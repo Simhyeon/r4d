@@ -15,6 +15,7 @@ impl Cli {
         Ok(())
     }
 
+    // TODO Add stream or file type option for main usage
     fn args_builder() -> clap::ArgMatches {
         clap_app!(Rif =>
             (version: "0.0.1")
@@ -26,10 +27,6 @@ impl Cli {
                 (@arg MACRO: +required "Macro to execute")
                 (@arg args: -a --args +takes_value "Argument to be passed to macro")
                 (@arg inc: ... -i --include +takes_value "(Not implemented)File to read macro definition from")
-            )
-            (@subcommand new =>
-                (about: "Create a new rif file in current working directory")
-                (@arg default: -d --default "Creates defult rifignore file")
             )
         ).get_matches()
     }
