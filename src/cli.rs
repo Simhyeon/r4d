@@ -24,8 +24,8 @@ impl Cli {
             (@subcommand direct =>
                 (about: "Directly call r4d macro")
                 (@arg MACRO: +required "Macro to execute")
-                (@arg argument: -a --args +takes_value "Argument to be passed to macro")
-                (@arg argument: ... -i --include +takes_value "(Not implemented)File to read macro definition from")
+                (@arg args: -a --args +takes_value "Argument to be passed to macro")
+                (@arg inc: ... -i --include +takes_value "(Not implemented)File to read macro definition from")
             )
             (@subcommand new =>
                 (about: "Create a new rif file in current working directory")
@@ -39,6 +39,7 @@ impl Cli {
             // TODO
             // Call direct macro call
             if let Some(mac) = sub_match.value_of("MACRO") {
+                println!("Given macro name is {}", mac);
                 // TODO
                 // Create hashamp with has macro name as key
                 // and function pointer as value if possible
