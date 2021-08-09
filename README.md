@@ -32,14 +32,20 @@ string literal and macro definitio and macro usages at the same time.
 
 #### Macro definition
 
+Definition is also a macro.
+
+Definition should start from the first of the line
+
 ```
-def macro_name(arg1, arg2) { "First line: $arg1","Second line : $arg2" }
+// Define with json form
+$define({name: "", args: [""], contents: [""]})
+// Define with simple form
+$define("",[""],[""])
 ```
 
 #### Macro inovokation
 
 Prefix(default is $, dollar sign) can be changed by end user.
-
 ```
 $macro_name(arg1, arg2)
 ```
