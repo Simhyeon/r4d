@@ -1,7 +1,17 @@
 mod parser;
 mod fileio;
+mod cli;
+mod error;
+mod basic;
 
-pub fn main() {
-    println!("Parse input stream");
-    println!("Print out to output stream");
+use parser::Parser;
+use cli::Cli;
+use error::MainError;
+
+pub fn main() -> Result<(), MainError> {
+    // Command line parse
+    Cli::parse()?;
+    
+    // End 
+    Ok(())
 }
