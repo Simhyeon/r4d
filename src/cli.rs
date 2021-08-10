@@ -1,5 +1,6 @@
 use clap::clap_app;
 use crate::error::CliError;
+use crate::basic::BasicMacro;
 
 /// Struct to parse command line arguments and execute proper operations
 pub struct Cli{}
@@ -36,7 +37,15 @@ impl Cli {
             // TODO
             // Call direct macro call
             if let Some(mac) = sub_match.value_of("MACRO") {
+                let mut args = "";
+                if let Some(args_content) = sub_match.value_of("args") {
+                    args = args_content;
+                } 
                 println!("Given macro name is {}", mac);
+
+                let basic = BasicMacro::new();
+                basic.call(mac, args).expect("Test failed");
+
                 // TODO
                 // Create hashamp with has macro name as key
                 // and function pointer as value if possible
