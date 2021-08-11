@@ -1,13 +1,12 @@
-mod parser;
-mod fileio;
+mod basic;
 mod cli;
 mod error;
-mod basic;
+mod fileio;
+mod parser;
+mod utils;
 
-use basic::BasicMacro;
 use cli::Cli;
 use error::MainError;
-use parser::Parser;
 
 pub fn main() -> Result<(), MainError> {
     // Command line parse
