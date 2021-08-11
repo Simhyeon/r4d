@@ -33,7 +33,7 @@ impl<'a> BasicMacro<'a> {
     pub fn call(&self, name : &str, args: &str) -> Result<bool, BasicError> {
         if let Some(func) = self.macros.get(name) {
             // Print out macro call result
-            println!("{}", func(args)?);
+            print!("{}", func(args)?);
             Ok(true)
         } else {
             Ok(false)
