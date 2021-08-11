@@ -41,7 +41,6 @@ impl Cli {
                 if let Some(args_content) = sub_match.value_of("args") {
                     args = args_content;
                 } 
-                println!("Given macro name is {}", mac);
 
                 let basic = BasicMacro::new();
                 basic.call(mac, args).expect("Test failed");
