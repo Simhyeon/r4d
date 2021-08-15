@@ -59,7 +59,7 @@ impl Lexor {
             Cursor::None => {
                 if ch == MACRO_START_CHAR 
                     && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
-                        println!("--MACRO START--");
+                        //noprintln!("--MACRO START--");
                         self.cursor = Cursor::Name;
                         result = LexResult::Ignore;
                 } else {
@@ -105,7 +105,7 @@ impl Lexor {
                 // TODO 
                 // LexResult should imply that another syntax is required
                 else if ch == '(' {
-                    println!("START ARGS");
+                    //noprintln!("START ARGS");
                     self.cursor = Cursor::Arg;
                     result = LexResult::AddToFrag(Cursor::Arg);
                 }
@@ -143,7 +143,7 @@ impl Lexor {
     // Previous this was not a part of lexor struct
     // Make this method to called after lex method so that cursor change or 
     // other setter logic is invoked
-    pub fn set_previous(&mut self, ch: char) {
+    fn set_previous(&mut self, ch: char) {
         match ch {
             '(' => self.surrounding = Surrounding::Paren,
             ')' => if let Surrounding::Paren = self.surrounding { self.surrounding = Surrounding::None;}
@@ -169,9 +169,6 @@ impl Lexor {
         self.previous_char.replace(ch);
     }
 
-    pub fn get_previous(&self) -> Option<char> {
-        self.previous_char
-    }
 } 
 
 pub enum ParseResult {
@@ -214,7 +211,7 @@ impl<'a> Processor<'a> {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(remainder) => {
-                    println!("Remainder from parse_line ::: {}", remainder);
+                    println!("{}", remainder);
                     // Reset fragment
                     if &invoke.whole_string != "" {
                         invoke = MacroFragment::new();
@@ -244,7 +241,7 @@ impl<'a> Processor<'a> {
                 // TODO
                 // Either add character to remainder or fragments
                 match lex_result {
-                    LexResult::Ignore => continue,
+                    LexResult::Ignore => frag.whole_string.push(ch),
                     LexResult::AddToRemainder => {
                         remainder.push(ch);
                     }
@@ -263,14 +260,22 @@ impl<'a> Processor<'a> {
                     // 2. And append to remainder
                     // 3. Reset fragment
                     LexResult::EndFrag => {
+                        frag.whole_string.push(ch);
                         if frag.name == "define" {
-                            // TODO
-                            // self.macros.register(name: &str, args: &str, body: &str)
+                            // Failed to register macro
+                            if let Some((name,args,body)) = Self::parse_define(&frag.args) {
+                                self.macros.register(&name, &args, &body)?;
+                            } else {
+                                remainder.push_str(&frag.whole_string);
+                            }
+                            // Clear fragment regardless of success
+                            frag.clear();
                         } else {
                             // Invoke
                             if let Some(content) = self.macros.evaluate(&frag.name, &frag.args)? {
-                                println!("Evaluated : {}", content);
+                                //noprintln!("Evaluated : {}", content);
                                 remainder.push_str(&content);
+                                frag.clear();
                             }
                         }
                     }
@@ -297,10 +302,76 @@ impl<'a> Processor<'a> {
                 Ok(ParseResult::NoPrint)
             }
         } else {
-            println!("--END OF INPUT--");
+            //noprintln!("--END OF INPUT--");
             Ok(ParseResult::EOI)
         }
     } // parse_line end
+
+    // Static function
+    // NOTE This method expects valid form of macro invocation
+    pub fn parse_define(text: &str) -> Option<(String, String, String)> {
+        let mut arg_cursor = "name";
+        let mut name = String::new();
+        let mut args = String::new();
+        let mut body = String::new();
+
+        for ch in text.chars() {
+            if ch == ',' {
+                match arg_cursor {
+                    "name" => {arg_cursor = "args"; continue;},
+                    "args" => {arg_cursor = "body"; continue;},
+                    "body" => return Some((name, args, body)),
+                    _ => unreachable!()
+                }
+            }
+            if ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t' {
+                // This means pattern like this
+                // $define( name ) -> name is registered
+                // $define( na me ) -> only "na" is registered
+                if arg_cursor == "name" && name.len() != 0 {
+                    arg_cursor = "args";
+                    continue;
+                } 
+                // This emans pattern like this
+                // $define(name, arg1 ,)
+                //                   |
+                //                  -This part makes argument empty
+                //                  and starts argument evaluation as new state
+                else if arg_cursor == "args" && args.len() != 0 {
+                    args.clear();
+                    continue;
+                }
+            } else {
+                // Body can be any text
+                if arg_cursor != "body" {
+                    if args.len() == 0 { // Start of string
+                        // Not alphabetic and not underscore
+                        // $define( 1name ) -> Not valid
+                        if !ch.is_alphabetic() && ch != '_' {
+                            return None;
+                        }
+                    } else { // middle of string
+                        // Not alphanumeric and not underscore
+                        // $define( na*me ) -> Not valid
+                        // $define( na_me ) -> Valid
+                        if !ch.is_alphanumeric() && ch != '_' {
+                            return None;
+                        }
+                    }
+                }
+            }
+
+            // Add ch to string, which is used for other evaluation
+            match arg_cursor {
+                "name" => name.push(ch),
+                "args" => args.push(ch),
+                "body" => body.push(ch),
+                _ => unreachable!()
+            }
+        }
+
+        Some((name, args, body))
+    }
 }
 
 #[derive(Clone, Copy)]

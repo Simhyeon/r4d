@@ -1,3 +1,5 @@
+use crate::processor::Cursor;
+
 pub(crate) fn args_to_vec<'a>(args : &'a str) -> Vec<&'a str> {
     args.split(",").collect()
 }
@@ -11,3 +13,4 @@ pub(crate) fn args_with_len<'a>(args: &'a str, length: usize) -> Option<Vec<&'a 
 
     Some(args)
 }
+

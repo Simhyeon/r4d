@@ -1,17 +1,21 @@
 ### TODOs
 
+* [ ] Improve modularlity
+Define is not basic macro but reserved macro, so...
+
 * [ ] Make custom parser and lexor
   * [x] print out non macro text
   * [ ] Print remainder from lines that contains macro definition
-    * [ ] Complete register logic
-	  * [ ] parse define macro's arguments
+    * [x] Complete register logic
+	  * [x] parse define macro's arguments
 	* [ ] Complete invoke logic
 	  * [x] Basic macro works for now
 	  * [x] Single macro in single line works
-	  * [ ] Single macro in multiple lines
-	  * [ ] Multiple macro in multiple lines
-	  * [ ] Multiple macro in multiple fragmented lines
+	  * [x] Single macro in multiple lines
+	  * [x] Multiple macro in multiple lines
+	  * [x] Multiple macro in multiple fragmented lines
 	  * [ ] Make custom macro works
+	  * [ ] Make nested invocation work
   * [ ] Print evaluated macro substitution
   * [ ] Print failed macro  
   * [ ] Print a line which as multiple macros in a line
