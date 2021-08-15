@@ -16,7 +16,6 @@ impl<'a> BasicMacro<'a> {
     pub fn new() -> Self {
         // Create hashmap of functions
         let map = HashMap::from_iter(IntoIter::new([
-            ("test", BasicMacro::test as MacroType),
             ("regex_sub", BasicMacro::regex_sub as MacroType),
             ("regex_del", BasicMacro::regex_del as MacroType),
             ("eval", BasicMacro::eval as MacroType),
@@ -30,21 +29,21 @@ impl<'a> BasicMacro<'a> {
         Self {  macros : map }
     }
 
-    pub fn call(&self, name : &str, args: &str) -> Result<bool, RadError> {
+    pub fn contains(&self, name: &str) -> bool {
+        self.macros.contains_key(name)
+    }
+
+    pub fn call(&self, name : &str, args: &str) -> Result<String, RadError> {
         if let Some(func) = self.macros.get(name) {
             // Print out macro call result
-            print!("{}", func(args)?);
-            Ok(true)
+            let result = func(args)?;
+            Ok(result)
         } else {
-            Ok(false)
+            Ok(String::new())
         }
     }
 
-    pub fn test(args: &str) -> Result<String, RadError> {
-        Ok(format!("Test call with args : {}", args))
-    }
-
-    pub fn regex_sub(args: &str) -> Result<String, RadError> {
+    fn regex_sub(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 3) {
             let source: &str = args[0];
             let target: &str = args[1];
@@ -59,7 +58,7 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    pub fn regex_del(args: &str) -> Result<String, RadError> {
+    fn regex_del(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 2) {
             let source = args[0];
             let target = args[1];
@@ -73,7 +72,7 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    pub fn eval(args: &str) -> Result<String, RadError> {
+    fn eval(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let formula = args[0];
             let result = evalexpr::eval(formula)?;
@@ -84,7 +83,7 @@ impl<'a> BasicMacro<'a> {
     }
 
     // Trim preceding and trailing whitespaces
-    pub fn trim(args: &str) -> Result<String, RadError> {
+    fn trim(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let source = args[0];
             // let reg = Regex::new(r"^[ \t]+")?;
@@ -98,7 +97,7 @@ impl<'a> BasicMacro<'a> {
     }
 
     // Remove duplicate newlines
-    pub fn chomp(args: &str) -> Result<String, RadError> {
+    fn chomp(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let source = args[0];
             let reg = Regex::new(r"\n\s*\n")?;
@@ -110,7 +109,7 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    pub fn compress(args: &str) -> Result<String, RadError> {
+    fn compress(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let source = args[0];
             // Chomp and then compress
@@ -122,7 +121,7 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    pub fn placeholder(args: &str) -> Result<String, RadError> {
+    fn placeholder(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let word_count = args[0];
             Ok(lipsum(word_count.parse::<usize>()?))
@@ -132,7 +131,7 @@ impl<'a> BasicMacro<'a> {
     }
 
     // TODO
-    pub fn include(args: &str) -> Result<String, RadError> {
+    fn include(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let file_path = args[0];
 

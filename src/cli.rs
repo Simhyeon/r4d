@@ -1,7 +1,7 @@
 use clap::clap_app;
 use crate::error::RadError;
 use crate::basic::BasicMacro;
-use crate::parser::Parser;
+use crate::processor::Processor;
 
 /// Struct to parse command line arguments and execute proper operations
 pub struct Cli{}
@@ -24,7 +24,7 @@ impl Cli {
         if let Some(files) = args.values_of("FILE") {
             unimplemented!();
         } else { // Read from stdin
-            Parser::from_stdin()?;
+            Processor::new().from_stdin()?;
         }
         Ok(())
     }

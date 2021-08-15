@@ -6,7 +6,12 @@
     * [ ] Complete register logic
 	  * [ ] parse define macro's arguments
 	* [ ] Complete invoke logic
-	  * [ ] Make print line work
+	  * [x] Basic macro works for now
+	  * [x] Single macro in single line works
+	  * [ ] Single macro in multiple lines
+	  * [ ] Multiple macro in multiple lines
+	  * [ ] Multiple macro in multiple fragmented lines
+	  * [ ] Make custom macro works
   * [ ] Print evaluated macro substitution
   * [ ] Print failed macro  
   * [ ] Print a line which as multiple macros in a line
