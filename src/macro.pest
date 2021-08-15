@@ -1,0 +1,16 @@
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+char = { !"\"" ~ ANY }
+char_name = _{ ASCII_ALPHANUMERIC | "_" }
+name = @{ char_name* }
+// No space characters allowed in macro_name
+macro_name = { "$" ~ name }
+macro_header = _{ macro_name ~ "(" }
+string = ${ "\"" ~ char* ~ "\"" }
+macro_args = { "[" ~ "]" | "[" ~ string ~ ( "," ~ string )* ~ "]"}
+macro_impls = { "[" ~ "]" | "[" ~ string ~ ( "," ~ string )* ~ "]" ~ ")"}
+macro_body = _{ macro_header ~ macro_args ~ "," ~ macro_impls }
+
+source_stdin = { SOI ~ macro_body* }
+source_file = { SOI ~ macro_body* ~ EOI }
+// source = { SOI ~ macro_body* ~ EOI }

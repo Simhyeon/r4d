@@ -2,28 +2,22 @@ mod basic;
 mod cli;
 mod error;
 mod fileio;
+mod processor;
 mod parser;
 mod utils;
+mod models;
 
 use cli::Cli;
-use error::MainError;
+use error::RadError;
+use parser::Parser;
 
-pub fn main() -> Result<(), MainError> {
+pub fn main() -> Result<(), RadError> {
+
     // Command line parse
-    Cli::parse()?;
+    //Cli::parse()?;
+
+    Parser::from_stdin();
 
     // End 
     Ok(())
-}
-
-// TESTS
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test() {
-        let basic = BasicMacro::new();
-        let result = basic.call("test", "args,content");
-    }
 }

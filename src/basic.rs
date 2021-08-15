@@ -1,12 +1,12 @@
 use std::array::IntoIter;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use crate::error::BasicError;
+use crate::error::RadError;
 use regex::Regex;
 use crate::utils;
 use lipsum::lipsum;
 
-type MacroType = fn(&str) -> Result<String, BasicError>;
+type MacroType = fn(&str) -> Result<String, RadError>;
 
 pub struct BasicMacro<'a> {
     macros : HashMap<&'a str, MacroType>,
@@ -30,7 +30,7 @@ impl<'a> BasicMacro<'a> {
         Self {  macros : map }
     }
 
-    pub fn call(&self, name : &str, args: &str) -> Result<bool, BasicError> {
+    pub fn call(&self, name : &str, args: &str) -> Result<bool, RadError> {
         if let Some(func) = self.macros.get(name) {
             // Print out macro call result
             print!("{}", func(args)?);
@@ -40,11 +40,11 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    pub fn test(args: &str) -> Result<String, BasicError> {
+    pub fn test(args: &str) -> Result<String, RadError> {
         Ok(format!("Test call with args : {}", args))
     }
 
-    pub fn regex_sub(args: &str) -> Result<String, BasicError> {
+    pub fn regex_sub(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 3) {
             let source: &str = args[0];
             let target: &str = args[1];
@@ -55,11 +55,11 @@ impl<'a> BasicMacro<'a> {
             let result = reg.replace_all(source, object); // This is a cow, moo~
             Ok(result.to_string())
         } else {
-            Err(BasicError::InvalidArgument("Regex sub requires three arguments"))
+            Err(RadError::InvalidArgument("Regex sub requires three arguments"))
         }
     }
 
-    pub fn regex_del(args: &str) -> Result<String, BasicError> {
+    pub fn regex_del(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 2) {
             let source = args[0];
             let target = args[1];
@@ -69,22 +69,22 @@ impl<'a> BasicMacro<'a> {
             let result = reg.replace_all(source, ""); // This is a cow, moo~, btw this replaces all match as empty character which technically deletes matches
             Ok(result.to_string())
         } else {
-            Err(BasicError::InvalidArgument("Regex del requires two arguments"))
+            Err(RadError::InvalidArgument("Regex del requires two arguments"))
         }
     }
 
-    pub fn eval(args: &str) -> Result<String, BasicError> {
+    pub fn eval(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let formula = args[0];
             let result = evalexpr::eval(formula)?;
             Ok(result.to_string())
         } else {
-            Err(BasicError::InvalidArgument("Regex del requires an argument"))
+            Err(RadError::InvalidArgument("Regex del requires an argument"))
         }
     }
 
     // Trim preceding and trailing whitespaces
-    pub fn trim(args: &str) -> Result<String, BasicError> {
+    pub fn trim(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let source = args[0];
             // let reg = Regex::new(r"^[ \t]+")?;
@@ -93,12 +93,12 @@ impl<'a> BasicMacro<'a> {
 
             Ok(result.to_string())
         } else {
-            Err(BasicError::InvalidArgument("Trim requires an argument"))
+            Err(RadError::InvalidArgument("Trim requires an argument"))
         }
     }
 
     // Remove duplicate newlines
-    pub fn chomp(args: &str) -> Result<String, BasicError> {
+    pub fn chomp(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let source = args[0];
             let reg = Regex::new(r"\n\s*\n")?;
@@ -106,11 +106,11 @@ impl<'a> BasicMacro<'a> {
 
             Ok(result.to_string())
         } else {
-            Err(BasicError::InvalidArgument("Chomp requires an argument"))
+            Err(RadError::InvalidArgument("Chomp requires an argument"))
         }
     }
 
-    pub fn compress(args: &str) -> Result<String, BasicError> {
+    pub fn compress(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let source = args[0];
             // Chomp and then compress
@@ -118,21 +118,21 @@ impl<'a> BasicMacro<'a> {
 
             Ok(result.to_string())
         } else {
-            Err(BasicError::InvalidArgument("Compress requires an argument"))
+            Err(RadError::InvalidArgument("Compress requires an argument"))
         }
     }
 
-    pub fn placeholder(args: &str) -> Result<String, BasicError> {
+    pub fn placeholder(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let word_count = args[0];
             Ok(lipsum(word_count.parse::<usize>()?))
         } else {
-            Err(BasicError::InvalidArgument("Placeholder requires an argument"))
+            Err(RadError::InvalidArgument("Placeholder requires an argument"))
         }
     }
 
     // TODO
-    pub fn include(args: &str) -> Result<String, BasicError> {
+    pub fn include(args: &str) -> Result<String, RadError> {
         if let Some(args) = utils::args_with_len(args, 1) {
             let file_path = args[0];
 
@@ -140,7 +140,7 @@ impl<'a> BasicMacro<'a> {
             // TODO
             // Include should invoke macro in its internal content first
         } else {
-            Err(BasicError::InvalidArgument("Include requires an argument"))
+            Err(RadError::InvalidArgument("Include requires an argument"))
         }
     }
 

@@ -1,28 +1,46 @@
 use clap::clap_app;
-use crate::error::CliError;
+use crate::error::RadError;
 use crate::basic::BasicMacro;
+use crate::parser::Parser;
 
 /// Struct to parse command line arguments and execute proper operations
 pub struct Cli{}
 
 impl Cli {
-    pub fn parse() -> Result<(), CliError>{
+    pub fn parse() -> Result<(), RadError>{
         let cli_args = Cli::args_builder();
+        Cli::parse_options(&cli_args)?;
         Cli::parse_subcommands(&cli_args)?;
         Ok(())
     }
-    fn parse_subcommands(args: &clap::ArgMatches) -> Result<(), CliError> {
+
+    // Debug, TODO
+    // Currently this process syntax parsing withint parse options methods
+    // This is not ideal but ignored for debugging purpose
+    // Plus parse options is always invoked which is not intended behaviour
+    // if subcommand was given, main command should not be executed
+    fn parse_options(args: &clap::ArgMatches) -> Result<(), RadError> {
+        // File is given
+        if let Some(files) = args.values_of("FILE") {
+            unimplemented!();
+        } else { // Read from stdin
+            Parser::from_stdin()?;
+        }
+        Ok(())
+    }
+
+    fn parse_subcommands(args: &clap::ArgMatches) -> Result<(), RadError> {
         Cli::subcommand_direct(args)?;
         Ok(())
     }
 
     // TODO Add stream or file type option for main usage
     fn args_builder() -> clap::ArgMatches {
-        clap_app!(Rif =>
+        clap_app!(R4d =>
             (version: "0.0.1")
             (author: "Simon Creek <simoncreek@tutanota.com>")
             (about: "R4d is a modern macro processro made with rust")
-            (@setting ArgRequiredElseHelp)
+            (@arg FILE: ... "Files to execute processing")
             (@subcommand direct =>
                 (about: "Directly call r4d macro")
                 (@arg MACRO: +required "Macro to execute")
@@ -32,7 +50,7 @@ impl Cli {
         ).get_matches()
     }
 
-    fn subcommand_direct(matches: &clap::ArgMatches) -> Result<(), CliError> {
+    fn subcommand_direct(matches: &clap::ArgMatches) -> Result<(), RadError> {
         if let Some(sub_match) = matches.subcommand_matches("direct") {
             // TODO
             // Call direct macro call
