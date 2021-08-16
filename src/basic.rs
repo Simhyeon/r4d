@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use crate::error::RadError;
 use regex::Regex;
-use crate::utils;
+use crate::utils::Utils;
 use lipsum::lipsum;
 
 type MacroType = fn(&str) -> Result<String, RadError>;
@@ -44,7 +44,7 @@ impl<'a> BasicMacro<'a> {
     }
 
     fn regex_sub(args: &str) -> Result<String, RadError> {
-        if let Some(args) = utils::args_with_len(args, 3) {
+        if let Some(args) = Utils::args_with_len(args, 3) {
             let source: &str = args[0];
             let target: &str = args[1];
             let object: &str = args[2];
@@ -59,7 +59,7 @@ impl<'a> BasicMacro<'a> {
     }
 
     fn regex_del(args: &str) -> Result<String, RadError> {
-        if let Some(args) = utils::args_with_len(args, 2) {
+        if let Some(args) = Utils::args_with_len(args, 2) {
             let source = args[0];
             let target = args[1];
 
@@ -73,7 +73,7 @@ impl<'a> BasicMacro<'a> {
     }
 
     fn eval(args: &str) -> Result<String, RadError> {
-        if let Some(args) = utils::args_with_len(args, 1) {
+        if let Some(args) = Utils::args_with_len(args, 1) {
             let formula = args[0];
             let result = evalexpr::eval(formula)?;
             Ok(result.to_string())
@@ -84,21 +84,12 @@ impl<'a> BasicMacro<'a> {
 
     // Trim preceding and trailing whitespaces
     fn trim(args: &str) -> Result<String, RadError> {
-        if let Some(args) = utils::args_with_len(args, 1) {
-            let source = args[0];
-            // let reg = Regex::new(r"^[ \t]+")?;
-            let reg = Regex::new(r"^[ \t\n]+|[ \t\n]+$")?;
-            let result = reg.replace_all(source, "");
-
-            Ok(result.to_string())
-        } else {
-            Err(RadError::InvalidArgument("Trim requires an argument"))
-        }
+        Utils::trim(args)
     }
 
     // Remove duplicate newlines
     fn chomp(args: &str) -> Result<String, RadError> {
-        if let Some(args) = utils::args_with_len(args, 1) {
+        if let Some(args) = Utils::args_with_len(args, 1) {
             let source = args[0];
             let reg = Regex::new(r"\n\s*\n")?;
             let result = reg.replace_all(source, "\n\n");
@@ -110,7 +101,7 @@ impl<'a> BasicMacro<'a> {
     }
 
     fn compress(args: &str) -> Result<String, RadError> {
-        if let Some(args) = utils::args_with_len(args, 1) {
+        if let Some(args) = Utils::args_with_len(args, 1) {
             let source = args[0];
             // Chomp and then compress
             let result = BasicMacro::trim(&BasicMacro::chomp(source)?)?;
@@ -122,7 +113,7 @@ impl<'a> BasicMacro<'a> {
     }
 
     fn placeholder(args: &str) -> Result<String, RadError> {
-        if let Some(args) = utils::args_with_len(args, 1) {
+        if let Some(args) = Utils::args_with_len(args, 1) {
             let word_count = args[0];
             Ok(lipsum(word_count.parse::<usize>()?))
         } else {
@@ -132,7 +123,7 @@ impl<'a> BasicMacro<'a> {
 
     // TODO
     fn include(args: &str) -> Result<String, RadError> {
-        if let Some(args) = utils::args_with_len(args, 1) {
+        if let Some(args) = Utils::args_with_len(args, 1) {
             let file_path = args[0];
 
             unimplemented!();

@@ -1,25 +1,35 @@
 ### TODOs
 
+Currently, it looks like macro rule is working.
+
 * [ ] Improve modularlity
 Define is not basic macro but reserved macro, so...
 
-* [ ] Make custom parser and lexor
+* [ ] Currently invalid macro definition doesn't yield proper error message
+
+* [ ] Currently local macro is not released which is a bad idea as a final output.
+
+* [x] Make custom parser and lexor
   * [x] print out non macro text
   * [ ] Print remainder from lines that contains macro definition
     * [x] Complete register logic
 	  * [x] parse define macro's arguments
-	* [ ] Complete invoke logic
+	* [x] Complete invoke logic
 	  * [x] Basic macro works for now
 	  * [x] Single macro in single line works
 	  * [x] Single macro in multiple lines
 	  * [x] Multiple macro in multiple lines
 	  * [x] Multiple macro in multiple fragmented lines
-	  * [ ] Make custom macro works
-	  * [ ] Make nested invocation work
-  * [ ] Print evaluated macro substitution
-  * [ ] Print failed macro  
-  * [ ] Print a line which as multiple macros in a line
-  * [ ] Print a nested macro substitution
+	  * [x] Make custom macro works
+	    - Invocation should be also another 
+		- Thus "MacroMap"'s evaluation logic should be located in processor not in Macromap itself
+	  * [x] Make nested invocation work
+	    * [x] When definition includes nestedness -> This is evaluated on invocation
+		* [x] When invocation includes nestedness -> This is evaluated with method name "evaluate"
+  * [x] Print evaluated macro substitution
+  * [x] Print failed macro  
+  * [x] Print a line which as multiple macros in a line
+  * [x] Print a nested macro substitution
 
 * [x] Make direct subcommand option
 

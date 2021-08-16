@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use crate::basic::BasicMacro;
 use crate::error::RadError;
+use crate::utils::Utils;
 
+#[derive(Clone)]
 pub struct MacroRule{
     pub name: String,
     pub args: Vec<String>,
@@ -10,53 +12,53 @@ pub struct MacroRule{
 
 impl MacroRule {
     pub fn new(name: &str, args: &str, body: &str) -> Self {
+        // Empty args are no args
+        let mut args : Vec<String> = args.split(' ').map(|item| item.to_owned()).collect();
+        if args.len() == 1 && args[0] == "" {
+            args = vec![]
+        }
+
         MacroRule {  
             name : name.to_owned(),
-            args : args.split(' ').map(|item| item.to_owned()).collect(),
+            args,
             body : body.to_owned(),
         }
-    }
-
-    pub fn invoke(&self) -> Result<String, RadError> {
-        // TODO
-        let result = format!("");
-        Ok(result)
     }
 }
 
 pub struct MacroMap<'a> {
-    basic : BasicMacro<'a>,
-    map : HashMap<String, MacroRule>,
+    pub basic : BasicMacro<'a>,
+    pub custom : HashMap<String, MacroRule>,
+    pub local : HashMap<String, String>,
 }
 
 impl<'a> MacroMap<'a> {
     pub fn new() -> Self {
         Self { 
             basic: BasicMacro::new(),
-            map: HashMap::new() 
+            custom: HashMap::new(),
+            local: HashMap::new()
         }
     }
 
+    // Crate new local macro(argument map)
+    pub fn new_local(&mut self, caller: &str ,name: &str, value: &str) {
+        self.local.insert(Utils::local_name(caller, name), value.to_owned());
+    }
+
+    // Empty argument should be treated as no arg
     pub fn register(
         &mut self, 
         name: &str,
         args: &str,
         body: &str,
     ) -> Result<(),RadError> {
-        let mac = MacroRule::new(name, args, body);
-        self.map.insert(name.to_owned(), mac);
+        // Trim all whitespaces and newlines from the string
+        let mac = MacroRule::new(
+            &Utils::trim(name)?, 
+            &Utils::trim(args)?, 
+            &Utils::trim(body)?);
+        self.custom.insert(name.to_owned(), mac);
         Ok(())
-    }
-
-    pub fn evaluate(&mut self, name: &str, args: &str) -> Result<Option<String>, RadError> {
-        if self.basic.contains(name) {
-            let result = self.basic.call(name, args)?;
-            Ok(Some(result))
-        } else if self.map.contains_key(name) {
-            let mac = self.map.get(name).unwrap();
-            Ok(Some(mac.invoke()?))
-        } else {
-            Ok(None)
-        }
     }
 }
