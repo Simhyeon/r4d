@@ -10,13 +10,13 @@ Simply make custom macro search comes earlier than basic macro
 * [ ] Currently invalid macro definition doesn't yield proper error message
 * [ ] Currently local macro is not released which is a bad idea as a final output.
 
-* [ ] Read from file option
-* [ ] Output option
+* [x] Read from file option
+* [x] Output option
 * [ ] Err redirection option
 
 * [ ] New basic macros
   * [ ] Syscmd macro
-  * [ ] Time macro
+  * [x] Time macro
   * [ ] Web request
 - This needs sincere consideration because this binary targets alpine which is not necessarily easy to combine openssl library.
   * [ ] Include macro

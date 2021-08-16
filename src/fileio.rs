@@ -1,8 +1,8 @@
-pub struct Reader; 
+pub struct _Reader; 
 
-impl Reader {
+impl _Reader {
     // Read input stream
-    pub fn read_stream() {
+    pub fn _read_stream() {
 
     }
 }

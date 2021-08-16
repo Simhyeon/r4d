@@ -2,6 +2,9 @@ use clap::clap_app;
 use crate::error::RadError;
 use crate::basic::BasicMacro;
 use crate::processor::Processor;
+use std::path::Path;
+use std::fs::{OpenOptions, File};
+use std::io::Write;
 
 /// Struct to parse command line arguments and execute proper operations
 pub struct Cli{}
@@ -20,10 +23,32 @@ impl Cli {
     // Plus parse options is always invoked which is not intended behaviour
     // if subcommand was given, main command should not be executed
     fn parse_options(args: &clap::ArgMatches) -> Result<(), RadError> {
-        // File is given
+        // Read from files
         if let Some(files) = args.values_of("FILE") {
-            unimplemented!();
-        } else { // Read from stdin
+            // Write to file
+            if let Some(output_file) = args.value_of("out") {
+                let mut out_file = OpenOptions::new()
+                    .write(true)
+                    .append(true)
+                    .open(output_file)
+                    .unwrap();
+                out_file.set_len(0)?;
+                for file in files {
+                    let mut file_result = Processor::new().from_file(Path::new(file))?;
+                    file_result.push('\n');
+                    out_file.write_all(file_result.as_bytes())?;
+                }
+            }
+            // Write to standard output
+            else {
+                for file in files {
+                    let file_result = Processor::new().from_file(Path::new(file))?;
+                    println!("{}", file_result);
+                }
+            }
+        } 
+        // Read from stdin
+        else { 
             Processor::new().from_stdin()?;
         }
         Ok(())
@@ -41,6 +66,7 @@ impl Cli {
             (author: "Simon Creek <simoncreek@tutanota.com>")
             (about: "R4d is a modern macro processro made with rust")
             (@arg FILE: ... "Files to execute processing")
+            (@arg out: -o --out +takes_value "File to print out macro")
             (@subcommand direct =>
                 (about: "Directly call r4d macro")
                 (@arg MACRO: +required "Macro to execute")

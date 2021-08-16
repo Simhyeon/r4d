@@ -1,5 +1,6 @@
-use std::io::{self, StdinLock, Lines};
-use std::io::prelude::*;
+use std::io::{self, StdinLock, Lines, BufRead};
+use std::fs::File;
+use std::path::Path;
 use crate::error::RadError;
 use crate::models::MacroMap;
 use crate::utils::Utils;
@@ -243,10 +244,41 @@ impl<'a> Processor<'a> {
 
         Ok(())
     }
+
+    pub fn from_file(&mut self, path :&Path) -> Result<String, RadError> {
+        let file_stream = File::open(path)?;
+        let reader = io::BufReader::new(file_stream);
+        let mut content = String::new();
+        let mut line_iter = reader.lines();
+        let mut lexor = Lexor::new();
+        let mut invoke = MacroFragment::new();
+        loop {
+            let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
+            match result {
+                // This means either macro is not found at all
+                // or previous macro fragment failed with invalid syntax
+                ParseResult::Printable(remainder) => {
+                    content.push_str(&remainder);
+                    // Reset fragment
+                    if &invoke.whole_string != "" {
+                        invoke = MacroFragment::new();
+                    }
+                }
+                ParseResult::FoundMacro(remainder) => {
+                    content.push_str(&remainder);
+                }
+                ParseResult::NoPrint => (), // Do nothing
+                // End of input, end loop
+                ParseResult::EOI => break,
+            }
+        } // Loop end
+
+        Ok(content)
+    }
     
     // TODO
     /// Parse line is called only by the main loop thus, caller name is special name of @MAIN
-    fn parse_line(&mut self, lines :&mut Lines<StdinLock>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
+    fn parse_line(&mut self, lines :&mut Lines<impl BufRead>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
         if let Some(line) = lines.next() {
             // Rip off a result into a string
             let line = line?;
