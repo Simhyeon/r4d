@@ -1,3 +1,10 @@
+### Bugs
+
+Body's newline character is not substituted properly. This is somewhat in
+conjunction of newline inconsistency
+
+lines() method that I'm using strips off newline which is the source of the bug.
+
 ### TODOs
 
 Currently, it looks like macro rule is working.
@@ -5,6 +12,8 @@ Currently, it looks like macro rule is working.
 * [ ] Improve modularlity
 Define is not basic macro but reserved macro, so...
 
+* [ ] Print logic is quite inconsistent
+Every line is printed as println which makes a single trailing new line
 * [ ] Enable user to override basic macro 
 Simply make custom macro search comes earlier than basic macro
 * [ ] Currently invalid macro definition doesn't yield proper error message
@@ -19,8 +28,11 @@ Simply make custom macro search comes earlier than basic macro
   * [x] Time macro
   * [ ] Web request
 - This needs sincere consideration because this binary targets alpine which is not necessarily easy to combine openssl library.
-  * [ ] Include macro
-  * [ ] For loop(repeat) macro
+  * [x] Include macro
+  * [x] Repeat macro -> Same thing
+  * [ ] For loop -> Change by number
+  * [ ] If macro
+  * [ ] If define macro
   * [ ] Text format
     * [ ] CSV macro
       * [ ] csv query

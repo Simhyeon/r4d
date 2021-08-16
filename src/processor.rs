@@ -1,12 +1,12 @@
 use std::io::{self, StdinLock, Lines, BufRead};
 use std::fs::File;
+use std::ops::Add;
 use std::path::Path;
 use crate::error::RadError;
 use crate::models::MacroMap;
 use crate::utils::Utils;
-
-const MACRO_START_CHAR: char = '$';
-const ESCAPE_CHAR: char ='\\';
+use crate::consts::*;
+use crate::lexor::*;
 
 pub struct MacroFragment {
     pub whole_string: String,
@@ -30,176 +30,11 @@ impl MacroFragment {
     }
 }
 
-pub enum Surrounding {
-    None,
-    Paren,
-    Squared,
-    Quote,
-    Dquote,
-}
-
-pub struct Lexor {
-    previous_char : Option<char>,
-    pub cursor: Cursor,
-    pub escape_next : bool,
-    pub surrounding : Surrounding,
-    pub paren_count : usize,
-}
-
-impl Lexor {
-    pub fn new() -> Self {
-        Lexor {
-            previous_char : None,
-            cursor: Cursor::None,
-            escape_next : false,
-            surrounding : Surrounding::None, 
-            paren_count : 0,
-        }
-    }
-
-    pub fn lex(&mut self, ch: char) -> Result<LexResult, RadError> {
-        let mut result: LexResult = LexResult::Ignore;
-        match self.cursor {
-            Cursor::None => {
-                if ch == MACRO_START_CHAR 
-                    && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
-                        //noprintln!("--MACRO START--");
-                        self.cursor = Cursor::Name;
-                        result = LexResult::Ignore;
-                } else {
-                    result = LexResult::AddToRemainder;
-                }
-            },
-            Cursor::Name => {
-                // Check whehter name should end or not
-                let mut end_name = false;
-                // if macro name's first character, then it should be alphabetic
-                if self.previous_char.unwrap_or(MACRO_START_CHAR) == MACRO_START_CHAR {
-                    if ch.is_alphabetic() || ch == '_' {
-                        result = LexResult::AddToFrag(Cursor::Name);
-                    } else {
-                        end_name = true;
-                    }
-                } else { // not first character
-                    // Can be alphanumeric
-                    if ch.is_alphanumeric() || ch == '_' {
-                        result = LexResult::AddToFrag(Cursor::Name);
-                    } else {
-                        end_name = true;
-                    }
-                }
-
-                // Unallowed character
-                // Start arg if parenthesis was given,
-                // whitespaces are ignored and don't trigger exit
-                if end_name {
-                    if ch == ' ' {
-                        self.cursor = Cursor::NameToArg;
-                        result = LexResult::Ignore;
-                    } else if ch == '(' {
-                        self.cursor = Cursor::Arg;
-                        self.paren_count = 1;
-                        result = LexResult::Ignore;
-                    }
-                }
-            }
-            Cursor::NameToArg => {
-                if ch == ' ' {
-                    result = LexResult::Ignore;
-                }
-                // TODO 
-                // LexResult should imply that another syntax is required
-                else if ch == '(' {
-                    //noprintln!("START ARGS");
-                    self.cursor = Cursor::Arg;
-                    self.paren_count = 1;
-                    result = LexResult::AddToFrag(Cursor::Arg);
-                }
-                else {
-                    self.cursor = Cursor::None;
-                    result = LexResult::ExitFrag;
-                }
-            }
-            // TODO
-            // Arg needs extra logic to detect double quoted parenthesis
-            Cursor::Arg => {
-                // if ending parenthesis without surrounding double quotes are 
-                // ending of args
-                if let Surrounding::Dquote = self.surrounding {
-                    result = LexResult::AddToFrag(Cursor::Arg);
-                } else {
-                    if ch == ')' {
-                        self.paren_count = self.paren_count - 1; 
-                        if self.paren_count == 0 {
-                            self.cursor = Cursor::None;
-                            result = LexResult::EndFrag;
-                        } else {
-                            result = LexResult::AddToFrag(Cursor::Arg);
-                        }
-                    } else if ch == '(' {
-                        self.paren_count = self.paren_count + 1; 
-                        result = LexResult::AddToFrag(Cursor::Arg);
-                        // TODO
-                        // Remove this
-                        //self.cursor = Cursor::None;
-                        //result = LexResult::ExitFrag;
-                    } else {
-                        result = LexResult::AddToFrag(Cursor::Arg);
-                    }
-                }
-            } // end arg match
-        }
-
-        self.set_previous(ch);
-        Ok(result)
-    }
-
-    // TODO
-    // Previous this was not a part of lexor struct
-    // Make this method to called after lex method so that cursor change or 
-    // other setter logic is invoked
-    fn set_previous(&mut self, ch: char) {
-        match ch {
-            '(' => self.surrounding = Surrounding::Paren,
-            ')' => if let Surrounding::Paren = self.surrounding { self.surrounding = Surrounding::None;}
-            '[' => self.surrounding = Surrounding::Squared,
-            ']' => if let Surrounding::Squared = self.surrounding { self.surrounding = Surrounding::None;}
-            '\'' => {
-                if let Surrounding::Quote = self.surrounding { 
-                    self.surrounding = Surrounding::None;
-                } else {
-                    self.surrounding = Surrounding::Quote;
-                }
-            }
-            '"' => {
-                if let Surrounding::Dquote = self.surrounding { 
-                    self.surrounding = Surrounding::None;
-                } else {
-                    self.surrounding = Surrounding::Dquote;
-                }
-            }
-            _ => (),
-        }
-        // Set previous
-        self.previous_char.replace(ch);
-    }
-
-} 
-
 pub enum ParseResult {
     FoundMacro(String),
     Printable(String),
     NoPrint,
     EOI,
-}
-
-#[derive(Debug)]
-pub enum LexResult {
-    Ignore,
-    AddToRemainder,
-    AddToFrag(Cursor),
-    EndFrag,
-    ExitFrag,
 }
 
 pub struct Processor<'a> {
@@ -258,7 +93,7 @@ impl<'a> Processor<'a> {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(remainder) => {
-                    content.push_str(&remainder);
+                    content.push_str(&remainder.add("\n"));
                     // Reset fragment
                     if &invoke.whole_string != "" {
                         invoke = MacroFragment::new();
@@ -321,7 +156,7 @@ impl<'a> Processor<'a> {
                             frag.clear();
                         } else {
                             // Invoke
-                            if let Some(content) = self.evaluate(&"@MAIN".to_owned(), &frag.name, &frag.args)? {
+                            if let Some(content) = self.evaluate(&MAIN_CALLER.to_owned(), &frag.name, &frag.args)? {
                                 //noprintln!("Evaluated : {}", content);
                                 remainder.push_str(&content);
                                 frag.clear();
@@ -364,8 +199,11 @@ impl<'a> Processor<'a> {
     } // parse_line end
 
     /// Parse chunk is called by non-main process, thus needs caller
-    fn parse_chunk(&mut self, caller: &String, lines :&mut std::str::Lines, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<String, RadError> {
+    pub fn parse_chunk(&mut self, caller: &String, lines :&mut std::str::Lines) -> Result<String, RadError> {
+        let mut lexor = Lexor::new();
+        let mut frag = MacroFragment::new();
         let mut remainder = String::new();
+        let mut lines = lines.peekable();
         while let Some(line) = lines.next() {
             // Rip off a result into a string
             // Local values
@@ -419,6 +257,10 @@ impl<'a> Processor<'a> {
                         frag.clear();
                     }
                 }
+            }
+            // Add new line to remainder because this operation is line based
+            if let Some(_) = lines.peek() {
+                remainder.push('\n');
             }
         }  // End while
         return Ok(remainder)
@@ -514,16 +356,10 @@ impl<'a> Processor<'a> {
     // Evaluate can be nested deeply
     // TODO Add local macro map to be used for custom macro expansion
     fn evaluate(&mut self,caller: &String, name: &String, args: &String) -> Result<Option<String>, RadError> {
-        // println!("EVALUATE -- caller : {} | name : {} | args : {}", caller, name, args);
-        let mut iter = args.lines();
-        let mut lexor = Lexor::new();
-        let mut frag = MacroFragment::new();
 
-        // DEBUG NOTE TODO
-        // Use parse_line for evaluation purpose, just name is differnt as chunk
-        // This parsed and processes arguments
+        // This parses and processes arguments
         // and macro should be evaluated after
-        let args = self.parse_chunk(caller, &mut iter, &mut lexor, &mut frag)?; 
+        let args = self.parse_chunk(caller, &mut args.lines())?; 
 
         // Ok, this is devastatingly hard to read 
         // Find Local macro first
@@ -571,7 +407,7 @@ impl<'a> Processor<'a> {
             self.map.new_local(name, arg_type ,&arg_values[idx]);
         }
         // PARSE Chunk
-        let result = self.parse_chunk(&name, &mut rule.body.lines(), &mut Lexor::new(), &mut MacroFragment::new())?;
+        let result = self.parse_chunk(&name, &mut rule.body.lines())?;
 
         Ok(Some(result))
     }
@@ -598,12 +434,4 @@ impl<'a> Processor<'a> {
 
         values
     }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum Cursor {
-    None,
-    Name,
-    NameToArg,
-    Arg,
 }

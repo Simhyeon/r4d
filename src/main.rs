@@ -5,6 +5,8 @@ mod fileio;
 mod processor;
 mod utils;
 mod models;
+mod consts;
+mod lexor;
 
 use cli::Cli;
 use error::RadError;

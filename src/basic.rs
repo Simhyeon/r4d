@@ -2,8 +2,10 @@ use std::array::IntoIter;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use crate::error::RadError;
+use crate::consts::MAIN_CALLER;
 use regex::Regex;
 use crate::utils::Utils;
+use crate::processor::Processor;
 use lipsum::lipsum;
 
 type MacroType = fn(&str) -> Result<String, RadError>;
@@ -25,6 +27,8 @@ impl<'a> BasicMacro<'a> {
             ("placeholder", BasicMacro::placeholder as MacroType),
             ("time", BasicMacro::time as MacroType),
             ("date", BasicMacro::date as MacroType),
+            ("include", BasicMacro::include as MacroType),
+            ("repeat", BasicMacro::repeat as MacroType)
         ]));
 
         // Return struct
@@ -131,14 +135,27 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    // TODO
     fn include(args: &str) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 1) {
             let file_path = args[0];
+            let file_path = std::path::Path::new(file_path);
+            Ok(Processor::new().from_file(file_path)?)
+        } else {
+            Err(RadError::InvalidArgument("Include requires an argument"))
+        }
+    }
 
-            unimplemented!();
-            // TODO
-            // Include should invoke macro in its internal content first
+    // TODO
+    fn repeat(args: &str) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 2) {
+            let repeat_count =  args[0].parse::<usize>()?;
+            let repeat_object = args[1];
+            let mut repeated = String::new();
+            let item = Processor::new().parse_chunk(&MAIN_CALLER.to_owned(), &mut repeat_object.lines())?;
+            for _ in 0..repeat_count {
+                repeated.push_str(&item);
+            }
+            Ok(repeated)
         } else {
             Err(RadError::InvalidArgument("Include requires an argument"))
         }
@@ -148,5 +165,7 @@ impl<'a> BasicMacro<'a> {
     // IF
     // IfElse
     // IfDefine
+    // Repeat
+    // Syscmd
 }
 
