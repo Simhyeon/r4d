@@ -442,6 +442,7 @@ impl<'a> Processor<'a> {
                 //                  and starts argument evaluation as new state
                 else if arg_cursor == "args" && container.len() != 0 {
                     args.push_str(&container);
+                    args.push(' ');
                     container.clear();
                     continue;
                 }
@@ -555,15 +556,13 @@ impl<'a> Processor<'a> {
             } else if ch == '"' && previous.unwrap_or(' ') != ESCAPE_CHAR {
                 // Toggle double quote
                 dquote = !dquote;
+            } else {
+                value.push(ch);
             }
 
-            value.push(ch);
             previous.replace(ch);
         }
-
-        if values.len() == 0 {
-            values.push(value);
-        }
+        values.push(value);
 
         values
     }
