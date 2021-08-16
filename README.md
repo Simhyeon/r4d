@@ -13,40 +13,31 @@ is not necessary
 
 #### No library
 
-I tried pest, however I didn't like the limitation of the syntax. Plus, other
-parser generator libraries recommend using custom parser for programming
-languages. 
+Since r4d allows inline macro expansion and definition, explicit rule based
+parsing is impossible. Plus, R4d yields not expanded string, which is not
+typical in traditional parser framework.
 
-The reason stock library doesn't fit well comes from the expressiveness and
-complexity of m4 macro processor. Technical difficulties are followed,
-
-- M4 syntax allows string literal in its file which is not allowed in many
-programming languages
-- M4 allows macro definition in any location of given input, even among string literal
-- M4 allows shell execution in any location of given input.
-
-Thus there are too much caveats to with exsiting library that can differentiate
-string literal and macro definitio and macro usages at the same time.
-
-### Syntax (This is a plan, not the real specification)
+### Syntax 
 
 #### Macro definition
 
-Definition is also a macro.
-
-Definition should start from the first of the line
+Definition is also a macro. However it requires specifid form not like other
+macros
 
 ```
-// Define with json form
-$define({name: "", args: [""], contents: [""]})
 // Define with simple form
-$define("",[""],[""])
+// First argument is macro name
+// Second argument is whitespace separated macro's argument list
+// Third argument is body to be substituted
+// Body can express argument usage with macro usage
+$define(name,arg1 arg2, $arg1() $arg2())
 ```
 
 #### Macro inovokation
 
 Prefix(default is $, dollar sign) can be changed by end user.
 ```
+$define(macro_name,a1 a2, $a1() $a2())
 $macro_name(arg1, arg2)
 ```
 
@@ -55,8 +46,12 @@ Macro can be invoked anywhere
 ```
 My name is $macro_name(Simon, Creek).
 ```
+converts to
+```
+My name is Simon Creek.
+```
 
-#### In-built macros
+#### In-built macros(WIP)
 
 - Include
 - Foreach, for loop
