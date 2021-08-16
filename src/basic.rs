@@ -23,6 +23,8 @@ impl<'a> BasicMacro<'a> {
             ("chomp", BasicMacro::chomp as MacroType),
             ("compress", BasicMacro::compress as MacroType),
             ("placeholder", BasicMacro::placeholder as MacroType),
+            ("time", BasicMacro::time as MacroType),
+            ("date", BasicMacro::date as MacroType),
         ]));
 
         // Return struct
@@ -41,6 +43,14 @@ impl<'a> BasicMacro<'a> {
         } else {
             Ok(String::new())
         }
+    }
+
+    fn time(_: &str) -> Result<String, RadError> {
+        Ok(format!("{}", chrono::offset::Local::now().format("%H:%M:%S")))
+    }
+
+    fn date(_: &str) -> Result<String, RadError> {
+        Ok(format!("{}", chrono::offset::Local::now().format("%Y-%m-%d")))
     }
 
     fn regex_sub(args: &str) -> Result<String, RadError> {

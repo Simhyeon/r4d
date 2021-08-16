@@ -278,7 +278,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "r4d"
+name = "rad"
 version = "0.1.0"
 dependencies = [
  "chrono",
