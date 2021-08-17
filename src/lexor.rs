@@ -63,6 +63,11 @@ impl Lexor {
                         self.cursor = Cursor::Arg;
                         self.paren_count = 1;
                         result = LexResult::Ignore;
+                    } 
+                    // CHECK -> Maybe unncessary
+                    // Exit when unallowed character is given
+                    else {
+                        result = LexResult::ExitFrag;
                     }
                 }
             }
