@@ -28,14 +28,14 @@ impl Cli {
             // Write to file
             if let Some(output_file) = args.value_of("out") {
                 let mut out_file = OpenOptions::new()
+                    .create(true)
                     .write(true)
                     .append(true)
                     .open(output_file)
                     .unwrap();
                 out_file.set_len(0)?;
                 for file in files {
-                    let mut file_result = Processor::new().from_file(Path::new(file))?;
-                    file_result.push('\n');
+                    let file_result = Processor::new().from_file(Path::new(file))?;
                     out_file.write_all(file_result.as_bytes())?;
                 }
             }
@@ -49,7 +49,19 @@ impl Cli {
         } 
         // Read from stdin
         else { 
-            Processor::new().from_stdin()?;
+            let result = Processor::new().from_stdin()?;
+            if let Some(output_file) = args.value_of("out") {
+                let mut out_file = OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .append(true)
+                    .open(output_file)
+                    .unwrap();
+                out_file.set_len(0)?;
+                out_file.write_all(result.as_bytes())?;
+            } else {
+                print!("{}", result);
+            }
         }
         Ok(())
     }
