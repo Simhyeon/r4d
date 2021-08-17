@@ -56,6 +56,9 @@ impl<'a> Processor<'a> {
             map : MacroMap::new(),
         }
     }
+    pub fn get_map(&self) -> &MacroMap {
+        &self.map
+    }
     pub fn from_stdin(&mut self) -> Result<String, RadError> {
         let stdin = io::stdin();
         let mut line_iter = stdin.lock().lines();
@@ -405,8 +408,8 @@ impl<'a> Processor<'a> {
         }
         // Find basic macro
         else if self.map.basic.contains(&name) {
-            let final_result = self.map.basic.call(name, &args)?;
-            return Ok(Some(final_result));
+            let final_result = self.map.basic.clone().call(name, &args, self)?;
+            return Ok(Some(final_result.to_string()));
         } 
         // No macros found..? // possibly be unreachable
         else { 
@@ -425,7 +428,7 @@ impl<'a> Processor<'a> {
         let rule = self.map.custom.get(name).unwrap().clone();
         let arg_types = &rule.args;
         // Set variable to local macros
-        let arg_values = Self::parse_args(arg_values);
+        let arg_values = Utils::args_to_vec(arg_values, ',', ('"','"'));
 
         // Necessary arg count is bigger than given arguments
         if arg_types.len() > arg_values.len() {
@@ -444,26 +447,4 @@ impl<'a> Processor<'a> {
         Ok(Some(result))
     }
 
-    fn parse_args(arg_values: &String) -> Vec<String> {
-        let mut values = vec![];
-        let mut value = String::new();
-        let mut previous : Option<char> = None;
-        let mut dquote = false;
-        for ch in arg_values.chars() {
-            if ch == ',' && !dquote {
-                values.push(value);
-                value = String::new();
-            } else if ch == '"' && previous.unwrap_or(' ') != ESCAPE_CHAR {
-                // Toggle double quote
-                dquote = !dquote;
-            } else {
-                value.push(ch);
-            }
-
-            previous.replace(ch);
-        }
-        values.push(value);
-
-        values
-    }
 }

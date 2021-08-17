@@ -88,6 +88,9 @@ impl Cli {
         ).get_matches()
     }
 
+    // Deprecated
+    // Not ensured to work properly
+    // This will be substituted by raw text option
     fn subcommand_direct(matches: &clap::ArgMatches) -> Result<(), RadError> {
         if let Some(sub_match) = matches.subcommand_matches("direct") {
             // TODO
@@ -99,7 +102,7 @@ impl Cli {
                 } 
 
                 let basic = BasicMacro::new();
-                basic.call(mac, args).expect("Test failed");
+                basic.call(mac, args, &mut Processor::new()).expect("Test failed");
 
                 // TODO
                 // Create hashamp with has macro name as key
