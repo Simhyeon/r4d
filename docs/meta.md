@@ -16,15 +16,17 @@ to add number and not
 * [ ] Err redirection option
 
 * [ ] New basic macros
-  * [ ] Syscmd macro
+  * [x] Syscmd macro
   * [x] Time macro
   * [ ] Web request
 - This needs sincere consideration because this binary targets alpine which is not necessarily easy to combine openssl library.
   * [x] Include macro
   * [x] Repeat macro -> Same thing
+  * [ ] Foreach loop
   * [ ] For loop -> Change by number
-  * [ ] If macro
-  * [ ] If define macro
+  * [x] If macro
+  * [x] If define macro
+  * [ ] Data macro from data
   * [ ] Text format
     * [ ] CSV macro
       * [ ] csv query

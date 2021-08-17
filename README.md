@@ -54,4 +54,14 @@ My name is Simon Creek.
 #### In-built macros(WIP)
 
 - Include
-- Foreach, for loop
+- Repeat
+- For loop
+- If else
+- System command
+- Regex sub and del
+- Evaluation
+- Trim, chomp, compress
+- Placeholder
+- Time, date
+- Ifdefine
+- csv
