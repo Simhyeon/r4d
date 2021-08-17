@@ -7,6 +7,7 @@ use crate::models::MacroMap;
 use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
+use crate::consts::LINE_ENDING;
 
 pub struct MacroFragment {
     pub whole_string: String,
@@ -27,6 +28,10 @@ impl MacroFragment {
         self.whole_string.clear();
         self.name.clear();
         self.args.clear();
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.whole_string.len() == 0
     }
 }
 
@@ -51,25 +56,27 @@ impl<'a> Processor<'a> {
             map : MacroMap::new(),
         }
     }
-    pub fn from_stdin(&mut self) -> Result<(), RadError> {
+    pub fn from_stdin(&mut self) -> Result<String, RadError> {
         let stdin = io::stdin();
         let mut line_iter = stdin.lock().lines();
         let mut lexor = Lexor::new();
         let mut invoke = MacroFragment::new();
+        let mut content = String::new();
         loop {
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
             match result {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
-                ParseResult::Printable(remainder) => {
-                    println!("{}", remainder);
+                ParseResult::Printable(mut remainder) => {
+                    remainder.push_str(LINE_ENDING);
+                    content.push_str(&remainder);
                     // Reset fragment
                     if &invoke.whole_string != "" {
                         invoke = MacroFragment::new();
                     }
                 }
                 ParseResult::FoundMacro(remainder) => {
-                    println!("{}", remainder);
+                    content.push_str(&remainder);
                 }
                 ParseResult::NoPrint => (), // Do nothing
                 // End of input, end loop
@@ -77,7 +84,7 @@ impl<'a> Processor<'a> {
             }
         } // Loop end
 
-        Ok(())
+        Ok(content)
     }
 
     pub fn from_file(&mut self, path :&Path) -> Result<String, RadError> {
@@ -92,8 +99,9 @@ impl<'a> Processor<'a> {
             match result {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
-                ParseResult::Printable(remainder) => {
-                    content.push_str(&remainder.add("\n"));
+                ParseResult::Printable(mut remainder) => {
+                    remainder.push_str(LINE_ENDING);
+                    content.push_str(&remainder);
                     // Reset fragment
                     if &invoke.whole_string != "" {
                         invoke = MacroFragment::new();
@@ -119,6 +127,7 @@ impl<'a> Processor<'a> {
             let line = line?;
             // Local values
             let mut remainder = String::new();
+
             for ch in line.chars() {
                 let lex_result = lexor.lex(ch)?;
                 // TODO
@@ -176,11 +185,24 @@ impl<'a> Processor<'a> {
                         frag.clear();
                     }
                 }
+            } // End Character iteration
+
+            // Post-parse process
+            
+            // Add new line to fragment
+            if !frag.is_empty() {
+                match lexor.cursor {
+                    Cursor::Name => frag.name.push_str(LINE_ENDING),
+                    Cursor::Arg => frag.args.push_str(LINE_ENDING),
+                    // Name to arg is ignored
+                    _ => (),
+                }
             }
+
             // Non macro string is included
             if remainder.len() != 0 {
                 // Fragment is not empty
-                if frag.whole_string.len() != 0 {
+                if !frag.is_empty() {
                     Ok(ParseResult::FoundMacro(remainder))
                 } 
                 // Print everything
@@ -192,6 +214,7 @@ impl<'a> Processor<'a> {
             else {
                 Ok(ParseResult::NoPrint)
             }
+
         } else {
             //noprintln!("--END OF INPUT--");
             Ok(ParseResult::EOI)
@@ -260,7 +283,7 @@ impl<'a> Processor<'a> {
             }
             // Add new line to remainder because this operation is line based
             if let Some(_) = lines.peek() {
-                remainder.push('\n');
+                remainder.push_str(LINE_ENDING);
             }
         }  // End while
         return Ok(remainder)
