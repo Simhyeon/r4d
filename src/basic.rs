@@ -157,15 +157,46 @@ impl<'a> BasicMacro<'a> {
             }
             Ok(repeated)
         } else {
-            Err(RadError::InvalidArgument("Include requires an argument"))
+            Err(RadError::InvalidArgument("Repeat requires two arguments"))
         }
     }
 
-    // TODO 
-    // IF
-    // IfElse
-    // IfDefine
-    // Repeat
-    // Syscmd
+    // TODO
+    // $syscmd("echo 'fuck you'")
+    fn syscmd(args: &str) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 1) {
+            let command =  args[0];
+            Ok(String::new())
+        } else {
+            Err(RadError::InvalidArgument("Syscmd requires an argument"))
+        }
+    }
+
+    // TODO
+    // $ifelse(evaluation, ifstate, elsestate)
+    fn ifelse(args: &str) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 2) {
+            let eval = args[0];
+            let if_state = args[1];
+            let mut else_state = "";
+            if args.len() >= 3 {
+                else_state = args[2];
+            }
+            Ok(String::new())
+        } else {
+            Err(RadError::InvalidArgument("Syscmd requires an argument"))
+        }
+    }
+
+    // TODO
+    // $ifdef(macro_name) -> return string true or false
+    fn ifdef(args: &str) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 1) {
+            let macro_name =  args[0];
+            Ok(String::new())
+        } else {
+            Err(RadError::InvalidArgument("Syscmd requires an argument"))
+        }
+    }
 }
 

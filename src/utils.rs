@@ -11,7 +11,7 @@ impl Utils {
     pub(crate) fn args_with_len<'a>(args: &'a str, length: usize) -> Option<Vec<&'a str>> {
         let args: Vec<_> = args.split(",").collect();
 
-        if args.len() != length {
+        if args.len() < length {
             return None;
         } 
 
@@ -23,15 +23,19 @@ impl Utils {
     }
 
     pub(crate) fn trim(args: &str) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 1) {
-            let source = args[0];
-            // let reg = Regex::new(r"^[ \t]+")?;
-            let reg = Regex::new(r"^[ \t\n]+|[ \t\n]+$")?;
-            let result = reg.replace_all(source, "");
+        let reg = Regex::new(r"^[ \t\n]+|[ \t\n]+$")?;
+        let result = reg.replace_all(args, "");
 
-            Ok(result.to_string())
-        } else {
-            Err(RadError::InvalidArgument("Trim requires an argument"))
-        }
+        Ok(result.to_string())
+    }
+    // TODO
+    pub(crate) fn command_str(args: &str) -> Result<String, RadError> {
+        // TODO 
+        // parse string
+        // Execute 
+        unimplemented!();
+        //std::process::Command(name)
+            //.args(["", ""])
+            //.output()
     }
 }
