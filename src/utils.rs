@@ -18,8 +18,8 @@ impl Utils {
         Some(args)
     }
 
-    pub(crate) fn local_name(caller: &str, name : &str) -> String {
-        format!("{}.{}", caller, name)
+    pub(crate) fn local_name(level: usize, caller: &str, name : &str) -> String {
+        format!("{}.{}.{}", level,caller, name)
     }
 
     pub(crate) fn trim(args: &str) -> Result<String, RadError> {

@@ -5,12 +5,11 @@ Currently, it looks like macro rule is working.
 * [ ] Improve modularlity
 Define is not basic macro but reserved macro, so...
 
-* [ ] Enable user to override basic macro 
-* [ ] Currently invalid macro definition doesn't yield proper error message
-- This might be desirable but need consideration, e.g. m4 doesn't yield error message for
-invalid define call
-* [ ] Currently local macro is not released which is a bad idea as a final output.
-* [ ] Currently local macro is not perperly constructed when same macro invoked in single call
+* [x] Enable user to override basic macro 
+* [x] Currently local macro is not released which is a bad idea as a final output.
+* [x] Currently local macro is not perperly constructed when same macro invoked in single call
+Using usize type level is not a bad idea, however it should be definite where
+to add number and not 
 
 * [x] Read from file option
 * [x] Output option

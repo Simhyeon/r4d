@@ -151,7 +151,7 @@ impl<'a> BasicMacro<'a> {
             let repeat_count =  args[0].parse::<usize>()?;
             let repeat_object = args[1];
             let mut repeated = String::new();
-            let item = Processor::new().parse_chunk(&MAIN_CALLER.to_owned(), &mut repeat_object.lines())?;
+            let item = Processor::new().parse_chunk(0, &MAIN_CALLER.to_owned(), &mut repeat_object.lines())?;
             for _ in 0..repeat_count {
                 repeated.push_str(&item);
             }

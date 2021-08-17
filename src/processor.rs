@@ -127,6 +127,7 @@ impl<'a> Processor<'a> {
             let line = line?;
             // Local values
             let mut remainder = String::new();
+            let level = 0; // 0 is main level
 
             for ch in line.chars() {
                 let lex_result = lexor.lex(ch)?;
@@ -165,10 +166,13 @@ impl<'a> Processor<'a> {
                             frag.clear();
                         } else {
                             // Invoke
-                            if let Some(content) = self.evaluate(&MAIN_CALLER.to_owned(), &frag.name, &frag.args)? {
+                            if let Some(content) = self.evaluate(level, &MAIN_CALLER.to_owned(), &frag.name, &frag.args)? {
                                 //noprintln!("Evaluated : {}", content);
                                 remainder.push_str(&content);
                                 frag.clear();
+
+                                // Clear local variable macros
+                                self.map.clear_local();
                             } 
                             // Failed to invoke
                             // because macro doesn't exist
@@ -222,7 +226,7 @@ impl<'a> Processor<'a> {
     } // parse_line end
 
     /// Parse chunk is called by non-main process, thus needs caller
-    pub fn parse_chunk(&mut self, caller: &String, lines :&mut std::str::Lines) -> Result<String, RadError> {
+    pub fn parse_chunk(&mut self, level: usize, caller: &String, lines :&mut std::str::Lines) -> Result<String, RadError> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
         let mut remainder = String::new();
@@ -267,7 +271,7 @@ impl<'a> Processor<'a> {
                             frag.clear();
                         } else {
                             // Invoke
-                            if let Some(content) = self.evaluate(caller, &frag.name, &frag.args)? {
+                            if let Some(content) = self.evaluate(level + 1, caller, &frag.name, &frag.args)? {
                                 //noprintln!("Evaluated : {}", content);
                                 remainder.push_str(&content);
                                 frag.clear();
@@ -378,30 +382,35 @@ impl<'a> Processor<'a> {
     // This method's logic should be similar to that of from_stdin
     // Evaluate can be nested deeply
     // TODO Add local macro map to be used for custom macro expansion
-    fn evaluate(&mut self,caller: &String, name: &String, args: &String) -> Result<Option<String>, RadError> {
+    fn evaluate(&mut self,level: usize, caller: &String, name: &String, args: &String) -> Result<Option<String>, RadError> {
 
         // This parses and processes arguments
         // and macro should be evaluated after
-        let args = self.parse_chunk(caller, &mut args.lines())?; 
+        let args = self.parse_chunk(level, caller, &mut args.lines())?; 
 
         // Ok, this is devastatingly hard to read 
         // Find Local macro first
-        if let Some(local) = self.map.local.get(&Utils::local_name(&caller, &name)) {
+        if let Some(local) = self.map.local.get(&Utils::local_name(level, &caller, &name)) {
             return Ok(Some(local.to_owned()))
         } 
+        // Find custom macro
+        // custom macro comes before basic macro so that
+        // user can override it
+        else if self.map.custom.contains_key(name) {
+            if let Some(result) = self.invoke_rule(level, name, &args)? {
+                return Ok(Some(result));
+            } else {
+                return Ok(None);
+            }
+        }
         // Find basic macro
         else if self.map.basic.contains(&name) {
             let final_result = self.map.basic.call(name, &args)?;
             return Ok(Some(final_result));
         } 
-        // Find custom macro
-        else if self.map.custom.contains_key(name) {
-            if let Some(result) = self.invoke_rule(name, &args)? {
-                return Ok(Some(result));
-            } else {
-                return Ok(None);
-            }
-        } else { // No macros found..? // possibly be unreachable
+        // No macros found..? // possibly be unreachable
+        else { 
+            println!("{}", Utils::local_name(level, caller, name));
             println!("No macro found");
             return Ok(None);
         }
@@ -410,12 +419,12 @@ impl<'a> Processor<'a> {
     // TODO
     // Inconsistency in arg_values array is seriously bad
     // Pick one space separated string, or vector
-    fn invoke_rule(&mut self,name: &String, arg_values: &String) -> Result<Option<String>, RadError> {
+    fn invoke_rule(&mut self,level: usize ,name: &String, arg_values: &String) -> Result<Option<String>, RadError> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
         let rule = self.map.custom.get(name).unwrap().clone();
         let arg_types = &rule.args;
-        // Set varaible to local macros
+        // Set variable to local macros
         let arg_values = Self::parse_args(arg_values);
 
         // Necessary arg count is bigger than given arguments
@@ -427,10 +436,10 @@ impl<'a> Processor<'a> {
 
         for (idx, arg_type) in arg_types.iter().enumerate() {
             //Set arg to be substitued
-            self.map.new_local(name, arg_type ,&arg_values[idx]);
+            self.map.new_local(level + 1, name, arg_type ,&arg_values[idx]);
         }
         // PARSE Chunk
-        let result = self.parse_chunk(&name, &mut rule.body.lines())?;
+        let result = self.parse_chunk(level, &name, &mut rule.body.lines())?;
 
         Ok(Some(result))
     }
