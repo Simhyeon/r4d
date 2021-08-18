@@ -37,7 +37,7 @@ impl<'a> MacroMap<'a> {
         Self { 
             basic: BasicMacro::new(),
             custom: HashMap::new(),
-            local: HashMap::new()
+            local: HashMap::new(),
         }
     }
 
