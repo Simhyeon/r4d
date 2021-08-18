@@ -59,6 +59,28 @@ converts to
 My name is Simon Creek.
 ```
 
+Special argument ```$_``` is used for iterated value.
+```
+$foreach("John,Simon,Jane",Name : $_
+)
+$forloop("5,10",$_th
+)
+```
+converts to
+```
+Name : John
+Name : Simon
+Name : Jane
+
+5th
+6th
+7th
+8th
+9th
+10th
+
+```
+
 **NOTE**
 
 An unbalanced right parenthesis ends macro invocation and non-double-quoted
@@ -83,19 +105,19 @@ is not necessary
 **Implemented**
 
 - define
-- undefine
+- undef
 - include
 - repeat
-- for each
-- for loop
-- if else
-- system command
-- regex substitution and deletion
-- evaluation
-- trim, chomp, compress
-- placeholder(lipsum)
+- foreach
+- forloop
+- ifelse
+- syscmd
+- rsub, rdel
+- eval
+- trim, chomp, comp
+- lipsum
 - time, date
-- ifdefine
+- ifdef
 
 **Not implemented**
 

@@ -1,25 +1,21 @@
 ### TODOs
 
+* [ ] Error message should indicate which line caused an error
+Might be a better idea to save context in lexor or parser.
 * [ ] I think, namespacing is not working properly with caller, so that every caller is @MAIN@
 However it does look not a problem
-
 * [ ] Make undef line is deleted
 Add new struct invoke\_context so that other macro definition can also contains
 contexts.
-
 * [ ] Failed macro stops further evlaution.
 - Should it be a feature? or be fixed? I'm not even sure if it is a bug or not.
-
 * [ ] Make syscmd call unsafe and allow only when sudo was given
-
 * [-] Improve modularlity
 Define is not basic macro but reserved macro for now, Change this into basic
 macro for better readability and maintainability.
 Though it has some benefits, I don't think it is necessary to refactor.
-
 * [ ] Err redirection option
 Should crate new function, because there is no such standard way to redirect error
-
 * [ ] New basic macros
   * [ ] Data macro from data
   * [ ] Text format
@@ -116,12 +112,3 @@ to add number and not
   * [x] Random text -> Use lorem lipsum
 
 * [x] Make direct subcommand option
-
-### How r4d handles newline?
-
-R4d reads file or stdin by lines, in both literal meaning and also rust method
-lines. Thus empty trailing lines are ignored if not given spcial pre
-processing. R4d chose simple solution to add special index after source chunk
-of string after remove it after macro expansions.
-
-Therefore, as a result, every newline works as it is.
