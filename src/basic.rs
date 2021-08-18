@@ -192,7 +192,7 @@ impl<'a> BasicMacro<'a> {
 
         if let Some(args) = Utils::args_with_len(args, 1) {
             let file_path = std::path::Path::new(&args[0]);
-            Ok(processor.from_file(file_path)?)
+            Ok(processor.from_file(file_path, true)?)
         } else {
             Err(RadError::InvalidArgument("Include requires an argument"))
         }
@@ -360,6 +360,18 @@ impl<'a> BasicMacro<'a> {
             Err(RadError::InvalidArgument("Foreach requires two argument"))
         }
     }
+
+    //fn define(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+        //// Failed to register macro
+        //if let Some((name,args,body)) = Self::parse_define(&args) {
+            //self.map.register(&name, &args, &body)?;
+        //} else {
+            //eprintln!("Failed to register macro");
+            //remainder.push_str(&frag.whole_string);
+        //}
+        //// Clear fragment regardless of success
+        //frag.clear();
+    //}
 
     // TODO
     fn from_data() {

@@ -1,4 +1,4 @@
-use std::io::{self, StdinLock, Lines, BufRead};
+use std::io::{self, Lines, BufRead, Write};
 use std::fs::File;
 use std::path::Path;
 use crate::error::RadError;
@@ -41,8 +41,14 @@ pub enum ParseResult {
     EOI,
 }
 
+pub enum WriteOption {
+    File(std::fs::File),
+    Stdout,
+}
+
 pub struct Processor<'a> {
     pub map: MacroMap<'a>,
+    write_option: WriteOption,
 }
 // 1. Get string
 // 2. Parse until macro invocation detected
@@ -50,20 +56,22 @@ pub struct Processor<'a> {
 // 4. Continue parsing with fragments
 
 impl<'a> Processor<'a> {
-    pub fn new() -> Self {
+    pub fn new(write_option: WriteOption) -> Self {
         Self {
             map : MacroMap::new(),
+            write_option,
         }
     }
     pub fn get_map(&self) -> &MacroMap {
         &self.map
     }
-    pub fn from_stdin(&mut self) -> Result<String, RadError> {
+    pub fn from_stdin(&mut self, get_result: bool) -> Result<String, RadError> {
         let stdin = io::stdin();
         let mut line_iter = stdin.lock().lines();
         let mut lexor = Lexor::new();
         let mut invoke = MacroFragment::new();
         let mut content = String::new();
+        let mut container = if get_result { Some(&mut content) } else { None };
         loop {
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
             match result {
@@ -71,14 +79,14 @@ impl<'a> Processor<'a> {
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(mut remainder) => {
                     remainder.push_str(LINE_ENDING);
-                    content.push_str(&remainder);
+                    self.write_to(&remainder, &mut container)?;
                     // Reset fragment
                     if &invoke.whole_string != "" {
                         invoke = MacroFragment::new();
                     }
                 }
                 ParseResult::FoundMacro(remainder) => {
-                    content.push_str(&remainder);
+                    self.write_to(&remainder, &mut container)?;
                 }
                 ParseResult::NoPrint => (), // Do nothing
                 // End of input, end loop
@@ -86,16 +94,17 @@ impl<'a> Processor<'a> {
             }
         } // Loop end
 
-        Ok(content.strip_suffix(LINE_ENDING).unwrap_or(&content).to_owned())
+        Ok(content)
     }
 
-    pub fn from_file(&mut self, path :&Path) -> Result<String, RadError> {
+    pub fn from_file(&mut self, path :&Path, get_result: bool) -> Result<String, RadError> {
         let file_stream = File::open(path)?;
         let reader = io::BufReader::new(file_stream);
-        let mut content = String::new();
         let mut line_iter = reader.lines();
         let mut lexor = Lexor::new();
         let mut invoke = MacroFragment::new();
+        let mut content = String::new();
+        let mut container = if get_result { Some(&mut content) } else { None };
         loop {
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
             match result {
@@ -103,14 +112,14 @@ impl<'a> Processor<'a> {
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(mut remainder) => {
                     remainder.push_str(LINE_ENDING);
-                    content.push_str(&remainder);
+                    self.write_to(&remainder, &mut container)?;
                     // Reset fragment
                     if &invoke.whole_string != "" {
                         invoke = MacroFragment::new();
                     }
                 }
                 ParseResult::FoundMacro(remainder) => {
-                    content.push_str(&remainder);
+                    self.write_to(&remainder, &mut container)?;
                 }
                 ParseResult::NoPrint => (), // Do nothing
                 // End of input, end loop
@@ -118,7 +127,7 @@ impl<'a> Processor<'a> {
             }
         } // Loop end
 
-        Ok(content.strip_suffix(LINE_ENDING).unwrap_or(&content).to_owned())
+        Ok(content)
     }
     
     // TODO
@@ -448,6 +457,22 @@ impl<'a> Processor<'a> {
         let result = self.parse_chunk(level, &name, &rule.body)?;
 
         Ok(Some(result))
+    }
+
+    fn write_to(&mut self, content: &str, container: &mut Option<&mut String>) -> Result<(), RadError> {
+        // Save to container
+        if let Some(container) = container {
+            container.push_str(content);
+        } 
+        // Write out to file or stdout
+        else {
+            match &mut self.write_option {
+                WriteOption::File(f) => f.write_all(content.as_bytes())?,
+                WriteOption::Stdout => print!("{}", content),
+            }
+        }
+
+        Ok(())
     }
 
 }

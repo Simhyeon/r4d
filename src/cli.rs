@@ -1,10 +1,8 @@
 use clap::clap_app;
 use crate::error::RadError;
-use crate::basic::BasicMacro;
-use crate::processor::Processor;
+use crate::processor::{Processor, WriteOption};
 use std::path::Path;
-use std::fs::{OpenOptions, File};
-use std::io::Write;
+use std::fs::OpenOptions;
 
 /// Struct to parse command line arguments and execute proper operations
 pub struct Cli{}
@@ -13,7 +11,7 @@ impl Cli {
     pub fn parse() -> Result<(), RadError>{
         let cli_args = Cli::args_builder();
         Cli::parse_options(&cli_args)?;
-        Cli::parse_subcommands(&cli_args)?;
+        // Cli::parse_subcommands(&cli_args)?;
         Ok(())
     }
 
@@ -23,51 +21,48 @@ impl Cli {
     // Plus parse options is always invoked which is not intended behaviour
     // if subcommand was given, main command should not be executed
     fn parse_options(args: &clap::ArgMatches) -> Result<(), RadError> {
+        // Processor
+        let mut processor: Processor;
         // Read from files
         if let Some(files) = args.values_of("FILE") {
             // Write to file
             if let Some(output_file) = args.value_of("out") {
-                let mut out_file = OpenOptions::new()
+                let out_file = OpenOptions::new()
                     .create(true)
                     .write(true)
                     .append(true)
                     .open(output_file)
                     .unwrap();
                 out_file.set_len(0)?;
-                for file in files {
-                    let file_result = Processor::new().from_file(Path::new(file))?;
-                    out_file.write_all(file_result.as_bytes())?;
-                }
+                processor = Processor::new(WriteOption::File(out_file));
             }
             // Write to standard output
-            else {
-                for file in files {
-                    let file_result = Processor::new().from_file(Path::new(file))?;
-                    print!("{}", file_result);
-                }
+            else { processor = Processor::new(WriteOption::Stdout); }
+
+            for file in files {
+                processor.from_file(Path::new(file), false)?;
             }
         } 
         // Read from stdin
-        else { 
-            let result = Processor::new().from_stdin()?;
+        else {
             if let Some(output_file) = args.value_of("out") {
-                let mut out_file = OpenOptions::new()
+                let out_file = OpenOptions::new()
                     .create(true)
                     .write(true)
                     .append(true)
                     .open(output_file)
                     .unwrap();
                 out_file.set_len(0)?;
-                out_file.write_all(result.as_bytes())?;
-            } else {
-                print!("{}", result);
-            }
+                processor = Processor::new(WriteOption::File(out_file));
+            } else { processor = Processor::new(WriteOption::Stdout); }
+
+            processor.from_stdin(false)?;
         }
         Ok(())
     }
 
-    fn parse_subcommands(args: &clap::ArgMatches) -> Result<(), RadError> {
-        Cli::subcommand_direct(args)?;
+    fn _parse_subcommands(_args: &clap::ArgMatches) -> Result<(), RadError> {
+        //Cli::subcommand_direct(args)?;
         Ok(())
     }
 
@@ -79,38 +74,6 @@ impl Cli {
             (about: "R4d is a modern macro processor made with rust")
             (@arg FILE: ... "Files to execute processing")
             (@arg out: -o --out +takes_value "File to print out macro")
-            (@subcommand direct =>
-                (about: "Directly call r4d macro")
-                (@arg MACRO: +required "Macro to execute")
-                (@arg args: -a --args +takes_value "Argument to be passed to macro")
-                (@arg inc: ... -i --include +takes_value "(Not implemented)File to read macro definition from")
-            )
         ).get_matches()
     }
-
-    // Deprecated
-    // Not ensured to work properly
-    // This will be substituted by raw text option
-    fn subcommand_direct(matches: &clap::ArgMatches) -> Result<(), RadError> {
-        if let Some(sub_match) = matches.subcommand_matches("direct") {
-            // TODO
-            // Call direct macro call
-            if let Some(mac) = sub_match.value_of("MACRO") {
-                let mut args = "";
-                if let Some(args_content) = sub_match.value_of("args") {
-                    args = args_content;
-                } 
-
-                let basic = BasicMacro::new();
-                basic.call(mac, args, &mut Processor::new()).expect("Test failed");
-
-                // TODO
-                // Create hashamp with has macro name as key
-                // and function pointer as value if possible
-                // and try getting function according to given macro name
-            }
-        } 
-        Ok(())
-    }
-
 }
