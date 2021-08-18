@@ -1,4 +1,4 @@
-use std::io::{self, Lines, BufRead, Write};
+use std::io::{self,  Lines, BufRead, Write};
 use std::fs::File;
 use std::path::Path;
 use crate::error::RadError;
@@ -202,7 +202,6 @@ impl<'a> Processor<'a> {
             } // End Character iteration
 
             // Post-parse process
-            
             // Add new line to fragment
             if !frag.is_empty() {
                 match lexor.cursor {
@@ -298,7 +297,19 @@ impl<'a> Processor<'a> {
                         frag.clear();
                     }
                 }
+            } // End character iteration
+
+            // Post-parse process
+            // Add new line to fragment
+            if !frag.is_empty() {
+                match lexor.cursor {
+                    Cursor::Name => frag.name.push_str(LINE_ENDING),
+                    Cursor::Arg => frag.args.push_str(LINE_ENDING),
+                    // Name to arg is ignored
+                    _ => (),
+                }
             }
+
             // Add new line to remainder because this operation is line based
             if let Some(_) = lines.peek() {
                 remainder.push_str(LINE_ENDING);
