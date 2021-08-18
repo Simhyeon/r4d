@@ -67,7 +67,6 @@ impl<'a> BasicMacro<'a> {
         Ok(format!("{}", chrono::offset::Local::now().format("%Y-%m-%d")))
     }
 
-    // TODO
     fn regex_sub(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         let args = &processor.parse_chunk(
             1000, 
@@ -250,7 +249,6 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    // TODO
     // Special macro
     // Argument is expanded after vectorization
     // $ifelse(evaluation, ifstate, elsestate)
@@ -331,7 +329,6 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    // TODO
     // $foreach()
     // $foreach($testo($_()),"a,b,c")
     fn foreach(args: &str, processor: &mut Processor) -> Result<String, RadError> {
@@ -388,7 +385,6 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    // TODO
     // $from($_,"1,2,34,5,6")
     #[allow(dead_code)]
     fn from_data() {

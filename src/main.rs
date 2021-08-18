@@ -1,7 +1,6 @@
 mod basic;
 mod cli;
 mod error;
-mod fileio;
 mod processor;
 mod utils;
 mod models;

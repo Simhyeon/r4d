@@ -29,15 +29,12 @@ impl Lexor {
                 if ch == MACRO_START_CHAR 
                     && self.previous_char.unwrap_or('0') != ESCAPE_CHAR 
                 {
-                    //noprintln!("--MACRO START--");
                     self.cursor = Cursor::Name;
                     result = LexResult::Ignore;
                     self.escape_nl = false;
                 } else if self.escape_nl && (ch as i32 == 13 || ch as i32 == 10) {
-                    //println!("FOUND NEWLINE");
                     result = LexResult::Ignore;
                 } else {
-                    //println!("Given ch : {} as i32 : {} comp : {}", ch, ch as i32, ch as i32 == '\n' as i32);
                     self.escape_nl = false;
                     result = LexResult::AddToRemainder;
                 }
@@ -84,25 +81,18 @@ impl Lexor {
             Cursor::NameToArg => {
                 if ch == ' ' {
                     result = LexResult::Ignore;
-                }
-                // TODO 
-                // LexResult should imply that another syntax is required
-                else if ch == '(' {
-                    //noprintln!("START ARGS");
+                } else if ch == '(' {
                     self.cursor = Cursor::Arg;
                     self.paren_count = 1;
                     result = LexResult::AddToFrag(Cursor::Arg);
-                }
-                else {
+                } else {
                     self.cursor = Cursor::None;
                     result = LexResult::ExitFrag;
                 }
             }
-            // TODO
-            // Arg needs extra logic to detect double quoted parenthesis
             Cursor::Arg => {
-                // if ending parenthesis without surrounding double quotes are 
-                // ending of args
+                // if given ending parenthesis without surrounding double quotes,
+                // it means end of args
                 if let Surrounding::Dquote = self.surrounding {
                     result = LexResult::AddToFrag(Cursor::Arg);
                 } else {
@@ -117,10 +107,6 @@ impl Lexor {
                     } else if ch == '(' {
                         self.paren_count = self.paren_count + 1; 
                         result = LexResult::AddToFrag(Cursor::Arg);
-                        // TODO
-                        // Remove this
-                        //self.cursor = Cursor::None;
-                        //result = LexResult::ExitFrag;
                     } else {
                         result = LexResult::AddToFrag(Cursor::Arg);
                     }
@@ -132,10 +118,6 @@ impl Lexor {
         Ok(result)
     }
 
-    // TODO
-    // Previous this was not a part of lexor struct
-    // Make this method to called after lex method so that cursor change or 
-    // other setter logic is invoked
     fn set_previous(&mut self, ch: char) {
         match ch {
             '(' => self.surrounding = Surrounding::Paren,

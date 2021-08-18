@@ -128,8 +128,7 @@ impl<'a> Processor<'a> {
         Ok(content)
     }
     
-    // TODO
-    /// Parse line is called only by the main loop thus, caller name is special name of @MAIN
+    /// Parse line is called only by the main loop thus, caller name is special name of @MAIN@
     fn parse_line(&mut self, lines :&mut impl std::iter::Iterator<Item = std::io::Result<String>>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
         if let Some(line) = lines.next() {
             // Rip off a result into a string
@@ -141,9 +140,7 @@ impl<'a> Processor<'a> {
             // Reset lexor's escape_nl 
             lexor.escape_nl = false;
             for ch in line.chars() {
-                //lexor.escape_nl = false;
                 let lex_result = lexor.lex(ch)?;
-                // TODO
                 // Either add character to remainder or fragments
                 match lex_result {
                     LexResult::Ignore => frag.whole_string.push(ch),
@@ -167,7 +164,6 @@ impl<'a> Processor<'a> {
                         frag.whole_string.push(ch);
                         if frag.name == "define" {
                             self.add_define(frag, &mut remainder)?;
-                            //println!("Added definition");
                             lexor.escape_nl = true;
                         } else {
                             // Invoke
@@ -221,11 +217,8 @@ impl<'a> Processor<'a> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
         let mut remainder = String::new();
-        // Rip off a result into a string
-        // Local values
         for ch in chunk.chars() {
             let lex_result = lexor.lex(ch)?;
-            // TODO
             // Either add character to remainder or fragments
             match lex_result {
                 LexResult::Ignore => frag.whole_string.push(ch),
@@ -240,7 +233,6 @@ impl<'a> Processor<'a> {
                     } 
                     frag.whole_string.push(ch);
                 }
-                // TODO
                 // End of fragment
                 // 1. Evaluate macro 
                 // 1.5 -> If define, parse rule applied again.
@@ -268,14 +260,14 @@ impl<'a> Processor<'a> {
             }
         } // End character iteration
         return Ok(remainder)
-    } // parse_line end
+    } // parse_chunk end
 
     fn add_define(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
         // Failed to register macro
         if let Some((name,args,body)) = Self::parse_define(&frag.args) {
             self.map.register(&name, &args, &body)?;
         } else {
-            eprintln!("Failed to register macro");
+            eprintln!("Failed to register a macro : {}", frag.name);
             remainder.push_str(&frag.whole_string);
         }
         // Clear fragment regardless of success
@@ -327,7 +319,7 @@ impl<'a> Processor<'a> {
                     arg_cursor = "args";
                     continue;
                 } 
-                // This emans pattern like this
+                // This means pattern like this
                 // $define(name, arg1 ,)
                 //                   |
                 //                  -This part makes argument empty
@@ -362,23 +354,19 @@ impl<'a> Processor<'a> {
             container.push(ch);
         }
 
-        // Natural end of body
+        // End of body
         body.push_str(&container);
 
         Some((name, args, body))
     }
 
-    // TODO
-    // This method's logic should be similar to that of from_stdin
     // Evaluate can be nested deeply
-    // TODO Add local macro map to be used for custom macro expansion
     fn evaluate(&mut self,level: usize, caller: &String, name: &String, args: &String) -> Result<Option<String>, RadError> {
 
         // This parses and processes arguments
         // and macro should be evaluated after
         let args = self.parse_chunk(level, caller, args)?; 
 
-        // Ok, this is devastatingly hard to read 
         // Find Local macro first
         if let Some(local) = self.map.local.get(&Utils::local_name(level, &caller, &name)) {
             return Ok(Some(local.to_owned()))
@@ -398,17 +386,12 @@ impl<'a> Processor<'a> {
             let final_result = self.map.basic.clone().call(name, &args, self)?;
             return Ok(Some(final_result));
         } 
-        // No macros found..? // possibly be unreachable
+        // No macros found to evaluate
         else { 
-            println!("{}", Utils::local_name(level, caller, name));
-            println!("No macro found");
             return Ok(None);
         }
     }
 
-    // TODO
-    // Inconsistency in arg_values array is seriously bad
-    // Pick one space separated string, or vector
     fn invoke_rule(&mut self,level: usize ,name: &String, arg_values: &String) -> Result<Option<String>, RadError> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
@@ -428,7 +411,7 @@ impl<'a> Processor<'a> {
             //Set arg to be substitued
             self.map.new_local(level + 1, name, arg_type ,&arg_values[idx]);
         }
-        // PARSE Chunk
+        // parse the Chunk
         let result = self.parse_chunk(level, &name, &rule.body)?;
 
         Ok(Some(result))

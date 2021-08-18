@@ -15,11 +15,6 @@ impl Cli {
         Ok(())
     }
 
-    // Debug, TODO
-    // Currently this process syntax parsing withint parse options methods
-    // This is not ideal but ignored for debugging purpose
-    // Plus parse options is always invoked which is not intended behaviour
-    // if subcommand was given, main command should not be executed
     fn parse_options(args: &clap::ArgMatches) -> Result<(), RadError> {
         // Processor
         let mut processor: Processor;
@@ -30,10 +25,9 @@ impl Cli {
                 let out_file = OpenOptions::new()
                     .create(true)
                     .write(true)
-                    .append(true)
+                    .truncate(true)
                     .open(output_file)
                     .unwrap();
-                out_file.set_len(0)?;
                 processor = Processor::new(WriteOption::File(out_file));
             }
             // Write to standard output
@@ -49,10 +43,9 @@ impl Cli {
                 let out_file = OpenOptions::new()
                     .create(true)
                     .write(true)
-                    .append(true)
+                    .truncate(true)
                     .open(output_file)
                     .unwrap();
-                out_file.set_len(0)?;
                 processor = Processor::new(WriteOption::File(out_file));
             } else { processor = Processor::new(WriteOption::Stdout); }
 
@@ -62,11 +55,9 @@ impl Cli {
     }
 
     fn _parse_subcommands(_args: &clap::ArgMatches) -> Result<(), RadError> {
-        //Cli::subcommand_direct(args)?;
         Ok(())
     }
 
-    // TODO Add stream or file type option for main usage
     fn args_builder() -> clap::ArgMatches {
         clap_app!(R4d =>
             (version: "0.0.1")

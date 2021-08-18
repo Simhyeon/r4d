@@ -1,5 +1,14 @@
 use thiserror::Error;
 
+#[allow(dead_code)]
+pub(crate) fn print_error() {
+    // TODO
+    // Print err to stderr or to file or simply ignore or errors
+    // Error in this context, means failure of definition and invocatino
+    // rather than argument evaluation error which is a critical abort error
+    unimplemented!()
+}
+
 #[derive(Error, Debug)]
 pub enum RadError {
     #[error("Failed regex operation : {0}")]
@@ -17,7 +26,6 @@ pub enum RadError {
     #[error("Failed to convert to utf8 string : {0}")]
     Utf8Err(std::string::FromUtf8Error)
 }
-// std::string::FromUtf8Error
 
 impl From<regex::Error> for RadError {
     fn from(err : regex::Error) -> Self {
