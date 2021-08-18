@@ -6,7 +6,6 @@ use crate::models::MacroMap;
 use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
-use crate::consts::LINE_ENDING;
 
 pub struct MacroFragment {
     pub whole_string: String,
@@ -67,7 +66,7 @@ impl<'a> Processor<'a> {
     }
     pub fn from_stdin(&mut self, get_result: bool) -> Result<String, RadError> {
         let stdin = io::stdin();
-        let mut line_iter = stdin.lock().lines();
+        let mut line_iter = Utils::full_lines(stdin.lock());
         let mut lexor = Lexor::new();
         let mut invoke = MacroFragment::new();
         let mut content = String::new();
@@ -100,7 +99,7 @@ impl<'a> Processor<'a> {
     pub fn from_file(&mut self, path :&Path, get_result: bool) -> Result<String, RadError> {
         let file_stream = File::open(path)?;
         let reader = io::BufReader::new(file_stream);
-        let mut line_iter = reader.lines();
+        let mut line_iter = Utils::full_lines(reader);
         let mut lexor = Lexor::new();
         let mut invoke = MacroFragment::new();
         let mut content = String::new();
@@ -110,8 +109,7 @@ impl<'a> Processor<'a> {
             match result {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
-                ParseResult::Printable(mut remainder) => {
-                    remainder.push_str(LINE_ENDING);
+                ParseResult::Printable(remainder) => {
                     self.write_to(&remainder, &mut container)?;
                     // Reset fragment
                     if &invoke.whole_string != "" {
@@ -132,7 +130,7 @@ impl<'a> Processor<'a> {
     
     // TODO
     /// Parse line is called only by the main loop thus, caller name is special name of @MAIN
-    fn parse_line(&mut self, lines :&mut Lines<impl BufRead>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
+    fn parse_line(&mut self, lines :&mut impl std::iter::Iterator<Item = std::io::Result<String>>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
         if let Some(line) = lines.next() {
             // Rip off a result into a string
             let line = line?;
@@ -140,7 +138,10 @@ impl<'a> Processor<'a> {
             let mut remainder = String::new();
             let level = 0; // 0 is main level
 
+            // Reset lexor's escape_nl 
+            lexor.escape_nl = false;
             for ch in line.chars() {
+                //lexor.escape_nl = false;
                 let lex_result = lexor.lex(ch)?;
                 // TODO
                 // Either add character to remainder or fragments
@@ -166,6 +167,8 @@ impl<'a> Processor<'a> {
                         frag.whole_string.push(ch);
                         if frag.name == "define" {
                             self.add_define(frag, &mut remainder)?;
+                            //println!("Added definition");
+                            lexor.escape_nl = true;
                         } else {
                             // Invoke
                             if let Some(content) = self.evaluate(level, &MAIN_CALLER.to_owned(), &frag.name, &frag.args)? {
@@ -191,17 +194,6 @@ impl<'a> Processor<'a> {
                     }
                 }
             } // End Character iteration
-
-            // Post-parse process
-            // Add new line to fragment
-            if !frag.is_empty() {
-                match lexor.cursor {
-                    Cursor::Name => frag.name.push_str(LINE_ENDING),
-                    Cursor::Arg => frag.args.push_str(LINE_ENDING),
-                    // Name to arg is ignored
-                    _ => (),
-                }
-            }
 
             // Non macro string is included
             if remainder.len() != 0 {
@@ -229,78 +221,52 @@ impl<'a> Processor<'a> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
         let mut remainder = String::new();
-
-        // Cap the chunk to resesrve new lines
-        let chunk = Utils::cap(chunk);
-
-        let mut lines = chunk.lines().peekable();
-        let mut count = 0;
-        while let Some(line) = lines.next() {
-            count = count + 1;
-            // Rip off a result into a string
-            // Local values
-            for ch in line.chars() {
-                let lex_result = lexor.lex(ch)?;
+        // Rip off a result into a string
+        // Local values
+        for ch in chunk.chars() {
+            let lex_result = lexor.lex(ch)?;
+            // TODO
+            // Either add character to remainder or fragments
+            match lex_result {
+                LexResult::Ignore => frag.whole_string.push(ch),
+                LexResult::AddToRemainder => {
+                    remainder.push(ch);
+                }
+                LexResult::AddToFrag(cursor) => {
+                    match cursor{
+                        Cursor::Name => frag.name.push(ch),
+                        Cursor::Arg => frag.args.push(ch),
+                        _ => unreachable!(),
+                    } 
+                    frag.whole_string.push(ch);
+                }
                 // TODO
-                // Either add character to remainder or fragments
-                match lex_result {
-                    LexResult::Ignore => frag.whole_string.push(ch),
-                    LexResult::AddToRemainder => {
-                        remainder.push(ch);
-                    }
-                    LexResult::AddToFrag(cursor) => {
-                        match cursor{
-                            Cursor::Name => frag.name.push(ch),
-                            Cursor::Arg => frag.args.push(ch),
-                            _ => unreachable!(),
-                        } 
-                        frag.whole_string.push(ch);
-                    }
-                    // TODO
-                    // End of fragment
-                    // 1. Evaluate macro 
-                    // 1.5 -> If define, parse rule applied again.
-                    // 2. And append to remainder
-                    // 3. Reset fragment
-                    LexResult::EndFrag => {
-                        frag.whole_string.push(ch);
-                        if frag.name == "define" {
-                            self.add_define(&mut frag, &mut remainder)?;
-                        } else {
-                            // Invoke
-                            if let Some(content) = self.evaluate(level + 1, caller, &frag.name, &frag.args)? {
-                                remainder.push_str(&content);
-                                frag.clear();
-                            }
+                // End of fragment
+                // 1. Evaluate macro 
+                // 1.5 -> If define, parse rule applied again.
+                // 2. And append to remainder
+                // 3. Reset fragment
+                LexResult::EndFrag => {
+                    frag.whole_string.push(ch);
+                    if frag.name == "define" {
+                        self.add_define(&mut frag, &mut remainder)?;
+                        lexor.escape_nl = true;
+                    } else {
+                        // Invoke
+                        if let Some(content) = self.evaluate(level + 1, caller, &frag.name, &frag.args)? {
+                            remainder.push_str(&content);
+                            frag.clear();
                         }
                     }
-                    // Remove fragment and set to remainder
-                    LexResult::ExitFrag => {
-                        frag.whole_string.push(ch);
-                        remainder.push_str(&frag.whole_string);
-                        frag.clear();
-                    }
                 }
-            } // End character iteration
-
-            // Post-parse process
-            // Add new line to fragment
-            if !frag.is_empty() {
-                match lexor.cursor {
-                    Cursor::Name => frag.name.push_str(LINE_ENDING),
-                    Cursor::Arg => frag.args.push_str(LINE_ENDING),
-                    // Name to arg is ignored
-                    _ => (),
+                // Remove fragment and set to remainder
+                LexResult::ExitFrag => {
+                    frag.whole_string.push(ch);
+                    remainder.push_str(&frag.whole_string);
+                    frag.clear();
                 }
             }
-
-            // Add new line to remainder because this operation is line based
-            if let Some(_) = lines.peek() {
-                remainder.push_str(LINE_ENDING);
-            }
-        }  // End while
-        // Uncap LINE_CAP
-        Utils::uncap(&mut remainder);
+        } // End character iteration
         return Ok(remainder)
     } // parse_line end
 

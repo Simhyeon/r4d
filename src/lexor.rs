@@ -7,6 +7,7 @@ pub struct Lexor {
     pub escape_next : bool,
     pub surrounding : Surrounding,
     pub paren_count : usize,
+    pub escape_nl : bool,
 }
 
 impl Lexor {
@@ -15,6 +16,7 @@ impl Lexor {
             previous_char : None,
             cursor: Cursor::None,
             escape_next : false,
+            escape_nl : false,
             surrounding : Surrounding::None, 
             paren_count : 0,
         }
@@ -25,11 +27,18 @@ impl Lexor {
         match self.cursor {
             Cursor::None => {
                 if ch == MACRO_START_CHAR 
-                    && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
-                        //noprintln!("--MACRO START--");
-                        self.cursor = Cursor::Name;
-                        result = LexResult::Ignore;
+                    && self.previous_char.unwrap_or('0') != ESCAPE_CHAR 
+                {
+                    //noprintln!("--MACRO START--");
+                    self.cursor = Cursor::Name;
+                    result = LexResult::Ignore;
+                    self.escape_nl = false;
+                } else if self.escape_nl && (ch as i32 == 13 || ch as i32 == 10) {
+                    //println!("FOUND NEWLINE");
+                    result = LexResult::Ignore;
                 } else {
+                    //println!("Given ch : {} as i32 : {} comp : {}", ch, ch as i32, ch as i32 == '\n' as i32);
+                    self.escape_nl = false;
                     result = LexResult::AddToRemainder;
                 }
             },

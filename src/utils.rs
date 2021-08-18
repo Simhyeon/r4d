@@ -1,6 +1,7 @@
 use crate::error::RadError;
 use regex::Regex;
 use crate::consts::{ESCAPE_CHAR, LINE_CAP};
+use std::io::BufRead;
 
 pub(crate) struct Utils;
 
@@ -73,5 +74,19 @@ impl Utils {
     // Remove Line cap
     pub fn uncap(source: &mut String) {
         *source = source.replace(LINE_CAP, "");
+    }
+
+    // Shamelessly copied from 
+    // https://stackoverflow.com/questions/64517785/read-full-lines-from-stdin-including-n-until-end-of-file
+    /// Read full lines of bufread iterator which doesn't chop new lines
+    pub fn full_lines(mut input: impl BufRead) -> impl Iterator<Item = std::io::Result<String>> {
+        std::iter::from_fn(move || {
+            let mut vec = String::new();
+            match input.read_line(&mut vec) {
+                Ok(0) => None,
+                Ok(_) => Some(Ok(vec)),
+                Err(e) => Some(Err(e)),
+            }
+        })
     }
 }

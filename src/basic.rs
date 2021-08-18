@@ -19,13 +19,13 @@ impl<'a> BasicMacro<'a> {
     pub fn new() -> Self {
         // Create hashmap of functions
         let map = HashMap::from_iter(IntoIter::new([
-            ("regex_sub", BasicMacro::regex_sub as MacroType),
-            ("regex_del", BasicMacro::regex_del as MacroType),
+            ("rsub", BasicMacro::regex_sub as MacroType),
+            ("rdel", BasicMacro::regex_del as MacroType),
             ("eval", BasicMacro::eval as MacroType),
             ("trim", BasicMacro::trim as MacroType),
             ("chomp", BasicMacro::chomp as MacroType),
-            ("compress", BasicMacro::compress as MacroType),
-            ("placeholder", BasicMacro::placeholder as MacroType),
+            ("comp", BasicMacro::compress as MacroType),
+            ("lipsum", BasicMacro::placeholder as MacroType),
             ("time", BasicMacro::time as MacroType),
             ("date", BasicMacro::date as MacroType),
             ("include", BasicMacro::include as MacroType),
@@ -35,6 +35,7 @@ impl<'a> BasicMacro<'a> {
             ("ifdef", BasicMacro::ifdef as MacroType),
             ("foreach", BasicMacro::foreach as MacroType),
             ("forloop", BasicMacro::forloop as MacroType),
+            ("undef", BasicMacro::undef as MacroType),
         ]));
         // Return struct
         Self {  macros : map}
@@ -42,6 +43,10 @@ impl<'a> BasicMacro<'a> {
 
     pub fn contains(&self, name: &str) -> bool {
         self.macros.contains_key(name)
+    }
+
+    pub fn unset(&mut self, name: &str) {
+        self.macros.remove(name);
     }
 
     pub fn call(&self, name : &str, args: &str, processor: &mut Processor) -> Result<String, RadError> {
@@ -303,6 +308,29 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
+    fn undef(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+        let args = &processor.parse_chunk(
+            1000, 
+            &MAIN_CALLER.to_owned(), 
+            args
+        )?;
+
+        if let Some(args) = Utils::args_with_len(args, 1) {
+            let name = &args[0];
+
+            // Return true or false by the definition
+            if processor.map.basic.contains(name) {
+                processor.map.basic.unset(name);
+            }
+            if processor.map.custom.contains_key(name) {
+                processor.map.custom.remove(name);
+            }
+            Ok("".to_owned())
+        } else {
+            Err(RadError::InvalidArgument("Syscmd requires an argument"))
+        }
+    }
+
     // TODO
     // $foreach()
     // $foreach($testo($_()),"a,b,c")
@@ -328,8 +356,7 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    // TODO
-    // $forloop($testo($_),"1,5")
+    // $forloop("1,5",$testo($_))
     fn forloop(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 2) {
             let mut sums = String::new();
@@ -362,21 +389,18 @@ impl<'a> BasicMacro<'a> {
     }
 
     // TODO
+    // $from($_,"1,2,34,5,6")
     fn from_data() {
-
-    }
-
-    // TODO
-    fn from_csv() {
 
     }
 
     // TODO
     fn csv(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 3) {
-            let csv_file = &args[0];
-            let table_format = &args[1]; // Either gfm, wikitex, latex, none
-            let csv_query = &args[2];
+            let table_format = &args[0]; // Either gfm, wikitex, latex, none
+            let csv_query = &args[1];
+            let csv_content = &args[2];
+            csv::Reader::from_reader(csv_content.as_bytes());
             Ok(String::new())
         } else {
             Err(RadError::InvalidArgument("Syscmd requires an argument"))
