@@ -157,7 +157,6 @@ impl<'a> Processor<'a> {
                         } 
                         frag.whole_string.push(ch);
                     }
-                    // TODO
                     // End of fragment
                     // 1. Evaluate macro 
                     // 1.5 -> If define, parse rule applied again.
@@ -166,15 +165,7 @@ impl<'a> Processor<'a> {
                     LexResult::EndFrag => {
                         frag.whole_string.push(ch);
                         if frag.name == "define" {
-                            // Failed to register macro
-                            if let Some((name,args,body)) = Self::parse_define(&frag.args) {
-                                self.map.register(&name, &args, &body)?;
-                            } else {
-                                eprintln!("Failed to register macro");
-                                remainder.push_str(&frag.whole_string);
-                            }
-                            // Clear fragment regardless of success
-                            frag.clear();
+                            self.add_define(frag, &mut remainder)?;
                         } else {
                             // Invoke
                             if let Some(content) = self.evaluate(level, &MAIN_CALLER.to_owned(), &frag.name, &frag.args)? {
@@ -274,14 +265,7 @@ impl<'a> Processor<'a> {
                     LexResult::EndFrag => {
                         frag.whole_string.push(ch);
                         if frag.name == "define" {
-                            // Failed to register macro
-                            if let Some((name,args,body)) = Self::parse_define(&frag.args) {
-                                self.map.register(&name, &args, &body)?;
-                            } else {
-                                remainder.push_str(&frag.whole_string);
-                            }
-                            // Clear fragment regardless of success
-                            frag.clear();
+                            self.add_define(&mut frag, &mut remainder)?;
                         } else {
                             // Invoke
                             if let Some(content) = self.evaluate(level + 1, caller, &frag.name, &frag.args)? {
@@ -320,9 +304,23 @@ impl<'a> Processor<'a> {
         return Ok(remainder)
     } // parse_line end
 
+    fn add_define(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
+        // Failed to register macro
+        if let Some((name,args,body)) = Self::parse_define(&frag.args) {
+            self.map.register(&name, &args, &body)?;
+        } else {
+            eprintln!("Failed to register macro");
+            remainder.push_str(&frag.whole_string);
+        }
+        // Clear fragment regardless of success
+        frag.clear();
+
+        Ok(())
+    }
+
     // Static function
     // NOTE This method expects valid form of macro invocation
-    pub fn parse_define(text: &str) -> Option<(String, String, String)> {
+    fn parse_define(text: &str) -> Option<(String, String, String)> {
         let mut arg_cursor = "name";
         let mut name = String::new();
         let mut args = String::new();
@@ -485,5 +483,4 @@ impl<'a> Processor<'a> {
 
         Ok(())
     }
-
 }

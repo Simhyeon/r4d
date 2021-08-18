@@ -361,18 +361,6 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    //fn define(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        //// Failed to register macro
-        //if let Some((name,args,body)) = Self::parse_define(&args) {
-            //self.map.register(&name, &args, &body)?;
-        //} else {
-            //eprintln!("Failed to register macro");
-            //remainder.push_str(&frag.whole_string);
-        //}
-        //// Clear fragment regardless of success
-        //frag.clear();
-    //}
-
     // TODO
     fn from_data() {
 
