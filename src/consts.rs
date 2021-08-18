@@ -1,6 +1,7 @@
 pub const MACRO_START_CHAR: char = '$';
 pub const ESCAPE_CHAR: char ='\\';
-pub const MAIN_CALLER: &str = "@MAIN";
+pub const MAIN_CALLER: &str = "@MAIN@";
+pub const LINE_CAP: &str = "@CAP@";
 
 #[cfg(windows)]
 pub const LINE_ENDING: &'static str = "\r\n";
