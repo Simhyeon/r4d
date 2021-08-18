@@ -77,7 +77,6 @@ impl<'a> Processor<'a> {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(mut remainder) => {
-                    remainder.push_str(LINE_ENDING);
                     self.write_to(&remainder, &mut container)?;
                     // Reset fragment
                     if &invoke.whole_string != "" {
