@@ -2,7 +2,7 @@ use std::array::IntoIter;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use crate::error::RadError;
-use crate::consts::MAIN_CALLER;
+use crate::consts::{MAIN_CALLER, LINE_ENDING};
 use regex::Regex;
 use crate::utils::Utils;
 use crate::processor::Processor;
@@ -33,6 +33,8 @@ impl<'a> BasicMacro<'a> {
             ("syscmd", BasicMacro::syscmd as MacroType),
             ("ifelse", BasicMacro::ifelse as MacroType),
             ("ifdef", BasicMacro::ifdef as MacroType),
+            ("foreach", BasicMacro::foreach as MacroType),
+            ("forloop", BasicMacro::forloop as MacroType),
         ]));
         // Return struct
         Self {  macros : map}
@@ -65,7 +67,7 @@ impl<'a> BasicMacro<'a> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
+            args
         )?;
 
         if let Some(args) = Utils::args_with_len(args, 3) {
@@ -86,7 +88,7 @@ impl<'a> BasicMacro<'a> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
+            args
         )?;
 
         if let Some(args) = Utils::args_with_len(args, 2) {
@@ -106,7 +108,7 @@ impl<'a> BasicMacro<'a> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
+            args
         )?;
 
         if let Some(args) = Utils::args_with_len(args, 1) {
@@ -123,7 +125,7 @@ impl<'a> BasicMacro<'a> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
+            args
         )?;
 
         Utils::trim(args)
@@ -134,13 +136,13 @@ impl<'a> BasicMacro<'a> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
+            args
         )?;
 
         if let Some(args) = Utils::args_with_len(args, 1) {
             let source = &args[0];
-            let reg = Regex::new(r"\n\s*\n")?;
-            let result = reg.replace_all(source, "\n\n");
+            let reg = Regex::new(&format!(r"{0}\s*{0}", LINE_ENDING))?;
+            let result = reg.replace_all(source, &format!("{0}{0}", LINE_ENDING));
 
             Ok(result.to_string())
         } else {
@@ -152,7 +154,7 @@ impl<'a> BasicMacro<'a> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
+            args
         )?;
 
         if let Some(args) = Utils::args_with_len(args, 1) {
@@ -170,7 +172,7 @@ impl<'a> BasicMacro<'a> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
+            args
         )?;
 
         if let Some(args) = Utils::args_with_len(args, 1) {
@@ -185,7 +187,7 @@ impl<'a> BasicMacro<'a> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
+            args
         )?;
 
         if let Some(args) = Utils::args_with_len(args, 1) {
@@ -200,7 +202,7 @@ impl<'a> BasicMacro<'a> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
+            args
         )?;
 
         if let Some(args) = Utils::args_with_len(args, 2) {
@@ -221,7 +223,7 @@ impl<'a> BasicMacro<'a> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
+            args
         )?;
 
         if let Some(args_content) = Utils::args_with_len(args, 1) {
@@ -248,15 +250,13 @@ impl<'a> BasicMacro<'a> {
     // Argument is expanded after vectorization
     // $ifelse(evaluation, ifstate, elsestate)
     fn ifelse(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
-        )?;
-
         if let Some(args) = Utils::args_with_len(args, 2) {
             let boolean = &args[0];
-            let if_state = &args[1];
+            let if_state = &processor.parse_chunk(
+                1000, 
+                &MAIN_CALLER.to_owned(), 
+                &args[1]
+            )?;
 
             // Given condition is true
             if Utils::trim(boolean)?.parse::<bool>()? {
@@ -264,7 +264,11 @@ impl<'a> BasicMacro<'a> {
             } 
             // if else statement exsits
             else if args.len() >= 3 {
-                let else_state = &args[2];
+                let else_state = &processor.parse_chunk(
+                    1000, 
+                    &MAIN_CALLER.to_owned(), 
+                    &args[2]
+                )?;
                 return Ok(else_state.to_owned());
             }
 
@@ -281,7 +285,7 @@ impl<'a> BasicMacro<'a> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
-            &mut args.lines()
+            args
         )?;
 
         if let Some(args) = Utils::args_with_len(args, 1) {
@@ -300,13 +304,61 @@ impl<'a> BasicMacro<'a> {
     }
 
     // TODO
-    fn foreach() {
+    // $foreach()
+    // $foreach($testo($_()),"a,b,c")
+    fn foreach(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 2) {
+            let mut sums = String::new();
+            let mut target = args[1].to_owned(); // evaluate on loop
+            target.push_str(LINE_ENDING);
+            let loopable = &processor.parse_chunk(
+                1000, 
+                &MAIN_CALLER.to_owned(), 
+                &args[2]
+            )?;
 
+            let processed = processor.parse_chunk(0, &MAIN_CALLER.to_owned(),&target)?;
+
+            for value in loopable.split(',') {
+                sums.push_str(&processed.replace("$_", value));
+            }
+            Ok(sums)
+        } else {
+            Err(RadError::InvalidArgument("Foreach requires two argument"))
+        }
     }
 
     // TODO
-    fn forloop() {
+    // $forloop($testo($_),"1,5")
+    fn forloop(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 2) {
+            let mut sums = String::new();
+            let mut target = args[1].to_owned(); // evaluate on loop
+            target.push_str(LINE_ENDING);
 
+            let loopable = &processor.parse_chunk(
+                1000, 
+                &MAIN_CALLER.to_owned(), 
+                &args[0]
+            )?;
+            let loopable = loopable.split(',').collect::<Vec<&str>>();
+
+            if loopable.len() != 2 {
+                RadError::InvalidArgument("Forloop's second argument should be quoted min,max value e.g \"2,5\"");
+            }
+            let min = Utils::trim(loopable[0])?.parse::<usize>()?;
+            let max = Utils::trim(loopable[1])?.parse::<usize>()?;
+
+            let processed = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &target)?;
+
+            for value in min..=max {
+                sums.push_str(&processed.replace("$_", &value.to_string()));
+            }
+
+            Ok(sums)
+        } else {
+            Err(RadError::InvalidArgument("Foreach requires two argument"))
+        }
     }
 
     // TODO
@@ -315,7 +367,7 @@ impl<'a> BasicMacro<'a> {
     }
 
     // TODO
-    fn from_file() {
+    fn from_csv() {
 
     }
 
