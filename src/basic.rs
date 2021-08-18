@@ -181,7 +181,11 @@ impl<'a> BasicMacro<'a> {
 
         if let Some(args) = Utils::args_with_len(args, 1) {
             let word_count = &args[0];
-            Ok(lipsum(Utils::trim(word_count)?.parse::<usize>()?))
+            if let Ok(count) = Utils::trim(word_count)?.parse::<usize>() {
+                Ok(lipsum(count))
+            } else {
+                Err(RadError::InvalidArgument("Lipsum needs a number bigger or equal to 0 (unsigned integer)"))
+            }
         } else {
             Err(RadError::InvalidArgument("Placeholder requires an argument"))
         }
@@ -210,7 +214,12 @@ impl<'a> BasicMacro<'a> {
         )?;
 
         if let Some(args) = Utils::args_with_len(args, 2) {
-            let repeat_count = Utils::trim(&args[0])?.parse::<usize>()?;
+            let repeat_count;
+            if let Ok(count) = Utils::trim(&args[0])?.parse::<usize>() {
+                repeat_count = count;
+            } else {
+                return Err(RadError::InvalidArgument("Repeat needs a number bigger or equal to 0 (unsigned integer)"));
+            }
             let repeat_object = &args[1];
             let mut repeated = String::new();
             for _ in 0..repeat_count {
@@ -262,11 +271,16 @@ impl<'a> BasicMacro<'a> {
             )?;
 
             // Given condition is true
-            if Utils::trim(boolean)?.parse::<bool>()? {
-                return Ok(if_state.to_owned());
-            } 
+            let trimmed_cond = Utils::trim(boolean)?;
+            if let Ok(cond) = trimmed_cond.parse::<bool>() {
+                if cond { return Ok(if_state.to_owned()); }
+            } else if let Ok(number) = trimmed_cond.parse::<i32>() {
+                if number != 0 { return Ok(if_state.to_owned()); }
+            } else {
+                return Err(RadError::InvalidArgument("Ifelse requires true/fals or zero/nonzero."))
+            }
             // if else statement exsits
-            else if args.len() >= 3 {
+            if args.len() >= 3 {
                 let else_state = &processor.parse_chunk(
                     1000, 
                     &MAIN_CALLER.to_owned(), 
@@ -334,12 +348,11 @@ impl<'a> BasicMacro<'a> {
     fn foreach(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 2) {
             let mut sums = String::new();
-            let mut target = args[1].to_owned(); // evaluate on loop
-            target.push_str(LINE_ENDING);
+            let target = args[1].to_owned(); // evaluate on loop
             let loopable = &processor.parse_chunk(
                 1000, 
                 &MAIN_CALLER.to_owned(), 
-                &args[2]
+                &args[0]
             )?;
 
             let processed = processor.parse_chunk(0, &MAIN_CALLER.to_owned(),&target)?;
@@ -357,8 +370,7 @@ impl<'a> BasicMacro<'a> {
     fn forloop(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 2) {
             let mut sums = String::new();
-            let mut target = args[1].to_owned(); // evaluate on loop
-            target.push_str(LINE_ENDING);
+            let target = args[1].to_owned(); // evaluate on loop
 
             let loopable = &processor.parse_chunk(
                 1000, 
@@ -370,8 +382,14 @@ impl<'a> BasicMacro<'a> {
             if loopable.len() != 2 {
                 RadError::InvalidArgument("Forloop's second argument should be quoted min,max value e.g \"2,5\"");
             }
-            let min = Utils::trim(loopable[0])?.parse::<usize>()?;
-            let max = Utils::trim(loopable[1])?.parse::<usize>()?;
+            let min: usize; 
+            let max: usize; 
+            if let Ok(num) = Utils::trim(loopable[0])?.parse::<usize>() {
+                min = num;
+            } else { return Err(RadError::InvalidArgument("Forloop's min value should be non zero positive integer")); }
+            if let Ok(num) = Utils::trim(loopable[1])?.parse::<usize>() {
+                max = num
+            } else { return Err(RadError::InvalidArgument("Forloop's min value should be non zero positive integer")); }
 
             let processed = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &target)?;
 
