@@ -2,6 +2,11 @@
 
 Currently, it looks like macro rule is working.
 
+* [ ] Change from chunk write to buf writer
+Currently every substituted text is saved to a single string variable, which is
+problematic when ram size is not sufficient. Use buff writer to write given
+string without saving to designated space.
+
 * [ ] Improve modularlity
 Define is not basic macro but reserved macro, so...
 
@@ -11,19 +16,25 @@ Define is not basic macro but reserved macro, so...
 Using usize type level is not a bad idea, however it should be definite where
 to add number and not 
 
+* [-] Is nested parse chunk necessary? Maybe main parser is alreayd expanding all?
+It was not... mostly because some macro can make another macro call...
+
 * [x] Read from file option
 * [x] Output option
 * [ ] Err redirection option
 
 * [ ] New basic macros
+  * [ ] Shift macro
+  * [ ] Whole arguments -> Possibly but not likely
   * [x] Syscmd macro
   * [x] Time macro
   * [ ] Web request
 - This needs sincere consideration because this binary targets alpine which is not necessarily easy to combine openssl library.
+- Thus using using curl command through std::process::Command might be a global choice
   * [x] Include macro
   * [x] Repeat macro -> Same thing
-  * [ ] Foreach loop
-  * [ ] For loop -> Change by number
+  * [x] Foreach loop
+  * [x] For loop -> Change by number
   * [x] If macro
   * [x] If define macro
   * [ ] Data macro from data
@@ -85,3 +96,12 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
   * [x] Print a nested macro substitution
 
 * [x] Make direct subcommand option
+
+### How r4d handles newline?
+
+R4d reads file or stdin by lines, in both literal meaning and also rust method
+lines. Thus empty trailing lines are ignored if not given spcial pre
+processing. R4d chose simple solution to add special index after source chunk
+of string after remove it after macro expansions.
+
+Therefore, as a result, every newline works as it is.
