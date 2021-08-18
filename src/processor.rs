@@ -1,6 +1,5 @@
 use std::io::{self, StdinLock, Lines, BufRead};
 use std::fs::File;
-use std::ops::Add;
 use std::path::Path;
 use crate::error::RadError;
 use crate::models::MacroMap;
@@ -43,7 +42,7 @@ pub enum ParseResult {
 }
 
 pub struct Processor<'a> {
-    map: MacroMap<'a>,
+    pub map: MacroMap<'a>,
 }
 // 1. Get string
 // 2. Parse until macro invocation detected
@@ -87,7 +86,7 @@ impl<'a> Processor<'a> {
             }
         } // Loop end
 
-        Ok(content)
+        Ok(content.strip_suffix(LINE_ENDING).unwrap_or(&content).to_owned())
     }
 
     pub fn from_file(&mut self, path :&Path) -> Result<String, RadError> {
@@ -119,7 +118,7 @@ impl<'a> Processor<'a> {
             }
         } // Loop end
 
-        Ok(content)
+        Ok(content.strip_suffix(LINE_ENDING).unwrap_or(&content).to_owned())
     }
     
     // TODO
@@ -170,7 +169,6 @@ impl<'a> Processor<'a> {
                         } else {
                             // Invoke
                             if let Some(content) = self.evaluate(level, &MAIN_CALLER.to_owned(), &frag.name, &frag.args)? {
-                                //noprintln!("Evaluated : {}", content);
                                 remainder.push_str(&content);
                                 frag.clear();
 
@@ -187,7 +185,7 @@ impl<'a> Processor<'a> {
                     }
                     // Remove fragment and set to remainder
                     LexResult::ExitFrag => {
-                        eprintln!("Exited fragment");
+                        frag.whole_string.push(ch);
                         remainder.push_str(&frag.whole_string);
                         frag.clear();
                     }
@@ -223,18 +221,23 @@ impl<'a> Processor<'a> {
             }
 
         } else {
-            //noprintln!("--END OF INPUT--");
             Ok(ParseResult::EOI)
         }
     } // parse_line end
 
     /// Parse chunk is called by non-main process, thus needs caller
-    pub fn parse_chunk(&mut self, level: usize, caller: &String, lines :&mut std::str::Lines) -> Result<String, RadError> {
+    pub fn parse_chunk(&mut self, level: usize, caller: &String, chunk: &str) -> Result<String, RadError> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
         let mut remainder = String::new();
-        let mut lines = lines.peekable();
+
+        // Cap the chunk to resesrve new lines
+        let chunk = Utils::cap(chunk);
+
+        let mut lines = chunk.lines().peekable();
+        let mut count = 0;
         while let Some(line) = lines.next() {
+            count = count + 1;
             // Rip off a result into a string
             // Local values
             for ch in line.chars() {
@@ -265,7 +268,6 @@ impl<'a> Processor<'a> {
                         if frag.name == "define" {
                             // Failed to register macro
                             if let Some((name,args,body)) = Self::parse_define(&frag.args) {
-                                println!("Register");
                                 self.map.register(&name, &args, &body)?;
                             } else {
                                 remainder.push_str(&frag.whole_string);
@@ -275,7 +277,6 @@ impl<'a> Processor<'a> {
                         } else {
                             // Invoke
                             if let Some(content) = self.evaluate(level + 1, caller, &frag.name, &frag.args)? {
-                                //noprintln!("Evaluated : {}", content);
                                 remainder.push_str(&content);
                                 frag.clear();
                             }
@@ -283,6 +284,7 @@ impl<'a> Processor<'a> {
                     }
                     // Remove fragment and set to remainder
                     LexResult::ExitFrag => {
+                        frag.whole_string.push(ch);
                         remainder.push_str(&frag.whole_string);
                         frag.clear();
                     }
@@ -293,6 +295,8 @@ impl<'a> Processor<'a> {
                 remainder.push_str(LINE_ENDING);
             }
         }  // End while
+        // Uncap LINE_CAP
+        Utils::uncap(&mut remainder);
         return Ok(remainder)
     } // parse_line end
 
@@ -351,21 +355,20 @@ impl<'a> Processor<'a> {
                     continue;
                 }
             } else {
-                // Body can be any text
+                // Body can be any text but, 
+                // name and arg should follow rules
                 if arg_cursor != "body" {
                     if container.len() == 0 { // Start of string
-                        // Not alphabetic and not underscore
+                        // Not alphabetic 
                         // $define( 1name ) -> Not valid
-                        if !ch.is_alphabetic() && ch != '_' {
-                            println!("ERR 1 ch : {}", ch);
+                        if !ch.is_alphabetic() {
                             return None;
                         }
                     } else { // middle of string
                         // Not alphanumeric and not underscore
-                        // $define( na*me ) -> Not valid
-                        // $define( na_me ) -> Valid
+                        // $define( na*1me ) -> Not valid
+                        // $define( na_1me ) -> Valid
                         if !ch.is_alphanumeric() && ch != '_' {
-                            println!("ERR 2");
                             return None;
                         }
                     }
@@ -389,7 +392,7 @@ impl<'a> Processor<'a> {
 
         // This parses and processes arguments
         // and macro should be evaluated after
-        let args = self.parse_chunk(level, caller, &mut args.lines())?; 
+        let args = self.parse_chunk(level, caller, args)?; 
 
         // Ok, this is devastatingly hard to read 
         // Find Local macro first
@@ -409,7 +412,7 @@ impl<'a> Processor<'a> {
         // Find basic macro
         else if self.map.basic.contains(&name) {
             let final_result = self.map.basic.clone().call(name, &args, self)?;
-            return Ok(Some(final_result.to_string()));
+            return Ok(Some(final_result));
         } 
         // No macros found..? // possibly be unreachable
         else { 
@@ -442,7 +445,7 @@ impl<'a> Processor<'a> {
             self.map.new_local(level + 1, name, arg_type ,&arg_values[idx]);
         }
         // PARSE Chunk
-        let result = self.parse_chunk(level, &name, &mut rule.body.lines())?;
+        let result = self.parse_chunk(level, &name, &rule.body)?;
 
         Ok(Some(result))
     }
