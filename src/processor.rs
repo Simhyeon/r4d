@@ -76,7 +76,7 @@ impl<'a> Processor<'a> {
             match result {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
-                ParseResult::Printable(mut remainder) => {
+                ParseResult::Printable(remainder) => {
                     self.write_to(&remainder, &mut container)?;
                     // Reset fragment
                     if &invoke.whole_string != "" {
