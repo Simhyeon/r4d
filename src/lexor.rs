@@ -38,7 +38,7 @@ impl Lexor {
                 let mut end_name = false;
                 // if macro name's first character, then it should be alphabetic
                 if self.previous_char.unwrap_or(MACRO_START_CHAR) == MACRO_START_CHAR {
-                    if ch.is_alphabetic() || ch == '_' {
+                    if ch.is_alphabetic() {
                         result = LexResult::AddToFrag(Cursor::Name);
                     } else {
                         end_name = true;
@@ -63,10 +63,11 @@ impl Lexor {
                         self.cursor = Cursor::Arg;
                         self.paren_count = 1;
                         result = LexResult::Ignore;
-                    } 
+                    }
                     // CHECK -> Maybe unncessary
                     // Exit when unallowed character is given
                     else {
+                        self.cursor = Cursor::None;
                         result = LexResult::ExitFrag;
                     }
                 }
