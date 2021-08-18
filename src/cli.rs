@@ -43,7 +43,7 @@ impl Cli {
             else {
                 for file in files {
                     let file_result = Processor::new().from_file(Path::new(file))?;
-                    println!("{}", file_result);
+                    print!("{}", file_result);
                 }
             }
         } 
@@ -76,7 +76,7 @@ impl Cli {
         clap_app!(R4d =>
             (version: "0.0.1")
             (author: "Simon Creek <simoncreek@tutanota.com>")
-            (about: "R4d is a modern macro processro made with rust")
+            (about: "R4d is a modern macro processor made with rust")
             (@arg FILE: ... "Files to execute processing")
             (@arg out: -o --out +takes_value "File to print out macro")
             (@subcommand direct =>
