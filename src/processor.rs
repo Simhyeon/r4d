@@ -1,4 +1,4 @@
-use std::io::{self,  Lines, BufRead, Write};
+use std::io::{self, Write};
 use std::fs::File;
 use std::path::Path;
 use crate::error::RadError;

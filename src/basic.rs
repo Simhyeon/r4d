@@ -390,17 +390,18 @@ impl<'a> BasicMacro<'a> {
 
     // TODO
     // $from($_,"1,2,34,5,6")
+    #[allow(dead_code)]
     fn from_data() {
 
     }
 
     // TODO
-    fn csv(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+    #[allow(dead_code)]
+    fn csv(args: &str, _processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 3) {
-            let table_format = &args[0]; // Either gfm, wikitex, latex, none
-            let csv_query = &args[1];
-            let csv_content = &args[2];
-            csv::Reader::from_reader(csv_content.as_bytes());
+            let _table_format = &args[0]; // Either gfm, wikitex, latex, none
+            let _csv_query = &args[1];
+            let _csv_content = &args[2];
             Ok(String::new())
         } else {
             Err(RadError::InvalidArgument("Syscmd requires an argument"))

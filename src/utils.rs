@@ -1,6 +1,6 @@
 use crate::error::RadError;
 use regex::Regex;
-use crate::consts::{ESCAPE_CHAR, LINE_CAP};
+use crate::consts::ESCAPE_CHAR;
 use std::io::BufRead;
 
 pub(crate) struct Utils;
@@ -61,21 +61,6 @@ impl Utils {
 
         values
     }
-
-    // CHECK
-    // Intended usage with parse_chunk method
-    // Add Line cap to end of given string(chunk)
-    pub fn cap(source : &str) -> String{
-        let mut out = source.to_owned();
-        out.push_str(LINE_CAP);
-        out
-    }
-
-    // Remove Line cap
-    pub fn uncap(source: &mut String) {
-        *source = source.replace(LINE_CAP, "");
-    }
-
     // Shamelessly copied from 
     // https://stackoverflow.com/questions/64517785/read-full-lines-from-stdin-including-n-until-end-of-file
     /// Read full lines of bufread iterator which doesn't chop new lines
