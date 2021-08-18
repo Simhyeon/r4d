@@ -4,6 +4,24 @@ R4d is a text oriented macro prosessor made with rust.
 
 R4d is in very early stage, so there might be lots of undetected bugs.
 
+### Usage
+
+```bash
+# Usage : rad [OPTIONS] [FILE]...
+
+# Read from file and save to file
+rad input_file.txt -o out_file.txt
+
+# Read from file and print to stdout (without error print)
+rad input_file.txt 2>/dev/null
+
+# Read from standard input and print to file
+printf '...text...' | rad -o out_file.txt
+
+# Read from stdin and print to stdout (without error print)
+printf '...text...' | rad 2>/dev/null
+```
+
 ### Syntax 
 
 #### Macro definition
