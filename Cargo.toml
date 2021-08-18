@@ -1,5 +1,5 @@
 [package]
-name = "rad"
+name = "r4d"
 version = "0.1.0"
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -9,6 +9,10 @@ description = "Text oriented macro processor"
 homepage = "https://github.com/simhyeon/r4d"
 repository = "https://github.com/simhyeon/r4d"
 readme = "README.md"
+
+[[bin]]
+name = "rad"
+path = "src/main.rs"
 
 [dependencies]
 thiserror = "1.0.25"
