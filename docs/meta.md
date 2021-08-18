@@ -1,50 +1,29 @@
 ### TODOs
 
-Currently, it looks like macro rule is working.
+* [ ] Make undef line is deleted
+Add new struct invoke\_context so that other macro definition can also contains
+contexts.
 
-* [ ] Change from chunk write to buf writer
-Currently every substituted text is saved to a single string variable, which is
-problematic when ram size is not sufficient. Use buff writer to write given
-string without saving to designated space.
+* [ ] Failed macro stops further evlaution.
+- Should it be a feature? or be fixed? I'm not even sure if it is a bug or not.
 
-* [ ] Improve modularlity
-Define is not basic macro but reserved macro, so...
+* [ ] Make syscmd call unsafe and allow only when sudo was given
 
-* [x] Enable user to override basic macro 
-* [x] Currently local macro is not released which is a bad idea as a final output.
-* [x] Currently local macro is not perperly constructed when same macro invoked in single call
-Using usize type level is not a bad idea, however it should be definite where
-to add number and not 
+* [-] Improve modularlity
+Define is not basic macro but reserved macro for now, Change this into basic
+macro for better readability and maintainability.
+Though it has some benefits, I don't think it is necessary to refactor.
 
-* [-] Is nested parse chunk necessary? Maybe main parser is alreayd expanding all?
-It was not... mostly because some macro can make another macro call...
-
-* [x] Read from file option
-* [x] Output option
 * [ ] Err redirection option
+Should crate new function, because there is no such standard way to redirect error
 
 * [ ] New basic macros
-  * [ ] Shift macro
-  * [ ] Whole arguments -> Possibly but not likely
-  * [x] Syscmd macro
-  * [x] Time macro
-  * [ ] Web request
-- This needs sincere consideration because this binary targets alpine which is not necessarily easy to combine openssl library.
-- Thus using using curl command through std::process::Command might be a global choice
-  * [x] Include macro
-  * [x] Repeat macro -> Same thing
-  * [x] Foreach loop
-  * [x] For loop -> Change by number
-  * [x] If macro
-  * [x] If define macro
   * [ ] Data macro from data
   * [ ] Text format
     * [ ] CSV macro
       * [ ] csv query
       * [ ] csv to markdown table
       * [ ] csv to wikitext table
-  * [x] Remove extra new lines and spaces (Namely, "chomp" method)
-  * [x] Random text -> Use lorem lipsum
 
 ### How one should parse macro invocation?
 
@@ -73,6 +52,29 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [-] Is nested parse chunk necessary? Maybe main parser is alreayd expanding all?
+It was not... mostly because some macro can make another macro call...
+
+* [x] Change from chunk write to buf writer
+Currently every substituted text is saved to a single string variable, which is
+problematic when ram size is not sufficient. Use buff writer to write given
+string without saving to designated space.
+
+* [x] God damn it, lines() consume all duplicate new lines
+I googled a lot and shamlessly copied from stackoverflow, I Felt real needs to
+learn rust much more.
+
+* [x] Made defnition line is deleted 
+
+* [x] Enable user to override basic macro 
+* [x] Currently local macro is not released which is a bad idea as a final output.
+* [x] Currently local macro is not perperly constructed when same macro invoked in single call
+Using usize type level is not a bad idea, however it should be definite where
+to add number and not 
+
+* [x] Read from file option
+* [x] Output option
+
 * [x] Make custom parser and lexor
   * [x] print out non macro text
   * [ ] Print remainder from lines that contains macro definition
@@ -94,6 +96,21 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
   * [x] Print failed macro  
   * [x] Print a line which as multiple macros in a line
   * [x] Print a nested macro substitution
+
+* [x] New basic macros
+  * [x] Syscmd macro
+  * [x] Time macro
+  * [x] Undefine macro
+- This needs sincere consideration because this binary targets alpine which is not necessarily easy to combine openssl library.
+- Thus using using curl command through std::process::Command might be a global choice
+  * [x] Include macro
+  * [x] Repeat macro -> Same thing
+  * [x] Foreach loop
+  * [x] For loop -> Change by number
+  * [x] If macro
+  * [x] If define macro
+  * [x] Remove extra new lines and spaces (Namely, "chomp" method)
+  * [x] Random text -> Use lorem lipsum
 
 * [x] Make direct subcommand option
 
