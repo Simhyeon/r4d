@@ -2,6 +2,8 @@
 
 R4d is a text oriented macro prosessor made with rust.
 
+R4d is in very early stage, so there might be lots of undetected bugs.
+
 ### Syntax 
 
 #### Macro definition
