@@ -1,6 +1,6 @@
 use crate::error::RadError;
 use regex::Regex;
-use crate::consts::ESCAPE_CHAR;
+use crate::consts::{ESCAPE_CHAR, LINE_CAP};
 
 pub(crate) struct Utils;
 
@@ -20,7 +20,7 @@ impl Utils {
     }
 
     pub(crate) fn trim(args: &str) -> Result<String, RadError> {
-        let reg = Regex::new(r"^[ \t\n]+|[ \t\n]+$")?;
+        let reg = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$")?;
         let result = reg.replace_all(args, "");
 
         Ok(result.to_string())
@@ -39,7 +39,11 @@ impl Utils {
             } 
             // Literal start
             else if ch == lit_start && previous.unwrap_or(' ') != ESCAPE_CHAR {
-                literal = true;
+                if lit_start == lit_end {
+                    literal = !literal; 
+                } else {
+                    literal = true;
+                }
             } 
             // Literal end
             else if ch == lit_end && previous.unwrap_or(' ') != ESCAPE_CHAR {
@@ -55,5 +59,19 @@ impl Utils {
         values.push(value);
 
         values
+    }
+
+    // CHECK
+    // Intended usage with parse_chunk method
+    // Add Line cap to end of given string(chunk)
+    pub fn cap(source : &str) -> String{
+        let mut out = source.to_owned();
+        out.push_str(LINE_CAP);
+        out
+    }
+
+    // Remove Line cap
+    pub fn uncap(source: &mut String) {
+        *source = source.replace(LINE_CAP, "");
     }
 }
