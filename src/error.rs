@@ -24,7 +24,11 @@ pub enum RadError {
     #[error("Standard IO error : {0}")]
     StdIo(std::io::Error),
     #[error("Failed to convert to utf8 string : {0}")]
-    Utf8Err(std::string::FromUtf8Error)
+    Utf8Err(std::string::FromUtf8Error),
+    #[error("Unsupported table format : {0}")]
+    UnsupportedTableFormat(String),
+    #[error("Table error : {0}")]
+    CsvError(csv::Error),
 }
 
 impl From<regex::Error> for RadError {
@@ -60,5 +64,11 @@ impl From<std::io::Error> for RadError {
 impl From <std::string::FromUtf8Error> for RadError {
     fn from(err : std::string::FromUtf8Error) -> Self {
         Self::Utf8Err(err)
+    }
+}
+
+impl From <csv::Error> for RadError {
+    fn from(err : csv::Error) -> Self {
+        Self::CsvError(err)
     }
 }
