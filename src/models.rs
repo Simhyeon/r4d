@@ -66,7 +66,7 @@ impl<'a> MacroMap<'a> {
         let mac = MacroRule::new(
             &Utils::trim(name)?, 
             &Utils::trim(args)?, 
-            &Utils::trim(body)?);
+            body);
         self.custom.insert(name.to_owned(), mac);
         Ok(())
     }
