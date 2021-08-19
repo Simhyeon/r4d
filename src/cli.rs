@@ -1,6 +1,7 @@
 use clap::clap_app;
 use crate::error::RadError;
-use crate::processor::{Processor, WriteOption};
+use crate::processor::Processor;
+use crate::models::WriteOption;
 use std::path::Path;
 use std::fs::OpenOptions;
 
@@ -18,6 +19,18 @@ impl Cli {
     fn parse_options(args: &clap::ArgMatches) -> Result<(), RadError> {
         // Processor
         let mut processor: Processor;
+        let mut error_option : Option<WriteOption> = Some(WriteOption::Stdout);
+        if args.is_present("silent") {
+            error_option = None; 
+        } else if let Some(file) = args.value_of("err") {
+            let err_file = OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(file)
+                .unwrap();
+            error_option = Some(WriteOption::File(err_file));
+        }
         // Read from files
         if let Some(files) = args.values_of("FILE") {
             // Write to file
@@ -28,10 +41,10 @@ impl Cli {
                     .truncate(true)
                     .open(output_file)
                     .unwrap();
-                processor = Processor::new(WriteOption::File(out_file));
+                processor = Processor::new(WriteOption::File(out_file), error_option);
             }
             // Write to standard output
-            else { processor = Processor::new(WriteOption::Stdout); }
+            else { processor = Processor::new(WriteOption::Stdout, error_option); }
 
             for file in files {
                 processor.from_file(Path::new(file), false)?;
@@ -46,8 +59,8 @@ impl Cli {
                     .truncate(true)
                     .open(output_file)
                     .unwrap();
-                processor = Processor::new(WriteOption::File(out_file));
-            } else { processor = Processor::new(WriteOption::Stdout); }
+                processor = Processor::new(WriteOption::File(out_file), error_option);
+            } else { processor = Processor::new(WriteOption::Stdout, error_option); }
 
             processor.from_stdin(false)?;
         }
@@ -65,6 +78,8 @@ impl Cli {
             (about: "R4d is a modern macro processor made with rust")
             (@arg FILE: ... "Files to execute processing")
             (@arg out: -o --out +takes_value "File to print out macro")
+            (@arg err: -e --err +takes_value "File to save error")
+            (@arg silent: -s --silent "Supress warning")
         ).get_matches()
     }
 }

@@ -1,13 +1,38 @@
 use thiserror::Error;
+use crate::models::WriteOption;
+use std::io::Write;
+use crate::consts::LINE_ENDING;
+use colored::*;
 
-#[allow(dead_code)]
-pub(crate) fn print_error() {
-    // TODO
-    // Print err to stderr or to file or simply ignore or errors
-    // Error in this context, means failure of definition and invocatino
-    // rather than argument evaluation error which is a critical abort error
-    unimplemented!()
+pub struct ErrorLogger {
+    write_option: Option<WriteOption>,
 }
+
+impl ErrorLogger{
+    pub fn new(write_option: Option<WriteOption>) -> Self {
+        Self {
+            write_option,
+        }
+    }
+
+    pub fn elog(&mut self, log : &str) -> Result<(), RadError> {
+        if let Some(option) = &mut self.write_option {
+            match option {
+                WriteOption::File(file) => {
+                    file.write_all(format!("{}{}",log,LINE_ENDING).as_bytes())?;
+                }
+                WriteOption::Stdout => {
+                    eprintln!("{}", log.red());
+                }
+            }
+        } else {
+            // Silent option
+            // Do nothing
+        }
+
+        Ok(())
+    }
+} 
 
 #[derive(Error, Debug)]
 pub enum RadError {
