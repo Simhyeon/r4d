@@ -42,7 +42,9 @@ pub enum ParseResult {
 pub struct Processor<'a> {
     pub map: MacroMap<'a>,
     write_option: WriteOption,
-    error_logger: ErrorLogger
+    error_logger: ErrorLogger,
+    line_number: u64,
+    ch_number: u64,
 }
 // 1. Get string
 // 2. Parse until macro invocation detected
@@ -55,6 +57,8 @@ impl<'a> Processor<'a> {
             map : MacroMap::new(),
             write_option,
             error_logger: ErrorLogger::new(error_write_option),
+            line_number :0,
+            ch_number:0,
         }
     }
     pub fn get_map(&self) -> &MacroMap {
@@ -126,6 +130,8 @@ impl<'a> Processor<'a> {
     /// Parse line is called only by the main loop thus, caller name is special name of @MAIN@
     fn parse_line(&mut self, lines :&mut impl std::iter::Iterator<Item = std::io::Result<String>>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
         if let Some(line) = lines.next() {
+            self.line_number = self.line_number + 1;
+            self.ch_number = 0;
             // Rip off a result into a string
             let line = line?;
             // Local values
@@ -135,6 +141,7 @@ impl<'a> Processor<'a> {
             // Reset lexor's escape_nl 
             lexor.escape_nl = false;
             for ch in line.chars() {
+                self.ch_number = self.ch_number + 1;
                 let lex_result = lexor.lex(ch)?;
                 // Either add character to remainder or fragments
                 match lex_result {
@@ -144,7 +151,15 @@ impl<'a> Processor<'a> {
                     }
                     LexResult::AddToFrag(cursor) => {
                         match cursor{
-                            Cursor::Name => frag.name.push(ch),
+                            Cursor::Name => {
+                                if frag.name.len() == 0 {
+                                    self.error_logger
+                                        .set_number(
+                                            self.line_number, self.ch_number
+                                        );
+                                }
+                                frag.name.push(ch);
+                            },
                             Cursor::Arg => frag.args.push(ch),
                             _ => unreachable!(),
                         } 
@@ -163,19 +178,23 @@ impl<'a> Processor<'a> {
                         } else {
                             // Invoke
                             if let Some(content) = self.evaluate(level, &MAIN_CALLER.to_owned(), &frag.name, &frag.args)? {
-                                remainder.push_str(&content);
-                                frag.clear();
-
+                                // If content is none
+                                // Ignore new line after macro evaluation until any character
+                                if content.len() == 0 {
+                                    lexor.escape_nl = true;
+                                } else {
+                                    remainder.push_str(&content);
+                                }
                                 // Clear local variable macros
                                 self.map.clear_local();
                             } 
                             // Failed to invoke
                             // because macro doesn't exist
                             else {
-                                self.log_error(&format!("Failed to invoke macro : {}", frag.name))?;
                                 remainder.push_str(&frag.whole_string);
-                                frag.clear()
                             }
+                            // Clear fragment regardless of success
+                            frag.clear()
                         }
                     }
                     // Remove fragment and set to remainder
@@ -242,9 +261,15 @@ impl<'a> Processor<'a> {
                     } else {
                         // Invoke
                         if let Some(content) = self.evaluate(level + 1, caller, &frag.name, &frag.args)? {
-                            remainder.push_str(&content);
-                            frag.clear();
+                            // If content is none
+                            // Ignore new line after macro evaluation until any character
+                            if content.len() == 0 {
+                                lexor.escape_nl = true;
+                            } else {
+                                remainder.push_str(&content);
+                            }
                         }
+                        frag.clear();
                     }
                 }
                 // Remove fragment and set to remainder
@@ -263,7 +288,7 @@ impl<'a> Processor<'a> {
             self.map.register(&name, &args, &body)?;
         } else {
             self.log_error(&format!(
-                    "Failed to register a macro : {}", frag.args.split(',').collect::<Vec<&str>>()[0]
+                    "Failed to register a macro : \"{}\"", frag.args.split(',').collect::<Vec<&str>>()[0]
             ))?;
             remainder.push_str(&frag.whole_string);
         }
@@ -401,6 +426,7 @@ impl<'a> Processor<'a> {
         } 
         // No macros found to evaluate
         else { 
+            self.log_error(&format!("Failed to invoke a macro : \"{}\"", name))?;
             return Ok(None);
         }
     }
@@ -448,5 +474,11 @@ impl<'a> Processor<'a> {
     fn log_error(&mut self, log : &str) -> Result<(), RadError> {
         self.error_logger.elog(log)?;
         Ok(())
+    }
+
+    pub fn set_file(&mut self, file: &str) {
+        self.error_logger.set_file(file);
+        self.line_number = 0;
+        self.ch_number = 0;
     }
 }

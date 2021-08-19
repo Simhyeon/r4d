@@ -5,24 +5,46 @@ use crate::consts::LINE_ENDING;
 use colored::*;
 
 pub struct ErrorLogger {
+    last_line_number: u64,
+    last_ch_number: u64,
+    current_file: String,
     write_option: Option<WriteOption>,
 }
 
 impl ErrorLogger{
     pub fn new(write_option: Option<WriteOption>) -> Self {
         Self {
+            last_line_number: 0,
+            last_ch_number: 0,
+            current_file: String::from("stdin"),
             write_option,
         }
+    }
+    pub fn set_file(&mut self, file: &str) {
+        self.current_file = file.to_owned();
+    }
+
+    pub fn set_number(&mut self, line_number: u64, ch_number : u64) {
+        self.last_line_number = line_number;
+        self.last_ch_number = ch_number;
     }
 
     pub fn elog(&mut self, log : &str) -> Result<(), RadError> {
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(format!("{}{}",log,LINE_ENDING).as_bytes())?;
+                    file.write_all(format!("ERR : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, self.last_ch_number,LINE_ENDING).as_bytes())?;
                 }
                 WriteOption::Stdout => {
-                    eprintln!("{}", log.red());
+                    eprint!(
+                        "{}: {} {} --> {}:{}:{}{}",
+                        "error".red(),
+                        log,
+                        LINE_ENDING,
+                        self.current_file,
+                        self.last_line_number,
+                        self.last_ch_number,
+                        LINE_ENDING);
                 }
             }
         } else {

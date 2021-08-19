@@ -20,6 +20,7 @@ impl Cli {
         // Processor
         let mut processor: Processor;
         let mut error_option : Option<WriteOption> = Some(WriteOption::Stdout);
+        // Set error write option
         if args.is_present("silent") {
             error_option = None; 
         } else if let Some(file) = args.value_of("err") {
@@ -47,6 +48,7 @@ impl Cli {
             else { processor = Processor::new(WriteOption::Stdout, error_option); }
 
             for file in files {
+                processor.set_file(file);
                 processor.from_file(Path::new(file), false)?;
             }
         } 
