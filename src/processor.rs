@@ -282,11 +282,20 @@ impl<'a> Processor<'a> {
         let mut name = String::new();
         let mut args = String::new();
         let mut body = String::new();
+        let mut dquote = false;
 
         let mut container = String::new();
 
         for ch in text.chars() {
-            if ch == ',' {
+            // $define(variable=something)
+            // Don't set argument but directly bind variable to body
+            if ch == '=' && arg_cursor == "name" {
+                name.push_str(&container);
+                container.clear();
+                arg_cursor = "body"; 
+                continue;
+            }
+            if ch == ',' && !dquote {
                 match arg_cursor {
                     "name" => {
                         name.push_str(&container);
@@ -346,6 +355,13 @@ impl<'a> Processor<'a> {
                         if !ch.is_alphanumeric() && ch != '_' {
                             return None;
                         }
+                    }
+                } 
+                // On body
+                else {
+                    if ch == '"' && !(container.chars().last().unwrap_or(' ') == '\\') {
+                        dquote = !dquote;
+                        continue;
                     }
                 }
             }
