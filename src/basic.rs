@@ -6,6 +6,7 @@ use crate::consts::{MAIN_CALLER, LINE_ENDING};
 use regex::Regex;
 use crate::utils::Utils;
 use crate::processor::Processor;
+use crate::formatter::Formatter;
 use lipsum::lipsum;
 
 type MacroType = fn(&str, &mut Processor) -> Result<String, RadError>;
@@ -36,6 +37,8 @@ impl<'a> BasicMacro<'a> {
             ("foreach", BasicMacro::foreach as MacroType),
             ("forloop", BasicMacro::forloop as MacroType),
             ("undef", BasicMacro::undef as MacroType),
+            ("from", BasicMacro::from_data as MacroType),
+            ("table", BasicMacro::table as MacroType),
         ]));
         // Return struct
         Self {  macros : map}
@@ -118,6 +121,8 @@ impl<'a> BasicMacro<'a> {
         if let Some(args) = Utils::args_with_len(args, 1) {
             let formula = &args[0];
             let result = evalexpr::eval(formula)?;
+            // TODO
+            // Enable floating points length (or something similar)
             Ok(result.to_string())
         } else {
             Err(RadError::InvalidArgument("Regex del requires an argument"))
@@ -403,22 +408,28 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    // $from($_,"1,2,34,5,6")
-    #[allow(dead_code)]
-    fn from_data() {
+    // $from("1,2,3\n4,5,6", $_)
+    fn from_data(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 2) {
+            let macro_data = &args[0];
+            let macro_name = &args[1];
 
+            let result = Formatter::csv_to_macros(macro_name, macro_data)?;
+            let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &result)?;
+            Ok(result)
+        } else {
+            Err(RadError::InvalidArgument("From requires two arguments"))
+        }
     }
 
-    // TODO
-    #[allow(dead_code)]
-    fn csv(args: &str, _processor: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 3) {
-            let _table_format = &args[0]; // Either gfm, wikitex, latex, none
-            let _csv_query = &args[1];
-            let _csv_content = &args[2];
-            Ok(String::new())
+    fn table(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 2) {
+            let table_format = &args[0]; // Either gfm, wikitex, latex, none
+            let csv_content = &args[1];
+            let result = Formatter::csv_to_table(table_format, csv_content)?;
+            Ok(result)
         } else {
-            Err(RadError::InvalidArgument("Syscmd requires an argument"))
+            Err(RadError::InvalidArgument("Table requires two arguments"))
         }
     }
 }
