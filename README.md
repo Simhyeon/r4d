@@ -12,22 +12,29 @@ R4d is in very early stage, so there might be lots of undetected bugs.
 # Read from file and save to file
 rad input_file.txt -o out_file.txt
 
-# Read from file and print to stdout (without error print)
-rad input_file.txt 2>/dev/null
+# Read from file and print to stdout 
+rad input_file.txt
 
 # Read from standard input and print to file
 printf '...text...' | rad -o out_file.txt
 
-# Read from stdin and print to stdout (without error print)
-printf '...text...' | rad 2>/dev/null
+# Read from stdin and print to stdout 
+printf '...text...' | rad 
+
+# Use following options to decide error behaviours
+# default is stderr
+rad -e FileToWriteError.txt
+rad -s # Suppress error
 ```
+
+Type ```-h``` or ```--help``` to see options.
 
 ### Syntax 
 
 #### Macro definition
 
-Definition is also a macro. However it requires specific form not like other
-macros.
+Definition syntax is similar to macro invocation but requires specific form to
+sucessfully register a macro.
 
 ```
 $define(name,arg1 arg2, $arg1() $arg2())
@@ -42,6 +49,16 @@ whitespace.
 while an unbalanced right parenthesis will end the definition. Enclose the body
 with double quote or escape with backslash to type literal parenthesis. Any
 character including newlines('\n', "\r\n") are all respected. (UTF-8)
+
+You can simply bind the value to macro withoug using arguments with ```=```.
+
+```
+$define(v_name=Simon creek)
+```
+which is technically same with
+```
+$define(v_name,,Simon creek)
+```
 
 #### Macro inovokation
 
@@ -89,6 +106,24 @@ includes unbalanced right parentheses or commas, enclose the body with double
 quotes. Use escaped form of double quote, ```\"``` to use literal comma inside
 double quotes.
 
+```
+$define(order=first,second,third)
+$order()
+```
+The result is 
+```
+first
+```
+To include commas you need to enclose with double quotes
+```
+$define(order="first,second,third")
+$order()
+```
+converts to
+```
+first,second,third
+```
+
 ### Goal
 
 R4d aims to be a modern m4 alternative, which means
@@ -100,35 +135,6 @@ is not necessary
 - Enable combination of file stream and stdout
 - As expressive as current m4 macro processor
 
-#### In-built macros(WIP)
+#### In-built macros (or macro-like functions)
 
-**Implemented**
-
-- define
-- undef
-- include
-- repeat
-- foreach
-- forloop
-- ifelse
-- syscmd
-- rsub, rdel
-- eval
-- trim, chomp, comp
-- lipsum
-- time, date
-- ifdef
-
-**Not implemented**
-
-- csv sql query
-- csv formatting(gfm table, wititext table, latex table)
-- Macro automation 
-
-**Possibly**
-
-- Web request macro
-There would many caveats implementing web request macro, because it is
-inherently insecure + r4d targets gnu linux, windows and possibly musl
-linux(alpine linux), thus configuing libcurl and libssl compatible global
-interface might not be easy, I guess
+[Usages](./docs/macros.md)

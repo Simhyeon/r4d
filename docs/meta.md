@@ -1,28 +1,11 @@
 ### TODOs
 
-* [ ] Error message should indicate which line caused an error
-Might be a better idea to save context in lexor or parser.
-* [ ] I think, namespacing is not working properly with caller, so that every caller is @MAIN@
-However it does look not a problem
-* [ ] Make undef line is deleted
-Add new struct invoke\_context so that other macro definition can also contains
+* [ ] Line ending consistency
+* [ ] I think, namespacing is not working properly with caller, so that every
+caller is @MAIN@
+- However it doesn't look like a problem, refactor later
 contexts.
-* [ ] Failed macro stops further evlaution.
-- Should it be a feature? or be fixed? I'm not even sure if it is a bug or not.
-* [ ] Make syscmd call unsafe and allow only when sudo was given
-* [-] Improve modularlity
-Define is not basic macro but reserved macro for now, Change this into basic
-macro for better readability and maintainability.
-Though it has some benefits, I don't think it is necessary to refactor.
-* [ ] Err redirection option
-Should crate new function, because there is no such standard way to redirect error
 * [ ] New basic macros
-  * [ ] Data macro from data
-  * [ ] Text format
-    * [ ] CSV macro
-      * [ ] csv query
-      * [ ] csv to markdown table
-      * [ ] csv to wikitext table
 
 ### How one should parse macro invocation?
 
@@ -51,6 +34,20 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [-] Make syscmd call unsafe and allow only when sudo was given
+- Maybe this is fine? Because some command should require auth anyway?
+* [x] Make undef line is deleted
+* [x] Error loggin
+  * [x] Error message should indicate which line caused an error
+  * [x] Silent option
+  * [x] To stderr
+  * [x] To file
+* [-] Failed macro stops further evlaution.
+- This is because parse chunk only executed only when macro is valid
+* [-] Improve modularlity
+- Define is not basic macro but reserved macro for now, Change this into basic
+macro for better readability and maintainability.
+Though it has some benefits, I don't think it is necessary to refactor.
 * [-] Is nested parse chunk necessary? Maybe main parser is alreayd expanding all?
 It was not... mostly because some macro can make another macro call...
 
@@ -97,6 +94,11 @@ to add number and not
   * [x] Print a nested macro substitution
 
 * [x] New basic macros
+  * [x] Text format
+    * [x] CSV macro
+  	* [x] Data macro from data
+      * [x] csv to markdown table
+      * [x] csv to wikitext table
   * [x] Syscmd macro
   * [x] Time macro
   * [x] Undefine macro
