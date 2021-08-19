@@ -1,6 +1,7 @@
 use std::array::IntoIter;
 use std::collections::HashMap;
 use std::iter::FromIterator;
+use std::process::Command;
 use crate::error::RadError;
 use crate::consts::{MAIN_CALLER, LINE_ENDING};
 use regex::Regex;
@@ -248,16 +249,23 @@ impl<'a> BasicMacro<'a> {
             let source = &args_content[0];
             let arg_vec = Utils::args_to_vec(&source, ' ', ('\'', '\''));
 
-            let cmd = &arg_vec[0];
-            let cmd_args = if arg_vec.len() >= 2 {&arg_vec[1..]} else {&[]};
+            let output = if cfg!(target_os = "windows") {
+                Command::new("cmd")
+                    .arg("/C")
+                    .args(arg_vec)
+                    .output()
+                    .expect("failed to execute process")
+                    .stdout
+            } else {
+                Command::new("sh")
+                    .arg("-c")
+                    .args(arg_vec)
+                    .output()
+                    .expect("failed to execute process")
+                    .stdout
+            };
 
-            let output = String::from_utf8(
-                std::process::Command::new(cmd)
-                .args(cmd_args)
-                .output()
-                .expect(&format!("Failed to execute command {}", args)).stdout
-            )?;
-            Ok(output)
+            Ok(String::from_utf8(output)?)
         } else {
             Err(RadError::InvalidArgument("Syscmd requires an argument"))
         }
