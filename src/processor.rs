@@ -1,8 +1,8 @@
 use std::io::{self, Write};
 use std::fs::File;
 use std::path::Path;
-use crate::error::RadError;
-use crate::models::MacroMap;
+use crate::error::{RadError, ErrorLogger};
+use crate::models::{MacroMap, WriteOption};
 use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
@@ -39,15 +39,10 @@ pub enum ParseResult {
     NoPrint,
     EOI,
 }
-
-pub enum WriteOption {
-    File(std::fs::File),
-    Stdout,
-}
-
 pub struct Processor<'a> {
     pub map: MacroMap<'a>,
     write_option: WriteOption,
+    error_logger: ErrorLogger
 }
 // 1. Get string
 // 2. Parse until macro invocation detected
@@ -55,10 +50,11 @@ pub struct Processor<'a> {
 // 4. Continue parsing with fragments
 
 impl<'a> Processor<'a> {
-    pub fn new(write_option: WriteOption) -> Self {
+    pub fn new(write_option: WriteOption, error_write_option : Option<WriteOption>) -> Self {
         Self {
             map : MacroMap::new(),
             write_option,
+            error_logger: ErrorLogger::new(error_write_option),
         }
     }
     pub fn get_map(&self) -> &MacroMap {
@@ -176,6 +172,7 @@ impl<'a> Processor<'a> {
                             // Failed to invoke
                             // because macro doesn't exist
                             else {
+                                self.log_error(&format!("Failed to invoke macro : {}", frag.name))?;
                                 remainder.push_str(&frag.whole_string);
                                 frag.clear()
                             }
@@ -262,11 +259,12 @@ impl<'a> Processor<'a> {
     } // parse_chunk end
 
     fn add_define(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
-        // Failed to register macro
         if let Some((name,args,body)) = Self::parse_define(&frag.args) {
             self.map.register(&name, &args, &body)?;
         } else {
-            eprintln!("Failed to register a macro : {}", frag.name);
+            self.log_error(&format!(
+                    "Failed to register a macro : {}", frag.args.split(',').collect::<Vec<&str>>()[0]
+            ))?;
             remainder.push_str(&frag.whole_string);
         }
         // Clear fragment regardless of success
@@ -417,8 +415,7 @@ impl<'a> Processor<'a> {
 
         // Necessary arg count is bigger than given arguments
         if arg_types.len() > arg_values.len() {
-            eprintln!("Arg types : {:?}\nArg values : {:?}", arg_types, arg_values);
-            eprintln!("{}'s arguments are not sufficient", name);
+            self.log_error(&format!("{}'s arguments are not sufficient. Given {}, but needs {}", name, arg_values.len(), arg_types.len()))?;
             return Ok(None);
         }
 
@@ -445,6 +442,11 @@ impl<'a> Processor<'a> {
             }
         }
 
+        Ok(())
+    }
+
+    fn log_error(&mut self, log : &str) -> Result<(), RadError> {
+        self.error_logger.elog(log)?;
         Ok(())
     }
 }
