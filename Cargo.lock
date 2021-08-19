@@ -285,6 +285,7 @@ dependencies = [
  "clap",
  "csv",
  "evalexpr",
+ "lazy_static",
  "lipsum",
  "regex",
  "thiserror",
