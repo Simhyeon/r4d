@@ -7,6 +7,7 @@ use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
 
+#[derive(Debug)]
 pub struct MacroFragment {
     pub whole_string: String,
     pub name: String,
@@ -361,31 +362,30 @@ impl<'a> Processor<'a> {
                     container.clear();
                     continue;
                 }
-            } else {
-                // Body can be any text but, 
-                // name and arg should follow rules
-                if arg_cursor != "body" {
-                    if container.len() == 0 { // Start of string
-                        // Not alphabetic 
-                        // $define( 1name ) -> Not valid
-                        if !ch.is_alphabetic() {
-                            return None;
-                        }
-                    } else { // middle of string
-                        // Not alphanumeric and not underscore
-                        // $define( na*1me ) -> Not valid
-                        // $define( na_1me ) -> Valid
-                        if !ch.is_alphanumeric() && ch != '_' {
-                            return None;
-                        }
+            }
+            // Body can be any text but, 
+            // name and arg should follow rules
+            if arg_cursor != "body" {
+                if container.len() == 0 { // Start of string
+                    // Not alphabetic 
+                    // $define( 1name ) -> Not valid
+                    if !ch.is_alphabetic() {
+                        return None;
                     }
-                } 
-                // On body
-                else {
-                    if ch == '"' && !(container.chars().last().unwrap_or(' ') == '\\') {
-                        dquote = !dquote;
-                        continue;
+                } else { // middle of string
+                    // Not alphanumeric and not underscore
+                    // $define( na*1me ) -> Not valid
+                    // $define( na_1me ) -> Valid
+                    if !ch.is_alphanumeric() && ch != '_' {
+                        return None;
                     }
+                }
+            } 
+            // On body
+            else {
+                if ch == '"' && !(container.chars().last().unwrap_or(' ') == '\\') {
+                    dquote = !dquote;
+                    continue;
                 }
             }
 
