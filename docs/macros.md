@@ -9,7 +9,7 @@ Expanded text from macro
 
 #### Basic(default) macros
 
-All macros are all case sensitive and should come with dollar sign prefix.
+All macros are case sensitive and should come with dollar sign prefix.
 
 **define**
 
@@ -53,13 +53,12 @@ Content to be repeated
 Content to be repeated
 Content to be repeated
 
-// There is a trailing new line
 ```
 
 **foreach**
 
-Loop around given value. Value is separated with commas. Thus value should be
-always encloed with double quotes.
+Loop around given value. Value is separated with commas. Thus values should be
+always enclosed with double quotes.
 
 ```
 $foreach("a,b,c",Value: $_
@@ -73,8 +72,8 @@ Value: c
 
 **forloop**
 
-Loop around given range. Value is separated with commas. Thus value should be
-always encloed with double quotes.
+Loop around given range. Value is separated with commas. Thus values should be
+always enclosed with double quotes.
 
 Range is inclusive e.g. "1,3" means from 1 to 3.
 
@@ -90,7 +89,7 @@ Number: 5
 
 **eval**
 
-Eval evaluates expression. This macro(function) uses rust' evalexpr crate
+Eval evaluates expression. This macro(function) uses rust's evalexpr crate
 [crate link](https://crates.io/crates/evalexpr). Therefore argument formula
 follows evalexpr's syntax.
 
@@ -149,7 +148,6 @@ Linux
 
 Microsoft Windows [Version 10......]
 
-// Cmd ver command has starting and ending new line.
 ```
 
 **rsub, rdel**
@@ -208,7 +206,7 @@ DOWN
 
 **lipsum**
 
-Lipsum creaes placehoder with given word counts.
+Lipsum creates a placehoder with given word counts.
 
 ```
 $lipsum(5)
@@ -228,10 +226,10 @@ $date()
 2021-08-20
 ```
 
-**from*
+**from**
 
-From creates formatted macro invocation with given csv value. Given macro name
-doesn't need dollar sign prefix.
+From creates formatted macro invocations with given csv values. The given macro
+name doesn't need dollar sign prefix.
 
 ```
 $define(three,a1 a2 a3,"1-$a1(), 2-$a2(), 3-$a3()")
@@ -244,9 +242,9 @@ d,e,f",three)
 
 **table**
 
-Table creates formatted table from given csv value. Currently supported format
-is ```github``` and ```wikitext```. This macro doesn't pretty print but just
-make it readable from other programs.
+Table creates a formatted table from given csv values. Currently supported
+formats are ```github``` and ```wikitext```. This macro doesn't pretty print
+but just make it readable from other programs.
 
 ```
 $table(github,"a,b,c

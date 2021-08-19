@@ -2,7 +2,10 @@
 
 R4d is a text oriented macro prosessor made with rust.
 
-R4d is in very early stage, so there might be lots of undetected bugs.
+R4d is in very early stage, so there might be lots of undetected bugs and
+changes will occur fast.
+
+Currently only binary exists.
 
 ### Usage
 
@@ -23,25 +26,25 @@ printf '...text...' | rad
 
 # Use following options to decide error behaviours
 # default is stderr
-rad -e FileToWriteError.txt
+rad -e FileToWriteError.txt # Log error to file
 rad -s # Suppress error
 ```
 
-Type ```-h``` or ```--help``` to see options.
+Type ```-h``` or ```--help``` to see full options.
 
 ### Syntax 
 
 #### Macro definition
 
-Definition syntax is similar to macro invocation but requires specific form to
-sucessfully register a macro.
+Definition syntax is similar to macro invocation but requires a specific form
+to sucessfully register the macro.
 
 ```
 $define(name,arg1 arg2, $arg1() $arg2())
 ```
 
-- First argument is a macro name. Macro  should start with alphabets and
-following characters should be either alphanumeric or underscore.
+- First argument is a macro name. Macro should start with an alphabet character
+and following characters should be either alphanumeric or underscore.
 - Second argument is macro's arguments. Macro argument also follows same rule
 of naming. Multiple arguments can be declared and should be separated by a
 whitespace.
@@ -50,7 +53,7 @@ while an unbalanced right parenthesis will end the definition. Enclose the body
 with double quote or escape with backslash to type literal parenthesis. Any
 character including newlines('\n', "\r\n") are all respected. (UTF-8)
 
-You can simply bind the value to macro withoug using arguments with ```=```.
+You can simply bind the value to macro with ```=```.
 
 ```
 $define(v_name=Simon creek)
@@ -100,7 +103,7 @@ Name : Jane
 
 **NOTE**
 
-An unbalanced right parenthesis ends macro invocation and non-double-quoted
+An unbalanced right parenthesis ends macro invocation and a non-double-quoted
 comma will change the number or content of arguments. If desirable content
 includes unbalanced right parentheses or commas, enclose the body with double
 quotes. Use escaped form of double quote, ```\"``` to use literal comma inside
@@ -126,7 +129,7 @@ first,second,third
 
 ### Goal
 
-R4d aims to be a modern m4 alternative, which means
+R4d aims to be a modern alternative to m4 processor, which means
 
 - No trivial m4 quotes for macro definition
 - Explicit rule for macro definition and usage so that de facto underscore rule
@@ -135,6 +138,6 @@ is not necessary
 - Enable combination of file stream and stdout
 - As expressive as current m4 macro processor
 
-#### In-built macros (or macro-like functions)
+#### Built-in macros (or macro-like functions)
 
 [Usages](./docs/macros.md)
