@@ -430,7 +430,7 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    fn table(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+    fn table(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 2) {
             let table_format = &args[0]; // Either gfm, wikitex, latex, none
             let csv_content = &args[1];
