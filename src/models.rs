@@ -3,6 +3,11 @@ use crate::basic::BasicMacro;
 use crate::error::RadError;
 use crate::utils::Utils;
 
+pub enum WriteOption {
+    File(std::fs::File),
+    Stdout,
+}
+
 #[derive(Clone)]
 pub struct MacroRule{
     pub name: String,
