@@ -420,7 +420,7 @@ impl<'a> BasicMacro<'a> {
     fn from_data(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 2) {
             let macro_data = &args[0];
-            let macro_name = &args[1];
+            let macro_name = &Utils::trim(&args[1])?;
 
             let result = Formatter::csv_to_macros(macro_name, macro_data)?;
             let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &result)?;
