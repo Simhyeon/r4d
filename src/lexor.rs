@@ -120,22 +120,13 @@ impl Lexor {
 
     fn set_previous(&mut self, ch: char) {
         match ch {
-            '(' => self.surrounding = Surrounding::Paren,
-            ')' => if let Surrounding::Paren = self.surrounding { self.surrounding = Surrounding::None;}
-            '[' => self.surrounding = Surrounding::Squared,
-            ']' => if let Surrounding::Squared = self.surrounding { self.surrounding = Surrounding::None;}
-            '\'' => {
-                if let Surrounding::Quote = self.surrounding { 
-                    self.surrounding = Surrounding::None;
-                } else {
-                    self.surrounding = Surrounding::Quote;
-                }
-            }
             '"' => {
-                if let Surrounding::Dquote = self.surrounding { 
-                    self.surrounding = Surrounding::None;
-                } else {
-                    self.surrounding = Surrounding::Dquote;
+                if self.previous_char.unwrap_or(' ') != ESCAPE_CHAR {
+                    if let Surrounding::Dquote = self.surrounding { 
+                        self.surrounding = Surrounding::None;
+                    } else {
+                        self.surrounding = Surrounding::Dquote;
+                    }
                 }
             }
             _ => (),
@@ -143,7 +134,6 @@ impl Lexor {
         // Set previous
         self.previous_char.replace(ch);
     }
-
 } 
 
 #[derive(Debug)]
@@ -155,11 +145,9 @@ pub enum LexResult {
     ExitFrag,
 }
 
+#[derive(Debug)]
 pub enum Surrounding {
     None,
-    Paren,
-    Squared,
-    Quote,
     Dquote,
 }
 
