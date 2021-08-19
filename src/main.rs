@@ -1,11 +1,12 @@
 mod basic;
 mod cli;
+mod consts;
 mod error;
+mod formatter;
+mod lexor;
+mod models;
 mod processor;
 mod utils;
-mod models;
-mod consts;
-mod lexor;
 
 use cli::Cli;
 use error::RadError;
