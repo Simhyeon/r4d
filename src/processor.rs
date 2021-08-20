@@ -42,6 +42,7 @@ pub enum ParseResult {
 }
 pub struct Processor<'a> {
     pub map: MacroMap<'a>,
+    define_parse: DefineParser,
     write_option: WriteOption,
     error_logger: ErrorLogger,
     line_number: u64,
@@ -57,6 +58,7 @@ impl<'a> Processor<'a> {
         Self {
             map : MacroMap::new(),
             write_option,
+            define_parse: DefineParser::new(),
             error_logger: ErrorLogger::new(error_write_option),
             line_number :0,
             ch_number:0,
@@ -285,7 +287,7 @@ impl<'a> Processor<'a> {
     } // parse_chunk end
 
     fn add_define(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
-        if let Some((name,args,body)) = Self::parse_define(&frag.args) {
+        if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
             self.map.register(&name, &args, &body)?;
         } else {
             self.log_error(&format!(
@@ -299,110 +301,13 @@ impl<'a> Processor<'a> {
         Ok(())
     }
 
-    // Static function
-    // NOTE This method expects valid form of macro invocation
-    fn parse_define(text: &str) -> Option<(String, String, String)> {
-        let mut arg_cursor = "name";
-        let mut name = String::new();
-        let mut args = String::new();
-        let mut body = String::new();
-        let mut dquote = false;
-
-        let mut container = String::new();
-
-        for ch in text.chars() {
-            // $define(variable=something)
-            // Don't set argument but directly bind variable to body
-            if ch == '=' && arg_cursor == "name" {
-                name.push_str(&container);
-                container.clear();
-                arg_cursor = "body"; 
-                continue;
-            }
-            if ch == ',' && !dquote {
-                match arg_cursor {
-                    "name" => {
-                        name.push_str(&container);
-                        container.clear();
-                        arg_cursor = "args"; 
-                        continue;
-                    },
-                    "args" => {
-                        args.push_str(&container);
-                        container.clear();
-                        arg_cursor = "body"; 
-                        continue;
-                    },
-                    "body" => {
-                        body.push_str(&container);
-                        container.clear();
-                        return Some((name, args, body));
-                    }
-                    _ => unreachable!()
-                }
-            }
-            if ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t' {
-                // This means pattern like this
-                // $define( name ) -> name is registered
-                // $define( na me ) -> only "na" is registered
-                if arg_cursor == "name" && name.len() != 0 {
-                    name.push_str(&container);
-                    container.clear();
-                    arg_cursor = "args";
-                    continue;
-                } 
-                // This means pattern like this
-                // $define(name, arg1 ,)
-                //                   |
-                //                  -This part makes argument empty
-                //                  and starts argument evaluation as new state
-                else if arg_cursor == "args" && container.len() != 0 {
-                    args.push_str(&container);
-                    args.push(' ');
-                    container.clear();
-                    continue;
-                }
-            }
-            // Body can be any text but, 
-            // name and arg should follow rules
-            if arg_cursor != "body" {
-                if container.len() == 0 { // Start of string
-                    // Not alphabetic 
-                    // $define( 1name ) -> Not valid
-                    if !ch.is_alphabetic() {
-                        return None;
-                    }
-                } else { // middle of string
-                    // Not alphanumeric and not underscore
-                    // $define( na*1me ) -> Not valid
-                    // $define( na_1me ) -> Valid
-                    if !ch.is_alphanumeric() && ch != '_' {
-                        return None;
-                    }
-                }
-            } 
-            // On body
-            else {
-                if ch == '"' && !(container.chars().last().unwrap_or(' ') == '\\') {
-                    dquote = !dquote;
-                    continue;
-                }
-            }
-
-            container.push(ch);
-        }
-
-        // End of body
-        body.push_str(&container);
-
-        Some((name, args, body))
-    }
-
     // Evaluate can be nested deeply
     fn evaluate(&mut self,level: usize, caller: &String, name: &String, args: &String) -> Result<Option<String>, RadError> {
 
         // This parses and processes arguments
         // and macro should be evaluated after
+        // TODO 
+        // Make caller to name
         let args = self.parse_chunk(level, caller, args)?; 
 
         // Find Local macro first
@@ -436,8 +341,10 @@ impl<'a> Processor<'a> {
         // Invoke is called only when key exists, thus unwrap is safe
         let rule = self.map.custom.get(name).unwrap().clone();
         let arg_types = &rule.args;
+        println!("ARGS : {:?}", arg_values);
         // Set variable to local macros
         let arg_values = Utils::args_to_vec(arg_values, ',', ('"','"'));
+        println!("PARSED : {:?}", arg_values);
 
         // Necessary arg count is bigger than given arguments
         if arg_types.len() > arg_values.len() {
@@ -481,4 +388,142 @@ impl<'a> Processor<'a> {
         self.line_number = 0;
         self.ch_number = 0;
     }
+}
+
+pub struct DefineParser{
+    arg_cursor :DefineCursor,
+    name: String,
+    args: String,
+    body: String,
+    dquote: bool,
+    container: String,
+}
+
+impl DefineParser {
+    pub fn new() -> Self {
+        Self {
+            arg_cursor : DefineCursor::Name,
+            name : String::new(),
+            args : String::new(),
+            body : String::new(),
+            dquote : false,
+            container : String::new(),
+        }
+    }
+
+    fn clear(&mut self) {
+        self.arg_cursor = DefineCursor::Name;
+        self.name.clear();
+        self.args.clear();
+        self.body.clear();
+        self.dquote = false;
+        self.container.clear();
+    }
+
+    // Static function
+    // NOTE This method expects valid form of macro invocation
+    // Given value should be without outer prentheses
+    // e.g. ) name,a1 a2,body text
+    pub fn parse_define(&mut self, text: &str) -> Option<(String, String, String)> {
+        self.clear();
+        for ch in text.chars() {
+            match self.arg_cursor {
+                DefineCursor::Name => {
+                    // $define(variable=something)
+                    // Don't set argument but directly bind variable to body
+                    if ch == '=' {
+                        self.name.push_str(&self.container);
+                        self.container.clear();
+                        self.arg_cursor = DefineCursor::Body;
+                    } 
+                    // This means pattern like this
+                    // $define( name ) -> name is registered
+                    // $define( na me ) -> only "na" is registered
+                    else if Utils::is_blank_char(ch) && self.name.len() != 0 {
+                        self.name.push_str(&self.container);
+                        self.container.clear();
+                        self.arg_cursor = DefineCursor::Args;
+                    } 
+                    // Comma go to args
+                    // Dquote is invalid character so no need to escape
+                    else if ch == ',' {
+                        self.name.push_str(&self.container);
+                        self.container.clear();
+                        self.arg_cursor = DefineCursor::Args;
+                        continue;
+                    } else {
+                        // If not valid name return None
+                        if !self.is_valid_name(ch) { return None; }
+                    }
+                }
+                DefineCursor::Args => {
+                    // Blank space separates arguments 
+                    if Utils::is_blank_char(ch) && self.name.len() != 0 {
+                        self.args.push_str(&self.container);
+                        self.args.push(' ');
+                        self.container.clear();
+                        continue;
+                    } 
+                    // Go to body
+                    // Dquote is invalid character so no need to escape
+                    else if ch == ',' {
+                        self.args.push_str(&self.container);
+                        self.container.clear();
+                        self.arg_cursor = DefineCursor::Body; 
+                        continue;
+                    } 
+                    // Others
+                    else {
+                        // If not valid name return
+                        if !self.is_valid_name(ch) { return None; }
+                    }
+                }
+                // Add everything
+                DefineCursor::Body => ()
+            } 
+            self.container.push(ch);
+        }
+
+        // End of body
+        self.body.push_str(&self.container);
+
+        Some((self.name.clone(), self.args.clone(), self.body.clone()))
+    }
+
+    fn is_valid_name(&mut self, ch : char) -> bool {
+        if self.container.len() == 0 { // Start of string
+            // Not alphabetic 
+            // $define( 1name ) -> Not valid
+            if !ch.is_alphabetic() {
+                return false;
+            }
+        } else { // middle of string
+            // Not alphanumeric and not underscore
+            // $define( na*1me ) -> Not valid
+            // $define( na_1me ) -> Valid
+            if !ch.is_alphanumeric() && ch != '_' {
+                return false;
+            }
+        }
+        true
+    }
+    
+    // Reserved for later refactoring
+    //fn branch_name() {
+
+    //}
+
+    //fn branch_args() {
+
+    //}
+
+    //fn branch_body() {
+
+    //}
+}
+
+enum DefineCursor {
+    Name,
+    Args,
+    Body,
 }
