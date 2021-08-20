@@ -440,4 +440,16 @@ impl<'a> BasicMacro<'a> {
             Err(RadError::InvalidArgument("Table requires two arguments"))
         }
     }
+
+    fn len(args: &str, _: &mut Processor) -> Result<String, RadError> {
+
+        Ok(String::new())
+    }
+    fn substring(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
+    fn translate(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
+    fn rename(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
+    fn append(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
+    fn print(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
+    fn toggle(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
+    fn temp_file(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
 }
