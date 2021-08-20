@@ -5,7 +5,7 @@ pub struct Lexor {
     previous_char : Option<char>,
     pub cursor: Cursor,
     pub escape_next : bool,
-    pub surrounding : Surrounding,
+    pub dquote: bool,
     pub paren_count : usize,
     pub escape_nl : bool,
 }
@@ -17,7 +17,7 @@ impl Lexor {
             cursor: Cursor::None,
             escape_next : false,
             escape_nl : false,
-            surrounding : Surrounding::None, 
+            dquote: false,
             paren_count : 0,
         }
     }
@@ -39,7 +39,8 @@ impl Lexor {
             } // end arg match
         }
 
-        self.set_previous(ch);
+        // Set previous character
+        self.previous_char.replace(ch);
         Ok(result)
     }
 
@@ -51,9 +52,17 @@ impl Lexor {
             self.cursor = Cursor::Name;
             result = LexResult::Ignore;
             self.escape_nl = false;
-        } else if self.escape_nl && (ch as i32 == 13 || ch as i32 == 10) {
+        } 
+        // This applies to cases where new lines comes after invocation
+        // e.g. $define(..) \n
+        // in this case last \n is ignored and deleted
+        // escape_nl is only set after define
+        else if self.escape_nl && (ch as i32 == 13 || ch as i32 == 10) {
             result = LexResult::Ignore;
-        } else {
+        } 
+        // Characters other than newline means other characters has been introduced
+        // after definition thus, escape_nl is now false
+        else {
             self.escape_nl = false;
             result = LexResult::AddToRemainder;
         }
@@ -61,103 +70,84 @@ impl Lexor {
     }
 
     fn branch_name(&mut self, ch: char) -> LexResult {
-        let mut result = LexResult::Ignore;
-        // Check whehter name should end or not
-        let mut end_name = false;
-        // if macro name's first character, then it should be alphabetic
-        if self.previous_char.unwrap_or(MACRO_START_CHAR) == MACRO_START_CHAR {
-            if ch.is_alphabetic() {
-                result = LexResult::AddToFrag(Cursor::Name);
-            } else {
-                end_name = true;
-            }
-        } else { // not first character
-            // Can be alphanumeric
-            if ch.is_alphanumeric() || ch == '_' {
-                result = LexResult::AddToFrag(Cursor::Name);
-            } else {
-                end_name = true;
-            }
-        }
+        let result: LexResult;
 
-        // Unallowed character
         // Start arg if parenthesis was given,
         // whitespaces are ignored and don't trigger exit
-        if end_name {
-            if ch == ' ' {
-                self.cursor = Cursor::NameToArg;
-                result = LexResult::Ignore;
-            } else if ch == '(' {
-                self.cursor = Cursor::Arg;
-                self.paren_count = 1;
-                result = LexResult::Ignore;
-            }
-            // CHECK -> Maybe unncessary
-            // Exit when unallowed character is given
-            else {
-                self.cursor = Cursor::None;
-                result = LexResult::ExitFrag;
-            }
+        if ch == ' ' {
+            self.cursor = Cursor::NameToArg;
+            result = LexResult::Ignore;
+        } 
+        // Left parenthesis trigger macro invocation
+        else if ch == '(' {
+            self.cursor = Cursor::Arg;
+            self.paren_count = 1;
+            result = LexResult::Ignore;
+        } 
+        // Put any character in name
+        // It is ok not to validate macro name
+        // because invalid name cannot be registered anyway
+        else {
+            result = LexResult::AddToFrag(Cursor::Name);
         }
         result
     }
 
+    /// Space between name and args
+    /// e.g.
+    /// $define ()
+    ///        |-> This is the name to args characters
     fn branch_name_to_arg(&mut self, ch: char) -> LexResult {
         let result: LexResult;
 
-        if ch == ' ' {
+        // White space or tab character is ignored
+        if ch == ' ' || ch == '\t' {
             result = LexResult::Ignore;
-        } else if ch == '(' {
+        } 
+        // Parenthesis start arguments
+        else if ch == '(' {
             self.cursor = Cursor::Arg;
             self.paren_count = 1;
             result = LexResult::AddToFrag(Cursor::Arg);
-        } else {
+        } 
+        // Other characters are invalid
+        else {
             self.cursor = Cursor::None;
             result = LexResult::ExitFrag;
         }
         result
     }
 
+    // Double quote rule is somewhat suspicious?
     fn branch_arg(&mut self, ch: char) -> LexResult {
-        let result: LexResult;
-        // if given ending parenthesis without surrounding double quotes,
-        // it means end of args
-        if let Surrounding::Dquote = self.surrounding {
-            result = LexResult::AddToFrag(Cursor::Arg);
-        } else {
+        let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
+        // Inside dquotes
+        if self.dquote {
+            if ch == '"' {
+                self.dquote = false;
+            }
+        } 
+        // Not in dquotes
+        else {
+            // Right paren decreases paren_count
             if ch == ')' {
                 self.paren_count = self.paren_count - 1; 
                 if self.paren_count == 0 {
                     self.cursor = Cursor::None;
                     result = LexResult::EndFrag;
-                } else {
-                    result = LexResult::AddToFrag(Cursor::Arg);
                 }
-            } else if ch == '(' {
+            } 
+            // Left paren increases paren_count
+            else if ch == '(' {
                 self.paren_count = self.paren_count + 1; 
-                result = LexResult::AddToFrag(Cursor::Arg);
-            } else {
-                result = LexResult::AddToFrag(Cursor::Arg);
             }
+            // Double quotes triggers dquote
+            else if ch == '"' {
+                self.dquote = true;
+            }
+            // Other characters are added normally
         }
         result
-    }
-
-    fn set_previous(&mut self, ch: char) {
-        match ch {
-            '"' => {
-                if self.previous_char.unwrap_or(' ') != ESCAPE_CHAR {
-                    if let Surrounding::Dquote = self.surrounding { 
-                        self.surrounding = Surrounding::None;
-                    } else {
-                        self.surrounding = Surrounding::Dquote;
-                    }
-                }
-            }
-            _ => (),
-        }
-        // Set previous
-        self.previous_char.replace(ch);
     }
 } 
 
