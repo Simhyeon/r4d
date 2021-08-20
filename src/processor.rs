@@ -341,10 +341,8 @@ impl<'a> Processor<'a> {
         // Invoke is called only when key exists, thus unwrap is safe
         let rule = self.map.custom.get(name).unwrap().clone();
         let arg_types = &rule.args;
-        println!("ARGS : {:?}", arg_values);
         // Set variable to local macros
         let arg_values = Utils::args_to_vec(arg_values, ',', ('"','"'));
-        println!("PARSED : {:?}", arg_values);
 
         // Necessary arg count is bigger than given arguments
         if arg_types.len() > arg_values.len() {
