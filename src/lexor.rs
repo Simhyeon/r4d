@@ -23,99 +23,124 @@ impl Lexor {
     }
 
     pub fn lex(&mut self, ch: char) -> Result<LexResult, RadError> {
-        let mut result: LexResult = LexResult::Ignore;
+        let result: LexResult;
         match self.cursor {
             Cursor::None => {
-                if ch == MACRO_START_CHAR 
-                    && self.previous_char.unwrap_or('0') != ESCAPE_CHAR 
-                {
-                    self.cursor = Cursor::Name;
-                    result = LexResult::Ignore;
-                    self.escape_nl = false;
-                } else if self.escape_nl && (ch as i32 == 13 || ch as i32 == 10) {
-                    result = LexResult::Ignore;
-                } else {
-                    self.escape_nl = false;
-                    result = LexResult::AddToRemainder;
-                }
+                result = self.branch_none(ch);
             },
             Cursor::Name => {
-                // Check whehter name should end or not
-                let mut end_name = false;
-                // if macro name's first character, then it should be alphabetic
-                if self.previous_char.unwrap_or(MACRO_START_CHAR) == MACRO_START_CHAR {
-                    if ch.is_alphabetic() {
-                        result = LexResult::AddToFrag(Cursor::Name);
-                    } else {
-                        end_name = true;
-                    }
-                } else { // not first character
-                    // Can be alphanumeric
-                    if ch.is_alphanumeric() || ch == '_' {
-                        result = LexResult::AddToFrag(Cursor::Name);
-                    } else {
-                        end_name = true;
-                    }
-                }
-
-                // Unallowed character
-                // Start arg if parenthesis was given,
-                // whitespaces are ignored and don't trigger exit
-                if end_name {
-                    if ch == ' ' {
-                        self.cursor = Cursor::NameToArg;
-                        result = LexResult::Ignore;
-                    } else if ch == '(' {
-                        self.cursor = Cursor::Arg;
-                        self.paren_count = 1;
-                        result = LexResult::Ignore;
-                    }
-                    // CHECK -> Maybe unncessary
-                    // Exit when unallowed character is given
-                    else {
-                        self.cursor = Cursor::None;
-                        result = LexResult::ExitFrag;
-                    }
-                }
+                result = self.branch_name(ch);
             }
             Cursor::NameToArg => {
-                if ch == ' ' {
-                    result = LexResult::Ignore;
-                } else if ch == '(' {
-                    self.cursor = Cursor::Arg;
-                    self.paren_count = 1;
-                    result = LexResult::AddToFrag(Cursor::Arg);
-                } else {
-                    self.cursor = Cursor::None;
-                    result = LexResult::ExitFrag;
-                }
+                result = self.branch_name_to_arg(ch);
             }
             Cursor::Arg => {
-                // if given ending parenthesis without surrounding double quotes,
-                // it means end of args
-                if let Surrounding::Dquote = self.surrounding {
-                    result = LexResult::AddToFrag(Cursor::Arg);
-                } else {
-                    if ch == ')' {
-                        self.paren_count = self.paren_count - 1; 
-                        if self.paren_count == 0 {
-                            self.cursor = Cursor::None;
-                            result = LexResult::EndFrag;
-                        } else {
-                            result = LexResult::AddToFrag(Cursor::Arg);
-                        }
-                    } else if ch == '(' {
-                        self.paren_count = self.paren_count + 1; 
-                        result = LexResult::AddToFrag(Cursor::Arg);
-                    } else {
-                        result = LexResult::AddToFrag(Cursor::Arg);
-                    }
-                }
+                result = self.branch_arg(ch);
             } // end arg match
         }
 
         self.set_previous(ch);
         Ok(result)
+    }
+
+    fn branch_none(&mut self, ch: char) -> LexResult {
+        let result: LexResult;
+        if ch == MACRO_START_CHAR 
+            && self.previous_char.unwrap_or('0') != ESCAPE_CHAR 
+        {
+            self.cursor = Cursor::Name;
+            result = LexResult::Ignore;
+            self.escape_nl = false;
+        } else if self.escape_nl && (ch as i32 == 13 || ch as i32 == 10) {
+            result = LexResult::Ignore;
+        } else {
+            self.escape_nl = false;
+            result = LexResult::AddToRemainder;
+        }
+        result
+    }
+
+    fn branch_name(&mut self, ch: char) -> LexResult {
+        let mut result = LexResult::Ignore;
+        // Check whehter name should end or not
+        let mut end_name = false;
+        // if macro name's first character, then it should be alphabetic
+        if self.previous_char.unwrap_or(MACRO_START_CHAR) == MACRO_START_CHAR {
+            if ch.is_alphabetic() {
+                result = LexResult::AddToFrag(Cursor::Name);
+            } else {
+                end_name = true;
+            }
+        } else { // not first character
+            // Can be alphanumeric
+            if ch.is_alphanumeric() || ch == '_' {
+                result = LexResult::AddToFrag(Cursor::Name);
+            } else {
+                end_name = true;
+            }
+        }
+
+        // Unallowed character
+        // Start arg if parenthesis was given,
+        // whitespaces are ignored and don't trigger exit
+        if end_name {
+            if ch == ' ' {
+                self.cursor = Cursor::NameToArg;
+                result = LexResult::Ignore;
+            } else if ch == '(' {
+                self.cursor = Cursor::Arg;
+                self.paren_count = 1;
+                result = LexResult::Ignore;
+            }
+            // CHECK -> Maybe unncessary
+            // Exit when unallowed character is given
+            else {
+                self.cursor = Cursor::None;
+                result = LexResult::ExitFrag;
+            }
+        }
+        result
+    }
+
+    fn branch_name_to_arg(&mut self, ch: char) -> LexResult {
+        let result: LexResult;
+
+        if ch == ' ' {
+            result = LexResult::Ignore;
+        } else if ch == '(' {
+            self.cursor = Cursor::Arg;
+            self.paren_count = 1;
+            result = LexResult::AddToFrag(Cursor::Arg);
+        } else {
+            self.cursor = Cursor::None;
+            result = LexResult::ExitFrag;
+        }
+        result
+    }
+
+    fn branch_arg(&mut self, ch: char) -> LexResult {
+        let result: LexResult;
+        // if given ending parenthesis without surrounding double quotes,
+        // it means end of args
+        if let Surrounding::Dquote = self.surrounding {
+            result = LexResult::AddToFrag(Cursor::Arg);
+        } else {
+            if ch == ')' {
+                self.paren_count = self.paren_count - 1; 
+                if self.paren_count == 0 {
+                    self.cursor = Cursor::None;
+                    result = LexResult::EndFrag;
+                } else {
+                    result = LexResult::AddToFrag(Cursor::Arg);
+                }
+            } else if ch == '(' {
+                self.paren_count = self.paren_count + 1; 
+                result = LexResult::AddToFrag(Cursor::Arg);
+            } else {
+                result = LexResult::AddToFrag(Cursor::Arg);
+            }
+        }
+        result
     }
 
     fn set_previous(&mut self, ch: char) {
