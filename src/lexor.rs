@@ -124,7 +124,9 @@ impl Lexor {
         // Inside dquotes
         if self.dquote {
             if ch == '"' {
-                self.dquote = false;
+                if self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
+                    self.dquote = false;
+                }
             }
         } 
         // Not in dquotes
@@ -143,7 +145,9 @@ impl Lexor {
             }
             // Double quotes triggers dquote
             else if ch == '"' {
-                self.dquote = true;
+                if self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
+                    self.dquote = true;
+                }
             }
             // Other characters are added normally
         }
