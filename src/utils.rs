@@ -35,34 +35,36 @@ impl Utils {
         let mut literal = false;
         let mut no_previous = false;
         for ch in arg_values.chars() {
-            if ch == delimiter && !literal {
-                values.push(value);
-                value = String::new();
-            } 
-            // Literal start
-            else if ch == lit_start && previous.unwrap_or('0') != ESCAPE_CHAR {
-                if lit_start == lit_end {
-                    literal = !literal; 
-                } else {
-                    literal = true;
+            if ch == delimiter  {
+                if literal || previous.unwrap_or('0') == ESCAPE_CHAR { value.push(ch); } 
+                else {
+                    println!("DELMITED");
+                    values.push(value);
+                    value = String::new();
                 }
-            } 
-            // Literal end
-            else if ch == lit_end && previous.unwrap_or('0') != ESCAPE_CHAR {
-                literal = false;
-            } 
-            else {
-                // Not escape
-                if ch != ESCAPE_CHAR {
+            } else if ch == lit_start {
+                // Not escaped
+                if previous.unwrap_or('0') != ESCAPE_CHAR {
+                    if lit_start == lit_end { literal = !literal; } 
+                    else { literal = true; }
+                } 
+                // Escaped
+                else { value.push(ch); }
+            } else if ch == lit_end {
+                // Not escaped
+                if previous.unwrap_or('0') != ESCAPE_CHAR {
+                    literal = false;
+                } 
+                // Escaped
+                else { value.push(ch); }
+            } else if ch == ESCAPE_CHAR {
+                // Previous was escape, then add
+                if previous.unwrap_or('0') == ESCAPE_CHAR {
                     value.push(ch);
-                }
-                // Escape but previous was also escape
-                else if previous.unwrap_or('0') == ESCAPE_CHAR {
-                    value.push(ch);
+                    // Current escape is consumed and doesn't affect next character
                     no_previous = true;
-                }
-            }
-
+                } 
+            } else { value.push(ch) }
             if no_previous {
                 previous.replace('0');
                 no_previous = false;
