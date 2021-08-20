@@ -82,7 +82,7 @@ impl Cli {
 
     fn args_builder() -> clap::ArgMatches {
         clap_app!(R4d =>
-            (version: "0.1.3")
+            (version: "0.1.4")
             (author: "Simon Creek <simoncreek@tutanota.com>")
             (about: "R4d is a modern macro processor made with rust")
             (@arg FILE: ... "Files to execute processing")
