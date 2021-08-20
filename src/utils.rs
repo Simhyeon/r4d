@@ -33,13 +33,14 @@ impl Utils {
         let mut previous : Option<char> = None;
         let (lit_start, lit_end) = literal_rules;
         let mut literal = false;
+        let mut no_previous = false;
         for ch in arg_values.chars() {
             if ch == delimiter && !literal {
                 values.push(value);
                 value = String::new();
             } 
             // Literal start
-            else if ch == lit_start && previous.unwrap_or(' ') != ESCAPE_CHAR {
+            else if ch == lit_start && previous.unwrap_or('0') != ESCAPE_CHAR {
                 if lit_start == lit_end {
                     literal = !literal; 
                 } else {
@@ -47,14 +48,27 @@ impl Utils {
                 }
             } 
             // Literal end
-            else if ch == lit_end && previous.unwrap_or(' ') != ESCAPE_CHAR {
+            else if ch == lit_end && previous.unwrap_or('0') != ESCAPE_CHAR {
                 literal = false;
             } 
             else {
-                value.push(ch);
+                // Not escape
+                if ch != ESCAPE_CHAR {
+                    value.push(ch);
+                }
+                // Escape but previous was also escape
+                else if previous.unwrap_or('0') == ESCAPE_CHAR {
+                    value.push(ch);
+                    no_previous = true;
+                }
             }
 
-            previous.replace(ch);
+            if no_previous {
+                previous.replace('0');
+                no_previous = false;
+            } else {
+                previous.replace(ch);
+            }
         }
         // Add last arg
         values.push(value);
@@ -73,5 +87,9 @@ impl Utils {
                 Err(e) => Some(Err(e)),
             }
         })
+    }
+
+    pub(crate) fn is_blank_char(ch: char) -> bool {
+        ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
     }
 }
