@@ -17,6 +17,13 @@ impl Cli {
     }
 
     fn parse_options(args: &clap::ArgMatches) -> Result<(), RadError> {
+
+        let newline: String = 
+            if cfg!(target_os = "windows") && !args.is_present("newline"){
+                "\r\n".to_owned()
+            } else {
+                "\n".to_owned()
+            };
         // Processor
         let mut processor: Processor;
         let mut error_option : Option<WriteOption> = Some(WriteOption::Stdout);
@@ -42,10 +49,10 @@ impl Cli {
                     .truncate(true)
                     .open(output_file)
                     .unwrap();
-                processor = Processor::new(WriteOption::File(out_file), error_option);
+                processor = Processor::new(WriteOption::File(out_file), error_option, newline);
             }
             // Write to standard output
-            else { processor = Processor::new(WriteOption::Stdout, error_option); }
+            else { processor = Processor::new(WriteOption::Stdout, error_option, newline); }
 
             for file in files {
                 processor.set_file(file);
@@ -61,8 +68,8 @@ impl Cli {
                     .truncate(true)
                     .open(output_file)
                     .unwrap();
-                processor = Processor::new(WriteOption::File(out_file), error_option);
-            } else { processor = Processor::new(WriteOption::Stdout, error_option); }
+                processor = Processor::new(WriteOption::File(out_file), error_option, newline);
+            } else { processor = Processor::new(WriteOption::Stdout, error_option, newline); }
 
             processor.from_stdin(false)?;
         }
@@ -82,6 +89,7 @@ impl Cli {
             (@arg out: -o --out +takes_value "File to print out macro")
             (@arg err: -e --err +takes_value "File to save error")
             (@arg silent: -s --silent "Supress warning")
+            (@arg newline: -n --newline "Use unix newline for formatting")
         ).get_matches()
     }
 }

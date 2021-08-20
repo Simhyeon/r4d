@@ -47,6 +47,7 @@ pub struct Processor<'a> {
     error_logger: ErrorLogger,
     line_number: u64,
     ch_number: u64,
+    pub newline: String,
 }
 // 1. Get string
 // 2. Parse until macro invocation detected
@@ -54,7 +55,7 @@ pub struct Processor<'a> {
 // 4. Continue parsing with fragments
 
 impl<'a> Processor<'a> {
-    pub fn new(write_option: WriteOption, error_write_option : Option<WriteOption>) -> Self {
+    pub fn new(write_option: WriteOption, error_write_option : Option<WriteOption>, newline: String) -> Self {
         Self {
             map : MacroMap::new(),
             write_option,
@@ -62,6 +63,7 @@ impl<'a> Processor<'a> {
             error_logger: ErrorLogger::new(error_write_option),
             line_number :0,
             ch_number:0,
+            newline
         }
     }
     pub fn get_map(&self) -> &MacroMap {

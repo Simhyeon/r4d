@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::process::Command;
 use crate::error::RadError;
-use crate::consts::{MAIN_CALLER, LINE_ENDING};
+use crate::consts::MAIN_CALLER;
 use regex::Regex;
 use crate::utils::Utils;
 use crate::processor::Processor;
@@ -151,8 +151,8 @@ impl<'a> BasicMacro<'a> {
 
         if let Some(args) = Utils::args_with_len(args, 1) {
             let source = &args[0];
-            let reg = Regex::new(&format!(r"{0}\s*{0}", LINE_ENDING))?;
-            let result = reg.replace_all(source, &format!("{0}{0}", LINE_ENDING));
+            let reg = Regex::new(&format!(r"{0}\s*{0}", &processor.newline))?;
+            let result = reg.replace_all(source, &format!("{0}{0}", &processor.newline));
 
             Ok(result.to_string())
         } else {
@@ -422,7 +422,7 @@ impl<'a> BasicMacro<'a> {
             let macro_data = &args[0];
             let macro_name = &Utils::trim(&args[1])?;
 
-            let result = Formatter::csv_to_macros(macro_name, macro_data)?;
+            let result = Formatter::csv_to_macros(macro_name, macro_data, &processor.newline)?;
             let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &result)?;
             Ok(result)
         } else {
@@ -430,11 +430,11 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
-    fn table(args: &str, _: &mut Processor) -> Result<String, RadError> {
+    fn table(args: &str, p: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 2) {
             let table_format = &args[0]; // Either gfm, wikitex, latex, none
             let csv_content = &args[1];
-            let result = Formatter::csv_to_table(table_format, csv_content)?;
+            let result = Formatter::csv_to_table(table_format, csv_content, &p.newline)?;
             Ok(result)
         } else {
             Err(RadError::InvalidArgument("Table requires two arguments"))
