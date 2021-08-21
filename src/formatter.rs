@@ -20,6 +20,7 @@ impl Formatter {
         let table = match table_format {
             "github" => Formatter::gfm_table(&mut reader, newline)?,
             "wikitext" => Formatter::wikitext_table(&mut reader, newline)?,
+            "html" => Formatter::html_table(&mut reader, newline)?,
             _ => return Err(RadError::UnsupportedTableFormat(format!("Unsupported table format : {}", table_format)))
         };
         let table = Self::restore_comma(&table);
@@ -110,6 +111,41 @@ impl Formatter {
             table.push_str(newline); 
         }
         table.push_str("|}");
+        Ok(table)
+    }
+
+    //<table>
+    //<thead>
+        //<tr>
+            //<th colspan="2">The table header</th>
+        //</tr>
+    //</thead>
+    //<tbody>
+        //<tr>
+            //<td>The table body</td>
+            //<td>with two columns</td>
+        //</tr>
+    //</tbody>
+//</table>
+    fn html_table(reader : &mut csv::Reader<&[u8]>, newline: &str) -> Result<String, RadError> {
+        let mut table = String::new();
+        table.push_str("<table>");
+        // Add header
+        table.push_str("<thead><tr>");
+        let header_iter = reader.headers()?;
+        for header in header_iter {
+            table.push_str(&format!("<td>{}</td>", header));
+        }
+        table.push_str("</tr></thead>");
+        table.push_str("<tbody>");
+        for record in reader.records() {
+            table.push_str("<tr>");
+            for column in record?.iter() {
+                table.push_str(&format!("<td>{}</td>", column));
+            }
+            table.push_str("</tr>");
+        }
+        table.push_str("</tbody></table>");
         Ok(table)
     }
 
