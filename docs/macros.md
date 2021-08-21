@@ -256,14 +256,14 @@ $len(我们刚才从图书馆来了)
 10
 ```
 
-**rsub, rdel**
+**regex**
 
 Regex substitution and regex deletion gets source and additional arguments to
 process regex operation. Second argument is regex expression. This use [regex
 crate](https://crates.io/crates/regex).
 ```
-$rsub(Hello world,w.*?d,rust)
-$rdel(Hello World// TODO,//.*$)
+$regex(Hello world,w.*?d,rust)
+$regex(Hello World// TODO,//.*$,"")
 ===
 Hello rust
 Hello World
