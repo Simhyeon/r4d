@@ -177,7 +177,9 @@ impl Lexor {
         let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
         // END with '\)'
         if ch == ')' && self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
+            self.literal = false;
             result = LexResult::EndFrag;
+            self.cursor = Cursor::None; 
         } 
 
         result
