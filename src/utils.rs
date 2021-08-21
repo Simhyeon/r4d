@@ -2,6 +2,14 @@ use crate::error::RadError;
 use regex::Regex;
 use crate::consts::ESCAPE_CHAR;
 use std::io::BufRead;
+use lazy_static::lazy_static;
+
+lazy_static!{
+   pub static ref COMMA: Regex = Regex::new(r",").unwrap();
+   pub static ref DQUOTE: Regex = Regex::new(r#"""#).unwrap();
+   pub static ref LEFT_PAREN: Regex = Regex::new(r"\(").unwrap();
+   pub static ref RIGHT_PAREN: Regex = Regex::new(r"\)").unwrap();
+}
 
 pub(crate) struct Utils;
 
@@ -94,4 +102,14 @@ impl Utils {
     pub(crate) fn is_blank_char(ch: char) -> bool {
         ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
     }
+
+    pub(crate) fn escape_all(args: &str) ->  Result<String, RadError> {
+        println!("ARGS : {}", args);
+        let cow1 = COMMA.replace_all(args, "\\,");
+        let cow2 = DQUOTE.replace_all(cow1.as_ref(), "\\\"");
+        let cow3 = LEFT_PAREN.replace_all(cow2.as_ref(), "\\(");
+        let cow4 = RIGHT_PAREN.replace_all(cow3.as_ref(), "\\)");
+        Ok(cow4.to_string())
+    }
+
 }
