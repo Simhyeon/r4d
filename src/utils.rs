@@ -46,7 +46,6 @@ impl Utils {
             if ch == delimiter  {
                 if literal || previous.unwrap_or('0') == ESCAPE_CHAR { value.push(ch); } 
                 else {
-                    println!("DELMITED");
                     values.push(value);
                     value = String::new();
                 }
@@ -104,7 +103,6 @@ impl Utils {
     }
 
     pub(crate) fn escape_all(args: &str) ->  Result<String, RadError> {
-        println!("ARGS : {}", args);
         let cow1 = COMMA.replace_all(args, "\\,");
         let cow2 = DQUOTE.replace_all(cow1.as_ref(), "\\\"");
         let cow3 = LEFT_PAREN.replace_all(cow2.as_ref(), "\\(");
