@@ -1,9 +1,12 @@
 use std::array::IntoIter;
+use std::path::Path;
+use std::io::Write;
+use std::fs::OpenOptions;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::process::Command;
 use crate::error::RadError;
-use crate::consts::MAIN_CALLER;
+use crate::consts::{MAIN_CALLER, TEMP_PATH, TEMP_FILE};
 use regex::Regex;
 use crate::utils::Utils;
 use crate::processor::Processor;
@@ -49,6 +52,9 @@ impl BasicMacro {
             ("table".to_owned(), BasicMacro::table as MacroType).to_owned(),
             ("len".to_owned(), BasicMacro::len as MacroType).to_owned(),
             ("tr".to_owned(), BasicMacro::translate as MacroType).to_owned(),
+            ("sub".to_owned(), BasicMacro::substring as MacroType).to_owned(),
+            ("pause".to_owned(), BasicMacro::pause as MacroType).to_owned(),
+            ("temp".to_owned(), BasicMacro::temp as MacroType).to_owned(),
             ("-".to_owned(), BasicMacro::get_pipe as MacroType).to_owned(),
         ]));
         // Return struct
@@ -504,8 +510,51 @@ impl BasicMacro {
         }
     }
 
-    fn substring(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
-    fn print(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
-    fn toggle(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
-    fn temp_file(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
+    fn substring(args: &str, _: &mut Processor) -> Result<String, RadError> {
+        if let Some(_args) = Utils::args_with_len(args, 3) {
+            Ok(String::new())
+        } else {
+            Err(RadError::InvalidArgument("Substring requires some arguments"))
+        }
+    }
+    fn pause(args: &str, processor : &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 1) {
+            let arg = &args[0];
+            if let Ok(value) =Utils::is_arg_true(arg) {
+                if value {
+                    processor.paused = true;
+                } else {
+                    processor.paused = false;
+                }
+                Ok(String::new())
+            } 
+            // Failed to evaluate
+            else {
+                Err(RadError::InvalidArgument("Pause requires either true/false or zero/nonzero integer."))
+            }
+        } else {
+            Err(RadError::InvalidArgument("Pause requires an argument"))
+        }
+    }
+    fn temp(args: &str, _: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 1) {
+            let truncate = &args[0];
+            let content = &args[1];
+            if let Ok(value) = Utils::is_arg_true(truncate) {
+                let file = Path::new(TEMP_PATH).join(TEMP_FILE);
+                let mut temp_file = OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .truncate(value)
+                    .open(file)
+                    .unwrap();
+                temp_file.write_all(content.as_bytes())?;
+                Ok(String::new())
+            } else {
+                Err(RadError::InvalidArgument("Temp requires either true/false or zero/nonzero integer."))
+            }
+        } else {
+            Err(RadError::InvalidArgument("Temp requires an argument"))
+        }
+    }
 }
