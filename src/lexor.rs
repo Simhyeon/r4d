@@ -23,6 +23,15 @@ impl Lexor {
             paren_count : 0,
         }
     }
+    pub fn reset(&mut self) {
+        self.previous_char = None;
+        self.cursor= Cursor::None;
+        self.escape_next = false;
+        self.escape_nl = false;
+        self.literal = false;
+        self.dquote= false;
+        self.paren_count = 0;
+    }
 
     pub fn lex(&mut self, ch: char) -> Result<LexResult, RadError> {
         let result: LexResult;
@@ -97,10 +106,10 @@ impl Lexor {
                 self.cursor = Cursor::Arg;
                 self.paren_count = 1;
             }
-            result = LexResult::Ignore;
+            result = LexResult::StartFrag;
             // Empty name
             if self.previous_char.unwrap_or('0') == '$' {
-                result = LexResult::AddToFrag(Cursor::Name);
+                result = LexResult::EmptyName;
             }
         } 
         // Put any character in name
@@ -127,7 +136,7 @@ impl Lexor {
         else if ch == '(' {
             self.cursor = Cursor::Arg;
             self.paren_count = 1;
-            result = LexResult::AddToFrag(Cursor::Arg);
+            result = LexResult::StartFrag;
         } 
         // Other characters are invalid
         else {
@@ -190,6 +199,8 @@ impl Lexor {
 pub enum LexResult {
     Ignore,
     AddToRemainder,
+    StartFrag,
+    EmptyName,
     AddToFrag(Cursor),
     EndFrag,
     ExitFrag,
