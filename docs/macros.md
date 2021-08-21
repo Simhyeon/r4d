@@ -13,7 +13,9 @@ All macros are case sensitive and should come with dollar sign prefix.
 
 **define**
 
-Define creates an custom macro.
+Define creates an custom macro. This macro is actually not a macro but special
+function. Define cannot be renamed or undefined. Or even paused(Which will be
+added later) Define macro cannot be overriden too.
 
 ```
 $define(name,a1 a2,"$a1(),$a2()")
@@ -22,8 +24,8 @@ $define(name,a1 a2,"$a1(),$a2()")
 ```
 **undef**
 
-Undef can undefine every macros including basic(default) macros. However ```define```
-cannot be undefined.
+Undef can undefine every macros including basic(default) macros. However
+```define``` cannot be undefined.
 
 ```
 $undef(name)
@@ -33,8 +35,8 @@ $undef(name)
 
 **rename**
 
-Rename can change the name of the macro. This
-applies both to basic and custom macro.
+Rename can change the name of the macro. This applies both to basic and custom
+macro. You cannot rename define.
 
 ```
 $rename(len,length)
