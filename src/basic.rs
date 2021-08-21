@@ -29,8 +29,7 @@ impl BasicMacro {
     pub fn new() -> Self {
         // Create hashmap of functions
         let map = HashMap::from_iter(IntoIter::new([
-            ("rsub".to_owned(), BasicMacro::regex_sub as MacroType),
-            ("rdel".to_owned(), BasicMacro::regex_del as MacroType),
+            ("regex".to_owned(), BasicMacro::regex_sub as MacroType),
             ("eval".to_owned(), BasicMacro::eval as MacroType),
             ("trim".to_owned(), BasicMacro::trim as MacroType),
             ("chomp".to_owned(), BasicMacro::chomp as MacroType).to_owned(),
@@ -113,26 +112,6 @@ impl BasicMacro {
             Ok(result.to_string())
         } else {
             Err(RadError::InvalidArgument("Regex sub requires three arguments"))
-        }
-    }
-
-    fn regex_del(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
-
-        if let Some(args) = Utils::args_with_len(args, 2) {
-            let source = &args[0];
-            let target = &args[1];
-
-            // This is regex expression without any preceding and trailing commands
-            let reg = Regex::new(&format!(r"{}", target))?;
-            let result = reg.replace_all(source, ""); // This is a cow, moo~, btw this replaces all match as empty character which technically deletes matches
-            Ok(result.to_string())
-        } else {
-            Err(RadError::InvalidArgument("Regex del requires two arguments"))
         }
     }
 
@@ -405,7 +384,7 @@ impl BasicMacro {
             let loopable = loopable.split(',').collect::<Vec<&str>>();
 
             if loopable.len() != 2 {
-                RadError::InvalidArgument("Forloop's second argument should be quoted min,max value e.g \"2,5\"");
+                RadError::InvalidArgument("Forloop's first argument should be quoted min,max value e.g \"2,5\"");
             }
             let min: usize; 
             let max: usize; 
@@ -511,10 +490,48 @@ impl BasicMacro {
     }
 
     fn substring(args: &str, _: &mut Processor) -> Result<String, RadError> {
-        if let Some(_args) = Utils::args_with_len(args, 3) {
-            Ok(String::new())
+        if let Some(args) = Utils::args_with_len(args, 2) {
+            let source = &args[1];
+            let loopable = &args[0].split(',').collect::<Vec<&str>>();
+
+            if loopable.len() != 2 {
+                RadError::InvalidArgument("Substring's first argument should be quoted min,max value e.g \"2,5\"");
+            }
+
+            let mut min: Option<usize> = None;
+            let mut max: Option<usize> = None;
+
+            let start = Utils::trim(loopable[0])?;
+            let end = Utils::trim(loopable[1])?;
+            if let Ok(num) = start.parse::<usize>() {
+                min.replace(num);
+            } else { 
+                if start.len() != 0 {
+                    return Err(RadError::InvalidArgument("Sub's min value should be non zero positive integer or empty value")); 
+                }
+            }
+            if let Ok(num) = end.parse::<usize>() {
+                max.replace(num);
+            } else { 
+                if end.len() != 0 {
+                    return Err(RadError::InvalidArgument("Sub's max value should be non zero positive integer or empty value")); 
+                }
+            }
+            if let Some(min) = min {
+                if let Some(max) = max { // Both
+                    Ok(source[min..max].to_string())
+                } else { // no max
+                    Ok(source[min..].to_string())
+                }
+            } else { // No min
+                if let Some(max) = max { // at least max 
+                    Ok(source[..max].to_string())
+                } else { // Nothing 
+                    Ok(source[..].to_string())
+                }
+            }
         } else {
-            Err(RadError::InvalidArgument("Substring requires some arguments"))
+            Err(RadError::InvalidArgument("Sub requires some arguments"))
         }
     }
     fn pause(args: &str, processor : &mut Processor) -> Result<String, RadError> {
