@@ -38,7 +38,6 @@ impl Lexor {
             }
             Cursor::Arg => {
                 if self.literal {
-                    println!("Start literal");
                     result = self.branch_arg_literal(ch);
                 } else {
                     result = self.branch_arg(ch);
@@ -91,6 +90,7 @@ impl Lexor {
             // $macro\(
             if self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
                 self.literal = true;
+                self.cursor = Cursor::Arg;
             } 
             // Else
             else {
