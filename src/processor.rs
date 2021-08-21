@@ -12,14 +12,18 @@ pub struct MacroFragment {
     pub whole_string: String,
     pub name: String,
     pub args: String,
+    pub literal: bool,
+    pub pipe: bool,
 }
 
 impl MacroFragment {
     pub fn new() -> Self {
-        MacroFragment {  
+        MacroFragment {
             whole_string : String::new(),
             name : String::new(),
             args : String::new(),
+            literal : false,
+            pipe: false,
         }
     }
 
@@ -27,6 +31,8 @@ impl MacroFragment {
         self.whole_string.clear();
         self.name.clear();
         self.args.clear();
+        self.literal = false; 
+        self.pipe = false; 
     }
 
     pub fn is_empty(&self) -> bool {
@@ -40,13 +46,14 @@ pub enum ParseResult {
     NoPrint,
     EOI,
 }
-pub struct Processor<'a> {
-    pub map: MacroMap<'a>,
+pub struct Processor{
+    pub map: MacroMap,
     define_parse: DefineParser,
     write_option: WriteOption,
     error_logger: ErrorLogger,
     line_number: u64,
     ch_number: u64,
+    pub pipe_value: String,
     pub newline: String,
 }
 // 1. Get string
@@ -54,7 +61,7 @@ pub struct Processor<'a> {
 // 3. Return remainder and macro fragments
 // 4. Continue parsing with fragments
 
-impl<'a> Processor<'a> {
+impl Processor {
     pub fn new(write_option: WriteOption, error_write_option : Option<WriteOption>, newline: String) -> Self {
         Self {
             map : MacroMap::new(),
@@ -63,7 +70,8 @@ impl<'a> Processor<'a> {
             error_logger: ErrorLogger::new(error_write_option),
             line_number :0,
             ch_number:0,
-            newline
+            newline,
+            pipe_value: String::new(),
         }
     }
     pub fn get_map(&self) -> &MacroMap {
@@ -166,7 +174,11 @@ impl<'a> Processor<'a> {
     pub fn parse_chunk(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
-        return Ok(self.parse(&mut lexor, &mut frag, chunk, level, caller)?);
+        let mut result = self.parse(&mut lexor, &mut frag, chunk, level, caller)?;
+        if !frag.is_empty() {
+            result.push_str(&frag.whole_string);
+        }
+        return Ok(result);
     } // parse_chunk end
 
     fn parse(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, line: &str, level: usize, caller: &str) -> Result<String, RadError> {
@@ -192,10 +204,13 @@ impl<'a> Processor<'a> {
                             if frag.name.len() == 0 {
                                 self.error_logger
                                     .set_number(
-                                        self.line_number, self.ch_number
+                                        self.line_number, 
+                                        self.ch_number
                                     );
                             }
-                            frag.name.push(ch);
+                            if ch == '\\' { frag.literal = true; }
+                            else if ch == '|' { frag.pipe = true; }
+                            else { frag.name.push(ch); }
                         },
                         Cursor::Arg => {
                             frag.args.push(ch)
@@ -216,10 +231,9 @@ impl<'a> Processor<'a> {
                         self.log_error(&format!("Empty macro"))?;
                     }
                     // Literal rule
-                    else if frag.name.chars().last().unwrap() == '\\' {
+                    else if frag.literal {
                         frag.args = Utils::escape_all(&frag.args)?;
                     }
-
                     // define
                     if frag.name == "define" {
                         self.add_define(frag, &mut remainder)?;
@@ -229,9 +243,13 @@ impl<'a> Processor<'a> {
                     // Invoke macro
                     else {
                         if let Some(content) = self.evaluate(level, caller, &frag.name, &frag.args)? {
+                            if frag.pipe {
+                                self.pipe_value = content;
+                                lexor.escape_nl = true;
+                            }
                             // If content is none
                             // Ignore new line after macro evaluation until any character
-                            if content.len() == 0 {
+                            else if content.len() == 0 {
                                 lexor.escape_nl = true;
                             } else {
                                 remainder.push_str(&content);
@@ -404,6 +422,7 @@ impl DefineParser {
                         self.name.push_str(&self.container);
                         self.container.clear();
                         self.arg_cursor = DefineCursor::Body;
+                        continue;
                     } 
                     // This means pattern like this
                     // $define( name ) -> name is registered
