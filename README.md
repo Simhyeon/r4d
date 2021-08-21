@@ -165,6 +165,5 @@ is not necessary
 
 #### Yet to come
 
-**Features**
-
+- Clear basic macro ergonomics
 - Compiled rule file a.k.a. m4 frozen file
