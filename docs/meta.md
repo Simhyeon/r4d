@@ -1,13 +1,9 @@
 ### TODOs
 
 * [ ] Make expansion rule more consistent for basic macros
+- Currently it simply does parsing again and again
 * [ ] Make line based literal rule
 * [ ] New basic macros
-  * [ ] Pause macro option
-  * [ ] tr
-  * [ ] Substring
-  * [ ] Rust print! macro invocation
-  * [ ] Write to temp file /tmp %TEMP%
 
 * [ ] Frozen file
   * [ ] Json file
@@ -108,6 +104,10 @@ to add number and not
   * [x] Print a nested macro substitution
 
 * [x] New basic macros
+  * [x] Substring
+  * [x] tr
+  * [x] Pause macro option
+  * [x] Write to temp file /tmp %TEMP%
   * [x] Literal attribute -> $test\(Literal text\)
   * [x] Make pipe rule 
   * [x] Len

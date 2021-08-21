@@ -110,24 +110,20 @@ quotes. Use escaped form of double quote, ```\"``` to use literal comma inside
 double quotes.
 
 ```
-$define(order=first,second,third)
-$order()
-```
-The result is 
-```
-first
+$repeat(2,I'm,comma,separated
+)
+===
+I'mI'm
 ```
 To include commas you need to enclose with double quotes
 ```
-$define(order="first,second,third")
-$order()
-```
-converts to
-```
-first,second,third
-```
+$repeat(2,"I'm,comma,separated"
+)
+===
+I'm,comma,separated
+I'm,comma,separated
 
-=> This behaviour might change in the future.
+```
 
 ### Advanced features
 
@@ -168,14 +164,6 @@ is not necessary
 [Usages](./docs/macros.md)
 
 #### Yet to come
-
-**Macros**
-
-- Tr (Translate)
-- Substring 
-- Rust print! macro invocation
-- Pause macro option (stop, recover pair)
-- Write to temp file "/tmp %TEMP%"
 
 **Features**
 

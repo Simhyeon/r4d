@@ -58,6 +58,24 @@ $test()
 TEST CASE
 ```
 
+**pause**
+
+Pause literally pauses every macro execution except pause macro.
+
+```
+$pause(true)
+$define(some,a,$a())
+$eval(1 + 2)
+$pause(false)
+$define(some,a,$a())
+$eval(1 + 2)
+===
+
+$define(some,a,$a())
+$eval(1 + 2)
+3
+```
+
 **include**
 
 Include macro include given file and paste into the position. Included file's
@@ -67,6 +85,19 @@ contents are all expanded.
 $include(src/content.rs)
 ===
 // Content of src/content.rs is pasted in here
+```
+
+**temp**
+
+Temp saves content to temp file named ```rad_temp.txt```. Temp file is saved in
+```%TEMP%``` in windows and ```/tmp``` in non windows system. First argument is
+whether to truncate the file content.
+
+```
+$temp(true,Hello world)
+$include(/tmp/rad_temp.txt)
+===
+Hello world
 ```
 
 **Repeat**
@@ -175,6 +206,30 @@ Linux
 
 Microsoft Windows [Version 10......]
 
+```
+
+**sub**
+
+Sub gets substring from given input range. 
+
+```
+$sub("1,5",123456789)
+$sub("2,",123456789)
+$sub(",6",123456789)
+===
+2345
+3456789
+123456
+```
+
+**tr**
+
+Tr translate characters to other characters.
+
+```
+$tr(Given String,iSg,aOs)
+===
+Gaven Otrans
 ```
 
 **len**

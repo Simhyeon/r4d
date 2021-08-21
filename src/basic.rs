@@ -489,6 +489,7 @@ impl BasicMacro {
         }
     }
 
+    // $sub(",",GivenString)
     fn substring(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 2) {
             let source = &args[1];
