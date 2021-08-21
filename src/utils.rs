@@ -109,5 +109,21 @@ impl Utils {
         let cow4 = RIGHT_PAREN.replace_all(cow3.as_ref(), "\\)");
         Ok(cow4.to_string())
     }
-
+    pub(crate) fn is_arg_true(arg: &str) -> Result<bool, RadError> {
+        let arg = Utils::trim(arg)?;
+        if let Ok(value) = arg.parse::<usize>() {
+            if value == 0 {
+                return Ok(false);
+            } else {
+                return Ok(true);
+            }
+        } else {
+            if arg == "true" {
+                return Ok(true);
+            } else if arg == "false" {
+                return Ok(false);
+            }
+        }
+        return Err(RadError::InvalidArgument("Neither true nor false"));
+    }
 }
