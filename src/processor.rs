@@ -165,7 +165,9 @@ impl<'a> Processor<'a> {
                                 }
                                 frag.name.push(ch);
                             },
-                            Cursor::Arg => frag.args.push(ch),
+                            Cursor::Arg => {
+                                frag.args.push(ch)
+                            },
                             _ => unreachable!(),
                         } 
                         frag.whole_string.push(ch);
@@ -177,11 +179,22 @@ impl<'a> Processor<'a> {
                     // 3. Reset fragment
                     LexResult::EndFrag => {
                         frag.whole_string.push(ch);
-                        if frag.name == "define" {
+                        // Empty macro
+                        if frag.name.len() == 0 {
+                            self.log_error(&format!("Empty macro"))?;
+                        }
+                        // Literal rule
+                        else if frag.name.chars().last().unwrap() == '\\' {
+                            frag.args = Utils::escape_all(&frag.args)?;
+                        }
+                        // define
+                        else if frag.name == "define" {
                             self.add_define(frag, &mut remainder)?;
                             lexor.escape_nl = true;
-                        } else {
-                            // Invoke
+                            frag.clear()
+                        } 
+                        // Invoke macro
+                        else {
                             if let Some(content) = self.evaluate(level, &MAIN_CALLER.to_owned(), &frag.name, &frag.args)? {
                                 // If content is none
                                 // Ignore new line after macro evaluation until any character
