@@ -48,6 +48,7 @@ impl BasicMacro {
             ("from".to_owned(), BasicMacro::from_data as MacroType).to_owned(),
             ("table".to_owned(), BasicMacro::table as MacroType).to_owned(),
             ("len".to_owned(), BasicMacro::len as MacroType).to_owned(),
+            ("tr".to_owned(), BasicMacro::translate as MacroType).to_owned(),
             ("-".to_owned(), BasicMacro::get_pipe as MacroType).to_owned(),
         ]));
         // Return struct
@@ -483,8 +484,27 @@ impl BasicMacro {
             Err(RadError::InvalidArgument("Append requires two arguments"))
         }
     }
+    fn translate(args: &str, _: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 3) {
+            let mut source = args[0].clone();
+            let target = &args[1].chars().collect::<Vec<char>>();
+            let destination = &args[2].chars().collect::<Vec<char>>();
+
+            if target.len() != destination.len() {
+                return Err(RadError::InvalidArgument("Tr's replacment should have same length of texts"));
+            }
+
+            for i in 0..target.len() {
+                source = source.replace(target[i], &destination[i].to_string());
+            }
+
+            Ok(source)
+        } else {
+            Err(RadError::InvalidArgument("Tr requires two arguments"))
+        }
+    }
+
     fn substring(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
-    fn translate(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
     fn print(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
     fn toggle(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
     fn temp_file(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
