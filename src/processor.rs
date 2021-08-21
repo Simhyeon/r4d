@@ -78,6 +78,8 @@ impl<'a> Processor<'a> {
         let mut container = if get_result { Some(&mut content) } else { None };
         loop {
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
+            // Clear local variable macros
+            self.map.clear_local();
             match result {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
@@ -110,6 +112,8 @@ impl<'a> Processor<'a> {
         let mut container = if get_result { Some(&mut content) } else { None };
         loop {
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
+            // Clear local variable macros
+            self.map.clear_local();
             match result {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
@@ -135,94 +139,8 @@ impl<'a> Processor<'a> {
     /// Parse line is called only by the main loop thus, caller name is special name of @MAIN@
     fn parse_line(&mut self, lines :&mut impl std::iter::Iterator<Item = std::io::Result<String>>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
         if let Some(line) = lines.next() {
-            self.line_number = self.line_number + 1;
-            self.ch_number = 0;
-            // Rip off a result into a string
             let line = line?;
-            // Local values
-            let mut remainder = String::new();
-            let level = 0; // 0 is main level
-
-            // Reset lexor's escape_nl 
-            lexor.escape_nl = false;
-            for ch in line.chars() {
-                self.ch_number = self.ch_number + 1;
-                let lex_result = lexor.lex(ch)?;
-                // Either add character to remainder or fragments
-                match lex_result {
-                    LexResult::Ignore => frag.whole_string.push(ch),
-                    LexResult::AddToRemainder => {
-                        remainder.push(ch);
-                    }
-                    LexResult::AddToFrag(cursor) => {
-                        match cursor{
-                            Cursor::Name => {
-                                if frag.name.len() == 0 {
-                                    self.error_logger
-                                        .set_number(
-                                            self.line_number, self.ch_number
-                                        );
-                                }
-                                frag.name.push(ch);
-                            },
-                            Cursor::Arg => {
-                                frag.args.push(ch)
-                            },
-                            _ => unreachable!(),
-                        } 
-                        frag.whole_string.push(ch);
-                    }
-                    // End of fragment
-                    // 1. Evaluate macro 
-                    // 1.5 -> If define, parse rule applied again.
-                    // 2. And append to remainder
-                    // 3. Reset fragment
-                    LexResult::EndFrag => {
-                        frag.whole_string.push(ch);
-                        // Empty macro
-                        if frag.name.len() == 0 {
-                            self.log_error(&format!("Empty macro"))?;
-                        }
-                        // Literal rule
-                        else if frag.name.chars().last().unwrap() == '\\' {
-                            frag.args = Utils::escape_all(&frag.args)?;
-                        }
-                        // define
-                        else if frag.name == "define" {
-                            self.add_define(frag, &mut remainder)?;
-                            lexor.escape_nl = true;
-                            frag.clear()
-                        } 
-                        // Invoke macro
-                        else {
-                            if let Some(content) = self.evaluate(level, &MAIN_CALLER.to_owned(), &frag.name, &frag.args)? {
-                                // If content is none
-                                // Ignore new line after macro evaluation until any character
-                                if content.len() == 0 {
-                                    lexor.escape_nl = true;
-                                } else {
-                                    remainder.push_str(&content);
-                                }
-                                // Clear local variable macros
-                                self.map.clear_local();
-                            } 
-                            // Failed to invoke
-                            // because macro doesn't exist
-                            else {
-                                remainder.push_str(&frag.whole_string);
-                            }
-                            // Clear fragment regardless of success
-                            frag.clear()
-                        }
-                    }
-                    // Remove fragment and set to remainder
-                    LexResult::ExitFrag => {
-                        frag.whole_string.push(ch);
-                        remainder.push_str(&frag.whole_string);
-                        frag.clear();
-                    }
-                }
-            } // End Character iteration
+            let remainder = self.parse(lexor, frag, &line, 0, MAIN_CALLER)?;
 
             // Non macro string is included
             if remainder.len() != 0 {
@@ -239,18 +157,28 @@ impl<'a> Processor<'a> {
             else {
                 Ok(ParseResult::NoPrint)
             }
-
         } else {
             Ok(ParseResult::EOI)
         }
     } // parse_line end
 
     /// Parse chunk is called by non-main process, thus needs caller
-    pub fn parse_chunk(&mut self, level: usize, caller: &String, chunk: &str) -> Result<String, RadError> {
+    pub fn parse_chunk(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
+        return Ok(self.parse(&mut lexor, &mut frag, chunk, level, caller)?);
+    } // parse_chunk end
+
+    fn parse(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, line: &str, level: usize, caller: &str) -> Result<String, RadError> {
+        self.line_number = self.line_number + 1;
+        self.ch_number = 0;
+        // Local values
         let mut remainder = String::new();
-        for ch in chunk.chars() {
+
+        // Reset lexor's escape_nl 
+        lexor.escape_nl = false;
+        for ch in line.chars() {
+            self.ch_number = self.ch_number + 1;
             let lex_result = lexor.lex(ch)?;
             // Either add character to remainder or fragments
             match lex_result {
@@ -260,8 +188,18 @@ impl<'a> Processor<'a> {
                 }
                 LexResult::AddToFrag(cursor) => {
                     match cursor{
-                        Cursor::Name => frag.name.push(ch),
-                        Cursor::Arg => frag.args.push(ch),
+                        Cursor::Name => {
+                            if frag.name.len() == 0 {
+                                self.error_logger
+                                    .set_number(
+                                        self.line_number, self.ch_number
+                                    );
+                            }
+                            frag.name.push(ch);
+                        },
+                        Cursor::Arg => {
+                            frag.args.push(ch)
+                        },
                         _ => unreachable!(),
                     } 
                     frag.whole_string.push(ch);
@@ -273,12 +211,24 @@ impl<'a> Processor<'a> {
                 // 3. Reset fragment
                 LexResult::EndFrag => {
                     frag.whole_string.push(ch);
+                    // Empty macro
+                    if frag.name.len() == 0 {
+                        self.log_error(&format!("Empty macro"))?;
+                    }
+                    // Literal rule
+                    else if frag.name.chars().last().unwrap() == '\\' {
+                        frag.args = Utils::escape_all(&frag.args)?;
+                    }
+
+                    // define
                     if frag.name == "define" {
-                        self.add_define(&mut frag, &mut remainder)?;
+                        self.add_define(frag, &mut remainder)?;
                         lexor.escape_nl = true;
-                    } else {
-                        // Invoke
-                        if let Some(content) = self.evaluate(level + 1, caller, &frag.name, &frag.args)? {
+                        frag.clear()
+                    } 
+                    // Invoke macro
+                    else {
+                        if let Some(content) = self.evaluate(level, caller, &frag.name, &frag.args)? {
                             // If content is none
                             // Ignore new line after macro evaluation until any character
                             if content.len() == 0 {
@@ -286,8 +236,14 @@ impl<'a> Processor<'a> {
                             } else {
                                 remainder.push_str(&content);
                             }
+                        } 
+                        // Failed to invoke
+                        // because macro doesn't exist
+                        else {
+                            remainder.push_str(&frag.whole_string);
                         }
-                        frag.clear();
+                        // Clear fragment regardless of success
+                        frag.clear()
                     }
                 }
                 // Remove fragment and set to remainder
@@ -297,9 +253,9 @@ impl<'a> Processor<'a> {
                     frag.clear();
                 }
             }
-        } // End character iteration
-        return Ok(remainder)
-    } // parse_chunk end
+        } // End Character iteration
+        Ok(remainder)
+    }
 
     fn add_define(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
         if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
@@ -317,13 +273,13 @@ impl<'a> Processor<'a> {
     }
 
     // Evaluate can be nested deeply
-    fn evaluate(&mut self,level: usize, caller: &String, name: &String, args: &String) -> Result<Option<String>, RadError> {
-
+    fn evaluate(&mut self,level: usize, caller: &str, name: &str, args: &String) -> Result<Option<String>, RadError> {
+        let level = level + 1;
         // This parses and processes arguments
         // and macro should be evaluated after
         // TODO 
         // Make caller to name
-        let args = self.parse_chunk(level, caller, args)?; 
+        let args = self.parse_chunk(level, name, args)?; 
 
         // Find Local macro first
         if let Some(local) = self.map.local.get(&Utils::local_name(level, &caller, &name)) {
@@ -351,7 +307,7 @@ impl<'a> Processor<'a> {
         }
     }
 
-    fn invoke_rule(&mut self,level: usize ,name: &String, arg_values: &String) -> Result<Option<String>, RadError> {
+    fn invoke_rule(&mut self,level: usize ,name: &str, arg_values: &str) -> Result<Option<String>, RadError> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
         let rule = self.map.custom.get(name).unwrap().clone();
