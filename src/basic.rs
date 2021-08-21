@@ -12,6 +12,7 @@ use lipsum::lipsum;
 
 type MacroType = fn(&str, &mut Processor) -> Result<String, RadError>;
 
+
 #[derive(Clone)]
 pub struct BasicMacro<'a> {
     macros : HashMap<&'a str, MacroType>,
@@ -440,7 +441,6 @@ impl<'a> BasicMacro<'a> {
             Err(RadError::InvalidArgument("Table requires two arguments"))
         }
     }
-
     fn len(args: &str, _: &mut Processor) -> Result<String, RadError> {
 
         Ok(String::new())
