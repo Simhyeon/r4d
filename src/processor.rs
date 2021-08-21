@@ -55,6 +55,7 @@ pub struct Processor{
     ch_number: u64,
     pub pipe_value: String,
     pub newline: String,
+    pub paused: bool,
 }
 // 1. Get string
 // 2. Parse until macro invocation detected
@@ -72,6 +73,7 @@ impl Processor {
             ch_number:0,
             newline,
             pipe_value: String::new(),
+            paused: false,
         }
     }
     pub fn get_map(&self) -> &MacroMap {
@@ -85,6 +87,7 @@ impl Processor {
         let mut content = String::new();
         let mut container = if get_result { Some(&mut content) } else { None };
         loop {
+            self.line_number = self.line_number + 1;
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
             // Clear local variable macros
             self.map.clear_local();
@@ -119,6 +122,7 @@ impl Processor {
         let mut content = String::new();
         let mut container = if get_result { Some(&mut content) } else { None };
         loop {
+            self.line_number = self.line_number + 1;
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
             // Clear local variable macros
             self.map.clear_local();
@@ -182,7 +186,6 @@ impl Processor {
     } // parse_chunk end
 
     fn parse(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, line: &str, level: usize, caller: &str) -> Result<String, RadError> {
-        self.line_number = self.line_number + 1;
         self.ch_number = 0;
         // Local values
         let mut remainder = String::new();
@@ -195,6 +198,30 @@ impl Processor {
             // Either add character to remainder or fragments
             match lex_result {
                 LexResult::Ignore => frag.whole_string.push(ch),
+                LexResult::StartFrag => {
+                    frag.whole_string.push(ch);
+
+                    // If paused and not pause, then reset lexor context
+                    if self.paused && frag.name != "pause" {
+                        lexor.reset();
+                        remainder.push_str(&frag.whole_string);
+                        frag.clear();
+                    }
+                },
+                LexResult::EmptyName => {
+                    frag.whole_string.push(ch);
+                    self.error_logger
+                        .set_number(
+                            self.line_number, 
+                            self.ch_number
+                        );
+                    // If paused, then reset lexor context
+                    if self.paused {
+                        lexor.reset();
+                        remainder.push_str(&frag.whole_string);
+                        frag.clear();
+                    }
+                }
                 LexResult::AddToRemainder => {
                     remainder.push(ch);
                 }
@@ -226,12 +253,8 @@ impl Processor {
                 // 3. Reset fragment
                 LexResult::EndFrag => {
                     frag.whole_string.push(ch);
-                    // Empty macro
-                    if frag.name.len() == 0 {
-                        self.log_error(&format!("Empty macro"))?;
-                    }
                     // Literal rule
-                    else if frag.literal {
+                    if frag.literal {
                         frag.args = Utils::escape_all(&frag.args)?;
                     }
                     // define
