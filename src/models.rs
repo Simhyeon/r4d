@@ -31,13 +31,13 @@ impl MacroRule {
     }
 }
 
-pub struct MacroMap<'a> {
-    pub basic : BasicMacro<'a>,
+pub struct MacroMap {
+    pub basic : BasicMacro,
     pub custom : HashMap<String, MacroRule>,
     pub local : HashMap<String, String>,
 }
 
-impl<'a> MacroMap<'a> {
+impl MacroMap {
     pub fn new() -> Self {
         Self { 
             basic: BasicMacro::new(),
@@ -69,5 +69,32 @@ impl<'a> MacroMap<'a> {
             body);
         self.custom.insert(name.to_owned(), mac);
         Ok(())
+    }
+
+    pub fn undefine(&mut self, name: &str) {
+        // Return true or false by the definition
+        if self.basic.contains(name) {
+            self.basic.undefine(name);
+        }
+        if self.custom.contains_key(name) {
+            self.custom.remove(name);
+        }
+    }
+
+    pub fn rename(&mut self, name: &str, target: &str) {
+        if self.basic.contains(name) {
+            self.basic.rename(name, target);
+        }
+        if self.custom.contains_key(name) {
+            let rule = self.custom.remove(name).unwrap();
+            self.custom.insert(target.to_owned(), rule);
+        }
+    }
+
+    pub fn append(&mut self, name: &str, target: &str) {
+        if self.custom.contains_key(name) {
+            let rule = self.custom.get_mut(name).unwrap();
+            rule.body.push_str(target);
+        }
     }
 }
