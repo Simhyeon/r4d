@@ -5,6 +5,7 @@ pub struct Lexor {
     previous_char : Option<char>,
     pub cursor: Cursor,
     pub escape_next : bool,
+    pub literal: bool,
     pub dquote: bool,
     pub paren_count : usize,
     pub escape_nl : bool,
@@ -17,6 +18,7 @@ impl Lexor {
             cursor: Cursor::None,
             escape_next : false,
             escape_nl : false,
+            literal : false,
             dquote: false,
             paren_count : 0,
         }
@@ -35,7 +37,12 @@ impl Lexor {
                 result = self.branch_name_to_arg(ch);
             }
             Cursor::Arg => {
-                result = self.branch_arg(ch);
+                if self.literal {
+                    println!("Start literal");
+                    result = self.branch_arg_literal(ch);
+                } else {
+                    result = self.branch_arg(ch);
+                }
             } // end arg match
         }
 
@@ -70,7 +77,7 @@ impl Lexor {
     }
 
     fn branch_name(&mut self, ch: char) -> LexResult {
-        let result: LexResult;
+        let mut result: LexResult;
 
         // Start arg if parenthesis was given,
         // whitespaces are ignored and don't trigger exit
@@ -80,9 +87,21 @@ impl Lexor {
         } 
         // Left parenthesis trigger macro invocation
         else if ch == '(' {
-            self.cursor = Cursor::Arg;
-            self.paren_count = 1;
+            // Literal rule
+            // $macro\(
+            if self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
+                self.literal = true;
+            } 
+            // Else
+            else {
+                self.cursor = Cursor::Arg;
+                self.paren_count = 1;
+            }
             result = LexResult::Ignore;
+            // Empty name
+            if self.previous_char.unwrap_or('0') == '$' {
+                result = LexResult::AddToFrag(Cursor::Name);
+            }
         } 
         // Put any character in name
         // It is ok not to validate macro name
@@ -151,6 +170,16 @@ impl Lexor {
             }
             // Other characters are added normally
         }
+        result
+    }
+
+    fn branch_arg_literal(&mut self, ch: char) -> LexResult {
+        let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
+        // END with '\)'
+        if ch == ')' && self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
+            result = LexResult::EndFrag;
+        } 
+
         result
     }
 } 
