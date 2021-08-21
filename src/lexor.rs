@@ -195,12 +195,6 @@ pub enum LexResult {
     ExitFrag,
 }
 
-#[derive(Debug)]
-pub enum Surrounding {
-    None,
-    Dquote,
-}
-
 #[derive(Clone, Copy, Debug)]
 pub enum Cursor {
     None,

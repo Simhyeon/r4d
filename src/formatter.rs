@@ -114,20 +114,7 @@ impl Formatter {
         Ok(table)
     }
 
-    //<table>
-    //<thead>
-        //<tr>
-            //<th colspan="2">The table header</th>
-        //</tr>
-    //</thead>
-    //<tbody>
-        //<tr>
-            //<td>The table body</td>
-            //<td>with two columns</td>
-        //</tr>
-    //</tbody>
-//</table>
-    fn html_table(reader : &mut csv::Reader<&[u8]>, newline: &str) -> Result<String, RadError> {
+    fn html_table(reader : &mut csv::Reader<&[u8]>, _: &str) -> Result<String, RadError> {
         let mut table = String::new();
         table.push_str("<table>");
         // Add header
