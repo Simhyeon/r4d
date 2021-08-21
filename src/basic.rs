@@ -9,49 +9,53 @@ use crate::utils::Utils;
 use crate::processor::Processor;
 use crate::formatter::Formatter;
 use lipsum::lipsum;
+use lazy_static::lazy_static;
 
 type MacroType = fn(&str, &mut Processor) -> Result<String, RadError>;
 
-
-#[derive(Clone)]
-pub struct BasicMacro<'a> {
-    macros : HashMap<&'a str, MacroType>,
+lazy_static!{
+   pub static ref ITER: Regex = Regex::new(r"\$:").unwrap();
 }
 
-impl<'a> BasicMacro<'a> {
+#[derive(Clone)]
+pub struct BasicMacro {
+    macros : HashMap<String, MacroType>,
+}
+
+impl BasicMacro {
     pub fn new() -> Self {
         // Create hashmap of functions
         let map = HashMap::from_iter(IntoIter::new([
-            ("rsub", BasicMacro::regex_sub as MacroType),
-            ("rdel", BasicMacro::regex_del as MacroType),
-            ("eval", BasicMacro::eval as MacroType),
-            ("trim", BasicMacro::trim as MacroType),
-            ("chomp", BasicMacro::chomp as MacroType),
-            ("comp", BasicMacro::compress as MacroType),
-            ("lipsum", BasicMacro::placeholder as MacroType),
-            ("time", BasicMacro::time as MacroType),
-            ("date", BasicMacro::date as MacroType),
-            ("include", BasicMacro::include as MacroType),
-            ("repeat", BasicMacro::repeat as MacroType),
-            ("syscmd", BasicMacro::syscmd as MacroType),
-            ("ifelse", BasicMacro::ifelse as MacroType),
-            ("ifdef", BasicMacro::ifdef as MacroType),
-            ("foreach", BasicMacro::foreach as MacroType),
-            ("forloop", BasicMacro::forloop as MacroType),
-            ("undef", BasicMacro::undef as MacroType),
-            ("from", BasicMacro::from_data as MacroType),
-            ("table", BasicMacro::table as MacroType),
+            ("rsub".to_owned(), BasicMacro::regex_sub as MacroType),
+            ("rdel".to_owned(), BasicMacro::regex_del as MacroType),
+            ("eval".to_owned(), BasicMacro::eval as MacroType),
+            ("trim".to_owned(), BasicMacro::trim as MacroType),
+            ("chomp".to_owned(), BasicMacro::chomp as MacroType).to_owned(),
+            ("comp".to_owned(), BasicMacro::compress as MacroType).to_owned(),
+            ("lipsum".to_owned(), BasicMacro::placeholder as MacroType).to_owned(),
+            ("time".to_owned(), BasicMacro::time as MacroType).to_owned(),
+            ("date".to_owned(), BasicMacro::date as MacroType).to_owned(),
+            ("include".to_owned(), BasicMacro::include as MacroType).to_owned(),
+            ("repeat".to_owned(), BasicMacro::repeat as MacroType).to_owned(),
+            ("syscmd".to_owned(), BasicMacro::syscmd as MacroType).to_owned(),
+            ("ifelse".to_owned(), BasicMacro::ifelse as MacroType).to_owned(),
+            ("ifdef".to_owned(), BasicMacro::ifdef as MacroType).to_owned(),
+            ("foreach".to_owned(), BasicMacro::foreach as MacroType).to_owned(),
+            ("forloop".to_owned(), BasicMacro::forloop as MacroType).to_owned(),
+            ("undef".to_owned(), BasicMacro::undefine_call as MacroType).to_owned(),
+            ("rename".to_owned(), BasicMacro::rename_call as MacroType).to_owned(),
+            ("append".to_owned(), BasicMacro::append as MacroType).to_owned(),
+            ("from".to_owned(), BasicMacro::from_data as MacroType).to_owned(),
+            ("table".to_owned(), BasicMacro::table as MacroType).to_owned(),
+            ("len".to_owned(), BasicMacro::len as MacroType).to_owned(),
+            ("-".to_owned(), BasicMacro::get_pipe as MacroType).to_owned(),
         ]));
         // Return struct
-        Self {  macros : map}
+        Self { macros : map }
     }
 
     pub fn contains(&self, name: &str) -> bool {
         self.macros.contains_key(name)
-    }
-
-    pub fn unset(&mut self, name: &str) {
-        self.macros.remove(name);
     }
 
     pub fn call(&self, name : &str, args: &str, processor: &mut Processor) -> Result<String, RadError> {
@@ -64,6 +68,18 @@ impl<'a> BasicMacro<'a> {
         }
     }
 
+    pub fn undefine(&mut self, name: &str) {
+        self.macros.remove(name);
+    }
+
+    pub fn rename(&mut self, name: &str, target: &str) {
+        let func = self.macros.remove(name).unwrap();
+        self.macros.insert(target.to_owned(), func);
+    }
+
+    // ==========
+    // Basic Macros
+    // ==========
     fn time(_: &str, _ : &mut Processor) -> Result<String, RadError> {
         Ok(format!("{}", chrono::offset::Local::now().format("%H:%M:%S")))
     }
@@ -127,7 +143,7 @@ impl<'a> BasicMacro<'a> {
             // Enable floating points length (or something similar)
             Ok(result.to_string())
         } else {
-            Err(RadError::InvalidArgument("Regex del requires an argument"))
+            Err(RadError::InvalidArgument("Eval requires an argument"))
         }
     }
 
@@ -239,13 +255,7 @@ impl<'a> BasicMacro<'a> {
     }
 
     // $syscmd(echo 'this is printed')
-    fn syscmd(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
-
+    fn syscmd(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args_content) = Utils::args_with_len(args, 1) {
             let source = &args_content[0];
             let arg_vec = Utils::args_to_vec(&source, ' ', ('\'', '\''));
@@ -258,9 +268,9 @@ impl<'a> BasicMacro<'a> {
                     .expect("failed to execute process")
                     .stdout
             } else {
-                Command::new("sh")
-                    .arg("-c")
-                    .args(arg_vec)
+                let sys_args = if arg_vec.len() > 1 { &arg_vec[1..] } else { &[] };
+                Command::new(&arg_vec[0])
+                    .args(sys_args)
                     .output()
                     .expect("failed to execute process")
                     .stdout
@@ -291,7 +301,7 @@ impl<'a> BasicMacro<'a> {
             } else if let Ok(number) = trimmed_cond.parse::<i32>() {
                 if number != 0 { return Ok(if_state.to_owned()); }
             } else {
-                return Err(RadError::InvalidArgument("Ifelse requires true/fals or zero/nonzero."))
+                return Err(RadError::InvalidArgument("Ifelse requires either true/false or zero/nonzero integer."))
             }
             // if else statement exsits
             if args.len() >= 3 {
@@ -305,7 +315,7 @@ impl<'a> BasicMacro<'a> {
 
             Ok(String::new())
         } else {
-            Err(RadError::InvalidArgument("Syscmd requires an argument"))
+            Err(RadError::InvalidArgument("ifelse requires an argument"))
         }
     }
 
@@ -330,11 +340,11 @@ impl<'a> BasicMacro<'a> {
                 Ok("false".to_owned())
             }
         } else {
-            Err(RadError::InvalidArgument("Syscmd requires an argument"))
+            Err(RadError::InvalidArgument("Ifdef requires an argument"))
         }
     }
 
-    fn undef(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+    fn undefine_call(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         let args = &processor.parse_chunk(
             1000, 
             &MAIN_CALLER.to_owned(), 
@@ -344,16 +354,10 @@ impl<'a> BasicMacro<'a> {
         if let Some(args) = Utils::args_with_len(args, 1) {
             let name = &args[0];
 
-            // Return true or false by the definition
-            if processor.map.basic.contains(name) {
-                processor.map.basic.unset(name);
-            }
-            if processor.map.custom.contains_key(name) {
-                processor.map.custom.remove(name);
-            }
+            processor.map.undefine(name);
             Ok("".to_owned())
         } else {
-            Err(RadError::InvalidArgument("Syscmd requires an argument"))
+            Err(RadError::InvalidArgument("Undefine requires an argument"))
         }
     }
 
@@ -372,7 +376,7 @@ impl<'a> BasicMacro<'a> {
             let processed = processor.parse_chunk(0, &MAIN_CALLER.to_owned(),&target)?;
 
             for value in loopable.split(',') {
-                sums.push_str(&processed.replace("$_", value));
+                sums.push_str(&ITER.replace_all(&processed, value));
             }
             Ok(sums)
         } else {
@@ -408,12 +412,12 @@ impl<'a> BasicMacro<'a> {
             let processed = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &target)?;
 
             for value in min..=max {
-                sums.push_str(&processed.replace("$_", &value.to_string()));
+                sums.push_str(&ITER.replace_all(&processed, &value.to_string()));
             }
 
             Ok(sums)
         } else {
-            Err(RadError::InvalidArgument("Foreach requires two argument"))
+            Err(RadError::InvalidArgument("Forloop requires two argument"))
         }
     }
 
@@ -441,14 +445,46 @@ impl<'a> BasicMacro<'a> {
             Err(RadError::InvalidArgument("Table requires two arguments"))
         }
     }
-    fn len(args: &str, _: &mut Processor) -> Result<String, RadError> {
 
-        Ok(String::new())
+    fn get_pipe(_: &str, processor: &mut Processor) -> Result<String, RadError> {
+        let out = processor.pipe_value.clone();
+        processor.pipe_value.clear();
+        Ok(out)
+    }
+
+    /// Return a length of the string
+    /// This is O(n) operation
+    /// String.len() function returns byte length not "Character" length
+    /// therefore, chars().count() is used
+    fn len(args: &str, _: &mut Processor) -> Result<String, RadError> {
+        Ok(args.chars().count().to_string())
+    }
+
+    fn rename_call(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 2) {
+            let target = &args[0];
+            let new = &args[1];
+            processor.map.rename(target, new);
+
+            Ok(String::new())
+        } else {
+            Err(RadError::InvalidArgument("Rename requires two arguments"))
+        }
+    }
+
+    fn append(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = Utils::args_with_len(args, 2) {
+            let name = &args[0];
+            let target = &args[1];
+            processor.map.append(name, target);
+
+            Ok(String::new())
+        } else {
+            Err(RadError::InvalidArgument("Append requires two arguments"))
+        }
     }
     fn substring(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
     fn translate(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
-    fn rename(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
-    fn append(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
     fn print(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
     fn toggle(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
     fn temp_file(args: &str, _: &mut Processor) -> Result<String, RadError> {Ok(String::new())}
