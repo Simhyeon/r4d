@@ -3,6 +3,8 @@
 * [ ] Make expansion rule more consistent for basic macros
 - Currently it simply does parsing again and again
 * [ ] Make line based literal rule
+* [ ] Improve macro ergonomics
+* [ ] Make allocations less, especially string manipulation 
 * [ ] New basic macros
 
 * [ ] Frozen file
