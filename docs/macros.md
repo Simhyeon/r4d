@@ -31,6 +31,31 @@ $undef(name)
 // Undef doesn't print new line if it is a single input in the line
 ```
 
+**rename**
+
+Rename can change the name of the macro. This
+applies both to basic and custom macro.
+
+```
+$rename(len,length)
+$length(I'm long)
+===
+8
+```
+
+**append**
+
+Append append given string into the macro. Only
+custom macro can be appended.
+
+```
+$define(test=TEST)
+$append(test, CASE)
+$test()
+===
+TEST CASE
+```
+
 **include**
 
 Include macro include given file and paste into the position. Included file's
@@ -61,7 +86,7 @@ Loop around given value. Value is separated with commas. Thus values should be
 always enclosed with double quotes.
 
 ```
-$foreach("a,b,c",Value: $_
+$foreach("a,b,c",Value: $:
 )
 ===
 Value: a
@@ -78,7 +103,7 @@ always enclosed with double quotes.
 Range is inclusive e.g. "1,3" means from 1 to 3.
 
 ```
-$forloop("3,5",Number: $_
+$forloop("3,5",Number: $:
 )
 ===
 Number: 3
@@ -137,8 +162,8 @@ false
 
 **syscmd**
 
-Call system command, on unix system it calls ```sh -c``` and ```cmd /C``` on
-windows system.
+Call system command, on unix system it calls directly. While windows call are
+mediated through ```cmd /C``` call.
 
 ```
 $syscmd("uname -a") 
@@ -148,6 +173,30 @@ Linux
 
 Microsoft Windows [Version 10......]
 
+```
+
+**len**
+
+Return the length of given string. This operation takes O(n) not like
+traditional O(1) from rust' string data. This is because len returns length of
+utf characters not ASCII characters.
+
+```
+$len(Lorem ipsum dolor)
+$len(ሰማይ አይታረስ ንጉሥ አይከሰስ።)
+$len(Зарегистрируйтесь)
+$len(สิบสองกษัตริย์ก่อนหน้าแลถัดไป)
+$len(⡍⠔⠙⠖ ⡊ ⠙⠕⠝⠰⠞ ⠍⠑⠁⠝)
+$len(나는 안녕하지 못하다)
+$len(我们刚才从图书馆来了)
+===
+17
+20
+17
+29
+17
+11
+10
 ```
 
 **rsub, rdel**
@@ -243,14 +292,17 @@ d,e,f",three)
 **table**
 
 Table creates a formatted table from given csv values. Currently supported
-formats are ```github``` and ```wikitext```. This macro doesn't pretty print
-but just make it readable from other programs.
+formats are ```github```, ```wikitext``` and ```html```. This macro doesn't
+pretty print but just make it readable from other programs.
 
 ```
 $table(github,"a,b,c
 1,2,3
 4,5,6")
 $table(wikitext,"a,b,c
+1,2,3
+4,5,6")
+$table(html,"a,b,c
 1,2,3
 4,5,6")
 ===
@@ -272,4 +324,5 @@ $table(wikitext,"a,b,c
 |6
 |-
 |}
+<table><thead><tr><td>a</td><td>b</td><td>c</td></tr></thead><tbody><tr><td>1</td><td>2</td><td>3</td></tr><tr><td>4</td><td>5</td><td>6</td></tr></tbody></table>
 ```

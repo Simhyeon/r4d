@@ -40,7 +40,7 @@ Definition syntax is similar to macro invocation but requires a specific form
 to sucessfully register the macro.
 
 ```
-$define(name,arg1 arg2, $arg1() $arg2())
+$define(name,arg1 arg2,$arg1() $arg2())
 ```
 
 - First argument is a macro name. Macro should start with an alphabet character
@@ -79,11 +79,11 @@ converts to
 My name is Simon Creek.
 ```
 
-Special argument ```$_``` is used for iterated value.
+Special argument ```$:``` is used for iterated value.
 ```
-$foreach("John,Simon,Jane",Name : $_
+$foreach("John,Simon,Jane",Name : $:
 )
-$forloop("5,10",$_th
+$forloop("5,10",$:th
 )
 ```
 converts to
@@ -127,6 +127,31 @@ converts to
 first,second,third
 ```
 
+=> This behaviour might change in the future.
+
+### Advanced features
+
+**Literal input**
+
+```
+$define(test,a,$a())
+$test\("This text prints as it is", but it should be only called on main level ))) \)
+===
+"This text prints as it is", but it should be only called on main level )))
+```
+
+**Piping**
+
+```
+$define(test,a,$a())
+$test|(I'm going to be used by a pipe macro)
+$trim($repeat(2,$-()
+))
+===
+I'm going to be used by a pipe macro
+I'm going to be used by a pipe macro
+```
+
 ### Goal
 
 R4d aims to be a modern alternative to m4 processor, which means
@@ -141,3 +166,17 @@ is not necessary
 #### Built-in macros (or macro-like functions)
 
 [Usages](./docs/macros.md)
+
+#### Yet to come
+
+**Macros**
+
+- Tr (Translate)
+- Substring 
+- Rust print! macro invocation
+- Pause macro option (stop, recover pair)
+- Write to temp file "/tmp %TEMP%"
+
+**Features**
+
+- Compiled rule file a.k.a. m4 frozen file

@@ -1,11 +1,17 @@
 ### TODOs
 
-* [ ] Line ending consistency
-* [ ] I think, namespacing is not working properly with caller, so that every
-caller is @MAIN@
-- However it doesn't look like a problem, refactor later
-contexts.
+* [ ] Make expansion rule more consistent for basic macros
+* [ ] Make line based literal rule
 * [ ] New basic macros
+  * [ ] Pause macro option
+  * [ ] tr
+  * [ ] Substring
+  * [ ] Rust print! macro invocation
+  * [ ] Write to temp file /tmp %TEMP%
+
+* [ ] Frozen file
+  * [ ] Json file
+- This is kind of pre-compiled file
 
 ### How one should parse macro invocation?
 
@@ -34,6 +40,14 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] Change iterator value naming -> $:
+* [x] Name can be empty space which is problem
+* [x] Refactor namespace rule
+* [-] --Greedy double quote rules-- This is impossible or hard to make
+* [x] Make error consistent so that failed invoke calways yield error message
+* [x] Escape char doesn't work at all.. All escape characters all just printed as it is.
+* [x] Line ending consistency
+- Give user an option to use preferred line ending
 * [-] Make syscmd call unsafe and allow only when sudo was given
 - Maybe this is fine? Because some command should require auth anyway?
 * [x] Make undef line is deleted
@@ -94,6 +108,12 @@ to add number and not
   * [x] Print a nested macro substitution
 
 * [x] New basic macros
+  * [x] Literal attribute -> $test\(Literal text\)
+  * [x] Make pipe rule 
+  * [x] Len
+  * [x] Rename macro
+  * [x] Csv table html format
+  * [x] Define append (appdef)
   * [x] Text format
     * [x] CSV macro
   	* [x] Data macro from data

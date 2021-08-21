@@ -362,7 +362,7 @@ impl BasicMacro {
     }
 
     // $foreach()
-    // $foreach($testo($_()),"a,b,c")
+    // $foreach("a,b,c",$:)
     fn foreach(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 2) {
             let mut sums = String::new();
@@ -384,7 +384,7 @@ impl BasicMacro {
         }
     }
 
-    // $forloop("1,5",$testo($_))
+    // $forloop("1,5",$:)
     fn forloop(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 2) {
             let mut sums = String::new();
@@ -421,7 +421,7 @@ impl BasicMacro {
         }
     }
 
-    // $from("1,2,3\n4,5,6", $_)
+    // $from("1,2,3\n4,5,6", macro_name)
     fn from_data(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = Utils::args_with_len(args, 2) {
             let macro_data = &args[0];
