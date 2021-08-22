@@ -1,14 +1,6 @@
 use crate::error::RadError;
 use regex::Regex;
 use std::io::BufRead;
-use lazy_static::lazy_static;
-
-lazy_static!{
-   pub static ref COMMA: Regex = Regex::new(r",").unwrap();
-   pub static ref DQUOTE: Regex = Regex::new(r#"""#).unwrap();
-   pub static ref LEFT_PAREN: Regex = Regex::new(r"\(").unwrap();
-   pub static ref RIGHT_PAREN: Regex = Regex::new(r"\)").unwrap();
-}
 
 pub(crate) struct Utils;
 
@@ -42,14 +34,6 @@ impl Utils {
         ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
     }
 
-    pub(crate) fn escape_all(args: &str) ->  Result<String, RadError> {
-        let cow1 = COMMA.replace_all(args, "\\,");
-        let cow2 = DQUOTE.replace_all(cow1.as_ref(), "\\\"");
-        let cow3 = LEFT_PAREN.replace_all(cow2.as_ref(), "\\(");
-        let cow4 = RIGHT_PAREN.replace_all(cow3.as_ref(), "\\)");
-        Ok(cow4.to_string())
-    }
-
     pub(crate) fn is_arg_true(arg: &str) -> Result<bool, RadError> {
         let arg = Utils::trim(arg)?;
         if let Ok(value) = arg.parse::<usize>() {
@@ -66,5 +50,35 @@ impl Utils {
             }
         }
         return Err(RadError::InvalidArgument("Neither true nor false"));
+    }
+
+    pub(crate) fn utf8_substring(source: &str, min: Option<usize>, max: Option<usize>) -> String {
+        let mut result = String::new();
+        if let Some(min) = min {
+            if let Some(max) = max { // Both
+                for (idx,ch) in source.chars().enumerate() {
+                    if idx >= min && idx <= max {
+                        result.push(ch);
+                    }
+                }
+            } else { // no max
+                for (idx,ch) in source.chars().enumerate() {
+                    if idx >= min {
+                        result.push(ch);
+                    }
+                }
+            }
+        } else { // No min
+            if let Some(max) = max { // at least max 
+                for (idx,ch) in source.chars().enumerate() {
+                    if idx <= max {
+                        result.push(ch);
+                    }
+                }
+            } else { // Nothing 
+                return source.to_owned();
+            }
+        }
+        return result;
     }
 }
