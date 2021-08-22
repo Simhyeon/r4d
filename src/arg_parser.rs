@@ -62,10 +62,10 @@ impl ArgParser {
                             previous.replace('0');
                             continue; 
                         }
-                    } else if let Some(&ch) = arg_iter.peek() {
+                    } else if let Some(&ch_next) = arg_iter.peek() {
                         // Next is escape chart and not inside lit_count
                         // *\
-                        if ch == ESCAPE_CHAR && lit_count >= 1 {
+                        if ch_next == ESCAPE_CHAR && lit_count >= 1 {
                             lit_count = lit_count - 1; 
                             arg_iter.next(); // Conume next escape_char
                             // Lit end was outter most one

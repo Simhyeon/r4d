@@ -307,7 +307,6 @@ impl Processor {
     }
 
     fn add_define(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
-        println!("ARG : {}", frag.args);
         if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
             self.map.register(&name, &args, &body)?;
         } else {

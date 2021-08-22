@@ -161,8 +161,6 @@ impl Lexor {
         // Left paren increases paren_count
         else if ch == '(' && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
             self.paren_count = self.paren_count + 1; 
-        } else {
-            println!("NORMAL : {}", ch);
         }
         // Other characters are added normally
         result
