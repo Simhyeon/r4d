@@ -6,7 +6,6 @@ pub struct Lexor {
     pub cursor: Cursor,
     pub escape_next : bool,
     pub lit_count: usize,
-    pub dquote: bool,
     pub paren_count : usize,
     pub escape_nl : bool,
 }
@@ -19,7 +18,6 @@ impl Lexor {
             escape_next : false,
             escape_nl : false,
             lit_count : 0,
-            dquote: false,
             paren_count : 0,
         }
     }
@@ -28,7 +26,6 @@ impl Lexor {
         self.cursor= Cursor::None;
         self.escape_next = false;
         self.escape_nl = false;
-        self.dquote= false;
         self.paren_count = 0;
         // CHECK TODO is it necessary?
         // Don't reset literal
@@ -36,14 +33,14 @@ impl Lexor {
 
     pub fn lex(&mut self, ch: char) -> Result<LexResult, RadError> {
         let result: LexResult;
-        self.start_literal(ch);
-        if self.lit_count > 0 { 
-            self.end_literal(ch);
-            // If lit count is 0
-            // Then outtermost literl has ended. Thus should escape '\' 
-            if self.lit_count != 0 {
-                self.previous_char.replace(ch);
-            }
+        if self.start_literal(ch) {
+            self.previous_char.replace('0');
+            return Ok(LexResult::Literal(self.cursor)); 
+        } else if self.end_literal(ch){
+            self.previous_char.replace('0');
+            return Ok(LexResult::Literal(self.cursor)); 
+        } else if self.lit_count >0 {
+            self.previous_char.replace(ch);
             return Ok(LexResult::Literal(self.cursor)); 
         }
         match self.cursor {
@@ -61,8 +58,17 @@ impl Lexor {
             } // end arg match
         }
 
+        let mut replace = ch;
         // Set previous character
-        self.previous_char.replace(ch);
+        // Don't set previous as it is
+        if ch == '\\' && self.previous_char.unwrap_or('0') == '\\' {
+            replace = '0';
+        } 
+        // TODO CHECK This
+        //if ch == LIT_CHAR && self.previous_char.unwrap_or('0') == '\\' {
+            //replace = '0';
+        //}
+        self.previous_char.replace(replace);
         Ok(result)
     }
 
@@ -147,50 +153,39 @@ impl Lexor {
     // Double quote rule is somewhat suspicious?
     fn branch_arg(&mut self, ch: char) -> LexResult {
         let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
-        // Inside dquotes
-        if self.dquote {
-            if ch == '"' {
-                if self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
-                    self.dquote = false;
-                }
+        // Right paren decreases paren_count
+        if ch == ')' && self.previous_char.unwrap_or('0') != '\\' {
+            self.paren_count = self.paren_count - 1; 
+            if self.paren_count == 0 {
+                self.cursor = Cursor::None;
+                result = LexResult::EndFrag;
             }
         } 
-        // Not in dquotes
-        else {
-            // Right paren decreases paren_count
-            if ch == ')' {
-                self.paren_count = self.paren_count - 1; 
-                if self.paren_count == 0 {
-                    self.cursor = Cursor::None;
-                    result = LexResult::EndFrag;
-                }
-            } 
-            // Left paren increases paren_count
-            else if ch == '(' {
-                self.paren_count = self.paren_count + 1; 
-            }
-            // Double quotes triggers dquote
-            else if ch == '"' {
-                if self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
-                    self.dquote = true;
-                }
-            }
-            // Other characters are added normally
+        // Left paren increases paren_count
+        else if ch == '(' && self.previous_char.unwrap_or('0') != '\\' {
+            self.paren_count = self.paren_count + 1; 
         }
+        // Other characters are added normally
         result
     }
 
-    fn start_literal(&mut self, ch: char) {
+    fn start_literal(&mut self, ch: char) -> bool {
         // if given value is literal character and preceding character is escape
         if ch == LIT_CHAR && self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
             self.lit_count = self.lit_count + 1; 
+            true
+        } else {
+            false
         }
     }
 
-    fn end_literal(&mut self, ch: char) {
+    fn end_literal(&mut self, ch: char) -> bool {
         // if given value is literal character and preceding character is escape
         if ch == ESCAPE_CHAR && self.previous_char.unwrap_or('0') == LIT_CHAR {
             self.lit_count = self.lit_count - 1; 
+            true
+        } else {
+            false
         }
     }
 } 
