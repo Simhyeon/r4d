@@ -134,7 +134,7 @@ impl BasicMacro {
 
     // Trim preceding and trailing whitespaces
     /// $trim(text)
-    fn trim(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+    fn trim(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1) {
             Utils::trim(&args[0])
         } else {
@@ -143,7 +143,7 @@ impl BasicMacro {
     }
 
     /// $triml(text)
-    fn trim_literal(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+    fn trim_literal(args: &str, _: &mut Processor) -> Result<String, RadError> {
         Utils::trim(args)
     }
 
@@ -268,7 +268,7 @@ impl BasicMacro {
     // Special macro
     // Argument is expanded after vectorization
     /// $ifelse(evaluation, ifstate, elsestate)
-    fn ifelse(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+    fn ifelse(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2) {
             let boolean = &args[0];
             let if_state = &args[1];
@@ -328,7 +328,7 @@ impl BasicMacro {
 
     // $foreach()
     // $foreach(\*a,b,c*\,$:)
-    fn foreach(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+    fn foreach(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2) {
             let mut sums = String::new();
             let target = &args[1]; // evaluate on loop

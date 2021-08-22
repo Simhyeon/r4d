@@ -58,16 +58,13 @@ impl Lexor {
             } // end arg match
         }
 
-        let mut replace = ch;
-        // Set previous character
-        // Don't set previous as it is
-        if ch == '\\' && self.previous_char.unwrap_or('0') == '\\' {
-            replace = '0';
-        } 
-        // TODO CHECK This
-        //if ch == LIT_CHAR && self.previous_char.unwrap_or('0') == '\\' {
+        let replace = ch;
+
+        // Reserved for later usage
+        // Don't set previous as it is when double ESCAPE_CHAR is used. 
+        //if ch == ESCAPE_CHAR && self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
             //replace = '0';
-        //}
+        //} 
         self.previous_char.replace(replace);
         Ok(result)
     }
@@ -154,7 +151,7 @@ impl Lexor {
     fn branch_arg(&mut self, ch: char) -> LexResult {
         let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
         // Right paren decreases paren_count
-        if ch == ')' && self.previous_char.unwrap_or('0') != '\\' {
+        if ch == ')' && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
             self.paren_count = self.paren_count - 1; 
             if self.paren_count == 0 {
                 self.cursor = Cursor::None;
@@ -162,8 +159,10 @@ impl Lexor {
             }
         } 
         // Left paren increases paren_count
-        else if ch == '(' && self.previous_char.unwrap_or('0') != '\\' {
+        else if ch == '(' && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
             self.paren_count = self.paren_count + 1; 
+        } else {
+            println!("NORMAL : {}", ch);
         }
         // Other characters are added normally
         result
