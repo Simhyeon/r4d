@@ -30,6 +30,7 @@ printf '...text...' | rad
 # default is stderr
 rad -e FileToWriteError.txt # Log error to file
 rad -s # Suppress error
+rad -n # Always use unix newline (default is '\r\n' in windows platform)
 ```
 
 Type ```-h``` or ```--help``` to see full options.
@@ -94,9 +95,9 @@ My name is Simon Creek.
 
 Special argument ```$:``` is used for iterated value.
 ```
-$foreach("John,Simon,Jane",Name : $:
+$foreach(\*John,Simon,Jane*\,Name : $:
 )
-$forloop("5,10",$:th
+$forloop(5,10,$:th
 )
 ```
 converts to
