@@ -197,7 +197,7 @@ impl Processor {
             match lex_result {
                 LexResult::Ignore => frag.whole_string.push(ch),
                 // If given result is literal
-                LexResult::Literal(cursor)=> {
+                LexResult::Literal(cursor) => {
                     match cursor {
                         // Exit frag
                         // If literal is given on names
@@ -205,11 +205,11 @@ impl Processor {
                             frag.whole_string.push(ch);
                             remainder.push_str(&frag.whole_string);
                             frag.clear();
-                        } 
+                        }
                         // Simply push if none or arg
                         Cursor::None => { remainder.push(ch); }
                         Cursor::Arg => { frag.args.push(ch); }
-                    } 
+                    }
                 }
                 LexResult::StartFrag => {
                     frag.whole_string.push(ch);
@@ -445,7 +445,8 @@ impl DefineParser {
     // e.g. ) name,a1 a2,body text
     pub fn parse_define(&mut self, text: &str) -> Option<(String, String, String)> {
         self.clear();
-        for ch in text.chars() {
+        let mut char_iter = text.chars().peekable();
+        while let Some(ch) = char_iter.next() {
             match self.arg_cursor {
                 DefineCursor::Name => {
                     // $define(variable=something)
@@ -465,13 +466,13 @@ impl DefineParser {
                         self.arg_cursor = DefineCursor::Args;
                     } 
                     // Comma go to args
-                    // Dquote is invalid character so no need to escape
                     else if ch == ',' {
                         self.name.push_str(&self.container);
                         self.container.clear();
                         self.arg_cursor = DefineCursor::Args;
                         continue;
-                    } else {
+                    } 
+                    else {
                         // If not valid name return None
                         if !self.is_valid_name(ch) { return None; }
                     }
@@ -485,8 +486,7 @@ impl DefineParser {
                         continue;
                     } 
                     // Go to body
-                    // Dquote is invalid character so no need to escape
-                    else if ch == ',' {
+                    else if ch == '=' {
                         self.args.push_str(&self.container);
                         self.container.clear();
                         self.arg_cursor = DefineCursor::Body; 
@@ -499,7 +499,17 @@ impl DefineParser {
                     }
                 }
                 // Add everything
-                DefineCursor::Body => ()
+                DefineCursor::Body => {
+                    // Some escape rule
+                    if ch == '\\' {
+                        if let Some(&next) = char_iter.peek() {
+                            // Escape reul contents go here
+                            if next == ')' {
+                                continue;
+                            }
+                        }
+                    }
+                }
             } 
             self.container.push(ch);
         }
