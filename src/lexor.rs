@@ -5,7 +5,7 @@ pub struct Lexor {
     previous_char : Option<char>,
     pub cursor: Cursor,
     pub escape_next : bool,
-    pub literal: bool,
+    pub lit_count: usize,
     pub dquote: bool,
     pub paren_count : usize,
     pub escape_nl : bool,
@@ -18,7 +18,7 @@ impl Lexor {
             cursor: Cursor::None,
             escape_next : false,
             escape_nl : false,
-            literal : false,
+            lit_count : 0,
             dquote: false,
             paren_count : 0,
         }
@@ -28,13 +28,24 @@ impl Lexor {
         self.cursor= Cursor::None;
         self.escape_next = false;
         self.escape_nl = false;
-        self.literal = false;
         self.dquote= false;
         self.paren_count = 0;
+        // CHECK TODO is it necessary?
+        // Don't reset literal
     }
 
     pub fn lex(&mut self, ch: char) -> Result<LexResult, RadError> {
         let result: LexResult;
+        self.start_literal(ch);
+        if self.lit_count > 0 { 
+            self.end_literal(ch);
+            // If lit count is 0
+            // Then outtermost literl has ended. Thus should escape '\' 
+            if self.lit_count != 0 {
+                self.previous_char.replace(ch);
+            }
+            return Ok(LexResult::Literal(self.cursor)); 
+        }
         match self.cursor {
             Cursor::None => {
                 result = self.branch_none(ch);
@@ -46,11 +57,7 @@ impl Lexor {
                 result = self.branch_name_to_arg(ch);
             }
             Cursor::Arg => {
-                if self.literal {
-                    result = self.branch_arg_literal(ch);
-                } else {
-                    result = self.branch_arg(ch);
-                }
+                result = self.branch_arg(ch);
             } // end arg match
         }
 
@@ -95,17 +102,8 @@ impl Lexor {
         } 
         // Left parenthesis trigger macro invocation
         else if ch == '(' {
-            // Literal rule
-            // $macro\(
-            if self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
-                self.literal = true;
-                self.cursor = Cursor::Arg;
-            } 
-            // Else
-            else {
-                self.cursor = Cursor::Arg;
-                self.paren_count = 1;
-            }
+            self.cursor = Cursor::Arg;
+            self.paren_count = 1;
             result = LexResult::StartFrag;
             // Empty name
             if self.previous_char.unwrap_or('0') == '$' {
@@ -182,16 +180,18 @@ impl Lexor {
         result
     }
 
-    fn branch_arg_literal(&mut self, ch: char) -> LexResult {
-        let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
-        // END with '\)'
-        if ch == ')' && self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
-            self.literal = false;
-            result = LexResult::EndFrag;
-            self.cursor = Cursor::None; 
-        } 
+    fn start_literal(&mut self, ch: char) {
+        // if given value is literal character and preceding character is escape
+        if ch == LIT_CHAR && self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
+            self.lit_count = self.lit_count + 1; 
+        }
+    }
 
-        result
+    fn end_literal(&mut self, ch: char) {
+        // if given value is literal character and preceding character is escape
+        if ch == ESCAPE_CHAR && self.previous_char.unwrap_or('0') == LIT_CHAR {
+            self.lit_count = self.lit_count - 1; 
+        }
     }
 } 
 
@@ -204,6 +204,7 @@ pub enum LexResult {
     AddToFrag(Cursor),
     EndFrag,
     ExitFrag,
+    Literal(Cursor),
 }
 
 #[derive(Clone, Copy, Debug)]

@@ -6,13 +6,13 @@ use crate::models::{MacroMap, WriteOption};
 use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
+use crate::arg_parser::ArgParser;
 
 #[derive(Debug)]
 pub struct MacroFragment {
     pub whole_string: String,
     pub name: String,
     pub args: String,
-    pub literal: bool,
     pub pipe: bool,
 }
 
@@ -22,7 +22,6 @@ impl MacroFragment {
             whole_string : String::new(),
             name : String::new(),
             args : String::new(),
-            literal : false,
             pipe: false,
         }
     }
@@ -31,7 +30,6 @@ impl MacroFragment {
         self.whole_string.clear();
         self.name.clear();
         self.args.clear();
-        self.literal = false; 
         self.pipe = false; 
     }
 
@@ -198,6 +196,21 @@ impl Processor {
             // Either add character to remainder or fragments
             match lex_result {
                 LexResult::Ignore => frag.whole_string.push(ch),
+                // If given result is literal
+                LexResult::Literal(cursor)=> {
+                    match cursor {
+                        // Exit frag
+                        // If literal is given on names
+                        Cursor::Name | Cursor::NameToArg => {
+                            frag.whole_string.push(ch);
+                            remainder.push_str(&frag.whole_string);
+                            frag.clear();
+                        } 
+                        // Simply push if none or arg
+                        Cursor::None => { remainder.push(ch); }
+                        Cursor::Arg => { frag.args.push(ch); }
+                    } 
+                }
                 LexResult::StartFrag => {
                     frag.whole_string.push(ch);
 
@@ -235,8 +248,7 @@ impl Processor {
                                         self.ch_number
                                     );
                             }
-                            if ch == '\\' { frag.literal = true; }
-                            else if ch == '|' { frag.pipe = true; }
+                            if ch == '|' { frag.pipe = true; }
                             else { frag.name.push(ch); }
                         },
                         Cursor::Arg => {
@@ -253,10 +265,6 @@ impl Processor {
                 // 3. Reset fragment
                 LexResult::EndFrag => {
                     frag.whole_string.push(ch);
-                    // Literal rule
-                    if frag.literal {
-                        frag.args = Utils::escape_all(&frag.args)?;
-                    }
                     // define
                     if frag.name == "define" {
                         self.add_define(frag, &mut remainder)?;
@@ -354,7 +362,8 @@ impl Processor {
         let rule = self.map.custom.get(name).unwrap().clone();
         let arg_types = &rule.args;
         // Set variable to local macros
-        let arg_values = Utils::args_to_vec(arg_values, ',', ('"','"'));
+        // TODO Check here for literal rules
+        let arg_values = ArgParser::args_to_vec(arg_values, ',');
 
         // Necessary arg count is bigger than given arguments
         if arg_types.len() > arg_values.len() {
