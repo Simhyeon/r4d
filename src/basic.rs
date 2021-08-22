@@ -35,6 +35,9 @@ impl BasicMacro {
             ("trim".to_owned(), BasicMacro::trim as MacroType),
             ("chomp".to_owned(), BasicMacro::chomp as MacroType).to_owned(),
             ("comp".to_owned(), BasicMacro::compress as MacroType).to_owned(),
+            ("triml".to_owned(), BasicMacro::trim_literal as MacroType),
+            ("chompl".to_owned(), BasicMacro::chomp_literal as MacroType).to_owned(),
+            ("compl".to_owned(), BasicMacro::compress_literal as MacroType).to_owned(),
             ("lipsum".to_owned(), BasicMacro::placeholder as MacroType).to_owned(),
             ("time".to_owned(), BasicMacro::time as MacroType).to_owned(),
             ("date".to_owned(), BasicMacro::date as MacroType).to_owned(),
@@ -55,7 +58,9 @@ impl BasicMacro {
             ("sub".to_owned(), BasicMacro::substring as MacroType).to_owned(),
             ("pause".to_owned(), BasicMacro::pause as MacroType).to_owned(),
             ("temp".to_owned(), BasicMacro::temp as MacroType).to_owned(),
+            ("pipe".to_owned(), BasicMacro::pipe as MacroType).to_owned(),
             ("-".to_owned(), BasicMacro::get_pipe as MacroType).to_owned(),
+            ("*".to_owned(), BasicMacro::get_pipe_literal as MacroType).to_owned(),
         ]));
         // Return struct
         Self { macros : map }
@@ -87,42 +92,35 @@ impl BasicMacro {
     // ==========
     // Basic Macros
     // ==========
+    /// $time()
     fn time(_: &str, _ : &mut Processor) -> Result<String, RadError> {
         Ok(format!("{}", chrono::offset::Local::now().format("%H:%M:%S")))
     }
 
+    /// $date()
     fn date(_: &str, _ : &mut Processor) -> Result<String, RadError> {
         Ok(format!("{}", chrono::offset::Local::now().format("%Y-%m-%d")))
     }
 
-    fn regex_sub(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
-
+    /// $regex(source_text,regex_match,substitution)
+    fn regex_sub(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 3) {
             let source= &args[0];
-            let target= &args[1];
-            let object= &args[2];
+            let match_expr= &args[1];
+            let substitution= &args[2];
 
             // This is regex expression without any preceding and trailing commands
-            let reg = Regex::new(&format!(r"{}", target))?;
-            let result = reg.replace_all(source, object); // This is a cow, moo~
+            let reg = Regex::new(&format!(r"{}", match_expr))?;
+            let result = reg.replace_all(source, substitution); // This is a cow, moo~
             Ok(result.to_string())
         } else {
             Err(RadError::InvalidArgument("Regex sub requires three arguments"))
         }
     }
 
-    fn eval(args: &str, processor: &mut Processor ) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
-
+    /// $eval(expression)
+    /// This returns true, false or evaluated number
+    fn eval(args: &str, _: &mut Processor ) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1) {
             let formula = &args[0];
             let result = evalexpr::eval(formula)?;
@@ -135,24 +133,23 @@ impl BasicMacro {
     }
 
     // Trim preceding and trailing whitespaces
+    /// $trim(text)
     fn trim(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
+        if let Some(args) = ArgParser::args_with_len(args, 1) {
+            Utils::trim(&args[0])
+        } else {
+            Err(RadError::InvalidArgument("Trim requires an argument"))
+        }
+    }
 
+    /// $triml(text)
+    fn trim_literal(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         Utils::trim(args)
     }
 
     // Remove duplicate newlines
+    /// $chomp(test)
     fn chomp(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
-
         if let Some(args) = ArgParser::args_with_len(args, 1) {
             let source = &args[0];
             let reg = Regex::new(&format!(r"{0}\s*{0}", &processor.newline))?;
@@ -164,13 +161,18 @@ impl BasicMacro {
         }
     }
 
-    fn compress(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
+    // Remove duplicate newlines
+    /// $chompl(test)
+    fn chomp_literal(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+        let source = args;
+        let reg = Regex::new(&format!(r"{0}\s*{0}", &processor.newline))?;
+        let result = reg.replace_all(source, &format!("{0}{0}", &processor.newline));
 
+        Ok(result.to_string())
+    }
+
+    /// $comp(text)
+    fn compress(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1) {
             let source = &args[0];
             // Chomp and then compress
@@ -182,13 +184,17 @@ impl BasicMacro {
         }
     }
 
-    fn placeholder(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
+    /// $compl(text)
+    fn compress_literal(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+        let source = args;
+        // Chomp and then compress
+        let result = Utils::trim(&BasicMacro::chomp_literal(source, processor)?)?;
 
+        Ok(result.to_string())
+    }
+
+    /// $lipsum(Number: usize)
+    fn placeholder(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1) {
             let word_count = &args[0];
             if let Ok(count) = Utils::trim(word_count)?.parse::<usize>() {
@@ -201,13 +207,8 @@ impl BasicMacro {
         }
     }
 
+    /// $include(path)
     fn include(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
-
         if let Some(args) = ArgParser::args_with_len(args, 1) {
             let file_path = std::path::Path::new(&args[0]);
             Ok(processor.from_file(file_path, true)?)
@@ -216,13 +217,8 @@ impl BasicMacro {
         }
     }
 
-    fn repeat(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
-
+    /// $repeat(count: usize,text)
+    fn repeat(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2) {
             let repeat_count;
             if let Ok(count) = Utils::trim(&args[0])?.parse::<usize>() {
@@ -241,7 +237,7 @@ impl BasicMacro {
         }
     }
 
-    // $syscmd(echo 'this is printed')
+    /// $syscmd(system command -a arguments)
     fn syscmd(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args_content) = ArgParser::args_with_len(args, 1) {
             let source = &args_content[0];
@@ -271,15 +267,11 @@ impl BasicMacro {
 
     // Special macro
     // Argument is expanded after vectorization
-    // $ifelse(evaluation, ifstate, elsestate)
+    /// $ifelse(evaluation, ifstate, elsestate)
     fn ifelse(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2) {
             let boolean = &args[0];
-            let if_state = &processor.parse_chunk(
-                1000, 
-                &MAIN_CALLER.to_owned(), 
-                &args[1]
-            )?;
+            let if_state = &args[1];
 
             // Given condition is true
             let trimmed_cond = Utils::trim(boolean)?;
@@ -292,11 +284,7 @@ impl BasicMacro {
             }
             // if else statement exsits
             if args.len() >= 3 {
-                let else_state = &processor.parse_chunk(
-                    1000, 
-                    &MAIN_CALLER.to_owned(), 
-                    &args[2]
-                )?;
+                let else_state = &args[2];
                 return Ok(else_state.to_owned());
             }
 
@@ -308,14 +296,9 @@ impl BasicMacro {
 
     // This is composite basic macro
     // Which means this macro acts differently by the context(Processor state)
-    // $ifdef(macro_name) -> return string true or false
+    /// $ifdef(macro_name) 
+    /// This return string true or false
     fn ifdef(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
-
         if let Some(args) = ArgParser::args_with_len(args, 1) {
             let name = &args[0];
             let map = processor.get_map();
@@ -331,13 +314,8 @@ impl BasicMacro {
         }
     }
 
+    /// $undef(macro_name)
     fn undefine_call(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        let args = &processor.parse_chunk(
-            1000, 
-            &MAIN_CALLER.to_owned(), 
-            args
-        )?;
-
         if let Some(args) = ArgParser::args_with_len(args, 1) {
             let name = &args[0];
 
@@ -349,21 +327,15 @@ impl BasicMacro {
     }
 
     // $foreach()
-    // $foreach("a,b,c",$:)
+    // $foreach(\*a,b,c*\,$:)
     fn foreach(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2) {
             let mut sums = String::new();
-            let target = args[1].to_owned(); // evaluate on loop
-            let loopable = &processor.parse_chunk(
-                1000, 
-                &MAIN_CALLER.to_owned(), 
-                &args[0]
-            )?;
-
-            let processed = processor.parse_chunk(0, &MAIN_CALLER.to_owned(),&target)?;
+            let target = &args[1]; // evaluate on loop
+            let loopable = &args[0];
 
             for value in loopable.split(',') {
-                sums.push_str(&ITER.replace_all(&processed, value));
+                sums.push_str(&ITER.replace_all(target, value));
             }
             Ok(sums)
         } else {
@@ -371,35 +343,23 @@ impl BasicMacro {
         }
     }
 
-    // $forloop("1,5",$:)
-    fn forloop(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = ArgParser::args_with_len(args, 2) {
+    // $forloop(1,5,$:)
+    fn forloop(args: &str, _: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = ArgParser::args_with_len(args, 3) {
             let mut sums = String::new();
-            let target = args[1].to_owned(); // evaluate on loop
+            let expression = &args[2]; // evaluate on loop
 
-            let loopable = &processor.parse_chunk(
-                1000, 
-                &MAIN_CALLER.to_owned(), 
-                &args[0]
-            )?;
-            let loopable = loopable.split(',').collect::<Vec<&str>>();
-
-            if loopable.len() != 2 {
-                RadError::InvalidArgument("Forloop's first argument should be quoted min,max value e.g \"2,5\"");
-            }
             let min: usize; 
             let max: usize; 
-            if let Ok(num) = Utils::trim(loopable[0])?.parse::<usize>() {
+            if let Ok(num) = Utils::trim(&args[0])?.parse::<usize>() {
                 min = num;
             } else { return Err(RadError::InvalidArgument("Forloop's min value should be non zero positive integer")); }
-            if let Ok(num) = Utils::trim(loopable[1])?.parse::<usize>() {
+            if let Ok(num) = Utils::trim(&args[1])?.parse::<usize>() {
                 max = num
             } else { return Err(RadError::InvalidArgument("Forloop's min value should be non zero positive integer")); }
 
-            let processed = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &target)?;
-
             for value in min..=max {
-                sums.push_str(&ITER.replace_all(&processed, &value.to_string()));
+                sums.push_str(&ITER.replace_all(expression, &value.to_string()));
             }
 
             Ok(sums)
@@ -408,13 +368,14 @@ impl BasicMacro {
         }
     }
 
-    // $from("1,2,3\n4,5,6", macro_name)
+    // $from(\*1,2,3\n4,5,6*\, macro_name)
     fn from_data(args: &str, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2) {
             let macro_data = &args[0];
             let macro_name = &Utils::trim(&args[1])?;
 
             let result = Formatter::csv_to_macros(macro_name, macro_data, &processor.newline)?;
+            // This is necessary
             let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &result)?;
             Ok(result)
         } else {
@@ -433,8 +394,22 @@ impl BasicMacro {
         }
     }
 
+    /// $pipe()
+    fn pipe(args: &str, processor: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = ArgParser::args_with_len(args, 1) {
+            processor.pipe_value = args[0].to_owned();
+        }
+        Ok(String::new())
+    }
+
     fn get_pipe(_: &str, processor: &mut Processor) -> Result<String, RadError> {
         let out = processor.pipe_value.clone();
+        processor.pipe_value.clear();
+        Ok(out)
+    }
+
+    fn get_pipe_literal(_: &str, processor: &mut Processor) -> Result<String, RadError> {
+        let out = format!("\\*{}*\\",processor.pipe_value);
         processor.pipe_value.clear();
         Ok(out)
     }
@@ -470,6 +445,7 @@ impl BasicMacro {
             Err(RadError::InvalidArgument("Append requires two arguments"))
         }
     }
+
     fn translate(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 3) {
             let mut source = args[0].clone();
@@ -490,21 +466,17 @@ impl BasicMacro {
         }
     }
 
-    // $sub(",",GivenString)
+    // $sub(0,5,GivenString)
     fn substring(args: &str, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2) {
-            let source = &args[1];
-            let loopable = &args[0].split(',').collect::<Vec<&str>>();
-
-            if loopable.len() != 2 {
-                RadError::InvalidArgument("Substring's first argument should be quoted min,max value e.g \"2,5\"");
-            }
+            let source = &args[2];
 
             let mut min: Option<usize> = None;
             let mut max: Option<usize> = None;
 
-            let start = Utils::trim(loopable[0])?;
-            let end = Utils::trim(loopable[1])?;
+            let start = Utils::trim(&args[0])?;
+            let end = Utils::trim(&args[1])?;
+
             if let Ok(num) = start.parse::<usize>() {
                 min.replace(num);
             } else { 
@@ -512,6 +484,7 @@ impl BasicMacro {
                     return Err(RadError::InvalidArgument("Sub's min value should be non zero positive integer or empty value")); 
                 }
             }
+
             if let Ok(num) = end.parse::<usize>() {
                 max.replace(num);
             } else { 
@@ -519,19 +492,9 @@ impl BasicMacro {
                     return Err(RadError::InvalidArgument("Sub's max value should be non zero positive integer or empty value")); 
                 }
             }
-            if let Some(min) = min {
-                if let Some(max) = max { // Both
-                    Ok(source[min..max].to_string())
-                } else { // no max
-                    Ok(source[min..].to_string())
-                }
-            } else { // No min
-                if let Some(max) = max { // at least max 
-                    Ok(source[..max].to_string())
-                } else { // Nothing 
-                    Ok(source[..].to_string())
-                }
-            }
+
+            Ok(Utils::utf8_substring(source, min, max))
+
         } else {
             Err(RadError::InvalidArgument("Sub requires some arguments"))
         }
