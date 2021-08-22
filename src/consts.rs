@@ -14,3 +14,5 @@ pub const TEMP_PATH: &'static str = "%TEMP%";
 pub const TEMP_PATH: &'static str = "/tmp";
 
 pub const TEMP_FILE: &'static str = "rad_temp.txt";
+
+pub const LIT_CHAR: char = '*';
