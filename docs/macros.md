@@ -89,13 +89,10 @@ $include(src/content.rs)
 
 **temp**
 
-Temp saves content to temp file named ```rad_temp.txt```. Temp file is saved in
-```%TEMP%``` in windows and ```/tmp``` in non windows system. First argument is
-whether to truncate the file content.
-
+Tempin saves content to temp file named ```rad_temp.txt```. Tempout gets content from temp file.
 ```
-$temp(true,Hello world)
-$include(/tmp/rad_temp.txt)
+$tempout(true,Hello world)
+$tempin()
 ===
 Hello world
 ```
