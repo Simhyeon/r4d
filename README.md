@@ -2,10 +2,12 @@
 
 R4d is a text oriented macro prosessor made with rust.
 
-R4d is in very early stage, so there might be lots of undetected bugs and
-changes will occur fast.
 
-Currently only binary exists.
+### NOTE
+
+R4d is in very early stage, so there might be lots of undetected bugs. Fast
+implementaiton was my priorites, thus optimization has had a least
+consideration for a current stage.
 
 ### Usage
 
@@ -40,7 +42,7 @@ Definition syntax is similar to macro invocation but requires a specific form
 to sucessfully register the macro.
 
 ```
-$define(name,arg1 arg2,$arg1() $arg2())
+$define(name,arg1 arg2=$arg1() $arg2())
 ```
 
 - First argument is a macro name. Macro should start with an alphabet character
@@ -49,25 +51,36 @@ and following characters should be either alphanumeric or underscore.
 of naming. Multiple arguments can be declared and should be separated by a
 whitespace.
 - Third argument is a macro body. Any text can be included in the macro body
-while an unbalanced right parenthesis will end the definition. Enclose the body
-with double quote or escape with backslash to type literal parenthesis. Any
-character including newlines('\n', "\r\n") are all respected. (UTF-8)
+while an unbalanced parenthesis will prevent processor's work. Enclose the body
+with literal syntax or escape with backslash to type literal parenthesis. Other
+than that any character including newlines('\n', "\r\n") are all respected
+(UTF-8). Even literal syntax itself is included.
 
-You can simply bind the value to macro with ```=```.
+You can simply bind the value without giving arguments.
 
 ```
 $define(v_name=Simon creek)
 ```
-which is technically same with
+
+##### Caveats
+
+Definition's body can include any macro invocation in itself, thus wrong
+argument declaration cannot be detected at the time of definition.
+
 ```
-$define(v_name,,Simon creek)
+$define(panik,kalm=$calm())
+$panik()
+===
+error: Failed to invoke a macro : "calm"
+ --> stdin:2:2
+$calm()
 ```
 
 #### Macro inovokation
 
 Prefix is a dollar sign($)
 ```
-$define(macro_name,a1 a2,$a1() $a2())
+$define(macro_name,a1 a2=$a1() $a2())
 $macro_name(arg1, arg2)
 ```
 Macro can be invoked anywhere after the definition.
@@ -103,11 +116,10 @@ Name : Jane
 
 **NOTE**
 
-An unbalanced right parenthesis ends macro invocation and a non-double-quoted
-comma will change the number or content of arguments. If desirable content
-includes unbalanced right parentheses or commas, enclose the body with double
-quotes. Use escaped form of double quote, ```\"``` to use literal comma inside
-double quotes.
+An unbalanced parenthesis changes the behaviour of macro invocation and a
+non-double-quoted comma will change the number or content of arguments. If
+desirable content includes unbalanced parentheses or commas, enclose the body
+with string literal with the syntax of ```\* TEXT GOES HERE *\``` 
 
 ```
 $repeat(2,I'm,comma,separated
@@ -115,9 +127,9 @@ $repeat(2,I'm,comma,separated
 ===
 I'mI'm
 ```
-To include commas you need to enclose with double quotes
+To include commas you need to enclose with string literal
 ```
-$repeat(2,"I'm,comma,separated"
+$repeat(2,\*I'm,comma,separated*\
 )
 ===
 I'm,comma,separated
@@ -127,25 +139,19 @@ I'm,comma,separated
 
 ### Advanced features
 
-**Literal input**
-
-```
-$define(test,a,$a())
-$test\("This text prints as it is", but it should be only called on main level ))) \)
-===
-"This text prints as it is", but it should be only called on main level )))
-```
-
 **Piping**
 
 ```
-$define(test,a,$a())
+$define(test,a=$a())
 $test|(I'm going to be used by a pipe macro)
 $trim($repeat(2,$-()
 ))
+$test|(\*I'll be requoted with literal*\)
+$*()
 ===
 I'm going to be used by a pipe macro
 I'm going to be used by a pipe macro
+\*I'll be requoted with literal*\
 ```
 
 ### Goal
@@ -165,5 +171,6 @@ is not necessary
 
 #### Yet to come
 
-- Clear basic macro ergonomics
 - Compiled rule file a.k.a. m4 frozen file
+- Combination of stdin and file input
+- And possibly some optimizations...

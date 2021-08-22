@@ -18,7 +18,7 @@ function. Define cannot be renamed or undefined. Or even paused(Which will be
 added later) Define macro cannot be overriden too.
 
 ```
-$define(name,a1 a2,"$a1(),$a2()")
+$define(name,a1 a2="$a1(),$a2()")
 ===
 // Define doesn't print new line if it is a single input in the line
 ```
@@ -64,14 +64,14 @@ Pause literally pauses every macro execution except pause macro.
 
 ```
 $pause(true)
-$define(some,a,$a())
+$define(some,a=$a())
 $eval(1 + 2)
 $pause(false)
-$define(some,a,$a())
+$define(some,a=$a())
 $eval(1 + 2)
 ===
 
-$define(some,a,$a())
+$define(some,a=$a())
 $eval(1 + 2)
 3
 ```
@@ -100,6 +100,25 @@ $include(/tmp/rad_temp.txt)
 Hello world
 ```
 
+**pipe, -, \* **
+
+Pipe macro simply saves value to pipe. $-() returns piped value and clears
+pipe. $*() returns piped value in literal form.
+
+```
+$pipe(Value)
+$-()
+$-() 
+$pipe(Value)
+$*()
+$*() 
+===
+Value
+
+\*Value*\
+\**\
+```
+
 **Repeat**
 
 Repeat given content for given times
@@ -119,7 +138,7 @@ Loop around given value. Value is separated with commas. Thus values should be
 always enclosed with double quotes.
 
 ```
-$foreach("a,b,c",Value: $:
+$foreach(\*a,b,c*\,Value: $:
 )
 ===
 Value: a
@@ -130,13 +149,12 @@ Value: c
 
 **forloop**
 
-Loop around given range. Value is separated with commas. Thus values should be
-always enclosed with double quotes.
+Loop around given range. Value is separated with commas. 
 
-Range is inclusive e.g. "1,3" means from 1 to 3.
+Range is inclusive e.g. 1 and 3 means from 1 to 3.
 
 ```
-$forloop("3,5",Number: $:
+$forloop(3,5,Number: $:
 )
 ===
 Number: 3
@@ -168,10 +186,10 @@ Text "true" and "false", non "0" integer and "0" are valid inputs. "true" and
 negative integer is valid input. Floating point number is not allowed.
 
 ```
-$ifelse( true ,"I'm true","I'm false")
-$ifelse( false ,"I'm true","I'm false")
-$ifelse( 1 ,"I'm true","I'm false")
-$ifelse( 0 ,"I'm true","I'm false")
+$ifelse( true ,I'm true,I'm false)
+$ifelse( false ,I'm true,I'm false)
+$ifelse( 1 ,I'm true,I'm false)
+$ifelse( 0 ,I'm true,I'm false)
 ===
 I'm true
 I'm false
@@ -195,11 +213,11 @@ false
 
 **syscmd**
 
-Call system command, on unix system it calls directly. While windows call are
-mediated through ```cmd /C``` call.
+Call system command, on unix system macro calls given command directly. While
+windows call are mediated through ```cmd /C``` call.
 
 ```
-$syscmd("uname -a") 
+$syscmd(uname -a) 
 $syscmd(ver)
 ===
 Linux
@@ -210,12 +228,12 @@ Microsoft Windows [Version 10......]
 
 **sub**
 
-Sub gets substring from given input range. 
+Sub gets substring from given input range. You can give empty value. This is technically same with rust's syntax ```[min..max]```. Also supports utf8 characters.
 
 ```
-$sub("1,5",123456789)
-$sub("2,",123456789)
-$sub(",6",123456789)
+$sub(1,5,123456789)
+$sub(2,,123456789)
+$sub(,6,123456789)
 ===
 2345
 3456789
@@ -224,7 +242,7 @@ $sub(",6",123456789)
 
 **tr**
 
-Tr translate characters to other characters.
+Tr translate characters to other characters. Utf8 characters work.
 
 ```
 $tr(Given String,iSg,aOs)
@@ -263,7 +281,7 @@ process regex operation. Second argument is regex expression. This use [regex
 crate](https://crates.io/crates/regex).
 ```
 $regex(Hello world,w.*?d,rust)
-$regex(Hello World// TODO,//.*$,"")
+$regex(Hello World// TODO,//.*$,)
 ===
 Hello rust
 Hello World
@@ -274,6 +292,9 @@ Hello World
 ```Trim``` removes preceding and trailing new lines, tabs and whitespaces from
 given input. ```Chomp``` removed duplicate newlines from given input.
 ```Comp``` both trim and chomp given input
+
+There are variatins with suffix "l" which yield literal output. ```triml,
+chompl, compl```
 
 ```
 $define(value="
@@ -338,9 +359,9 @@ From creates formatted macro invocations with given csv values. The given macro
 name doesn't need dollar sign prefix.
 
 ```
-$define(three,a1 a2 a3,"1-$a1(), 2-$a2(), 3-$a3()")
-$from("a,b,c
-d,e,f",three)
+$define(three,a1 a2 a3=1-$a1(), 2-$a2(), 3-$a3())
+$from(\*a,b,c
+d,e,f*\,three)
 ===
 1-a, 2-b, 3-c
 1-d, 2-e, 3-f
@@ -353,15 +374,15 @@ formats are ```github```, ```wikitext``` and ```html```. This macro doesn't
 pretty print but just make it readable from other programs.
 
 ```
-$table(github,"a,b,c
+$table(github,\*a,b,c
 1,2,3
-4,5,6")
-$table(wikitext,"a,b,c
+4,5,6*\)
+$table(wikitext,\*a,b,c
 1,2,3
-4,5,6")
-$table(html,"a,b,c
+4,5,6*\)
+$table(html,\*a,b,c
 1,2,3
-4,5,6")
+4,5,6*\)
 ===
 |a|b|c|
 |-|-|-|

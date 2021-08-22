@@ -1,15 +1,12 @@
 ### TODOs
 
-* [ ] Make expansion rule more consistent for basic macros
-- Currently it simply does parsing again and again
-* [ ] Make line based literal rule
-* [ ] Improve macro ergonomics
 * [ ] Make allocations less, especially string manipulation 
-* [ ] New basic macros
 
 * [ ] Frozen file
   * [ ] Json file
 - This is kind of pre-compiled file
+
+* [ ] New basic macros
 
 ### How one should parse macro invocation?
 
@@ -38,6 +35,11 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] Make expansion rule more consistent for basic macros
+* [x] Literal input is stupid make, make comment-like literal rule instead
+* [x] Improve macro ergonomics
+* [-] Detect failed local macro definition
+- This is impossible because definition can contains outer macro
 * [x] Change iterator value naming -> $:
 * [x] Name can be empty space which is problem
 * [x] Refactor namespace rule
@@ -106,6 +108,7 @@ to add number and not
   * [x] Print a nested macro substitution
 
 * [x] New basic macros
+  * [x] Trime, chomp, compress no stripping
   * [x] Substring
   * [x] tr
   * [x] Pause macro option
@@ -136,3 +139,13 @@ to add number and not
   * [x] Random text -> Use lorem lipsum
 
 * [x] Make direct subcommand option
+
+- Buggy fixes, reserved for release notes
+
+* [x] Fixed strange literal syntax
+* [x] Removed double quotes syntax
+* [x] Removed literal version of macro invocation
+* [x] args_to_vec cannot parse string ```\**\``` starngely
+* [x] Substring doesn't work with utf8
+* [x] Foreach is broken
+* [x] Changed define syntax
