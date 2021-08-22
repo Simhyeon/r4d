@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::process::Command;
 use crate::error::RadError;
+use crate::arg_parser::ArgParser;
 use crate::consts::{MAIN_CALLER, TEMP_PATH, TEMP_FILE};
 use regex::Regex;
 use crate::utils::Utils;
@@ -101,7 +102,7 @@ impl BasicMacro {
             args
         )?;
 
-        if let Some(args) = Utils::args_with_len(args, 3) {
+        if let Some(args) = ArgParser::args_with_len(args, 3) {
             let source= &args[0];
             let target= &args[1];
             let object= &args[2];
@@ -122,7 +123,7 @@ impl BasicMacro {
             args
         )?;
 
-        if let Some(args) = Utils::args_with_len(args, 1) {
+        if let Some(args) = ArgParser::args_with_len(args, 1) {
             let formula = &args[0];
             let result = evalexpr::eval(formula)?;
             // TODO
@@ -152,7 +153,7 @@ impl BasicMacro {
             args
         )?;
 
-        if let Some(args) = Utils::args_with_len(args, 1) {
+        if let Some(args) = ArgParser::args_with_len(args, 1) {
             let source = &args[0];
             let reg = Regex::new(&format!(r"{0}\s*{0}", &processor.newline))?;
             let result = reg.replace_all(source, &format!("{0}{0}", &processor.newline));
@@ -170,7 +171,7 @@ impl BasicMacro {
             args
         )?;
 
-        if let Some(args) = Utils::args_with_len(args, 1) {
+        if let Some(args) = ArgParser::args_with_len(args, 1) {
             let source = &args[0];
             // Chomp and then compress
             let result = Utils::trim(&BasicMacro::chomp(source, processor)?)?;
@@ -188,7 +189,7 @@ impl BasicMacro {
             args
         )?;
 
-        if let Some(args) = Utils::args_with_len(args, 1) {
+        if let Some(args) = ArgParser::args_with_len(args, 1) {
             let word_count = &args[0];
             if let Ok(count) = Utils::trim(word_count)?.parse::<usize>() {
                 Ok(lipsum(count))
@@ -207,7 +208,7 @@ impl BasicMacro {
             args
         )?;
 
-        if let Some(args) = Utils::args_with_len(args, 1) {
+        if let Some(args) = ArgParser::args_with_len(args, 1) {
             let file_path = std::path::Path::new(&args[0]);
             Ok(processor.from_file(file_path, true)?)
         } else {
@@ -222,7 +223,7 @@ impl BasicMacro {
             args
         )?;
 
-        if let Some(args) = Utils::args_with_len(args, 2) {
+        if let Some(args) = ArgParser::args_with_len(args, 2) {
             let repeat_count;
             if let Ok(count) = Utils::trim(&args[0])?.parse::<usize>() {
                 repeat_count = count;
@@ -242,9 +243,9 @@ impl BasicMacro {
 
     // $syscmd(echo 'this is printed')
     fn syscmd(args: &str, _: &mut Processor) -> Result<String, RadError> {
-        if let Some(args_content) = Utils::args_with_len(args, 1) {
+        if let Some(args_content) = ArgParser::args_with_len(args, 1) {
             let source = &args_content[0];
-            let arg_vec = Utils::args_to_vec(&source, ' ', ('\'', '\''));
+            let arg_vec = ArgParser::args_to_vec(&source, ' ');
 
             let output = if cfg!(target_os = "windows") {
                 Command::new("cmd")
@@ -272,7 +273,7 @@ impl BasicMacro {
     // Argument is expanded after vectorization
     // $ifelse(evaluation, ifstate, elsestate)
     fn ifelse(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 2) {
+        if let Some(args) = ArgParser::args_with_len(args, 2) {
             let boolean = &args[0];
             let if_state = &processor.parse_chunk(
                 1000, 
@@ -315,7 +316,7 @@ impl BasicMacro {
             args
         )?;
 
-        if let Some(args) = Utils::args_with_len(args, 1) {
+        if let Some(args) = ArgParser::args_with_len(args, 1) {
             let name = &args[0];
             let map = processor.get_map();
 
@@ -337,7 +338,7 @@ impl BasicMacro {
             args
         )?;
 
-        if let Some(args) = Utils::args_with_len(args, 1) {
+        if let Some(args) = ArgParser::args_with_len(args, 1) {
             let name = &args[0];
 
             processor.map.undefine(name);
@@ -350,7 +351,7 @@ impl BasicMacro {
     // $foreach()
     // $foreach("a,b,c",$:)
     fn foreach(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 2) {
+        if let Some(args) = ArgParser::args_with_len(args, 2) {
             let mut sums = String::new();
             let target = args[1].to_owned(); // evaluate on loop
             let loopable = &processor.parse_chunk(
@@ -372,7 +373,7 @@ impl BasicMacro {
 
     // $forloop("1,5",$:)
     fn forloop(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 2) {
+        if let Some(args) = ArgParser::args_with_len(args, 2) {
             let mut sums = String::new();
             let target = args[1].to_owned(); // evaluate on loop
 
@@ -409,7 +410,7 @@ impl BasicMacro {
 
     // $from("1,2,3\n4,5,6", macro_name)
     fn from_data(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 2) {
+        if let Some(args) = ArgParser::args_with_len(args, 2) {
             let macro_data = &args[0];
             let macro_name = &Utils::trim(&args[1])?;
 
@@ -422,7 +423,7 @@ impl BasicMacro {
     }
 
     fn table(args: &str, p: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 2) {
+        if let Some(args) = ArgParser::args_with_len(args, 2) {
             let table_format = &args[0]; // Either gfm, wikitex, latex, none
             let csv_content = &args[1];
             let result = Formatter::csv_to_table(table_format, csv_content, &p.newline)?;
@@ -447,7 +448,7 @@ impl BasicMacro {
     }
 
     fn rename_call(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 2) {
+        if let Some(args) = ArgParser::args_with_len(args, 2) {
             let target = &args[0];
             let new = &args[1];
             processor.map.rename(target, new);
@@ -459,7 +460,7 @@ impl BasicMacro {
     }
 
     fn append(args: &str, processor: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 2) {
+        if let Some(args) = ArgParser::args_with_len(args, 2) {
             let name = &args[0];
             let target = &args[1];
             processor.map.append(name, target);
@@ -470,7 +471,7 @@ impl BasicMacro {
         }
     }
     fn translate(args: &str, _: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 3) {
+        if let Some(args) = ArgParser::args_with_len(args, 3) {
             let mut source = args[0].clone();
             let target = &args[1].chars().collect::<Vec<char>>();
             let destination = &args[2].chars().collect::<Vec<char>>();
@@ -491,7 +492,7 @@ impl BasicMacro {
 
     // $sub(",",GivenString)
     fn substring(args: &str, _: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 2) {
+        if let Some(args) = ArgParser::args_with_len(args, 2) {
             let source = &args[1];
             let loopable = &args[0].split(',').collect::<Vec<&str>>();
 
@@ -536,7 +537,7 @@ impl BasicMacro {
         }
     }
     fn pause(args: &str, processor : &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 1) {
+        if let Some(args) = ArgParser::args_with_len(args, 1) {
             let arg = &args[0];
             if let Ok(value) =Utils::is_arg_true(arg) {
                 if value {
@@ -555,7 +556,7 @@ impl BasicMacro {
         }
     }
     fn temp(args: &str, _: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = Utils::args_with_len(args, 1) {
+        if let Some(args) = ArgParser::args_with_len(args, 1) {
             let truncate = &args[0];
             let content = &args[1];
             if let Ok(value) = Utils::is_arg_true(truncate) {
