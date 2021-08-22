@@ -1,5 +1,4 @@
 use std::array::IntoIter;
-use std::path::PathBuf;
 use std::env::temp_dir;
 use std::io::Write;
 use std::fs::OpenOptions;
