@@ -58,7 +58,10 @@ impl ArgParser {
                         } 
                         // First lit character in given args
                         // Simply ignore character and don't set previous
-                        else { continue; }
+                        else { 
+                            previous.replace('0');
+                            continue; 
+                        }
                     } else if let Some(&ch) = arg_iter.peek() {
                         // Next is escape chart and not inside lit_count
                         // *\
@@ -67,6 +70,7 @@ impl ArgParser {
                             arg_iter.next(); // Conume next escape_char
                             // Lit end was outter most one
                             if lit_count == 0 {
+                                previous.replace('0');
                                 continue;
                             } 
                             // Inside other literal rules
