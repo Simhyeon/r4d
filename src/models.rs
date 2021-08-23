@@ -2,13 +2,15 @@ use std::collections::HashMap;
 use crate::basic::BasicMacro;
 use crate::error::RadError;
 use crate::utils::Utils;
+use serde::{Deserialize, Serialize};
+use bincode;
 
 pub enum WriteOption {
     File(std::fs::File),
     Stdout,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct MacroRule{
     pub name: String,
     pub args: Vec<String>,
@@ -123,3 +125,42 @@ impl UnbalancedChecker {
         true
     }
 } 
+
+#[derive(Serialize, Deserialize)]
+pub struct RuleFile {
+    pub rules : HashMap<String, MacroRule>,
+}
+
+impl RuleFile {
+    pub fn new(rules : Option<HashMap<String, MacroRule>>) -> Self {
+        if let Some(content) = rules {
+            Self {
+                rules: content,
+            }
+        } else {
+            Self {
+                rules: HashMap::new(),
+            }
+        }
+    }
+
+    pub fn melt(&mut self, path : &std::path::Path) -> Result<(), RadError> {
+        let result = bincode::deserialize::<Self>(&std::fs::read(path)?);
+        if let Err(_) = result {
+            Err(RadError::BincodeError(format!("Failed to melt the file : {}", path.display())))
+        } else {
+            self.rules.extend(result.unwrap().rules.into_iter());
+            Ok(())
+        }
+    }
+
+    pub fn freeze(&self, path: &std::path::Path) -> Result<(), RadError> {
+        let result = bincode::serialize(self);
+        if let Err(_) = result {
+            Err(RadError::BincodeError(format!("Failed to freeze to the file : {}", path.display())))
+        } else {
+            std::fs::write(path, result.unwrap())?;
+            Ok(())
+        }
+    }
+}

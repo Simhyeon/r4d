@@ -1,8 +1,9 @@
 use std::io::{self, Write};
+use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
 use crate::error::{RadError, ErrorLogger};
-use crate::models::{MacroMap, WriteOption, UnbalancedChecker};
+use crate::models::{MacroMap, WriteOption, UnbalancedChecker, MacroRule};
 use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
@@ -420,6 +421,10 @@ impl Processor {
         self.error_logger.set_file(file);
         self.line_number = 0;
         self.ch_number = 0;
+    }
+
+    pub fn add_custom_rules(&mut self, rules: HashMap<String, MacroRule>) {
+        self.map.custom.extend(rules.into_iter());
     }
 }
 

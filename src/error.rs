@@ -102,6 +102,8 @@ pub enum RadError {
     UnsupportedTableFormat(String),
     #[error("Table error : {0}")]
     CsvError(csv::Error),
+    #[error("Failed frozen operation : {0}")]
+    BincodeError(String),
 }
 
 impl From<regex::Error> for RadError {
