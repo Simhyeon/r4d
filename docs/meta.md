@@ -2,8 +2,7 @@
 
 * [ ] Make allocations less, especially string manipulation 
 
-* [ ] Frozen file
-  * [ ] Json file
+* [ ] Combination of stdin and file input
 - This is kind of pre-compiled file
 
 * [ ] New basic macros
@@ -34,6 +33,12 @@ regex crate complies with pure regex standard.
 My next approach will be pest. Pest has somewhat unfamailiar syntax but if used only for a line it would be fine.
 
 ### DONE
+
+* [x] Frozen file -> Bincode file
+* [x] Greedy suffix which put all remainder to last element without splitting
+- e.g. $pipe|+(1,2,3)
+
+* [x] Unbalanced parenthesis warning in non fragment case.
 
 * [x] Make expansion rule more consistent for basic macros
 * [x] Literal input is stupid make, make comment-like literal rule instead

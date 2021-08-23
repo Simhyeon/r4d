@@ -2,12 +2,11 @@
 
 R4d is a text oriented macro prosessor made with rust.
 
-
 ### NOTE
 
 R4d is in very early stage, so there might be lots of undetected bugs. Fast
 implementaiton was my priorites, thus optimization has had a least
-consideration for a current stage.
+consideration for the time.
 
 ### Usage
 
@@ -31,6 +30,11 @@ printf '...text...' | rad
 rad -e FileToWriteError.txt # Log error to file
 rad -s # Suppress error
 rad -n # Always use unix newline (default is '\r\n' in windows platform)
+
+# Freeze rule to a file
+rad test -f frozen.r4f
+# Melt a file and use in processing
+rad test -m frozen.r4f
 ```
 
 Type ```-h``` or ```--help``` to see full options.
@@ -139,6 +143,17 @@ I'm,comma,separated
 ```
 
 ### Advanced features
+
+**Greedy macro**
+
+```
+$define(test,a b c=$a() $b() $c())
+$test(first, second, third, fourth, fifth, sixth)
+$test+(first, second, third, fourth, fifth, sixth)
+===
+first  second  third
+first, second, third, fourth  fifth  sixth
+```
 
 **Piping**
 
