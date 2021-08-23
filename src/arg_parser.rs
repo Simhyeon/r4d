@@ -1,14 +1,20 @@
 use crate::consts::{ESCAPE_CHAR, LIT_CHAR};
 pub struct ArgParser;
 
+#[derive(Debug)]
+pub enum GreedyState {
+    Reserve(usize),
+    None
+}
+
 impl ArgParser {
     pub(crate) fn args_with_len<'a>(args: &'a str, length: usize, greedy: bool) -> Option<Vec<String>> {
-        let greedy = if greedy { 
-            if length == 1 { None } else { Some(length - 1) }
+        let greedy_state = if greedy { 
+            GreedyState::Reserve(length)
         } else { 
-            None 
+            GreedyState::None
         };
-        let args: Vec<_> = ArgParser::args_to_vec(args, ',', greedy);
+        let args: Vec<_> = ArgParser::args_to_vec(args, ',', greedy_state);
 
         if args.len() < length {
             return None;
@@ -17,14 +23,13 @@ impl ArgParser {
         Some(args)
     }
 
-    pub(crate) fn args_to_vec(arg_values: &str, delimiter: char, non_greedy_count: Option<usize>) -> Vec<String> {
+    pub(crate) fn args_to_vec(arg_values: &str, delimiter: char, mut greedy_state: GreedyState) -> Vec<String> {
         let mut values = vec![];
         let mut value = String::new();
         let mut previous : Option<char> = None;
         let mut lit_count : usize = 0;
         let mut no_previous = false;
         let mut arg_iter = arg_values.chars().peekable();
-        let mut non_greedy_count = non_greedy_count;
 
         while let Some(ch) = arg_iter.next() {
             // If greedy 
@@ -35,19 +40,21 @@ impl ArgParser {
                 { 
                     value.push(ch); 
                 } 
+                // If reserved
+                else if let GreedyState::Reserve(count) = greedy_state {
+                    value.push(ch); 
+                    let count = count - 1;
+                    if count > 0 {
+                        greedy_state = GreedyState::Reserve(count);
+                    } else {
+                        greedy_state = GreedyState::None;
+                    }
+                }
                 // else move to next value
-                else if let Some(count) = non_greedy_count {
+                else {
                     values.push(value);
                     value = String::new();
 
-                    let count = count - 1;
-                    if count > 0 {
-                        non_greedy_count.replace(count);
-                    } else {
-                        non_greedy_count = None;
-                    }
-                } else {
-                    value.push(ch); 
                 }
             }
             // Default behaviour of escape_char is not adding

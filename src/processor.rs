@@ -371,19 +371,19 @@ impl Processor {
         // Invoke is called only when key exists, thus unwrap is safe
         let rule = self.map.custom.get(name).unwrap().clone();
         let arg_types = &rule.args;
+        let args: Vec<String>;
         // Set variable to local macros
-        let non_greedy_count = if greedy { Some(arg_types.len()) } else { None };
-        let arg_values = ArgParser::args_to_vec(arg_values, ',', non_greedy_count);
-
-        // Necessary arg count is bigger than given arguments
-        if arg_types.len() > arg_values.len() {
+        if let Some(content) = ArgParser::args_with_len(arg_values, arg_types.len(), greedy) {
+            args = content;
+        } else {
+            // Necessary arg count is bigger than given arguments
             self.log_error(&format!("{}'s arguments are not sufficient. Given {}, but needs {}", name, arg_values.len(), arg_types.len()))?;
             return Ok(None);
         }
 
         for (idx, arg_type) in arg_types.iter().enumerate() {
             //Set arg to be substitued
-            self.map.new_local(level + 1, name, arg_type ,&arg_values[idx]);
+            self.map.new_local(level + 1, name, arg_type ,&args[idx]);
         }
         // parse the Chunk
         let result = self.parse_chunk(level, &name, &rule.body)?;

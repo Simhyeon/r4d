@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::process::Command;
 use crate::error::RadError;
-use crate::arg_parser::ArgParser;
+use crate::arg_parser::{ArgParser, GreedyState};
 use crate::consts::{MAIN_CALLER, TEMP_FILE};
 use regex::Regex;
 use crate::utils::Utils;
@@ -216,7 +216,7 @@ impl BasicMacro {
     fn syscmd(args: &str, greedy: bool,_: &mut Processor) -> Result<String, RadError> {
         if let Some(args_content) = ArgParser::args_with_len(args, 1, greedy) {
             let source = &args_content[0];
-            let arg_vec = ArgParser::args_to_vec(&source, ' ', None);
+            let arg_vec = ArgParser::args_to_vec(&source, ' ', GreedyState::None);
 
             let output = if cfg!(target_os = "windows") {
                 Command::new("cmd")
