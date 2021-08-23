@@ -88,7 +88,7 @@ impl Cli {
             (@arg FILE: ... "Files to execute processing")
             (@arg out: -o --out +takes_value "File to print out macro")
             (@arg err: -e --err +takes_value "File to save error")
-            (@arg silent: -s --silent "Supress warning")
+            (@arg silent: -s --silent "Supress error and warning")
             (@arg newline: -n --newline "Use unix newline for formatting")
         ).get_matches()
     }

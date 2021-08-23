@@ -98,3 +98,28 @@ impl MacroMap {
         }
     }
 }
+
+pub(crate) struct UnbalancedChecker{
+    paren: usize,
+}
+
+impl UnbalancedChecker {
+    pub fn new() -> Self {
+        Self {
+            paren: 0,
+        }
+    }
+    pub fn check(&mut self, ch: char) -> bool {
+        match ch {
+            '(' => {
+                self.paren = self.paren + 1
+            },
+            ')' => {
+                if self.paren > 0 {self.paren = self.paren - 1; } 
+                else {return false; }
+            },
+            _ => {return true;}
+        }
+        true
+    }
+} 

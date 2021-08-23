@@ -33,12 +33,38 @@ impl ErrorLogger{
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(format!("ERR : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, self.last_ch_number,LINE_ENDING).as_bytes())?;
+                    file.write_all(format!("error : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, self.last_ch_number,LINE_ENDING).as_bytes())?;
                 }
                 WriteOption::Stdout => {
                     eprint!(
                         "{}: {} {} --> {}:{}:{}{}",
                         "error".red(),
+                        log,
+                        LINE_ENDING,
+                        self.current_file,
+                        self.last_line_number,
+                        self.last_ch_number,
+                        LINE_ENDING);
+                }
+            }
+        } else {
+            // Silent option
+            // Do nothing
+        }
+
+        Ok(())
+    }
+
+    pub fn wlog(&mut self, log : &str) -> Result<(), RadError> {
+        if let Some(option) = &mut self.write_option {
+            match option {
+                WriteOption::File(file) => {
+                    file.write_all(format!("warning : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, self.last_ch_number,LINE_ENDING).as_bytes())?;
+                }
+                WriteOption::Stdout => {
+                    eprint!(
+                        "{}: {} {} --> {}:{}:{}{}",
+                        "warning".yellow(),
                         log,
                         LINE_ENDING,
                         self.current_file,

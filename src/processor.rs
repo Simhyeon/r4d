@@ -2,7 +2,7 @@ use std::io::{self, Write};
 use std::fs::File;
 use std::path::Path;
 use crate::error::{RadError, ErrorLogger};
-use crate::models::{MacroMap, WriteOption};
+use crate::models::{MacroMap, WriteOption, UnbalancedChecker};
 use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
@@ -49,6 +49,7 @@ pub struct Processor{
     define_parse: DefineParser,
     write_option: WriteOption,
     error_logger: ErrorLogger,
+    checker: UnbalancedChecker,
     line_number: u64,
     ch_number: u64,
     pub pipe_value: String,
@@ -67,6 +68,7 @@ impl Processor {
             write_option,
             define_parse: DefineParser::new(),
             error_logger: ErrorLogger::new(error_write_option),
+            checker : UnbalancedChecker::new(),
             line_number :0,
             ch_number:0,
             newline,
@@ -236,6 +238,10 @@ impl Processor {
                     }
                 }
                 LexResult::AddToRemainder => {
+                    if !self.checker.check(ch) {
+                        self.error_logger.set_number(self.line_number, self.ch_number);
+                        self.log_warning("Unbalanced parenthesis detected.")?;
+                    }
                     remainder.push(ch);
                 }
                 LexResult::AddToFrag(cursor) => {
@@ -399,6 +405,11 @@ impl Processor {
 
     fn log_error(&mut self, log : &str) -> Result<(), RadError> {
         self.error_logger.elog(log)?;
+        Ok(())
+    }
+
+    fn log_warning(&mut self, log : &str) -> Result<(), RadError> {
+        self.error_logger.wlog(log)?;
         Ok(())
     }
 
