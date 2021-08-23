@@ -4,15 +4,20 @@ pub struct ArgParser;
 #[derive(Debug)]
 pub enum GreedyState {
     Reserve(usize),
-    None
+    None,
+    Never,
 }
 
 impl ArgParser {
     pub(crate) fn args_with_len<'a>(args: &'a str, length: usize, greedy: bool) -> Option<Vec<String>> {
         let greedy_state = if greedy { 
-            GreedyState::Reserve(length)
+            if length > 1 {
+                GreedyState::Reserve(length - 1)
+            } else {
+                GreedyState::None
+            }
         } else { 
-            GreedyState::None
+            GreedyState::Never
         };
         let args: Vec<_> = ArgParser::args_to_vec(args, ',', greedy_state);
 
@@ -34,27 +39,37 @@ impl ArgParser {
         while let Some(ch) = arg_iter.next() {
             // If greedy 
             if ch == delimiter {
+                match greedy_state {
+                    GreedyState::Reserve(count) => {
+                        // move to next value
+                        values.push(value);
+                        value = String::new();
+                        let count = count - 1;
+                        if count > 0 {
+                            greedy_state = GreedyState::Reserve(count);
+                        } else {
+                            greedy_state = GreedyState::None;
+                        }
+                        continue;
+                    }
+                    // Push everything to current item, index, value or you name it
+                    GreedyState::None => {
+                        value.push(ch);
+                        continue;
+                    }
+                    _ => ()
+
+                }
                 // Either literal or escaped
                 if lit_count > 0 
                     || previous.unwrap_or('0') == ESCAPE_CHAR 
                 { 
                     value.push(ch); 
                 } 
-                // If reserved
-                else if let GreedyState::Reserve(count) = greedy_state {
-                    value.push(ch); 
-                    let count = count - 1;
-                    if count > 0 {
-                        greedy_state = GreedyState::Reserve(count);
-                    } else {
-                        greedy_state = GreedyState::None;
-                    }
-                }
-                // else move to next value
                 else {
+                    // move to next value
                     values.push(value);
                     value = String::new();
-
                 }
             }
             // Default behaviour of escape_char is not adding

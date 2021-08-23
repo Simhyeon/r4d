@@ -152,7 +152,7 @@ $test(first, second, third, fourth, fifth, sixth)
 $test+(first, second, third, fourth, fifth, sixth)
 ===
 first  second  third
-first, second, third, fourth  fifth  sixth
+first  second  third, fourth, fifth, sixth
 ```
 
 **Piping**
