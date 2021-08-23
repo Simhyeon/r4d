@@ -14,6 +14,7 @@ pub struct MacroFragment {
     pub name: String,
     pub args: String,
     pub pipe: bool,
+    pub greedy: bool,
 }
 
 impl MacroFragment {
@@ -23,6 +24,7 @@ impl MacroFragment {
             name : String::new(),
             args : String::new(),
             pipe: false,
+            greedy: false,
         }
     }
 
@@ -254,7 +256,8 @@ impl Processor {
                                         self.ch_number
                                     );
                             }
-                            if ch == '|' { frag.pipe = true; }
+                            if ch == '|' {frag.pipe = true; }
+                            else if ch == '+' { frag.greedy = true; }
                             else { frag.name.push(ch); }
                         },
                         Cursor::Arg => {
@@ -279,7 +282,7 @@ impl Processor {
                     } 
                     // Invoke macro
                     else {
-                        if let Some(content) = self.evaluate(level, caller, &frag.name, &frag.args)? {
+                        if let Some(content) = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy)? {
                             if frag.pipe {
                                 self.pipe_value = content;
                                 lexor.escape_nl = true;
@@ -328,7 +331,7 @@ impl Processor {
     }
 
     // Evaluate can be nested deeply
-    fn evaluate(&mut self,level: usize, caller: &str, name: &str, args: &String) -> Result<Option<String>, RadError> {
+    fn evaluate(&mut self,level: usize, caller: &str, name: &str, args: &String, greedy: bool) -> Result<Option<String>, RadError> {
         let level = level + 1;
         // This parses and processes arguments
         // and macro should be evaluated after
@@ -344,7 +347,7 @@ impl Processor {
         // custom macro comes before basic macro so that
         // user can override it
         else if self.map.custom.contains_key(name) {
-            if let Some(result) = self.invoke_rule(level, name, &args)? {
+            if let Some(result) = self.invoke_rule(level, name, &args, greedy)? {
                 return Ok(Some(result));
             } else {
                 return Ok(None);
@@ -352,7 +355,7 @@ impl Processor {
         }
         // Find basic macro
         else if self.map.basic.contains(&name) {
-            let final_result = self.map.basic.clone().call(name, &args, self)?;
+            let final_result = self.map.basic.clone().call(name, &args, greedy, self)?;
             return Ok(Some(final_result));
         } 
         // No macros found to evaluate
@@ -362,14 +365,14 @@ impl Processor {
         }
     }
 
-    fn invoke_rule(&mut self,level: usize ,name: &str, arg_values: &str) -> Result<Option<String>, RadError> {
+    fn invoke_rule(&mut self,level: usize ,name: &str, arg_values: &str, greedy: bool) -> Result<Option<String>, RadError> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
         let rule = self.map.custom.get(name).unwrap().clone();
         let arg_types = &rule.args;
         // Set variable to local macros
-        // TODO Check here for literal rules
-        let arg_values = ArgParser::args_to_vec(arg_values, ',');
+        let non_greedy_count = if greedy { Some(arg_types.len()) } else { None };
+        let arg_values = ArgParser::args_to_vec(arg_values, ',', non_greedy_count);
 
         // Necessary arg count is bigger than given arguments
         if arg_types.len() > arg_values.len() {
