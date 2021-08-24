@@ -27,6 +27,7 @@ impl Cli {
         // Processor
         let mut processor: Processor;
         let mut error_option : Option<WriteOption> = Some(WriteOption::Stdout);
+        let purge_option = args.is_present("purge");
         // ========
         // Sub options
         // Set error write option
@@ -63,11 +64,13 @@ impl Cli {
                     .unwrap();
                 processor = Processor::new(WriteOption::File(out_file), error_option, newline);
                 processor.add_custom_rules(rule_file.rules);
+                if purge_option { processor.set_purge() };
             }
             // Write to standard output
             else { 
                 processor = Processor::new(WriteOption::Stdout, error_option, newline); 
                 processor.add_custom_rules(rule_file.rules);
+                if purge_option { processor.set_purge() };
             }
 
             for file in files {
@@ -86,9 +89,11 @@ impl Cli {
                     .unwrap();
                 processor = Processor::new(WriteOption::File(out_file), error_option, newline);
                 processor.add_custom_rules(rule_file.rules);
+                if purge_option { processor.set_purge() };
             } else { 
                 processor = Processor::new(WriteOption::Stdout, error_option, newline); 
                 processor.add_custom_rules(rule_file.rules);
+                if purge_option { processor.set_purge() };
             }
 
             processor.from_stdin(false)?;
@@ -115,6 +120,7 @@ impl Cli {
             (@arg err: -e --err +takes_value "File to save logs")
             (@arg melt: ... -m +takes_value "Frozen file to reads")
             (@arg freeze: -f +takes_value "Freeze to file")
+            (@arg purge: -p "Purge unused macros")
             (@arg silent: -s "Supress error and warning")
             (@arg newline: -n "Use unix newline for formatting")
         ).get_matches()

@@ -58,6 +58,7 @@ pub struct Processor{
     pub pipe_value: String,
     pub newline: String,
     pub paused: bool,
+    purge: bool,
 }
 // 1. Get string
 // 2. Parse until macro invocation detected
@@ -77,7 +78,11 @@ impl Processor {
             newline,
             pipe_value: String::new(),
             paused: false,
+            purge: false,
         }
+    }
+    pub fn set_purge(&mut self) {
+        self.purge = true;
     }
     pub fn get_map(&self) -> &MacroMap {
         &self.map
@@ -299,7 +304,16 @@ impl Processor {
                         // Failed to invoke
                         // because macro doesn't exist
                         else {
-                            remainder.push_str(&frag.whole_string);
+                            // If purge mode is set, don't print anything 
+                            // and don't print error
+                            if !self.purge {
+                                self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
+                                remainder.push_str(&frag.whole_string);
+                            } else {
+                                // If purge mode
+                                // set escape new line 
+                                lexor.escape_nl = true;
+                            }
                         }
                         // Clear fragment regardless of success
                         frag.clear()
@@ -361,7 +375,6 @@ impl Processor {
         } 
         // No macros found to evaluate
         else { 
-            self.log_error(&format!("Failed to invoke a macro : \"{}\"", name))?;
             return Ok(None);
         }
     }
@@ -464,6 +477,7 @@ impl DefineParser {
     // e.g. ) name,a1 a2,body text
     pub fn parse_define(&mut self, text: &str) -> Option<(String, String, String)> {
         self.clear();
+        let mut bind = false;
         let mut char_iter = text.chars().peekable();
         while let Some(ch) = char_iter.next() {
             match self.arg_cursor {
@@ -474,6 +488,7 @@ impl DefineParser {
                         self.name.push_str(&self.container);
                         self.container.clear();
                         self.arg_cursor = DefineCursor::Body;
+                        bind = true;
                         continue;
                     } 
                     // This means pattern like this
@@ -506,6 +521,7 @@ impl DefineParser {
                     } 
                     // Go to body
                     else if ch == '=' {
+                        println!("GO TO BODY");
                         self.args.push_str(&self.container);
                         self.container.clear();
                         self.arg_cursor = DefineCursor::Body; 
@@ -531,6 +547,13 @@ impl DefineParser {
                 }
             } 
             self.container.push(ch);
+        }
+
+        // This means pattern such as
+        // $define(test,Test) 
+        // -> This is not a valid pattern
+        if self.args.len() == 0 && !bind {
+            return None;
         }
 
         // End of body
