@@ -30,8 +30,9 @@ printf '...text...' | rad
 rad -e FileToWriteError.txt # Log error to file
 rad -s # Suppress error
 rad -n # Always use unix newline (default is '\r\n' in windows platform)
+rad -p # Purge mode, print nothing if a macro doesn't exist
 
-# Freeze rule to a file
+# Freeze(zip to binary) rules to a single file
 rad test -f frozen.r4f
 # Melt a file and use in processing
 rad test -m frozen.r4f
