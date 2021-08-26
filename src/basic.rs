@@ -58,8 +58,9 @@ impl BasicMacro {
             ("tempout".to_owned(), BasicMacro::temp as MacroType).to_owned(),
             ("tempin".to_owned(), BasicMacro::temp_include as MacroType).to_owned(),
             ("pipe".to_owned(), BasicMacro::pipe as MacroType).to_owned(),
+            ("env".to_owned(), BasicMacro::get_env as MacroType).to_owned(),
+            ("path".to_owned(), BasicMacro::merge_path as MacroType).to_owned(),
             ("-".to_owned(), BasicMacro::get_pipe as MacroType).to_owned(),
-            ("*".to_owned(), BasicMacro::get_pipe_literal as MacroType).to_owned(),
         ]));
         // Return struct
         Self { macros : map }
@@ -378,16 +379,26 @@ impl BasicMacro {
         Ok(String::new())
     }
 
-    /// $-()
-    fn get_pipe(_: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
-        let out = processor.pipe_value.clone();
-        processor.pipe_value.clear();
+    fn get_env(args: &str, _: bool, _: &mut Processor) -> Result<String, RadError> {
+        let out = std::env::var(args)?;
         Ok(out)
     }
 
-    /// $*()
-    fn get_pipe_literal(_: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
-        let out = format!("\\*{}*\\",processor.pipe_value);
+    fn merge_path(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
+            let target = &args[0];
+            let added = &args[1];
+
+            let out = format!("{}",&std::path::Path::new(target).join(added).display());
+            Ok(out)
+        } else {
+            Err(RadError::InvalidArgument("Path macro needs two arguments"))
+        }
+    }
+
+    /// $-()
+    fn get_pipe(_: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
+        let out = processor.pipe_value.clone();
         processor.pipe_value.clear();
         Ok(out)
     }
