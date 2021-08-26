@@ -59,6 +59,7 @@ pub struct Processor{
     pub newline: String,
     pub paused: bool,
     purge: bool,
+    always_greedy: bool,
 }
 // 1. Get string
 // 2. Parse until macro invocation detected
@@ -79,7 +80,11 @@ impl Processor {
             pipe_value: String::new(),
             paused: false,
             purge: false,
+            always_greedy: false,
         }
+    }
+    pub fn set_greedy(&mut self) {
+        self.always_greedy = true;
     }
     pub fn set_purge(&mut self) {
         self.purge = true;
@@ -288,7 +293,7 @@ impl Processor {
                     } 
                     // Invoke macro
                     else {
-                        if let Some(content) = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy)? {
+                        if let Some(content) = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy)? {
                             if frag.pipe {
                                 self.pipe_value = content;
                                 lexor.escape_nl = true;
@@ -521,7 +526,6 @@ impl DefineParser {
                     } 
                     // Go to body
                     else if ch == '=' {
-                        println!("GO TO BODY");
                         self.args.push_str(&self.container);
                         self.container.clear();
                         self.arg_cursor = DefineCursor::Body; 
