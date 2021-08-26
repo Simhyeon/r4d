@@ -16,6 +16,8 @@ pub struct MacroFragment {
     pub args: String,
     pub pipe: bool,
     pub greedy: bool,
+    pub preceding: bool,
+    pub yield_literal : bool,
 }
 
 impl MacroFragment {
@@ -26,6 +28,8 @@ impl MacroFragment {
             args : String::new(),
             pipe: false,
             greedy: false,
+            preceding: false,
+            yield_literal : false,
         }
     }
 
@@ -34,6 +38,9 @@ impl MacroFragment {
         self.name.clear();
         self.args.clear();
         self.pipe = false; 
+        self.greedy = false; 
+        self.preceding = false; 
+        self.yield_literal = false;
     }
 
     pub fn is_empty(&self) -> bool {
@@ -59,6 +66,7 @@ pub struct Processor{
     pub newline: String,
     pub paused: bool,
     purge: bool,
+    always_preceding: bool,
     always_greedy: bool,
 }
 // 1. Get string
@@ -80,6 +88,7 @@ impl Processor {
             pipe_value: String::new(),
             paused: false,
             purge: false,
+            always_preceding: false,
             always_greedy: false,
         }
     }
@@ -88,6 +97,9 @@ impl Processor {
     }
     pub fn set_purge(&mut self) {
         self.purge = true;
+    }
+    pub fn set_preceding(&mut self) {
+        self.always_preceding = true;
     }
     pub fn get_map(&self) -> &MacroMap {
         &self.map
@@ -267,9 +279,13 @@ impl Processor {
                                         self.ch_number
                                     );
                             }
-                            if ch == '|' {frag.pipe = true; }
-                            else if ch == '+' { frag.greedy = true; }
-                            else { frag.name.push(ch); }
+                            match ch {
+                                '|' => frag.pipe = true,
+                                '+' => frag.greedy = true,
+                                '^' => frag.preceding = true, 
+                                '*' => frag.yield_literal = true,
+                                _ => frag.name.push(ch) 
+                            }
                         },
                         Cursor::Arg => {
                             frag.args.push(ch)
@@ -293,7 +309,7 @@ impl Processor {
                     } 
                     // Invoke macro
                     else {
-                        if let Some(content) = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy)? {
+                        if let Some(mut content) = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy, frag.preceding || self.always_preceding)? {
                             if frag.pipe {
                                 self.pipe_value = content;
                                 lexor.escape_nl = true;
@@ -303,6 +319,9 @@ impl Processor {
                             else if content.len() == 0 {
                                 lexor.escape_nl = true;
                             } else {
+                                if frag.yield_literal {
+                                    content = format!("\\*{}*\\", content);
+                                }
                                 remainder.push_str(&content);
                             }
                         } 
@@ -351,7 +370,7 @@ impl Processor {
     }
 
     // Evaluate can be nested deeply
-    fn evaluate(&mut self,level: usize, caller: &str, name: &str, args: &String, greedy: bool) -> Result<Option<String>, RadError> {
+    fn evaluate(&mut self,level: usize, caller: &str, name: &str, args: &String, greedy: bool, preceding: bool) -> Result<Option<String>, RadError> {
         let level = level + 1;
         // This parses and processes arguments
         // and macro should be evaluated after
@@ -359,8 +378,19 @@ impl Processor {
         // Make caller to name
         let args = self.parse_chunk(level, name, args)?; 
 
+        // TODO
+        if preceding {
+            let mut temp_level = level;
+            while temp_level > 0 {
+                temp_level = temp_level - 1;
+                if let Some(local) = self.map.local.get(&Utils::local_name(temp_level, &name)) {
+                    return Ok(Some(local.to_owned()));
+                } 
+            }
+        } 
+
         // Find Local macro first
-        if let Some(local) = self.map.local.get(&Utils::local_name(level, &caller, &name)) {
+        if let Some(local) = self.map.local.get(&Utils::local_name(level, &name)) {
             return Ok(Some(local.to_owned()))
         } 
         // Find custom macro
@@ -401,7 +431,7 @@ impl Processor {
 
         for (idx, arg_type) in arg_types.iter().enumerate() {
             //Set arg to be substitued
-            self.map.new_local(level + 1, name, arg_type ,&args[idx]);
+            self.map.new_local(level + 1, arg_type ,&args[idx]);
         }
         // parse the Chunk
         let result = self.parse_chunk(level, &name, &rule.body)?;
