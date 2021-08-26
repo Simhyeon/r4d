@@ -84,6 +84,8 @@ impl ErrorLogger{
 
 #[derive(Error, Debug)]
 pub enum RadError {
+    #[error("Invalid environment name : {0}")]
+    EnvError(std::env::VarError),
     #[error("Failed regex operation : {0}")]
     InvalidRegex(regex::Error),
     #[error("Invalid formula : {0}")]
@@ -145,5 +147,11 @@ impl From <std::string::FromUtf8Error> for RadError {
 impl From <csv::Error> for RadError {
     fn from(err : csv::Error) -> Self {
         Self::CsvError(err)
+    }
+}
+
+impl From <std::env::VarError> for RadError {
+    fn from(err : std::env::VarError) -> Self {
+        Self::EnvError(err)
     }
 }
