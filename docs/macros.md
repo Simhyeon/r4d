@@ -98,6 +98,26 @@ $tempin()
 Hello world
 ```
 
+**env**
+
+Print environment variable. Wrong name yields error
+
+```
+$env(HOME)
+===
+/home/simoncreek
+```
+
+**path**
+
+Merge two path into one.
+
+```
+$path($env(HOME),document)
+===
+/home/simoncreek/document
+```
+
 **pipe, -, \* **
 
 Pipe macro simply saves value to pipe. $-() returns piped value and clears

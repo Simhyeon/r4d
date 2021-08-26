@@ -370,7 +370,8 @@ impl Processor {
     }
 
     // Evaluate can be nested deeply
-    fn evaluate(&mut self,level: usize, caller: &str, name: &str, args: &String, greedy: bool, preceding: bool) -> Result<Option<String>, RadError> {
+    // Disable caller for temporary
+    fn evaluate(&mut self,level: usize, _caller: &str, name: &str, args: &String, greedy: bool, preceding: bool) -> Result<Option<String>, RadError> {
         let level = level + 1;
         // This parses and processes arguments
         // and macro should be evaluated after

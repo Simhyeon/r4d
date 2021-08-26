@@ -1,5 +1,6 @@
 ### TODOs
 
+- With caller refactoring
 * [ ] Make allocations less, especially string manipulation 
 
 * [ ] Combination of stdin and file input
@@ -33,6 +34,12 @@ regex crate complies with pure regex standard.
 My next approach will be pest. Pest has somewhat unfamailiar syntax but if used only for a line it would be fine.
 
 ### DONE
+
+* [x] Greedy is working not as it should
+* [x] ENV macro
+* [x] Path macro
+* [x] Add literal attribute
+* [x] Parent argument indicator
 
 * [x] Enable all greedy by default option
 * [x] Purge mode

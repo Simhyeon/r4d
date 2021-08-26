@@ -32,6 +32,7 @@ rad -s # Suppress error
 rad -n # Always use unix newline (default is '\r\n' in windows platform)
 rad -p # Purge mode, print nothing if a macro doesn't exist
 rad -g # Always enable greedy for every macro invocation
+rad -P # Always enable preceding
 
 # Freeze(zip to binary) rules to a single file
 rad test -f frozen.r4f
@@ -144,9 +145,23 @@ I'm,comma,separated
 
 ```
 
-### Advanced features
+### Macro attributes
 
-**Greedy macro**
+**Preceding**
+
+```
+$define(nested,a=$forloop(0,$a^(),Value : $:
+))
+$nested(3)
+===
+Value : 0
+Value : 1
+Value : 2
+Value : 3
+
+```
+
+**Greedy**
 
 ```
 $define(test,a b c=$a() $b() $c())
@@ -165,11 +180,24 @@ $test|(I'm going to be used by a pipe macro)
 $trim($repeat(2,$-()
 ))
 $test|(\*I'll be requoted with literal*\)
-$*()
+$-*()
 ===
 I'm going to be used by a pipe macro
 I'm going to be used by a pipe macro
 \*I'll be requoted with literal*\
+```
+
+**Yield literal**
+
+```
+$define(array,content=$content())
+$foreach($array*(a,b,c),Iterated: $:
+)
+===
+Iterated: a
+Iterated: b
+Iterated: c
+
 ```
 
 ### Goal
