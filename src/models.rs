@@ -49,8 +49,8 @@ impl MacroMap {
     }
 
     // Crate new local macro(argument map)
-    pub fn new_local(&mut self, level: usize, caller: &str ,name: &str, value: &str) {
-        self.local.insert(Utils::local_name(level, caller, name), value.to_owned());
+    pub fn new_local(&mut self, level: usize,name: &str, value: &str) {
+        self.local.insert(Utils::local_name(level,name), value.to_owned());
     }
 
     pub fn clear_local(&mut self) {

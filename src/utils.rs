@@ -5,8 +5,8 @@ use std::io::BufRead;
 pub(crate) struct Utils;
 
 impl Utils {
-    pub(crate) fn local_name(level: usize, caller: &str, name : &str) -> String {
-        format!("{}.{}.{}", level,caller, name)
+    pub(crate) fn local_name(level: usize, name : &str) -> String {
+        format!("{}.{}", level, name)
     }
 
     pub(crate) fn trim(args: &str) -> Result<String, RadError> {
