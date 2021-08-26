@@ -31,6 +31,7 @@ rad -e FileToWriteError.txt # Log error to file
 rad -s # Suppress error
 rad -n # Always use unix newline (default is '\r\n' in windows platform)
 rad -p # Purge mode, print nothing if a macro doesn't exist
+rad -g # Always enable greedy for every macro invocation
 
 # Freeze(zip to binary) rules to a single file
 rad test -f frozen.r4f
@@ -185,9 +186,3 @@ is not necessary
 #### Built-in macros (or macro-like functions)
 
 [Usages](./docs/macros.md)
-
-#### Yet to come
-
-- Compiled rule file a.k.a. m4 frozen file
-- Combination of stdin and file input
-- And possibly some optimizations...

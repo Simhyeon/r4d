@@ -34,6 +34,7 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] Enable all greedy by default option
 * [x] Purge mode
 * [x] Frozen file -> Bincode file
 * [x] Greedy suffix which put all remainder to last element without splitting

@@ -14,8 +14,8 @@ All macros are case sensitive and should come with dollar sign prefix.
 **define**
 
 Define creates an custom macro. This macro is actually not a macro but special
-function. Define cannot be renamed or undefined. Or even paused(Which will be
-added later) Define macro cannot be overriden too.
+function. Define cannot be renamed or undefined. Define macro cannot be
+overriden too.
 
 ```
 $define(name,a1 a2="$a1(),$a2()")
@@ -60,7 +60,8 @@ TEST CASE
 
 **pause**
 
-Pause literally pauses every macro execution except pause macro.
+Pause literally pauses every macro execution except pause macro. Even define is
+not evaluated
 
 ```
 $pause(true)
