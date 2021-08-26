@@ -39,39 +39,38 @@ impl ArgParser {
         while let Some(ch) = arg_iter.next() {
             // If greedy 
             if ch == delimiter {
-                match greedy_state {
-                    GreedyState::Reserve(count) => {
-                        // move to next value
-                        values.push(value);
-                        value = String::new();
-                        let count = count - 1;
-                        if count > 0 {
-                            greedy_state = GreedyState::Reserve(count);
-                        } else {
-                            greedy_state = GreedyState::None;
-                        }
-                        continue;
-                    }
-                    // Push everything to current item, index, value or you name it
-                    GreedyState::None => {
-                        value.push(ch);
-                        continue;
-                    }
-                    _ => ()
-
-                }
                 // Either literal or escaped
                 if lit_count > 0 
                     || previous.unwrap_or('0') == ESCAPE_CHAR 
                 { 
                     value.push(ch); 
-                } 
-                else {
-                    // move to next value
-                    values.push(value);
-                    value = String::new();
-                }
-            }
+                } else { // not literal
+                    match greedy_state {
+                        GreedyState::Reserve(count) => {
+                            // move to next value
+                            values.push(value);
+                            value = String::new();
+                            let count = count - 1;
+                            if count > 0 {
+                                greedy_state = GreedyState::Reserve(count);
+                            } else {
+                                greedy_state = GreedyState::None;
+                            }
+                            continue;
+                        }
+                        // Push everything to current item, index, value or you name it
+                        GreedyState::None => {
+                            value.push(ch);
+                            continue;
+                        }
+                        GreedyState::Never => {
+                            // move to next value
+                            values.push(value);
+                            value = String::new();
+                        }
+                    } // Match end
+                } // else end
+            } 
             // Default behaviour of escape_char is not adding
             else if ch == ESCAPE_CHAR { 
                 // If literal print everything without escaping
