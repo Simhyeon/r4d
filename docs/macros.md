@@ -90,12 +90,17 @@ $include(src/content.rs)
 
 **temp**
 
-Tempin saves content to temp file named ```rad_temp.txt```. Tempout gets content from temp file.
+Tempin saves content to temp file named ```rad_temp.txt```. Tempout gets
+content from temp file. You can also change the temp file with tempto.
 ```
 $tempout(true,Hello world)
 $tempin()
+$tempto(out.json)
+$tempout(true,{"name":"simon creek"})
+$tempin()
 ===
 Hello world
+{"name":"simon creek"}
 ```
 
 **env**

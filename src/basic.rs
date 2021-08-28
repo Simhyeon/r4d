@@ -544,9 +544,7 @@ impl BasicMacro {
 
     fn set_temp_target(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
-            println!("HMM");
             processor.temp_target = PathBuf::from(std::env::temp_dir()).join(&args[0]);
-            println!("TEMP FILE : {}", processor.temp_target.display());
             Ok(String::new())
         } else {
             Err(RadError::InvalidArgument("Temp requires an argument"))
