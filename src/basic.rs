@@ -311,14 +311,15 @@ impl BasicMacro {
 
     // $foreach()
     // $foreach(\*a,b,c*\,$:)
-    fn foreach(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
+    fn foreach(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let mut sums = String::new();
             let target = &args[1]; // evaluate on loop
             let loopable = &args[0];
 
             for value in loopable.split(',') {
-                sums.push_str(&ITER.replace_all(target, value));
+                let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &ITER.replace_all(target, value))?;
+                sums.push_str(&result);
             }
             Ok(sums)
         } else {
@@ -327,7 +328,7 @@ impl BasicMacro {
     }
 
     // $forloop(1,5,$:)
-    fn forloop(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
+    fn forloop(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 3, greedy) {
             let mut sums = String::new();
             let expression = &args[2]; // evaluate on loop
@@ -342,7 +343,8 @@ impl BasicMacro {
             } else { return Err(RadError::InvalidArgument("Forloop's min value should be non zero positive integer")); }
 
             for value in min..=max {
-                sums.push_str(&ITER.replace_all(expression, &value.to_string()));
+                let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &ITER.replace_all(expression, &value.to_string()))?;
+                sums.push_str(&result);
             }
 
             Ok(sums)

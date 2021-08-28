@@ -1,5 +1,6 @@
 ### TODOs
 
+* [ ] Improve foreach, forloop ergonomics
 * [ ] Make allocations less, especially string manipulation 
 
 * [ ] Combination of stdin and file input
