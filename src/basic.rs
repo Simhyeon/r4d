@@ -4,10 +4,11 @@ use std::io::Write;
 use std::fs::OpenOptions;
 use std::collections::HashMap;
 use std::iter::FromIterator;
+use std::path::PathBuf;
 use std::process::Command;
 use crate::error::RadError;
 use crate::arg_parser::{ArgParser, GreedyState};
-use crate::consts::{MAIN_CALLER, TEMP_FILE};
+use crate::consts::MAIN_CALLER;
 use regex::Regex;
 use crate::utils::Utils;
 use crate::processor::Processor;
@@ -55,6 +56,7 @@ impl BasicMacro {
             ("tr".to_owned(), BasicMacro::translate as MacroType).to_owned(),
             ("sub".to_owned(), BasicMacro::substring as MacroType).to_owned(),
             ("pause".to_owned(), BasicMacro::pause as MacroType).to_owned(),
+            ("tempto".to_owned(), BasicMacro::set_temp_target as MacroType).to_owned(),
             ("tempout".to_owned(), BasicMacro::temp as MacroType).to_owned(),
             ("tempin".to_owned(), BasicMacro::temp_include as MacroType).to_owned(),
             ("pipe".to_owned(), BasicMacro::pipe as MacroType).to_owned(),
@@ -70,10 +72,11 @@ impl BasicMacro {
         self.macros.contains_key(name)
     }
 
-    pub fn call(&self, name : &str, args: &str,greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
+    pub fn call(&mut self, name : &str, args: &str,greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
+        let args = self.parse_inner(processor, args)?;
         if let Some(func) = self.macros.get(name) {
             // Print out macro call result
-            let result = func(args, greedy, processor)?;
+            let result = func(&args, greedy, processor)?;
             Ok(result)
         } else {
             Ok(String::new())
@@ -87,6 +90,10 @@ impl BasicMacro {
     pub fn rename(&mut self, name: &str, target: &str) {
         let func = self.macros.remove(name).unwrap();
         self.macros.insert(target.to_owned(), func);
+    }
+
+    fn parse_inner(&mut self,processor : &mut Processor, target: &str) -> Result<String, RadError> {
+        processor.parse_chunk(0, &MAIN_CALLER.to_owned(), target)
     }
 
     // ==========
@@ -508,12 +515,12 @@ impl BasicMacro {
         }
     }
 
-    fn temp(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
+    fn temp(args: &str, greedy: bool, p: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let truncate = &args[0];
             let content = &args[1];
             if let Ok(value) = Utils::is_arg_true(truncate) {
-                let file = temp_dir().join(TEMP_FILE);
+                let file = temp_dir().join(&p.temp_target);
                 let mut temp_file = OpenOptions::new()
                     .create(true)
                     .write(true)
@@ -531,7 +538,18 @@ impl BasicMacro {
     }
 
     fn temp_include(_: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
-        let file_path = temp_dir().join(TEMP_FILE);
+        let file_path = temp_dir().join(&processor.temp_target);
         Ok(processor.from_file(&file_path, true)?)
+    }
+
+    fn set_temp_target(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
+            println!("HMM");
+            processor.temp_target = PathBuf::from(std::env::temp_dir()).join(&args[0]);
+            println!("TEMP FILE : {}", processor.temp_target.display());
+            Ok(String::new())
+        } else {
+            Err(RadError::InvalidArgument("Temp requires an argument"))
+        }
     }
 }

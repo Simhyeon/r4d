@@ -1,6 +1,5 @@
 ### TODOs
 
-- With caller refactoring
 * [ ] Make allocations less, especially string manipulation 
 
 * [ ] Combination of stdin and file input
@@ -35,6 +34,7 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] Make temp target change macro
 * [x] Greedy is working not as it should
 * [x] ENV macro
 * [x] Path macro

@@ -32,7 +32,6 @@ rad -s # Suppress error
 rad -n # Always use unix newline (default is '\r\n' in windows platform)
 rad -p # Purge mode, print nothing if a macro doesn't exist
 rad -g # Always enable greedy for every macro invocation
-rad -P # Always enable preceding
 
 # Freeze(zip to binary) rules to a single file
 rad test -f frozen.r4f
@@ -146,20 +145,6 @@ I'm,comma,separated
 ```
 
 ### Macro attributes
-
-**Preceding**
-
-```
-$define(nested,a=$forloop(0,$a^(),Value : $:
-))
-$nested(3)
-===
-Value : 0
-Value : 1
-Value : 2
-Value : 3
-
-```
 
 **Greedy**
 

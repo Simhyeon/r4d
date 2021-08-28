@@ -29,7 +29,6 @@ impl Cli {
         let mut error_option : Option<WriteOption> = Some(WriteOption::Stdout);
         let purge_option = args.is_present("purge");
         let greedy_option = args.is_present("greedy");
-        let preceding_option = args.is_present("preceding");
         // ========
         // Sub options
         // Set error write option
@@ -68,7 +67,6 @@ impl Cli {
                 processor.add_custom_rules(rule_file.rules);
                 if purge_option { processor.set_purge() };
                 if greedy_option { processor.set_greedy() };
-                if preceding_option { processor.set_preceding() };
             }
             // Write to standard output
             else { 
@@ -76,7 +74,6 @@ impl Cli {
                 processor.add_custom_rules(rule_file.rules);
                 if purge_option { processor.set_purge() };
                 if greedy_option { processor.set_greedy() };
-                if preceding_option { processor.set_preceding() };
             }
 
             for file in files {
@@ -97,13 +94,11 @@ impl Cli {
                 processor.add_custom_rules(rule_file.rules);
                 if purge_option { processor.set_purge() };
                 if greedy_option { processor.set_greedy() };
-                if preceding_option { processor.set_preceding() };
             } else { 
                 processor = Processor::new(WriteOption::Stdout, error_option, newline); 
                 processor.add_custom_rules(rule_file.rules);
                 if purge_option { processor.set_purge() };
                 if greedy_option { processor.set_greedy() };
-                if preceding_option { processor.set_preceding() };
             }
 
             processor.from_stdin(false)?;
@@ -122,14 +117,13 @@ impl Cli {
 
     fn args_builder() -> clap::ArgMatches {
         clap_app!(R4d =>
-            (version: "0.4.0")
+            (version: "0.4.1")
             (author: "Simon Creek <simoncreek@tutanota.com>")
             (about: "R4d is a modern macro processor made with rust")
             (@arg FILE: ... "Files to execute processing")
             (@arg out: -o --out +takes_value "File to print out macro")
             (@arg err: -e --err +takes_value "File to save logs")
             (@arg greedy: -g "Make all macro invocation greedy")
-            (@arg preceding: -P "Make all macro invocation preceding by default")
             (@arg melt: ... -m +takes_value "Frozen file to reads")
             (@arg freeze: -f +takes_value "Freeze to file")
             (@arg purge: -p "Purge unused macros")

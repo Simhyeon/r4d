@@ -8,6 +8,4 @@ pub const LINE_ENDING: &'static str = "\r\n";
 #[cfg(not(windows))]
 pub const LINE_ENDING: &'static str = "\n";
 
-pub const TEMP_FILE: &'static str = "radtemp.txt";
-
 pub const LIT_CHAR: char = '*';
