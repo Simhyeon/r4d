@@ -378,11 +378,12 @@ impl Processor {
         // The macro can be be the macro defined in parent macro
         let mut temp_level = level;
         while temp_level > 0 {
-            temp_level = temp_level - 1;
             if let Some(local) = self.map.local.get(&Utils::local_name(temp_level, &name)) {
                 return Ok(Some(local.to_owned()));
             } 
+            temp_level = temp_level - 1;
         }
+        println!("Find other");
         // Find custom macro
         // custom macro comes before basic macro so that
         // user can override it

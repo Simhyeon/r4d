@@ -15,7 +15,9 @@ use error::RadError;
 pub fn main() -> Result<(), RadError> {
 
     // Command line parse
-    Cli::parse()?;
+    if let Err(content) = Cli::parse() {
+        eprintln!("{}", content);
+    }
 
     // End 
     Ok(())
