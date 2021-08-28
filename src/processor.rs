@@ -383,7 +383,6 @@ impl Processor {
             } 
             temp_level = temp_level - 1;
         }
-        println!("Find other");
         // Find custom macro
         // custom macro comes before basic macro so that
         // user can override it
