@@ -103,6 +103,15 @@ Hello world
 {"name":"simon creek"}
 ```
 
+**fileout**
+
+Fileout literaly saves contents to the file
+
+```
+$fileout(true,file_name.txt,Hello World)
+===
+```
+
 **env**
 
 Print environment variable. Wrong name yields error

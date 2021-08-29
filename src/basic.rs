@@ -59,6 +59,7 @@ impl BasicMacro {
             ("tempto".to_owned(), BasicMacro::set_temp_target as MacroType).to_owned(),
             ("tempout".to_owned(), BasicMacro::temp as MacroType).to_owned(),
             ("tempin".to_owned(), BasicMacro::temp_include as MacroType).to_owned(),
+            ("fileout".to_owned(), BasicMacro::file_out as MacroType).to_owned(),
             ("pipe".to_owned(), BasicMacro::pipe as MacroType).to_owned(),
             ("env".to_owned(), BasicMacro::get_env as MacroType).to_owned(),
             ("path".to_owned(), BasicMacro::merge_path as MacroType).to_owned(),
@@ -524,6 +525,29 @@ impl BasicMacro {
             let content = &args[1];
             if let Ok(value) = Utils::is_arg_true(truncate) {
                 let file = temp_dir().join(&p.temp_target);
+                let mut temp_file = OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .truncate(value)
+                    .open(file)
+                    .unwrap();
+                temp_file.write_all(content.as_bytes())?;
+                Ok(String::new())
+            } else {
+                Err(RadError::InvalidArgument("Temp requires either true/false or zero/nonzero integer."))
+            }
+        } else {
+            Err(RadError::InvalidArgument("Temp requires an argument"))
+        }
+    }
+
+    fn file_out(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = ArgParser::args_with_len(args, 3, greedy) {
+            let truncate = &args[0];
+            let file_name = &args[1];
+            let content = &args[2];
+            if let Ok(value) = Utils::is_arg_true(truncate) {
+                let file = std::env::current_dir()?.join(file_name);
                 let mut temp_file = OpenOptions::new()
                     .create(true)
                     .write(true)
