@@ -193,8 +193,8 @@ impl BasicMacro {
     /// $include(path)
     fn include(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
-            let file_path = std::path::Path::new(&args[0]);
-            println!("FILE path : {:?}", file_path.display());
+            let raw = Utils::trim(&args[0])?;
+            let file_path = std::path::Path::new(&raw);
             Ok(processor.from_file(file_path, true)?)
         } else {
             Err(RadError::InvalidArgument("Include requires an argument"))
@@ -284,7 +284,7 @@ impl BasicMacro {
     /// This return string true or false
     fn ifdef(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
-            let name = &args[0];
+            let name = &Utils::trim(&args[0])?;
             let map = processor.get_map();
 
             // Return true or false by the definition
@@ -301,7 +301,7 @@ impl BasicMacro {
     /// $undef(macro_name)
     fn undefine_call(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
-            let name = &args[0];
+            let name = &Utils::trim(&args[0])?;
 
             processor.map.undefine(name);
             Ok("".to_owned())
@@ -396,10 +396,10 @@ impl BasicMacro {
 
     fn merge_path(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
-            let target = &args[0];
-            let added = &args[1];
+            let target = Utils::trim(&args[0])?;
+            let added = Utils::trim(&args[1])?;
 
-            let out = format!("{}",&std::path::Path::new(target).join(added).display());
+            let out = format!("{}",&std::path::Path::new(&target).join(&added).display());
             Ok(out)
         } else {
             Err(RadError::InvalidArgument("Path macro needs two arguments"))
