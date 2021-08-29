@@ -194,6 +194,7 @@ impl BasicMacro {
     fn include(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             let file_path = std::path::Path::new(&args[0]);
+            println!("FILE path : {:?}", file_path.display());
             Ok(processor.from_file(file_path, true)?)
         } else {
             Err(RadError::InvalidArgument("Include requires an argument"))

@@ -231,7 +231,10 @@ impl Processor {
                         }
                         // Simply push if none or arg
                         Cursor::None => { remainder.push(ch); }
-                        Cursor::Arg => { frag.args.push(ch); }
+                        Cursor::Arg => { 
+                            frag.args.push(ch); 
+                            frag.whole_string.push(ch);
+                        }
                     }
                 }
                 LexResult::StartFrag => {
@@ -351,6 +354,7 @@ impl Processor {
 
     fn add_define(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
         if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
+            println!("Register : {}\n{}\n{}", name, args, body);
             self.map.register(&name, &args, &body)?;
         } else {
             self.log_error(&format!(
@@ -558,17 +562,7 @@ impl DefineParser {
                     }
                 }
                 // Add everything
-                DefineCursor::Body => {
-                    // Some escape rule
-                    if ch == '\\' {
-                        if let Some(&next) = char_iter.peek() {
-                            // Escape reul contents go here
-                            if next == ')' {
-                                continue;
-                            }
-                        }
-                    }
-                }
+                DefineCursor::Body => ()
             } 
             self.container.push(ch);
         }
