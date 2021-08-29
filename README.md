@@ -58,10 +58,8 @@ and following characters should be either alphanumeric or underscore.
 of naming. Multiple arguments can be declared and should be separated by a
 whitespace.
 - Third argument is a macro body. Any text can be included in the macro body
-while an unbalanced parenthesis will prevent processor's work. Enclose the body
-with literal syntax or escape with backslash to type literal parenthesis. Other
-than that any character including newlines('\n', "\r\n") are all respected
-(UTF-8). Even literal syntax itself is included.
+while an unbalanced parenthesis will prevent processor's work. Currently there
+is no way to include unbalanced parenthesis inside definition body. 
 
 You can simply bind the value without giving arguments.
 

@@ -1,6 +1,6 @@
 ### TODOs
 
-* [ ] Improve foreach, forloop ergonomics
+* [ ] Currently disabled escape with parenthesis for eaiser maintain
 * [ ] Make allocations less, especially string manipulation 
 
 * [ ] Combination of stdin and file input
@@ -35,6 +35,7 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] Improve foreach, forloop ergonomics
 * [x] Make temp target change macro
 * [x] Greedy is working not as it should
 * [x] ENV macro

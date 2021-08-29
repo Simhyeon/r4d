@@ -186,6 +186,38 @@ Number: 5
 
 ```
 
+**forloop, foreach with nested macro usage**
+
+Forloop and foreach's ```$:``` is a substituion rather than macro expansion.
+And first of all rad doesn't create any form of AST from given source thus, $:
+is expanded at the last stage.
+
+```
+$define(styles,a_styles=<style>
+$foreach($a_styles*(),
+$include($path($env(GDE_MODULE),$:.css)))
+</style>
+)
+$styles(\*a,b,c*\)
+=== 
+// This fails because include tries to get path of $GDE_MODULE/$:.css
+```
+Thus enclose the body with literal rule which will deter evaluation for a time.
+
+```
+$define(styles,a_styles=<style>
+$foreach($a_styles*(),
+\*$include($path($env(GDE_MODULE),$:.css))*\)
+</style>
+)
+$styles(\*a,b,c*\)
+===
+// This will execute macro of 
+// $include($GDE_MODULE/a.css) 
+// $include($GDE_MODULE/b.css)
+// $include($GDE_MODULE/c.css)
+```
+
 **eval**
 
 Eval evaluates expression. This macro(function) uses rust's evalexpr crate
