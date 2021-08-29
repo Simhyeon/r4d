@@ -523,14 +523,22 @@ impl BasicMacro {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let truncate = &args[0];
             let content = &args[1];
-            if let Ok(value) = Utils::is_arg_true(truncate) {
+            if let Ok(truncate) = Utils::is_arg_true(truncate) {
                 let file = temp_dir().join(&p.temp_target);
-                let mut temp_file = OpenOptions::new()
-                    .create(true)
-                    .write(true)
-                    .truncate(value)
-                    .open(file)
-                    .unwrap();
+                let mut temp_file; 
+                if truncate {
+                    temp_file = OpenOptions::new()
+                        .create(true)
+                        .write(true)
+                        .truncate(true)
+                        .open(file)
+                        .unwrap();
+                } else {
+                    temp_file = OpenOptions::new()
+                        .append(true)
+                        .open(file)
+                        .unwrap();
+                }
                 temp_file.write_all(content.as_bytes())?;
                 Ok(String::new())
             } else {
@@ -546,15 +554,23 @@ impl BasicMacro {
             let truncate = &args[0];
             let file_name = &args[1];
             let content = &args[2];
-            if let Ok(value) = Utils::is_arg_true(truncate) {
+            if let Ok(truncate) = Utils::is_arg_true(truncate) {
                 let file = std::env::current_dir()?.join(file_name);
-                let mut temp_file = OpenOptions::new()
-                    .create(true)
-                    .write(true)
-                    .truncate(value)
-                    .open(file)
-                    .unwrap();
-                temp_file.write_all(content.as_bytes())?;
+                let mut target_file; 
+                if truncate {
+                    target_file = OpenOptions::new()
+                        .create(true)
+                        .write(true)
+                        .truncate(true)
+                        .open(file)
+                        .unwrap();
+                    } else {
+                        target_file = OpenOptions::new()
+                            .append(true)
+                            .open(file)
+                            .unwrap();
+                }
+                target_file.write_all(content.as_bytes())?;
                 Ok(String::new())
             } else {
                 Err(RadError::InvalidArgument("Temp requires either true/false or zero/nonzero integer."))
