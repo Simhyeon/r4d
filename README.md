@@ -70,7 +70,8 @@ $define(v_name=Simon creek)
 ##### Caveats
 
 Definition's body can include any macro invocation in itself, thus wrong
-argument declaration cannot be detected at the time of definition.
+argument declaration cannot be detected at the time of definition. To make
+matters worse, arguments doesn't have any types either.
 
 ```
 $define(panik,kalm=$calm())
@@ -82,6 +83,27 @@ error: Failed to invoke a macro : "calm"
  --> stdin:2:2
 $calm()
 KALM // After defnition it prints out without error
+```
+
+Thus, idiomatic way is to invoke a dummy after declartion to check if
+definition has sane invocations.
+
+```
+$define(test,a\_expr a\_path=
+	$bind+(cond,$eval($a_expr()))
+	$bind+(true_path,$path(cache,$a_path()))
+	$bind+(false_path,$path(cache,index.md))
+	$ifelse(
+		$cond(),
+		$include($true_path()),
+		$include($false_path())
+	)
+)
+$test|(1==1,out.md)
+
+$test($ifdef(mod\_mw),out.md)
+===
+// Some outputs...
 ```
 
 #### Macro inovokation
@@ -146,6 +168,53 @@ I'm,comma,separated
 ```
 
 ### Macro attributes
+
+**Trim**
+
+Trim attribute trims preceding and following newlines, whitespaces from output. To make a definition look much more easier to read, many blank spaces are often included.
+
+for e.g.
+
+```
+$define(test,a_expr a_path= // This new line
+	$bind+(cond,$eval($a_expr())) // Whitespaces before "$bind"
+	$bind+(true_path,$path(cache,$a_path())) // Whitespaces before "$bind"
+	$bind+(false_path,$path(cache,index.md)) // Whitespaces before "$bind"
+	$ifelse( // Whitespaces before "$ifelse"
+		$cond(),
+		$include($true_path()),
+		$include($false_path())
+	) // This new line
+)
+$test(1==1,out.md)
+===
+
+
+                1
+2
+3
+4
+5
+
+
+
+```
+
+Such definition is easier to read, but makes formatting unpredictable. So trim
+attribute comes handy, although you can always manually call trim macro.
+
+```
+...
+$test^(1==1,out.md)
+// This is same with 
+// $trim($test^(1==1,out.md))
+===
+1
+2
+3
+4
+5
+```
 
 **Greedy**
 

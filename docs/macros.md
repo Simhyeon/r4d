@@ -105,10 +105,12 @@ Hello world
 
 **fileout**
 
-Fileout literaly saves contents to the file
+Fileout saves contents to the file. If truncate is false, non existent file
+argument is panic behaviour.
 
 ```
 $fileout(true,file_name.txt,Hello World)
+$fileout(false,file_name.txt,This is appended)
 ===
 ```
 
@@ -130,6 +132,21 @@ Merge two path into one.
 $path($env(HOME),document)
 ===
 /home/simoncreek/document
+```
+
+**bind**
+
+Bind macro makes new local macro inside definition. This macro is automatically
+clared after evalution of the macro.
+
+```
+$define(test,a\_src a\_content=
+$bind+(source,$path(cache,$a\_src()))
+$fileout(false,$source(),$a\_content())
+)
+$test+(temp,Hello World)
+===
+// Now ./cache/temp file contains string "Hello World"
 ```
 
 **pipe, -, \* **

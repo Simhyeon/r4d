@@ -1,8 +1,6 @@
 ### TODOs
 
-* [ ] Failed invocation makes new line which is not so desirable
-- This might be that problematic becuase purge mode doesn't yield new line. Error should be hanlded in non purge mode anyway
-* [x] Made error messages much easier to use.
+* [ ] Make declartion more tolerable
 * [ ] Currently disabled escape with parenthesis for eaiser maintain
 * [ ] Make allocations less, especially string manipulation 
 
@@ -10,6 +8,10 @@
 - This is kind of pre-compiled file
 
 * [ ] New basic macros
+
+### Deterred
+
+* [-] Failed invocation makes new line which is not so desirable
 
 ### How one should parse macro invocation?
 
@@ -38,6 +40,8 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] Add local(bind) macro
+* [x] Made error messages much easier to use.
 * [x] Warn non existent include operation with error message
 * [x] Improve foreach, forloop ergonomics
 * [x] Make temp target change macro
