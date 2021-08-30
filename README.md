@@ -91,7 +91,7 @@ definition has sane invocations.
 ```
 $define(
 	test,
-	a\_expr a\_path
+	a_expr a_path
 	=
 	$bind+(cond,$eval($a_expr()))
 	$bind+(true_path,$path(cache,$a_path()))
@@ -104,7 +104,7 @@ $define(
 )
 $test|(1==1,out.md)
 
-$test($ifdef(mod\_mw),out.md)
+$test($ifdef(mod_mw),out.md)
 ===
 // Some outputs...
 ```
@@ -283,7 +283,7 @@ since ignoring such error is very undesirable for end user experience..
 ```
 $define(test=Test)
 $tesT()
-$include($path(typo\_in\_name, index.md))
+$include($path(typo_in_name, index.md))
 ===
 error: Failed to invoke a macro : "tesT"
  --> test:2:2
