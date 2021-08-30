@@ -227,7 +227,7 @@ impl Processor {
                     match cursor {
                         // Exit frag
                         // If literal is given on names
-                        Cursor::Name | Cursor::NameToArg => {
+                        Cursor::Name => {
                             frag.whole_string.push(ch);
                             remainder.push_str(&frag.whole_string);
                             frag.clear();

@@ -51,9 +51,6 @@ impl Lexor {
             Cursor::Name => {
                 result = self.branch_name(ch);
             }
-            Cursor::NameToArg => {
-                result = self.branch_name_to_arg(ch);
-            }
             Cursor::Arg => {
                 result = self.branch_arg(ch);
             } // end arg match
@@ -122,31 +119,6 @@ impl Lexor {
         result
     }
 
-    /// Space between name and args
-    /// e.g.
-    /// $define ()
-    ///        |-> This is the name to args characters
-    fn branch_name_to_arg(&mut self, ch: char) -> LexResult {
-        let result: LexResult;
-
-        // White space or tab character is ignored
-        if ch == ' ' || ch == '\t' {
-            result = LexResult::Ignore;
-        } 
-        // Parenthesis start arguments
-        else if ch == '(' {
-            self.cursor = Cursor::Arg;
-            self.paren_count = 1;
-            result = LexResult::StartFrag;
-        } 
-        // Other characters are invalid
-        else {
-            self.cursor = Cursor::None;
-            result = LexResult::ExitFrag;
-        }
-        result
-    }
-
     // Double quote rule is somewhat suspicious?
     fn branch_arg(&mut self, ch: char) -> LexResult {
         let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
@@ -203,6 +175,5 @@ pub enum LexResult {
 pub enum Cursor {
     None,
     Name,
-    NameToArg,
     Arg,
 }
