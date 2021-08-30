@@ -47,7 +47,11 @@ impl Cli {
         let mut rule_file = RuleFile::new(None);
         if let Some(files) = args.values_of("melt") {
             for file in files {
-                rule_file.melt(&Path::new(file))?;
+                let path = &Path::new(file);
+                if !path.exists() {
+                    return Err(RadError::InvalidCommandOption(format!("File, \"{}\" doesn't exist, therefore cannot be melted.", path.display())))
+                }
+                rule_file.melt(path)?;
             }
         }
         // ========
@@ -77,6 +81,10 @@ impl Cli {
 
             for file in files {
                 processor.set_file(file);
+                let path = &Path::new(file);
+                if !path.exists() {
+                    return Err(RadError::InvalidCommandOption(format!("File, \"{}\" doesn't exist, therefore cannot be read by r4d.", path.display())))
+                }
                 processor.from_file(Path::new(file), false)?;
             }
         } 

@@ -84,27 +84,29 @@ impl ErrorLogger{
 
 #[derive(Error, Debug)]
 pub enum RadError {
-    #[error("Invalid environment name\n= {0}")]
+    #[error("{}: Invalid command option\n= {0}", "error".red())]
+    InvalidCommandOption(String),
+    #[error("{}: Invalid environment name\n= {0}", "error".red())]
     EnvError(std::env::VarError),
-    #[error("Failed regex operation\n= {0}")]
+    #[error("{}: Failed regex operation\n= {0}", "error".red())]
     InvalidRegex(regex::Error),
-    #[error("Invalid formula\n= {0}")]
+    #[error("{}: Invalid formula\n= {0}", "error".red())]
     InvalidFormula(evalexpr::EvalexprError),
-    #[error("Invalid argument\n= {0}")]
+    #[error("{}: Invalid argument\n= {0}", "error".red())]
     InvalidArgument(String),
-    #[error("Invalid argument type\n= {0}")]
+    #[error("{}: Invalid argument type\n= {0}", "error".red())]
     InvalidArgInt(std::num::ParseIntError),
-    #[error("Invalid argument type\n= {0}")]
+    #[error("{}: Invalid argument type\n= {0}", "error".red())]
     InvalidArgBoolean(std::str::ParseBoolError),
-    #[error("Standard IO error\n= {0}")]
+    #[error("{}: Standard IO error\n= {0}", "error".red())]
     StdIo(std::io::Error),
-    #[error("Failed to convert to utf8 string\n= {0}")]
+    #[error("{}: Failed to convert to utf8 string\n= {0}", "error".red())]
     Utf8Err(std::string::FromUtf8Error),
-    #[error("Unsupported table format\n= {0}")]
+    #[error("{}: Unsupported table format\n= {0}", "error".red())]
     UnsupportedTableFormat(String),
-    #[error("Table error\n= {0}")]
+    #[error("{}: Table error\n= {0}", "error".red())]
     CsvError(csv::Error),
-    #[error("Failed frozen operation\n= {0}")]
+    #[error("{}: Failed frozen operation\n= {0}", "error".red())]
     BincodeError(String),
     #[error("Processor panicked, exiting...")]
     Panic,
