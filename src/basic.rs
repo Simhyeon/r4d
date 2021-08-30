@@ -61,6 +61,7 @@ impl BasicMacro {
             ("tempin".to_owned(), BasicMacro::temp_include as MacroType).to_owned(),
             ("fileout".to_owned(), BasicMacro::file_out as MacroType).to_owned(),
             ("pipe".to_owned(), BasicMacro::pipe as MacroType).to_owned(),
+            ("bind".to_owned(), BasicMacro::bind_to_local as MacroType).to_owned(),
             ("env".to_owned(), BasicMacro::get_env as MacroType).to_owned(),
             ("path".to_owned(), BasicMacro::merge_path as MacroType).to_owned(),
             ("-".to_owned(), BasicMacro::get_pipe as MacroType).to_owned(),
@@ -197,7 +198,11 @@ impl BasicMacro {
             let raw = Utils::trim(&args[0])?;
             let file_path = std::path::Path::new(&raw);
             if file_path.exists() { 
-                Ok(processor.from_file(file_path, true)?)
+                // This reservation is necessary because from_file method clears all locals
+                let reserved_local = processor.map.local.clone();
+                let result = processor.from_file(file_path, true)?;
+                processor.map.local = reserved_local;
+                Ok(result)
             } else {
                 let formatted = format!("File path : \"{}\" doesn't exist", file_path.display());
                 Err(RadError::InvalidArgument(formatted))
@@ -391,6 +396,16 @@ impl BasicMacro {
     fn pipe(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             processor.pipe_value = args[0].to_owned();
+        }
+        Ok(String::new())
+    }
+
+    /// $bind(name,value)
+    fn bind_to_local(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
+            let name = &args[0];
+            let value = &args[1];
+            processor.map.new_local(1, name, value);
         }
         Ok(String::new())
     }
