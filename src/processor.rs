@@ -4,7 +4,7 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use crate::error::{RadError, ErrorLogger};
 use crate::models::{MacroMap, WriteOption, UnbalancedChecker, MacroRule};
-use crate::utils::{self, Utils};
+use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
 use crate::arg_parser::ArgParser;

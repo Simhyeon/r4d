@@ -89,7 +89,10 @@ Thus, idiomatic way is to invoke a dummy after declartion to check if
 definition has sane invocations.
 
 ```
-$define(test,a\_expr a\_path=
+$define(
+	test,
+	a\_expr a\_path
+	=
 	$bind+(cond,$eval($a_expr()))
 	$bind+(true_path,$path(cache,$a_path()))
 	$bind+(false_path,$path(cache,index.md))
@@ -176,7 +179,10 @@ Trim attribute trims preceding and following newlines, whitespaces from output. 
 for e.g.
 
 ```
-$define(test,a_expr a_path= // This new line
+$define(
+	test,
+	a_expr a_path
+	= // This new line
 	$bind+(cond,$eval($a_expr())) // Whitespaces before "$bind"
 	$bind+(true_path,$path(cache,$a_path())) // Whitespaces before "$bind"
 	$bind+(false_path,$path(cache,index.md)) // Whitespaces before "$bind"
