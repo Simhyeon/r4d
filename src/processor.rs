@@ -18,6 +18,7 @@ pub struct MacroFragment {
     pub greedy: bool,
     pub preceding: bool,
     pub yield_literal : bool,
+    pub trimmed : bool,
 }
 
 impl MacroFragment {
@@ -30,6 +31,7 @@ impl MacroFragment {
             greedy: false,
             preceding: false,
             yield_literal : false,
+            trimmed: false,
         }
     }
 
@@ -40,6 +42,7 @@ impl MacroFragment {
         self.pipe = false; 
         self.greedy = false; 
         self.yield_literal = false;
+        self.trimmed= false; 
     }
 
     pub fn is_empty(&self) -> bool {
@@ -282,6 +285,7 @@ impl Processor {
                                 '|' => frag.pipe = true,
                                 '+' => frag.greedy = true,
                                 '*' => frag.yield_literal = true,
+                                '^' => frag.trimmed = true,
                                 _ => frag.name.push(ch) 
                             }
                         },
@@ -312,7 +316,13 @@ impl Processor {
 
                         // If panicked, this means unrecoverable error occured.
                         if let Err(error) = evaluation_result {
-                            self.log_error(&format!("{}", error))?;
+                            // this is equlvalent to conceptual if let not pattern
+                            if let RadError::Panic = error{
+                                // Do nothing
+                                ();
+                            } else {
+                                self.log_error(&format!("{}", error))?;
+                            }
                             return Err(RadError::Panic);
                         }
                         // else it is ok to proceed.
@@ -327,6 +337,9 @@ impl Processor {
                             else if content.len() == 0 {
                                 lexor.escape_nl = true;
                             } else {
+                                if frag.trimmed {
+                                    content = Utils::trim(&content)?;
+                                }
                                 if frag.yield_literal {
                                     content = format!("\\*{}*\\", content);
                                 }
