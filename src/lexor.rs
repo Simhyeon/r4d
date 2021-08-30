@@ -1,5 +1,6 @@
 use crate::error::RadError;
 use crate::consts::*;
+use crate::utils::Utils;
 
 pub struct Lexor {
     previous_char : Option<char>,
@@ -97,11 +98,10 @@ impl Lexor {
     fn branch_name(&mut self, ch: char) -> LexResult {
         let mut result: LexResult;
 
-        // Start arg if parenthesis was given,
-        // whitespaces are ignored and don't trigger exit
-        if ch == ' ' {
-            self.cursor = Cursor::NameToArg;
-            result = LexResult::Ignore;
+        // Blank characters are nvalid
+        if Utils::is_blank_char(ch) {
+            self.cursor = Cursor::None;
+            result = LexResult::ExitFrag;
         } 
         // Left parenthesis trigger macro invocation
         else if ch == '(' {

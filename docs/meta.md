@@ -39,6 +39,7 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] NameToArgs is not desirable
 * [x] Make declartion more tolerable
 * [x] Add local(bind) macro
 * [x] Made error messages much easier to use.
