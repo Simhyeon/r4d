@@ -49,7 +49,7 @@ impl Utils {
                 return Ok(false);
             }
         }
-        return Err(RadError::InvalidArgument("Neither true nor false"));
+        return Err(RadError::InvalidArgument("Neither true nor false".to_owned()));
     }
 
     pub(crate) fn utf8_substring(source: &str, min: Option<usize>, max: Option<usize>) -> String {

@@ -84,28 +84,30 @@ impl ErrorLogger{
 
 #[derive(Error, Debug)]
 pub enum RadError {
-    #[error("Invalid environment name : {0}")]
+    #[error("Invalid environment name\n= {0}")]
     EnvError(std::env::VarError),
-    #[error("Failed regex operation : {0}")]
+    #[error("Failed regex operation\n= {0}")]
     InvalidRegex(regex::Error),
-    #[error("Invalid formula : {0}")]
+    #[error("Invalid formula\n= {0}")]
     InvalidFormula(evalexpr::EvalexprError),
-    #[error("Invalid argument : {0}")]
-    InvalidArgument(&'static str),
-    #[error("Invalid argument type: {0}")]
+    #[error("Invalid argument\n= {0}")]
+    InvalidArgument(String),
+    #[error("Invalid argument type\n= {0}")]
     InvalidArgInt(std::num::ParseIntError),
-    #[error("Invalid argument type: {0}")]
+    #[error("Invalid argument type\n= {0}")]
     InvalidArgBoolean(std::str::ParseBoolError),
-    #[error("Standard IO error : {0}")]
+    #[error("Standard IO error\n= {0}")]
     StdIo(std::io::Error),
-    #[error("Failed to convert to utf8 string : {0}")]
+    #[error("Failed to convert to utf8 string\n= {0}")]
     Utf8Err(std::string::FromUtf8Error),
-    #[error("Unsupported table format : {0}")]
+    #[error("Unsupported table format\n= {0}")]
     UnsupportedTableFormat(String),
-    #[error("Table error : {0}")]
+    #[error("Table error\n= {0}")]
     CsvError(csv::Error),
-    #[error("Failed frozen operation : {0}")]
+    #[error("Failed frozen operation\n= {0}")]
     BincodeError(String),
+    #[error("Processor panicked, exiting...")]
+    Panic,
 }
 
 impl From<regex::Error> for RadError {

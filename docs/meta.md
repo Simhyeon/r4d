@@ -1,5 +1,8 @@
 ### TODOs
 
+* [ ] Failed invocation makes new line which is not so desirable
+- This might be that problematic becuase purge mode doesn't yield new line. Error should be hanlded in non purge mode anyway
+* [x] Made error messages much easier to use.
 * [ ] Currently disabled escape with parenthesis for eaiser maintain
 * [ ] Make allocations less, especially string manipulation 
 
@@ -35,6 +38,7 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] Warn non existent include operation with error message
 * [x] Improve foreach, forloop ergonomics
 * [x] Make temp target change macro
 * [x] Greedy is working not as it should

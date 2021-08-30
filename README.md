@@ -75,10 +75,13 @@ argument declaration cannot be detected at the time of definition.
 ```
 $define(panik,kalm=$calm())
 $panik()
+$define(calm=KALM)
+$panik()
 ===
 error: Failed to invoke a macro : "calm"
  --> stdin:2:2
 $calm()
+KALM // After defnition it prints out without error
 ```
 
 #### Macro inovokation
@@ -146,6 +149,10 @@ I'm,comma,separated
 
 **Greedy**
 
+Greedy attribute ```+``` parses arguments as greedy as possible so that last
+argument will include or following characters in it. This is useful when
+argument is a big chunk of data and includes multiple commas.
+
 ```
 $define(test,a b c=$a() $b() $c())
 $test(first, second, third, fourth, fifth, sixth)
@@ -156,6 +163,10 @@ first  second  third, fourth, fifth, sixth
 ```
 
 **Piping**
+
+Pipe attribute ```|``` saves macro output into temporary value. This is useful
+when you have to use mutlple macros for desired output which makes it hard to
+grasp the code and maintain them.
 
 ```
 $define(test,a=$a())
@@ -172,6 +183,10 @@ I'm going to be used by a pipe macro
 
 **Yield literal**
 
+Yield literal attribute ```*``` makes output printed as literal form. This is
+useful when you have to give an argument literal value but you need to pre
+process the data which means it cannot be marked as literal.
+
 ```
 $define(array,content=$content())
 $foreach($array*(a,b,c),Iterated: $:
@@ -181,6 +196,28 @@ Iterated: a
 Iterated: b
 Iterated: c
 
+```
+
+### Errors
+
+There are two types of errors. One is failed invocation error and second is
+invalid argument error. Failed invocation means that macro definition was not
+present at the time. On the other hand, invalid argument error is panic error
+since ignoring such error is very undesirable for end user experience..
+
+```
+$define(test=Test)
+$tesT()
+$include($path(typo\_in\_name, index.md))
+===
+error: Failed to invoke a macro : "tesT"
+ --> test:2:2
+
+$tesT()
+error: Invalid argument
+= File path : "typo_in_name/index.md" doesn't exist
+ --> test:3:2
+Processor panicked, exiting...
 ```
 
 ### Goal

@@ -12,7 +12,6 @@ impl Cli {
     pub fn parse() -> Result<(), RadError>{
         let cli_args = Cli::args_builder();
         Cli::parse_options(&cli_args)?;
-        // Cli::parse_subcommands(&cli_args)?;
         Ok(())
     }
 

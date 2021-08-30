@@ -307,7 +307,17 @@ impl Processor {
                     } 
                     // Invoke macro
                     else {
-                        if let Some(mut content) = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy)? {
+                        // Try to evaluate
+                        let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy);
+
+                        // If panicked, this means unrecoverable error occured.
+                        if let Err(error) = evaluation_result {
+                            self.log_error(&format!("{}", error))?;
+                            return Err(RadError::Panic);
+                        }
+                        // else it is ok to proceed.
+                        // thus it is safe to unwrap it
+                        if let Some(mut content) = evaluation_result.unwrap() {
                             if frag.pipe {
                                 self.pipe_value = content;
                                 lexor.escape_nl = true;
@@ -354,7 +364,6 @@ impl Processor {
 
     fn add_define(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
         if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
-            println!("Register : {}\n{}\n{}", name, args, body);
             self.map.register(&name, &args, &body)?;
         } else {
             self.log_error(&format!(
@@ -370,7 +379,7 @@ impl Processor {
 
     // Evaluate can be nested deeply
     // Disable caller for temporary
-    fn evaluate(&mut self,level: usize, _caller: &str, name: &str, args: &String, greedy: bool) -> Result<Option<String>, RadError> {
+    fn evaluate(&mut self,level: usize, _caller: &str, name: &str, args: &str, greedy: bool) -> Result<Option<String>, RadError> {
         let level = level + 1;
         // This parses and processes arguments
         // and macro should be evaluated after
