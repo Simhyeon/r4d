@@ -4,7 +4,7 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use crate::error::{RadError, ErrorLogger};
 use crate::models::{MacroMap, WriteOption, UnbalancedChecker, MacroRule};
-use crate::utils::Utils;
+use crate::utils::{self, Utils};
 use crate::consts::*;
 use crate::lexor::*;
 use crate::arg_parser::ArgParser;
@@ -542,13 +542,16 @@ impl DefineParser {
                         bind = true;
                         continue;
                     } 
-                    // This means pattern like this
-                    // $define( name ) -> name is registered
-                    // $define( na me ) -> only "na" is registered
-                    else if Utils::is_blank_char(ch) && self.name.len() != 0 {
-                        self.name.push_str(&self.container);
-                        self.container.clear();
-                        self.arg_cursor = DefineCursor::Args;
+                    else if Utils::is_blank_char(ch) {
+                        // This means pattern like this
+                        // $define( name ) -> name is registered
+                        // $define( na me ) -> na is ignored and take me instead
+                        if self.name.len() != 0 {
+                            self.container.clear();
+                        } else {
+                            // Ignore
+                            continue;
+                        }
                     } 
                     // Comma go to args
                     else if ch == ',' {

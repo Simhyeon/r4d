@@ -1,6 +1,5 @@
 ### TODOs
 
-* [ ] Make declartion more tolerable
 * [ ] Currently disabled escape with parenthesis for eaiser maintain
 * [ ] Make allocations less, especially string manipulation 
 
@@ -40,6 +39,7 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] Make declartion more tolerable
 * [x] Add local(bind) macro
 * [x] Made error messages much easier to use.
 * [x] Warn non existent include operation with error message
