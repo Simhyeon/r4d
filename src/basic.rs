@@ -406,6 +406,9 @@ impl BasicMacro {
             let name = &args[0];
             let value = &args[1];
             processor.map.new_local(1, name, value);
+            if processor.map.custom.contains_key(name) {
+                processor.log_warning(&format!("Creating a binding with a name already existing : \"{}\"", name))?;
+            }
         }
         Ok(String::new())
     }

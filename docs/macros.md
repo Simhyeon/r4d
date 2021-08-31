@@ -90,17 +90,35 @@ $include(src/content.rs)
 
 **temp**
 
-Tempin saves content to temp file named ```rad_temp.txt```. Tempout gets
-content from temp file. You can also change the temp file with tempto.
+Tempin gets content from temp file named ```rad.txt```. Macros within temp file
+is also expanded. Tempout pushes content into current temp file. You can also
+change the temp file with tempto.
+
+Temp file is saved in ```%TEMP%``` in Windows and ```/tmp``` in *nix systmes.
 ```
-$tempout(true,Hello world)
+$tempout(Hello world)
 $tempin()
 $tempto(out.json)
-$tempout(true,{"name":"simon creek"})
+$tempout({"name":"simon creek"})
 $tempin()
 ===
 Hello world
 {"name":"simon creek"}
+```
+
+**redir**
+
+Redirect all input into a temp file.
+
+```
+$redir(true)
+$foreach(\*1,2,3*\,Value: $:
+)
+1,2,3,4,5
+$redir(false)
+===
+// Yield nothing regardless of -o option
+// Content is saved to current temp file.
 ```
 
 **fileout**

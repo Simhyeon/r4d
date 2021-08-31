@@ -424,7 +424,7 @@ impl Processor {
 
     // Evaluate can be nested deeply
     // Disable caller for temporary
-    fn evaluate(&mut self,level: usize, _caller: &str, name: &str, args: &str, greedy: bool) -> Result<Option<String>, RadError> {
+    fn evaluate(&mut self,level: usize, caller: &str, name: &str, args: &str, greedy: bool) -> Result<Option<String>, RadError> {
         let level = level + 1;
         // This parses and processes arguments
         // and macro should be evaluated after
@@ -436,6 +436,9 @@ impl Processor {
         // The macro can be be the macro defined in parent macro
         let mut temp_level = level;
         while temp_level > 0 {
+            if caller == name {
+                self.log_warning(&format!("Calling self, which is \"{}\", can possibly trigger infinite loop", name))?;
+            }
             if let Some(local) = self.map.local.get(&Utils::local_name(temp_level, &name)) {
                 return Ok(Some(local.to_owned()));
             } 
@@ -509,12 +512,12 @@ impl Processor {
         Ok(())
     }
 
-    fn log_error(&mut self, log : &str) -> Result<(), RadError> {
+    pub fn log_error(&mut self, log : &str) -> Result<(), RadError> {
         self.error_logger.elog(log)?;
         Ok(())
     }
 
-    fn log_warning(&mut self, log : &str) -> Result<(), RadError> {
+    pub fn log_warning(&mut self, log : &str) -> Result<(), RadError> {
         self.error_logger.wlog(log)?;
         Ok(())
     }
