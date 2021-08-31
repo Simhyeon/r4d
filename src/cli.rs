@@ -111,6 +111,9 @@ impl Cli {
             processor.from_stdin(false)?;
         }
 
+        // Print result
+        processor.print_result()?;
+
         if let Some(file) = args.value_of("freeze") {
             RuleFile::new(Some(processor.map.custom)).freeze(&Path::new(file))?;
         }

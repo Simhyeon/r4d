@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 use std::collections::HashMap;
-use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::fs::{File, OpenOptions};
+use std::path::{ Path , PathBuf};
 use crate::error::{RadError, ErrorLogger};
 use crate::models::{MacroMap, WriteOption, UnbalancedChecker, MacroRule};
 use crate::utils::Utils;
@@ -62,14 +62,15 @@ pub struct Processor{
     write_option: WriteOption,
     error_logger: ErrorLogger,
     checker: UnbalancedChecker,
-    line_number: u64,
-    ch_number: u64,
+    line_number: usize,
+    ch_number: usize,
     pub pipe_value: String,
     pub newline: String,
     pub paused: bool,
+    pub redirect: bool,
     purge: bool,
     always_greedy: bool,
-    pub temp_target: PathBuf,
+    temp_target: (PathBuf,File),
 }
 // 1. Get string
 // 2. Parse until macro invocation detected
@@ -78,6 +79,14 @@ pub struct Processor{
 
 impl Processor {
     pub fn new(write_option: WriteOption, error_write_option : Option<WriteOption>, newline: String) -> Self {
+        let temp_path= std::env::temp_dir().join("rad.txt");
+        let temp_target = (temp_path.to_owned(),OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(&temp_path)
+            .unwrap());
+
         Self {
             map : MacroMap::new(),
             write_option,
@@ -89,10 +98,15 @@ impl Processor {
             newline,
             pipe_value: String::new(),
             paused: false,
+            redirect: false,
             purge: false,
             always_greedy: false,
-            temp_target: PathBuf::from(std::env::temp_dir()).join("rad.txt"),
+            temp_target,
         }
+    }
+    pub fn print_result(&mut self) -> Result<(), RadError> {
+        self.error_logger.print_result()?;
+        Ok(())
     }
     pub fn set_greedy(&mut self) {
         self.always_greedy = true;
@@ -103,6 +117,24 @@ impl Processor {
     pub fn get_map(&self) -> &MacroMap {
         &self.map
     }
+
+    pub fn set_temp_file(&mut self, path: &Path) {
+        self.temp_target = (path.to_owned(),OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(path)
+            .unwrap());
+    }
+
+    pub fn get_temp_path(&self) -> &Path {
+        &self.temp_target.0
+    }
+
+    pub fn get_temp_file(&self) -> &File {
+        &self.temp_target.1
+    }
+
     pub fn from_stdin(&mut self, get_result: bool) -> Result<String, RadError> {
         let stdin = io::stdin();
         let mut line_iter = Utils::full_lines(stdin.lock());
@@ -456,15 +488,21 @@ impl Processor {
     }
 
     fn write_to(&mut self, content: &str, container: &mut Option<&mut String>) -> Result<(), RadError> {
+        // Don't try to write empty string, because it's a waste
+        if content.len() == 0 { return Ok(()); }
         // Save to container
         if let Some(container) = container {
             container.push_str(content);
         } 
         // Write out to file or stdout
         else {
-            match &mut self.write_option {
-                WriteOption::File(f) => f.write_all(content.as_bytes())?,
-                WriteOption::Stdout => print!("{}", content),
+            if self.redirect {
+                self.temp_target.1.write(content.as_bytes())?;
+            } else {
+                match &mut self.write_option {
+                    WriteOption::File(f) => f.write_all(content.as_bytes())?,
+                    WriteOption::Stdout => print!("{}", content),
+                }
             }
         }
 

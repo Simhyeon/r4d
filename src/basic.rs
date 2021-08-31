@@ -1,5 +1,4 @@
 use std::array::IntoIter;
-use std::env::temp_dir;
 use std::io::Write;
 use std::fs::OpenOptions;
 use std::collections::HashMap;
@@ -57,8 +56,9 @@ impl BasicMacro {
             ("sub".to_owned(), BasicMacro::substring as MacroType).to_owned(),
             ("pause".to_owned(), BasicMacro::pause as MacroType).to_owned(),
             ("tempto".to_owned(), BasicMacro::set_temp_target as MacroType).to_owned(),
-            ("tempout".to_owned(), BasicMacro::temp as MacroType).to_owned(),
+            ("tempout".to_owned(), BasicMacro::temp_out as MacroType).to_owned(),
             ("tempin".to_owned(), BasicMacro::temp_include as MacroType).to_owned(),
+            ("redir".to_owned(), BasicMacro::temp_redirect as MacroType).to_owned(),
             ("fileout".to_owned(), BasicMacro::file_out as MacroType).to_owned(),
             ("pipe".to_owned(), BasicMacro::pipe as MacroType).to_owned(),
             ("bind".to_owned(), BasicMacro::bind_to_local as MacroType).to_owned(),
@@ -539,33 +539,13 @@ impl BasicMacro {
         }
     }
 
-    fn temp(args: &str, greedy: bool, p: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
-            let truncate = &args[0];
-            let content = &args[1];
-            if let Ok(truncate) = Utils::is_arg_true(truncate) {
-                let file = temp_dir().join(&p.temp_target);
-                let mut temp_file; 
-                if truncate {
-                    temp_file = OpenOptions::new()
-                        .create(true)
-                        .write(true)
-                        .truncate(true)
-                        .open(file)
-                        .unwrap();
-                } else {
-                    temp_file = OpenOptions::new()
-                        .append(true)
-                        .open(file)
-                        .unwrap();
-                }
-                temp_file.write_all(content.as_bytes())?;
-                Ok(String::new())
-            } else {
-                Err(RadError::InvalidArgument("Temp requires either true/false or zero/nonzero integer.".to_owned()))
-            }
+    fn temp_out(args: &str, greedy: bool, p: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
+            let content = &args[0];
+            p.get_temp_file().write_all(content.as_bytes())?;
+            Ok(String::new())
         } else {
-            Err(RadError::InvalidArgument("Temp requires an argument".to_owned()))
+            Err(RadError::InvalidArgument("Tempout requires an argument".to_owned()))
         }
     }
 
@@ -601,13 +581,27 @@ impl BasicMacro {
     }
 
     fn temp_include(_: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
-        let file_path = temp_dir().join(&processor.temp_target);
-        Ok(processor.from_file(&file_path, true)?)
+        let file = processor.get_temp_path().to_owned();
+        Ok(processor.from_file(&file, true)?)
+    }
+
+    fn temp_redirect(args: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = ArgParser::args_with_len(args, 1, false) {
+            let toggle = if let Ok(toggle) =Utils::is_arg_true(&args[0]) { 
+                toggle
+            } else {
+                return Err(RadError::InvalidArgument("Redir's agument should be valid boolean value".to_owned()));
+            };
+            processor.redirect = toggle;
+            Ok(String::new())
+        } else {
+            Err(RadError::InvalidArgument("Redir requires an argument".to_owned()))
+        }
     }
 
     fn set_temp_target(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
-            processor.temp_target = PathBuf::from(std::env::temp_dir()).join(&args[0]);
+            processor.set_temp_file(&PathBuf::from(std::env::temp_dir()).join(&args[0]));
             Ok(String::new())
         } else {
             Err(RadError::InvalidArgument("Temp requires an argument".to_owned()))

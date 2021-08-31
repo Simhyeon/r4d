@@ -39,6 +39,10 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] Temp refacotr a bit
+- Made temp a file not a path
+- Made temp redirect
+* [x] Final render result -> Show warning and erros count
 * [x] NameToArgs is not desirable
 * [x] Make declartion more tolerable
 * [x] Add local(bind) macro

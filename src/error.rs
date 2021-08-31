@@ -5,10 +5,12 @@ use crate::consts::LINE_ENDING;
 use colored::*;
 
 pub struct ErrorLogger {
-    last_line_number: u64,
-    last_ch_number: u64,
+    last_line_number: usize,
+    last_ch_number: usize,
     current_file: String,
     write_option: Option<WriteOption>,
+    error_count: usize,
+    warning_count: usize,
 }
 
 impl ErrorLogger{
@@ -18,18 +20,21 @@ impl ErrorLogger{
             last_ch_number: 0,
             current_file: String::from("stdin"),
             write_option,
+            error_count:0,
+            warning_count:0,
         }
     }
     pub fn set_file(&mut self, file: &str) {
         self.current_file = file.to_owned();
     }
 
-    pub fn set_number(&mut self, line_number: u64, ch_number : u64) {
+    pub fn set_number(&mut self, line_number: usize, ch_number : usize) {
         self.last_line_number = line_number;
         self.last_ch_number = ch_number;
     }
 
     pub fn elog(&mut self, log : &str) -> Result<(), RadError> {
+        self.error_count = self.error_count + 1; 
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
@@ -56,21 +61,49 @@ impl ErrorLogger{
     }
 
     pub fn wlog(&mut self, log : &str) -> Result<(), RadError> {
+        self.warning_count = self.warning_count + 1; 
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
                     file.write_all(format!("warning : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, self.last_ch_number,LINE_ENDING).as_bytes())?;
                 }
                 WriteOption::Stdout => {
-                    eprint!(
-                        "{}: {} {} --> {}:{}:{}{}",
+                    eprintln!(
+                        "{}: {} {} --> {}:{}:{}",
                         "warning".yellow(),
                         log,
                         LINE_ENDING,
                         self.current_file,
                         self.last_line_number,
-                        self.last_ch_number,
-                        LINE_ENDING);
+                        self.last_ch_number);
+                }
+            }
+        } else {
+            // Silent option
+            // Do nothing
+        }
+
+        Ok(())
+    }
+
+    pub fn print_result(&mut self) -> Result<(), RadError> {
+        if let Some(option) = &mut self.write_option {
+            // No warning or error
+            if self.error_count == 0 && self.warning_count == 0 {
+                return Ok(())
+            }
+    
+            // There is either error or warning
+            let error_result = format!("{}: found {} errors","error".red(), self.error_count);
+            let warning_result = format!("{}: found {} warnings","warning".yellow(), self.warning_count);
+            match option {
+                WriteOption::File(file) => {
+                    if self.error_count > 0 {file.write_all(error_result.as_bytes())?;}
+                    if self.warning_count > 0 {file.write_all(warning_result.as_bytes())?;}
+                }
+                WriteOption::Stdout => {
+                    if self.error_count > 0 { eprintln!("{}",error_result);}
+                    if self.warning_count > 0 {eprintln!("{}",warning_result);}
                 }
             }
         } else {
