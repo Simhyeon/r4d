@@ -69,6 +69,7 @@ pub struct Processor{
     pub paused: bool,
     pub redirect: bool,
     purge: bool,
+    strict: bool,
     always_greedy: bool,
     temp_target: (PathBuf,File),
 }
@@ -100,6 +101,7 @@ impl Processor {
             paused: false,
             redirect: false,
             purge: false,
+            strict: false,
             always_greedy: false,
             temp_target,
         }
@@ -113,6 +115,9 @@ impl Processor {
     }
     pub fn set_purge(&mut self) {
         self.purge = true;
+    }
+    pub fn set_strict(&mut self) {
+        self.strict = true;
     }
     pub fn get_map(&self) -> &MacroMap {
         &self.map
@@ -381,12 +386,18 @@ impl Processor {
                         // Failed to invoke
                         // because macro doesn't exist
                         else {
+                            // If strict mode is set, every error is panic error
+                            if self.strict {
+                                self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
+                                return Err(RadError::StrictPanic);
+                            } 
                             // If purge mode is set, don't print anything 
                             // and don't print error
                             if !self.purge {
                                 self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
                                 remainder.push_str(&frag.whole_string);
-                            } else {
+                            } 
+                            else {
                                 // If purge mode
                                 // set escape new line 
                                 lexor.escape_nl = true;

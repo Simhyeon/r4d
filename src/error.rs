@@ -117,30 +117,32 @@ impl ErrorLogger{
 
 #[derive(Error, Debug)]
 pub enum RadError {
-    #[error("{}: Invalid command option\n= {0}", "error".red())]
+    #[error("Invalid command option\n= {0}")]
     InvalidCommandOption(String),
-    #[error("{}: Invalid environment name\n= {0}", "error".red())]
+    #[error("Invalid environment name\n= {0}")]
     EnvError(std::env::VarError),
-    #[error("{}: Failed regex operation\n= {0}", "error".red())]
+    #[error("Failed regex operation\n= {0}")]
     InvalidRegex(regex::Error),
-    #[error("{}: Invalid formula\n= {0}", "error".red())]
+    #[error("Invalid formula\n= {0}")]
     InvalidFormula(evalexpr::EvalexprError),
-    #[error("{}: Invalid argument\n= {0}", "error".red())]
+    #[error("Invalid argument\n= {0}")]
     InvalidArgument(String),
-    #[error("{}: Invalid argument type\n= {0}", "error".red())]
+    #[error("Invalid argument type\n= {0}")]
     InvalidArgInt(std::num::ParseIntError),
-    #[error("{}: Invalid argument type\n= {0}", "error".red())]
+    #[error("Invalid argument type\n= {0}")]
     InvalidArgBoolean(std::str::ParseBoolError),
-    #[error("{}: Standard IO error\n= {0}", "error".red())]
+    #[error("Standard IO error\n= {0}")]
     StdIo(std::io::Error),
-    #[error("{}: Failed to convert to utf8 string\n= {0}", "error".red())]
+    #[error("Failed to convert to utf8 string\n= {0}")]
     Utf8Err(std::string::FromUtf8Error),
-    #[error("{}: Unsupported table format\n= {0}", "error".red())]
+    #[error("Unsupported table format\n= {0}")]
     UnsupportedTableFormat(String),
-    #[error("{}: Table error\n= {0}", "error".red())]
+    #[error("Table error\n= {0}")]
     CsvError(csv::Error),
-    #[error("{}: Failed frozen operation\n= {0}", "error".red())]
+    #[error("Failed frozen operation\n= {0}")]
     BincodeError(String),
+    #[error("Processor panicked, exiting...")]
+    StrictPanic,
     #[error("Processor panicked, exiting...")]
     Panic,
 }

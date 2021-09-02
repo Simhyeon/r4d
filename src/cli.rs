@@ -27,6 +27,7 @@ impl Cli {
         let mut processor: Processor;
         let mut error_option : Option<WriteOption> = Some(WriteOption::Stdout);
         let purge_option = args.is_present("purge");
+        let strict_option = args.is_present("strict");
         let greedy_option = args.is_present("greedy");
         // ========
         // Sub options
@@ -58,7 +59,7 @@ impl Cli {
         // Main options
         // Read from files
         if let Some(files) = args.values_of("FILE") {
-            // Write to file
+            // Set option : write to file
             if let Some(output_file) = args.value_of("out") {
                 let out_file = OpenOptions::new()
                     .create(true)
@@ -68,17 +69,25 @@ impl Cli {
                     .unwrap();
                 processor = Processor::new(WriteOption::File(out_file), error_option, newline);
                 processor.add_custom_rules(rule_file.rules);
-                if purge_option { processor.set_purge() };
-                if greedy_option { processor.set_greedy() };
+                if purge_option { processor.set_purge() }
+                else if strict_option { processor.set_strict() }
+                if greedy_option { processor.set_greedy() }
             }
-            // Write to standard output
+            // Set option : write to standard output
             else { 
                 processor = Processor::new(WriteOption::Stdout, error_option, newline); 
                 processor.add_custom_rules(rule_file.rules);
-                if purge_option { processor.set_purge() };
-                if greedy_option { processor.set_greedy() };
+                if purge_option { processor.set_purge() }
+                else if strict_option { processor.set_strict() }
+                if greedy_option { processor.set_greedy() }
             }
 
+            // Also read from stdin if given combiation option
+            if args.is_present("combination") {
+                processor.from_stdin(false)?;
+            }
+
+            // Read from files and write with given options
             for file in files {
                 processor.set_file(file);
                 let path = &Path::new(file);
@@ -99,13 +108,15 @@ impl Cli {
                     .unwrap();
                 processor = Processor::new(WriteOption::File(out_file), error_option, newline);
                 processor.add_custom_rules(rule_file.rules);
-                if purge_option { processor.set_purge() };
-                if greedy_option { processor.set_greedy() };
+                if purge_option { processor.set_purge() }
+                else if strict_option { processor.set_strict() }
+                if greedy_option { processor.set_greedy() }
             } else { 
                 processor = Processor::new(WriteOption::Stdout, error_option, newline); 
                 processor.add_custom_rules(rule_file.rules);
-                if purge_option { processor.set_purge() };
-                if greedy_option { processor.set_greedy() };
+                if purge_option { processor.set_purge() }
+                else if strict_option { processor.set_strict() }
+                if greedy_option { processor.set_greedy() }
             }
 
             processor.from_stdin(false)?;
@@ -137,6 +148,8 @@ impl Cli {
             (@arg melt: ... -m +takes_value "Frozen file to reads")
             (@arg freeze: -f +takes_value "Freeze to file")
             (@arg purge: -p "Purge unused macros")
+            (@arg strict: -S "Strict mode")
+            (@arg combination: -c "Read from both stdin and file inputs")
             (@arg silent: -s "Supress error and warning")
             (@arg newline: -n "Use unix newline for formatting")
         ).get_matches()
