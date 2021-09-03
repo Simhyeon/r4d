@@ -12,7 +12,7 @@ readme = "README.md"
 
 [[bin]]
 name = "rad"
-path = "src/main.rs"
+path = "src/bin.rs"
 
 [lib]
 name = "rad"
