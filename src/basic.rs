@@ -11,7 +11,9 @@ use crate::consts::MAIN_CALLER;
 use regex::Regex;
 use crate::utils::Utils;
 use crate::processor::Processor;
+#[cfg(feature = "csv")]
 use crate::formatter::Formatter;
+#[cfg(feature = "lipsum")]
 use lipsum::lipsum;
 use lazy_static::lazy_static;
 
@@ -31,15 +33,11 @@ impl BasicMacro {
     /// Creates new basic macro hashmap
     pub fn new() -> Self {
         // Create hashmap of functions
-        let map = HashMap::from_iter(IntoIter::new([
+        let mut map = HashMap::from_iter(IntoIter::new([
             ("regex".to_owned(), BasicMacro::regex_sub as MacroType),
-            ("eval".to_owned(), BasicMacro::eval as MacroType),
             ("trim".to_owned(), BasicMacro::trim as MacroType),
             ("chomp".to_owned(), BasicMacro::chomp as MacroType).to_owned(),
             ("comp".to_owned(), BasicMacro::compress as MacroType).to_owned(),
-            ("lipsum".to_owned(), BasicMacro::placeholder as MacroType).to_owned(),
-            ("time".to_owned(), BasicMacro::time as MacroType).to_owned(),
-            ("date".to_owned(), BasicMacro::date as MacroType).to_owned(),
             ("include".to_owned(), BasicMacro::include as MacroType).to_owned(),
             ("repeat".to_owned(), BasicMacro::repeat as MacroType).to_owned(),
             ("syscmd".to_owned(), BasicMacro::syscmd as MacroType).to_owned(),
@@ -50,8 +48,6 @@ impl BasicMacro {
             ("undef".to_owned(), BasicMacro::undefine_call as MacroType).to_owned(),
             ("rename".to_owned(), BasicMacro::rename_call as MacroType).to_owned(),
             ("append".to_owned(), BasicMacro::append as MacroType).to_owned(),
-            ("from".to_owned(), BasicMacro::from_data as MacroType).to_owned(),
-            ("table".to_owned(), BasicMacro::table as MacroType).to_owned(),
             ("len".to_owned(), BasicMacro::len as MacroType).to_owned(),
             ("tr".to_owned(), BasicMacro::translate as MacroType).to_owned(),
             ("sub".to_owned(), BasicMacro::substring as MacroType).to_owned(),
@@ -68,6 +64,23 @@ impl BasicMacro {
             ("nl".to_owned(), BasicMacro::newline as MacroType).to_owned(),
             ("-".to_owned(), BasicMacro::get_pipe as MacroType).to_owned(),
         ]));
+        
+        // Optional macros
+        #[cfg(feature = "csv")]
+        {
+            map.insert("from".to_owned(), BasicMacro::from_data as MacroType);
+            map.insert("table".to_owned(), BasicMacro::table as MacroType);
+        }
+        #[cfg(feature = "chrono")]
+        {
+            map.insert("time".to_owned(), BasicMacro::time as MacroType);
+            map.insert("date".to_owned(), BasicMacro::date as MacroType);
+        }
+        #[cfg(feature = "lipsum")]
+        map.insert("lipsum".to_owned(), BasicMacro::placeholder as MacroType);
+        #[cfg(feature = "evalexpr")]
+        map.insert("eval".to_owned(), BasicMacro::eval as MacroType);
+
         // Return struct
         Self { macros : map }
     }
@@ -136,6 +149,7 @@ impl BasicMacro {
     /// # Usage
     ///
     /// $time()
+    #[cfg(feature = "chrono")]
     fn time(_: &str, _: bool, _ : &mut Processor) -> Result<String, RadError> {
         Ok(format!("{}", chrono::offset::Local::now().format("%H:%M:%S")))
     }
@@ -145,6 +159,7 @@ impl BasicMacro {
     /// # Usage
     ///
     /// $date()
+    #[cfg(feature = "chrono")]
     fn date(_: &str, _: bool, _ : &mut Processor) -> Result<String, RadError> {
         Ok(format!("{}", chrono::offset::Local::now().format("%Y-%m-%d")))
     }
@@ -176,6 +191,7 @@ impl BasicMacro {
     /// # Usage
     ///
     /// $eval(expression)
+    #[cfg(feature = "evalexpr")]
     fn eval(args: &str, greedy: bool,_: &mut Processor ) -> Result<String, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let formula = &args[0];
@@ -240,6 +256,7 @@ impl BasicMacro {
     /// # Usage
     ///
     /// $lipsum(Number)
+    #[cfg(feature = "lipsum")]
     fn placeholder(args: &str, greedy: bool,_: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let word_count = &args[0];
@@ -463,6 +480,7 @@ impl BasicMacro {
     ///
     /// $from(\*1,2,3
     /// 4,5,6*\, macro_name)
+    #[cfg(feature = "csv")]
     fn from_data(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let macro_data = &args[0];
@@ -485,6 +503,7 @@ impl BasicMacro {
     ///
     /// $table(github,"1,2,3
     /// 4,5,6")
+    #[cfg(feature = "csv")]
     fn table(args: &str, greedy: bool, p: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let table_format = &args[0]; // Either gfm, wikitex, latex, none
