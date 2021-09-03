@@ -154,7 +154,7 @@ impl RuleFile {
         }
     }
 
-    pub fn freeze(&self, path: &std::path::Path) -> Result<(), RadError> {
+    pub(crate) fn freeze(&self, path: &std::path::Path) -> Result<(), RadError> {
         let result = bincode::serialize(self);
         if let Err(_) = result {
             Err(RadError::BincodeError(format!("Failed to freeze to the file : {}", path.display())))

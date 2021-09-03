@@ -1,7 +1,6 @@
 use clap::clap_app;
 use crate::error::RadError;
 use crate::processor::Processor;
-use crate::models::RuleFile;
 use std::path::{Path, PathBuf};
 
 /// Struct to parse command line arguments and execute proper operations
@@ -66,7 +65,7 @@ impl Cli {
 
         // Freeze to file if option was given
         if let Some(file) = args.value_of("freeze") {
-            RuleFile::new(Some(processor.get_map().custom.clone())).freeze(&Path::new(file))?;
+            processor.freeze_to_file(Path::new(file))?;
         }
 
         Ok(())

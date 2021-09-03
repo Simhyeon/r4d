@@ -211,6 +211,7 @@ impl Processor {
     // ----------
 
     /// Print the result of a processing
+    #[allow(dead_code)]
     pub(crate) fn print_result(&mut self) -> Result<(), RadError> {
         self.error_logger.print_result()?;
         Ok(())
@@ -257,6 +258,12 @@ impl Processor {
         self.current_input = backup.current_input;
         self.map.local= backup.local_macro_map; 
         self.error_logger.recover_lines(backup.logger_lines);
+    }
+
+    /// Freeze to single file
+    pub fn freeze_to_file(&self, path: &Path) -> Result<(), RadError> {
+        RuleFile::new(Some(self.map.custom.clone())).freeze(path)?;
+        Ok(())
     }
 
     /// Read from standard input
