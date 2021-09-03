@@ -64,6 +64,7 @@ impl BasicMacro {
             ("bind".to_owned(), BasicMacro::bind_to_local as MacroType).to_owned(),
             ("env".to_owned(), BasicMacro::get_env as MacroType).to_owned(),
             ("path".to_owned(), BasicMacro::merge_path as MacroType).to_owned(),
+            ("nl".to_owned(), BasicMacro::newline as MacroType).to_owned(),
             ("-".to_owned(), BasicMacro::get_pipe as MacroType).to_owned(),
         ]));
         // Return struct
@@ -425,6 +426,12 @@ impl BasicMacro {
         } else {
             Err(RadError::InvalidArgument("Path macro needs two arguments".to_owned()))
         }
+    }
+
+    /// $nl()
+    /// Create newline
+    fn newline(_: &str, _: bool, p: &mut Processor) -> Result<String, RadError> {
+        Ok(p.newline.to_owned())
     }
 
     /// $-()
