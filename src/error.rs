@@ -5,7 +5,7 @@ use crate::consts::LINE_ENDING;
 use colored::*;
 
 /// Logger that controls whether to print error, warning or not and where to yield the error and warnings.
-pub struct ErrorLogger {
+pub(crate) struct ErrorLogger {
     line_number: usize,
     char_number: usize,
     last_line_number: usize,
@@ -16,7 +16,7 @@ pub struct ErrorLogger {
     warning_count: usize,
 }
 /// Struct specifically exists for error loggers backup information
-pub struct LoggerLines {
+pub(crate) struct LoggerLines {
     line_number: usize,
     char_number: usize,
     last_line_number: usize,
@@ -178,6 +178,7 @@ pub enum RadError {
     EnvError(std::env::VarError),
     #[error("Failed regex operation\n= {0}")]
     InvalidRegex(regex::Error),
+    #[cfg(feature = "evalexpr")]
     #[error("Invalid formula\n= {0}")]
     InvalidFormula(evalexpr::EvalexprError),
     #[error("Invalid argument\n= {0}")]
@@ -210,6 +211,7 @@ impl From<regex::Error> for RadError {
     }
 }
 
+#[cfg(feature = "evalexpr")]
 impl From<evalexpr::EvalexprError> for RadError {
     fn from(err : evalexpr::EvalexprError) -> Self {
         Self::InvalidFormula(err)
@@ -240,6 +242,7 @@ impl From <std::string::FromUtf8Error> for RadError {
     }
 }
 
+#[cfg(feature = "csv")]
 impl From <csv::Error> for RadError {
     fn from(err : csv::Error) -> Self {
         Self::CsvError(err)
