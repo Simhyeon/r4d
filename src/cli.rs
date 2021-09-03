@@ -15,6 +15,66 @@ impl Cli {
         Ok(())
     }
 
+    fn new_parse_options(args: &clap::ArgMatches) -> Result<(), RadError> {
+
+        // ========
+        // Sub options
+        // custom rules
+        let rules = if let Some(files) = args.values_of("melt")  {
+            let files = files.into_iter().map(|value| Path::new(value)).collect::<Vec<&Path>>();
+            Some(files)
+        } else { None };
+
+        // Write to file 
+        let write_to_file = if let Some(output_file) = args.value_of("out") {
+            Some(Path::new(output_file))
+        } else { None };
+
+        // Error to file 
+        let error_to_file = if let Some(output_file) = args.value_of("error") {
+            Some(Path::new(output_file))
+        } else { None };
+
+        // Build processor
+        let mut processor = Processor::new_proc()
+            .purge(args.is_present("purge"))
+            .greedy(args.is_present("greedy"))
+            .strict(args.is_present("greedy"))
+            .silent(args.is_present("silent"))
+            .unix_new_line(args.is_present("newline"))
+            .custom_rules(rules)?
+            .write_to_file(write_to_file)?
+            .error_to_file(error_to_file)?;
+
+        // ========
+        // Main options
+        // -->> Read from files
+        if let Some(files) = args.values_of("FILE") {
+            // Also read from stdin if given combiation option
+            if args.is_present("combination") {
+                processor.from_stdin(false)?;
+            }
+
+            // Read from files and write with given options
+            for file in files {
+                processor.from_file(Path::new(file), false)?;
+            }
+        } 
+        // -->> Read from stdin
+        else {
+            processor.from_stdin(false)?;
+        }
+
+        // Print result
+        processor.print_result()?;
+
+        if let Some(file) = args.value_of("freeze") {
+            RuleFile::new(Some(processor.map.custom)).freeze(&Path::new(file))?;
+        }
+
+        Ok(())
+    }
+
     fn parse_options(args: &clap::ArgMatches) -> Result<(), RadError> {
 
         let newline: String = 
@@ -89,11 +149,6 @@ impl Cli {
 
             // Read from files and write with given options
             for file in files {
-                processor.set_file(file);
-                let path = &Path::new(file);
-                if !path.exists() {
-                    return Err(RadError::InvalidCommandOption(format!("File, \"{}\" doesn't exist, therefore cannot be read by r4d.", path.display())))
-                }
                 processor.from_file(Path::new(file), false)?;
             }
         } 

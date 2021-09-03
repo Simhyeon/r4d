@@ -2,8 +2,8 @@ use std::io::{self, Write};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::{ Path , PathBuf};
-use crate::error::{RadError, ErrorLogger};
-use crate::models::{MacroMap, WriteOption, UnbalancedChecker, MacroRule};
+use crate::error::{RadError, ErrorLogger, LoggerLines};
+use crate::models::{MacroMap, MacroRule, RuleFile, UnbalancedChecker, WriteOption};
 use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
@@ -56,18 +56,24 @@ pub enum ParseResult {
     NoPrint,
     EOI,
 }
+
+pub struct SandboxBackup {
+    current_input: String,
+    local_macro_map: HashMap<String,String>,
+    logger_lines: LoggerLines,
+}
+
 pub struct Processor{
-    pub map: MacroMap,
+    current_input : String,
+    pub(crate) map: MacroMap,
     define_parse: DefineParser,
     write_option: WriteOption,
     error_logger: ErrorLogger,
     checker: UnbalancedChecker,
-    line_number: usize,
-    ch_number: usize,
-    pub pipe_value: String,
-    pub newline: String,
-    pub paused: bool,
-    pub redirect: bool,
+    pub(crate) pipe_value: String,
+    pub(crate) newline: String,
+    pub(crate) paused: bool,
+    pub(crate) redirect: bool,
     purge: bool,
     strict: bool,
     always_greedy: bool,
@@ -79,6 +85,116 @@ pub struct Processor{
 // 4. Continue parsing with fragments
 
 impl Processor {
+    // ----------
+    // Builder pattern methods
+    /// Creates new processor with deafult options
+    pub fn new_proc() -> Self {
+        let temp_path= std::env::temp_dir().join("rad.txt");
+        let temp_target = (temp_path.to_owned(),OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(&temp_path)
+            .unwrap());
+
+        Self {
+            current_input: String::from("stdin"),
+            map : MacroMap::new(),
+            write_option: WriteOption::Stdout,
+            define_parse: DefineParser::new(),
+            error_logger: ErrorLogger::new(Some(WriteOption::Stdout)),
+            checker : UnbalancedChecker::new(),
+            newline : LINE_ENDING.to_owned(),
+            pipe_value: String::new(),
+            paused: false,
+            redirect: false,
+            purge: false,
+            strict: false,
+            always_greedy: false,
+            temp_target,
+        }
+    }
+
+    /// Set write option to yield output to the file
+    pub fn write_to_file(mut self, target_file: Option<&Path>) -> Result<Self, RadError> {
+        if let Some(target_file) = target_file {
+            let target_file = OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(target_file)?;
+
+            self.write_option = WriteOption::File(target_file);
+        }
+        Ok(self)
+    }
+
+    /// Yield error to the file
+    pub fn error_to_file(mut self, target_file: Option<&Path>) -> Result<Self, RadError> {
+        if let Some(target_file) = target_file {
+            let target_file = OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(target_file)?;
+
+            self.error_logger = ErrorLogger::new(Some(WriteOption::File(target_file)));
+        }
+        Ok(self)
+    }
+
+    /// Use unix line ending instead of os default one
+    pub fn unix_new_line(mut self, use_unix_new_line: bool) -> Self {
+        if use_unix_new_line {
+            self.newline = "\n".to_owned();
+        }
+        self
+    }
+
+    pub fn greedy(mut self, greedy: bool) -> Self {
+        if greedy {
+            self.always_greedy = true;
+        }
+        self
+    }
+
+    pub fn purge(mut self, purge: bool) -> Self {
+        if purge {
+            self.purge = true;
+            self.strict = false;
+        }
+        self
+    }
+
+    pub fn strict(mut self, strict: bool) -> Self {
+        if strict {
+            self.strict = true;
+            self.purge = false;
+        }
+        self
+    }
+
+    pub fn silent(mut self, silent: bool) -> Self {
+        if silent {
+            self.error_logger = ErrorLogger::new(None);
+        }
+        self
+    }
+
+    pub fn custom_rules(mut self, paths: Option<Vec<&Path>>) -> Result<Self, RadError> {
+        if let Some(paths) = paths {
+            let mut rule_file = RuleFile::new(None);
+            for p in paths.iter() {
+                rule_file.melt(*p)?;
+            }
+            self.map.custom.extend(rule_file.rules);
+        }
+
+        Ok(self)
+    }
+
+    // =========
+    // -->> Old constructor
     pub fn new(write_option: WriteOption, error_write_option : Option<WriteOption>, newline: String) -> Self {
         let temp_path= std::env::temp_dir().join("rad.txt");
         let temp_target = (temp_path.to_owned(),OpenOptions::new()
@@ -89,13 +205,12 @@ impl Processor {
             .unwrap());
 
         Self {
+            current_input: String::from("stdin"),
             map : MacroMap::new(),
             write_option,
             define_parse: DefineParser::new(),
             error_logger: ErrorLogger::new(error_write_option),
             checker : UnbalancedChecker::new(),
-            line_number :0,
-            ch_number:0,
             newline,
             pipe_value: String::new(),
             paused: false,
@@ -140,15 +255,38 @@ impl Processor {
         &self.temp_target.1
     }
 
-    pub fn from_stdin(&mut self, get_result: bool) -> Result<String, RadError> {
+    /// Backup information of current file before processing sandboxed input
+    fn backup(&self) -> SandboxBackup {
+        SandboxBackup { 
+            current_input: self.current_input.clone(), 
+            local_macro_map: self.map.local.clone(),
+            logger_lines: self.error_logger.backup_lines(),
+        }
+    }
+
+    fn recover(&mut self, backup: SandboxBackup) {
+        // NOTE ::: Set file should come first becuase set_file override line number and character
+        // number
+        self.error_logger.set_file(&backup.current_input);
+        self.current_input = backup.current_input;
+        self.map.local= backup.local_macro_map; 
+        self.error_logger.recover_lines(backup.logger_lines);
+    }
+
+    /// Read from standard input
+    pub fn from_stdin(&mut self, sandbox: bool) -> Result<String, RadError> {
+
+        // Sandboxed environment, backup
+        let backup = if sandbox { Some(self.backup()) } else { None };
+
         let stdin = io::stdin();
         let mut line_iter = Utils::full_lines(stdin.lock());
         let mut lexor = Lexor::new();
         let mut invoke = MacroFragment::new();
         let mut content = String::new();
-        let mut container = if get_result { Some(&mut content) } else { None };
+        let mut container = if sandbox { Some(&mut content) } else { None };
         loop {
-            self.line_number = self.line_number + 1;
+            self.error_logger.add_line_number();
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
             // Clear local variable macros
             self.map.clear_local();
@@ -171,19 +309,29 @@ impl Processor {
             }
         } // Loop end
 
+        // Recover
+        if let Some(backup) = backup { self.recover(backup); }
+
         Ok(content)
     }
 
-    pub fn from_file(&mut self, path :&Path, get_result: bool) -> Result<String, RadError> {
+    pub fn from_file(&mut self, path :&Path, sandbox: bool) -> Result<String, RadError> {
+
+        // Sandboxed environment, backup
+        let backup = if sandbox { Some(self.backup()) } else { None };
+
+        // Set file as name of given path
+        self.set_file(path.to_str().unwrap())?;
+
         let file_stream = File::open(path)?;
         let reader = io::BufReader::new(file_stream);
         let mut line_iter = Utils::full_lines(reader);
         let mut lexor = Lexor::new();
         let mut invoke = MacroFragment::new();
         let mut content = String::new();
-        let mut container = if get_result { Some(&mut content) } else { None };
+        let mut container = if sandbox { Some(&mut content) } else { None };
         loop {
-            self.line_number = self.line_number + 1;
+            self.error_logger.add_line_number();
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
             // Clear local variable macros
             self.map.clear_local();
@@ -205,6 +353,9 @@ impl Processor {
                 ParseResult::EOI => break,
             }
         } // Loop end
+
+        // Recover
+        if let Some(backup) = backup { self.recover(backup); }
 
         Ok(content)
     }
@@ -247,14 +398,14 @@ impl Processor {
     } // parse_chunk end
 
     fn parse(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, line: &str, level: usize, caller: &str) -> Result<String, RadError> {
-        self.ch_number = 0;
+        self.error_logger.reset_char_number();
         // Local values
         let mut remainder = String::new();
 
         // Reset lexor's escape_nl 
         lexor.escape_nl = false;
         for ch in line.chars() {
-            self.ch_number = self.ch_number + 1;
+            self.error_logger.add_char_number();
             let lex_result = lexor.lex(ch)?;
             // Either add character to remainder or fragments
             match lex_result {
@@ -289,12 +440,8 @@ impl Processor {
                 },
                 LexResult::EmptyName => {
                     frag.whole_string.push(ch);
-                    self.error_logger
-                        .set_number(
-                            self.line_number, 
-                            self.ch_number
-                        );
                     // If paused, then reset lexor context
+                    self.error_logger.freeze_number(); 
                     if self.paused {
                         lexor.reset();
                         remainder.push_str(&frag.whole_string);
@@ -303,7 +450,7 @@ impl Processor {
                 }
                 LexResult::AddToRemainder => {
                     if !self.checker.check(ch) {
-                        self.error_logger.set_number(self.line_number, self.ch_number);
+                        self.error_logger.freeze_number();
                         self.log_warning("Unbalanced parenthesis detected.")?;
                     }
                     remainder.push(ch);
@@ -312,11 +459,7 @@ impl Processor {
                     match cursor{
                         Cursor::Name => {
                             if frag.name.len() == 0 {
-                                self.error_logger
-                                    .set_number(
-                                        self.line_number, 
-                                        self.ch_number
-                                    );
+                                self.error_logger.freeze_number();
                             }
                             match ch {
                                 '|' => frag.pipe = true,
@@ -533,10 +676,16 @@ impl Processor {
         Ok(())
     }
 
-    pub fn set_file(&mut self, file: &str) {
-        self.error_logger.set_file(file);
-        self.line_number = 0;
-        self.ch_number = 0;
+    /// This is not a backup but fresh set of file information
+    fn set_file(&mut self, file: &str) -> Result<(), RadError> {
+        let path = &Path::new(file);
+        if !path.exists() {
+            Err(RadError::InvalidCommandOption(format!("File, \"{}\" doesn't exist, therefore cannot be read by r4d.", path.display())))
+        } else {
+            self.current_input = file.to_owned();
+            self.error_logger.set_file(file);
+            Ok(())
+        }
     }
 
     pub fn add_custom_rules(&mut self, rules: HashMap<String, MacroRule>) {
@@ -544,7 +693,7 @@ impl Processor {
     }
 }
 
-pub struct DefineParser{
+pub(crate) struct DefineParser{
     arg_cursor :DefineCursor,
     name: String,
     args: String,

@@ -5,32 +5,76 @@ use crate::consts::LINE_ENDING;
 use colored::*;
 
 pub struct ErrorLogger {
+    line_number: usize,
+    char_number: usize,
     last_line_number: usize,
-    last_ch_number: usize,
+    last_char_number: usize,
     current_file: String,
     write_option: Option<WriteOption>,
     error_count: usize,
     warning_count: usize,
 }
+pub struct LoggerLines {
+    line_number: usize,
+    char_number: usize,
+    last_line_number: usize,
+    last_char_number: usize,
+}
 
 impl ErrorLogger{
     pub fn new(write_option: Option<WriteOption>) -> Self {
         Self {
+            line_number: 0,
+            char_number: 0,
             last_line_number: 0,
-            last_ch_number: 0,
+            last_char_number: 0,
             current_file: String::from("stdin"),
             write_option,
             error_count:0,
             warning_count:0,
         }
     }
-    pub fn set_file(&mut self, file: &str) {
-        self.current_file = file.to_owned();
+
+    pub fn backup_lines(&self) -> LoggerLines {
+        LoggerLines { line_number: self.line_number, char_number: self.char_number, last_line_number: self.last_line_number, last_char_number: self.last_char_number }
     }
 
-    pub fn set_number(&mut self, line_number: usize, ch_number : usize) {
-        self.last_line_number = line_number;
-        self.last_ch_number = ch_number;
+    pub fn recover_lines(&mut self, logger_lines: LoggerLines) {
+        self.line_number =          logger_lines.line_number;
+        self.char_number =          logger_lines.char_number;
+        self.last_line_number =     logger_lines.last_line_number;
+        self.last_char_number =     logger_lines.last_char_number;
+    }
+
+    pub fn set_file(&mut self, file: &str) {
+        self.current_file = file.to_owned();
+        self.line_number = 0;
+        self.char_number = 0;
+        self.last_line_number = 0;
+        self.last_char_number = 0;
+    }
+
+    pub fn add_line_number(&mut self) {
+        self.line_number = self.line_number + 1;
+    }
+
+    pub fn add_char_number(&mut self) {
+        self.char_number = self.char_number + 1;
+    }
+
+    pub fn reset_char_number(&mut self) {
+        self.char_number = 0;
+    }
+
+    pub fn freeze_number(&mut self) {
+        self.last_line_number = self.line_number;
+        self.last_char_number = self.char_number;
+    }
+
+    pub fn elog_panic(&mut self, log: &str, error: RadError) -> Result<(), RadError> {
+        self.elog(log)?;
+
+        Err(error)
     }
 
     pub fn elog(&mut self, log : &str) -> Result<(), RadError> {
@@ -38,7 +82,7 @@ impl ErrorLogger{
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(format!("error : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, self.last_ch_number,LINE_ENDING).as_bytes())?;
+                    file.write_all(format!("error : {} -> {}:{}:{}{}",log,self.current_file, self.line_number, self.char_number,LINE_ENDING).as_bytes())?;
                 }
                 WriteOption::Stdout => {
                     eprint!(
@@ -48,7 +92,7 @@ impl ErrorLogger{
                         LINE_ENDING,
                         self.current_file,
                         self.last_line_number,
-                        self.last_ch_number,
+                        self.last_char_number,
                         LINE_ENDING);
                 }
             }
@@ -65,7 +109,7 @@ impl ErrorLogger{
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(format!("warning : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, self.last_ch_number,LINE_ENDING).as_bytes())?;
+                    file.write_all(format!("warning : {} -> {}:{}:{}{}",log,self.current_file, self.line_number, self.char_number,LINE_ENDING).as_bytes())?;
                 }
                 WriteOption::Stdout => {
                     eprintln!(
@@ -75,7 +119,7 @@ impl ErrorLogger{
                         LINE_ENDING,
                         self.current_file,
                         self.last_line_number,
-                        self.last_ch_number);
+                        self.last_char_number);
                 }
             }
         } else {
@@ -147,6 +191,8 @@ pub enum RadError {
     Panic,
 }
 
+// ==========
+// -->> Convert variations
 impl From<regex::Error> for RadError {
     fn from(err : regex::Error) -> Self {
         Self::InvalidRegex(err)
