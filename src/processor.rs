@@ -79,10 +79,6 @@ pub struct Processor{
     always_greedy: bool,
     temp_target: (PathBuf,File),
 }
-// 1. Get string
-// 2. Parse until macro invocation detected
-// 3. Return remainder and macro fragments
-// 4. Continue parsing with fragments
 
 impl Processor {
     // ----------
@@ -151,6 +147,7 @@ impl Processor {
         self
     }
 
+    /// Set greedy option
     pub fn greedy(&mut self, greedy: bool) -> &mut Self {
         if greedy {
             self.always_greedy = true;
@@ -158,6 +155,7 @@ impl Processor {
         self
     }
 
+    /// Set purge option
     pub fn purge(&mut self, purge: bool) -> &mut Self {
         if purge {
             self.purge = true;
@@ -166,6 +164,7 @@ impl Processor {
         self
     }
 
+    /// Set strict option
     pub fn strict(&mut self, strict: bool) -> &mut Self {
         if strict {
             self.strict = true;
@@ -174,6 +173,7 @@ impl Processor {
         self
     }
 
+    /// Set silent option
     pub fn silent(&mut self, silent: bool) -> &mut Self {
         if silent {
             self.error_logger = ErrorLogger::new(None);
@@ -181,6 +181,7 @@ impl Processor {
         self
     }
 
+    /// Add custom rules
     pub fn custom_rules(&mut self, paths: Option<Vec<&Path>>) -> Result<&mut Self, RadError> {
         if let Some(paths) = paths {
             let mut rule_file = RuleFile::new(None);
@@ -193,15 +194,18 @@ impl Processor {
         Ok(self)
     }
 
+    /// Print the result of a processing
     pub fn print_result(&mut self) -> Result<(), RadError> {
         self.error_logger.print_result()?;
         Ok(())
     }
 
+    /// Get mutable reference of macro map
     pub fn get_map(&mut self) -> &mut MacroMap {
         &mut self.map
     }
 
+    /// Change temp file target
     pub fn set_temp_file(&mut self, path: &Path) {
         self.temp_target = (path.to_owned(),OpenOptions::new()
             .create(true)
@@ -211,14 +215,17 @@ impl Processor {
             .unwrap());
     }
 
+    /// Creates a unreferenced instance of processor
     pub fn build(&mut self) -> Self {
         std::mem::replace(self, Processor::new())
     }
 
+    /// Get temp file's path
     pub fn get_temp_path(&self) -> &Path {
         &self.temp_target.0
     }
 
+    /// Get temp file's "file"
     pub fn get_temp_file(&self) -> &File {
         &self.temp_target.1
     }
@@ -232,6 +239,7 @@ impl Processor {
         }
     }
 
+    /// Recover backup information into the processor
     fn recover(&mut self, backup: SandboxBackup) {
         // NOTE ::: Set file should come first becuase set_file override line number and character
         // number
@@ -283,6 +291,7 @@ impl Processor {
         Ok(content)
     }
 
+    /// Process contents from a file
     pub fn from_file(&mut self, path :&Path, sandbox: bool) -> Result<String, RadError> {
 
         // Sandboxed environment, backup
@@ -365,6 +374,7 @@ impl Processor {
         return Ok(result);
     } // parse_chunk end
 
+    /// Parse a given line
     fn parse(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, line: &str, level: usize, caller: &str) -> Result<String, RadError> {
         self.error_logger.reset_char_number();
         // Local values
@@ -529,6 +539,7 @@ impl Processor {
         Ok(remainder)
     }
 
+    /// Add custom rule to macro map
     fn add_rule(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
         if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
             self.map.register(&name, &args, &body)?;
@@ -546,6 +557,7 @@ impl Processor {
 
     // Evaluate can be nested deeply
     // Disable caller for temporary
+    /// Evaluate detected macro usage
     fn evaluate(&mut self,level: usize, caller: &str, name: &str, args: &str, greedy: bool) -> Result<Option<String>, RadError> {
         let level = level + 1;
         // This parses and processes arguments
@@ -587,6 +599,7 @@ impl Processor {
         }
     }
 
+    /// Invoke a custom rule and get a result
     fn invoke_rule(&mut self,level: usize ,name: &str, arg_values: &str, greedy: bool) -> Result<Option<String>, RadError> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
@@ -612,6 +625,7 @@ impl Processor {
         Ok(Some(result))
     }
 
+    /// Write text to either file or standard output according to processor's write option
     fn write_to(&mut self, content: &str, container: &mut Option<&mut String>) -> Result<(), RadError> {
         // Don't try to write empty string, because it's a waste
         if content.len() == 0 { return Ok(()); }
@@ -634,17 +648,20 @@ impl Processor {
         Ok(())
     }
 
+    /// Log error
     pub fn log_error(&mut self, log : &str) -> Result<(), RadError> {
         self.error_logger.elog(log)?;
         Ok(())
     }
 
+    /// Log warning
     pub fn log_warning(&mut self, log : &str) -> Result<(), RadError> {
         self.error_logger.wlog(log)?;
         Ok(())
     }
 
-    /// This is not a backup but fresh set of file information
+    // This is not a backup but fresh set of file information
+    /// Set current processing file information for the first time
     fn set_file(&mut self, file: &str) -> Result<(), RadError> {
         let path = &Path::new(file);
         if !path.exists() {
@@ -656,6 +673,7 @@ impl Processor {
         }
     }
 
+    /// Add custom rules without builder pattern
     pub fn add_custom_rules(&mut self, rules: HashMap<String, MacroRule>) {
         self.map.custom.extend(rules.into_iter());
     }
@@ -774,6 +792,7 @@ impl DefineParser {
         Some((self.name.clone(), self.args.clone(), self.body.clone()))
     }
 
+    /// Check if name complies with naming rule
     fn is_valid_name(&mut self, ch : char) -> bool {
         if self.container.len() == 0 { // Start of string
             // Not alphabetic 

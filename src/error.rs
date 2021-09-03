@@ -4,6 +4,7 @@ use std::io::Write;
 use crate::consts::LINE_ENDING;
 use colored::*;
 
+/// Logger that controls whether to print error, warning or not and where to yield the error and warnings.
 pub struct ErrorLogger {
     line_number: usize,
     char_number: usize,
@@ -14,6 +15,7 @@ pub struct ErrorLogger {
     error_count: usize,
     warning_count: usize,
 }
+/// Struct specifically exists for error loggers backup information
 pub struct LoggerLines {
     line_number: usize,
     char_number: usize,
@@ -35,10 +37,12 @@ impl ErrorLogger{
         }
     }
 
+    /// Backup current line information into a struct
     pub fn backup_lines(&self) -> LoggerLines {
         LoggerLines { line_number: self.line_number, char_number: self.char_number, last_line_number: self.last_line_number, last_char_number: self.last_char_number }
     }
 
+    /// Recover backuped line information from a struct
     pub fn recover_lines(&mut self, logger_lines: LoggerLines) {
         self.line_number =          logger_lines.line_number;
         self.char_number =          logger_lines.char_number;
@@ -46,6 +50,7 @@ impl ErrorLogger{
         self.last_char_number =     logger_lines.last_char_number;
     }
 
+    /// Set file's logging information
     pub fn set_file(&mut self, file: &str) {
         self.current_file = file.to_owned();
         self.line_number = 0;
@@ -54,18 +59,19 @@ impl ErrorLogger{
         self.last_char_number = 0;
     }
 
+    /// Increase line number
     pub fn add_line_number(&mut self) {
         self.line_number = self.line_number + 1;
     }
-
+    /// Increase char number
     pub fn add_char_number(&mut self) {
         self.char_number = self.char_number + 1;
     }
-
+    /// Reset char number
     pub fn reset_char_number(&mut self) {
         self.char_number = 0;
     }
-
+    /// Freeze line and char number for logging
     pub fn freeze_number(&mut self) {
         self.last_line_number = self.line_number;
         self.last_char_number = self.char_number;
@@ -77,6 +83,7 @@ impl ErrorLogger{
         Err(error)
     }
 
+    /// Log error
     pub fn elog(&mut self, log : &str) -> Result<(), RadError> {
         self.error_count = self.error_count + 1; 
         if let Some(option) = &mut self.write_option {
@@ -104,6 +111,7 @@ impl ErrorLogger{
         Ok(())
     }
 
+    /// Log warning
     pub fn wlog(&mut self, log : &str) -> Result<(), RadError> {
         self.warning_count = self.warning_count + 1; 
         if let Some(option) = &mut self.write_option {

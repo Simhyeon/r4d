@@ -10,11 +10,12 @@ pub(crate) struct Cli{}
 impl Cli {
     pub fn parse() -> Result<(), RadError>{
         let cli_args = Cli::args_builder();
-        Cli::parse_options(&cli_args)?;
+        Cli::run_processor(&cli_args)?;
         Ok(())
     }
 
-    fn parse_options(args: &clap::ArgMatches) -> Result<(), RadError> {
+    /// Parse arguments and run processor
+    fn run_processor(args: &clap::ArgMatches) -> Result<(), RadError> {
         // ========
         // Sub options
         // custom rules
@@ -73,6 +74,7 @@ impl Cli {
         Ok(())
     }
 
+    /// Creates argument template
     fn args_builder() -> clap::ArgMatches {
         clap_app!(R4d =>
             (version: "0.4.7")

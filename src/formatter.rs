@@ -8,7 +8,7 @@ lazy_static!{
    pub static ref RESTORE: Regex = Regex::new(r"@COMMA@").unwrap();
 }
 
-pub struct Formatter;
+pub(crate) struct Formatter;
 
 impl Formatter {
     pub fn csv_to_table(table_format : &str, data: &str, newline: &str) -> Result<String, RadError> {

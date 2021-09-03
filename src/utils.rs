@@ -5,10 +5,16 @@ use std::io::BufRead;
 pub(crate) struct Utils;
 
 impl Utils {
+    /// Create local name
     pub(crate) fn local_name(level: usize, name : &str) -> String {
         format!("{}.{}", level, name)
     }
 
+    /// Trim preceding and trailing whitespaces for given input
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - Text to trim
     pub(crate) fn trim(args: &str) -> Result<String, RadError> {
         let reg = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$")?;
         let result = reg.replace_all(args, "");
@@ -30,10 +36,14 @@ impl Utils {
         })
     }
 
+    /// Check if a character is blank
     pub(crate) fn is_blank_char(ch: char) -> bool {
         ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
     }
 
+    /// Check if a character is true
+    ///
+    /// In this contenxt, true and non zero number is 'true' while false and zero number is false
     pub(crate) fn is_arg_true(arg: &str) -> Result<bool, RadError> {
         let arg = Utils::trim(arg)?;
         if let Ok(value) = arg.parse::<usize>() {
@@ -43,15 +53,16 @@ impl Utils {
                 return Ok(true);
             }
         } else {
-            if arg == "true" {
+            if arg.to_lowercase() == "true" {
                 return Ok(true);
-            } else if arg == "false" {
+            } else if arg.to_lowercase() == "false" {
                 return Ok(false);
             }
         }
         return Err(RadError::InvalidArgument("Neither true nor false".to_owned()));
     }
 
+    /// Get a substring of utf8 encoded text.
     pub(crate) fn utf8_substring(source: &str, min: Option<usize>, max: Option<usize>) -> String {
         let mut result = String::new();
         if let Some(min) = min {

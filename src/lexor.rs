@@ -59,6 +59,10 @@ impl Lexor {
         let replace = ch;
 
         // Reserved for later usage
+        // TODO
+        // This is reserved because there was a time when basckslash was igrnoed and only appeared
+        // given two backslashes
+        // This is not the case of a current implementation but, it might change in the future
         // Don't set previous as it is when double ESCAPE_CHAR is used. 
         //if ch == ESCAPE_CHAR && self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
             //replace = '0';
@@ -119,7 +123,6 @@ impl Lexor {
         result
     }
 
-    // Double quote rule is somewhat suspicious?
     fn branch_arg(&mut self, ch: char) -> LexResult {
         let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
         // Right paren decreases paren_count
