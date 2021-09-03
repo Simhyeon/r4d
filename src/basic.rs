@@ -282,7 +282,8 @@ impl BasicMacro {
             let raw = Utils::trim(&args[0])?;
             let file_path = std::path::Path::new(&raw);
             if file_path.exists() { 
-                let result = processor.from_file(file_path, true)?;
+                processor.set_sandbox();
+                let result = processor.from_file(file_path)?;
                 Ok(result)
             } else {
                 let formatted = format!("File path : \"{}\" doesn't exist", file_path.display());
@@ -794,7 +795,8 @@ impl BasicMacro {
     /// $tempin()
     fn temp_include(_: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
         let file = processor.get_temp_path().to_owned();
-        Ok(processor.from_file(&file, true)?)
+        processor.set_sandbox();
+        Ok(processor.from_file(&file)?)
     }
 
     /// Redirect all text into temporary file

@@ -79,6 +79,7 @@ pub struct Processor{
     pub(crate) newline: String,
     pub(crate) paused: bool,
     pub(crate) redirect: bool,
+    sandbox: bool,
     purge: bool,
     strict: bool,
     always_greedy: bool,
@@ -114,6 +115,7 @@ impl Processor {
             redirect: false,
             purge: false,
             strict: false,
+            sandbox : false,
             always_greedy: false,
             temp_target,
         }
@@ -232,6 +234,10 @@ impl Processor {
             .unwrap());
     }
 
+    pub(crate) fn set_sandbox(&mut self) {
+        self.sandbox = true; 
+    }
+
     /// Get temp file's path
     pub(crate) fn get_temp_path(&self) -> &Path {
         &self.temp_target.0
@@ -267,10 +273,10 @@ impl Processor {
     }
 
     /// Read from standard input
-    pub fn from_stdin(&mut self, sandbox: bool) -> Result<String, RadError> {
+    pub fn from_stdin(&mut self) -> Result<String, RadError> {
 
         // Sandboxed environment, backup
-        let backup = if sandbox { Some(self.backup()) } else { None };
+        let backup = if self.sandbox { Some(self.backup()) } else { None };
 
         let stdin = io::stdin();
         let mut line_iter = Utils::full_lines(stdin.lock());
@@ -278,7 +284,7 @@ impl Processor {
         let mut frag = MacroFragment::new();
         let mut content = String::new();
         // Container is where sandboxed output is saved
-        let mut container = if sandbox { Some(&mut content) } else { None };
+        let mut container = if self.sandbox { Some(&mut content) } else { None };
         loop {
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut frag)?;
             match result {
@@ -301,16 +307,16 @@ impl Processor {
         } // Loop end
 
         // Recover
-        if let Some(backup) = backup { self.recover(backup); }
+        if let Some(backup) = backup { self.recover(backup); self.sandbox = false; }
 
         Ok(content)
     }
 
     /// Process contents from a file
-    pub fn from_file(&mut self, path :&Path, sandbox: bool) -> Result<String, RadError> {
+    pub fn from_file(&mut self, path :&Path) -> Result<String, RadError> {
 
         // Sandboxed environment, backup
-        let backup = if sandbox { Some(self.backup()) } else { None };
+        let backup = if self.sandbox { Some(self.backup()) } else { None };
 
         // Set file as name of given path
         self.set_file(path.to_str().unwrap())?;
@@ -322,7 +328,7 @@ impl Processor {
         let mut frag = MacroFragment::new();
         let mut content = String::new();
         // Container is where sandboxed output is saved
-        let mut container = if sandbox { Some(&mut content) } else { None };
+        let mut container = if self.sandbox { Some(&mut content) } else { None };
         loop {
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut frag)?;
             match result {
@@ -345,7 +351,7 @@ impl Processor {
         } // Loop end
 
         // Recover
-        if let Some(backup) = backup { self.recover(backup); }
+        if let Some(backup) = backup { self.recover(backup); self.sandbox = false; }
 
         Ok(content)
     }

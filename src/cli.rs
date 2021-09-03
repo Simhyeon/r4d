@@ -49,15 +49,15 @@ impl Cli {
         if let Some(files) = args.values_of("FILE") {
             // Also read from stdin if given combiation option
             if args.is_present("combination") {
-                processor.from_stdin(false)?;
+                processor.from_stdin()?;
             }
 
             // Read from files and write with given options
             for file in files {
-                processor.from_file(Path::new(file), false)?;
+                processor.from_file(Path::new(file))?;
             }
         } else { // -->> Read from stdin
-            processor.from_stdin(false)?;
+            processor.from_stdin()?;
         }
 
         // Print result

@@ -193,6 +193,7 @@ pub enum RadError {
     Utf8Err(std::string::FromUtf8Error),
     #[error("Unsupported table format\n= {0}")]
     UnsupportedTableFormat(String),
+    #[cfg(feature = "csv")]
     #[error("Table error\n= {0}")]
     CsvError(csv::Error),
     #[error("Failed frozen operation\n= {0}")]
