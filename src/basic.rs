@@ -198,10 +198,7 @@ impl BasicMacro {
             let raw = Utils::trim(&args[0])?;
             let file_path = std::path::Path::new(&raw);
             if file_path.exists() { 
-                // This reservation is necessary because from_file method clears all locals
-                let reserved_local = processor.map.local.clone();
                 let result = processor.from_file(file_path, true)?;
-                processor.map.local = reserved_local;
                 Ok(result)
             } else {
                 let formatted = format!("File path : \"{}\" doesn't exist", file_path.display());
