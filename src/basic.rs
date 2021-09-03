@@ -311,7 +311,7 @@ impl BasicMacro {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             let name = &Utils::trim(&args[0])?;
 
-            processor.map.undefine(name);
+            processor.get_map().undefine(name);
             Ok("".to_owned())
         } else {
             Err(RadError::InvalidArgument("Undefine requires an argument".to_owned()))
@@ -402,8 +402,8 @@ impl BasicMacro {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let name = &args[0];
             let value = &args[1];
-            processor.map.new_local(1, name, value);
-            if processor.map.custom.contains_key(name) {
+            processor.get_map().new_local(1, name, value);
+            if processor.get_map().custom.contains_key(name) {
                 processor.log_warning(&format!("Creating a binding with a name already existing : \"{}\"", name))?;
             }
         }
@@ -446,7 +446,7 @@ impl BasicMacro {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let target = &args[0];
             let new = &args[1];
-            processor.map.rename(target, new);
+            processor.get_map().rename(target, new);
 
             Ok(String::new())
         } else {
@@ -458,7 +458,7 @@ impl BasicMacro {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let name = &args[0];
             let target = &args[1];
-            processor.map.append(name, target);
+            processor.get_map().append(name, target);
 
             Ok(String::new())
         } else {

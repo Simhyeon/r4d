@@ -65,7 +65,7 @@ pub struct SandboxBackup {
 
 pub struct Processor{
     current_input : String,
-    pub(crate) map: MacroMap,
+    map: MacroMap,
     define_parse: DefineParser,
     write_option: WriteOption,
     error_logger: ErrorLogger,
@@ -88,7 +88,7 @@ impl Processor {
     // ----------
     // Builder pattern methods
     /// Creates new processor with deafult options
-    pub fn new_proc() -> Self {
+    pub fn new() -> Self {
         let temp_path= std::env::temp_dir().join("rad.txt");
         let temp_target = (temp_path.to_owned(),OpenOptions::new()
             .create(true)
@@ -193,49 +193,13 @@ impl Processor {
         Ok(self)
     }
 
-    // =========
-    // -->> Old constructor
-    pub fn new(write_option: WriteOption, error_write_option : Option<WriteOption>, newline: String) -> Self {
-        let temp_path= std::env::temp_dir().join("rad.txt");
-        let temp_target = (temp_path.to_owned(),OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(&temp_path)
-            .unwrap());
-
-        Self {
-            current_input: String::from("stdin"),
-            map : MacroMap::new(),
-            write_option,
-            define_parse: DefineParser::new(),
-            error_logger: ErrorLogger::new(error_write_option),
-            checker : UnbalancedChecker::new(),
-            newline,
-            pipe_value: String::new(),
-            paused: false,
-            redirect: false,
-            purge: false,
-            strict: false,
-            always_greedy: false,
-            temp_target,
-        }
-    }
     pub fn print_result(&mut self) -> Result<(), RadError> {
         self.error_logger.print_result()?;
         Ok(())
     }
-    pub fn set_greedy(&mut self) {
-        self.always_greedy = true;
-    }
-    pub fn set_purge(&mut self) {
-        self.purge = true;
-    }
-    pub fn set_strict(&mut self) {
-        self.strict = true;
-    }
-    pub fn get_map(&self) -> &MacroMap {
-        &self.map
+
+    pub fn get_map(&mut self) -> &mut MacroMap {
+        &mut self.map
     }
 
     pub fn set_temp_file(&mut self, path: &Path) {
@@ -485,7 +449,7 @@ impl Processor {
                     frag.whole_string.push(ch);
                     // define
                     if frag.name == "define" {
-                        self.add_define(frag, &mut remainder)?;
+                        self.add_rule(frag, &mut remainder)?;
                         lexor.escape_nl = true;
                         frag.clear()
                     } 
@@ -561,7 +525,7 @@ impl Processor {
         Ok(remainder)
     }
 
-    fn add_define(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
+    fn add_rule(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
         if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
             self.map.register(&name, &args, &body)?;
         } else {
