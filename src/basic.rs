@@ -28,6 +28,7 @@ pub struct BasicMacro {
 }
 
 impl BasicMacro {
+    /// Creates new basic macro hashmap
     pub fn new() -> Self {
         // Create hashmap of functions
         let map = HashMap::from_iter(IntoIter::new([
@@ -71,30 +72,58 @@ impl BasicMacro {
         Self { macros : map }
     }
 
+    /// Check if a given macro exists
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Name of the macro to find
     pub fn contains(&self, name: &str) -> bool {
         self.macros.contains_key(name)
     }
 
+    /// Call a macro
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Name of the macro to call
+    /// * `args` - Argument sto supply to macro
+    /// * `greedy` - Whether macro should interpret arguments greedily
+    /// * `processor` - Processor instance to execute macro
     pub fn call(&mut self, name : &str, args: &str,greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
-        let args = self.parse_inner(processor, args)?;
+        // TODO
+        // Check if this code is necessary
+        // let args = self.parse_inner(processor, args)?;
         if let Some(func) = self.macros.get(name) {
             // Print out macro call result
-            let result = func(&args, greedy, processor)?;
+            let result = func(args, greedy, processor)?;
             Ok(result)
         } else {
             Ok(String::new())
         }
     }
 
+    /// Undefine a macro
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Macro name to undefine
     pub fn undefine(&mut self, name: &str) {
         self.macros.remove(name);
     }
 
+    /// Rename a macro
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Source macro name to find
+    /// * `target` - Target macro name to apply
     pub fn rename(&mut self, name: &str, target: &str) {
         let func = self.macros.remove(name).unwrap();
         self.macros.insert(target.to_owned(), func);
     }
 
+    // TODO 
+    // Check if this is ncessary
     fn parse_inner(&mut self,processor : &mut Processor, target: &str) -> Result<String, RadError> {
         processor.parse_chunk(0, &MAIN_CALLER.to_owned(), target)
     }
@@ -102,16 +131,28 @@ impl BasicMacro {
     // ==========
     // Basic Macros
     // ==========
+    /// Print out current time
+    ///
+    /// # Usage
+    ///
     /// $time()
     fn time(_: &str, _: bool, _ : &mut Processor) -> Result<String, RadError> {
         Ok(format!("{}", chrono::offset::Local::now().format("%H:%M:%S")))
     }
 
+    /// Print out current date
+    ///
+    /// # Usage
+    ///
     /// $date()
     fn date(_: &str, _: bool, _ : &mut Processor) -> Result<String, RadError> {
         Ok(format!("{}", chrono::offset::Local::now().format("%Y-%m-%d")))
     }
 
+    /// Substitute the given source with following match expressions
+    ///
+    /// # Usage
+    ///
     /// $regex(source_text,regex_match,substitution)
     fn regex_sub(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 3, greedy) {
@@ -128,8 +169,13 @@ impl BasicMacro {
         }
     }
 
-    /// $eval(expression)
+    /// Evaluate given expression
+    ///
     /// This returns true, false or evaluated number
+    ///
+    /// # Usage
+    ///
+    /// $eval(expression)
     fn eval(args: &str, greedy: bool,_: &mut Processor ) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             let formula = &args[0];
@@ -142,8 +188,11 @@ impl BasicMacro {
         }
     }
 
-    // Trim preceding and trailing whitespaces
-    /// $trim(text)
+    /// Trim preceding and trailing whitespaces (' ', '\n', '\t', '\r')
+    ///
+    /// # Usage
+    ///
+    /// $trim(expression)
     fn trim(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             Utils::trim(&args[0])
@@ -152,8 +201,11 @@ impl BasicMacro {
         }
     }
 
-    // Remove duplicate newlines
-    /// $chomp(test)
+    /// Removes duplicate newlines whithin given input
+    ///
+    /// # Usage
+    ///
+    /// $chomp(expression)
     fn chomp(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             let source = &args[0];
@@ -166,7 +218,11 @@ impl BasicMacro {
         }
     }
 
-    /// $comp(text)
+    /// Both apply trim and chomp to given expression
+    ///
+    /// # Usage
+    ///
+    /// $comp(Expression)
     fn compress(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             let source = &args[0];
@@ -179,7 +235,11 @@ impl BasicMacro {
         }
     }
 
-    /// $lipsum(Number: usize)
+    /// Creates placeholder with given amount of word counts
+    ///
+    /// # Usage
+    ///
+    /// $lipsum(Number)
     fn placeholder(args: &str, greedy: bool,_: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             let word_count = &args[0];
@@ -193,6 +253,12 @@ impl BasicMacro {
         }
     }
 
+    /// Paste given file's content
+    ///
+    /// Every macros within the file is also expanded
+    ///
+    /// # Usage
+    ///
     /// $include(path)
     fn include(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
@@ -210,7 +276,11 @@ impl BasicMacro {
         }
     }
 
-    /// $repeat(count: usize,text)
+    /// Repeat given expression about given amount times
+    ///
+    /// # Usage
+    ///
+    /// $repeat(count,text)
     fn repeat(args: &str, greedy: bool,_: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let repeat_count;
@@ -230,6 +300,12 @@ impl BasicMacro {
         }
     }
 
+    /// Call system command
+    ///
+    /// This calls via 'CMD \C' in windows platform while unix call is operated without any mediation.
+    ///
+    /// # Usage
+    ///
     /// $syscmd(system command -a arguments)
     fn syscmd(args: &str, greedy: bool,_: &mut Processor) -> Result<String, RadError> {
         if let Some(args_content) = ArgParser::args_with_len(args, 1, greedy) {
@@ -258,8 +334,10 @@ impl BasicMacro {
         }
     }
 
-    // Special macro
-    // Argument is expanded after vectorization
+    /// Print content according to given condition
+    /// 
+    /// # Usage 
+    ///
     /// $ifelse(evaluation, ifstate, elsestate)
     fn ifelse(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
@@ -287,10 +365,13 @@ impl BasicMacro {
         }
     }
 
-    // This is composite basic macro
-    // Which means this macro acts differently by the context(Processor state)
+    /// Check if macro is defined or not
+    ///
+    /// This return 'true' or 'false'
+    ///
+    /// # Usage
+    ///
     /// $ifdef(macro_name) 
-    /// This return string true or false
     fn ifdef(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             let name = &Utils::trim(&args[0])?;
@@ -307,6 +388,12 @@ impl BasicMacro {
         }
     }
 
+    /// Undefine a macro 
+    ///
+    /// 'Define' cannot be undefined because it is not actually a macro 
+    ///
+    /// # Usage
+    ///
     /// $undef(macro_name)
     fn undefine_call(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
@@ -319,8 +406,11 @@ impl BasicMacro {
         }
     }
 
-    // $foreach()
-    // $foreach(\*a,b,c*\,$:)
+    /// Loop around given values and substitute iterators  with the value
+    ///
+    /// # Usage 
+    ///
+    /// $foreach(\*a,b,c*\,$:)
     fn foreach(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let mut sums = String::new();
@@ -337,7 +427,11 @@ impl BasicMacro {
         }
     }
 
-    // $forloop(1,5,$:)
+    /// For loop around given min, max value and finally substitue iterators with value
+    ///
+    /// # Usage
+    ///
+    /// $forloop(1,5,$:)
     fn forloop(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 3, greedy) {
             let mut sums = String::new();
@@ -363,7 +457,12 @@ impl BasicMacro {
         }
     }
 
-    // $from(\*1,2,3\n4,5,6*\, macro_name)
+    /// Create multiple macro executions from given csv value
+    ///
+    /// # Usage
+    ///
+    /// $from(\*1,2,3
+    /// 4,5,6*\, macro_name)
     fn from_data(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let macro_data = &args[0];
@@ -378,7 +477,14 @@ impl BasicMacro {
         }
     }
 
-    /// $table(github,"1,2,3\n4,5,6")
+    /// Create a table with given format and csv input
+    ///
+    /// Available formats are 'github', 'wikitext' and 'html'
+    ///
+    /// # Usage
+    ///
+    /// $table(github,"1,2,3
+    /// 4,5,6")
     fn table(args: &str, greedy: bool, p: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let table_format = &args[0]; // Either gfm, wikitex, latex, none
@@ -390,6 +496,12 @@ impl BasicMacro {
         }
     }
 
+    /// Put value into a temporary stack called pipe
+    ///
+    /// Piped value can be popped with macro '-'
+    ///
+    /// # Usage
+    ///
     /// $pipe(Value)
     fn pipe(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
@@ -398,6 +510,12 @@ impl BasicMacro {
         Ok(String::new())
     }
 
+    /// Bind a local macro
+    ///
+    /// Bound macro gets deleted after macro execution
+    ///
+    /// # Usage
+    ///
     /// $bind(name,value)
     fn bind_to_local(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
@@ -411,11 +529,23 @@ impl BasicMacro {
         Ok(String::new())
     }
 
+    /// Get environment variable with given name
+    ///
+    /// # Usage
+    ///
+    /// $env(SHELL)
     fn get_env(args: &str, _: bool, _: &mut Processor) -> Result<String, RadError> {
         let out = std::env::var(args)?;
         Ok(out)
     }
 
+    /// Merge two path into a single path
+    ///
+    /// This creates platform agonistic path which can be consumed by other macros.
+    ///
+    /// # Usage
+    ///
+    /// $path($env(HOME),document)
     fn merge_path(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let target = Utils::trim(&args[0])?;
@@ -428,12 +558,19 @@ impl BasicMacro {
         }
     }
 
+    /// Yield newline according to platform or user option
+    ///
+    /// # Usage
+    ///
     /// $nl()
-    /// Create newline
     fn newline(_: &str, _: bool, p: &mut Processor) -> Result<String, RadError> {
         Ok(p.newline.to_owned())
     }
 
+    /// Pop pipe value
+    ///
+    /// # Usage
+    ///
     /// $-()
     fn get_pipe(_: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
         let out = processor.pipe_value.clone();
@@ -442,13 +579,24 @@ impl BasicMacro {
     }
 
     /// Return a length of the string
-    /// This is O(n) operation
+    /// 
+    /// This is O(n) operation.
     /// String.len() function returns byte length not "Character" length
     /// therefore, chars().count() is used
+    ///
+    /// # Usage
+    ///
+    /// $len(안녕하세요)
+    /// $len(Hello)
     fn len(args: &str, _: bool, _: &mut Processor) -> Result<String, RadError> {
         Ok(args.chars().count().to_string())
     }
 
+    /// Rename macro rule to other name
+    ///
+    /// # Usage
+    ///
+    /// $rename(name,target)
     fn rename_call(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let target = &args[0];
@@ -461,6 +609,11 @@ impl BasicMacro {
         }
     }
 
+    /// Append content to a macro
+    ///
+    /// # Usage
+    ///
+    /// $append(macro_name,Content)
     fn append(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let name = &args[0];
@@ -473,6 +626,11 @@ impl BasicMacro {
         }
     }
 
+    /// Translate given char aray into corresponding char array
+    ///
+    /// # Usage
+    ///
+    /// $tr(Source,abc,ABC)
     fn translate(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 3, greedy) {
             let mut source = args[0].clone();
@@ -493,7 +651,11 @@ impl BasicMacro {
         }
     }
 
-    // $sub(0,5,GivenString)
+    /// Get a substring(indexed) from given source
+    ///
+    /// # Usage
+    ///
+    /// $sub(0,5,GivenString)
     fn substring(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 2, greedy) {
             let source = &args[2];
@@ -526,6 +688,15 @@ impl BasicMacro {
             Err(RadError::InvalidArgument("Sub requires some arguments".to_owned()))
         }
     }
+
+    /// Pause every macro expansion
+    ///
+    /// Only other pause call is evaluated
+    ///
+    /// # Usage
+    /// 
+    /// $pause(true)
+    /// $pause(false)
     fn pause(args: &str, greedy: bool, processor : &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             let arg = &args[0];
@@ -546,6 +717,11 @@ impl BasicMacro {
         }
     }
 
+    /// Save content to temporary file
+    ///
+    /// # Usage
+    ///
+    /// $tempout(true,Content)
     fn temp_out(args: &str, greedy: bool, p: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             let content = &args[0];
@@ -556,6 +732,11 @@ impl BasicMacro {
         }
     }
 
+    /// Save content to a file
+    ///
+    /// # Usage
+    ///
+    /// $fileout(true,file_name,Content)
     fn file_out(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 3, greedy) {
             let truncate = &args[0];
@@ -587,11 +768,24 @@ impl BasicMacro {
         }
     }
 
+    /// Include but for temporary file
+    ///
+    /// # Usage
+    ///
+    /// $tempin()
     fn temp_include(_: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
         let file = processor.get_temp_path().to_owned();
         Ok(processor.from_file(&file, true)?)
     }
 
+    /// Redirect all text into temporary file
+    ///
+    /// Every text including non macro calls are all sent to current temporary files.
+    ///
+    /// # Usage
+    ///
+    /// $redir(true) 
+    /// $redir(false) 
     fn temp_redirect(args: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, false) {
             let toggle = if let Ok(toggle) =Utils::is_arg_true(&args[0]) { 
@@ -606,6 +800,11 @@ impl BasicMacro {
         }
     }
 
+    /// Set temporary file
+    ///
+    /// # Usage
+    ///
+    /// $tempto(file_name)
     fn set_temp_target(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::args_with_len(args, 1, greedy) {
             processor.set_temp_file(&PathBuf::from(std::env::temp_dir()).join(&args[0]));
