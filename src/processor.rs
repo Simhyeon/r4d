@@ -116,7 +116,7 @@ impl Processor {
     }
 
     /// Set write option to yield output to the file
-    pub fn write_to_file(mut self, target_file: Option<&Path>) -> Result<Self, RadError> {
+    pub fn write_to_file(&mut self, target_file: Option<&Path>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
             let target_file = OpenOptions::new()
                 .create(true)
@@ -130,7 +130,7 @@ impl Processor {
     }
 
     /// Yield error to the file
-    pub fn error_to_file(mut self, target_file: Option<&Path>) -> Result<Self, RadError> {
+    pub fn error_to_file(&mut self, target_file: Option<&Path>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
             let target_file = OpenOptions::new()
                 .create(true)
@@ -144,21 +144,21 @@ impl Processor {
     }
 
     /// Use unix line ending instead of os default one
-    pub fn unix_new_line(mut self, use_unix_new_line: bool) -> Self {
+    pub fn unix_new_line(&mut self, use_unix_new_line: bool) -> &mut Self {
         if use_unix_new_line {
             self.newline = "\n".to_owned();
         }
         self
     }
 
-    pub fn greedy(mut self, greedy: bool) -> Self {
+    pub fn greedy(&mut self, greedy: bool) -> &mut Self {
         if greedy {
             self.always_greedy = true;
         }
         self
     }
 
-    pub fn purge(mut self, purge: bool) -> Self {
+    pub fn purge(&mut self, purge: bool) -> &mut Self {
         if purge {
             self.purge = true;
             self.strict = false;
@@ -166,7 +166,7 @@ impl Processor {
         self
     }
 
-    pub fn strict(mut self, strict: bool) -> Self {
+    pub fn strict(&mut self, strict: bool) -> &mut Self {
         if strict {
             self.strict = true;
             self.purge = false;
@@ -174,14 +174,14 @@ impl Processor {
         self
     }
 
-    pub fn silent(mut self, silent: bool) -> Self {
+    pub fn silent(&mut self, silent: bool) -> &mut Self {
         if silent {
             self.error_logger = ErrorLogger::new(None);
         }
         self
     }
 
-    pub fn custom_rules(mut self, paths: Option<Vec<&Path>>) -> Result<Self, RadError> {
+    pub fn custom_rules(&mut self, paths: Option<Vec<&Path>>) -> Result<&mut Self, RadError> {
         if let Some(paths) = paths {
             let mut rule_file = RuleFile::new(None);
             for p in paths.iter() {
@@ -209,6 +209,10 @@ impl Processor {
             .truncate(true)
             .open(path)
             .unwrap());
+    }
+
+    pub fn build(&mut self) -> Self {
+        std::mem::replace(self, Processor::new())
     }
 
     pub fn get_temp_path(&self) -> &Path {

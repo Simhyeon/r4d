@@ -5,7 +5,7 @@ use crate::models::RuleFile;
 use std::path::Path;
 
 /// Struct to parse command line arguments and execute proper operations
-pub struct Cli{}
+pub(crate) struct Cli{}
 
 impl Cli {
     pub fn parse() -> Result<(), RadError>{
@@ -42,7 +42,8 @@ impl Cli {
             .unix_new_line(args.is_present("newline"))
             .custom_rules(rules)?
             .write_to_file(write_to_file)?
-            .error_to_file(error_to_file)?;
+            .error_to_file(error_to_file)?
+            .build();
 
         // ========
         // Main options
@@ -57,15 +58,14 @@ impl Cli {
             for file in files {
                 processor.from_file(Path::new(file), false)?;
             }
-        } 
-        // -->> Read from stdin
-        else {
+        } else { // -->> Read from stdin
             processor.from_stdin(false)?;
         }
 
         // Print result
         processor.print_result()?;
 
+        // Freeze to file if option was given
         if let Some(file) = args.value_of("freeze") {
             RuleFile::new(Some(processor.get_map().custom.clone())).freeze(&Path::new(file))?;
         }
