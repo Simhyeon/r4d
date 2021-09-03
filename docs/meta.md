@@ -14,16 +14,21 @@
 * [ ] Dogfood until 1.0
 
 * [ ] Make proper documentation
+
 * [ ] Make library binding
   * [x] Make processor option setting more ergonomic with builder pattern
-  * [ ] Make code DRY
+  * [x] Make code DRY -> Kinda done
     * [x] Processor -> parse method is too long
 	* [x] lexor parts -> Actually this part is fine
 	* [x] Arg parser is disastrous -> Little bit better
-  * [ ] Only disclose necessary modules and structs
-  * [ ] Change arguments naming
+  * [x] Optional dependencies
+  * [x] Only disclose necessary modules and structs
+
+* [ ] Improve projects
   * [ ] Change module hierarchy
-* [ ] Make allocations less, especially string manipulation 
+  * [ ] Change arguments naming
+  * [ ] Make allocations less, especially string manipulation 
+
 * [ ] New basic macros
 
 ### Deterred
