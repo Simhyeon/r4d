@@ -9,6 +9,7 @@ use crate::consts::*;
 use crate::lexor::*;
 use crate::arg_parser::ArgParser;
 
+/// Macro framgent that processor saves fragmented information of the mcaro invocation
 #[derive(Debug)]
 pub struct MacroFragment {
     pub whole_string: String,
@@ -57,6 +58,10 @@ pub enum ParseResult {
     EOI,
 }
 
+/// Struct for backing current file and logging information
+///
+/// This is necessary because some macro processing should be executed in sandboxed environment.
+/// e.g. when include macro is called, outer file's information is not helpful at all.
 pub struct SandboxBackup {
     current_input: String,
     local_macro_map: HashMap<String,String>,
@@ -64,7 +69,7 @@ pub struct SandboxBackup {
 }
 
 pub struct Processor{
-    current_input : String,
+    current_input : String, // This is either "stdin" or currently reading file's name
     map: MacroMap,
     define_parse: DefineParser,
     write_option: WriteOption,
@@ -77,7 +82,10 @@ pub struct Processor{
     purge: bool,
     strict: bool,
     always_greedy: bool,
-    temp_target: (PathBuf,File),
+    // Temp target needs to save both path and file
+    // because file doesn't necessarily have path. 
+    // Especially in unix, this is not so an unique case
+    temp_target: (PathBuf,File), 
 }
 
 impl Processor {
@@ -225,7 +233,7 @@ impl Processor {
         &self.temp_target.0
     }
 
-    /// Get temp file's "file"
+    /// Get temp file's "file" struct
     pub fn get_temp_file(&self) -> &File {
         &self.temp_target.1
     }
@@ -241,8 +249,7 @@ impl Processor {
 
     /// Recover backup information into the processor
     fn recover(&mut self, backup: SandboxBackup) {
-        // NOTE ::: Set file should come first becuase set_file override line number and character
-        // number
+        // NOTE ::: Set file should come first becuase set_file override line number and character number
         self.error_logger.set_file(&backup.current_input);
         self.current_input = backup.current_input;
         self.map.local= backup.local_macro_map; 
@@ -258,22 +265,20 @@ impl Processor {
         let stdin = io::stdin();
         let mut line_iter = Utils::full_lines(stdin.lock());
         let mut lexor = Lexor::new();
-        let mut invoke = MacroFragment::new();
+        let mut frag = MacroFragment::new();
         let mut content = String::new();
+        // Container is where sandboxed output is saved
         let mut container = if sandbox { Some(&mut content) } else { None };
         loop {
-            self.error_logger.add_line_number();
-            let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
-            // Clear local variable macros
-            self.map.clear_local();
+            let result = self.parse_line(&mut line_iter, &mut lexor ,&mut frag)?;
             match result {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(remainder) => {
                     self.write_to(&remainder, &mut container)?;
                     // Reset fragment
-                    if &invoke.whole_string != "" {
-                        invoke = MacroFragment::new();
+                    if &frag.whole_string != "" {
+                        frag = MacroFragment::new();
                     }
                 }
                 ParseResult::FoundMacro(remainder) => {
@@ -304,22 +309,20 @@ impl Processor {
         let reader = io::BufReader::new(file_stream);
         let mut line_iter = Utils::full_lines(reader);
         let mut lexor = Lexor::new();
-        let mut invoke = MacroFragment::new();
+        let mut frag = MacroFragment::new();
         let mut content = String::new();
+        // Container is where sandboxed output is saved
         let mut container = if sandbox { Some(&mut content) } else { None };
         loop {
-            self.error_logger.add_line_number();
-            let result = self.parse_line(&mut line_iter, &mut lexor ,&mut invoke)?;
-            // Clear local variable macros
-            self.map.clear_local();
+            let result = self.parse_line(&mut line_iter, &mut lexor ,&mut frag)?;
             match result {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(remainder) => {
                     self.write_to(&remainder, &mut container)?;
                     // Reset fragment
-                    if &invoke.whole_string != "" {
-                        invoke = MacroFragment::new();
+                    if &frag.whole_string != "" {
+                        frag = MacroFragment::new();
                     }
                 }
                 ParseResult::FoundMacro(remainder) => {
@@ -339,9 +342,13 @@ impl Processor {
     
     /// Parse line is called only by the main loop thus, caller name is special name of @MAIN@
     fn parse_line(&mut self, lines :&mut impl std::iter::Iterator<Item = std::io::Result<String>>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
+        self.error_logger.add_line_number();
         if let Some(line) = lines.next() {
             let line = line?;
             let remainder = self.parse(lexor, frag, &line, 0, MAIN_CALLER)?;
+
+            // Clear local variable macros
+            self.map.clear_local();
 
             // Non macro string is included
             if remainder.len() != 0 {
@@ -376,6 +383,8 @@ impl Processor {
 
     /// Parse a given line
     fn parse(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, line: &str, level: usize, caller: &str) -> Result<String, RadError> {
+        // Initiate values
+        // Reset character number
         self.error_logger.reset_char_number();
         // Local values
         let mut remainder = String::new();
@@ -384,160 +393,191 @@ impl Processor {
         lexor.escape_nl = false;
         for ch in line.chars() {
             self.error_logger.add_char_number();
+
             let lex_result = lexor.lex(ch)?;
             // Either add character to remainder or fragments
             match lex_result {
                 LexResult::Ignore => frag.whole_string.push(ch),
                 // If given result is literal
                 LexResult::Literal(cursor) => {
-                    match cursor {
-                        // Exit frag
-                        // If literal is given on names
-                        Cursor::Name => {
-                            frag.whole_string.push(ch);
-                            remainder.push_str(&frag.whole_string);
-                            frag.clear();
-                        }
-                        // Simply push if none or arg
-                        Cursor::None => { remainder.push(ch); }
-                        Cursor::Arg => { 
-                            frag.args.push(ch); 
-                            frag.whole_string.push(ch);
-                        }
-                    }
+                    self.lex_branch_literal(ch, frag, &mut remainder, cursor);
                 }
                 LexResult::StartFrag => {
-                    frag.whole_string.push(ch);
-
-                    // If paused and not pause, then reset lexor context
-                    if self.paused && frag.name != "pause" {
-                        lexor.reset();
-                        remainder.push_str(&frag.whole_string);
-                        frag.clear();
-                    }
+                    self.lex_branch_start_frag(ch, frag, &mut remainder, lexor);
                 },
                 LexResult::EmptyName => {
-                    frag.whole_string.push(ch);
-                    // If paused, then reset lexor context
-                    self.error_logger.freeze_number(); 
-                    if self.paused {
-                        lexor.reset();
-                        remainder.push_str(&frag.whole_string);
-                        frag.clear();
-                    }
+                    self.lex_branch_empty_name(ch, frag, &mut remainder, lexor);
                 }
                 LexResult::AddToRemainder => {
-                    if !self.checker.check(ch) {
-                        self.error_logger.freeze_number();
-                        self.log_warning("Unbalanced parenthesis detected.")?;
-                    }
-                    remainder.push(ch);
+                    self.lex_branch_add_to_remainder(ch, &mut remainder)?;
                 }
                 LexResult::AddToFrag(cursor) => {
-                    match cursor{
-                        Cursor::Name => {
-                            if frag.name.len() == 0 {
-                                self.error_logger.freeze_number();
-                            }
-                            match ch {
-                                '|' => frag.pipe = true,
-                                '+' => frag.greedy = true,
-                                '*' => frag.yield_literal = true,
-                                '^' => frag.trimmed = true,
-                                _ => frag.name.push(ch) 
-                            }
-                        },
-                        Cursor::Arg => {
-                            frag.args.push(ch)
-                        },
-                        _ => unreachable!(),
-                    } 
-                    frag.whole_string.push(ch);
+                    self.lex_branch_add_to_frag(ch, frag, cursor);
                 }
-                // End of fragment
-                // 1. Evaluate macro 
-                // 1.5 -> If define, parse rule applied again.
-                // 2. And append to remainder
-                // 3. Reset fragment
                 LexResult::EndFrag => {
-                    frag.whole_string.push(ch);
-                    // define
-                    if frag.name == "define" {
-                        self.add_rule(frag, &mut remainder)?;
-                        lexor.escape_nl = true;
-                        frag.clear()
-                    } 
-                    // Invoke macro
-                    else {
-                        // Try to evaluate
-                        let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy);
-
-                        // If panicked, this means unrecoverable error occured.
-                        if let Err(error) = evaluation_result {
-                            // this is equlvalent to conceptual if let not pattern
-                            if let RadError::Panic = error{
-                                // Do nothing
-                                ();
-                            } else {
-                                self.log_error(&format!("{}", error))?;
-                            }
-                            return Err(RadError::Panic);
-                        }
-                        // else it is ok to proceed.
-                        // thus it is safe to unwrap it
-                        if let Some(mut content) = evaluation_result.unwrap() {
-                            if frag.pipe {
-                                self.pipe_value = content;
-                                lexor.escape_nl = true;
-                            }
-                            // If content is none
-                            // Ignore new line after macro evaluation until any character
-                            else if content.len() == 0 {
-                                lexor.escape_nl = true;
-                            } else {
-                                if frag.trimmed {
-                                    content = Utils::trim(&content)?;
-                                }
-                                if frag.yield_literal {
-                                    content = format!("\\*{}*\\", content);
-                                }
-                                remainder.push_str(&content);
-                            }
-                        } 
-                        // Failed to invoke
-                        // because macro doesn't exist
-                        else {
-                            // If strict mode is set, every error is panic error
-                            if self.strict {
-                                self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
-                                return Err(RadError::StrictPanic);
-                            } 
-                            // If purge mode is set, don't print anything 
-                            // and don't print error
-                            if !self.purge {
-                                self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
-                                remainder.push_str(&frag.whole_string);
-                            } 
-                            else {
-                                // If purge mode
-                                // set escape new line 
-                                lexor.escape_nl = true;
-                            }
-                        }
-                        // Clear fragment regardless of success
-                        frag.clear()
-                    }
+                    self.lex_branch_end_frag(ch,frag,&mut remainder, lexor, level, caller)?;
                 }
                 // Remove fragment and set to remainder
                 LexResult::ExitFrag => {
-                    frag.whole_string.push(ch);
-                    remainder.push_str(&frag.whole_string);
-                    frag.clear();
+                    self.lex_branch_exit_frag(ch,frag,&mut remainder);
                 }
             }
         } // End Character iteration
         Ok(remainder)
     }
+
+    // ==========
+    // Start of lex branch methods
+    // These are parse's sub methods for eaiser reading
+    fn lex_branch_literal(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, cursor: Cursor) {
+        match cursor {
+            // Exit frag
+            // If literal is given on names
+            Cursor::Name => {
+                frag.whole_string.push(ch);
+                remainder.push_str(&frag.whole_string);
+                frag.clear();
+            }
+            // Simply push if none or arg
+            Cursor::None => { remainder.push(ch); }
+            Cursor::Arg => { 
+                frag.args.push(ch); 
+                frag.whole_string.push(ch);
+            }
+        }
+    }
+
+    fn lex_branch_start_frag(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor) {
+        frag.whole_string.push(ch);
+
+        // If paused and not pause, then reset lexor context
+        if self.paused && frag.name != "pause" {
+            lexor.reset();
+            remainder.push_str(&frag.whole_string);
+            frag.clear();
+        }
+    }
+
+    fn lex_branch_empty_name(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor) {
+        frag.whole_string.push(ch);
+        // If paused, then reset lexor context
+        self.error_logger.freeze_number(); 
+        if self.paused {
+            lexor.reset();
+            remainder.push_str(&frag.whole_string);
+            frag.clear();
+        }
+
+    }
+
+    fn lex_branch_add_to_remainder(&mut self, ch: char,remainder: &mut String) -> Result<(), RadError> {
+        if !self.checker.check(ch) {
+            self.error_logger.freeze_number();
+            self.log_warning("Unbalanced parenthesis detected.")?;
+        }
+        remainder.push(ch);
+
+        Ok(())
+    }
+
+    fn lex_branch_add_to_frag(&mut self, ch: char,frag: &mut MacroFragment, cursor: Cursor) {
+        match cursor{
+            Cursor::Name => {
+                if frag.name.len() == 0 {
+                    self.error_logger.freeze_number();
+                }
+                match ch {
+                    '|' => frag.pipe = true,
+                    '+' => frag.greedy = true,
+                    '*' => frag.yield_literal = true,
+                    '^' => frag.trimmed = true,
+                    _ => frag.name.push(ch) 
+                }
+            },
+            Cursor::Arg => {
+                frag.args.push(ch)
+            },
+            _ => unreachable!(),
+        } 
+        frag.whole_string.push(ch);
+    }
+
+    fn lex_branch_end_frag(&mut self, ch: char, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize, caller: &str) -> Result<(), RadError> {
+        // Push character to whole string anyway
+        frag.whole_string.push(ch);
+        // define
+        if frag.name == "define" {
+            self.add_rule(frag, remainder)?;
+            lexor.escape_nl = true;
+            frag.clear()
+        } else { // Invoke macro
+            // Try to evaluate
+            let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy);
+
+            // If panicked, this means unrecoverable error occured.
+            if let Err(error) = evaluation_result {
+                // this is equlvalent to conceptual if let not pattern
+                if let RadError::Panic = error{
+                    // Do nothing
+                    ();
+                } else {
+                    self.log_error(&format!("{}", error))?;
+                }
+                return Err(RadError::Panic);
+            }
+            // else it is ok to proceed.
+            // thus it is safe to unwrap it
+            if let Some(mut content) = evaluation_result.unwrap() {
+                if frag.pipe {
+                    self.pipe_value = content;
+                    lexor.escape_nl = true;
+                }
+                // If content is none
+                // Ignore new line after macro evaluation until any character
+                else if content.len() == 0 {
+                    lexor.escape_nl = true;
+                } else {
+                    if frag.trimmed {
+                        content = Utils::trim(&content)?;
+                    }
+                    if frag.yield_literal {
+                        content = format!("\\*{}*\\", content);
+                    }
+                    remainder.push_str(&content);
+                }
+            } else { // Failed to invoke
+                // because macro doesn't exist
+
+                // If strict mode is set, every error is panic error
+                if self.strict {
+                    self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
+                    return Err(RadError::StrictPanic);
+                } 
+                // If purge mode is set, don't print anything 
+                // and don't print error
+                if !self.purge {
+                    self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
+                    remainder.push_str(&frag.whole_string);
+                } else {
+                    // If purge mode
+                    // set escape new line 
+                    lexor.escape_nl = true;
+                }
+            }
+            // Clear fragment regardless of success
+            frag.clear()
+        }
+
+        Ok(())
+    }
+
+    fn lex_branch_exit_frag(&mut self,ch: char, frag: &mut MacroFragment, remainder: &mut String) {
+        frag.whole_string.push(ch);
+        remainder.push_str(&frag.whole_string);
+        frag.clear();
+    }
+    // End of lex branch methods
+    // ==========
 
     /// Add custom rule to macro map
     fn add_rule(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
@@ -545,7 +585,8 @@ impl Processor {
             self.map.register(&name, &args, &body)?;
         } else {
             self.log_error(&format!(
-                    "Failed to register a macro : \"{}\"", frag.args.split(',').collect::<Vec<&str>>()[0]
+                    "Failed to register a macro : \"{}\"", 
+                    frag.args.split(',').collect::<Vec<&str>>()[0]
             ))?;
             remainder.push_str(&frag.whole_string);
         }
@@ -562,14 +603,13 @@ impl Processor {
         let level = level + 1;
         // This parses and processes arguments
         // and macro should be evaluated after
-        // TODO 
-        // Make caller to name
         let args = self.parse_chunk(level, name, args)?; 
 
         // Find local macro
-        // The macro can be be the macro defined in parent macro
+        // The macro can be  the one defined in parent macro
         let mut temp_level = level;
         while temp_level > 0 {
+            // Possibly inifinite loop so warn user
             if caller == name {
                 self.log_warning(&format!("Calling self, which is \"{}\", can possibly trigger infinite loop", name))?;
             }
@@ -607,7 +647,7 @@ impl Processor {
         let arg_types = &rule.args;
         let args: Vec<String>;
         // Set variable to local macros
-        if let Some(content) = ArgParser::args_with_len(arg_values, arg_types.len(), greedy) {
+        if let Some(content) = ArgParser::new().args_with_len(arg_values, arg_types.len(), greedy) {
             args = content;
         } else {
             // Necessary arg count is bigger than given arguments
@@ -674,6 +714,7 @@ impl Processor {
     }
 
     /// Add custom rules without builder pattern
+    #[allow(dead_code)]
     pub fn add_custom_rules(&mut self, rules: HashMap<String, MacroRule>) {
         self.map.custom.extend(rules.into_iter());
     }
@@ -684,7 +725,7 @@ pub(crate) struct DefineParser{
     name: String,
     args: String,
     body: String,
-    dquote: bool,
+    bind: bool,
     container: String,
 }
 
@@ -695,7 +736,7 @@ impl DefineParser {
             name : String::new(),
             args : String::new(),
             body : String::new(),
-            dquote : false,
+            bind : false,
             container : String::new(),
         }
     }
@@ -705,73 +746,27 @@ impl DefineParser {
         self.name.clear();
         self.args.clear();
         self.body.clear();
-        self.dquote = false;
+        self.bind = false;
         self.container.clear();
     }
 
-    // Static function
     // NOTE This method expects valid form of macro invocation
     // Given value should be without outer prentheses
-    // e.g. ) name,a1 a2,body text
+    // e.g. ) name,a1 a2=body text
     pub fn parse_define(&mut self, text: &str) -> Option<(String, String, String)> {
-        self.clear();
-        let mut bind = false;
+        self.clear(); // Start in fresh state
         let mut char_iter = text.chars().peekable();
         while let Some(ch) = char_iter.next() {
             match self.arg_cursor {
                 DefineCursor::Name => {
-                    // $define(variable=something)
-                    // Don't set argument but directly bind variable to body
-                    if ch == '=' {
-                        self.name.push_str(&self.container);
-                        self.container.clear();
-                        self.arg_cursor = DefineCursor::Body;
-                        bind = true;
-                        continue;
-                    } 
-                    else if Utils::is_blank_char(ch) {
-                        // This means pattern like this
-                        // $define( name ) -> name is registered
-                        // $define( na me ) -> na is ignored and take me instead
-                        if self.name.len() != 0 {
-                            self.container.clear();
-                        } else {
-                            // Ignore
-                            continue;
-                        }
-                    } 
-                    // Comma go to args
-                    else if ch == ',' {
-                        self.name.push_str(&self.container);
-                        self.container.clear();
-                        self.arg_cursor = DefineCursor::Args;
-                        continue;
-                    } 
-                    else {
-                        // If not valid name return None
-                        if !self.is_valid_name(ch) { return None; }
-                    }
+                    if let ParseIgnore::Ignore = self.branch_name(ch) {continue;}
+                    // If not valid name return None
+                    if !self.is_valid_name(ch) { return None; }
                 }
                 DefineCursor::Args => {
-                    // Blank space separates arguments 
-                    if Utils::is_blank_char(ch) && self.name.len() != 0 {
-                        self.args.push_str(&self.container);
-                        self.args.push(' ');
-                        self.container.clear();
-                        continue;
-                    } 
-                    // Go to body
-                    else if ch == '=' {
-                        self.args.push_str(&self.container);
-                        self.container.clear();
-                        self.arg_cursor = DefineCursor::Body; 
-                        continue;
-                    } 
-                    // Others
-                    else {
-                        // If not valid name return
-                        if !self.is_valid_name(ch) { return None; }
-                    }
+                    if let ParseIgnore::Ignore = self.branch_args(ch) {continue;}
+                    // If not valid name return None
+                    if !self.is_valid_name(ch) { return None; }
                 }
                 // Add everything
                 DefineCursor::Body => ()
@@ -782,7 +777,7 @@ impl DefineParser {
         // This means pattern such as
         // $define(test,Test) 
         // -> This is not a valid pattern
-        if self.args.len() == 0 && !bind {
+        if self.args.len() == 0 && !self.bind {
             return None;
         }
 
@@ -811,22 +806,68 @@ impl DefineParser {
         true
     }
     
-    // Reserved for later refactoring
-    //fn branch_name() {
+    fn branch_name(&mut self, ch: char) -> ParseIgnore {
+        // $define(variable=something)
+        // Don't set argument but directly bind variable to body
+        if ch == '=' {
+            self.name.push_str(&self.container);
+            self.container.clear();
+            self.arg_cursor = DefineCursor::Body;
+            self.bind = true;
+            ParseIgnore::Ignore
+        } 
+        else if Utils::is_blank_char(ch) {
+            // This means pattern like this
+            // $define( name ) -> name is registered
+            // $define( na me ) -> na is ignored and take me instead
+            if self.name.len() != 0 {
+                self.container.clear();
+                ParseIgnore::None
+            } else {
+                // Ignore
+                ParseIgnore::Ignore
+            }
+        } 
+        // Comma go to args
+        else if ch == ',' {
+            self.name.push_str(&self.container);
+            self.container.clear();
+            self.arg_cursor = DefineCursor::Args;
+            ParseIgnore::Ignore
+        } else {
+            ParseIgnore::None
+        }
+    }
 
-    //}
-
-    //fn branch_args() {
-
-    //}
-
-    //fn branch_body() {
-
-    //}
+    fn branch_args(&mut self, ch: char) -> ParseIgnore {
+        // Blank space separates arguments 
+        if Utils::is_blank_char(ch) && self.name.len() != 0 {
+            self.args.push_str(&self.container);
+            self.args.push(' ');
+            self.container.clear();
+            ParseIgnore::Ignore
+        } 
+        // Go to body
+        else if ch == '=' {
+            self.args.push_str(&self.container);
+            self.container.clear();
+            self.arg_cursor = DefineCursor::Body; 
+            ParseIgnore::Ignore
+        } 
+        // Others
+        else {
+            ParseIgnore::None
+        }
+    }
 }
 
 enum DefineCursor {
     Name,
     Args,
     Body,
+}
+
+enum ParseIgnore {
+    Ignore,
+    None
 }

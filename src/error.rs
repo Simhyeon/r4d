@@ -77,6 +77,9 @@ impl ErrorLogger{
         self.last_char_number = self.char_number;
     }
 
+    // TODO
+    // Check if this is necessary
+    #[allow(dead_code)]
     pub fn elog_panic(&mut self, log: &str, error: RadError) -> Result<(), RadError> {
         self.elog(log)?;
 
