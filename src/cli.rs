@@ -2,37 +2,35 @@ use clap::clap_app;
 use crate::error::RadError;
 use crate::processor::Processor;
 use crate::models::RuleFile;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Struct to parse command line arguments and execute proper operations
-pub(crate) struct Cli{}
+pub struct Cli{
+    rules: Option<Vec<PathBuf>>,
+    write_to_file : Option<PathBuf>,
+    error_to_file : Option<PathBuf>,
+}
 
 impl Cli {
-    pub fn parse() -> Result<(), RadError>{
+
+    pub fn new() -> Self {
+        Self {
+            rules: None,
+            write_to_file : None,
+            error_to_file : None,
+        }
+    }
+
+    pub fn parse(&mut self) -> Result<(), RadError>{
         let cli_args = Cli::args_builder();
-        Cli::run_processor(&cli_args)?;
+        self.run_processor(&cli_args)?;
         Ok(())
     }
 
     /// Parse arguments and run processor
-    fn run_processor(args: &clap::ArgMatches) -> Result<(), RadError> {
-        // ========
-        // Sub options
-        // custom rules
-        let rules = if let Some(files) = args.values_of("melt")  {
-            let files = files.into_iter().map(|value| Path::new(value)).collect::<Vec<&Path>>();
-            Some(files)
-        } else { None };
+    fn run_processor(&mut self, args: & clap::ArgMatches) -> Result<(), RadError> {
 
-        // Write to file 
-        let write_to_file = if let Some(output_file) = args.value_of("out") {
-            Some(Path::new(output_file))
-        } else { None };
-
-        // Error to file 
-        let error_to_file = if let Some(output_file) = args.value_of("error") {
-            Some(Path::new(output_file))
-        } else { None };
+        self.parse_options(args);
 
         // Build processor
         let mut processor = Processor::new()
@@ -41,9 +39,9 @@ impl Cli {
             .strict(args.is_present("greedy"))
             .silent(args.is_present("silent"))
             .unix_new_line(args.is_present("newline"))
-            .custom_rules(rules)?
-            .write_to_file(write_to_file)?
-            .error_to_file(error_to_file)?
+            .custom_rules(&self.rules)?
+            .write_to_file(&self.write_to_file)?
+            .error_to_file(&self.error_to_file)?
             .build();
 
         // ========
@@ -72,6 +70,26 @@ impl Cli {
         }
 
         Ok(())
+    }
+
+    fn parse_options(&mut self, args: & clap::ArgMatches) {
+        // ========
+        // Sub options
+        // custom rules
+        self.rules = if let Some(files) = args.values_of("melt")  {
+            let files = files.into_iter().map(|value| PathBuf::from(value)).collect::<Vec<PathBuf>>();
+            Some(files)
+        } else { None };
+
+        // Write to file 
+        self.write_to_file = if let Some(output_file) = args.value_of("out") {
+            Some(PathBuf::from(output_file))
+        } else { None };
+
+        // Error to file 
+        self.error_to_file = if let Some(output_file) = args.value_of("error") {
+            Some(PathBuf::from(output_file))
+        } else { None };
     }
 
     /// Creates argument template

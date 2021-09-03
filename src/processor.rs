@@ -11,7 +11,7 @@ use crate::arg_parser::ArgParser;
 
 /// Macro framgent that processor saves fragmented information of the mcaro invocation
 #[derive(Debug)]
-pub struct MacroFragment {
+struct MacroFragment {
     pub whole_string: String,
     pub name: String,
     pub args: String,
@@ -23,7 +23,7 @@ pub struct MacroFragment {
 }
 
 impl MacroFragment {
-    pub fn new() -> Self {
+    fn new() -> Self {
         MacroFragment {
             whole_string : String::new(),
             name : String::new(),
@@ -36,7 +36,7 @@ impl MacroFragment {
         }
     }
 
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         self.whole_string.clear();
         self.name.clear();
         self.args.clear();
@@ -46,12 +46,12 @@ impl MacroFragment {
         self.trimmed= false; 
     }
 
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.whole_string.len() == 0
     }
 }
 
-pub enum ParseResult {
+enum ParseResult {
     FoundMacro(String),
     Printable(String),
     NoPrint,
@@ -62,7 +62,7 @@ pub enum ParseResult {
 ///
 /// This is necessary because some macro processing should be executed in sandboxed environment.
 /// e.g. when include macro is called, outer file's information is not helpful at all.
-pub struct SandboxBackup {
+struct SandboxBackup {
     current_input: String,
     local_macro_map: HashMap<String,String>,
     logger_lines: LoggerLines,
@@ -120,7 +120,7 @@ impl Processor {
     }
 
     /// Set write option to yield output to the file
-    pub fn write_to_file(&mut self, target_file: Option<&Path>) -> Result<&mut Self, RadError> {
+    pub fn write_to_file(&mut self, target_file: &Option<PathBuf>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
             let target_file = OpenOptions::new()
                 .create(true)
@@ -134,7 +134,7 @@ impl Processor {
     }
 
     /// Yield error to the file
-    pub fn error_to_file(&mut self, target_file: Option<&Path>) -> Result<&mut Self, RadError> {
+    pub fn error_to_file(&mut self, target_file: &Option<PathBuf>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
             let target_file = OpenOptions::new()
                 .create(true)
@@ -190,11 +190,11 @@ impl Processor {
     }
 
     /// Add custom rules
-    pub fn custom_rules(&mut self, paths: Option<Vec<&Path>>) -> Result<&mut Self, RadError> {
+    pub fn custom_rules(&mut self, paths: &Option<Vec<PathBuf>>) -> Result<&mut Self, RadError> {
         if let Some(paths) = paths {
             let mut rule_file = RuleFile::new(None);
             for p in paths.iter() {
-                rule_file.melt(*p)?;
+                rule_file.melt(p)?;
             }
             self.map.custom.extend(rule_file.rules);
         }
@@ -202,19 +202,27 @@ impl Processor {
         Ok(self)
     }
 
+    /// Creates a unreferenced instance of processor
+    pub fn build(&mut self) -> Self {
+        std::mem::replace(self, Processor::new())
+    }
+
+    // End builder methods
+    // ----------
+
     /// Print the result of a processing
-    pub fn print_result(&mut self) -> Result<(), RadError> {
+    pub(crate) fn print_result(&mut self) -> Result<(), RadError> {
         self.error_logger.print_result()?;
         Ok(())
     }
 
     /// Get mutable reference of macro map
-    pub fn get_map(&mut self) -> &mut MacroMap {
+    pub(crate) fn get_map(&mut self) -> &mut MacroMap {
         &mut self.map
     }
 
     /// Change temp file target
-    pub fn set_temp_file(&mut self, path: &Path) {
+    pub(crate) fn set_temp_file(&mut self, path: &Path) {
         self.temp_target = (path.to_owned(),OpenOptions::new()
             .create(true)
             .write(true)
@@ -223,18 +231,13 @@ impl Processor {
             .unwrap());
     }
 
-    /// Creates a unreferenced instance of processor
-    pub fn build(&mut self) -> Self {
-        std::mem::replace(self, Processor::new())
-    }
-
     /// Get temp file's path
-    pub fn get_temp_path(&self) -> &Path {
+    pub(crate) fn get_temp_path(&self) -> &Path {
         &self.temp_target.0
     }
 
     /// Get temp file's "file" struct
-    pub fn get_temp_file(&self) -> &File {
+    pub(crate) fn get_temp_file(&self) -> &File {
         &self.temp_target.1
     }
 
@@ -371,7 +374,7 @@ impl Processor {
     } // parse_line end
 
     /// Parse chunk is called by non-main process, thus needs caller
-    pub fn parse_chunk(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
+    pub(crate) fn parse_chunk(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
         let mut result = self.parse(&mut lexor, &mut frag, chunk, level, caller)?;
@@ -576,6 +579,7 @@ impl Processor {
         remainder.push_str(&frag.whole_string);
         frag.clear();
     }
+
     // End of lex branch methods
     // ==========
 
@@ -720,7 +724,7 @@ impl Processor {
     }
 }
 
-pub(crate) struct DefineParser{
+struct DefineParser{
     arg_cursor :DefineCursor,
     name: String,
     args: String,
@@ -730,7 +734,7 @@ pub(crate) struct DefineParser{
 }
 
 impl DefineParser {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             arg_cursor : DefineCursor::Name,
             name : String::new(),
@@ -753,7 +757,7 @@ impl DefineParser {
     // NOTE This method expects valid form of macro invocation
     // Given value should be without outer prentheses
     // e.g. ) name,a1 a2=body text
-    pub fn parse_define(&mut self, text: &str) -> Option<(String, String, String)> {
+    fn parse_define(&mut self, text: &str) -> Option<(String, String, String)> {
         self.clear(); // Start in fresh state
         let mut char_iter = text.chars().peekable();
         while let Some(ch) = char_iter.next() {

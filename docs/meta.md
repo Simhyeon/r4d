@@ -1,15 +1,34 @@
 ### TODOs
 
-* [ ] Currently disabled escape with parenthesis for eaiser maintain
+
+* [x] Add_line_number, clear local inside parse_lin
+- Made builder pattern
+* [x] Should move from returning self to returning mutable reference.
+- Added backup methods for sandboxed form
+  - File name backup works
+  - Line number backup works
+  - Local backup also works
+
+* [ ] Utilize elog_panic to whether panic when given file doesn't exist or not
+
+* [ ] Dogfood until 1.0
+
+* [ ] Make proper documentation
+* [ ] Make library binding
+  * [x] Make processor option setting more ergonomic with builder pattern
+  * [ ] Make code DRY
+    * [x] Processor -> parse method is too long
+	* [x] lexor parts -> Actually this part is fine
+	* [x] Arg parser is disastrous -> Little bit better
+  * [ ] Only disclose necessary modules and structs
+  * [ ] Change arguments naming
+  * [ ] Change module hierarchy
 * [ ] Make allocations less, especially string manipulation 
-
-* [ ] Combination of stdin and file input
-- This is kind of pre-compiled file
-
 * [ ] New basic macros
 
 ### Deterred
 
+* [-] Currently disabled escape with parenthesis for eaiser maintain
 * [-] Failed invocation makes new line which is not so desirable
 
 ### How one should parse macro invocation?
@@ -39,6 +58,8 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] Combination of stdin and file input
+* [x] Add strict mode which is mutualy exclusive to purge mode
 * [x] Temp refacotr a bit
 - Made temp a file not a path
 - Made temp redirect
