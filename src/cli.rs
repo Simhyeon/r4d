@@ -38,9 +38,9 @@ impl Cli {
             .strict(args.is_present("greedy"))
             .silent(args.is_present("silent"))
             .unix_new_line(args.is_present("newline"))
-            .custom_rules(&self.rules)?
-            .write_to_file(&self.write_to_file)?
-            .error_to_file(&self.error_to_file)?
+            .custom_rules(std::mem::replace(&mut self.rules,None))?
+            .write_to_file(std::mem::replace(&mut self.write_to_file,None))?
+            .error_to_file(std::mem::replace(&mut self.error_to_file,None))?
             .build();
 
         // ========
