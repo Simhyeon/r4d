@@ -15,14 +15,9 @@ use crate::processor::Processor;
 use crate::formatter::Formatter;
 #[cfg(feature = "lipsum")]
 use lipsum::lipsum;
-use lazy_static::lazy_static;
 
 // Args, greediness, processor
 type MacroType = fn(&str, bool ,&mut Processor) -> Result<String, RadError>;
-
-lazy_static!{
-   pub static ref ITER: Regex = Regex::new(r"\$:").unwrap();
-}
 
 #[derive(Clone)]
 pub struct BasicMacro {
@@ -436,7 +431,7 @@ impl BasicMacro {
             let loopable = &args[0];
 
             for value in loopable.split(',') {
-                let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &ITER.replace_all(target, value))?;
+                let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &target.replace("$:", value))?;
                 sums.push_str(&result);
             }
             Ok(sums)
@@ -463,9 +458,9 @@ impl BasicMacro {
             if let Ok(num) = Utils::trim(&args[1])?.parse::<usize>() {
                 max = num
             } else { return Err(RadError::InvalidArgument("Forloop's min value should be non zero positive integer".to_owned())); }
-
+            
             for value in min..=max {
-                let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &ITER.replace_all(expression, &value.to_string()))?;
+                let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), &expression.replace("$:", &value.to_string()))?;
                 sums.push_str(&result);
             }
 
