@@ -1,5 +1,9 @@
 ### TODOs
 
+* [x] Hide sandbox switch from end user experience
+* [ ] Escape rule is very inconsistent
+- In arg parsing it consumes and set ending parenthesis literal
+- In define parsing it is treated as it is, a character ```\```
 
 * [x] Add_line_number, clear local inside parse_lin
 - Made builder pattern

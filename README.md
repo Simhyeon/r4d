@@ -10,6 +10,8 @@ consideration for the time.
 
 ### Usage
 
+**As a binary**
+
 ```bash
 # Usage : rad [OPTIONS] [FILE]...
 
@@ -29,6 +31,7 @@ printf '...text...' | rad
 # default is stderr
 rad -e FileToWriteError.txt # Log error to file
 rad -s # Suppress error
+rad -S # Strict mode makes every error panicking
 rad -n # Always use unix newline (default is '\r\n' in windows platform)
 rad -p # Purge mode, print nothing if a macro doesn't exist
 rad -g # Always enable greedy for every macro invocation
@@ -40,6 +43,44 @@ rad test -m frozen.r4f
 ```
 
 Type ```-h``` or ```--help``` to see full options.
+
+**As a library**
+
+**Cargo.toml**
+```toml
+[dependencies]
+rad = { version = "0.5.1", features = "full" }
+
+# Individually available features are 
+# "evalexpr", "chrono", "lipsum", "csv"
+
+# evalexpr - "eval" macro
+# chrono - "date", "time" macro
+# lipsum - "lipsum" macro
+# csv - "from", "table" macro
+```
+**rust file**
+```rust
+use rad::error::RadError;
+use rad::processor::Processor
+
+// Every option is not mendatory
+let processor = Processor::new()
+	.purge(true)
+	.greedy(true)
+	.silent(true)
+	.strict(true)
+	.custom_rules(Some(vec![pathbuf])) // Read from frozen rule files
+	.write_to_file(Some(pathbuf))? // default is standard out
+	.error_to_file(Some(pathbuf))? // default is standard err
+	.unix_new_line(true) // use unix new line for formatting
+	.build(); // Create unreferenced instance
+
+processor.from_stdin();
+processor.from_file(&path);
+processor.freeze_to_file(&path); // Create frozen file
+processor.print_result(); // Print out warning and errors count
+```
 
 ### Syntax 
 
@@ -85,8 +126,9 @@ $calm()
 KALM // After defnition it prints out without error
 ```
 
-Thus, idiomatic way is to invoke a dummy after declartion to check if
-definition has sane invocations.
+Thus, idiomatic way to check if definition has sane invocations is to invoke a
+dummy after declartion if possible. Although this might not be avilable all the
+time.
 
 ```
 $define(
@@ -104,6 +146,7 @@ $define(
 )
 $test|(1==1,out.md)
 
+// Real usage
 $test($ifdef(mod_mw),out.md)
 ===
 // Some outputs...
@@ -152,7 +195,9 @@ Name : Jane
 An unbalanced parenthesis changes the behaviour of macro invocation and a
 non-double-quoted comma will change the number or content of arguments. If
 desirable content includes unbalanced parentheses or commas, enclose the body
-with string literal with the syntax of ```\* TEXT GOES HERE *\``` 
+with string literal with the syntax of ```\* TEXT GOES HERE *\```, yet literal
+inside macro body will printed as is. Or put escacpe character before ending
+parenthesis, though this won't work in macro definition.
 
 ```
 $repeat(2,I'm,comma,separated
@@ -174,7 +219,9 @@ I'm,comma,separated
 
 **Trim**
 
-Trim attribute trims preceding and following newlines, whitespaces from output. To make a definition look much more easier to read, many blank spaces are often included.
+Trim attribute trims preceding and following newlines, whitespaces from output.
+To make a definition look much more easier to read, many blank spaces are often
+included.
 
 for e.g.
 
@@ -213,7 +260,7 @@ attribute comes handy, although you can always manually call trim macro.
 ...
 $test^(1==1,out.md)
 // This is same with 
-// $trim($test^(1==1,out.md))
+// $trim($test(1==1,out.md))
 ===
 1
 2
@@ -263,14 +310,26 @@ useful when you have to give an argument literal value but you need to pre
 process the data which means it cannot be marked as literal.
 
 ```
-$define(array,content=$content())
-$foreach($array*(a,b,c),Iterated: $:
+$define(array,content=$regex($content(), ,\*,*\))
+$foreach($array*(a b c),Iterated: $:
+)
+$foreach(\*$regex(a b c, ,\*,*\)*\,Iterated: $:
 )
 ===
 Iterated: a
 Iterated: b
 Iterated: c
 
+warning: Unbalanced parenthesis detected.
+ --> stdin:2:13
+Iterated: $regex(a b c
+Iterated:
+Iterated: \*
+Iterated: *\)
+
+warning: found 1 warnings
+// This is because foreach evaluate expression once more and "*\)" doesn't have
+matching "(" character.
 ```
 
 ### Errors

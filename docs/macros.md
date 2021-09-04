@@ -430,9 +430,23 @@ DOWN
 --
 ```
 
+**nl**
+
+Simply print out "newline" characters. This newline respects formatter's
+newline. Which is ```\r\n``` for windows and a ```\n``` in *nix systems by
+default.
+
+```
+$nl()
+===
+
+// This is useful when you want to construct an output in one-liner
+```
+
 **lipsum**
 
-Lipsum creates a placehoder with given word counts.
+Lipsum creates a placehoder with given word counts. This requires features
+"lipsum".
 
 ```
 $lipsum(5)
@@ -442,7 +456,8 @@ Lorem ipsum dolor sit amet.
 
 **time, date**
 
-Time and date prints current local time and date.
+Time and date prints current local time and date. This requires features
+"chrono".
 
 ```
 $time()
@@ -455,7 +470,7 @@ $date()
 **from**
 
 From creates formatted macro invocations with given csv values. The given macro
-name doesn't need dollar sign prefix.
+name doesn't need dollar sign prefix. This requires features "csv".
 
 ```
 $define(three,a1 a2 a3=1-$a1(), 2-$a2(), 3-$a3())
@@ -470,7 +485,8 @@ d,e,f*\,three)
 
 Table creates a formatted table from given csv values. Currently supported
 formats are ```github```, ```wikitext``` and ```html```. This macro doesn't
-pretty print but just make it readable from other programs.
+pretty print but just make it readable from other programs. This requires
+features "csv".
 
 ```
 $table(github,\*a,b,c
