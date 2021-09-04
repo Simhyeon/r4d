@@ -100,7 +100,6 @@ impl BasicMacro {
     pub fn call(&mut self, name : &str, args: &str,greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         // TODO
         // Check if this code is necessary
-        // let args = self.parse_inner(processor, args)?;
         if let Some(func) = self.macros.get(name) {
             // Print out macro call result
             let result = func(args, greedy, processor)?;
@@ -129,12 +128,6 @@ impl BasicMacro {
         let func = self.macros.remove(name).unwrap();
         self.macros.insert(target.to_owned(), func);
     }
-
-    // TODO 
-    // Check if this is ncessary
-    //fn parse_inner(&mut self,processor : &mut Processor, target: &str) -> Result<String, RadError> {
-        //processor.parse_chunk(0, &MAIN_CALLER.to_owned(), target)
-    //}
 
     // ==========
     // Basic Macros
