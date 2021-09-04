@@ -122,7 +122,7 @@ impl Processor {
     }
 
     /// Set write option to yield output to the file
-    pub fn write_to_file(&mut self, target_file: &Option<PathBuf>) -> Result<&mut Self, RadError> {
+    pub fn write_to_file(&mut self, target_file: Option<PathBuf>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
             let target_file = OpenOptions::new()
                 .create(true)
@@ -136,7 +136,7 @@ impl Processor {
     }
 
     /// Yield error to the file
-    pub fn error_to_file(&mut self, target_file: &Option<PathBuf>) -> Result<&mut Self, RadError> {
+    pub fn error_to_file(&mut self, target_file: Option<PathBuf>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
             let target_file = OpenOptions::new()
                 .create(true)
@@ -192,7 +192,7 @@ impl Processor {
     }
 
     /// Add custom rules
-    pub fn custom_rules(&mut self, paths: &Option<Vec<PathBuf>>) -> Result<&mut Self, RadError> {
+    pub fn custom_rules(&mut self, paths: Option<Vec<PathBuf>>) -> Result<&mut Self, RadError> {
         if let Some(paths) = paths {
             let mut rule_file = RuleFile::new(None);
             for p in paths.iter() {
