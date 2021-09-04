@@ -154,7 +154,9 @@ impl Lexor {
     fn end_literal(&mut self, ch: char) -> bool {
         // if given value is literal character and preceding character is escape
         if ch == ESCAPE_CHAR && self.previous_char.unwrap_or('0') == LIT_CHAR {
-            self.lit_count = self.lit_count - 1; 
+            if self.lit_count > 0 {
+                self.lit_count = self.lit_count - 1; 
+            } // else it is simply a *\ without starting \*
             true
         } else {
             false
