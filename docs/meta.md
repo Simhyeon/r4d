@@ -19,7 +19,7 @@
 
 * [ ] Make proper documentation
 
-* [ ] Make library binding
+* [x] Make library binding
   * [x] Make processor option setting more ergonomic with builder pattern
   * [x] Make code DRY -> Kinda done
     * [x] Processor -> parse method is too long
