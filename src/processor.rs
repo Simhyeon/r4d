@@ -214,7 +214,7 @@ impl Processor {
 
     /// Print the result of a processing
     #[allow(dead_code)]
-    pub(crate) fn print_result(&mut self) -> Result<(), RadError> {
+    pub fn print_result(&mut self) -> Result<(), RadError> {
         self.error_logger.print_result()?;
         Ok(())
     }
