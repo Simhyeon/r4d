@@ -1,5 +1,7 @@
 ### TODOs
 
+* [ ] Add strip macro attibute which strips string literals
+* [x] Read from string method for lib usage
 * [x] Hide sandbox switch from end user experience
 * [ ] Escape rule is very inconsistent
 - In arg parsing it consumes and set ending parenthesis literal

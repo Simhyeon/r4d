@@ -30,7 +30,7 @@ printf '...text...' | rad
 # Use following options to decide error behaviours
 # default is stderr
 rad -e FileToWriteError.txt # Log error to file
-rad -s # Suppress error
+rad -s # Suppress error and warnings
 rad -S # Strict mode makes every error panicking
 rad -n # Always use unix newline (default is '\r\n' in windows platform)
 rad -p # Purge mode, print nothing if a macro doesn't exist
@@ -49,7 +49,7 @@ Type ```-h``` or ```--help``` to see full options.
 **Cargo.toml**
 ```toml
 [dependencies]
-rad = { version = "0.5.1", features = ["full"] }
+rad = { version = "0.5", features = ["full"] }
 
 # Individually available features are 
 # "evalexpr", "chrono", "lipsum", "csv"
@@ -71,11 +71,12 @@ let processor = Processor::new()
 	.silent(true)
 	.strict(true)
 	.custom_rules(Some(vec![pathbuf])) // Read from frozen rule files
-	.write_to_file(Some(pathbuf))? // default is standard out
-	.error_to_file(Some(pathbuf))? // default is standard err
+	.write_to_file(Some(pathbuf))? // default is stdout
+	.error_to_file(Some(pathbuf))? // default is stderr
 	.unix_new_line(true) // use unix new line for formatting
 	.build(); // Create unreferenced instance
 
+processor.from_string(r#"$define(test=Test)"#);
 processor.from_stdin();
 processor.from_file(&path);
 processor.freeze_to_file(&path); // Create frozen file
