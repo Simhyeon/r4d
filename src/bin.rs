@@ -1,5 +1,6 @@
 #[cfg(feature = "clap")]
-use rad::{Cli, RadError};
+use rad::Cli;
+use rad::RadError;
 
 pub fn main() -> Result<(), RadError> {
 
