@@ -272,6 +272,44 @@ impl Processor {
         Ok(())
     }
 
+    /// Read from string
+    pub fn from_string(&mut self, content: &str) -> Result<String, RadError> {
+        // Sandboxed environment, backup
+        let backup = if self.sandbox { Some(self.backup()) } else { None };
+
+        let mut line_iter = Utils::full_lines(content.as_bytes());
+        let mut lexor = Lexor::new();
+        let mut frag = MacroFragment::new();
+        let mut content = String::new();
+        // Container is where sandboxed output is saved
+        let mut container = if self.sandbox { Some(&mut content) } else { None };
+        loop {
+            let result = self.parse_line(&mut line_iter, &mut lexor ,&mut frag)?;
+            match result {
+                // This means either macro is not found at all
+                // or previous macro fragment failed with invalid syntax
+                ParseResult::Printable(remainder) => {
+                    self.write_to(&remainder, &mut container)?;
+                    // Reset fragment
+                    if &frag.whole_string != "" {
+                        frag = MacroFragment::new();
+                    }
+                }
+                ParseResult::FoundMacro(remainder) => {
+                    self.write_to(&remainder, &mut container)?;
+                }
+                ParseResult::NoPrint => (), // Do nothing
+                // End of input, end loop
+                ParseResult::EOI => break,
+            }
+        } // Loop end
+
+        // Recover
+        if let Some(backup) = backup { self.recover(backup); self.sandbox = false; }
+
+        Ok(content)
+    }
+
     /// Read from standard input
     pub fn from_stdin(&mut self) -> Result<String, RadError> {
 
