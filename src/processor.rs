@@ -43,7 +43,7 @@ impl MacroFragment {
         self.pipe = false; 
         self.greedy = false; 
         self.yield_literal = false;
-        self.trimmed= false; 
+        self.trimmed = false; 
     }
 
     fn is_empty(&self) -> bool {
@@ -582,13 +582,9 @@ impl Processor {
             // else it is ok to proceed.
             // thus it is safe to unwrap it
             if let Some(mut content) = evaluation_result.unwrap() {
-                if frag.pipe {
-                    self.pipe_value = content;
-                    lexor.escape_nl = true;
-                }
                 // If content is none
                 // Ignore new line after macro evaluation until any character
-                else if content.len() == 0 {
+                if content.len() == 0 {
                     lexor.escape_nl = true;
                 } else {
                     if frag.trimmed {
@@ -597,7 +593,14 @@ impl Processor {
                     if frag.yield_literal {
                         content = format!("\\*{}*\\", content);
                     }
-                    remainder.push_str(&content);
+                    // NOTE
+                    // This should come later!!
+                    if frag.pipe {
+                        self.pipe_value = content;
+                        lexor.escape_nl = true;
+                    } else {
+                        remainder.push_str(&content);
+                    }
                 }
             } else { // Failed to invoke
                 // because macro doesn't exist
@@ -714,7 +717,7 @@ impl Processor {
             //Set arg to be substitued
             self.map.new_local(level + 1, arg_type ,&args[idx]);
         }
-        // parse the Chunk
+        // Process the rule body
         let result = self.parse_chunk(level, &name, &rule.body)?;
 
         Ok(Some(result))
