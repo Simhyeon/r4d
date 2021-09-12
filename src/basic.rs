@@ -36,6 +36,7 @@ impl BasicMacro {
             ("include".to_owned(), BasicMacro::include as MacroType).to_owned(),
             ("repeat".to_owned(), BasicMacro::repeat as MacroType).to_owned(),
             ("syscmd".to_owned(), BasicMacro::syscmd as MacroType).to_owned(),
+            ("if".to_owned(), BasicMacro::if_cond as MacroType).to_owned(),
             ("ifelse".to_owned(), BasicMacro::ifelse as MacroType).to_owned(),
             ("ifdef".to_owned(), BasicMacro::ifdef as MacroType).to_owned(),
             ("foreach".to_owned(), BasicMacro::foreach as MacroType).to_owned(),
@@ -344,9 +345,35 @@ impl BasicMacro {
     /// 
     /// # Usage 
     ///
+    /// $if(evaluation, ifstate)
+    fn if_cond(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let boolean = &args[0];
+            let if_state = &args[1];
+
+            // Given condition is true
+            let trimmed_cond = Utils::trim(boolean)?;
+            if let Ok(cond) = trimmed_cond.parse::<bool>() {
+                if cond { return Ok(if_state.to_owned()); }
+            } else if let Ok(number) = trimmed_cond.parse::<i32>() {
+                if number != 0 { return Ok(if_state.to_owned()); }
+            } else {
+                return Err(RadError::InvalidArgument("If requires either true/false or zero/nonzero integer.".to_owned()))
+            }
+
+            Ok(String::new())
+        } else {
+            Err(RadError::InvalidArgument("if requires two arguments".to_owned()))
+        }
+    }
+
+    /// Print content according to given condition
+    /// 
+    /// # Usage 
+    ///
     /// $ifelse(evaluation, ifstate, elsestate)
     fn ifelse(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
             let boolean = &args[0];
             let if_state = &args[1];
 
@@ -359,15 +386,12 @@ impl BasicMacro {
             } else {
                 return Err(RadError::InvalidArgument("Ifelse requires either true/false or zero/nonzero integer.".to_owned()))
             }
-            // if else statement exsits
-            if args.len() >= 3 {
-                let else_state = &args[2];
-                return Ok(else_state.to_owned());
-            }
 
-            Ok(String::new())
+            // Else state
+            let else_state = &args[2];
+            return Ok(else_state.to_owned());
         } else {
-            Err(RadError::InvalidArgument("ifelse requires an argument".to_owned()))
+            Err(RadError::InvalidArgument("ifelse requires three argument".to_owned()))
         }
     }
 
