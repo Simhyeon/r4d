@@ -276,13 +276,23 @@ $eval(0.1+0.2)
 0.30000000000000004
 ```
 
-**ifelse**
+**if**
 
-Ifelse gets two branches and print out one according to given condition.
+If gets a condition and prints if given value is true
 
 Text "true" and "false", non "0" integer and "0" are valid inputs. "true" and
 "false" is case sensitive. 0 is false and any number other than 0 is true even
 negative integer is valid input. Floating point number is not allowed.
+
+```
+$if(true,TRUE)
+===
+TRUE
+```
+
+**ifelse**
+
+Ifelse gets two branches and print out one according to given condition.
 
 ```
 $ifelse( true ,I'm true,I'm false)

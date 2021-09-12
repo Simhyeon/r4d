@@ -1,40 +1,15 @@
 ### TODOs
 
-* [ ] Add strip macro attibute which strips string literals
-* [x] Read from string method for lib usage
-* [x] Hide sandbox switch from end user experience
+* [ ] Add debugger
+
 * [ ] Escape rule is very inconsistent
 - In arg parsing it consumes and set ending parenthesis literal
 - In define parsing it is treated as it is, a character ```\```
 
-* [x] Add_line_number, clear local inside parse_lin
-- Made builder pattern
-* [x] Should move from returning self to returning mutable reference.
-- Added backup methods for sandboxed form
-  - File name backup works
-  - Line number backup works
-  - Local backup also works
-
 * [ ] Utilize elog_panic to whether panic when given file doesn't exist or not
 
-* [ ] Dogfood until 1.0
-
 * [ ] Make proper documentation
-
-* [x] Make library binding
-  * [x] Make processor option setting more ergonomic with builder pattern
-  * [x] Make code DRY -> Kinda done
-    * [x] Processor -> parse method is too long
-	* [x] lexor parts -> Actually this part is fine
-	* [x] Arg parser is disastrous -> Little bit better
-  * [x] Optional dependencies
-  * [x] Only disclose necessary modules and structs
-
-* [ ] Improve projects
-  * [ ] Change module hierarchy
-  * [ ] Change arguments naming
-  * [ ] Make allocations less, especially string manipulation 
-
+* [ ] Improve projects performance
 * [ ] New basic macros
 
 ### Deterred
@@ -69,6 +44,27 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] Currently ifelse is inefficient
+- Added deterred rule
+* [x] Make library binding
+  * [x] Make processor option setting more ergonomic with builder pattern
+  * [x] Make code DRY -> Kinda done
+    * [x] Processor -> parse method is too long
+	* [x] lexor parts -> Actually this part is fine
+	* [x] Arg parser is disastrous -> Little bit better
+  * [x] Optional dependencies
+  * [x] Only disclose necessary modules and structs
+
+* [x] Add_line_number, clear local inside parse_lin
+- Made builder pattern
+* [x] Should move from returning self to returning mutable reference.
+- Added backup methods for sandboxed form
+  - File name backup works
+  - Line number backup works
+  - Local backup also works
+
+* [x] Read from string method for lib usage
+* [x] Hide sandbox switch from end user experience
 * [x] Combination of stdin and file input
 * [x] Add strict mode which is mutualy exclusive to purge mode
 * [x] Temp refacotr a bit

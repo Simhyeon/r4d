@@ -8,6 +8,16 @@ R4d is in very early stage, so there might be lots of undetected bugs. Fast
 implementaiton was my priorites, thus optimization has had a least
 consideration for the time.
 
+**When it gets 1.0?**
+
+R4d's will reach 1.0 only when followings are resolved.
+
+- Debugger
+- Consistent parenthesis rules
+- Absence of critical bugs
+- No possiblity of basic macro changes
+- (maybe) Library feature to extend basic macros
+
 ### Usage
 
 **As a binary**
@@ -331,6 +341,41 @@ Iterated: *\)
 warning: found 1 warnings
 // This is because foreach evaluate expression once more and "*\)" doesn't have
 matching "(" character.
+```
+
+**Deterred**
+
+Sometimes it is handy or even necessary to prevent arguments from expanded. In
+the scenario, deterred attribute ```?``` is used.
+
+```
+$ifelse(true,TRUE,$redir(true) 
+This should be redirected to temp file only when condition is false)
+===
+TRUE
+// Arguments are pre-expanded and given text is actually redirected to temp
+file which is not intended behaviour
+```
+
+To prevent this,
+
+```
+$ifelse?(true,TRUE,$redir(true)
+This should be redirected to temp file only when condition is false)
+===
+TRUE
+```
+
+However deterred attribute is not a magic stick. Because it treats arguments as
+literal.  Thus any comma within arguments literal will change counts of
+arguments. 
+
+```
+$ifelse?(false,TRUE,$path(a,b))
+===
+$path(a
+// Though greedy attribute can be used in this case
+// $ifelse?+(false,TRUE,$path(a,b)) will be evaluated to a/b
 ```
 
 ### Errors
