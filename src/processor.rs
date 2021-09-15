@@ -7,7 +7,7 @@ use crate::models::{MacroMap, MacroRule, RuleFile, UnbalancedChecker, WriteOptio
 use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
-use crate::arg_parser::ArgParser;
+use crate::arg_parser::{ArgParser, GreedyState};
 
 /// Macro framgent that processor saves fragmented information of the mcaro invocation
 #[derive(Debug)]
@@ -20,7 +20,6 @@ struct MacroFragment {
     pub preceding: bool,
     pub yield_literal : bool,
     pub trimmed : bool,
-    pub deterred : bool,
 }
 
 impl MacroFragment {
@@ -34,7 +33,6 @@ impl MacroFragment {
             preceding: false,
             yield_literal : false,
             trimmed: false,
-            deterred: false,
         }
     }
 
@@ -46,7 +44,6 @@ impl MacroFragment {
         self.greedy = false; 
         self.yield_literal = false;
         self.trimmed = false; 
-        self.deterred = false;
     }
 
     fn is_empty(&self) -> bool {
@@ -548,7 +545,6 @@ impl Processor {
                     '+' => frag.greedy = true,
                     '*' => frag.yield_literal = true,
                     '^' => frag.trimmed = true,
-                    '?' => frag.deterred = true,
                     _ => frag.name.push(ch) 
                 }
             },
@@ -570,7 +566,7 @@ impl Processor {
             frag.clear()
         } else { // Invoke macro
             // Try to evaluate
-            let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy, frag.deterred);
+            let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy);
 
             // If panicked, this means unrecoverable error occured.
             if let Err(error) = evaluation_result {
@@ -591,10 +587,6 @@ impl Processor {
                 if content.len() == 0 {
                     lexor.escape_nl = true;
                 } else {
-                    // This should come first
-                    if frag.deterred {
-                        content = self.parse_chunk(level, &frag.name, &content)?;
-                    }
                     if frag.trimmed {
                         content = Utils::trim(&content)?;
                     }
@@ -665,11 +657,11 @@ impl Processor {
     // Evaluate can be nested deeply
     // Disable caller for temporary
     /// Evaluate detected macro usage
-    fn evaluate(&mut self,level: usize, caller: &str, name: &str, raw_args: &str, greedy: bool, deterred: bool) -> Result<Option<String>, RadError> {
+    fn evaluate(&mut self,level: usize, caller: &str, name: &str, raw_args: &str, greedy: bool) -> Result<Option<String>, RadError> {
         let level = level + 1;
         // This parses and processes arguments
         // and macro should be evaluated after
-        let args: String = if !deterred { self.parse_chunk(level, name, raw_args)? } else { raw_args.to_owned() };
+        let args = self.parse_chunk(level, name, raw_args)?;
 
         // Find local macro
         // The macro can be  the one defined in parent macro
@@ -717,7 +709,7 @@ impl Processor {
             args = content;
         } else {
             // Necessary arg count is bigger than given arguments
-            self.log_error(&format!("{}'s arguments are not sufficient. Given {}, but needs {}", name, arg_values.len(), arg_types.len()))?;
+            self.log_error(&format!("{}'s arguments are not sufficient. Given {}, but needs {}", name, ArgParser::new().args_to_vec(arg_values, ',', GreedyState::Never).len(), arg_types.len()))?;
             return Ok(None);
         }
 
@@ -907,10 +899,13 @@ impl DefineParser {
 
     fn branch_args(&mut self, ch: char) -> ParseIgnore {
         // Blank space separates arguments 
+        // TODO: Why check name's length? Is it necessary?
         if Utils::is_blank_char(ch) && self.name.len() != 0 {
-            self.args.push_str(&self.container);
-            self.args.push(' ');
-            self.container.clear();
+            if self.container.len() != 0 {
+                self.args.push_str(&self.container);
+                self.args.push(' ');
+                self.container.clear();
+            }
             ParseIgnore::Ignore
         } 
         // Go to body
