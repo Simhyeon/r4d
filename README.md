@@ -343,33 +343,6 @@ warning: found 1 warnings
 matching "(" character.
 ```
 
-**Deterred**
-
-Sometimes it is handy or even necessary to prevent arguments from expanded. In
-the scenario, deterred attribute ```?``` is used.
-
-```
-$ifelse(true,TRUE,$redir(true) 
-This should be redirected to temp file only when condition is false)
-===
-TRUE
-// Arguments are pre-expanded and given text is actually redirected to temp
-file which is not intended behaviour
-```
-
-To prevent this,
-
-```
-$ifelse?(true,TRUE,$redir(true)
-This should be redirected to temp file only when condition is false)
-===
-TRUE
-```
-
-However deterred attribute is not a magic stick. Because it treats arguments as
-literal.  Thus any comma within arguments literal will change counts of
-arguments. 
-
 ```
 $ifelse?(false,TRUE,$path(a,b))
 ===

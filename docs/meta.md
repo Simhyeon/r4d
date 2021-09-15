@@ -44,6 +44,13 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used 
 
 ### DONE
 
+* [x] If, ifelse is not so friendly with deterred macro
+- Just remove it
+* [x] Argument parsing is not properly done
+- This was because I was adding new argument if there was any "blank character"
+which menat consequent blank characters created more arguments
+* [x] Warning system is broken in define parsing
+
 * [x] Currently ifelse is inefficient
 - Added deterred rule
 * [x] Make library binding

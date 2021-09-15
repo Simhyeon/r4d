@@ -7,6 +7,7 @@ pub(crate) mod lexor;
 pub(crate) mod models;
 pub(crate) mod utils;
 pub(crate) mod arg_parser;
+pub(crate) mod debugger;
 
 pub use error::RadError;
 pub use processor::Processor;
