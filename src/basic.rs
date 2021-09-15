@@ -346,7 +346,7 @@ impl BasicMacro {
     /// # Usage 
     ///
     /// $if(evaluation, ifstate)
-    fn if_cond(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
+    fn if_cond(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let boolean = &args[0];
             let if_state = &args[1];
@@ -354,9 +354,15 @@ impl BasicMacro {
             // Given condition is true
             let trimmed_cond = Utils::trim(boolean)?;
             if let Ok(cond) = trimmed_cond.parse::<bool>() {
-                if cond { return Ok(if_state.to_owned()); }
+                if cond { 
+                    let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), if_state)?;
+                    return Ok(result); 
+                }
             } else if let Ok(number) = trimmed_cond.parse::<i32>() {
-                if number != 0 { return Ok(if_state.to_owned()); }
+                if number != 0 { 
+                    let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), if_state)?;
+                    return Ok(result); 
+                }
             } else {
                 return Err(RadError::InvalidArgument("If requires either true/false or zero/nonzero integer.".to_owned()))
             }
@@ -372,7 +378,7 @@ impl BasicMacro {
     /// # Usage 
     ///
     /// $ifelse(evaluation, ifstate, elsestate)
-    fn ifelse(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
+    fn ifelse(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
             let boolean = &args[0];
             let if_state = &args[1];
@@ -380,16 +386,23 @@ impl BasicMacro {
             // Given condition is true
             let trimmed_cond = Utils::trim(boolean)?;
             if let Ok(cond) = trimmed_cond.parse::<bool>() {
-                if cond { return Ok(if_state.to_owned()); }
+                if cond { 
+                    let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), if_state)?;
+                    return Ok(result); 
+                }
             } else if let Ok(number) = trimmed_cond.parse::<i32>() {
-                if number != 0 { return Ok(if_state.to_owned()); }
+                if number != 0 { 
+                    let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), if_state)?;
+                    return Ok(result); 
+                }
             } else {
                 return Err(RadError::InvalidArgument("Ifelse requires either true/false or zero/nonzero integer.".to_owned()))
             }
 
             // Else state
             let else_state = &args[2];
-            return Ok(else_state.to_owned());
+            let result = processor.parse_chunk(0, &MAIN_CALLER.to_owned(), else_state)?;
+            return Ok(result);
         } else {
             Err(RadError::InvalidArgument("ifelse requires three argument".to_owned()))
         }
