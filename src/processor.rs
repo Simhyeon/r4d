@@ -1,8 +1,9 @@
-use std::io::{self, Write};
+use std::io::{self, Write, stdin};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::{ Path , PathBuf};
-use crate::error::{RadError, ErrorLogger, LoggerLines};
+use crate::error::RadError;
+use crate::logger::{Logger, LoggerLines, DebugOption};
 use crate::models::{MacroMap, MacroRule, RuleFile, UnbalancedChecker, WriteOption};
 use crate::utils::Utils;
 use crate::consts::*;
@@ -73,7 +74,7 @@ pub struct Processor{
     map: MacroMap,
     define_parse: DefineParser,
     write_option: WriteOption,
-    error_logger: ErrorLogger,
+    logger: Logger,
     checker: UnbalancedChecker,
     pub(crate) pipe_value: String,
     pub(crate) newline: String,
@@ -102,12 +103,15 @@ impl Processor {
             .open(&temp_path)
             .unwrap());
 
+        let mut logger = Logger::new();
+        logger.set_write_options(Some(WriteOption::Stdout));
+
         Self {
             current_input: String::from("stdin"),
             map : MacroMap::new(),
             write_option: WriteOption::Stdout,
             define_parse: DefineParser::new(),
-            error_logger: ErrorLogger::new(Some(WriteOption::Stdout)),
+            logger,
             checker : UnbalancedChecker::new(),
             newline : LINE_ENDING.to_owned(),
             pipe_value: String::new(),
@@ -144,7 +148,8 @@ impl Processor {
                 .truncate(true)
                 .open(target_file)?;
 
-            self.error_logger = ErrorLogger::new(Some(WriteOption::File(target_file)));
+            self.logger = Logger::new();
+            self.logger.set_write_options(Some(WriteOption::File(target_file)));
         }
         Ok(self)
     }
@@ -186,9 +191,17 @@ impl Processor {
     /// Set silent option
     pub fn silent(&mut self, silent: bool) -> &mut Self {
         if silent {
-            self.error_logger = ErrorLogger::new(None);
+            self.logger = Logger::new();
+            self.logger.set_write_options(None);
         }
         self
+    }
+
+    /// Add debug options
+    #[cfg(feature = "debug")]
+    pub fn debug(&mut self, debug_options : Option<Vec<DebugOption>>) -> Result<&mut Self, RadError> {
+        self.logger.set_debug_options(debug_options);
+        Ok(self)
     }
 
     /// Add custom rules
@@ -215,7 +228,7 @@ impl Processor {
     /// Print the result of a processing
     #[allow(dead_code)]
     pub fn print_result(&mut self) -> Result<(), RadError> {
-        self.error_logger.print_result()?;
+        self.logger.print_result()?;
         Ok(())
     }
 
@@ -253,17 +266,17 @@ impl Processor {
         SandboxBackup { 
             current_input: self.current_input.clone(), 
             local_macro_map: self.map.local.clone(),
-            logger_lines: self.error_logger.backup_lines(),
+            logger_lines: self.logger.backup_lines(),
         }
     }
 
     /// Recover backup information into the processor
     fn recover(&mut self, backup: SandboxBackup) {
         // NOTE ::: Set file should come first becuase set_file override line number and character number
-        self.error_logger.set_file(&backup.current_input);
+        self.logger.set_file(&backup.current_input);
         self.current_input = backup.current_input;
         self.map.local= backup.local_macro_map; 
-        self.error_logger.recover_lines(backup.logger_lines);
+        self.logger.recover_lines(backup.logger_lines);
     }
 
     /// Freeze to single file
@@ -342,6 +355,9 @@ impl Processor {
                 // End of input, end loop
                 ParseResult::EOI => break,
             }
+            // Stop by lines if debug option is lines
+            #[cfg(feature = "debug")]
+            self.debug_wait_input(DebugOption::Lines)?;
         } // Loop end
 
         // Recover
@@ -386,6 +402,9 @@ impl Processor {
                 // End of input, end loop
                 ParseResult::EOI => break,
             }
+            // Stop by lines if debug option is lines
+            #[cfg(feature = "debug")]
+            self.debug_wait_input(DebugOption::Lines)?;
         } // Loop end
 
         // Recover
@@ -396,7 +415,7 @@ impl Processor {
     
     /// Parse line is called only by the main loop thus, caller name is special name of @MAIN@
     fn parse_line(&mut self, lines :&mut impl std::iter::Iterator<Item = std::io::Result<String>>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
-        self.error_logger.add_line_number();
+        self.logger.add_line_number();
         if let Some(line) = lines.next() {
             let line = line?;
             let remainder = self.parse(lexor, frag, &line, 0, MAIN_CALLER)?;
@@ -439,14 +458,14 @@ impl Processor {
     fn parse(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, line: &str, level: usize, caller: &str) -> Result<String, RadError> {
         // Initiate values
         // Reset character number
-        self.error_logger.reset_char_number();
+        self.logger.reset_char_number();
         // Local values
         let mut remainder = String::new();
 
         // Reset lexor's escape_nl 
         lexor.escape_nl = false;
         for ch in line.chars() {
-            self.error_logger.add_char_number();
+            self.logger.add_char_number();
 
             let lex_result = lexor.lex(ch)?;
             // Either add character to remainder or fragments
@@ -515,7 +534,7 @@ impl Processor {
     fn lex_branch_empty_name(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor) {
         frag.whole_string.push(ch);
         // If paused, then reset lexor context
-        self.error_logger.freeze_number(); 
+        self.logger.freeze_number(); 
         if self.paused {
             lexor.reset();
             remainder.push_str(&frag.whole_string);
@@ -526,7 +545,7 @@ impl Processor {
 
     fn lex_branch_add_to_remainder(&mut self, ch: char,remainder: &mut String) -> Result<(), RadError> {
         if !self.checker.check(ch) {
-            self.error_logger.freeze_number();
+            self.logger.freeze_number();
             self.log_warning("Unbalanced parenthesis detected.")?;
         }
         remainder.push(ch);
@@ -538,7 +557,7 @@ impl Processor {
         match cursor{
             Cursor::Name => {
                 if frag.name.len() == 0 {
-                    self.error_logger.freeze_number();
+                    self.logger.freeze_number();
                 }
                 match ch {
                     '|' => frag.pipe = true,
@@ -663,6 +682,9 @@ impl Processor {
         // and macro should be evaluated after
         let args = self.parse_chunk(level, name, raw_args)?;
 
+        #[cfg(feature = "debug")]
+        self.debug_print_evaluation(DebugOption::Log, &format!("{}: Name = \"{}\" Args = \"{}\"{}",level,name,raw_args,self.newline))?;
+
         // Find local macro
         // The macro can be  the one defined in parent macro
         let mut temp_level = level;
@@ -746,15 +768,26 @@ impl Processor {
         Ok(())
     }
 
+    #[cfg(feature = "debug")]
+    pub fn debug_wait_input(&mut self, debug_option: DebugOption) -> Result<(), RadError> {
+        self.logger.dlog_wait(debug_option)?;
+        Ok(())
+    }
+    #[cfg(feature = "debug")]
+    pub fn debug_print_evaluation(&mut self, debug_option: DebugOption, log : &str) -> Result<(), RadError> {
+        self.logger.dlog_print(debug_option, log)?;
+        Ok(())
+    }
+
     /// Log error
     pub fn log_error(&mut self, log : &str) -> Result<(), RadError> {
-        self.error_logger.elog(log)?;
+        self.logger.elog(log)?;
         Ok(())
     }
 
     /// Log warning
     pub fn log_warning(&mut self, log : &str) -> Result<(), RadError> {
-        self.error_logger.wlog(log)?;
+        self.logger.wlog(log)?;
         Ok(())
     }
 
@@ -766,7 +799,7 @@ impl Processor {
             Err(RadError::InvalidCommandOption(format!("File, \"{}\" doesn't exist, therefore cannot be read by r4d.", path.display())))
         } else {
             self.current_input = file.to_owned();
-            self.error_logger.set_file(file);
+            self.logger.set_file(file);
             Ok(())
         }
     }
