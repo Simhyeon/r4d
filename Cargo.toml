@@ -19,7 +19,7 @@ name = "rad"
 path = "src/lib.rs"
 
 [features]
-binary = [ "csv", "evalexpr", "lipsum", "chrono", "clap","crossterm"]
+binary = [ "csv", "evalexpr", "lipsum", "chrono", "clap", "debug"]
 full = [ "csv", "evalexpr", "lipsum", "chrono" ]
 debug = [ "crossterm" ]
 

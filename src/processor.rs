@@ -1,4 +1,4 @@
-use std::io::{self, Write, stdin};
+use std::io::{self, Write};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::{ Path , PathBuf};
