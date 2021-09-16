@@ -1,6 +1,13 @@
 ### TODOs
 
 * [ ] Add debugger
+  * [x] Lines option
+  * [x] log option
+  - Log every evaluation 
+  * [ ] Break option
+  * [ ] Command option?
+  * [ ] Debug command
+  - print, frag,
 
 * [ ] Escape rule is very inconsistent
 - In arg parsing it consumes and set ending parenthesis literal

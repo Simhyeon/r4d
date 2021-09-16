@@ -234,7 +234,7 @@ Number: 5
 
 Forloop and foreach's ```$:``` is a substituion rather than macro expansion.
 And first of all rad doesn't create any form of AST from given source thus, $:
-is expanded at the last stage.
+is expanded at the last stage, which means for loop's target are **once more evaluated** after.
 
 ```
 $define(styles,a_styles=<style>
@@ -284,10 +284,17 @@ Text "true" and "false", non "0" integer and "0" are valid inputs. "true" and
 "false" is case sensitive. 0 is false and any number other than 0 is true even
 negative integer is valid input. Floating point number is not allowed.
 
+One important note is that, ```if``` and ```ifelse``` evalutes target statement
+once more after evaluation.
+
 ```
 $if(true,TRUE)
+$define(wrapper,a_src=$fileout(true,a_src,Hello World))
+$if(false,$wrapper*())
 ===
 TRUE
+// If always evaluate inner arguments while
+// second "if" doesn't evaluate wrapper macro content thus no fileout occurs
 ```
 
 **ifelse**
