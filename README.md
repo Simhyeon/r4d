@@ -61,18 +61,21 @@ Type ```-h``` or ```--help``` to see full options.
 [dependencies]
 rad = { version = "0.5", features = ["full"] }
 
-# Individually available features are 
-# "evalexpr", "chrono", "lipsum", "csv"
+# Other available features are 
+# "evalexpr", "chrono", "lipsum", "csv", "debug"
 
 # evalexpr - "eval" macro
 # chrono - "date", "time" macro
 # lipsum - "lipsum" macro
 # csv - "from", "table" macro
+
+# debug - Enable debug method
 ```
 **rust file**
 ```rust
-use rad::error::RadError;
-use rad::processor::Processor
+use rad::RadError;
+use rad::Processor
+use rad::DebugOption;
 
 // Every option is not mendatory
 let processor = Processor::new()
@@ -80,6 +83,7 @@ let processor = Processor::new()
 	.greedy(true)
 	.silent(true)
 	.strict(true)
+	.debug(Some(vec![DebugOption::Lines])) // Print line by line 
 	.custom_rules(Some(vec![pathbuf])) // Read from frozen rule files
 	.write_to_file(Some(pathbuf))? // default is stdout
 	.error_to_file(Some(pathbuf))? // default is stderr
