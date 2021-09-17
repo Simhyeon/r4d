@@ -6,11 +6,16 @@ top, which means that inner macro expanded when outer macro fragment is
 completed, which makes line_cache points to strange place.
 - This has been addressed with interactive forme, but needs more abstraction
 
-* [ ] Make interactive flag which toggles text wrapping 
-* [ ] Make chunk_line chunk_char for more detailed debuggin and error logging
-* [ ] Make BR as not an error but a warning
-* [ ] Non printing macro do print empty space in debug mode
-- $BR() evaluates to newline character
+* [ ] Change logic of infinite loop warning, so that it onlys warns on body expansion
+- Maybe not to easy to do so, or doesn't worth it
+* [ ] New debug mode documentation
+* [x] Make chunk_line chunk_char for more detailed debuggin and error logging
+- Also parse_chunk calls freeze_number which makes error debugging hard to watch
+- This was actually not so hard, surprisingly
+* [x] Make interactive flag which toggles text wrapping 
+* [x] Make BR as not an error but a warning
+* [x] Non printing macro do print empty space in debug mode
+- $BR() evaluates to newline character fixed it
 * [ ] Log flag with debug flag yield strange output
 - Line after macro evaluation is duplicated
 
