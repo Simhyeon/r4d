@@ -465,10 +465,10 @@ impl Processor {
         Ok(())
     }
 
-    #[cfg(feature = "debug")]
-    fn brake_point(&mut self, frag: &mut MacroFragment) {
-        if self.debug {
-            if &frag.name == "BR" {
+    fn brake_point(&mut self, frag: &mut MacroFragment) -> Result<(), RadError> {
+        if &frag.name == "BR" {
+            #[cfg(feature = "debug")]
+            if self.debug {
                 if let DebugSwitch::NextBrakePoint(name) = &self.debug_switch {
                     // Name is empty or same with frag.args
                     if name == &frag.args || name == "" {
@@ -477,8 +477,14 @@ impl Processor {
                 }
                 // Clear fragment
                 frag.clear();
-            }
-        } 
+                return Ok(());
+            } 
+
+            self.logger.wlog("Brake point in non debug mode")?;
+            frag.clear();
+        }
+
+        Ok(())
     }
 
     // This is possibly loopable
@@ -845,9 +851,10 @@ print(p) <ARG> : Print variable
             {
                 // If debug switch target is brake point
                 // Set switch to next line.
-                self.brake_point(frag);
+                self.brake_point(frag)?;
                 // Brake point is true , continue
                 if frag.name.len() == 0 {
+                    lexor.escape_nl = true;
                     return Ok(());
                 }
             }
