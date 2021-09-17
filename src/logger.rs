@@ -1,18 +1,20 @@
 use std::io::Write;
+#[cfg(feature = "debug")]
+use crossterm::{ExecutableCommand, terminal::ClearType};
 use crate::models::WriteOption;
 use crate::consts::LINE_ENDING;
+use crate::utils::Utils;
 use colored::*;
 use crate::error::RadError;
 
 /// Logger that controls whether to print error, warning or not and where to yield the error and warnings.
 pub(crate) struct Logger {
-    line_number: usize,
-    char_number: usize,
+    pub(crate) line_number: usize,
+    pub(crate) char_number: usize,
     last_line_number: usize,
     last_char_number: usize,
     current_file: String,
     write_option: Option<WriteOption>,
-    debug_options: Option<Vec<DebugOption>>,
     error_count: usize,
     warning_count: usize,
 }
@@ -33,7 +35,6 @@ impl Logger{
             last_char_number: 0,
             current_file: String::from("stdin"),
             write_option: None,
-            debug_options: None,
             error_count:0,
             warning_count:0,
         }
@@ -41,10 +42,6 @@ impl Logger{
 
     pub fn set_write_options(&mut self, write_option: Option<WriteOption>) {
         self.write_option = write_option; 
-    }
-
-    pub fn set_debug_options(&mut self, debug_options: Option<Vec<DebugOption>>) {
-        self.debug_options = debug_options; 
     }
 
     /// Backup current line information into a struct
@@ -181,83 +178,62 @@ impl Logger{
 
     // ==========
     // Debug related methods
-    
     /// Log debug information
     #[cfg(feature = "debug")]
-    pub fn dlog_wait(&self, debug_option: DebugOption) -> Result<(), RadError> {
-        // Don't do anything
-        if !self.has_debug_option(debug_option) {
-            return Ok(());
-        }
-
-        use crossterm::{ExecutableCommand, terminal::ClearType};
+    pub fn dlog_command(&self, log : &str, prompt: Option<&str>) -> Result<String, RadError> {
+        // Disable line wrap
+        std::io::stdout()
+            .execute(crossterm::terminal::DisableLineWrap)?;
 
         let mut input = String::new();
-        print!("{} ", format!("{}:{}", self.line_number,"input").green());
+        let prompt = if let Some(content) = prompt { content } else { "" };
+        println!("{} : {}",format!("({})", &prompt.green()).green(), log);
+        print!("{} : ","(input)".green());
         // Flush because print! is not "printed" yet
         std::io::stdout().flush()?;
+
+        // Restore wrapping
+        #[cfg(feature = "debug")]
+        std::io::stdout()
+            .execute(crossterm::terminal::EnableLineWrap)?;
+
         // Get user input
         std::io::stdin().read_line(&mut input)?;
         // Clear user input line
-        std::io::stdout()
-            .execute(crossterm::terminal::Clear(ClearType::CurrentLine))?
-            .execute(crossterm::cursor::MoveUp(1))?
-            .execute(crossterm::terminal::Clear(ClearType::CurrentLine))?;
-        
-        Ok(())
+        // Preceding 1 is for "(input)" prompt
+        self.remove_terminal_lines(1 + Utils::count_newlines(log))?;
+
+        Ok(input)
     }
 
     /// Log debug information
     #[cfg(feature = "debug")]
-    pub fn dlog_print(&self, debug_option: DebugOption, log : &str) -> Result<(), RadError> {
-        // Don't do anything
-        if !self.has_debug_option(debug_option) {
-            return Ok(());
-        }
-
+    pub fn dlog_print(&self, log : &str) -> Result<(), RadError> {
         print!("{} ->> {}", format!("{}:{}", self.line_number,"log").green(), log);
-        
         Ok(())
     }
 
     #[cfg(feature = "debug")]
-    fn has_debug_option(&self, debug_option: DebugOption) -> bool {
-        if let Some(options) = &self.debug_options {
-            for opt in options {
-                if *opt == debug_option {
-                    return true;
-                }
-            }
-            false
-        } else {
-            false
+    fn remove_terminal_lines(&self, count: usize) -> Result<(), RadError> {
+
+        std::io::stdout()
+            .execute(crossterm::terminal::Clear(ClearType::CurrentLine))?;
+
+        // Range is max exclusive thus min should start from 0
+        // e.g. 0..1 only tries once with index 0
+        for _ in 0..count {
+            std::io::stdout()
+                .execute(crossterm::cursor::MoveUp(1))?
+                .execute(crossterm::terminal::Clear(ClearType::CurrentLine))?;
         }
+
+        Ok(())
     }
 } 
 
-#[derive(PartialEq)]
-pub enum DebugOption {
-    Log,
-    Lines,
-    Break,
-    None,
-}
-
-impl DebugOption {
-    pub fn new(raw : &str) -> Self {
-        match raw.to_lowercase().as_str() {
-            "lines" => {
-                Self::Lines
-            }
-            "break" => {
-                Self::Break
-            }
-            "log" => {
-                Self::Log
-            }
-            _ => {
-                Self::None
-            }
-        }
-    }
+pub enum DebugSwitch {
+    NextLine,
+    NextMacro,
+    StepMacro,
+    NextBrakePoint(String),
 }
