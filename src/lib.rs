@@ -11,7 +11,6 @@ pub(crate) mod logger;
 
 pub use error::RadError;
 pub use processor::Processor;
-pub use logger::DebugOption;
 
 // Optional
 
