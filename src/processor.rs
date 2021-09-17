@@ -224,11 +224,20 @@ impl Processor {
         Ok(self)
     }
 
-    /// Add debug options
+    /// Add debug log options
     #[cfg(feature = "debug")]
     pub fn log(&mut self, log: bool) -> Result<&mut Self, RadError> {
         if log {
             self.debug_log = true;
+        }
+        Ok(self)
+    }
+
+    /// Add debug interactive options
+    #[cfg(feature = "debug")]
+    pub fn interactive(&mut self, interactive: bool) -> Result<&mut Self, RadError> {
+        if interactive {
+            self.logger.set_debug_interactive();
         }
         Ok(self)
     }

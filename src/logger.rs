@@ -17,6 +17,8 @@ pub(crate) struct Logger {
     write_option: Option<WriteOption>,
     error_count: usize,
     warning_count: usize,
+    #[cfg(feature = "debug")]
+    debug_interactive: bool,
 }
 /// Struct specifically exists for error loggers backup information
 pub(crate) struct LoggerLines {
@@ -37,7 +39,15 @@ impl Logger{
             write_option: None,
             error_count:0,
             warning_count:0,
+            #[cfg(feature = "debug")]
+            debug_interactive: false,
         }
+    }
+
+
+    #[cfg(feature = "debug")]
+    pub fn set_debug_interactive(&mut self) {
+        self.debug_interactive = true;
     }
 
     pub fn set_write_options(&mut self, write_option: Option<WriteOption>) {
@@ -182,8 +192,10 @@ impl Logger{
     #[cfg(feature = "debug")]
     pub fn dlog_command(&self, log : &str, prompt: Option<&str>) -> Result<String, RadError> {
         // Disable line wrap
-        std::io::stdout()
-            .execute(crossterm::terminal::DisableLineWrap)?;
+        if self.debug_interactive {
+            std::io::stdout()
+                .execute(crossterm::terminal::DisableLineWrap)?;
+        }
 
         let mut input = String::new();
         let prompt = if let Some(content) = prompt { content } else { "" };
@@ -193,15 +205,18 @@ impl Logger{
         std::io::stdout().flush()?;
 
         // Restore wrapping
-        #[cfg(feature = "debug")]
-        std::io::stdout()
-            .execute(crossterm::terminal::EnableLineWrap)?;
+        if self.debug_interactive {
+            std::io::stdout()
+                .execute(crossterm::terminal::EnableLineWrap)?;
+        }
 
         // Get user input
         std::io::stdin().read_line(&mut input)?;
-        // Clear user input line
-        // Preceding 1 is for "(input)" prompt
-        self.remove_terminal_lines(1 + Utils::count_newlines(log))?;
+        if self.debug_interactive {
+            // Clear user input line
+            // Preceding 1 is for "(input)" prompt
+            self.remove_terminal_lines(1 + Utils::count_newlines(log))?;
+        }
 
         Ok(input)
     }

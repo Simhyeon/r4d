@@ -44,6 +44,7 @@ impl Cli {
             .error_to_file(std::mem::replace(&mut self.error_to_file,None))?
             .debug(args.is_present("debug"))?
             .log(args.is_present("log"))?
+            .interactive(args.is_present("interactive"))?
             .build();
 
         // Debug
@@ -115,6 +116,7 @@ impl Cli {
             (@arg strict: -S "Strict mode")
             (@arg debug: -d --debug "Debug mode")
             (@arg log: -l --log "Debug log mode")
+            (@arg interactive: -i --interactive "Use interactive debug mode")
             (@arg combination: -c "Read from both stdin and file inputs")
             (@arg silent: -s "Supress error and warning")
             (@arg newline: -n "Use unix newline for formatting")
