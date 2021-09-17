@@ -92,4 +92,26 @@ impl Utils {
         }
         return result;
     }
+    
+    // Copied from
+    // https://llogiq.github.io/2016/09/24/newline.html
+    // Actually the source talks about how to make following function faster
+    // yet I don't want to use simd because r4d's logic is currently very synchronous
+    // and making it a asynchornous would take much more effort and time
+    // NOTE : Trailing single is necessary because this only checks newline chracter
+    // thus line without trailing newline doesn't count as 1
+    pub(crate) fn count_newlines(s: &str) -> usize {
+        s.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1
+    }
+
+    #[cfg(feature = "debug")]
+    pub fn clear_terminal() -> Result<(), RadError> {
+        use crossterm::{ExecutableCommand, terminal::ClearType};
+
+        std::io::stdout()
+            .execute(crossterm::terminal::Clear(ClearType::All))?
+            .execute(crossterm::cursor::MoveTo(0,0))?;
+
+        Ok(())
+    }
 }
