@@ -1,13 +1,12 @@
 use clap::clap_app;
 use crate::error::RadError;
 use crate::processor::Processor;
-use crate::logger::DebugOption;
+use crate::utils::Utils;
 use std::path::{Path, PathBuf};
 
 /// Struct to parse command line arguments and execute proper operations
 pub struct Cli{
     rules: Option<Vec<PathBuf>>,
-    debug_options: Option<Vec<DebugOption>>,
     write_to_file : Option<PathBuf>,
     error_to_file : Option<PathBuf>,
 }
@@ -17,7 +16,6 @@ impl Cli {
     pub fn new() -> Self {
         Self {
             rules: None,
-            debug_options : None,
             write_to_file : None,
             error_to_file : None,
         }
@@ -44,8 +42,14 @@ impl Cli {
             .custom_rules(std::mem::replace(&mut self.rules,None))?
             .write_to_file(std::mem::replace(&mut self.write_to_file,None))?
             .error_to_file(std::mem::replace(&mut self.error_to_file,None))?
-            .debug(std::mem::replace(&mut self.debug_options,None))?
+            .debug(args.is_present("debug"))?
+            .log(args.is_present("log"))?
             .build();
+
+        // Debug
+        // Clear terminal cells
+        #[cfg(feature = "debug")]
+        Utils::clear_terminal()?;
 
         // ========
         // Main options
@@ -93,11 +97,6 @@ impl Cli {
         self.error_to_file = if let Some(error_file) = args.value_of("error") {
             Some(PathBuf::from(error_file))
         } else { None };
-
-        self.debug_options = if let Some(debug_options) = args.value_of("debug") {
-            let option_vec = debug_options.split('+').map(|s| DebugOption::new(s)).collect::<Vec<DebugOption>>();
-            Some(option_vec)
-        } else { None };
     }
 
     /// Creates argument template
@@ -114,7 +113,8 @@ impl Cli {
             (@arg freeze: -f +takes_value "Freeze to file")
             (@arg purge: -p "Purge unused macros")
             (@arg strict: -S "Strict mode")
-            (@arg debug: -d --debug +takes_value "Debug mode [break|log|lines]")
+            (@arg debug: -d --debug "Debug mode")
+            (@arg log: -l --log "Debug log mode")
             (@arg combination: -c "Read from both stdin and file inputs")
             (@arg silent: -s "Supress error and warning")
             (@arg newline: -n "Use unix newline for formatting")
