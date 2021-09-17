@@ -530,15 +530,17 @@ impl Processor {
             // line
             let mut do_continue = true;
             let mut log = format!("{}", frag.name);
+            let mut prompt = "step";
             while do_continue {
                 let input = self.debug_wait_input(
                     &log,
-                    Some("step")
+                    Some(prompt)
                 )?;
                 // Strip newline
                 let input = input.lines().next().unwrap();
 
                 do_continue = self.parse_debug_command_and_continue(&input, Some(&frag),&mut log)?;
+                prompt = "output";
             }
         }
         Ok(())
@@ -589,7 +591,7 @@ print(p) <ARG> : Print variable
                            *log = frag.name.to_owned();
                         }
                         "number" => {
-                            *log = self.logger.line_number.to_string();
+                            *log = self.logger.last_line_number.to_string();
                         }
                         "text" => {
                             *log = self.line_cache.lines().next().unwrap().to_owned();
@@ -707,10 +709,19 @@ print(p) <ARG> : Print variable
     pub(crate) fn parse_chunk(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
-        let mut result = self.parse(&mut lexor, &mut frag, chunk, level, caller)?;
-        if !frag.is_empty() {
-            result.push_str(&frag.whole_string);
+        let mut result = String::new();
+        let backup = self.logger.backup_lines();
+        self.logger.set_chunk(true);
+        for line in Utils::full_lines(chunk.as_bytes()) {
+            let line = line?;
+            self.logger.add_line_number();
+            result = self.parse(&mut lexor, &mut frag, &line, level, caller)?;
+            if !frag.is_empty() {
+                result.push_str(&frag.whole_string);
+            }
         }
+        self.logger.set_chunk(false);
+        self.logger.recover_lines(backup);
         return Ok(result);
     } // parse_chunk end
 
@@ -970,14 +981,16 @@ print(p) <ARG> : Print variable
         #[cfg(feature = "debug")]
         if self.debug_log { self.debug_print_log(&format!("{}: Name = \"{}\" Args = \"{}\"{}",level,name,raw_args,self.newline))?; }
 
+        // Possibly inifinite loop so warn user
+        if caller == name {
+            println!("LEVEL : {}", &level);
+            self.log_warning(&format!("Calling self, which is \"{}\", can possibly trigger infinite loop", name))?;
+        }
+
         // Find local macro
         // The macro can be  the one defined in parent macro
         let mut temp_level = level;
         while temp_level > 0 {
-            // Possibly inifinite loop so warn user
-            if caller == name {
-                self.log_warning(&format!("Calling self, which is \"{}\", can possibly trigger infinite loop", name))?;
-            }
             if let Some(local) = self.map.local.get(&Utils::local_name(temp_level, &name)) {
                 return Ok(Some(local.to_owned()));
             } 
