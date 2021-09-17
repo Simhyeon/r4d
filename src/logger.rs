@@ -11,14 +11,13 @@ use crate::error::RadError;
 pub(crate) struct Logger {
     pub(crate) line_number: usize,
     pub(crate) char_number: usize,
-    last_line_number: usize,
-    last_char_number: usize,
-    chunk_line_number: usize,
-    chunk_char_number: usize,
+    pub(crate) last_line_number: usize,
+    pub(crate) last_char_number: usize,
     current_file: String,
     write_option: Option<WriteOption>,
     error_count: usize,
     warning_count: usize,
+    on_chunk: bool,
     #[cfg(feature = "debug")]
     debug_interactive: bool,
 }
@@ -37,17 +36,24 @@ impl Logger{
             char_number: 0,
             last_line_number: 0,
             last_char_number: 0,
-            chunk_line_number: 0,
-            chunk_char_number: 0,
             current_file: String::from("stdin"),
             write_option: None,
             error_count:0,
             warning_count:0,
+            on_chunk : false,
             #[cfg(feature = "debug")]
             debug_interactive: false,
         }
     }
-
+    pub fn set_chunk(&mut self, switch: bool) {
+        if switch {
+            self.on_chunk = true;
+            self.line_number = 0;
+            self.char_number = 0;
+        } else {
+            self.on_chunk = false;
+        }
+    }
 
     #[cfg(feature = "debug")]
     pub fn set_debug_interactive(&mut self) {
@@ -96,6 +102,11 @@ impl Logger{
     pub fn freeze_number(&mut self) {
         self.last_line_number = self.line_number;
         self.last_char_number = self.char_number;
+
+        if self.on_chunk {
+            self.last_line_number = self.line_number + self.last_line_number;
+            self.last_char_number = self.char_number + self.last_char_number;
+        }
     }
 
     // TODO
@@ -113,7 +124,7 @@ impl Logger{
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(format!("error : {} -> {}:{}:{}{}",log,self.current_file, self.line_number, self.char_number,LINE_ENDING).as_bytes())?;
+                    file.write_all(format!("error : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, self.last_char_number,LINE_ENDING).as_bytes())?;
                 }
                 WriteOption::Stdout => {
                     eprint!(
@@ -141,7 +152,7 @@ impl Logger{
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(format!("warning : {} -> {}:{}:{}{}",log,self.current_file, self.line_number, self.char_number,LINE_ENDING).as_bytes())?;
+                    file.write_all(format!("warning : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, self.last_char_number,LINE_ENDING).as_bytes())?;
                 }
                 WriteOption::Stdout => {
                     eprintln!(
