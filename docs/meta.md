@@ -1,13 +1,27 @@
 ### TODOs
 
+* [ ] Print line doesn't work as intended
+- This is because macro execution is not top from to bottom but from bottom to
+top, which means that inner macro expanded when outer macro fragment is
+completed, which makes line_cache points to strange place.
+- This has been addressed with interactive forme, but needs more abstraction
+
+* [ ] Make interactive flag which toggles text wrapping 
+* [ ] Make chunk_line chunk_char for more detailed debuggin and error logging
+* [ ] Make BR as not an error but a warning
+* [ ] Non printing macro do print empty space in debug mode
+- $BR() evaluates to newline character
+* [ ] Log flag with debug flag yield strange output
+- Line after macro evaluation is duplicated
+
 * [ ] Add debugger
   * [x] Lines option
   * [x] log option
   - Log every evaluation 
-  * [ ] Break option
-  * [ ] Command option?
   * [ ] Debug command
-  - print, frag,
+    * [ ] print, help
+	* [ ] step 
+  * [ ] Brake point
 
 * [ ] Escape rule is very inconsistent
 - In arg parsing it consumes and set ending parenthesis literal
