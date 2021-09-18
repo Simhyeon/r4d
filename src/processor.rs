@@ -256,7 +256,7 @@ impl Processor {
     /// If debug mode is enabled this, doesn't read stdin line by line but by chunk because user
     /// input is also a standard input and processor cannot distinguish the two
     pub fn from_stdin(&mut self) -> Result<String, RadError> {
-        let mut stdin = io::stdin();
+        let stdin = io::stdin();
 
         // Early return if debug
         // This read whole chunk of string 
@@ -417,7 +417,14 @@ impl Processor {
     /// Prompt user input until break condition has been met
     fn user_input_prompt(&mut self, frag: &MacroFragment, initial_prompt: &str) -> Result<(), RadError> {
         let mut do_continue = true;
-        let mut log = self.line_caches.get(&self.logger.get_abs_last_line()).unwrap().to_owned();
+        let mut log = match &self.debug_switch {
+            &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => {
+                self.line_caches.get(&self.logger.get_abs_last_line()).unwrap().to_owned()
+            }
+            _ => {
+                self.line_caches.get(&self.line_number).unwrap().to_owned()
+            }
+        };
         let mut prompt = initial_prompt;
         while do_continue {
             let input = self.debug_wait_input(
