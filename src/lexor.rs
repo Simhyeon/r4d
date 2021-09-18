@@ -85,7 +85,7 @@ impl Lexor {
         // in this case last \n is ignored and deleted
         // escape_nl is only set after define
         else if self.escape_nl && (ch as i32 == 13 || ch as i32 == 10) {
-            result = LexResult::Ignore;
+            result = LexResult::Discard;
         } 
         // Characters other than newline means other characters has been introduced
         // after definition thus, escape_nl is now false
@@ -166,6 +166,7 @@ impl Lexor {
 
 #[derive(Debug)]
 pub enum LexResult {
+    Discard,
     Ignore,
     AddToRemainder,
     StartFrag,
