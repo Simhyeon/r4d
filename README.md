@@ -12,7 +12,6 @@ consideration for the time.
 
 R4d's will reach 1.0 only when followings are resolved.
 
-- Debugger
 - Consistent parenthesis rules
 - Absence of critical bugs
 - No possiblity of basic macro changes
