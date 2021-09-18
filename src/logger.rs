@@ -113,7 +113,12 @@ impl Logger{
             self.last_line_number = self.line_number;
             self.last_char_number = self.char_number;
         }
-        //self.print();
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn deb(&self) {
+        println!("LAST : {}", self.last_line_number);
+        println!("LINE : {}", self.line_number);
     }
 
     // TODO
