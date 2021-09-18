@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::io::{self, BufReader, Write};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::{ Path , PathBuf};
@@ -12,65 +12,19 @@ use crate::consts::*;
 use crate::lexor::*;
 use crate::arg_parser::{ArgParser, GreedyState};
 
-/// Macro framgent that processor saves fragmented information of the mcaro invocation
-#[derive(Debug)]
-struct MacroFragment {
-    pub whole_string: String,
-    pub name: String,
-    pub args: String,
-    pub pipe: bool,
-    pub greedy: bool,
-    pub preceding: bool,
-    pub yield_literal : bool,
-    pub trimmed : bool,
-}
+// Methods of processor consists of multiple sections followed as
+// <BUILDER>            -> Builder pattern related
+// <PROCESS>            -> User functions related
+// <DEBUG>              -> Debug related functions
+// <PARSE>              -> Parse rleated functions
+//     <LEX>            -> sub sectin of parse, this is technically not a lexing but it's named as
+// <MISC>               -> Miscellaenous
+//
+// Find each section's start with <NAME> and find end of section with </NAME>
+//
+// e.g. <BUILDER> for builder section start and </BUILDER> for builder section end
 
-impl MacroFragment {
-    fn new() -> Self {
-        MacroFragment {
-            whole_string : String::new(),
-            name : String::new(),
-            args : String::new(),
-            pipe: false,
-            greedy: false,
-            preceding: false,
-            yield_literal : false,
-            trimmed: false,
-        }
-    }
-
-    fn clear(&mut self) {
-        self.whole_string.clear();
-        self.name.clear();
-        self.args.clear();
-        self.pipe = false; 
-        self.greedy = false; 
-        self.yield_literal = false;
-        self.trimmed = false; 
-    }
-
-    fn is_empty(&self) -> bool {
-        self.whole_string.len() == 0
-    }
-}
-
-enum ParseResult {
-    FoundMacro(String),
-    Printable(String),
-    NoPrint,
-    EOI,
-}
-
-/// Struct for backing current file and logging information
-///
-/// This is necessary because some macro processing should be executed in sandboxed environment.
-/// e.g. when include macro is called, outer file's information is not helpful at all.
-struct SandboxBackup {
-    current_input: String,
-    local_macro_map: HashMap<String,String>,
-    logger_lines: LoggerLines,
-}
-
+/// Processor that parses(lexes) given input and print out to destined output
 pub struct Processor{
     current_input : String, // This is either "stdin" or currently reading file's name
     map: MacroMap,
@@ -88,8 +42,12 @@ pub struct Processor{
     pub(crate) debug_log: bool,
     #[cfg(feature = "debug")]
     debug_switch : DebugSwitch,
+    // This is a global line number storage for various deubbing usages
     #[cfg(feature = "debug")]
-    pub(crate) line_cache: String,
+    line_number : usize,
+    // This is a bit bloaty, but debugging needs functionality over efficiency
+    #[cfg(feature = "debug")]
+    pub(crate) line_caches: HashMap<usize, String>,
     sandbox: bool,
     purge: bool,
     strict: bool,
@@ -103,6 +61,7 @@ pub struct Processor{
 impl Processor {
     // ----------
     // Builder pattern methods
+    // <BUILDER>
     /// Creates new processor with deafult options
     pub fn new() -> Self {
         let temp_path= std::env::temp_dir().join("rad.txt");
@@ -137,7 +96,9 @@ impl Processor {
             #[cfg(feature = "debug")]
             debug_switch: DebugSwitch::NextLine,
             #[cfg(feature = "debug")]
-            line_cache: String::new(),
+            line_number: 1,
+            #[cfg(feature = "debug")]
+            line_caches: HashMap::new(),
             always_greedy: false,
             temp_target,
         }
@@ -260,61 +221,19 @@ impl Processor {
         std::mem::replace(self, Processor::new())
     }
 
+    // </BUILDER>
     // End builder methods
     // ----------
 
+    // ----------
+    // Processing methods
+    // <PROCESS>
+    //
     /// Print the result of a processing
     #[allow(dead_code)]
     pub fn print_result(&mut self) -> Result<(), RadError> {
         self.logger.print_result()?;
         Ok(())
-    }
-
-    /// Get mutable reference of macro map
-    pub(crate) fn get_map(&mut self) -> &mut MacroMap {
-        &mut self.map
-    }
-
-    /// Change temp file target
-    pub(crate) fn set_temp_file(&mut self, path: &Path) {
-        self.temp_target = (path.to_owned(),OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(path)
-            .unwrap());
-    }
-
-    pub(crate) fn set_sandbox(&mut self) {
-        self.sandbox = true; 
-    }
-
-    /// Get temp file's path
-    pub(crate) fn get_temp_path(&self) -> &Path {
-        &self.temp_target.0
-    }
-
-    /// Get temp file's "file" struct
-    pub(crate) fn get_temp_file(&self) -> &File {
-        &self.temp_target.1
-    }
-
-    /// Backup information of current file before processing sandboxed input
-    fn backup(&self) -> SandboxBackup {
-        SandboxBackup { 
-            current_input: self.current_input.clone(), 
-            local_macro_map: self.map.local.clone(),
-            logger_lines: self.logger.backup_lines(),
-        }
-    }
-
-    /// Recover backup information into the processor
-    fn recover(&mut self, backup: SandboxBackup) {
-        // NOTE ::: Set file should come first becuase set_file override line number and character number
-        self.logger.set_file(&backup.current_input);
-        self.current_input = backup.current_input;
-        self.map.local= backup.local_macro_map; 
-        self.logger.recover_lines(backup.logger_lines);
     }
 
     /// Freeze to single file
@@ -324,25 +243,64 @@ impl Processor {
     }
 
     /// Read from string
-    ///
-    /// Currently debug is not applied for this method
     pub fn from_string(&mut self, content: &str) -> Result<String, RadError> {
+        // Set name as string
+        self.set_file("String")?;
+
+        let mut reader = content.as_bytes();
+        self.from_buffer(&mut reader)
+    }
+
+    /// Read from standard input
+    pub fn from_stdin(&mut self) -> Result<String, RadError> {
+        let stdin = io::stdin();
+        let mut reader = stdin.lock();
+        self.from_buffer(&mut reader)
+    }
+
+    /// Process contents from a file
+    pub fn from_file(&mut self, path :&Path) -> Result<String, RadError> {
+
+        // Set file as name of given path
+        self.set_file(path.to_str().unwrap())?;
+
+        let file_stream = File::open(path)?;
+        let mut reader = io::BufReader::new(file_stream);
+        self.from_buffer(&mut reader)
+    }
+
+    /// Internal method for processing buffers line by line
+    fn from_buffer(&mut self,buffer: &mut impl std::io::BufRead) -> Result<String, RadError> {
         // Sandboxed environment, backup
         let backup = if self.sandbox { Some(self.backup()) } else { None };
-
-        let mut line_iter = Utils::full_lines(content.as_bytes());
+        let mut line_iter = Utils::full_lines(buffer).peekable();
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
         let mut content = String::new();
         // Container is where sandboxed output is saved
         let mut container = if self.sandbox { Some(&mut content) } else { None };
+        #[cfg(feature = "debug")]
+        self.user_input_on_start()?;
         loop {
+            #[cfg(feature = "debug")]
+            if let Some(line) = line_iter.peek() {
+                let line = line.as_ref().unwrap();
+                // Update line cache
+                self.line_caches.insert(self.line_number, line.lines().next().unwrap().to_owned());
+                // Only if debug switch is nextline
+                self.user_input_on_line(&frag)?;
+            }
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut frag)?;
             match result {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(remainder) => {
                     self.write_to(&remainder, &mut container)?;
+
+                    // Test if this works
+                    #[cfg(feature = "debug")]
+                    self.line_caches.clear();
+
                     // Reset fragment
                     if &frag.whole_string != "" {
                         frag = MacroFragment::new();
@@ -351,9 +309,18 @@ impl Processor {
                 ParseResult::FoundMacro(remainder) => {
                     self.write_to(&remainder, &mut container)?;
                 }
-                ParseResult::NoPrint => (), // Do nothing
+                // This happens only when given macro involved text should not be printed
+                ParseResult::NoPrint => { }
                 // End of input, end loop
                 ParseResult::EOI => break,
+            }
+            // Increaing number should be followed after evaluation
+            // To ensure no panick occurs during user_input_on_line, which is caused by
+            // out of index exception from getting current line_cache
+            #[cfg(feature = "debug")]
+            {
+                // Increase absolute line number
+                self.line_number = self.line_number + 1; 
             }
         } // Loop end
 
@@ -363,49 +330,37 @@ impl Processor {
         Ok(content)
     }
 
-    /// Read from standard input
-    pub fn from_stdin(&mut self) -> Result<String, RadError> {
+    // End of process methods
+    // </PROCESS>
+    // ----------
 
-        // Sandboxed environment, backup
-        let backup = if self.sandbox { Some(self.backup()) } else { None };
 
-        let stdin = io::stdin();
-        let mut line_iter = Utils::full_lines(stdin.lock());
-        let mut lexor = Lexor::new();
-        let mut frag = MacroFragment::new();
-        let mut content = String::new();
-        // Container is where sandboxed output is saved
-        let mut container = if self.sandbox { Some(&mut content) } else { None };
-        #[cfg(feature = "debug")]
-        self.user_input_on_start()?;
-        loop {
-            let result = self.parse_line(&mut line_iter, &mut lexor ,&mut frag)?;
-            // Only if debug switch is nextline
+    // ===========
+    // Debug related methods
+    // <DEBUG>
+
+    // This function can be used in non debug feature
+    /// Process breakpoint
+    fn break_point(&mut self, frag: &mut MacroFragment) -> Result<(), RadError> {
+        if &frag.name == "BR" {
             #[cfg(feature = "debug")]
-            self.user_input_on_line(&result, &frag)?;
-            match result {
-                // This means either macro is not found at all
-                // or previous macro fragment failed with invalid syntax
-                ParseResult::Printable(remainder) => {
-                    self.write_to(&remainder, &mut container)?;
-                    // Reset fragment
-                    if &frag.whole_string != "" {
-                        frag = MacroFragment::new();
+            if self.debug {
+                if let DebugSwitch::NextBreakPoint(name) = &self.debug_switch {
+                    // Name is empty or same with frag.args
+                    if name == &frag.args || name == "" {
+                        self.debug_switch = DebugSwitch::NextLine;
                     }
                 }
-                ParseResult::FoundMacro(remainder) => {
-                    self.write_to(&remainder, &mut container)?;
-                }
-                ParseResult::NoPrint => (), // Do nothing
-                // End of input, end loop
-                ParseResult::EOI => break,
-            }
-        } // Loop end
+                // Clear fragment
+                frag.clear();
+                return Ok(());
+            } 
 
-        // Recover
-        if let Some(backup) = backup { self.recover(backup); self.sandbox = false; }
+            self.logger.wlog("Breakpoint in non debug mode")?;
+            frag.clear();
+        }
 
-        Ok(content)
+        Ok(())
     }
 
     #[cfg(feature = "debug")]
@@ -426,7 +381,31 @@ impl Processor {
     }
 
     #[cfg(feature = "debug")]
-    fn user_input_on_line(&mut self, result: &ParseResult, frag: &MacroFragment) -> Result<(), RadError> {
+    /// Prompt user input until break condition has been met
+    fn user_input_prompt(&mut self, frag: &MacroFragment, initial_prompt: &str) -> Result<(), RadError> {
+        let mut do_continue = true;
+        let mut log = self.line_caches.get(&self.line_number).unwrap().to_owned();
+        let mut prompt = initial_prompt;
+        while do_continue {
+            let input = self.debug_wait_input(
+                &log,
+                Some(prompt)
+            )?;
+            // Strip newline
+            let input = input.lines().next().unwrap();
+
+            do_continue = self.parse_debug_command_and_continue(&input, Some(frag),&mut log)?;
+            prompt = "output";
+        }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "debug")]
+    /// Get user input on line 
+    ///
+    /// This method should be called before evaluation of a line
+    fn user_input_on_line(&mut self,frag: &MacroFragment) -> Result<(), RadError> {
         // Stop by lines if debug option is lines
         if self.debug {
             // Only when debugswitch is nextline
@@ -435,60 +414,28 @@ impl Processor {
             } else {
                 return Ok(()); // Return early
             }
-            // If end of file, don't do anything
-            if let ParseResult::EOI = result {
-                return Ok(());
-            } else {
-                // This technically strips newline feed regardless of platforms 
-                // It is ok to simply convert to a single line because it is logically a single
-                // line
-                let mut do_continue = true;
-                let mut log = self.line_cache
-                    .lines()
-                    .next()
-                    .to_owned()
-                    .unwrap().to_owned();
-                let mut prompt = "line";
-                while do_continue {
-                    let input = self.debug_wait_input(
-                        &log,
-                        Some(prompt)
-                    )?;
-                    // Strip newline
-                    let input = input.lines().next().unwrap();
-
-                    do_continue = self.parse_debug_command_and_continue(&input, Some(frag),&mut log)?;
-                    prompt = "output";
-                }
-            }
+            self.user_input_prompt(frag, "line")?;
         }
         Ok(())
     }
 
-    fn brake_point(&mut self, frag: &mut MacroFragment) -> Result<(), RadError> {
-        if &frag.name == "BR" {
-            #[cfg(feature = "debug")]
-            if self.debug {
-                if let DebugSwitch::NextBrakePoint(name) = &self.debug_switch {
-                    // Name is empty or same with frag.args
-                    if name == &frag.args || name == "" {
-                        self.debug_switch = DebugSwitch::NextLine;
-                    }
-                }
-                // Clear fragment
-                frag.clear();
-                return Ok(());
-            } 
-
-            self.logger.wlog("Brake point in non debug mode")?;
-            frag.clear();
+    #[cfg(feature = "debug")]
+    /// Get user input before macro execution
+    fn user_input_before_macro(&mut self, frag: &MacroFragment) -> Result<(), RadError> {
+        // Stop by lines if debug option is lines
+        if self.debug {
+            match &self.debug_switch {
+                &DebugSwitch::UntilMacro => (),
+                _ => return Ok(()),
+            }
+            self.user_input_prompt(frag, "until")?;
         }
-
         Ok(())
     }
 
     // This is possibly loopable
     #[cfg(feature = "debug")]
+    /// Get user input after execution
     fn user_input_on_macro(&mut self, frag: &MacroFragment) -> Result<(), RadError> {
         // Stop by lines if debug option is lines
         if self.debug {
@@ -496,27 +443,14 @@ impl Processor {
                 &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => (),
                 _ => return Ok(()),
             }
-            // This technically strips newline feed regardless of platforms 
-            // It is ok to simply convert to a single line because it is logically a single
-            // line
-            let mut do_continue = true;
-            let mut log = format!("{}", frag.name);
-            while do_continue {
-                let input = self.debug_wait_input(
-                    &log,
-                    Some("macro")
-                )?;
-                // Strip newline
-                let input = input.lines().next().unwrap();
-
-                do_continue = self.parse_debug_command_and_continue(&input, Some(&frag),&mut log)?;
-            }
+            self.user_input_prompt(frag, "macro")?;
         }
         Ok(())
     }
 
     // This is possibly loopable
     #[cfg(feature = "debug")]
+    /// Get user input on execution but nested macro can be 
     fn user_input_on_step(&mut self, frag: &MacroFragment) -> Result<(), RadError> {
         // Stop by lines if debug option is lines
         if self.debug {
@@ -525,28 +459,13 @@ impl Processor {
             } else {
                 return Ok(()); // Return early
             }
-            // This technically strips newline feed regardless of platforms 
-            // It is ok to simply convert to a single line because it is logically a single
-            // line
-            let mut do_continue = true;
-            let mut log = format!("{}", frag.name);
-            let mut prompt = "step";
-            while do_continue {
-                let input = self.debug_wait_input(
-                    &log,
-                    Some(prompt)
-                )?;
-                // Strip newline
-                let input = input.lines().next().unwrap();
-
-                do_continue = self.parse_debug_command_and_continue(&input, Some(&frag),&mut log)?;
-                prompt = "output";
-            }
         }
+        self.user_input_prompt(frag, "step")?;
         Ok(())
     }
 
     #[cfg(feature = "debug")]
+    /// Get user input and evaluates if loop should be breaked or not
     fn parse_debug_command_and_continue(&mut self, command_input: &str, frag: Option<&MacroFragment>, log: &mut String) -> Result<bool, RadError> {
         let command_input: Vec<&str> = command_input.split(' ').collect();
         let command = command_input[0];
@@ -555,8 +474,12 @@ impl Processor {
 
         match command.to_lowercase().as_str() {
             // Continues until next break point
+            "cl" | "clear" => {
+                Utils::clear_terminal()?;
+                return Ok(true);
+            }
             "c" | "continue" => {
-                self.debug_switch = DebugSwitch::NextBrakePoint(command_args.to_owned());
+                self.debug_switch = DebugSwitch::NextBreakPoint(command_args.to_owned());
             }
             // Continue to next line
             "n" | "next" | "" => {
@@ -566,37 +489,63 @@ impl Processor {
             "m" | "macro" => {
                 self.debug_switch = DebugSwitch::NextMacro;
             }
+            // Continue to until next macro
+            "u" | "until" => {
+                self.debug_switch = DebugSwitch::UntilMacro;
+            }
             // Setp into macro
             "s" | "step" => {
                 self.debug_switch = DebugSwitch::StepMacro;
             }
             "h" | "help" => {
-                *log = r#"help(p)        : Print this help
-next(n)        : Next line
-macro(m)       : Next macro
-step(s)        : Next macro including nested
-continue(c)    : Next brake point
-print(p) <ARG> : Print variable
-    - name     : Print current macro name
-    - arg      : Print current macro's argument (not necessarily complete)
-    - text     : Print current line text
-    - number   : Print current line number"#.to_owned();
+                *log = RDB_HELP.to_owned();
                 return Ok(true);
             }
             // Print "variable"
             "p" | "print" => {
                 if let Some(frag) = frag {
                     match command_args.to_lowercase().as_str() {
-                        "name" => {
+                        "name" | "n" => {
                            *log = frag.name.to_owned();
                         }
-                        "number" => {
-                            *log = self.logger.last_line_number.to_string();
+                        "line" | "l" => {
+                            match &self.debug_switch{
+                                DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
+                                    *log = self.logger.get_abs_last_line().to_string();
+                                }
+                                _ => {
+                                    *log = self.line_number.to_string();
+                                }
+                            } 
                         }
-                        "text" => {
-                            *log = self.line_cache.lines().next().unwrap().to_owned();
+                        "span" | "s" => {
+                            let mut line_number = match &self.debug_switch {
+                                &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => {
+                                    self.logger.get_abs_line()
+                                }
+                                _ => self.line_number
+                            };
+
+                            let mut sums = String::new();
+                            while let Some(line) = self.line_caches.get(&line_number) {
+                                let mut this_line = format!("{}{}",LINE_ENDING,line);
+                                this_line.push_str(&sums);
+                                sums = this_line;
+                                line_number = line_number - 1;
+                            }
+                            *log = sums;
                         }
-                        "arg" => {
+                        "text" | "t" => {
+                            match &self.debug_switch{
+                                DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
+                                    *log = self.line_caches.get(&self.logger.get_abs_last_line()).unwrap().to_owned();
+                                }
+                                _ => {
+                                    *log = self.line_caches.get(&self.line_number).unwrap().to_owned();
+                                }
+                            } 
+                        }
+                        "arg" | "a" => {
                             *log = frag.args.to_owned();
                         }
                         _ => {
@@ -620,67 +569,34 @@ print(p) <ARG> : Print variable
         Ok(false)
     }
 
-    /// Process contents from a file
-    pub fn from_file(&mut self, path :&Path) -> Result<String, RadError> {
-
-        // Sandboxed environment, backup
-        let backup = if self.sandbox { Some(self.backup()) } else { None };
-
-        // Set file as name of given path
-        self.set_file(path.to_str().unwrap())?;
-
-        let file_stream = File::open(path)?;
-        let reader = io::BufReader::new(file_stream);
-        let mut line_iter = Utils::full_lines(reader);
-        let mut lexor = Lexor::new();
-        let mut frag = MacroFragment::new();
-        let mut content = String::new();
-        // Container is where sandboxed output is saved
-        let mut container = if self.sandbox { Some(&mut content) } else { None };
-        #[cfg(feature = "debug")]
-        self.user_input_on_start()?;
-        loop {
-            let result = self.parse_line(&mut line_iter, &mut lexor ,&mut frag)?;
-            // Only if debug switch is nextline
-            #[cfg(feature = "debug")]
-            self.user_input_on_line(&result,&frag)?;
-            match result {
-                // This means either macro is not found at all
-                // or previous macro fragment failed with invalid syntax
-                ParseResult::Printable(remainder) => {
-                    self.write_to(&remainder, &mut container)?;
-                    // Reset fragment
-                    if &frag.whole_string != "" {
-                        frag = MacroFragment::new();
-                    }
-                }
-                ParseResult::FoundMacro(remainder) => {
-                    self.write_to(&remainder, &mut container)?;
-                }
-                ParseResult::NoPrint => (), // Do nothing
-                // End of input, end loop
-                ParseResult::EOI => break,
-            }
-        } // Loop end
-
-        // Recover
-        if let Some(backup) = backup { self.recover(backup); self.sandbox = false; }
-
-        Ok(content)
+    #[cfg(feature = "debug")]
+    pub fn debug_wait_input(&self, log: &str, prompt: Option<&str>) -> Result<String, RadError> {
+        Ok(self.logger.dlog_command(log, prompt)?)
     }
-    
+    #[cfg(feature = "debug")]
+    pub fn debug_print_log(&self,log : &str) -> Result<(), RadError> {
+        self.logger.dlog_print(log)?;
+        Ok(())
+    }
+    #[cfg(feature = "debug")]
+    pub fn debug_print_command_result(&self,log : &str) -> Result<(), RadError> {
+        self.logger.dlog_print(log)?;
+        Ok(())
+    }
+
+    // </DEBUG>
+    // End of debug methods
+    // ----------
+
+    // ----------
+    // Parse related methods
+    // <PARSE>
     /// Parse line is called only by the main loop thus, caller name is special name of @MAIN@
     fn parse_line(&mut self, lines :&mut impl std::iter::Iterator<Item = std::io::Result<String>>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
         self.logger.add_line_number();
         if let Some(line) = lines.next() {
             let line = line?;
             let remainder = self.parse(lexor, frag, &line, 0, MAIN_CALLER)?;
-
-            // Change line cache
-            #[cfg(feature = "debug")]
-            { 
-                self.line_cache = line; 
-            }
 
             // Clear local variable macros
             self.map.clear_local();
@@ -705,8 +621,8 @@ print(p) <ARG> : Print variable
         }
     } // parse_line end
 
-    /// Parse chunk is called by non-main process, thus needs caller
-    pub(crate) fn parse_chunk(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
+    /// Parse chunk lines is called by non-main process, thus needs caller
+    pub(crate) fn parse_chunk_lines(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
         let mut result = String::new();
@@ -714,14 +630,29 @@ print(p) <ARG> : Print variable
         self.logger.set_chunk(true);
         for line in Utils::full_lines(chunk.as_bytes()) {
             let line = line?;
-            self.logger.add_line_number();
             result = self.parse(&mut lexor, &mut frag, &line, level, caller)?;
             if !frag.is_empty() {
                 result.push_str(&frag.whole_string);
             }
+            self.logger.add_line_number();
         }
         self.logger.set_chunk(false);
         self.logger.recover_lines(backup);
+        return Ok(result);
+    } // parse_chunk_lines end
+
+    /// Parse chunk is called by non-main process, thus needs caller
+    ///
+    /// In contrast to parse_chunk_lines, parse_chunk doesn't create lines iterator but parses the
+    /// chunk as a single entity or line.
+    pub(crate) fn parse_chunk(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
+        let mut lexor = Lexor::new();
+        let mut frag = MacroFragment::new();
+        let mut result = self.parse(&mut lexor, &mut frag, &chunk, level, caller)?;
+        // Add remainders to result
+        if !frag.is_empty() {
+            result.push_str(&frag.whole_string);
+        }
         return Ok(result);
     } // parse_chunk end
 
@@ -741,13 +672,14 @@ print(p) <ARG> : Print variable
             let lex_result = lexor.lex(ch)?;
             // Either add character to remainder or fragments
             match lex_result {
+                LexResult::Discard => (),
                 LexResult::Ignore => frag.whole_string.push(ch),
                 // If given result is literal
                 LexResult::Literal(cursor) => {
                     self.lex_branch_literal(ch, frag, &mut remainder, cursor);
                 }
                 LexResult::StartFrag => {
-                    self.lex_branch_start_frag(ch, frag, &mut remainder, lexor);
+                    self.lex_branch_start_frag(ch, frag, &mut remainder, lexor)?;
                 },
                 LexResult::EmptyName => {
                     self.lex_branch_empty_name(ch, frag, &mut remainder, lexor);
@@ -770,205 +702,6 @@ print(p) <ARG> : Print variable
         Ok(remainder)
     }
 
-    // ==========
-    // Start of lex branch methods
-    // These are parse's sub methods for eaiser reading
-    fn lex_branch_literal(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, cursor: Cursor) {
-        match cursor {
-            // Exit frag
-            // If literal is given on names
-            Cursor::Name => {
-                frag.whole_string.push(ch);
-                remainder.push_str(&frag.whole_string);
-                frag.clear();
-            }
-            // Simply push if none or arg
-            Cursor::None => { remainder.push(ch); }
-            Cursor::Arg => { 
-                frag.args.push(ch); 
-                frag.whole_string.push(ch);
-            }
-        }
-    }
-
-    fn lex_branch_start_frag(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor) {
-        frag.whole_string.push(ch);
-
-        // If paused and not pause, then reset lexor context
-        if self.paused && frag.name != "pause" {
-            lexor.reset();
-            remainder.push_str(&frag.whole_string);
-            frag.clear();
-        }
-    }
-
-    fn lex_branch_empty_name(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor) {
-        frag.whole_string.push(ch);
-        // If paused, then reset lexor context
-        self.logger.freeze_number(); 
-        if self.paused {
-            lexor.reset();
-            remainder.push_str(&frag.whole_string);
-            frag.clear();
-        }
-
-    }
-
-    fn lex_branch_add_to_remainder(&mut self, ch: char,remainder: &mut String) -> Result<(), RadError> {
-        if !self.checker.check(ch) {
-            self.logger.freeze_number();
-            self.log_warning("Unbalanced parenthesis detected.")?;
-        }
-        remainder.push(ch);
-
-        Ok(())
-    }
-
-    fn lex_branch_add_to_frag(&mut self, ch: char,frag: &mut MacroFragment, cursor: Cursor) {
-        match cursor{
-            Cursor::Name => {
-                if frag.name.len() == 0 {
-                    self.logger.freeze_number();
-                }
-                match ch {
-                    '|' => frag.pipe = true,
-                    '+' => frag.greedy = true,
-                    '*' => frag.yield_literal = true,
-                    '^' => frag.trimmed = true,
-                    _ => frag.name.push(ch) 
-                }
-            },
-            Cursor::Arg => {
-                frag.args.push(ch)
-            },
-            _ => unreachable!(),
-        } 
-        frag.whole_string.push(ch);
-    }
-
-    fn lex_branch_end_frag(&mut self, ch: char, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize, caller: &str) -> Result<(), RadError> {
-        // Push character to whole string anyway
-        frag.whole_string.push(ch);
-        // define
-        if frag.name == "define" {
-            self.add_rule(frag, remainder)?;
-            lexor.escape_nl = true;
-            frag.clear()
-        } 
-        else { // Invoke macro
-
-            // Debug
-            #[cfg(feature = "debug")]
-            {
-                // If debug switch target is brake point
-                // Set switch to next line.
-                self.brake_point(frag)?;
-                // Brake point is true , continue
-                if frag.name.len() == 0 {
-                    lexor.escape_nl = true;
-                    return Ok(());
-                }
-            }
-
-            // Try to evaluate
-            let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy);
-
-            // If panicked, this means unrecoverable error occured.
-            if let Err(error) = evaluation_result {
-                // this is equlvalent to conceptual if let not pattern
-                if let RadError::Panic = error{
-                    // Do nothing
-                    ();
-                } else {
-                    self.log_error(&format!("{}", error))?;
-                }
-                return Err(RadError::Panic);
-            }
-            // else it is ok to proceed.
-            // thus it is safe to unwrap it
-            if let Some(mut content) = evaluation_result.unwrap() {
-
-                // Debug
-                #[cfg(feature = "debug")]
-                // If debug switch target is next macro
-                // Stop and wait for input
-                // Only on main level macro
-                // TODO This behaviour might change later
-                if level == 0 {self.user_input_on_macro(&frag)?;}
-                else {self.user_input_on_step(&frag)?;}
-
-                // If content is none
-                // Ignore new line after macro evaluation until any character
-                if content.len() == 0 {
-                    lexor.escape_nl = true;
-                } else {
-                    if frag.trimmed {
-                        content = Utils::trim(&content)?;
-                    }
-                    if frag.yield_literal {
-                        content = format!("\\*{}*\\", content);
-                    }
-                    // NOTE
-                    // This should come later!!
-                    if frag.pipe {
-                        self.pipe_value = content;
-                        lexor.escape_nl = true;
-                    } else {
-                        remainder.push_str(&content);
-                    }
-                }
-            } else { // Failed to invoke
-                // because macro doesn't exist
-
-                // If strict mode is set, every error is panic error
-                if self.strict {
-                    self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
-                    return Err(RadError::StrictPanic);
-                } 
-                // If purge mode is set, don't print anything 
-                // and don't print error
-                if !self.purge {
-                    self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
-                    remainder.push_str(&frag.whole_string);
-                } else {
-                    // If purge mode
-                    // set escape new line 
-                    lexor.escape_nl = true;
-                }
-            }
-            // Clear fragment regardless of success
-            frag.clear()
-        }
-
-        Ok(())
-    }
-
-    fn lex_branch_exit_frag(&mut self,ch: char, frag: &mut MacroFragment, remainder: &mut String) {
-        frag.whole_string.push(ch);
-        remainder.push_str(&frag.whole_string);
-        frag.clear();
-    }
-
-    // End of lex branch methods
-    // ==========
-
-    /// Add custom rule to macro map
-    fn add_rule(&mut self, frag: &mut MacroFragment, remainder: &mut String) -> Result<(), RadError> {
-        if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
-            self.map.register(&name, &args, &body)?;
-        } else {
-            self.log_error(&format!(
-                    "Failed to register a macro : \"{}\"", 
-                    frag.args.split(',').collect::<Vec<&str>>()[0]
-            ))?;
-            remainder.push_str(&frag.whole_string);
-        }
-        // Clear fragment regardless of success
-        frag.clear();
-
-        Ok(())
-    }
-
     // Evaluate can be nested deeply
     // Disable caller for temporary
     /// Evaluate detected macro usage
@@ -976,14 +709,25 @@ print(p) <ARG> : Print variable
         let level = level + 1;
         // This parses and processes arguments
         // and macro should be evaluated after
-        let args = self.parse_chunk(level, name, raw_args)?;
+        let args = self.parse_chunk_lines(level, name, raw_args)?;
 
         #[cfg(feature = "debug")]
-        if self.debug_log { self.debug_print_log(&format!("{}: Name = \"{}\" Args = \"{}\"{}",level,name,raw_args,self.newline))?; }
+        if self.debug_log { 
+            self.debug_print_log(
+                &format!(
+                    "Level = \"{}\"{}Name = \"{}\"{}Args = \"{}\"{}",
+                    level,
+                    LINE_ENDING,
+                    name,
+                    LINE_ENDING,
+                    raw_args,
+                    LINE_ENDING,
+                )
+            )?; 
+        }
 
         // Possibly inifinite loop so warn user
         if caller == name {
-            println!("LEVEL : {}", &level);
             self.log_warning(&format!("Calling self, which is \"{}\", can possibly trigger infinite loop", name))?;
         }
 
@@ -1043,6 +787,22 @@ print(p) <ARG> : Print variable
         Ok(Some(result))
     }
 
+    /// Add custom rule to macro map
+    ///
+    /// This doesn't clear fragment
+    fn add_rule(&mut self, frag: &MacroFragment, remainder: &mut String) -> Result<(), RadError> {
+        if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
+            self.map.register(&name, &args, &body)?;
+        } else {
+            self.log_error(&format!(
+                    "Failed to register a macro : \"{}\"", 
+                    frag.args.split(',').collect::<Vec<&str>>()[0]
+            ))?;
+            remainder.push_str(&frag.whole_string);
+        }
+        Ok(())
+    }
+
     /// Write text to either file or standard output according to processor's write option
     fn write_to(&mut self, content: &str, container: &mut Option<&mut String>) -> Result<(), RadError> {
         // Don't try to write empty string, because it's a waste
@@ -1066,19 +826,269 @@ print(p) <ARG> : Print variable
         Ok(())
     }
 
-    #[cfg(feature = "debug")]
-    pub fn debug_wait_input(&self, log: &str, prompt: Option<&str>) -> Result<String, RadError> {
-        Ok(self.logger.dlog_command(log, prompt)?)
+    // ==========
+    // <LEX>
+    // Start of lex branch methods
+    // These are parse's sub methods for eaiser reading
+    fn lex_branch_literal(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, cursor: Cursor) {
+        match cursor {
+            // Exit frag
+            // If literal is given on names
+            Cursor::Name => {
+                frag.whole_string.push(ch);
+                remainder.push_str(&frag.whole_string);
+                frag.clear();
+            }
+            // Simply push if none or arg
+            Cursor::None => { remainder.push(ch); }
+            Cursor::Arg => { 
+                frag.args.push(ch); 
+                frag.whole_string.push(ch);
+            }
+        }
     }
-    #[cfg(feature = "debug")]
-    pub fn debug_print_log(&self,log : &str) -> Result<(), RadError> {
-        self.logger.dlog_print(log)?;
+
+    fn lex_branch_start_frag(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor) -> Result<(), RadError> {
+        #[cfg(feature = "debug")]
+        self.user_input_before_macro(&frag)?;
+
+        frag.whole_string.push(ch);
+
+        // If paused and not pause, then reset lexor context
+        if self.paused && frag.name != "pause" {
+            lexor.reset();
+            remainder.push_str(&frag.whole_string);
+            frag.clear();
+        }
+
         Ok(())
     }
-    #[cfg(feature = "debug")]
-    pub fn debug_print_command_result(&self,log : &str) -> Result<(), RadError> {
-        self.logger.dlog_print(log)?;
+
+    fn lex_branch_empty_name(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor) {
+        frag.whole_string.push(ch);
+        // If paused, then reset lexor context
+        self.logger.freeze_number(); 
+        if self.paused {
+            lexor.reset();
+            remainder.push_str(&frag.whole_string);
+            frag.clear();
+        }
+
+    }
+
+    fn lex_branch_add_to_remainder(&mut self, ch: char,remainder: &mut String) -> Result<(), RadError> {
+        if !self.checker.check(ch) {
+            self.logger.freeze_number();
+            self.log_warning("Unbalanced parenthesis detected.")?;
+        }
+        remainder.push(ch);
+
         Ok(())
+    }
+
+    fn lex_branch_add_to_frag(&mut self, ch: char,frag: &mut MacroFragment, cursor: Cursor) {
+        match cursor{
+            Cursor::Name => {
+                if frag.name.len() == 0 {
+                    self.logger.freeze_number();
+                }
+                match ch {
+                    '|' => frag.pipe = true,
+                    '+' => frag.greedy = true,
+                    '*' => frag.yield_literal = true,
+                    '^' => frag.trimmed = true,
+                    _ => frag.name.push(ch) 
+                }
+            },
+            Cursor::Arg => {
+                frag.args.push(ch)
+            },
+            _ => unreachable!(),
+        } 
+        frag.whole_string.push(ch);
+    }
+
+    fn lex_branch_end_frag(&mut self, ch: char, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize, caller: &str) -> Result<(), RadError> {
+        // Push character to whole string anyway
+        frag.whole_string.push(ch);
+        // define
+        if frag.name == "define" {
+            self.add_rule(frag, remainder)?;
+            lexor.escape_nl = true;
+            #[cfg(feature = "debug")]
+            {
+                // If debug switch target is next macro
+                // Stop and wait for input
+                // Only on main level macro
+                // TODO This behaviour might change later
+                if level == 0 { self.user_input_on_macro(&frag)?; }
+                else {self.user_input_on_step(&frag)?;}
+
+                // Clear line_caches
+                if level == 0 {
+                    self.line_caches.clear();
+                }
+            }
+            frag.clear();
+        } 
+        else { // Invoke macro
+
+            // Debug
+            #[cfg(feature = "debug")]
+            {
+                // If debug switch target is break point
+                // Set switch to next line.
+                self.break_point(frag)?;
+                // Break point is true , continue
+                if frag.name.len() == 0 {
+                    lexor.escape_nl = true;
+                    return Ok(());
+                }
+            }
+
+            // Try to evaluate
+            let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy);
+
+            // If panicked, this means unrecoverable error occured.
+            if let Err(error) = evaluation_result {
+                // this is equlvalent to conceptual if let not pattern
+                if let RadError::Panic = error{
+                    // Do nothing
+                    ();
+                } else {
+                    self.log_error(&format!("{}", error))?;
+                }
+                return Err(RadError::Panic);
+            }
+            // else it is ok to proceed.
+            // thus it is safe to unwrap it
+            if let Some(mut content) = evaluation_result.unwrap() {
+
+                // Debug
+                // Debug command after macro evaluation
+                // This goes to last line and print last line
+                #[cfg(feature = "debug")]
+                {
+                    // If debug switch target is next macro
+                    // Stop and wait for input
+                    // Only on main level macro
+                    // TODO This behaviour might change later
+                    if level == 0 {self.user_input_on_macro(&frag)?;}
+                    else {self.user_input_on_step(&frag)?;}
+
+                    // Clear line_caches
+                    if level == 0 {
+                        self.line_caches.clear();
+                    }
+                }
+
+                // If content is none
+                // Ignore new line after macro evaluation until any character
+                if content.len() == 0 {
+                    lexor.escape_nl = true;
+                } else {
+                    if frag.trimmed {
+                        content = Utils::trim(&content)?;
+                    }
+                    if frag.yield_literal {
+                        content = format!("\\*{}*\\", content);
+                    }
+                    // NOTE
+                    // This should come later!!
+                    if frag.pipe {
+                        self.pipe_value = content;
+                        lexor.escape_nl = true;
+                    } else {
+                        remainder.push_str(&content);
+                    }
+                }
+            } else { // Failed to invoke
+                // because macro doesn't exist
+
+                // If strict mode is set, every error is panic error
+                if self.strict {
+                    self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
+                    return Err(RadError::StrictPanic);
+                } 
+                // If purge mode is set, don't print anything 
+                // and don't print error
+                if !self.purge {
+                    self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
+                    remainder.push_str(&frag.whole_string);
+                } else {
+                    // If purge mode
+                    // set escape new line 
+                    lexor.escape_nl = true;
+                }
+            }
+            // Clear fragment regardless of success
+            frag.clear()
+        }
+
+        Ok(())
+    }
+
+    fn lex_branch_exit_frag(&mut self,ch: char, frag: &mut MacroFragment, remainder: &mut String) {
+        frag.whole_string.push(ch);
+        remainder.push_str(&frag.whole_string);
+        frag.clear();
+    }
+
+    // </LEX>
+    // End of lex branch methods
+    // ==========
+    // </PARSE>
+    // End of parse related methods
+    // ----------
+
+    // ----------
+    // Start of miscellaenous methods
+    // <MISC>
+    /// Get mutable reference of macro map
+    pub(crate) fn get_map(&mut self) -> &mut MacroMap {
+        &mut self.map
+    }
+
+    /// Change temp file target
+    pub(crate) fn set_temp_file(&mut self, path: &Path) {
+        self.temp_target = (path.to_owned(),OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(path)
+            .unwrap());
+    }
+
+    pub(crate) fn set_sandbox(&mut self) {
+        self.sandbox = true; 
+    }
+
+    /// Get temp file's path
+    pub(crate) fn get_temp_path(&self) -> &Path {
+        &self.temp_target.0
+    }
+
+    /// Get temp file's "file" struct
+    pub(crate) fn get_temp_file(&self) -> &File {
+        &self.temp_target.1
+    }
+
+    /// Backup information of current file before processing sandboxed input
+    fn backup(&self) -> SandboxBackup {
+        SandboxBackup { 
+            current_input: self.current_input.clone(), 
+            local_macro_map: self.map.local.clone(),
+            logger_lines: self.logger.backup_lines(),
+        }
+    }
+
+    /// Recover backup information into the processor
+    fn recover(&mut self, backup: SandboxBackup) {
+        // NOTE ::: Set file should come first becuase set_file override line number and character number
+        self.logger.set_file(&backup.current_input);
+        self.current_input = backup.current_input;
+        self.map.local= backup.local_macro_map; 
+        self.logger.recover_lines(backup.logger_lines);
     }
 
     /// Log error
@@ -1111,8 +1121,13 @@ print(p) <ARG> : Print variable
     pub fn add_custom_rules(&mut self, rules: HashMap<String, MacroRule>) {
         self.map.custom.extend(rules.into_iter());
     }
+
+    // End of miscellaenous methods
+    // </MISC>
+    // ----------
 }
 
+/// Struct for deinition parsing
 struct DefineParser{
     arg_cursor :DefineCursor,
     name: String,
@@ -1266,4 +1281,65 @@ enum DefineCursor {
 enum ParseIgnore {
     Ignore,
     None
+}
+
+/// Macro framgent that processor saves fragmented information of the mcaro invocation
+#[derive(Debug)]
+struct MacroFragment {
+    pub whole_string: String,
+    pub name: String,
+    pub args: String,
+    // Macroframgnet related options
+    pub pipe: bool,
+    pub greedy: bool,
+    pub preceding: bool,
+    pub yield_literal : bool,
+    pub trimmed : bool,
+}
+
+impl MacroFragment {
+    fn new() -> Self {
+        MacroFragment {
+            whole_string : String::new(),
+            name : String::new(),
+            args : String::new(),
+            pipe: false,
+            greedy: false,
+            preceding: false,
+            yield_literal : false,
+            trimmed: false,
+        }
+    }
+
+    fn clear(&mut self) {
+        self.whole_string.clear();
+        self.name.clear();
+        self.args.clear();
+        self.pipe = false; 
+        self.greedy = false; 
+        self.yield_literal = false;
+        self.trimmed = false; 
+    }
+
+    fn is_empty(&self) -> bool {
+        self.whole_string.len() == 0
+    }
+}
+
+#[derive(Debug)]
+enum ParseResult {
+    FoundMacro(String),
+    Printable(String),
+    NoPrint,
+    EOI,
+}
+
+/// Struct for backing current file and logging information
+///
+/// This is necessary because some macro processing should be executed in sandboxed environment.
+/// e.g. when include macro is called, outer file's information is not helpful at all.
+struct SandboxBackup {
+    current_input: String,
+    local_macro_map: HashMap<String,String>,
+    logger_lines: LoggerLines,
 }
