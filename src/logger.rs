@@ -2,8 +2,7 @@ use std::io::Write;
 #[cfg(feature = "debug")]
 use crossterm::{ExecutableCommand, terminal::ClearType};
 use crate::models::WriteOption;
-use crate::consts::LINE_ENDING;
-use crate::utils::Utils;
+use crate::consts::*;
 use colored::*;
 use crate::error::RadError;
 
@@ -17,11 +16,12 @@ pub(crate) struct Logger {
     write_option: Option<WriteOption>,
     error_count: usize,
     warning_count: usize,
-    on_chunk: bool,
+    chunked: usize,
     #[cfg(feature = "debug")]
     debug_interactive: bool,
 }
 /// Struct specifically exists for error loggers backup information
+#[derive(Debug)]
 pub(crate) struct LoggerLines {
     line_number: usize,
     char_number: usize,
@@ -40,18 +40,18 @@ impl Logger{
             write_option: None,
             error_count:0,
             warning_count:0,
-            on_chunk : false,
+            chunked : 0,
             #[cfg(feature = "debug")]
             debug_interactive: false,
         }
     }
     pub fn set_chunk(&mut self, switch: bool) {
         if switch {
-            self.on_chunk = true;
+            self.chunked = self.chunked + 1;
             self.line_number = 0;
             self.char_number = 0;
         } else {
-            self.on_chunk = false;
+            self.chunked = self.chunked - 1;
         }
     }
 
@@ -100,13 +100,14 @@ impl Logger{
     }
     /// Freeze line and char number for logging
     pub fn freeze_number(&mut self) {
-        self.last_line_number = self.line_number;
-        self.last_char_number = self.char_number;
-
-        if self.on_chunk {
+        if self.chunked > 0 {
             self.last_line_number = self.line_number + self.last_line_number;
             self.last_char_number = self.char_number + self.last_char_number;
+        } else {
+            self.last_line_number = self.line_number;
+            self.last_char_number = self.char_number;
         }
+        //self.print();
     }
 
     // TODO
@@ -172,6 +173,20 @@ impl Logger{
 
         Ok(())
     }
+    
+    #[cfg(feature = "debug")]
+    pub fn get_abs_last_line(&self) -> usize {
+        self.last_line_number
+    }
+
+    #[cfg(feature = "debug")]
+    pub fn get_abs_line(&self) -> usize {
+        if self.chunked > 0{
+            self.last_line_number + self.line_number - 1
+        } else {
+            self.line_number
+        }
+    }
 
     pub fn print_result(&mut self) -> Result<(), RadError> {
         if let Some(option) = &mut self.write_option {
@@ -215,7 +230,7 @@ impl Logger{
         let mut input = String::new();
         let prompt = if let Some(content) = prompt { content } else { "" };
         println!("{} : {}",format!("({})", &prompt.green()).green(), log);
-        print!("{} : ","(input)".green());
+        print!("> ");
         // Flush because print! is not "printed" yet
         std::io::stdout().flush()?;
 
@@ -225,6 +240,7 @@ impl Logger{
                 .execute(crossterm::terminal::EnableLineWrap)?;
         }
 
+        use crate::utils::Utils;
         // Get user input
         std::io::stdin().read_line(&mut input)?;
         if self.debug_interactive {
@@ -239,7 +255,7 @@ impl Logger{
     /// Log debug information
     #[cfg(feature = "debug")]
     pub fn dlog_print(&self, log : &str) -> Result<(), RadError> {
-        print!("{} ->> {}", format!("{}:{}", self.line_number,"log").green(), log);
+        print!("{} :{}{}", format!("{}:{}", self.line_number,"log").green(),LINE_ENDING,log);
         Ok(())
     }
 
@@ -261,9 +277,11 @@ impl Logger{
     }
 } 
 
+#[cfg(feature = "debug")]
 pub enum DebugSwitch {
+    UntilMacro,
     NextLine,
     NextMacro,
     StepMacro,
-    NextBrakePoint(String),
+    NextBreakPoint(String),
 }
