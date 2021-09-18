@@ -10,9 +10,6 @@ use crate::error::RadError;
 pub(crate) struct Logger {
     pub(crate) line_number: usize,
     pub(crate) char_number: usize,
-    // This is a varaible that calibrates char position when parent caller is same line with child
-    // caller find <OFFSET> for detailed explanation
-    pub(crate) char_offset_number: usize,
     pub(crate) last_line_number: usize,
     pub(crate) last_char_number: usize,
     current_file: String,
@@ -37,7 +34,6 @@ impl Logger{
         Self {
             line_number: 0,
             char_number: 0,
-            char_offset_number: 0,
             last_line_number: 0,
             last_char_number: 0,
             current_file: String::from("stdin"),
@@ -93,6 +89,7 @@ impl Logger{
     /// Increase line number
     pub fn add_line_number(&mut self) {
         self.line_number = self.line_number + 1;
+        self.char_number = 0;
     }
     /// Increase char number
     pub fn add_char_number(&mut self) {
@@ -106,17 +103,13 @@ impl Logger{
     pub fn freeze_number(&mut self) {
         if self.chunked > 0 {
             self.last_line_number = self.line_number + self.last_line_number;
-            //self.last_char_number = self.char_number + self.last_char_number;
+            // In the same line
+            if self.line_number == 0 {
+                self.last_char_number = self.char_number + self.last_char_number + 3;
+            } else {
+                self.last_char_number = self.char_number;
+            }
         } else {
-            // LINK <OFFSET>
-            // $if($test()) -> In this case,
-            // $if's last char is 2 while theortically $test()'s last char should be 6
-            // Freeze number is called while a cursor is positioned in (, which index is 4
-            // and inner argument parse starts from $ which index is 5
-            // Thus offset should be char - last char + 2 
-            // Constant is 2 not 1 because subtraction gets a value of "distance - 1"
-            // Other 1 is for un-calculated "(" character
-            self.char_offset_number = self.char_number - self.last_char_number + 2;
             self.last_line_number = self.line_number;
             self.last_char_number = self.char_number;
         }
@@ -136,11 +129,6 @@ impl Logger{
     pub fn elog(&mut self, log : &str) -> Result<(), RadError> {
         self.error_count = self.error_count + 1; 
         if let Some(option) = &mut self.write_option {
-            let last_char = if self.chunked > 0 && self.line_number == 0 {
-                self.last_char_number + self.char_offset_number
-            } else {
-                self.last_char_number
-            };
 
             match option {
                 WriteOption::File(file) => {
@@ -150,7 +138,7 @@ impl Logger{
                             log,
                             self.current_file,
                             self.last_line_number,
-                            last_char,
+                            self.last_char_number,
                             LINE_ENDING
                         ).as_bytes()
                     )?;
@@ -163,7 +151,7 @@ impl Logger{
                         LINE_ENDING,
                         self.current_file,
                         self.last_line_number,
-                        last_char,
+                        self.last_char_number,
                         LINE_ENDING);
                 }
             }
@@ -179,15 +167,9 @@ impl Logger{
     pub fn wlog(&mut self, log : &str) -> Result<(), RadError> {
         self.warning_count = self.warning_count + 1; 
         if let Some(option) = &mut self.write_option {
-            let last_char = if self.chunked > 0 && self.line_number == 0 {
-                self.last_char_number + self.char_offset_number
-            } else {
-                self.last_char_number
-            };
-
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(format!("warning : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, last_char,LINE_ENDING).as_bytes())?;
+                    file.write_all(format!("warning : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, self.last_char_number,LINE_ENDING).as_bytes())?;
                 }
                 WriteOption::Stdout => {
                     eprintln!(
@@ -197,7 +179,7 @@ impl Logger{
                         LINE_ENDING,
                         self.current_file,
                         self.last_line_number,
-                        last_char);
+                        self.last_char_number);
                 }
             }
         } else {
