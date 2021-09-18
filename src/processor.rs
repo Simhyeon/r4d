@@ -352,6 +352,17 @@ impl Processor {
     // ===========
     // Debug related methods
     // <DEBUG>
+    
+    #[cfg(feature = "debug")]
+    fn is_local(&self, mut level: usize, name: &str) -> bool {
+        while level > 0 {
+            if self.map.local.contains_key(&Utils::local_name(level, &name)) {
+                return true;
+            }
+            level = level - 1;
+        }
+        false
+    }
 
     // This function can be used in non debug feature
     /// Process breakpoint
@@ -406,7 +417,7 @@ impl Processor {
     /// Prompt user input until break condition has been met
     fn user_input_prompt(&mut self, frag: &MacroFragment, initial_prompt: &str) -> Result<(), RadError> {
         let mut do_continue = true;
-        let mut log = self.line_caches.get(&self.line_number).unwrap().to_owned();
+        let mut log = self.line_caches.get(&self.logger.get_abs_last_line()).unwrap().to_owned();
         let mut prompt = initial_prompt;
         while do_continue {
             let input = self.debug_wait_input(
@@ -677,18 +688,13 @@ impl Processor {
     fn parse_chunk_body(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
+        let backup = self.logger.backup_lines();
 
         // NOTE
         // Parse's final argument is some kind of legacy of previous logics
         // However it can detect self calling macros in some cases
         let result = self.parse(&mut lexor, &mut frag, &chunk, level, caller)?;
-
-        // TODO
-        // Is this code necessary?
-        // Add remainders to result
-        //if !frag.is_empty() {
-            //result.push_str(&frag.whole_string);
-        //}
+        self.logger.recover_lines(backup);
         return Ok(result);
     } // parse_chunk end
 
@@ -1004,7 +1010,7 @@ impl Processor {
                 // Debug command after macro evaluation
                 // This goes to last line and print last line
                 #[cfg(feature = "debug")]
-                {
+                if !self.is_local(level + 1, &frag.name) {
                     // If debug switch target is next macro
                     // Stop and wait for input
                     // Only on main level macro
@@ -1331,6 +1337,7 @@ struct MacroFragment {
     pub whole_string: String,
     pub name: String,
     pub args: String,
+
     // Macroframgnet related options
     pub pipe: bool,
     pub greedy: bool,
