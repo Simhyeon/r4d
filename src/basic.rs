@@ -355,12 +355,12 @@ impl BasicMacro {
             let trimmed_cond = Utils::trim(boolean)?;
             if let Ok(cond) = trimmed_cond.parse::<bool>() {
                 if cond { 
-                    let result = processor.parse_chunk_lines(0, &MAIN_CALLER.to_owned(), if_state)?;
+                    let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), if_state)?;
                     return Ok(result); 
                 }
             } else if let Ok(number) = trimmed_cond.parse::<i32>() {
                 if number != 0 { 
-                    let result = processor.parse_chunk_lines(0, &MAIN_CALLER.to_owned(), if_state)?;
+                    let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), if_state)?;
                     return Ok(result); 
                 }
             } else {
@@ -387,12 +387,12 @@ impl BasicMacro {
             let trimmed_cond = Utils::trim(boolean)?;
             if let Ok(cond) = trimmed_cond.parse::<bool>() {
                 if cond { 
-                    let result = processor.parse_chunk_lines(0, &MAIN_CALLER.to_owned(), if_state)?;
+                    let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), if_state)?;
                     return Ok(result); 
                 }
             } else if let Ok(number) = trimmed_cond.parse::<i32>() {
                 if number != 0 { 
-                    let result = processor.parse_chunk_lines(0, &MAIN_CALLER.to_owned(), if_state)?;
+                    let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), if_state)?;
                     return Ok(result); 
                 }
             } else {
@@ -401,7 +401,7 @@ impl BasicMacro {
 
             // Else state
             let else_state = &args[2];
-            let result = processor.parse_chunk_lines(0, &MAIN_CALLER.to_owned(), else_state)?;
+            let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), else_state)?;
             return Ok(result);
         } else {
             Err(RadError::InvalidArgument("ifelse requires three argument".to_owned()))
@@ -461,7 +461,7 @@ impl BasicMacro {
             let loopable = &args[0];
 
             for value in loopable.split(',') {
-                let result = processor.parse_chunk_lines(0, &MAIN_CALLER.to_owned(), &target.replace("$:", value))?;
+                let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), &target.replace("$:", value))?;
                 sums.push_str(&result);
             }
             Ok(sums)
@@ -490,7 +490,7 @@ impl BasicMacro {
             } else { return Err(RadError::InvalidArgument("Forloop's min value should be non zero positive integer".to_owned())); }
             
             for value in min..=max {
-                let result = processor.parse_chunk_lines(0, &MAIN_CALLER.to_owned(), &expression.replace("$:", &value.to_string()))?;
+                let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), &expression.replace("$:", &value.to_string()))?;
                 sums.push_str(&result);
             }
 
@@ -514,7 +514,7 @@ impl BasicMacro {
 
             let result = Formatter::csv_to_macros(macro_name, macro_data, &processor.newline)?;
             // This is necessary
-            let result = processor.parse_chunk_lines(0, &MAIN_CALLER.to_owned(), &result)?;
+            let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), &result)?;
             Ok(result)
         } else {
             Err(RadError::InvalidArgument("From requires two arguments".to_owned()))
