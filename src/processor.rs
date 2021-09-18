@@ -265,7 +265,7 @@ impl Processor {
         self.set_file(path.to_str().unwrap())?;
 
         let file_stream = File::open(path)?;
-        let mut reader = io::BufReader::new(file_stream);
+        let mut reader = BufReader::new(file_stream);
         self.from_buffer(&mut reader)
     }
 
@@ -363,19 +363,27 @@ impl Processor {
         Ok(())
     }
 
+    // Though this implementation is same with user_input_prompt
+    // I thought modifying user_input_prompt isn't worth.
     #[cfg(feature = "debug")]
     fn user_input_on_start(&mut self) -> Result<(), RadError> {
         // Stop by lines if debug option is lines
         if self.debug {
 
-            // This technically strips newline feed regardless of platforms 
-            // It is ok to simply convert to a single line because it is logically a single
-            // line
-            let input = self.debug_wait_input("Default command is nextline",Some(&self.current_input))?;
-            // Strip newline
-            let input = input.lines().next().unwrap();
+            let mut log = "Default is next. Ctrl + c to exit.".to_owned();
+            let mut prompt = self.current_input.as_str();
+            let mut do_continue = true;
+            while do_continue {
+                // This technically strips newline feed regardless of platforms 
+                // It is ok to simply convert to a single line because it is logically a single
+                // line
+                let input = self.debug_wait_input(&log, Some(prompt))?;
+                // Strip newline
+                let input = input.lines().next().unwrap();
 
-            self.parse_debug_command_and_continue(&input, None, &mut String::new())?;
+                do_continue = self.parse_debug_command_and_continue(&input, None, &mut log)?;
+                prompt = "output";
+            }
         }
         Ok(())
     }
@@ -459,8 +467,8 @@ impl Processor {
             } else {
                 return Ok(()); // Return early
             }
+            self.user_input_prompt(frag, "step")?;
         }
-        self.user_input_prompt(frag, "step")?;
         Ok(())
     }
 
@@ -553,6 +561,9 @@ impl Processor {
                         } 
                     } // end inner match
                 } // End if let
+                else { // No fragment which means it is the start of file
+                    return Ok(false);
+                }
 
                 // Get user input again
                 return Ok(true); 
@@ -621,8 +632,8 @@ impl Processor {
         }
     } // parse_line end
 
-    /// Parse chunk lines is called by non-main process, thus needs caller
-    pub(crate) fn parse_chunk_lines(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
+    /// Parse chunk args by separating it into lines which implements BufRead
+    pub(crate) fn parse_chunk_args(&mut self, level: usize, _caller: &str, chunk: &str) -> Result<String, RadError> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
         let mut result = String::new();
@@ -630,10 +641,14 @@ impl Processor {
         self.logger.set_chunk(true);
         for line in Utils::full_lines(chunk.as_bytes()) {
             let line = line?;
-            result = self.parse(&mut lexor, &mut frag, &line, level, caller)?;
-            if !frag.is_empty() {
-                result.push_str(&frag.whole_string);
-            }
+
+            // NOTE
+            // Parse's final argument is some kind of legacy of previous logics
+            // However it can detect self calling macros in some cases
+            // parse_chunk_body needs this caller but, parse_chunk_args doesn't need because
+            // this methods only parses arguments thus, infinite loop is unlikely to happen
+            result.push_str(&self.parse(&mut lexor, &mut frag, &line, level, "")?);
+
             self.logger.add_line_number();
         }
         self.logger.set_chunk(false);
@@ -641,18 +656,25 @@ impl Processor {
         return Ok(result);
     } // parse_chunk_lines end
 
-    /// Parse chunk is called by non-main process, thus needs caller
-    ///
+    /// Parse chunk body without separating lines
+    /// 
     /// In contrast to parse_chunk_lines, parse_chunk doesn't create lines iterator but parses the
     /// chunk as a single entity or line.
-    pub(crate) fn parse_chunk(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
+    fn parse_chunk_body(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
-        let mut result = self.parse(&mut lexor, &mut frag, &chunk, level, caller)?;
+
+        // NOTE
+        // Parse's final argument is some kind of legacy of previous logics
+        // However it can detect self calling macros in some cases
+        let result = self.parse(&mut lexor, &mut frag, &chunk, level, caller)?;
+
+        // TODO
+        // Is this code necessary?
         // Add remainders to result
-        if !frag.is_empty() {
-            result.push_str(&frag.whole_string);
-        }
+        //if !frag.is_empty() {
+            //result.push_str(&frag.whole_string);
+        //}
         return Ok(result);
     } // parse_chunk end
 
@@ -709,7 +731,7 @@ impl Processor {
         let level = level + 1;
         // This parses and processes arguments
         // and macro should be evaluated after
-        let args = self.parse_chunk_lines(level, name, raw_args)?;
+        let args = self.parse_chunk_args(level, name, raw_args)?;
 
         #[cfg(feature = "debug")]
         if self.debug_log { 
@@ -782,7 +804,7 @@ impl Processor {
             self.map.new_local(level + 1, arg_type ,&args[idx]);
         }
         // Process the rule body
-        let result = self.parse_chunk(level, &name, &rule.body)?;
+        let result = self.parse_chunk_body(level, &name, &rule.body)?;
 
         Ok(Some(result))
     }
