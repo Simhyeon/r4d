@@ -1,5 +1,6 @@
+
 help(p)           : Print this help
-next(n)           : Next line
+next(n,\n)        : Next line
 macro(m)          : Next macro
 step(s)           : Next macro including nested
 until(u)          : Next macro but before invocation
