@@ -1,4 +1,4 @@
-use std::io::{self, BufReader, Write};
+use std::io::{self, BufReader, Read, Write};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::{ Path , PathBuf};
@@ -245,15 +245,29 @@ impl Processor {
     /// Read from string
     pub fn from_string(&mut self, content: &str) -> Result<String, RadError> {
         // Set name as string
-        self.set_file("String")?;
+        self.set_input("String")?;
 
         let mut reader = content.as_bytes();
         self.from_buffer(&mut reader)
     }
 
     /// Read from standard input
+    ///
+    /// If debug mode is enabled this, doesn't read stdin line by line but by chunk because user
+    /// input is also a standard input and processor cannot distinguish the two
     pub fn from_stdin(&mut self) -> Result<String, RadError> {
-        let stdin = io::stdin();
+        let mut stdin = io::stdin();
+
+        // Early return if debug
+        // This read whole chunk of string 
+        #[cfg(feature = "debug")]
+        if self.debug {
+            let mut input = String::new();
+            stdin.lock().read_to_string(&mut input)?;
+            // This is necessary to prevent unexpected output from being captured.
+            return self.from_buffer(&mut input.as_bytes());
+        }
+
         let mut reader = stdin.lock();
         self.from_buffer(&mut reader)
     }
@@ -1136,6 +1150,12 @@ impl Processor {
             self.logger.set_file(file);
             Ok(())
         }
+    }
+
+    fn set_input(&mut self, input: &str) -> Result<(), RadError> {
+        self.current_input = input.to_owned();
+        self.logger.set_file(input);
+        Ok(())
     }
 
     /// Add custom rules without builder pattern

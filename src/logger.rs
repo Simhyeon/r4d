@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::io::{Write, BufRead};
 #[cfg(feature = "debug")]
 use crossterm::{ExecutableCommand, terminal::ClearType};
 use crate::models::WriteOption;
@@ -265,18 +265,19 @@ impl Logger{
         let prompt = if let Some(content) = prompt { content } else { "" };
         println!("{} : {}",format!("({})", &prompt.green()).green(), log);
         print!(">> ");
-        // Flush because print! is not "printed" yet
-        std::io::stdout().flush()?;
 
         // Restore wrapping
         if self.debug_interactive {
             std::io::stdout()
                 .execute(crossterm::terminal::EnableLineWrap)?;
         }
+        // Flush because print! is not "printed" yet
+        std::io::stdout().flush()?;
 
         use crate::utils::Utils;
         // Get user input
-        std::io::stdin().read_line(&mut input)?;
+        let stdin = std::io::stdin();
+        stdin.lock().read_line(&mut input)?;
         if self.debug_interactive {
             // Clear user input line
             // Preceding 1 is for "(input)" prompt
