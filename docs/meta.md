@@ -1,32 +1,6 @@
 ### TODOs
 
-* [ ] Print line doesn't work as intended
-- This is because macro execution is not top from to bottom but from bottom to
-top, which means that inner macro expanded when outer macro fragment is
-completed, which makes line_cache points to strange place.
-- This has been addressed with interactive forme, but needs more abstraction
-
-* [ ] Change logic of infinite loop warning, so that it onlys warns on body expansion
-- Maybe not to easy to do so, or doesn't worth it
 * [ ] New debug mode documentation
-* [x] Make chunk_line chunk_char for more detailed debuggin and error logging
-- Also parse_chunk calls freeze_number which makes error debugging hard to watch
-- This was actually not so hard, surprisingly
-* [x] Make interactive flag which toggles text wrapping 
-* [x] Make BR as not an error but a warning
-* [x] Non printing macro do print empty space in debug mode
-- $BR() evaluates to newline character fixed it
-* [ ] Log flag with debug flag yield strange output
-- Line after macro evaluation is duplicated
-
-* [ ] Add debugger
-  * [x] Lines option
-  * [x] log option
-  - Log every evaluation 
-  * [ ] Debug command
-    * [ ] print, help
-	* [ ] step 
-  * [ ] Brake point
 
 * [ ] Escape rule is very inconsistent
 - In arg parsing it consumes and set ending parenthesis literal
@@ -66,9 +40,40 @@ definition, it can't find full macro invocation because rust regex cannot find
 balanced match (No subregex or recursive match). This is due to the fact that rust 
 regex crate complies with pure regex standard.
 
-My next approach will be pest. Pest has somewhat unfamailiar syntax but if used only for a line it would be fine.
+My next approach will be pest. Pest has somewhat unfamailiar syntax but if used
+only for a line it would be fine.
 
 ### DONE
+
+* [-] Check if parse_chunk_lines acts as intended in basic macros
+* [x] Change logic of infinite loop warning, so that it onlys warns on body
+expansion
+
+* [-] Check if lexresult::Discard is ane behaviour
+- This is ok because discard is only called when escape_nl has been set which
+means it succeeded evaluation
+* [x] Print line doesn't work as intended
+* [x] Refactor from_yatti_yatta series into single method
+* [x] Complete span command
+- Remove unused caches
+* [x] Make chunk_line chunk_char for more detailed debuggin and error logging
+- Also parse_chunk calls freeze_number which makes error debugging hard to watch
+- This was actually not so hard, surprisingly
+* [x] Make interactive flag which toggles text wrapping 
+* [x] Make BR as not an error but a warning
+* [x] Non printing macro do print empty space in debug mode
+- $BR() evaluates to newline character fixed it
+* [x] Log flag with debug flag yield strange output
+- Line after macro evaluation is duplicated
+
+* [x] Add debugger
+  * [x] Lines option
+  * [x] log option
+  - Log every evaluation 
+  * [x] Debug command
+    * [x] print, help
+	* [x] step 
+  * [x] Breakpoint
 
 * [x] If, ifelse is not so friendly with deterred macro
 - Just remove it
@@ -187,11 +192,14 @@ to add number and not
 	  * [x] Multiple macro in multiple lines
 	  * [x] Multiple macro in multiple fragmented lines
 	  * [x] Make custom macro works
-	    - Invocation should be also another 
-		- Thus "MacroMap"'s evaluation logic should be located in processor not in Macromap itself
+		- Invocation should be also another 
+		- Thus "MacroMap"'s evaluation logic should be located in processor not
+		in Macromap itself
 	  * [x] Make nested invocation work
-	    * [x] When definition includes nestedness -> This is evaluated on invocation
-		* [x] When invocation includes nestedness -> This is evaluated with method name "evaluate"
+		* [x] When definition includes nestedness -> This is evaluated on
+		invocation
+		* [x] When invocation includes nestedness -> This is evaluated with
+		method name "evaluate"
   * [x] Print evaluated macro substitution
   * [x] Print failed macro  
   * [x] Print a line which as multiple macros in a line
@@ -217,8 +225,10 @@ to add number and not
   * [x] Syscmd macro
   * [x] Time macro
   * [x] Undefine macro
-- This needs sincere consideration because this binary targets alpine which is not necessarily easy to combine openssl library.
-- Thus using using curl command through std::process::Command might be a global choice
+- This needs sincere consideration because this binary targets alpine which is
+not necessarily easy to combine openssl library.
+- Thus using using curl command through std::process::Command might be a global
+choice
   * [x] Include macro
   * [x] Repeat macro -> Same thing
   * [x] Foreach loop

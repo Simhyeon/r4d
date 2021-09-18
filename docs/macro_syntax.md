@@ -275,3 +275,15 @@ error: Invalid argument
  --> test:3:2
 Processor panicked, exiting...
 ```
+
+### Debugs
+
+**Breakpoint**
+
+```BR``` is reserved for debugging usage. You cannot override breakpoint.
+
+```
+$BR()
+```
+
+Using BR macro outside debug mode is not an error but warning.

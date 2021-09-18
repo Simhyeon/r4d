@@ -39,12 +39,15 @@ printf '...text...' | rad
 
 # Use following options to decide error behaviours
 # default is stderr
-rad -e FileToWriteError.txt # Log error to file
-rad -s # Suppress error and warnings
-rad -S # Strict mode makes every error panicking
-rad -n # Always use unix newline (default is '\r\n' in windows platform)
-rad -p # Purge mode, print nothing if a macro doesn't exist
-rad -g # Always enable greedy for every macro invocation
+-e <FILE> # Log error to <FILE>
+-s # Suppress error and warnings
+-S # Strict mode makes every error panicking
+-n # Always use unix newline (default is '\r\n' in windows platform)
+-p # Purge mode, print nothing if a macro doesn't exist
+-g # Always enable greedy for every macro invocation
+-d # Start debug mode
+-l # Print all macro invocation logs
+-i # Start debug mode as interactive, this makes stdout unwrapped
 
 # Freeze(zip to binary) rules to a single file
 rad test -f frozen.r4f
@@ -75,7 +78,6 @@ rad = { version = "0.5", features = ["full"] }
 ```rust
 use rad::RadError;
 use rad::Processor
-use rad::DebugOption;
 
 // Every option is not mendatory
 let processor = Processor::new()
@@ -83,11 +85,14 @@ let processor = Processor::new()
 	.greedy(true)
 	.silent(true)
 	.strict(true)
-	.debug(Some(vec![DebugOption::Lines])) // Print line by line 
 	.custom_rules(Some(vec![pathbuf])) // Read from frozen rule files
 	.write_to_file(Some(pathbuf))? // default is stdout
 	.error_to_file(Some(pathbuf))? // default is stderr
 	.unix_new_line(true) // use unix new line for formatting
+	// Debugging options
+	.debug(true) // Turn on debug mode
+	.log(true) // Use logging to terminal
+	.interactive(true) // Use interactive mode
 	.build(); // Create unreferenced instance
 
 processor.from_string(r#"$define(test=Test)"#);
@@ -100,6 +105,10 @@ processor.print_result(); // Print out warning and errors count
 ### Syntax 
 
 [Macro syntax](./docs/macro_syntax.md)
+
+### How to debug
+
+[Debug](./docs/debug.md)
 
 ### Goal
 
