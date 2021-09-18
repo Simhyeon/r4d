@@ -50,7 +50,9 @@ impl Cli {
         // Debug
         // Clear terminal cells
         #[cfg(feature = "debug")]
-        Utils::clear_terminal()?;
+        if args.is_present("debug") {
+            Utils::clear_terminal()?;
+        }
 
         // ========
         // Main options
