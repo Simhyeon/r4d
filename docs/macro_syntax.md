@@ -109,12 +109,10 @@ Name : Jane
 **NOTE**
 
 An unbalanced parenthesis changes the behaviour of macro invocation and a
-non-double-quoted comma will change the number or content of arguments. If
-desirable content includes unbalanced parentheses or commas, enclose the body
-with string literal with the syntax of ```\* TEXT GOES HERE *\```, yet literal
-inside macro body will printed as is. Or put escape character before ending
-parenthesis, though this won't work in macro definition.
-
+non-escaped comma will change the number or content of arguments. If desirable
+content includes unbalanced parentheses or commas, enclose the body with string
+literal with the syntax of ```\* TEXT GOES HERE *\```, by the way literal
+inside macro body will printed as is. 
 ```
 $repeat(2,I'm,comma,separated
 )
@@ -125,10 +123,12 @@ To include commas you need to enclose with string literal
 ```
 $repeat(2,\*I'm,comma,separated*\
 )
+// Easier alternative is greddy attribute in this case
+$repeat+(2,I'm,comma,separated)
 ===
 I'm,comma,separated
 I'm,comma,separated
-
+// Result is same
 ```
 ### Doublely evaluated macros
 
