@@ -110,14 +110,13 @@ impl Logger{
     pub fn reset_char_number(&mut self) {
         self.char_number = 0;
     }
+
     /// Freeze line and char number for logging
     pub fn freeze_number(&mut self) {
         if self.chunked > 0 {
             self.last_line_number = self.line_number + self.last_line_number;
             // In the same line
-            if self.line_number == 0 {
-                self.last_char_number = self.char_number + self.last_char_number + 3;
-            } else {
+            if self.line_number != 0 {
                 self.last_char_number = self.char_number;
             }
         } else {
@@ -133,9 +132,21 @@ impl Logger{
         println!("LINE : {}", self.line_number);
     }
 
+    /// Try getting last character
+    ///
+    /// This will have trailing ```->``` if caller macro and callee macro is in same line
+    fn try_get_last_char(&self) -> String {
+        if self.chunked > 0 && self.line_number == 0 {
+            format!("{}->",self.last_char_number)
+        }  else {
+            self.last_char_number.to_string()
+        }
+    }
+
     /// Log error
     pub fn elog(&mut self, log : &str) -> Result<(), RadError> {
         self.error_count = self.error_count + 1; 
+        let last_char = self.try_get_last_char();
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
@@ -145,7 +156,7 @@ impl Logger{
                             log,
                             self.current_file,
                             self.last_line_number,
-                            self.last_char_number,
+                            last_char,
                             LINE_ENDING
                         ).as_bytes()
                     )?;
@@ -158,7 +169,7 @@ impl Logger{
                         LINE_ENDING,
                         self.current_file,
                         self.last_line_number,
-                        self.last_char_number,
+                        last_char,
                         LINE_ENDING
                     );
                 }
@@ -171,6 +182,7 @@ impl Logger{
     /// Log warning
     pub fn wlog(&mut self, log : &str) -> Result<(), RadError> {
         self.warning_count = self.warning_count + 1; 
+        let last_char = self.try_get_last_char();
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
@@ -180,7 +192,7 @@ impl Logger{
                             log,
                             self.current_file,
                             self.last_line_number,
-                            self.last_char_number,
+                            last_char,
                             LINE_ENDING
                         ).as_bytes()
                     )?;
@@ -192,7 +204,7 @@ impl Logger{
                         log,
                         LINE_ENDING,
                         self.current_file,
-                        self.last_line_number,
+                        last_char,
                         self.last_char_number
                     );
                 }
