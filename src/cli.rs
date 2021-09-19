@@ -4,7 +4,7 @@
 //! Cli module is only included in binary feature flag.
 
 use clap::clap_app;
-use crate::error::RadError;
+use crate::{error::RadError, processor::auth::AuthType};
 use crate::processor::Processor;
 use crate::utils::Utils;
 use std::path::{Path, PathBuf};
@@ -14,6 +14,8 @@ pub struct Cli{
     rules: Option<Vec<PathBuf>>,
     write_to_file : Option<PathBuf>,
     error_to_file : Option<PathBuf>,
+    allow_auth: Option<Vec<AuthType>>,
+    allow_auth_warn: Option<Vec<AuthType>>,
 }
 
 impl Cli {
@@ -23,6 +25,8 @@ impl Cli {
             rules: None,
             write_to_file : None,
             error_to_file : None,
+            allow_auth : None,
+            allow_auth_warn : None,
         }
     }
 
@@ -39,16 +43,18 @@ impl Cli {
     fn run_processor(&mut self, args: & clap::ArgMatches) -> Result<(), RadError> {
 
         self.parse_options(args);
-
         // Build processor
         let mut processor = Processor::new()
             .purge(args.is_present("purge"))
             .greedy(args.is_present("greedy"))
             .strict(args.is_present("greedy"))
             .silent(args.is_present("silent"))
+            .allow(std::mem::replace(&mut self.allow_auth,None))?
+            .allow_with_warning(std::mem::replace(&mut self.allow_auth_warn,None))?
             .unix_new_line(args.is_present("newline"))
             .custom_rules(std::mem::replace(&mut self.rules,None))?
             .write_to_file(std::mem::replace(&mut self.write_to_file,None))?
+            .discard(args.is_present("discard"))?
             .error_to_file(std::mem::replace(&mut self.error_to_file,None))?
             .debug(args.is_present("debug"))?
             .log(args.is_present("log"))?
@@ -109,6 +115,18 @@ impl Cli {
         self.error_to_file = if let Some(error_file) = args.value_of("error") {
             Some(PathBuf::from(error_file))
         } else { None };
+
+        self.allow_auth = if let Some(auths) = args.value_of("allow") {
+            auths.split("+").map(|s| AuthType::from(s)).collect()
+        } else { None };
+
+        self.allow_auth_warn = if let Some(auths) = args.value_of("allow_warn") {
+            auths.split("+").map(|s| AuthType::from(s)).collect()
+        } else { None };
+
+        if args.is_present("allow_all") {
+            self.allow_auth = Some(vec![AuthType::IO, AuthType::ENV, AuthType::CMD]);
+        }
     }
 
     /// Creates argument template wich clap macro
@@ -129,6 +147,10 @@ impl Cli {
             (@arg log: -l --log "Debug log mode")
             (@arg interactive: -i --interactive "Use interactive debug mode")
             (@arg combination: -c "Read from both stdin and file inputs")
+            (@arg discard: -D --discard "Discard output without prin out")
+            (@arg allow: -a +takes_value "Allow permission (io|cmd|env)")
+            (@arg allow_warn: -w +takes_value "Allow permission with warnings (io|cmd|env)")
+            (@arg allow_all: -A "Allow all permission")
             (@arg silent: -s "Supress error and warning")
             (@arg newline: -n "Use unix newline for formatting")
         ).get_matches()
