@@ -86,6 +86,7 @@ let processor = Processor::new()
     .custom_rules(Some(vec![Pathbuf::from("rule.r4f")])) // Read from frozen rule files
     .write_to_file(Some(PathBuf::from("out.txt")))?      // default is stdout
     .error_to_file(Some(PathBuf::from("err.txt")))?      // default is stderr
+    .discard(true)?                                      // discard all output
     .unix_new_line(true)                                 // use unix new line for formatting
     // Permission
     .allow(Some(vec![AuthType::ENV]))

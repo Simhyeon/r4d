@@ -49,6 +49,7 @@
 //! module](crate::processor)
 
 mod error;
+// This is necessary for docs.rs documentation
 pub mod processor;
 
 pub(crate) mod basic;
@@ -61,6 +62,7 @@ pub(crate) mod logger;
 
 pub use error::RadError;
 pub use basic::MacroType;
+pub use processor::Processor;
 pub use processor::auth::AuthType;
 
 // Optional

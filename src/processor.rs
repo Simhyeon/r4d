@@ -25,6 +25,7 @@
 //!     .write_to_file(Some(PathBuf::from("out.txt")))?      // default is stdout
 //!     .error_to_file(Some(PathBuf::from("err.txt")))?      // default is stderr
 //!     .unix_new_line(true)                                 // use unix new line for formatting
+//!     .discard(true)?                                      // discard all output
 //!     // Permission
 //!     .allow(Some(vec![AuthType::ENV]))
 //!     .allow_with_warning(Some(vec![AuthType::CMD]))
