@@ -6,6 +6,51 @@
 //! untouched string back if not found any. 
 //!
 //! Processor can handle various types of inputs (string|stdin|file)
+//!
+//! # Detailed usage
+//! ```rust
+//! use rad::RadError;
+//! use rad::Processor;
+//! use rad::MacroType;
+//! use rad::auth::AuthType;
+//! use std::path::{Path, PathBuf};
+//! 
+//! // Builder
+//! let processor = Processor::new()
+//!     .purge(true)
+//!     .greedy(true)
+//!     .silent(true)
+//!     .strict(true)
+//!     .custom_rules(Some(vec![Pathbuf::from("rule.r4f")])) // Read from frozen rule files
+//!     .write_to_file(Some(PathBuf::from("out.txt")))?      // default is stdout
+//!     .error_to_file(Some(PathBuf::from("err.txt")))?      // default is stderr
+//!     .unix_new_line(true)                                 // use unix new line for formatting
+//!     // Permission
+//!     .allow(Some(vec![AuthType::ENV]))
+//!     .allow_with_warning(Some(vec![AuthType::CMD]))
+//!     // Debugging options
+//!     .debug(true)                                         // Turn on debug mode
+//!     .log(true)                                           // Use logging to terminal
+//!     .interactive(true)                                   // Use interactive mode
+//!     // Create unreferenced instance
+//!     .build(); 
+//! 
+//! // Use Processor::empty() instead of Processor::new()
+//! // if you don't want any default macros
+//! 
+//! // Add basic rules(= register functions)
+//! // test function is not included in this demo
+//! processor.add_basic_rules(vec![("test", test as MacroType)]);
+//! 
+//! // Add custom rules(in order of "name, args, body") 
+//! processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
+//! 
+//! processor.from_string(r#"$define(test=Test)"#);
+//! processor.from_stdin();
+//! processor.from_file(Path::new("from.txt"));
+//! processor.freeze_to_file(Path::new("out.r4f")); // Create frozen file
+//! processor.print_result();                       // Print out warning and errors count
+//! ```
 
 use auth::{AuthType, AuthFlags, AuthState};
 #[cfg(feature = "debug")]
@@ -1075,7 +1120,6 @@ impl Processor {
                 // If debug switch target is next macro
                 // Stop and wait for input
                 // Only on main level macro
-                // TODO This behaviour might change later
                 if level == 0 { self.user_input_on_macro(&frag)?; }
                 else {self.user_input_on_step(&frag)?;}
 
@@ -1127,7 +1171,6 @@ impl Processor {
                     // If debug switch target is next macro
                     // Stop and wait for input
                     // Only on main level macro
-                    // TODO This behaviour might change later
                     if level == 0 {self.user_input_on_macro(&frag)?;}
                     else {self.user_input_on_step(&frag)?;}
 
@@ -1529,9 +1572,13 @@ struct SandboxBackup {
     logger_lines: LoggerLines,
 }
 
+/// Authorization(Permission)
+///
+/// Permission should be given for some basic macro types
 pub mod auth {
     #[derive(Debug)]
-    pub struct AuthFlags{
+    /// Struct that stores auth states
+    pub(crate) struct AuthFlags{
         auths: Vec<AuthState>,
     }
 
@@ -1557,17 +1604,20 @@ pub mod auth {
     }
 
     #[derive(Debug, Clone, Copy)]
+    /// Authorization type
     pub enum AuthType {
         ENV = 0,
-        IO = 1,
-        CMD = 2,
-        LEN = 3,
+        FIN = 1,
+        FOUT = 2,
+        CMD = 3,
+        LEN = 4,
     }
 
     impl AuthType {
         pub fn from(string: &str) -> Option<Self> {
             match string.to_lowercase().as_str() {
-                "io" =>  Some(Self::IO),
+                "fin" =>  Some(Self::FIN),
+                "fout" =>  Some(Self::FOUT),
                 "cmd" => Some(Self::CMD),
                 "env" => Some(Self::ENV),
                 _ => None
@@ -1576,7 +1626,8 @@ pub mod auth {
     }
 
     #[derive(Clone, Copy, Debug)]
-    pub enum AuthState {
+    /// Current state authorization
+    pub(crate) enum AuthState {
         Restricted,
         Warn,
         Open,
