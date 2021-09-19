@@ -15,7 +15,6 @@ R4d's will reach 1.0 only when followings are resolved.
 - Consistent parenthesis rules
 - Absence of critical bugs
 - No possiblity of basic macro changes
-- (maybe) Library feature to extend basic macros
 
 ### Usage
 
@@ -41,12 +40,17 @@ printf '...text...' | rad
 -e <FILE> # Log error to <FILE>
 -s # Suppress error and warnings
 -S # Strict mode makes every error panicking
--n # Always use unix newline (default is '\r\n' in windows platform)
--p # Purge mode, print nothing if a macro doesn't exist
--g # Always enable greedy for every macro invocation
+
+# Use following options to decide deubbing behaviours
+# default is not to debug
 -d # Start debug mode
 -l # Print all macro invocation logs
 -i # Start debug mode as interactive, this makes stdout unwrapped
+
+# Other flags
+-n # Always use unix newline (default is '\r\n' in windows platform)
+-p # Purge mode, print nothing if a macro doesn't exist
+-g # Always enable greedy for every macro invocation
 
 # Freeze(zip to binary) rules to a single file
 rad test -f frozen.r4f
@@ -76,23 +80,34 @@ rad = { version = "0.5", features = ["full"] }
 **rust file**
 ```rust
 use rad::RadError;
-use rad::Processor
+use rad::Processor;
+use rad::MacroType;
 
 // Every option is not mendatory
 let processor = Processor::new()
-	.purge(true)
-	.greedy(true)
-	.silent(true)
-	.strict(true)
-	.custom_rules(Some(vec![pathbuf])) // Read from frozen rule files
-	.write_to_file(Some(pathbuf))? // default is stdout
-	.error_to_file(Some(pathbuf))? // default is stderr
-	.unix_new_line(true) // use unix new line for formatting
-	// Debugging options
-	.debug(true) // Turn on debug mode
-	.log(true) // Use logging to terminal
-	.interactive(true) // Use interactive mode
-	.build(); // Create unreferenced instance
+    .purge(true)
+    .greedy(true)
+    .silent(true)
+    .strict(true)
+    .custom_rules(Some(vec![pathbuf])) // Read from frozen rule files
+    .write_to_file(Some(pathbuf))? // default is stdout
+    .error_to_file(Some(pathbuf))? // default is stderr
+    .unix_new_line(true) // use unix new line for formatting
+    // Debugging options
+    .debug(true) // Turn on debug mode
+    .log(true) // Use logging to terminal
+    .interactive(true) // Use interactive mode
+    // Create unreferenced instance
+    .build(); 
+
+// Use Processor::empty() instead of Processor::new()
+// if you don't want any default macros
+
+// Add basic rules(= register functions)
+processor.add_basic_rules(vec![("test", test as MacroType)]);
+
+// Add custom rules(in order of "name, args, body") 
+processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
 
 processor.from_string(r#"$define(test=Test)"#);
 processor.from_stdin();
