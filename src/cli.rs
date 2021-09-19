@@ -1,3 +1,8 @@
+//! # Cli module
+//! Cli module takes care of command line argument parsing and executing branches accordingly
+//!
+//! Cli module is only included in binary feature flag.
+
 use clap::clap_app;
 use crate::error::RadError;
 use crate::processor::Processor;
@@ -21,6 +26,9 @@ impl Cli {
         }
     }
 
+    /// User method to call cli workflow
+    ///
+    /// This sequentially parse command line arguments and execute necessary operations
     pub fn parse(&mut self) -> Result<(), RadError>{
         let cli_args = Cli::args_builder();
         self.run_processor(&cli_args)?;
@@ -82,6 +90,7 @@ impl Cli {
         Ok(())
     }
 
+    /// Parse processor options
     fn parse_options(&mut self, args: & clap::ArgMatches) {
         // ========
         // Sub options
@@ -102,7 +111,7 @@ impl Cli {
         } else { None };
     }
 
-    /// Creates argument template
+    /// Creates argument template wich clap macro
     fn args_builder() -> clap::ArgMatches {
         clap_app!(rad =>
             (version: "0.8.0")

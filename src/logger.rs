@@ -1,3 +1,7 @@
+//! # Logger
+//!
+//! Logger handles all kinds of logging logics. Such log can be warning, error or debug logs.
+
 use std::io::{Write, BufRead};
 #[cfg(feature = "debug")]
 use crossterm::{ExecutableCommand, terminal::ClearType};
@@ -6,7 +10,7 @@ use crate::consts::*;
 use colored::*;
 use crate::error::RadError;
 
-/// Logger that controls whether to print error, warning or not and where to yield the error and warnings.
+/// Logger that controls logging
 pub(crate) struct Logger {
     pub(crate) line_number: usize,
     pub(crate) char_number: usize,
@@ -20,7 +24,7 @@ pub(crate) struct Logger {
     #[cfg(feature = "debug")]
     debug_interactive: bool,
 }
-/// Struct specifically exists for error loggers backup information
+/// Struct specifically exists to backup information of logger
 #[derive(Debug)]
 pub(crate) struct LoggerLines {
     line_number: usize,
@@ -45,6 +49,11 @@ impl Logger{
             debug_interactive: false,
         }
     }
+
+    /// Enables "chunk" mode whtin logger
+    ///
+    /// If chunk mode is enabled line_number doesn't mean real line number, rather it means how
+    /// much lines has passed since last_line_number.
     pub fn set_chunk(&mut self, switch: bool) {
         if switch {
             self.chunked = self.chunked + 1;
@@ -77,7 +86,7 @@ impl Logger{
         self.last_char_number =     logger_lines.last_char_number;
     }
 
-    /// Set file's logging information
+    /// Set file's logging information and reset state
     pub fn set_file(&mut self, file: &str) {
         self.current_file = file.to_owned();
         self.line_number = 0;
@@ -115,6 +124,7 @@ impl Logger{
         }
     }
 
+    // Debug method for development not rdb debugger
     #[allow(dead_code)]
     pub(crate) fn deb(&self) {
         println!("LAST : {}", self.last_line_number);
@@ -125,7 +135,6 @@ impl Logger{
     pub fn elog(&mut self, log : &str) -> Result<(), RadError> {
         self.error_count = self.error_count + 1; 
         if let Some(option) = &mut self.write_option {
-
             match option {
                 WriteOption::File(file) => {
                     file.write_all(
@@ -148,14 +157,11 @@ impl Logger{
                         self.current_file,
                         self.last_line_number,
                         self.last_char_number,
-                        LINE_ENDING);
+                        LINE_ENDING
+                    );
                 }
             }
-        } else {
-            // Silent option
-            // Do nothing
         }
-
         Ok(())
     }
 
@@ -165,7 +171,16 @@ impl Logger{
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(format!("warning : {} -> {}:{}:{}{}",log,self.current_file, self.last_line_number, self.last_char_number,LINE_ENDING).as_bytes())?;
+                    file.write_all(
+                        format!(
+                            "warning : {} -> {}:{}:{}{}",
+                            log,
+                            self.current_file,
+                            self.last_line_number,
+                            self.last_char_number,
+                            LINE_ENDING
+                        ).as_bytes()
+                    )?;
                 }
                 WriteOption::Stdout => {
                     eprintln!(
@@ -175,31 +190,16 @@ impl Logger{
                         LINE_ENDING,
                         self.current_file,
                         self.last_line_number,
-                        self.last_char_number);
+                        self.last_char_number
+                    );
                 }
             }
-        } else {
-            // Silent option
-            // Do nothing
-        }
+        } 
 
         Ok(())
     }
-    
-    #[cfg(feature = "debug")]
-    pub fn get_abs_last_line(&self) -> usize {
-        self.last_line_number
-    }
 
-    #[cfg(feature = "debug")]
-    pub fn get_abs_line(&self) -> usize {
-        if self.chunked > 0{
-            self.last_line_number + self.line_number - 1
-        } else {
-            self.line_number
-        }
-    }
-
+    /// Print result of logging of warnings and errors
     pub fn print_result(&mut self) -> Result<(), RadError> {
         if let Some(option) = &mut self.write_option {
             // No warning or error
@@ -228,8 +228,28 @@ impl Logger{
         Ok(())
     }
 
-    // ==========
+    // ----------
     // Debug related methods
+    // <DEBUG>
+    
+    // TODO
+    // Now this looks worthless?
+    #[cfg(feature = "debug")]
+    /// Get absolute last line position
+    pub fn get_abs_last_line(&self) -> usize {
+        self.last_line_number
+    }
+
+    #[cfg(feature = "debug")]
+    /// Get absolute line position
+    pub fn get_abs_line(&self) -> usize {
+        if self.chunked > 0{
+            self.last_line_number + self.line_number - 1
+        } else {
+            self.line_number
+        }
+    }
+
     /// Log debug information
     #[cfg(feature = "debug")]
     pub fn dlog_command(&self, log : &str, prompt: Option<&str>) -> Result<String, RadError> {
@@ -259,7 +279,7 @@ impl Logger{
         if self.debug_interactive {
             // Clear user input line
             // Preceding 1 is for "(input)" prompt
-            self.remove_terminal_lines(1 + Utils::count_newlines(log))?;
+            self.remove_terminal_lines(1 + Utils::count_sentences(log))?;
         }
 
         Ok(input)
@@ -288,8 +308,13 @@ impl Logger{
 
         Ok(())
     }
+
+    // End of debug related methods
+    // </DEBUG>
+    // ----------
 } 
 
+/// Debug switch(state) that indicates what debugging behaviours are intended for next branch
 #[cfg(feature = "debug")]
 pub enum DebugSwitch {
     UntilMacro,

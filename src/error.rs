@@ -36,7 +36,8 @@ pub enum RadError {
 }
 
 // ==========
-// -->> Convert variations
+// Start of Convert variations
+// <CONVERT>
 impl From<regex::Error> for RadError {
     fn from(err : regex::Error) -> Self {
         Self::InvalidRegex(err)
@@ -86,3 +87,6 @@ impl From <std::env::VarError> for RadError {
         Self::EnvError(err)
     }
 }
+// End of convert variations
+// </CONVERT>
+// ----------

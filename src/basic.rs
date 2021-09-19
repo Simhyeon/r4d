@@ -1,3 +1,8 @@
+//! # Basic module
+//!
+//! Basic module includes struct and methods related to basic macros which are technically function
+//! pointers.
+
 use std::array::IntoIter;
 use std::io::Write;
 use std::fs::OpenOptions;
@@ -35,6 +40,8 @@ impl BasicMacro {
     }
 
     /// Creates new basic macro hashmap
+    ///
+    /// Optional macros are included only when a feature is enabled
     pub fn new() -> Self {
         // Create hashmap of functions
         let mut map = HashMap::from_iter(IntoIter::new([
@@ -90,6 +97,7 @@ impl BasicMacro {
         Self { macros : map }
     }
 
+    /// Add new basic rule
     pub fn add_new_rule(&mut self, name: &str, macro_ref: MacroType) {
         self.macros.insert(name.to_owned(), macro_ref);
     }
@@ -356,9 +364,11 @@ impl BasicMacro {
 
     /// Print content according to given condition
     /// 
+    /// If macro's second argument is evaluated twice.
+    ///
     /// # Usage 
     ///
-    /// $if(evaluation, ifstate)
+    /// $if(evaluation, \*ifstate*\)
     fn if_cond(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let boolean = &args[0];
@@ -388,9 +398,11 @@ impl BasicMacro {
 
     /// Print content according to given condition
     /// 
+    /// Ifelse second and third arguemtns are evaluated twice.
+    ///
     /// # Usage 
     ///
-    /// $ifelse(evaluation, ifstate, elsestate)
+    /// $ifelse(evaluation, \*ifstate*\, \*elsestate*\)
     fn ifelse(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
             let boolean = &args[0];
@@ -446,7 +458,7 @@ impl BasicMacro {
 
     /// Undefine a macro 
     ///
-    /// 'Define' cannot be undefined because it is not actually a macro 
+    /// 'Define' and 'BR' cannot be undefined because it is not actually a macro 
     ///
     /// # Usage
     ///
@@ -464,9 +476,11 @@ impl BasicMacro {
 
     /// Loop around given values and substitute iterators  with the value
     ///
+    /// Foreach's second macro is evaluated twice.
+    ///
     /// # Usage 
     ///
-    /// $foreach(\*a,b,c*\,$:)
+    /// $foreach(\*a,b,c*\,\*$:*\)
     fn foreach(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let mut sums = String::new();
@@ -485,9 +499,11 @@ impl BasicMacro {
 
     /// For loop around given min, max value and finally substitue iterators with value
     ///
+    /// Forloop's second macro is evaluated twice.
+    ///
     /// # Usage
     ///
-    /// $forloop(1,5,$:)
+    /// $forloop(1,5,\*$:*\)
     fn forloop(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
             let mut sums = String::new();
@@ -652,6 +668,8 @@ impl BasicMacro {
 
     /// Rename macro rule to other name
     ///
+    /// Define and BR can't be renamed.
+    ///
     /// # Usage
     ///
     /// $rename(name,target)
@@ -668,6 +686,8 @@ impl BasicMacro {
     }
 
     /// Append content to a macro
+    ///
+    /// Only custom macros can be appended.
     ///
     /// # Usage
     ///
@@ -747,6 +767,8 @@ impl BasicMacro {
         }
     }
 
+    // TODO
+    // Make pause should be a logic branch not a basic macro?
     /// Pause every macro expansion
     ///
     /// Only other pause call is evaluated

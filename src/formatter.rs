@@ -3,14 +3,22 @@ use regex::Regex;
 use crate::consts::ESCAPED_COMMA;
 use crate::error::RadError;
 
+// Lazily constructed regex expression 
 lazy_static!{
    pub static ref ESCAPE: Regex = Regex::new(r"\\,").unwrap();
    pub static ref RESTORE: Regex = Regex::new(r"@COMMA@").unwrap();
 }
 
+/// Formatter that constructs multiple text formats
 pub(crate) struct Formatter;
 
 impl Formatter {
+    /// Convert csv to corresponding format table
+    ///
+    /// Available formats are
+    /// - github
+    /// - wikitext
+    /// - html
     pub fn csv_to_table(table_format : &str, data: &str, newline: &str) -> Result<String, RadError> {
         let data = Self::escape_comma(data);
         let mut reader = 
@@ -27,6 +35,9 @@ impl Formatter {
         Ok(table)
     }
 
+    // ----------
+    // Formatting methods start
+    // <FORMAT>
     pub fn csv_to_macros(macro_name: &str, data: &str, newline: &str) 
         -> Result<String, RadError> 
     {
@@ -136,10 +147,18 @@ impl Formatter {
         Ok(table)
     }
 
+    // Formatting methods end
+    // </FORMAT>
+    // ----------
+
+    /// Escape comma inside csv table
+    ///
+    /// With this process, we can use literal comma inside csv table
     fn escape_comma(source : &str) -> String {
         ESCAPE.replace_all(source,ESCAPED_COMMA).to_string()
     }
 
+    /// Restore the escaped commas
     fn restore_comma(source : &str) -> String {
         RESTORE.replace_all(source,",").to_string()
     }

@@ -1,3 +1,7 @@
+//! # arg_parser
+//!
+//! Module about argument parsing
+
 use std::{iter::Peekable, str::Chars};
 
 use crate::consts::{ESCAPE_CHAR, LIT_CHAR};
@@ -8,6 +12,7 @@ pub(crate) struct ArgParser{
         no_previous : bool,
 }
 
+/// State indicates whether argument should be parsed greedily or not
 #[derive(Debug)]
 pub(crate) enum GreedyState {
     Reserve(usize),
@@ -25,6 +30,10 @@ impl ArgParser {
         }
     }
 
+    /// Check if given length is qualified for given raw arguments
+    ///
+    /// If length is qualified it returns vector of arguments
+    /// if not, "None" is returned instead.
     pub(crate) fn args_with_len<'a>(&mut self, args: &'a str, length: usize, greedy: bool) -> Option<Vec<String>> {
         let greedy_state = if greedy { 
             if length > 1 {
@@ -44,6 +53,7 @@ impl ArgParser {
         Some(args)
     }
 
+    /// Split raw arguments into a vector
     pub(crate) fn args_to_vec(&mut self, arg_values: &str, delimiter: char, mut greedy_state: GreedyState) -> Vec<String> {
         let mut value = String::new();
         let mut arg_iter = arg_values.chars().peekable();
@@ -77,6 +87,10 @@ impl ArgParser {
 
         std::mem::replace(&mut self.values, vec![])
     }
+
+    // ----------
+    // <BRANCH>
+    // Start of branch methods
 
     fn branch_delimiter(&mut self, ch: char,value: &mut String, greedy_state: &mut GreedyState) {
         // Either literal or escaped
@@ -165,4 +179,7 @@ impl ArgParser {
         }
     } // end function
 
+    // End of branch methods
+    // </BRANCH>
+    // ----------
 }

@@ -1,7 +1,17 @@
+//! # Lexor module
+//!
+//! This is not about lexing(compiler) but a character validation.
+//!
+//! There might be conceptual resemblence however I had never learnt compiler before.
+//!
+//! Lexor carries lexor cursor(state) and validates if given character is valid and whether the
+//! character should be saved as a fragment of macro.
+
 use crate::error::RadError;
 use crate::consts::*;
 use crate::utils::Utils;
 
+/// Struct that validated a given character
 pub struct Lexor {
     previous_char : Option<char>,
     pub cursor: Cursor,
@@ -22,16 +32,16 @@ impl Lexor {
             paren_count : 0,
         }
     }
+    /// Reset lexor state
     pub fn reset(&mut self) {
         self.previous_char = None;
         self.cursor= Cursor::None;
         self.escape_next = false;
         self.escape_nl = false;
         self.paren_count = 0;
-        // CHECK TODO is it necessary?
-        // Don't reset literal
     }
 
+    /// Validate the character
     pub fn lex(&mut self, ch: char) -> Result<LexResult, RadError> {
         let result: LexResult;
         if self.start_literal(ch) {
@@ -70,6 +80,10 @@ impl Lexor {
         self.previous_char.replace(replace);
         Ok(result)
     }
+
+    // ----------
+    // <BRANCH>
+    // Branch methods start
 
     fn branch_none(&mut self, ch: char) -> LexResult {
         let result: LexResult;
@@ -141,6 +155,11 @@ impl Lexor {
         result
     }
 
+    // End of branch methods
+    // </BRANCH>
+    // ----------
+
+    /// Check if given character set starts a literal state
     fn start_literal(&mut self, ch: char) -> bool {
         // if given value is literal character and preceding character is escape
         if ch == LIT_CHAR && self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
@@ -151,6 +170,7 @@ impl Lexor {
         }
     }
 
+    /// Check if given character set end a literal state
     fn end_literal(&mut self, ch: char) -> bool {
         // if given value is literal character and preceding character is escape
         if ch == ESCAPE_CHAR && self.previous_char.unwrap_or('0') == LIT_CHAR {
@@ -177,6 +197,7 @@ pub enum LexResult {
     Literal(Cursor),
 }
 
+/// Cursor that carries state information of lexor
 #[derive(Clone, Copy, Debug)]
 pub enum Cursor {
     None,

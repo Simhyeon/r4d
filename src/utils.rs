@@ -100,11 +100,13 @@ impl Utils {
     // and making it a asynchornous would take much more effort and time
     // NOTE : Trailing single is necessary because this only checks newline chracter
     // thus line without trailing newline doesn't count as 1
-    pub(crate) fn count_newlines(s: &str) -> usize {
+    /// Count new lines
+    pub(crate) fn count_sentences(s: &str) -> usize {
         s.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1
     }
 
     #[cfg(feature = "debug")]
+    /// Clear terminal cells
     pub fn clear_terminal() -> Result<(), RadError> {
         use crossterm::{ExecutableCommand, terminal::ClearType};
 

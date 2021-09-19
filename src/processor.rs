@@ -1,3 +1,12 @@
+//! # processor
+//!
+//! "processor" module is about processing of given input.
+//!
+//! Processor substitutes all macros only when the macros were already defined and returns
+//! untouched string back if not found any. 
+//!
+//! Processor can handle various types of inputs (string|stdin|file)
+
 use std::io::{self, BufReader, Read, Write};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
@@ -25,9 +34,9 @@ use crate::arg_parser::{ArgParser, GreedyState};
 //
 // e.g. <BUILDER> for builder section start and </BUILDER> for builder section end
 
-/// Processor that parses(lexes) given input and print out to destined output
+/// Processor that parses(lexes) given input and print out to desginated output
 pub struct Processor{
-    current_input : String, // This is either "stdin" or currently reading file's name
+    current_input : String, // This is either "stdin" or currently being read file's name
     map: MacroMap,
     define_parse: DefineParser,
     write_option: WriteOption,
@@ -63,17 +72,22 @@ impl Processor {
     // ----------
     // Builder pattern methods
     // <BUILDER>
-    /// Creates new processor with deafult options
+    /// Creates default processor with basic macros
     pub fn new() -> Self {
         Self::new_processor(true)
     }
 
-    /// Creates new processor without default macros
+    /// Creates default processor without basic macros
     pub fn empty() -> Self {
         Self::new_processor(false)
     }
 
     /// Internal function to create Processor struct
+    ///
+    /// This creates a complete processor that can parse and create output without any extra
+    /// informations.
+    ///
+    /// Only basic macro usage should be given as an argument.
     fn new_processor(use_basic: bool) -> Self {
         let temp_path= std::env::temp_dir().join("rad.txt");
         let temp_target = (temp_path.to_owned(),OpenOptions::new()
@@ -150,7 +164,7 @@ impl Processor {
         Ok(self)
     }
 
-    /// Use unix line ending instead of os default one
+    /// Use unix line ending instead of operating system's default one
     pub fn unix_new_line(&mut self, use_unix_new_line: bool) -> &mut Self {
         if use_unix_new_line {
             self.newline = "\n".to_owned();
@@ -392,6 +406,10 @@ impl Processor {
     // Debug related methods
     // <DEBUG>
     
+    /// Check if given macro is local macro or not
+    ///
+    /// This is used when step debug command is to be executed.
+    /// Without chekcing locality, step will go inside local binding macros
     #[cfg(feature = "debug")]
     fn is_local(&self, mut level: usize, name: &str) -> bool {
         while level > 0 {
@@ -403,11 +421,10 @@ impl Processor {
         false
     }
 
-    // This function can be used in non debug feature
     /// Process breakpoint
+    #[cfg(feature = "debug")]
     fn break_point(&mut self, frag: &mut MacroFragment) -> Result<(), RadError> {
         if &frag.name == "BR" {
-            #[cfg(feature = "debug")]
             if self.debug {
                 if let DebugSwitch::NextBreakPoint(name) = &self.debug_switch {
                     // Name is empty or same with frag.args
@@ -429,6 +446,7 @@ impl Processor {
 
     // Though this implementation is same with user_input_prompt
     // I thought modifying user_input_prompt isn't worth.
+    /// Get user input command before processing starts
     #[cfg(feature = "debug")]
     fn user_input_on_start(&mut self) -> Result<(), RadError> {
         // Stop by lines if debug option is lines
@@ -529,7 +547,7 @@ impl Processor {
 
     // This is possibly loopable
     #[cfg(feature = "debug")]
-    /// Get user input on execution but nested macro can be 
+    /// Get user input on execution but also nested macro can be targeted
     fn user_input_on_step(&mut self, frag: &MacroFragment) -> Result<(), RadError> {
         // Stop by lines if debug option is lines
         if self.debug {
@@ -544,7 +562,7 @@ impl Processor {
     }
 
     #[cfg(feature = "debug")]
-    /// Get user input and evaluates if loop should be breaked or not
+    /// Get user input and evaluates whether loop of input prompt should be breaked or not
     fn parse_debug_command_and_continue(&mut self, command_input: &str, frag: Option<&MacroFragment>, log: &mut String) -> Result<bool, RadError> {
         let command_input: Vec<&str> = command_input.split(' ').collect();
         let command = command_input[0];
@@ -652,15 +670,18 @@ impl Processor {
     }
 
     #[cfg(feature = "debug")]
+    /// Bridge function to that waits user's stdin
     pub(crate) fn debug_wait_input(&self, log: &str, prompt: Option<&str>) -> Result<String, RadError> {
         Ok(self.logger.dlog_command(log, prompt)?)
     }
     #[cfg(feature = "debug")]
+    /// Bridge function to that prints given log as debug form
     pub(crate) fn debug_print_log(&self,log : &str) -> Result<(), RadError> {
         self.logger.dlog_print(log)?;
         Ok(())
     }
     #[cfg(feature = "debug")]
+    /// Bridge function to that prints given log as debug form but with different nmeonic(context)
     pub(crate) fn debug_print_command_result(&self,log : &str) -> Result<(), RadError> {
         self.logger.dlog_print(log)?;
         Ok(())
@@ -674,6 +695,9 @@ impl Processor {
     // Parse related methods
     // <PARSE>
     /// Parse line is called only by the main loop thus, caller name is special name of @MAIN@
+    ///
+    /// This parses given input as line by line with an iterator of lines including trailing new
+    /// line chracter.
     fn parse_line(&mut self, lines :&mut impl std::iter::Iterator<Item = std::io::Result<String>>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
         self.logger.add_line_number();
         if let Some(line) = lines.next() {
@@ -745,6 +769,8 @@ impl Processor {
     } // parse_chunk end
 
     /// Parse a given line
+    ///
+    /// This calles lexor.lex to validate characters and decides next behaviour
     fn parse(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, line: &str, level: usize, caller: &str) -> Result<String, RadError> {
         // Initiate values
         // Reset character number
@@ -793,6 +819,11 @@ impl Processor {
     // Evaluate can be nested deeply
     // Disable caller for temporary
     /// Evaluate detected macro usage
+    ///
+    /// Evaluation order is followed
+    /// - Local bound macro
+    /// - Custom macro
+    /// - Basic macro
     fn evaluate(&mut self,level: usize, caller: &str, name: &str, raw_args: &str, greedy: bool) -> Result<Option<String>, RadError> {
         let level = level + 1;
         // This parses and processes arguments
@@ -850,6 +881,8 @@ impl Processor {
     }
 
     /// Invoke a custom rule and get a result
+    ///
+    /// Invoke rule evalutes body of macro rule because body is not evaluated on register process
     fn invoke_rule(&mut self,level: usize ,name: &str, arg_values: &str, greedy: bool) -> Result<Option<String>, RadError> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
@@ -1147,6 +1180,12 @@ impl Processor {
             .unwrap());
     }
 
+    /// Turn on sandbox
+    ///
+    /// This is an explicit state change method for non-processor module's usage
+    ///
+    /// Sandbox means that current state(cursor) of processor should not be applied for following
+    /// independent processing
     pub(crate) fn set_sandbox(&mut self) {
         self.sandbox = true; 
     }
@@ -1192,7 +1231,7 @@ impl Processor {
     }
 
     // This is not a backup but fresh set of file information
-    /// Set current processing file information for the first time
+    /// Set(update) current processing file information
     fn set_file(&mut self, file: &str) -> Result<(), RadError> {
         let path = &Path::new(file);
         if !path.exists() {
@@ -1204,6 +1243,9 @@ impl Processor {
         }
     }
 
+    /// Set input as string not as &path
+    /// 
+    /// This is conceptualy identical to set_file but doesn't validate if given input is existent
     fn set_input(&mut self, input: &str) -> Result<(), RadError> {
         self.current_input = input.to_owned();
         self.logger.set_file(input);
@@ -1237,6 +1279,7 @@ impl DefineParser {
         }
     }
 
+    /// Clear state
     fn clear(&mut self) {
         self.arg_cursor = DefineCursor::Name;
         self.name.clear();
@@ -1246,9 +1289,13 @@ impl DefineParser {
         self.container.clear();
     }
 
-    // NOTE This method expects valid form of macro invocation
-    // Given value should be without outer prentheses
-    // e.g. ) name,a1 a2=body text
+    /// Parse macro definition body
+    ///
+    /// NOTE: This method expects valid form of macro invocation
+    /// which means given value should be presented without outer prentheses
+    /// e.g. ) name,a1 a2=body text
+    ///
+    /// If definition doesn't comply with naming rules or syntaxes, if returnes "None"
     fn parse_define(&mut self, text: &str) -> Option<(String, String, String)> {
         self.clear(); // Start in fresh state
         let mut char_iter = text.chars().peekable();
@@ -1301,6 +1348,10 @@ impl DefineParser {
         }
         true
     }
+    
+    // ---------
+    // Start of branche methods
+    // <DEF_BRANCH>
     
     fn branch_name(&mut self, ch: char) -> ParseIgnore {
         // $define(variable=something)
@@ -1358,6 +1409,10 @@ impl DefineParser {
             ParseIgnore::None
         }
     }
+
+    // End of branche methods
+    // </DEF_BRANCH>
+    // ---------
 }
 
 enum DefineCursor {
@@ -1378,10 +1433,9 @@ struct MacroFragment {
     pub name: String,
     pub args: String,
 
-    // Macroframgnet related options
+    // Macro attributes
     pub pipe: bool,
     pub greedy: bool,
-    pub preceding: bool,
     pub yield_literal : bool,
     pub trimmed : bool,
 }
@@ -1394,12 +1448,12 @@ impl MacroFragment {
             args : String::new(),
             pipe: false,
             greedy: false,
-            preceding: false,
             yield_literal : false,
             trimmed: false,
         }
     }
 
+    /// Reset all state
     fn clear(&mut self) {
         self.whole_string.clear();
         self.name.clear();
@@ -1410,6 +1464,9 @@ impl MacroFragment {
         self.trimmed = false; 
     }
 
+    /// Check if fragment is empty or not
+    ///
+    /// This also enables user to check if fragment has been cleared or not
     fn is_empty(&self) -> bool {
         self.whole_string.len() == 0
     }

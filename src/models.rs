@@ -5,11 +5,13 @@ use crate::utils::Utils;
 use serde::{Deserialize, Serialize};
 use bincode;
 
+/// State enum value about direction of processed text 
 pub enum WriteOption {
     File(std::fs::File),
     Stdout,
 }
 
+/// Macro rule of custom macros
 #[derive(Clone, Deserialize, Serialize)]
 pub struct MacroRule{
     pub name: String,
@@ -33,6 +35,12 @@ impl MacroRule {
     }
 }
 
+/// Macro map that stores all kinds of macro informations 
+///
+/// Included macro types are 
+/// - Basic macro
+/// - Custom macro
+/// - Local bound macro
 pub struct MacroMap {
     pub basic : BasicMacro,
     pub custom : HashMap<String, MacroRule>,
@@ -40,7 +48,7 @@ pub struct MacroMap {
 }
 
 impl MacroMap {
-    /// Creates empty map
+    /// Creates empty map withotu default basic macros
     pub fn empty() -> Self {
         Self {
             basic: BasicMacro::empty(),
@@ -49,6 +57,7 @@ impl MacroMap {
         }
     }
 
+    /// Creates default map with default basic macros
     pub fn new() -> Self {
         Self { 
             basic: BasicMacro::new(),
@@ -57,16 +66,18 @@ impl MacroMap {
         }
     }
 
-    // Crate new local macro(argument map)
+    /// Create a new local macro
     pub fn new_local(&mut self, level: usize,name: &str, value: &str) {
         self.local.insert(Utils::local_name(level,name), value.to_owned());
     }
 
+    /// Clear all local macros
     pub fn clear_local(&mut self) {
         self.local.clear();
     }
 
     // Empty argument should be treated as no arg
+    /// Register a new custom macro
     pub fn register(
         &mut self, 
         name: &str,
@@ -110,6 +121,7 @@ impl MacroMap {
     }
 }
 
+/// Struct designed to check unbalanced parenthesis
 pub(crate) struct UnbalancedChecker{
     paren: usize,
 }
@@ -135,6 +147,7 @@ impl UnbalancedChecker {
     }
 } 
 
+/// Readable, writeable struct that holds information of custom macros
 #[derive(Serialize, Deserialize)]
 pub struct RuleFile {
     pub rules : HashMap<String, MacroRule>,
@@ -153,6 +166,7 @@ impl RuleFile {
         }
     }
 
+    /// Read from rule file and make it into hash map
     pub fn melt(&mut self, path : &std::path::Path) -> Result<(), RadError> {
         let result = bincode::deserialize::<Self>(&std::fs::read(path)?);
         if let Err(_) = result {
@@ -163,6 +177,7 @@ impl RuleFile {
         }
     }
 
+    /// Convert custom rules into a single binary file
     pub(crate) fn freeze(&self, path: &std::path::Path) -> Result<(), RadError> {
         let result = bincode::serialize(self);
         if let Err(_) = result {
