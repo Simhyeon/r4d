@@ -116,16 +116,38 @@ impl Cli {
             Some(PathBuf::from(error_file))
         } else { None };
 
+        // Permission
         self.allow_auth = if let Some(auths) = args.value_of("allow") {
             auths.split("+").map(|s| AuthType::from(s)).collect()
         } else { None };
 
+        // Permission with warning
         self.allow_auth_warn = if let Some(auths) = args.value_of("allow_warn") {
             auths.split("+").map(|s| AuthType::from(s)).collect()
         } else { None };
 
+        // Permission all
         if args.is_present("allow_all") {
-            self.allow_auth = Some(vec![AuthType::IO, AuthType::ENV, AuthType::CMD]);
+            self.allow_auth = Some(
+                vec![
+                    AuthType::FIN,
+                    AuthType::FOUT,
+                    AuthType::ENV,
+                    AuthType::CMD
+                ]
+            );
+        }
+
+        // Permission all with warning
+        if args.is_present("allow_all_warn") {
+            self.allow_auth_warn = Some(
+                vec![
+                    AuthType::FIN,
+                    AuthType::FOUT,
+                    AuthType::ENV,
+                    AuthType::CMD
+                ]
+            );
         }
     }
 
@@ -151,6 +173,7 @@ impl Cli {
             (@arg allow: -a +takes_value "Allow permission (io|cmd|env)")
             (@arg allow_warn: -w +takes_value "Allow permission with warnings (io|cmd|env)")
             (@arg allow_all: -A "Allow all permission")
+            (@arg allow_all_warn: -W "Allow all permission with warning")
             (@arg silent: -s "Supress error and warning")
             (@arg newline: -n "Use unix newline for formatting")
         ).get_matches()
