@@ -115,7 +115,7 @@ impl Utils {
     pub fn yellow(string : &str) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
-            return Box::new(string.red().to_owned());
+            return Box::new(string.yellow().to_owned());
         }
         Box::new(string.to_owned())
     }
