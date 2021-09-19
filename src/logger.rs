@@ -249,8 +249,6 @@ impl Logger{
     // Debug related methods
     // <DEBUG>
     
-    // TODO
-    // Now this looks worthless?
     #[cfg(feature = "debug")]
     /// Get absolute last line position
     pub fn get_abs_last_line(&self) -> usize {
