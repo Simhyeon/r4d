@@ -266,6 +266,21 @@ impl Processor {
         }
     }
 
+    /// Add custom rules without builder pattern
+    pub fn add_custom_rules(&mut self, rules: Vec<(&str,&str,&str)>) {
+        for (name,args,body) in rules {
+            self.map.custom.insert(
+                name.to_owned(), 
+                MacroRule { 
+                    name: name.to_owned(),
+                    args: args.split(' ').map(|s| s.to_owned()).collect::<Vec<String>>(),
+                    body: body.to_owned()
+                }
+            );
+        }
+    }
+
+
     /// Read from string
     pub fn from_string(&mut self, content: &str) -> Result<String, RadError> {
         // Set name as string
@@ -637,16 +652,16 @@ impl Processor {
     }
 
     #[cfg(feature = "debug")]
-    pub fn debug_wait_input(&self, log: &str, prompt: Option<&str>) -> Result<String, RadError> {
+    pub(crate) fn debug_wait_input(&self, log: &str, prompt: Option<&str>) -> Result<String, RadError> {
         Ok(self.logger.dlog_command(log, prompt)?)
     }
     #[cfg(feature = "debug")]
-    pub fn debug_print_log(&self,log : &str) -> Result<(), RadError> {
+    pub(crate) fn debug_print_log(&self,log : &str) -> Result<(), RadError> {
         self.logger.dlog_print(log)?;
         Ok(())
     }
     #[cfg(feature = "debug")]
-    pub fn debug_print_command_result(&self,log : &str) -> Result<(), RadError> {
+    pub(crate) fn debug_print_command_result(&self,log : &str) -> Result<(), RadError> {
         self.logger.dlog_print(log)?;
         Ok(())
     }
@@ -1165,13 +1180,13 @@ impl Processor {
     }
 
     /// Log error
-    pub fn log_error(&mut self, log : &str) -> Result<(), RadError> {
+    pub(crate) fn log_error(&mut self, log : &str) -> Result<(), RadError> {
         self.logger.elog(log)?;
         Ok(())
     }
 
     /// Log warning
-    pub fn log_warning(&mut self, log : &str) -> Result<(), RadError> {
+    pub(crate) fn log_warning(&mut self, log : &str) -> Result<(), RadError> {
         self.logger.wlog(log)?;
         Ok(())
     }
@@ -1193,12 +1208,6 @@ impl Processor {
         self.current_input = input.to_owned();
         self.logger.set_file(input);
         Ok(())
-    }
-
-    /// Add custom rules without builder pattern
-    #[allow(dead_code)]
-    pub fn add_custom_rules(&mut self, rules: HashMap<String, MacroRule>) {
-        self.map.custom.extend(rules.into_iter());
     }
 
     // End of miscellaenous methods
