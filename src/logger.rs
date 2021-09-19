@@ -162,7 +162,8 @@ impl Logger{
                         LINE_ENDING
                     );
                 }
-            }
+                WriteOption::Discard => ()
+            } // Match end
         }
         Ok(())
     }
@@ -195,7 +196,8 @@ impl Logger{
                         self.last_char_number
                     );
                 }
-            }
+                WriteOption::Discard => ()
+            } // match end
         } 
 
         Ok(())
@@ -221,6 +223,7 @@ impl Logger{
                     if self.error_count > 0 { eprintln!("{}",error_result);}
                     if self.warning_count > 0 {eprintln!("{}",warning_result);}
                 }
+                WriteOption::Discard => ()
             }
         } else {
             // Silent option
