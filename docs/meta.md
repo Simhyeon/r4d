@@ -1,17 +1,6 @@
 ### TODOs
 
-* [ ] Publish with binary option so that user can install rad with cargo install --features binary
-
-* [ ] Escape rule is very inconsistent
-- In arg parsing it consumes and set ending parenthesis literal
-- In define parsing it is treated as it is, a character ```\```
-
 * [ ] Improve projects performance
-
-### Deterred
-
-* [-] Currently disabled escape with parenthesis for eaiser maintain
-* [-] Failed invocation makes new line which is not so desirable
 
 ### How one should parse macro invocation?
 
@@ -40,6 +29,14 @@ My next approach will be pest. Pest has somewhat unfamailiar syntax but if used
 only for a line it would be fine.
 
 ### DONE
+
+* [x] Divided io into fin and fout
+* [x] Fixed a bug wherer dollar sign doesn't restart framgent check
+* [-] Currently disabled escape with parenthesis for eaiser maintain
+* [-] Escape rule is very inconsistent
+- In arg parsing it consumes and set ending parenthesis literal
+- In define parsing it is treated as it is, a character ```\```
+- It costs more than its worth
 
 * [x] Make colored optional
 * [x] ~~Dry run~~ Discard run

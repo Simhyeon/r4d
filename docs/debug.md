@@ -21,11 +21,11 @@ rad --debug <FILE>
 rad --log
 
 # Interactive mode, like a game you know.
-# This disable text wrapping 
+# This disables text wrapping 
 rad --debug -i
 ===
 ...
-# After Some standard input
+# After Some standard input and EOF
 (stdin) : Default is next. Ctrl + c to exit.
 >>
 ```
@@ -33,20 +33,20 @@ rad --debug -i
 **Basic usage**
 
 ```
-help(p)           : Print this help
-next(n,\n)        : Next line
-macro(m)          : Next macro
-step(s)           : Next macro including nested
-until(u)          : Next macro but before invocation
-continue(c)       : Next break point
-clear(cl)         : Clear terminal
-print(p) <ARG>    : Print variable
-    <ARG TYPE>
-    - name(n)     : Print current macro name
-    - arg(a)      : Print current macro's argument (not necessarily complete)
-    - text(t)     : Print current line text
-    - line(l)     : Print current line number
-    - span(s)     : Print span of lines until the line
+help       (h)     : Print this help
+next       (n,\n)  : Next line
+macro      (m)     : Next macro
+step       (s)     : Next macro including nested
+until      (u)     : Next macro but before invocation
+continue   (c)     : Next break point
+clear      (cl)    : Clear terminal
+print      (p)     : Print variable
+
+    - name (n)     : Print current macro name
+    - arg  (a)     : Print current macro's argument (not necessarily complete)
+    - text (t)     : Print current line text
+    - line (l)     : Print current line number
+    - span (s)     : Print span of lines until the line
 ```
 
 ### Example
@@ -75,18 +75,18 @@ Text After ```//``` is a comment and should not be in included in real usage
 
 ```
 (filename) : Default is next. Ctrl + c to exit.
->> macro // == m
+>> macro      // == m
 Non macro texts are ignored unless newline
 (macro) : $define(test=Test)
 >> print line // == p l
 (output) : 2
 >> print name // == p n
 (output) : define
->> print arg // == p a
+>> print arg  // == p a
 (output) : test=Test
 >> print text // == p t
 (output) : $define(test=Test)
->> continue // == c
+>> continue   // == c
 1
 2
 3

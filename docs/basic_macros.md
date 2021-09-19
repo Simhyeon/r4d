@@ -1,5 +1,9 @@
 #### Format
 
+If permission is necessary,
+
+AUTH : ENV or FIN or FOUT or CMD
+
 ```
 $macro_invocation(...)
 ===
@@ -79,6 +83,8 @@ $eval(1 + 2)
 
 **include**
 
+AUTH : FIN
+
 Include macro include given file and paste into the position. Included file's
 contents are all expanded.
 
@@ -90,15 +96,17 @@ $include(src/content.rs)
 
 **temp**
 
+AUTH : FIN or FOUT
+
 Tempin gets content from temp file named ```rad.txt```. Macros within temp file
 is also expanded. Tempout pushes content into current temp file. You can also
 change the temp file with tempto.
 
 Temp file is saved in ```%TEMP%``` in Windows and ```/tmp``` in *nix systmes.
 ```
-$tempout(Hello world)
-$tempin()
-$tempto(out.json)
+$tempout(Hello world)             # needs FOUT
+$tempin()                         # needs FIN
+$tempto(out.json)                 # needs FOUT
 $tempout({"name":"simon creek"})
 $tempin()
 ===
@@ -107,6 +115,8 @@ Hello world
 ```
 
 **redir**
+
+AUTH : FOUT
 
 Redirect all input into a temp file.
 
@@ -123,6 +133,8 @@ $redir(false)
 
 **fileout**
 
+AUTH : FOUT
+
 Fileout saves contents to the file. If truncate is false, non existent file
 argument is panic behaviour.
 
@@ -133,6 +145,8 @@ $fileout(false,file_name.txt,This is appended)
 ```
 
 **env**
+
+AUTH : ENV
 
 Print environment variable. Wrong name yields error
 
@@ -328,6 +342,8 @@ false
 ```
 
 **syscmd**
+
+AUTH : CMD
 
 Call system command, on unix system macro calls given command directly. While
 windows call are mediated through ```cmd /C``` call.

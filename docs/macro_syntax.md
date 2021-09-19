@@ -6,17 +6,24 @@ to sucessfully register the macro.
 ```
 $define(name,arg1 arg2=$arg1() $arg2())
 ```
+**First argument**
 
-- First argument is a macro name. Macro should start with an alphabet character
+First argument is a macro name. Macro should start with an alphabet character
 and following characters should be either alphanumeric or underscore.
-- Second argument is macro's arguments. Macro argument also follows same rule
+
+**Second argument**
+
+Second argument is macro's arguments. Macro argument also follows same rule
 of naming. Multiple arguments can be declared and should be separated by a
 whitespace.
-- Third argument is a macro body. Any text can be included in the macro body
+
+**Third argument**
+
+Third argument is a macro body. Any text can be included in the macro body
 while an unbalanced parenthesis will prevent processor's work. Currently there
 is no way to include unbalanced parenthesis inside definition body. 
 
-You can simply bind the value without giving arguments.
+You can also simply bind the value without giving arguments.
 
 ```
 $define(v_name=Simon creek)
@@ -40,33 +47,28 @@ $calm()
 KALM // After defnition it prints out without error
 ```
 
-Thus, idiomatic way to check if definition has sane invocations is to invoke a
-dummy after declartion if possible. Although this might not be avilable all the
-time.
+**Escape characters**
+
+Defnition body can include any text except unbalanced parenthesis. Even escape
+character is saved into body as it is.
+
+However escape characters are escaped in arguments. Use double escape chraacter
+to use literal escape character.
 
 ```
-$define(
-	test,
-	a_expr a_path
-	=
-	$bind+(cond,$eval($a_expr()))
-	$bind+(true_path,$path(cache,$a_path()))
-	$bind+(false_path,$path(cache,index.md))
-	$ifelse(
-		$cond(),
-		$include($true_path()),
-		$include($false_path())
-	)
-)
-$test|(1==1,out.md)
-
-// Real usage
-$test($ifdef(mod_mw),out.md)
+$define(test,a_arg=Inside arg
+$a_arg()
+while body's escape is '\')
+$test(First escape is : '\'
+Second escape is '\\')
 ===
-// Some outputs...
+Inside arg
+First escape is : ''
+Second escape is '\'
+while body's escape is '\'
 ```
 
-#### Macro inovokation
+#### Macro inovocation
 
 Prefix is a dollar sign($)
 ```
@@ -110,7 +112,7 @@ An unbalanced parenthesis changes the behaviour of macro invocation and a
 non-double-quoted comma will change the number or content of arguments. If
 desirable content includes unbalanced parentheses or commas, enclose the body
 with string literal with the syntax of ```\* TEXT GOES HERE *\```, yet literal
-inside macro body will printed as is. Or put escacpe character before ending
+inside macro body will printed as is. Or put escape character before ending
 parenthesis, though this won't work in macro definition.
 
 ```
@@ -128,6 +130,20 @@ I'm,comma,separated
 I'm,comma,separated
 
 ```
+### Doublely evaluated macros
+
+Some macros' arguments are evaluated twice such as ```foreach, forloop, if and
+ifelse```.
+
+Try enclose it with literal to prevent from unexpected behaviour.
+
+e.g.
+```
+$if(true,\*$macro()*\)
+$ifelse(true,\*$macro()*\,\*$macro()*\)
+$foreach(\*1,2,3*\,\*$:*\)
+$forloop(1,3,\*$:*\)
+```
 
 ### Macro attributes
 
@@ -143,15 +159,15 @@ for e.g.
 $define(
 	test,
 	a_expr a_path
-	= // This new line
-	$bind+(cond,$eval($a_expr())) // Whitespaces before "$bind"
+	=                                        // This new line
+	$bind+(cond,$eval($a_expr()))            // Whitespaces before "$bind"
 	$bind+(true_path,$path(cache,$a_path())) // Whitespaces before "$bind"
 	$bind+(false_path,$path(cache,index.md)) // Whitespaces before "$bind"
-	$ifelse( // Whitespaces before "$ifelse"
+	$ifelse(                                 // Whitespaces before "$ifelse"
 		$cond(),
 		$include($true_path()),
 		$include($false_path())
-	) // This new line
+	)                                        // This new line
 )
 $test(1==1,out.md)
 ===
@@ -246,14 +262,6 @@ warning: found 1 warnings
 matching "(" character.
 ```
 
-```
-$ifelse?(false,TRUE,$path(a,b))
-===
-$path(a
-// Though greedy attribute can be used in this case
-// $ifelse?+(false,TRUE,$path(a,b)) will be evaluated to a/b
-```
-
 ### Errors
 
 There are two types of errors. One is failed invocation error and second is
@@ -276,9 +284,18 @@ error: Invalid argument
 Processor panicked, exiting...
 ```
 
-### Debugs
+**Position of character is not accurate somtime**
 
-**Breakpoint**
+Welp this is because, r4d doesn't construct AST and processes macros with
+stack. Thus position of characters can really vary.
+
+Plus, macro expanded text can have totally different length, content from
+original text. Thus tracking thoses offsets are not worth the hassel needed.
+
+In conclusion, character in error or warning messages can be not correct but
+might be an indicator, which is represented as arrow ```->```.
+
+### Break point
 
 ```BR``` is reserved for debugging usage. You cannot override breakpoint.
 
