@@ -9,6 +9,7 @@ use bincode;
 pub enum WriteOption {
     File(std::fs::File),
     Stdout,
+    Discard,
 }
 
 /// Macro rule of custom macros
