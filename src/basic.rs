@@ -11,11 +11,11 @@ use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::process::Command;
 use crate::error::RadError;
-use crate::arg_parser::{ArgParser, GreedyState};
+use crate::arg_parser::ArgParser;
 use crate::consts::MAIN_CALLER;
 use regex::Regex;
 use crate::utils::Utils;
-use crate::processor::Processor;
+use crate::processor::{Processor, auth::{AuthState, AuthType}};
 #[cfg(feature = "csv")]
 use crate::formatter::Formatter;
 #[cfg(feature = "lipsum")]
@@ -110,6 +110,21 @@ impl BasicMacro {
     /// * `name` - Name of the macro to find
     pub fn contains(&self, name: &str) -> bool {
         self.macros.contains_key(name)
+    }
+
+    /// Check file authority
+    fn is_granted(name:&str, auth_type: AuthType, processor: &mut Processor) -> Result<bool, RadError> {
+        match processor.get_auth_state(&auth_type) {
+            AuthState::Restricted => {
+                processor.log_error(&format!("\"{}\" not allowed.\"{:?}\" permission is required", name, auth_type))?;
+                Ok(false)
+            }
+            AuthState::Warn => {
+                processor.log_warning(&format!("\"{}\" was called with \"{:?}\" permission", name, auth_type))?;
+                Ok(true)
+            }
+            AuthState::Open => Ok(true),
+        }
     }
 
     /// Call a macro
@@ -289,6 +304,9 @@ impl BasicMacro {
     ///
     /// $include(path)
     fn include(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
+        if !Self::is_granted("include", AuthType::IO,processor)? {
+            return Ok(String::new());
+        }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let raw = Utils::trim(&args[0])?;
             let file_path = std::path::Path::new(&raw);
@@ -333,13 +351,18 @@ impl BasicMacro {
     ///
     /// This calls via 'CMD \C' in windows platform while unix call is operated without any mediation.
     ///
+    /// Syscmd is always greedy
+    ///
     /// # Usage
     ///
     /// $syscmd(system command -a arguments)
-    fn syscmd(args: &str, greedy: bool,_: &mut Processor) -> Result<String, RadError> {
-        if let Some(args_content) = ArgParser::new().args_with_len(args, 1, greedy) {
+    fn syscmd(args: &str, _: bool,p: &mut Processor) -> Result<String, RadError> {
+        if !Self::is_granted("syscmd", AuthType::CMD,p)? {
+            return Ok(String::new());
+        }
+        if let Some(args_content) = ArgParser::new().args_with_len(args, 1, true) {
             let source = &args_content[0];
-            let arg_vec = ArgParser::new().args_to_vec(&source, ' ', GreedyState::None);
+            let arg_vec = source.split(' ').collect::<Vec<&str>>();
 
             let output = if cfg!(target_os = "windows") {
                 Command::new("cmd")
@@ -609,7 +632,10 @@ impl BasicMacro {
     /// # Usage
     ///
     /// $env(SHELL)
-    fn get_env(args: &str, _: bool, _: &mut Processor) -> Result<String, RadError> {
+    fn get_env(args: &str, _: bool, p : &mut Processor) -> Result<String, RadError> {
+        if !Self::is_granted("env", AuthType::ENV,p)? {
+            return Ok(String::new());
+        }
         let out = std::env::var(args)?;
         Ok(out)
     }
@@ -804,6 +830,10 @@ impl BasicMacro {
     ///
     /// $tempout(true,Content)
     fn temp_out(args: &str, greedy: bool, p: &mut Processor) -> Result<String, RadError> {
+        if !Self::is_granted("temput", AuthType::IO,p)? {
+            return Ok(String::new());
+        }
+
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let content = &args[0];
             p.get_temp_file().write_all(content.as_bytes())?;
@@ -818,7 +848,10 @@ impl BasicMacro {
     /// # Usage
     ///
     /// $fileout(true,file_name,Content)
-    fn file_out(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
+    fn file_out(args: &str, greedy: bool, p: &mut Processor) -> Result<String, RadError> {
+        if !Self::is_granted("fileout", AuthType::IO,p)? {
+            return Ok(String::new());
+        }
         if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
             let truncate = &args[0];
             let file_name = &args[1];
@@ -855,6 +888,9 @@ impl BasicMacro {
     ///
     /// $tempin()
     fn temp_include(_: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
+        if !Self::is_granted("tempin", AuthType::IO,processor)? {
+            return Ok(String::new());
+        }
         let file = processor.get_temp_path().to_owned();
         processor.set_sandbox();
         Ok(processor.from_file(&file)?)
@@ -868,14 +904,17 @@ impl BasicMacro {
     ///
     /// $redir(true) 
     /// $redir(false) 
-    fn temp_redirect(args: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
+    fn temp_redirect(args: &str, _: bool, p: &mut Processor) -> Result<String, RadError> {
+        if !Self::is_granted("redir", AuthType::IO,p)? {
+            return Ok(String::new());
+        }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, false) {
             let toggle = if let Ok(toggle) =Utils::is_arg_true(&args[0]) { 
                 toggle
             } else {
                 return Err(RadError::InvalidArgument("Redir's agument should be valid boolean value".to_owned()));
             };
-            processor.redirect = toggle;
+            p.redirect = toggle;
             Ok(String::new())
         } else {
             Err(RadError::InvalidArgument("Redir requires an argument".to_owned()))
@@ -888,6 +927,9 @@ impl BasicMacro {
     ///
     /// $tempto(file_name)
     fn set_temp_target(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
+        if !Self::is_granted("tempto", AuthType::IO,processor)? {
+            return Ok(String::new());
+        }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             processor.set_temp_file(&PathBuf::from(std::env::temp_dir()).join(&args[0]));
             Ok(String::new())
