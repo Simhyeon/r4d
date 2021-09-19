@@ -113,7 +113,7 @@ impl Lexor {
     fn branch_name(&mut self, ch: char) -> LexResult {
         let mut result: LexResult;
 
-        // Blank characters are nvalid
+        // Blank characters are invalid
         if Utils::is_blank_char(ch) {
             self.cursor = Cursor::None;
             result = LexResult::ExitFrag;
@@ -128,9 +128,9 @@ impl Lexor {
                 result = LexResult::EmptyName;
             }
         } 
-        // Put any character in name
-        // It is ok not to validate macro name
-        // because invalid name cannot be registered anyway
+        else if ch == '$' {
+            result = LexResult::RestartName;
+        }
         else {
             result = LexResult::AddToFrag(Cursor::Name);
         }
@@ -140,7 +140,7 @@ impl Lexor {
     fn branch_arg(&mut self, ch: char) -> LexResult {
         let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
         // Right paren decreases paren_count
-        if ch == ')' && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
+        if ch == ')'{
             self.paren_count = self.paren_count - 1; 
             if self.paren_count == 0 {
                 self.cursor = Cursor::None;
@@ -148,7 +148,7 @@ impl Lexor {
             }
         } 
         // Left paren increases paren_count
-        else if ch == '(' && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
+        else if ch == '(' {
             self.paren_count = self.paren_count + 1; 
         }
         // Other characters are added normally
@@ -191,6 +191,7 @@ pub enum LexResult {
     AddToRemainder,
     StartFrag,
     EmptyName,
+    RestartName,
     AddToFrag(Cursor),
     EndFrag,
     ExitFrag,
