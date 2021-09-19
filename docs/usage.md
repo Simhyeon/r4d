@@ -57,18 +57,19 @@ Type ```-h``` or ```--help``` to see full options.
 **Cargo.toml**
 ```toml
 [dependencies]
-rad = { version = "0.5", features = ["full"] }
+rad = { version = "0.8.0", features = ["full"] }
 
 # Other available features are 
-# "evalexpr", "chrono", "lipsum", "csv", "debug", "color"
+# "evalexpr", "chrono", "lipsum", "csv", "debug", "color", "full"
 
 # evalexpr - "eval" macro
-# chrono - "date", "time" macro
-# lipsum - "lipsum" macro
-# csv - "from", "table" macro
+# chrono   - "date", "time" macro
+# lipsum   - "lipsum" macro
+# csv      - "from", "table" macro
 
-# debug - Enable debug method
-# color - Enable color prompt
+# debug    - Enable debug method
+# color    - Enable color prompt
+# full     - Enable evalexpr, chrono, lipsum and csv
 ```
 **rust file**
 ```rust
