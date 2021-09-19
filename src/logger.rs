@@ -9,7 +9,7 @@ use std::io::Write;
 use crossterm::{ExecutableCommand, terminal::ClearType};
 use crate::models::WriteOption;
 use crate::consts::*;
-use colored::*;
+use crate::utils::Utils;
 use crate::error::RadError;
 
 /// Logger that controls logging
@@ -153,7 +153,7 @@ impl Logger{
                 WriteOption::Stdout => {
                     eprint!(
                         "{}: {} {} --> {}:{}:{}{}",
-                        "error".red(),
+                        Utils::red("error"),
                         log,
                         LINE_ENDING,
                         self.current_file,
@@ -188,7 +188,7 @@ impl Logger{
                 WriteOption::Stdout => {
                     eprintln!(
                         "{}: {} {} --> {}:{}:{}",
-                        "warning".yellow(),
+                        Utils::yellow("warning"),
                         log,
                         LINE_ENDING,
                         self.current_file,
@@ -212,8 +212,8 @@ impl Logger{
             }
     
             // There is either error or warning
-            let error_result = format!("{}: found {} errors","error".red(), self.error_count);
-            let warning_result = format!("{}: found {} warnings","warning".yellow(), self.warning_count);
+            let error_result = format!("{}: found {} errors",Utils::red("error"), self.error_count);
+            let warning_result = format!("{}: found {} warnings",Utils::yellow("warning"), self.warning_count);
             match option {
                 WriteOption::File(file) => {
                     if self.error_count > 0 {file.write_all(error_result.as_bytes())?;}
@@ -266,7 +266,7 @@ impl Logger{
 
         let mut input = String::new();
         let prompt = if let Some(content) = prompt { content } else { "" };
-        println!("{} : {}",format!("({})", &prompt.green()).green(), log);
+        println!("{} : {}",Utils::green(&format!("({})", &prompt)), log);
         print!(">> ");
 
         // Restore wrapping
@@ -277,7 +277,6 @@ impl Logger{
         // Flush because print! is not "printed" yet
         std::io::stdout().flush()?;
 
-        use crate::utils::Utils;
         // Get user input
         let stdin = std::io::stdin();
         stdin.lock().read_line(&mut input)?;
@@ -293,7 +292,7 @@ impl Logger{
     /// Log debug information
     #[cfg(feature = "debug")]
     pub fn dlog_print(&self, log : &str) -> Result<(), RadError> {
-        print!("{} :{}{}", format!("{}:{}", self.last_line_number,"log").green(),LINE_ENDING,log);
+        print!("{} :{}{}", Utils::green(&format!("{}:{}", self.last_line_number,"log")),LINE_ENDING,log);
         Ok(())
     }
 

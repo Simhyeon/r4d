@@ -2,6 +2,9 @@ use crate::error::RadError;
 use regex::Regex;
 use std::io::BufRead;
 
+#[cfg(feature = "color")]
+use colored::*;
+
 pub(crate) struct Utils;
 
 impl Utils {
@@ -91,6 +94,30 @@ impl Utils {
             }
         }
         return result;
+    }
+    
+    pub fn green(string : &str) -> Box<dyn std::fmt::Display> {
+        if cfg!(feature = "color") {
+            #[cfg(feature = "color")]
+            return Box::new(string.green().to_owned());
+        }
+        Box::new(string.to_owned())
+    }
+
+    pub fn red(string : &str) -> Box<dyn std::fmt::Display> {
+        if cfg!(feature = "color") {
+            #[cfg(feature = "color")]
+            return Box::new(string.red().to_owned());
+        }
+        Box::new(string.to_owned())
+    }
+
+    pub fn yellow(string : &str) -> Box<dyn std::fmt::Display> {
+        if cfg!(feature = "color") {
+            #[cfg(feature = "color")]
+            return Box::new(string.red().to_owned());
+        }
+        Box::new(string.to_owned())
     }
     
     // Copied from
