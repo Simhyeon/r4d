@@ -1,6 +1,6 @@
 [package]
 name = "r4d"
-version = "0.7.2"
+version = "0.8.0"
 edition = "2018"
 license = "MIT OR Apache-2.0"
 keywords = ["macro", "cli", "text-processing"]
@@ -22,12 +22,13 @@ path = "src/lib.rs"
 binary = [ "csv", "evalexpr", "lipsum", "chrono", "clap", "debug"]
 full = [ "csv", "evalexpr", "lipsum", "chrono" ]
 debug = [ "crossterm" ]
+color = [ "colored" ]
 
 [dependencies]
 bincode = "1.3.3"
 chrono = {version = "0.4.19", optional = true}
 clap = { version = "3.0.0-beta.2", optional = true }
-colored = "2.0.0"
+colored = {version = "2.0.0", optional = true}
 csv = {version = "1.1.6", optional = true}
 evalexpr = {version = "6.4.0", optional = true}
 lazy_static = "1.4.0"
