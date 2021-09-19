@@ -7,6 +7,7 @@
 //!
 //! Processor can handle various types of inputs (string|stdin|file)
 
+use auth::{AuthType, AuthFlags, AuthState};
 #[cfg(feature = "debug")]
 use std::io::Read;
 use std::io::{self, BufReader, Write};
@@ -39,6 +40,7 @@ use crate::arg_parser::{ArgParser, GreedyState};
 /// Processor that parses(lexes) given input and print out to desginated output
 pub struct Processor{
     current_input : String, // This is either "stdin" or currently being read file's name
+    auth_flags: AuthFlags,
     map: MacroMap,
     define_parse: DefineParser,
     write_option: WriteOption,
@@ -110,6 +112,7 @@ impl Processor {
 
         Self {
             current_input: String::from("stdin"),
+            auth_flags: AuthFlags::new(),
             map,
             write_option: WriteOption::Stdout,
             define_parse: DefineParser::new(),
@@ -246,6 +249,34 @@ impl Processor {
             self.map.custom.extend(rule_file.rules);
         }
 
+        Ok(self)
+    }
+
+    /// Open authority of processor
+    pub fn allow(&mut self, auth_types : Option<Vec<AuthType>>) -> Result<&mut Self, RadError> {
+        if let Some(auth_types) = auth_types {
+            for auth in auth_types {
+                self.auth_flags.set_state(&auth, AuthState::Open)
+            }
+        }
+        Ok(self)
+    }
+
+    /// Open authority of processor but yield warning
+    pub fn allow_with_warning(&mut self, auth_types : Option<Vec<AuthType>>) -> Result<&mut Self, RadError> {
+        if let Some(auth_types) = auth_types {
+            for auth in auth_types {
+                self.auth_flags.set_state(&auth, AuthState::Warn)
+            }
+        }
+        Ok(self)
+    }
+
+    /// Discard output
+    pub fn discard(&mut self, discard: bool) -> Result<&mut Self, RadError> {
+        if discard {
+            self.write_option = WriteOption::Discard;
+        }
         Ok(self)
     }
 
@@ -936,6 +967,7 @@ impl Processor {
                 match &mut self.write_option {
                     WriteOption::File(f) => f.write_all(content.as_bytes())?,
                     WriteOption::Stdout => print!("{}", content),
+                    WriteOption::Discard => () // Don't print anything
                 }
             }
         }
@@ -1164,6 +1196,11 @@ impl Processor {
     /// Get mutable reference of macro map
     pub(crate) fn get_map(&mut self) -> &mut MacroMap {
         &mut self.map
+    }
+
+    /// Bridge method to get auth state
+    pub(crate) fn get_auth_state(&self, auth_type : &AuthType) -> AuthState {
+        *self.auth_flags.get_state(auth_type)
     }
 
     /// Change temp file target
@@ -1484,4 +1521,58 @@ struct SandboxBackup {
     current_input: String,
     local_macro_map: HashMap<String,String>,
     logger_lines: LoggerLines,
+}
+
+pub mod auth {
+    #[derive(Debug)]
+    pub struct AuthFlags{
+        auths: Vec<AuthState>,
+    }
+
+    impl AuthFlags {
+        pub fn new() -> Self {
+            let mut auths = Vec::new();
+            for _ in 0..AuthType::LEN as usize {
+                auths.push(AuthState::Restricted);
+            }
+
+            Self {
+                auths,
+            }
+        }
+
+        pub fn set_state(&mut self, auth_type: &AuthType, auth_state: AuthState) {
+            self.auths[*auth_type as usize] = auth_state;
+        }
+
+        pub fn get_state(&self, auth_type: &AuthType) -> &AuthState {
+            &self.auths[*auth_type as usize]
+        }
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    pub enum AuthType {
+        ENV = 0,
+        IO = 1,
+        CMD = 2,
+        LEN = 3,
+    }
+
+    impl AuthType {
+        pub fn from(string: &str) -> Option<Self> {
+            match string.to_lowercase().as_str() {
+                "io" =>  Some(Self::IO),
+                "cmd" => Some(Self::CMD),
+                "env" => Some(Self::ENV),
+                _ => None
+            }
+        }
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    pub enum AuthState {
+        Restricted,
+        Warn,
+        Open,
+    }
 }
