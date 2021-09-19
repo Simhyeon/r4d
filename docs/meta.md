@@ -4,7 +4,6 @@
 - In arg parsing it consumes and set ending parenthesis literal
 - In define parsing it is treated as it is, a character ```\```
 
-* [ ] Make proper documentation for codes(docs.rs)
 * [ ] Improve projects performance
 
 ### Deterred
@@ -40,6 +39,7 @@ only for a line it would be fine.
 
 ### DONE
 
+* [x] Make proper documentation for codes(docs.rs)
 * [x] Consider adding custom basic macros
 - This is very much easy so why not
 * [x] New debug mode documentation
