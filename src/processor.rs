@@ -822,6 +822,12 @@ impl Processor {
                 LexResult::StartFrag => {
                     self.lex_branch_start_frag(ch, frag, &mut remainder, lexor)?;
                 },
+                LexResult::RestartName => {
+                    // This restart frags
+                    remainder.push_str(&frag.whole_string);
+                    frag.clear();
+                    frag.whole_string.push('$');
+                },
                 LexResult::EmptyName => {
                     self.lex_branch_empty_name(ch, frag, &mut remainder, lexor);
                 }
@@ -1026,7 +1032,7 @@ impl Processor {
     }
 
     fn lex_branch_add_to_remainder(&mut self, ch: char,remainder: &mut String) -> Result<(), RadError> {
-        if !self.checker.check(ch) {
+        if !self.checker.check(ch) && !self.paused {
             self.logger.freeze_number();
             self.log_warning("Unbalanced parenthesis detected.")?;
         }
