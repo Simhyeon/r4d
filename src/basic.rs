@@ -23,7 +23,20 @@ use lipsum::lipsum;
 
 /// Type signature of basic macros
 ///
-/// This is in order of args, greediness, processor reference
+/// This is in order of args, greediness, processor's mutable reference
+///
+/// # Example
+///
+/// ```rust
+/// fn demo(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
+///     let mut medium = String::new();
+///     // Some logics go here
+///     Ok(medium)
+/// }
+///
+/// // ... While building a processor ...
+/// processor.add_basic_rules(vec![("test", test as MacroType)]);
+/// ```
 pub type MacroType = fn(&str, bool ,&mut Processor) -> Result<String, RadError>;
 
 #[derive(Clone)]
@@ -136,8 +149,6 @@ impl BasicMacro {
     /// * `greedy` - Whether macro should interpret arguments greedily
     /// * `processor` - Processor instance to execute macro
     pub fn call(&mut self, name : &str, args: &str,greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
-        // TODO
-        // Check if this code is necessary
         if let Some(func) = self.macros.get(name) {
             // Print out macro call result
             let result = func(args, greedy, processor)?;
@@ -222,8 +233,7 @@ impl BasicMacro {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let formula = &args[0];
             let result = evalexpr::eval(formula)?;
-            // TODO
-            // Enable floating points length (or something similar)
+            // TODO Enable floating points length (or something similar)
             Ok(result.to_string())
         } else {
             Err(RadError::InvalidArgument("Eval requires an argument".to_owned()))
@@ -304,7 +314,7 @@ impl BasicMacro {
     ///
     /// $include(path)
     fn include(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
-        if !Self::is_granted("include", AuthType::IO,processor)? {
+        if !Self::is_granted("include", AuthType::FIN,processor)? {
             return Ok(String::new());
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
@@ -794,8 +804,7 @@ impl BasicMacro {
         }
     }
 
-    // TODO
-    // Make pause should be a logic branch not a basic macro?
+    // TODO Make pause should be a logic branch not a basic macro?
     /// Pause every macro expansion
     ///
     /// Only other pause call is evaluated
@@ -830,7 +839,7 @@ impl BasicMacro {
     ///
     /// $tempout(true,Content)
     fn temp_out(args: &str, greedy: bool, p: &mut Processor) -> Result<String, RadError> {
-        if !Self::is_granted("temput", AuthType::IO,p)? {
+        if !Self::is_granted("temput", AuthType::FOUT,p)? {
             return Ok(String::new());
         }
 
@@ -849,7 +858,7 @@ impl BasicMacro {
     ///
     /// $fileout(true,file_name,Content)
     fn file_out(args: &str, greedy: bool, p: &mut Processor) -> Result<String, RadError> {
-        if !Self::is_granted("fileout", AuthType::IO,p)? {
+        if !Self::is_granted("fileout", AuthType::FOUT,p)? {
             return Ok(String::new());
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
@@ -888,7 +897,7 @@ impl BasicMacro {
     ///
     /// $tempin()
     fn temp_include(_: &str, _: bool, processor: &mut Processor) -> Result<String, RadError> {
-        if !Self::is_granted("tempin", AuthType::IO,processor)? {
+        if !Self::is_granted("tempin", AuthType::FIN,processor)? {
             return Ok(String::new());
         }
         let file = processor.get_temp_path().to_owned();
@@ -905,7 +914,7 @@ impl BasicMacro {
     /// $redir(true) 
     /// $redir(false) 
     fn temp_redirect(args: &str, _: bool, p: &mut Processor) -> Result<String, RadError> {
-        if !Self::is_granted("redir", AuthType::IO,p)? {
+        if !Self::is_granted("redir", AuthType::FOUT,p)? {
             return Ok(String::new());
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, false) {
@@ -927,7 +936,7 @@ impl BasicMacro {
     ///
     /// $tempto(file_name)
     fn set_temp_target(args: &str, greedy: bool, processor: &mut Processor) -> Result<String, RadError> {
-        if !Self::is_granted("tempto", AuthType::IO,processor)? {
+        if !Self::is_granted("tempto", AuthType::FOUT,processor)? {
             return Ok(String::new());
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {

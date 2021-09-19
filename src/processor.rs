@@ -1575,7 +1575,7 @@ struct SandboxBackup {
 /// Authorization(Permission)
 ///
 /// Permission should be given for some basic macro types
-pub mod auth {
+pub(crate) mod auth {
     #[derive(Debug)]
     /// Struct that stores auth states
     pub(crate) struct AuthFlags{
@@ -1605,6 +1605,15 @@ pub mod auth {
 
     #[derive(Debug, Clone, Copy)]
     /// Authorization type
+    ///
+    /// ```text
+    /// Each variants means
+    /// - ENV  : environment variable permission
+    /// - FIN  : File in(read) permission
+    /// - FOUT : File out(write) permission
+    /// - CMD  : System command permission
+    /// - LEN  : This is a functional variant not a real value, namely a length
+    /// ```
     pub enum AuthType {
         ENV = 0,
         FIN = 1,
@@ -1614,6 +1623,7 @@ pub mod auth {
     }
 
     impl AuthType {
+        /// Convert str slice into AuthType
         pub fn from(string: &str) -> Option<Self> {
             match string.to_lowercase().as_str() {
                 "fin" =>  Some(Self::FIN),
