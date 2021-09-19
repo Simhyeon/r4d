@@ -7,7 +7,9 @@
 //!
 //! Processor can handle various types of inputs (string|stdin|file)
 
-use std::io::{self, BufReader, Read, Write};
+#[cfg(feature = "debug")]
+use std::io::Read;
+use std::io::{self, BufReader, Write};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::{ Path , PathBuf};
@@ -677,12 +679,6 @@ impl Processor {
     #[cfg(feature = "debug")]
     /// Bridge function to that prints given log as debug form
     pub(crate) fn debug_print_log(&self,log : &str) -> Result<(), RadError> {
-        self.logger.dlog_print(log)?;
-        Ok(())
-    }
-    #[cfg(feature = "debug")]
-    /// Bridge function to that prints given log as debug form but with different nmeonic(context)
-    pub(crate) fn debug_print_command_result(&self,log : &str) -> Result<(), RadError> {
         self.logger.dlog_print(log)?;
         Ok(())
     }

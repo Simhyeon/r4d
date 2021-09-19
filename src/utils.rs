@@ -101,6 +101,7 @@ impl Utils {
     // NOTE : Trailing single is necessary because this only checks newline chracter
     // thus line without trailing newline doesn't count as 1
     /// Count new lines
+    #[allow(dead_code)]
     pub(crate) fn count_sentences(s: &str) -> usize {
         s.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1
     }

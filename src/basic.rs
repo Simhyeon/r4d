@@ -44,6 +44,7 @@ impl BasicMacro {
     /// Optional macros are included only when a feature is enabled
     pub fn new() -> Self {
         // Create hashmap of functions
+        #[allow(unused_mut)]
         let mut map = HashMap::from_iter(IntoIter::new([
             ("regex".to_owned(), BasicMacro::regex_sub as MacroType),
             ("trim".to_owned(), BasicMacro::trim as MacroType),

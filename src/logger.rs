@@ -2,7 +2,9 @@
 //!
 //! Logger handles all kinds of logging logics. Such log can be warning, error or debug logs.
 
-use std::io::{Write, BufRead};
+#[cfg(feature = "debug")]
+use std::io::BufRead;
+use std::io::Write;
 #[cfg(feature = "debug")]
 use crossterm::{ExecutableCommand, terminal::ClearType};
 use crate::models::WriteOption;
