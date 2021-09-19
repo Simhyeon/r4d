@@ -1,16 +1,11 @@
 ### TODOs
 
-* [ ] New debug mode documentation
-
 * [ ] Escape rule is very inconsistent
 - In arg parsing it consumes and set ending parenthesis literal
 - In define parsing it is treated as it is, a character ```\```
 
-* [ ] Utilize elog_panic to whether panic when given file doesn't exist or not
-
-* [ ] Make proper documentation
+* [ ] Make proper documentation for codes(docs.rs)
 * [ ] Improve projects performance
-* [ ] New basic macros
 
 ### Deterred
 
@@ -45,6 +40,9 @@ only for a line it would be fine.
 
 ### DONE
 
+* [x] Consider adding custom basic macros
+- This is very much easy so why not
+* [x] New debug mode documentation
 * [-] Check if parse_chunk_lines acts as intended in basic macros
 * [x] Change logic of infinite loop warning, so that it onlys warns on body
 expansion
