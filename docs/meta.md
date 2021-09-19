@@ -1,5 +1,7 @@
 ### TODOs
 
+* [ ] Publish with binary option so that user can install rad with cargo install --features binary
+
 * [ ] Escape rule is very inconsistent
 - In arg parsing it consumes and set ending parenthesis literal
 - In define parsing it is treated as it is, a character ```\```
@@ -39,6 +41,18 @@ only for a line it would be fine.
 
 ### DONE
 
+* [x] Make colored optional
+* [x] ~~Dry run~~ Discard run
+- Problem is dry run doesn't prevent fileio fileout or redir
+* [x] Authority option
+- Disable IO,Syscmd,Shell by default
+- And enable it by user input
+- Create : AuthFlagStruct with stores array of u8 which represents u8 number of enum values.
+
+* [x] BUG :::: Sys cmd fails to parse arguments... shit
+- Simply bypassed with default greedy and space split
+* [-] BUG :::: On debug mode, include triggers newly nested prompt...
+- Well this might not be a bad idea to be frankly speaking
 * [x] Make proper documentation for codes(docs.rs)
 * [x] Consider adding custom basic macros
 - This is very much easy so why not
