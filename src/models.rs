@@ -40,6 +40,15 @@ pub struct MacroMap {
 }
 
 impl MacroMap {
+    /// Creates empty map
+    pub fn empty() -> Self {
+        Self {
+            basic: BasicMacro::empty(),
+            custom: HashMap::new(),
+            local: HashMap::new(),
+        }
+    }
+
     pub fn new() -> Self {
         Self { 
             basic: BasicMacro::new(),

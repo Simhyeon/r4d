@@ -121,15 +121,6 @@ impl Logger{
         println!("LINE : {}", self.line_number);
     }
 
-    // TODO
-    // Check if this is necessary
-    #[allow(dead_code)]
-    pub fn elog_panic(&mut self, log: &str, error: RadError) -> Result<(), RadError> {
-        self.elog(log)?;
-
-        Err(error)
-    }
-
     /// Log error
     pub fn elog(&mut self, log : &str) -> Result<(), RadError> {
         self.error_count = self.error_count + 1; 

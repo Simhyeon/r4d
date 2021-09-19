@@ -2,6 +2,7 @@ use std::io::{self, BufReader, Read, Write};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::{ Path , PathBuf};
+use crate::basic::MacroType;
 use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
@@ -64,6 +65,16 @@ impl Processor {
     // <BUILDER>
     /// Creates new processor with deafult options
     pub fn new() -> Self {
+        Self::new_processor(true)
+    }
+
+    /// Creates new processor without default macros
+    pub fn empty() -> Self {
+        Self::new_processor(false)
+    }
+
+    /// Internal function to create Processor struct
+    fn new_processor(use_basic: bool) -> Self {
         let temp_path= std::env::temp_dir().join("rad.txt");
         let temp_target = (temp_path.to_owned(),OpenOptions::new()
             .create(true)
@@ -75,9 +86,15 @@ impl Processor {
         let mut logger = Logger::new();
         logger.set_write_options(Some(WriteOption::Stdout));
 
+        let map = if use_basic {
+            MacroMap::new()
+        } else {
+            MacroMap::empty()
+        };
+
         Self {
             current_input: String::from("stdin"),
-            map : MacroMap::new(),
+            map,
             write_option: WriteOption::Stdout,
             define_parse: DefineParser::new(),
             logger,
@@ -240,6 +257,13 @@ impl Processor {
     pub fn freeze_to_file(&self, path: &Path) -> Result<(), RadError> {
         RuleFile::new(Some(self.map.custom.clone())).freeze(path)?;
         Ok(())
+    }
+
+    /// Add new basic rules
+    pub fn add_basic_rules(&mut self, basic_rules:Vec<(&str,MacroType)>) {
+        for (name, macro_ref) in basic_rules {
+            self.map.basic.add_new_rule(name, macro_ref);
+        }
     }
 
     /// Read from string

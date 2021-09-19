@@ -17,7 +17,7 @@ use crate::formatter::Formatter;
 use lipsum::lipsum;
 
 // Args, greediness, processor
-type MacroType = fn(&str, bool ,&mut Processor) -> Result<String, RadError>;
+pub type MacroType = fn(&str, bool ,&mut Processor) -> Result<String, RadError>;
 
 #[derive(Clone)]
 pub struct BasicMacro {
@@ -25,6 +25,13 @@ pub struct BasicMacro {
 }
 
 impl BasicMacro {
+    /// Creates empty map
+    pub fn empty() -> Self {
+        Self {
+            macros: HashMap::new(),
+        }
+    }
+
     /// Creates new basic macro hashmap
     pub fn new() -> Self {
         // Create hashmap of functions
@@ -79,6 +86,10 @@ impl BasicMacro {
 
         // Return struct
         Self { macros : map }
+    }
+
+    pub fn add_new_rule(&mut self, name: &str, macro_ref: MacroType) {
+        self.macros.insert(name.to_owned(), macro_ref);
     }
 
     /// Check if a given macro exists
