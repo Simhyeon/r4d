@@ -94,7 +94,7 @@ $include(src/content.rs)
 // Content of src/content.rs is pasted in here
 ```
 
-**temp**
+**tempin, tempout, tempto**
 
 AUTH : FIN or FOUT
 

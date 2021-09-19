@@ -12,23 +12,23 @@
 //! use rad::RadError;
 //! use rad::Processor;
 //! use rad::MacroType;
-//! use rad::auth::AuthType;
+//! use rad::AuthType;
 //! use std::path::{Path, PathBuf};
 //! 
 //! // Builder
 //! let processor = Processor::new()
-//!     .purge(true)
-//!     .greedy(true)
-//!     .silent(true)
-//!     .strict(true)
+//!     .purge(true)                                         // Purge undefined macro
+//!     .greedy(true)                                        // Makes all macro greedy
+//!     .silent(true)                                        // Silents all errors and warnings
+//!     .strict(true)                                        // Enable strict mode, panicks on any error
 //!     .custom_rules(Some(vec![Pathbuf::from("rule.r4f")])) // Read from frozen rule files
 //!     .write_to_file(Some(PathBuf::from("out.txt")))?      // default is stdout
 //!     .error_to_file(Some(PathBuf::from("err.txt")))?      // default is stderr
 //!     .unix_new_line(true)                                 // use unix new line for formatting
 //!     .discard(true)?                                      // discard all output
 //!     // Permission
-//!     .allow(Some(vec![AuthType::ENV]))
-//!     .allow_with_warning(Some(vec![AuthType::CMD]))
+//!     .allow(Some(vec![AuthType::ENV]))                    // Grant permission of authtypes
+//!     .allow_with_warning(Some(vec![AuthType::CMD]))       // Grant permission of authypes with warning enabled
 //!     // Debugging options
 //!     .debug(true)                                         // Turn on debug mode
 //!     .log(true)                                           // Use logging to terminal

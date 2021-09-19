@@ -5,19 +5,21 @@ to sucessfully register the macro.
 
 ```
 $define(name,arg1 arg2=$arg1() $arg2())
+        |    |         |
+Arg:    1st  2nd       3rd
 ```
-**First argument**
+**First argument** (Before first comma)
 
 First argument is a macro name. Macro should start with an alphabet character
 and following characters should be either alphanumeric or underscore.
 
-**Second argument**
+**Second argument** (Before equal sign)
 
 Second argument is macro's arguments. Macro argument also follows same rule
 of naming. Multiple arguments can be declared and should be separated by a
 whitespace.
 
-**Third argument**
+**Third argument** (After equal sign)
 
 Third argument is a macro body. Any text can be included in the macro body
 while an unbalanced parenthesis will prevent processor's work. Currently there

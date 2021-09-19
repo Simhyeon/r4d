@@ -169,7 +169,7 @@ impl Cli {
             (@arg log: -l --log "Debug log mode")
             (@arg interactive: -i --interactive "Use interactive debug mode")
             (@arg combination: -c "Read from both stdin and file inputs")
-            (@arg discard: -D --discard "Discard output without prin out")
+            (@arg discard: -D --discard "Discard output without print out")
             (@arg allow: -a +takes_value "Allow permission (fin|fout|cmd|env)")
             (@arg allow_warn: -w +takes_value "Allow permission with warnings (fin|fout|cmd|env)")
             (@arg allow_all: -A "Allow all permission")
