@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+/// R4d's error type
 #[derive(Error, Debug)]
 pub enum RadError {
     #[error("Invalid command option\n= {0}")]

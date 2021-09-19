@@ -16,7 +16,9 @@ use crate::formatter::Formatter;
 #[cfg(feature = "lipsum")]
 use lipsum::lipsum;
 
-// Args, greediness, processor
+/// Type signature of basic macros
+///
+/// This is in order of args, greediness, processor reference
 pub type MacroType = fn(&str, bool ,&mut Processor) -> Result<String, RadError>;
 
 #[derive(Clone)]
