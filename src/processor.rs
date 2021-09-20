@@ -140,12 +140,15 @@ impl Processor {
     /// Only basic macro usage should be given as an argument.
     fn new_processor(use_basic: bool) -> Self {
         let temp_path= std::env::temp_dir().join("rad.txt");
-        let temp_target = (temp_path.to_owned(),OpenOptions::new()
+        let temp_target = (
+            temp_path.to_owned(),
+            OpenOptions::new()
             .create(true)
             .write(true)
             .truncate(true)
             .open(&temp_path)
-            .unwrap());
+            .unwrap()
+        );
 
         let mut logger = Logger::new();
         logger.set_write_options(Some(WriteOption::Stdout));
@@ -187,7 +190,7 @@ impl Processor {
     }
 
     /// Set write option to yield output to the file
-    pub fn write_to_file(&mut self, target_file: Option<PathBuf>) -> Result<&mut Self, RadError> {
+    pub fn write_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
             let target_file = OpenOptions::new()
                 .create(true)
@@ -201,7 +204,7 @@ impl Processor {
     }
 
     /// Yield error to the file
-    pub fn error_to_file(&mut self, target_file: Option<PathBuf>) -> Result<&mut Self, RadError> {
+    pub fn error_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
             let target_file = OpenOptions::new()
                 .create(true)
@@ -286,11 +289,11 @@ impl Processor {
     }
 
     /// Add custom rules
-    pub fn custom_rules(&mut self, paths: Option<Vec<PathBuf>>) -> Result<&mut Self, RadError> {
+    pub fn custom_rules(&mut self, paths: Option<Vec<impl AsRef<Path>>>) -> Result<&mut Self, RadError> {
         if let Some(paths) = paths {
             let mut rule_file = RuleFile::new(None);
             for p in paths.iter() {
-                rule_file.melt(p)?;
+                rule_file.melt(p.as_ref())?;
             }
             self.map.custom.extend(rule_file.rules);
         }
@@ -347,8 +350,8 @@ impl Processor {
     }
 
     /// Freeze to single file
-    pub fn freeze_to_file(&self, path: &Path) -> Result<(), RadError> {
-        RuleFile::new(Some(self.map.custom.clone())).freeze(path)?;
+    pub fn freeze_to_file(&self, path: impl AsRef<Path>) -> Result<(), RadError> {
+        RuleFile::new(Some(self.map.custom.clone())).freeze(path.as_ref())?;
         Ok(())
     }
 
@@ -405,10 +408,10 @@ impl Processor {
     }
 
     /// Process contents from a file
-    pub fn from_file(&mut self, path :&Path) -> Result<String, RadError> {
+    pub fn from_file(&mut self, path :impl AsRef<Path>) -> Result<String, RadError> {
 
         // Set file as name of given path
-        self.set_file(path.to_str().unwrap())?;
+        self.set_file(path.as_ref().to_str().unwrap())?;
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
@@ -1275,7 +1278,7 @@ impl Processor {
 
     /// Get temp file's path
     pub(crate) fn get_temp_path(&self) -> &Path {
-        &self.temp_target.0
+        self.temp_target.0.as_ref()
     }
 
     /// Get temp file's "file" struct
@@ -1316,7 +1319,7 @@ impl Processor {
     // This is not a backup but fresh set of file information
     /// Set(update) current processing file information
     fn set_file(&mut self, file: &str) -> Result<(), RadError> {
-        let path = &Path::new(file);
+        let path = Path::new(file);
         if !path.exists() {
             Err(RadError::InvalidCommandOption(format!("File, \"{}\" doesn't exist, therefore cannot be read by r4d.", path.display())))
         } else {
