@@ -31,17 +31,17 @@
 //!
 //! **Library**
 //! ```rust
-//! use rad::RadError;
 //! use rad::Processor;
+//! use std::path::Path;
 //! 
-//! let processor = Processor::new()
+//! let mut processor = Processor::new()
 //!     .purge(true)
 //!     .greedy(true)
-//!     .write_to_file(Some(PathBuf::from("cache.txt")))?
+//!     .write_to_file(Some(Path::new("cache.txt")))?
 //!     .build(); 
 //! 
-//! processor.from_file(Path::new("input.txt"));
-//! processor.print_result();
+//! processor.from_file(Path::new("input.txt"))?;
+//! processor.print_result()?;
 //! ```
 //!
 //! Detailed r4d usage is illustrated in [github
