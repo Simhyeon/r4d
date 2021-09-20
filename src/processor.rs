@@ -13,19 +13,19 @@
 //! use rad::Processor;
 //! use rad::MacroType;
 //! use rad::AuthType;
-//! use std::path::{Path, PathBuf};
+//! use std::path::Path;
 //! 
 //! // Builder
-//! let processor = Processor::new()
+//! let mut processor = Processor::new()
 //!     .purge(true)                                         // Purge undefined macro
 //!     .greedy(true)                                        // Makes all macro greedy
 //!     .silent(true)                                        // Silents all errors and warnings
 //!     .strict(true)                                        // Enable strict mode, panicks on any error
-//!     .custom_rules(Some(vec![Pathbuf::from("rule.r4f")])) // Read from frozen rule files
-//!     .write_to_file(Some(PathBuf::from("out.txt")))?      // default is stdout
-//!     .error_to_file(Some(PathBuf::from("err.txt")))?      // default is stderr
+//!     .custom_rules(Some(vec![Path::new("rule.r4f")]))?    // Read from frozen rule files
+//!     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
+//!     .error_to_file(Some(Path::new("err.txt")))?          // default is stderr
 //!     .unix_new_line(true)                                 // use unix new line for formatting
-//!     .discard(true)?                                      // discard all output
+//!     .discard(true)                                       // discard all output
 //!     // Permission
 //!     .allow(Some(vec![AuthType::ENV]))                    // Grant permission of authtypes
 //!     .allow_with_warning(Some(vec![AuthType::CMD]))       // Grant permission of authypes with warning enabled
@@ -46,11 +46,11 @@
 //! // Add custom rules(in order of "name, args, body") 
 //! processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
 //! 
-//! processor.from_string(r#"$define(test=Test)"#);
-//! processor.from_stdin();
-//! processor.from_file(Path::new("from.txt"));
-//! processor.freeze_to_file(Path::new("out.r4f")); // Create frozen file
-//! processor.print_result();                       // Print out warning and errors count
+//! processor.from_string(r#"$define(test=Test)"#)?;
+//! processor.from_stdin()?;
+//! processor.from_file(Path::new("from.txt"))?;
+//! processor.freeze_to_file(Path::new("out.r4f"))?; // Create frozen file
+//! processor.print_result()?;                       // Print out warning and errors count
 //! ```
 
 use auth::{AuthType, AuthFlags, AuthState};
@@ -263,29 +263,29 @@ impl Processor {
 
     /// Add debug options
     #[cfg(feature = "debug")]
-    pub fn debug(&mut self, debug: bool) -> Result<&mut Self, RadError> {
+    pub fn debug(&mut self, debug: bool) -> &mut Self {
         if debug {
             self.debug = true;
         }
-        Ok(self)
+        self
     }
 
     /// Add debug log options
     #[cfg(feature = "debug")]
-    pub fn log(&mut self, log: bool) -> Result<&mut Self, RadError> {
+    pub fn log(&mut self, log: bool) -> &mut Self {
         if log {
             self.debug_log = true;
         }
-        Ok(self)
+        self
     }
 
     /// Add debug interactive options
     #[cfg(feature = "debug")]
-    pub fn interactive(&mut self, interactive: bool) -> Result<&mut Self, RadError> {
+    pub fn interactive(&mut self, interactive: bool) -> &mut Self {
         if interactive {
             self.logger.set_debug_interactive();
         }
-        Ok(self)
+        self
     }
 
     /// Add custom rules
@@ -302,31 +302,31 @@ impl Processor {
     }
 
     /// Open authority of processor
-    pub fn allow(&mut self, auth_types : Option<Vec<AuthType>>) -> Result<&mut Self, RadError> {
+    pub fn allow(&mut self, auth_types : Option<Vec<AuthType>>) -> &mut Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
                 self.auth_flags.set_state(&auth, AuthState::Open)
             }
         }
-        Ok(self)
+        self
     }
 
     /// Open authority of processor but yield warning
-    pub fn allow_with_warning(&mut self, auth_types : Option<Vec<AuthType>>) -> Result<&mut Self, RadError> {
+    pub fn allow_with_warning(&mut self, auth_types : Option<Vec<AuthType>>) -> &mut Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
                 self.auth_flags.set_state(&auth, AuthState::Warn)
             }
         }
-        Ok(self)
+        self
     }
 
     /// Discard output
-    pub fn discard(&mut self, discard: bool) -> Result<&mut Self, RadError> {
+    pub fn discard(&mut self, discard: bool) -> &mut Self {
         if discard {
             self.write_option = WriteOption::Discard;
         }
-        Ok(self)
+        self
     }
 
     /// Creates a unreferenced instance of processor
