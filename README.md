@@ -53,8 +53,8 @@ let processor = Processor::new()
     .write_to_file(Some(PathBuf::from("cache.txt")))?
     .build(); 
 
-processor.from_file(Path::new("input.txt"));
-processor.print_result();
+processor.from_file(Path::new("input.txt"))?;
+processor.print_result()?;
 ```
 
 ### Usage
