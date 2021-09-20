@@ -77,18 +77,19 @@ use rad::RadError;
 use rad::Processor;
 use rad::MacroType;
 use rad::AuthType;
+use std::path::Path;
 
-// Builder pattern
-let processor = Processor::new()
+// Builder
+let mut processor = Processor::new()
     .purge(true)                                         // Purge undefined macro
     .greedy(true)                                        // Makes all macro greedy
     .silent(true)                                        // Silents all errors and warnings
     .strict(true)                                        // Enable strict mode, panicks on any error
-    .custom_rules(Some(vec![Pathbuf::from("rule.r4f")])) // Read from frozen rule files
-    .write_to_file(Some(PathBuf::from("out.txt")))?      // default is stdout
-    .error_to_file(Some(PathBuf::from("err.txt")))?      // default is stderr
-    .discard(true)?                                      // discard all output
+    .custom_rules(Some(vec![Path::new("rule.r4f")]))?    // Read from frozen rule files
+    .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
+    .error_to_file(Some(Path::new("err.txt")))?          // default is stderr
     .unix_new_line(true)                                 // use unix new line for formatting
+    .discard(true)                                       // discard all output
     // Permission
     .allow(Some(vec![AuthType::ENV]))                    // Grant permission of authtypes
     .allow_with_warning(Some(vec![AuthType::CMD]))       // Grant permission of authypes with warning enabled
@@ -109,9 +110,9 @@ processor.add_basic_rules(vec![("test", test as MacroType)]);
 // Add custom rules(in order of "name, args, body") 
 processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
 
-processor.from_string(r#"$define(test=Test)"#);
-processor.from_stdin();
-processor.from_file(Path::new("from.txt"));
-processor.freeze_to_file(Path::new("out.r4f")); // Create frozen file
-processor.print_result();                       // Print out warning and errors count
+processor.from_string(r#"$define(test=Test)"#)?;
+processor.from_stdin()?;
+processor.from_file(Path::new("from.txt"))?;
+processor.freeze_to_file(Path::new("out.r4f"))?; // Create frozen file
+processor.print_result()?;                       // Print out warning and errors count
 ```
