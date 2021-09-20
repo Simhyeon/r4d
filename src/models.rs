@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::Path;
 use crate::basic::BasicMacro;
 use crate::error::RadError;
 use crate::utils::Utils;
@@ -168,7 +169,7 @@ impl RuleFile {
     }
 
     /// Read from rule file and make it into hash map
-    pub fn melt(&mut self, path : &std::path::Path) -> Result<(), RadError> {
+    pub fn melt(&mut self, path : &Path) -> Result<(), RadError> {
         let result = bincode::deserialize::<Self>(&std::fs::read(path)?);
         if let Err(_) = result {
             Err(RadError::BincodeError(format!("Failed to melt the file : {}", path.display())))
