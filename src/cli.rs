@@ -49,16 +49,16 @@ impl Cli {
             .greedy(args.is_present("greedy"))
             .strict(args.is_present("greedy"))
             .silent(args.is_present("silent"))
-            .allow(std::mem::replace(&mut self.allow_auth,None))?
-            .allow_with_warning(std::mem::replace(&mut self.allow_auth_warn,None))?
+            .allow(std::mem::replace(&mut self.allow_auth,None))
+            .allow_with_warning(std::mem::replace(&mut self.allow_auth_warn,None))
             .unix_new_line(args.is_present("newline"))
             .custom_rules(std::mem::replace(&mut self.rules,None))?
             .write_to_file(std::mem::replace(&mut self.write_to_file,None))?
-            .discard(args.is_present("discard"))?
+            .discard(args.is_present("discard"))
             .error_to_file(std::mem::replace(&mut self.error_to_file,None))?
-            .debug(args.is_present("debug"))?
-            .log(args.is_present("log"))?
-            .interactive(args.is_present("interactive"))?
+            .debug(args.is_present("debug"))
+            .log(args.is_present("log"))
+            .interactive(args.is_present("interactive"))
             .build();
 
         // Debug
@@ -154,7 +154,7 @@ impl Cli {
     /// Creates argument template wich clap macro
     fn args_builder() -> clap::ArgMatches {
         clap_app!(rad =>
-            (version: "0.8.2")
+            (version: "0.8.3")
             (author: "Simon Creek <simoncreek@tutanota.com>")
             (about: "R4d is a modern macro processor made with rust")
             (@arg FILE: ... "Files to execute processing")
