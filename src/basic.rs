@@ -299,7 +299,7 @@ impl BasicMacro {
             if let Ok(count) = Utils::trim(word_count)?.parse::<usize>() {
                 Ok(lipsum(count))
             } else {
-                Err(RadError::InvalidArgument("Lipsum needs a number bigger or equal to 0 (unsigned integer)".to_owned()))
+                Err(RadError::InvalidArgument(format!("Lipsum needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", word_count)))
             }
         } else {
             Err(RadError::InvalidArgument("Placeholder requires an argument".to_owned()))
@@ -320,12 +320,12 @@ impl BasicMacro {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let raw = Utils::trim(&args[0])?;
             let file_path = std::path::Path::new(&raw);
-            if file_path.exists() { 
+            if file_path.is_file() { 
                 processor.set_sandbox();
                 let result = processor.from_file(file_path)?;
                 Ok(result)
             } else {
-                let formatted = format!("File path : \"{}\" doesn't exist", file_path.display());
+                let formatted = format!("File path : \"{}\" doesn't exist or not a file", file_path.display());
                 Err(RadError::InvalidArgument(formatted))
             }
         } else {
@@ -344,7 +344,7 @@ impl BasicMacro {
             if let Ok(count) = Utils::trim(&args[0])?.parse::<usize>() {
                 repeat_count = count;
             } else {
-                return Err(RadError::InvalidArgument("Repeat needs a number bigger or equal to 0 (unsigned integer)".to_owned()));
+                return Err(RadError::InvalidArgument(format!("Repeat needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", &args[0])));
             }
             let repeat_object = &args[1];
             let mut repeated = String::new();
@@ -421,7 +421,7 @@ impl BasicMacro {
                     return Ok(result); 
                 }
             } else {
-                return Err(RadError::InvalidArgument("If requires either true/false or zero/nonzero integer.".to_owned()))
+                return Err(RadError::InvalidArgument(format!("If requires either true/false or zero/nonzero integer but given \"{}\"", trimmed_cond)))
             }
 
             Ok(String::new())
@@ -455,7 +455,7 @@ impl BasicMacro {
                     return Ok(result); 
                 }
             } else {
-                return Err(RadError::InvalidArgument("Ifelse requires either true/false or zero/nonzero integer.".to_owned()))
+                return Err(RadError::InvalidArgument(format!("Ifelse requires either true/false or zero/nonzero integer but given \"{}\"",trimmed_cond)))
             }
 
             // Else state
@@ -501,7 +501,12 @@ impl BasicMacro {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let name = &Utils::trim(&args[0])?;
 
-            processor.get_map().undefine(name);
+            let map = processor.get_map();
+            if map.contains(name) { 
+                map.undefine(name);
+            } else {
+                processor.log_error(&format!("Macro \"{}\" doesn't exist, therefore cannot undefine", name))?;
+            }
             Ok("".to_owned())
         } else {
             Err(RadError::InvalidArgument("Undefine requires an argument".to_owned()))
@@ -547,10 +552,10 @@ impl BasicMacro {
             let max: usize; 
             if let Ok(num) = Utils::trim(&args[0])?.parse::<usize>() {
                 min = num;
-            } else { return Err(RadError::InvalidArgument("Forloop's min value should be non zero positive integer".to_owned())); }
+            } else { return Err(RadError::InvalidArgument(format!("Forloop's min value should be non zero positive integer but given {}", &args[0]))); }
             if let Ok(num) = Utils::trim(&args[1])?.parse::<usize>() {
                 max = num
-            } else { return Err(RadError::InvalidArgument("Forloop's min value should be non zero positive integer".to_owned())); }
+            } else { return Err(RadError::InvalidArgument(format!("Forloop's min value should be non zero positive integer gut given \"{}\"", &args[1]))); }
             
             for value in min..=max {
                 let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), &expression.replace("$:", &value.to_string()))?;
@@ -630,7 +635,7 @@ impl BasicMacro {
             let name = &args[0];
             let value = &args[1];
             processor.get_map().new_local(1, name, value);
-            if processor.get_map().custom.contains_key(name) {
+            if processor.get_map().contains(name) {
                 processor.log_warning(&format!("Creating a binding with a name already existing : \"{}\"", name))?;
             }
         }
@@ -714,7 +719,13 @@ impl BasicMacro {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let target = &args[0];
             let new = &args[1];
-            processor.get_map().rename(target, new);
+
+            let map = processor.get_map();
+            if map.contains(target) { 
+                processor.get_map().rename(target, new);
+            } else {
+                processor.log_error(&format!("Macro \"{}\" doesn't exist, therefore cannot rename", target))?;
+            }
 
             Ok(String::new())
         } else {
@@ -733,7 +744,12 @@ impl BasicMacro {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let name = &args[0];
             let target = &args[1];
-            processor.get_map().append(name, target);
+            let map = processor.get_map();
+            if map.custom.contains_key(name) {
+                map.append(name, target);
+            } else {
+                processor.log_error(&format!("Macro \"{}\" doesn't exist", name))?;
+            }
 
             Ok(String::new())
         } else {
@@ -753,7 +769,7 @@ impl BasicMacro {
             let destination = &args[2].chars().collect::<Vec<char>>();
 
             if target.len() != destination.len() {
-                return Err(RadError::InvalidArgument("Tr's replacment should have same length of texts".to_owned()));
+                return Err(RadError::InvalidArgument(format!("Tr's replacment should have same length of texts while given \"{:?}\" and \"{:?}\"", target, destination)));
             }
 
             for i in 0..target.len() {
@@ -762,7 +778,7 @@ impl BasicMacro {
 
             Ok(source)
         } else {
-            Err(RadError::InvalidArgument("Tr requires two arguments".to_owned()))
+            Err(RadError::InvalidArgument("Tr requires three arguments".to_owned()))
         }
     }
 
@@ -772,7 +788,7 @@ impl BasicMacro {
     ///
     /// $sub(0,5,GivenString)
     fn substring(args: &str, greedy: bool, _: &mut Processor) -> Result<String, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
             let source = &args[2];
 
             let mut min: Option<usize> = None;
@@ -785,7 +801,7 @@ impl BasicMacro {
                 min.replace(num);
             } else { 
                 if start.len() != 0 {
-                    return Err(RadError::InvalidArgument("Sub's min value should be non zero positive integer or empty value".to_owned())); 
+                    return Err(RadError::InvalidArgument(format!("Sub's min value should be non zero positive integer or empty value but given \"{}\"", start))); 
                 }
             }
 
@@ -793,14 +809,14 @@ impl BasicMacro {
                 max.replace(num);
             } else { 
                 if end.len() != 0 {
-                    return Err(RadError::InvalidArgument("Sub's max value should be non zero positive integer or empty value".to_owned())); 
+                    return Err(RadError::InvalidArgument(format!("Sub's max value should be non zero positive integer or empty value but given \"{}\"", end))); 
                 }
             }
 
             Ok(Utils::utf8_substring(source, min, max))
 
         } else {
-            Err(RadError::InvalidArgument("Sub requires some arguments".to_owned()))
+            Err(RadError::InvalidArgument("Sub requires three arguments".to_owned()))
         }
     }
 
@@ -826,7 +842,7 @@ impl BasicMacro {
             } 
             // Failed to evaluate
             else {
-                Err(RadError::InvalidArgument("Pause requires either true/false or zero/nonzero integer.".to_owned()))
+                Err(RadError::InvalidArgument(format!("Pause requires either true/false or zero/nonzero integer, but given \"{}\"", arg)))
             }
         } else {
             Err(RadError::InvalidArgument("Pause requires an argument".to_owned()))
@@ -876,6 +892,11 @@ impl BasicMacro {
                         .open(file)
                         .unwrap();
                     } else {
+
+                        if !file.is_file() {
+                            return Err(RadError::InvalidArgument(format!("Failed to read \"{}\". Fileout without truncate option needs exsiting file",file.display())));
+                        }
+
                         target_file = OpenOptions::new()
                             .append(true)
                             .open(file)
@@ -884,10 +905,10 @@ impl BasicMacro {
                 target_file.write_all(content.as_bytes())?;
                 Ok(String::new())
             } else {
-                Err(RadError::InvalidArgument("Temp requires either true/false or zero/nonzero integer.".to_owned()))
+                Err(RadError::InvalidArgument(format!("Fileout requires either true/false or zero/nonzero integer but given \"{}\"", truncate)))
             }
         } else {
-            Err(RadError::InvalidArgument("Temp requires an argument".to_owned()))
+            Err(RadError::InvalidArgument("Fileout requires three argument".to_owned()))
         }
     }
 
@@ -921,7 +942,7 @@ impl BasicMacro {
             let toggle = if let Ok(toggle) =Utils::is_arg_true(&args[0]) { 
                 toggle
             } else {
-                return Err(RadError::InvalidArgument("Redir's agument should be valid boolean value".to_owned()));
+                return Err(RadError::InvalidArgument(format!("Redir's agument should be valid boolean value but given \"{}\"", &args[0])));
             };
             p.redirect = toggle;
             Ok(String::new())

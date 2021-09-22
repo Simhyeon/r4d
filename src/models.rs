@@ -78,6 +78,11 @@ impl MacroMap {
         self.local.clear();
     }
 
+    /// Check if macro exists
+    pub fn contains(&self, name: &str) -> bool {
+        self.basic.contains(name) || self.custom.contains_key(name)
+    }
+
     // Empty argument should be treated as no arg
     /// Register a new custom macro
     pub fn register(
