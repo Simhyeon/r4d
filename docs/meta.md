@@ -3,31 +3,41 @@
 * [ ] Improve projects performance
 * [ ] Maybe fallable option
 
-### How one should parse macro invocation?
-
-While it is much easier to parse macro compared to other function definitions,
-it is somewhat hard to do with stock libraries by itself since you have to
-retain unparsed statements.
-
-I'm thinking of multiple approaches but basic principle is to parse lines not a
-whole file.
+### How macro parsing works?
 
 1. Get file buffer or stdin buffer
+- It is deliberately decided to get a bufstream not a single string because
+file or standard input maybe very big which is not so memory friendly and
+partial processing will yield nothing if input was given as a huge chunk.
+- Yet definition body processing doesn't read bufstream but a single chunk
+of body for simplicity of error logging.
 2. Iterate by lines
+- This iteration doesn't use std's builtin lines() literator but use custom
+iterator method which was blatantly copied from stack overflow. While std's
+lines method always chop newline chracter, this was not ideal in r4d's
+processing procedure.
 3. Check if line include macro invocation
-4. If not, check if line include partial macro invocation
+- Checking is simply done with character comparision of "$" sign existence.
+4. Check if line include partial macro invocation
+- This is a branch executed only when macro fragment is not empty, which means
+current line is a part of long macro invocation.
 5. Push lines to `chunk` until macro invocation is complete
-6. Execute macro invocation and substitue final result.
+- For 3 ~ 5 phase what so called "lexing" is introduced. Lexing has its
+cursor(state machine) in its body so that lexor can define whether iterated
+chracter is valid character for macro invocation or not. Invalid characters
+will break the macro framgent and return original text.
+6. Execute macro invocation and substitute with final result.
+    - If macro doesn't exist, original text is returned
+	- The order of macros are "local", "custom" and then "basic", this enables
+user to override basic macro with custom macro.
 
-The main point is 3 and 4. How should I find whether invocation exists or not.
+### How basic macros work
 
-First approach was to utilize regex crate, while this works for partial
-definition, it can't find full macro invocation because rust regex cannot find
-balanced match (No subregex or recursive match). This is due to the fact that rust 
-regex crate complies with pure regex standard.
-
-My next approach will be pest. Pest has somewhat unfamailiar syntax but if used
-only for a line it would be fine.
+Basic macros are simply a hashmap of functions with a string key. If processor
+finds a macro fragment(chunk). It tries to evaluate the chunk and find sif
+macro name is included in macro maps. After finding local and custom macros, if
+basic macro name is found, macro call(function) is executed. Thus adding a
+basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
 
