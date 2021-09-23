@@ -1,6 +1,7 @@
 ### TODOs
 
 * [ ] Improve projects performance
+* [ ] Maybe fallable option
 
 ### How one should parse macro invocation?
 
