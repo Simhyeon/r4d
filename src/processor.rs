@@ -906,7 +906,7 @@ impl Processor {
     /// - Local bound macro
     /// - Custom macro
     /// - Basic macro
-    fn evaluate(&mut self,level: usize, caller: &str, name: &str, raw_args: &str, greedy: bool) -> Result<Option<String>, RadError> {
+    fn evaluate(&mut self,level: usize, caller: &str, name: &str, raw_args: &str, greedy: bool) -> Result<EvalResult, RadError> {
         let level = level + 1;
         // This parses and processes arguments
         // and macro should be evaluated after
@@ -937,7 +937,7 @@ impl Processor {
         let mut temp_level = level;
         while temp_level > 0 {
             if let Some(local) = self.map.local.get(&Utils::local_name(temp_level, &name)) {
-                return Ok(Some(local.to_owned()));
+                return Ok(EvalResult::Eval(Some(local.to_owned())));
             } 
             temp_level = temp_level - 1;
         }
@@ -946,25 +946,25 @@ impl Processor {
         // user can override it
         if self.map.custom.contains_key(name) {
             if let Some(result) = self.invoke_rule(level, name, &args, greedy)? {
-                return Ok(Some(result));
+                return Ok(EvalResult::Eval(Some(result)));
             } else {
-                return Ok(None);
+                return Ok(EvalResult::None);
             }
         }
         // Find basic macro
         else if self.map.basic.contains(&name) {
             let final_result = self.map.basic.clone().call(name, &args, greedy, self)?;
-            return Ok(Some(final_result));
+            return Ok(EvalResult::Eval(final_result));
         } 
         // No macros found to evaluate
         else { 
-            return Ok(None);
+            return Ok(EvalResult::None);
         }
     }
 
     /// Invoke a custom rule and get a result
     ///
-    /// Invoke rule evalutes body of macro rule because body is not evaluated on register process
+    /// Invoke rule evaluates body of macro rule because body is not evaluated on register process
     fn invoke_rule(&mut self,level: usize ,name: &str, arg_values: &str, greedy: bool) -> Result<Option<String>, RadError> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
@@ -1135,7 +1135,6 @@ impl Processor {
             frag.clear();
         } 
         else { // Invoke macro
-
             // Debug
             #[cfg(feature = "debug")]
             {
@@ -1152,20 +1151,38 @@ impl Processor {
             // Try to evaluate
             let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy);
 
-            // If panicked, this means unrecoverable error occured.
-            if let Err(error) = evaluation_result {
-                // this is equlvalent to conceptual if let not pattern
-                if let RadError::Panic = error{
-                    // Do nothing
-                    ();
-                } else {
-                    self.log_error(&format!("{}", error))?;
+            match evaluation_result {
+                // If panicked, this means unrecoverable error occured.
+                Err(error) => {
+                    self.lex_branch_end_frag_eval_result_error(error)?;
                 }
-                return Err(RadError::Panic);
+                Ok(eval_variant) => {
+                    self.lex_branch_end_frag_eval_result_ok(eval_variant,frag,remainder,lexor,level)?;
+                }
             }
+            // Clear fragment regardless of success
+            frag.clear()
+        }
+
+        Ok(())
+    }
+
+    fn lex_branch_end_frag_eval_result_error(&mut self, error : RadError) -> Result<(), RadError> {
+        // this is equlvalent to conceptual if let not pattern
+        if let RadError::Panic = error{
+            // Do nothing
+            ();
+        } else {
+            self.log_error(&format!("{}", error))?;
+        }
+        return Err(RadError::Panic);
+    }
+
+    fn lex_branch_end_frag_eval_result_ok(&mut self, variant : EvalResult, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize) -> Result<(), RadError> {
+        match variant {
             // else it is ok to proceed.
             // thus it is safe to unwrap it
-            if let Some(mut content) = evaluation_result.unwrap() {
+            EvalResult::Eval(content) => {
 
                 // Debug
                 // Debug command after macro evaluation
@@ -1186,9 +1203,10 @@ impl Processor {
 
                 // If content is none
                 // Ignore new line after macro evaluation until any character
-                if content.len() == 0 {
+                if let None = content {
                     lexor.escape_nl = true;
                 } else {
+                    let mut content = content.unwrap();
                     if frag.trimmed {
                         content = Utils::trim(&content)?;
                     }
@@ -1204,7 +1222,8 @@ impl Processor {
                         remainder.push_str(&content);
                     }
                 }
-            } else { // Failed to invoke
+            }
+            EvalResult::None =>  { // Failed to invoke
                 // because macro doesn't exist
 
                 // If strict mode is set, every error is panic error
@@ -1223,9 +1242,7 @@ impl Processor {
                     lexor.escape_nl = true;
                 }
             }
-            // Clear fragment regardless of success
-            frag.clear()
-        }
+        } // End match
 
         Ok(())
     }
@@ -1646,4 +1663,9 @@ pub(crate) mod auth {
         Warn,
         Open,
     }
+}
+
+enum EvalResult {
+    Eval(Option<String>),
+    None,
 }
