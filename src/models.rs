@@ -9,7 +9,7 @@ use bincode;
 /// State enum value about direction of processed text 
 pub enum WriteOption {
     File(std::fs::File),
-    Stdout,
+    Terminal,
     Discard,
 }
 
