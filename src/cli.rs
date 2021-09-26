@@ -118,7 +118,7 @@ impl Cli {
         } else { None };
 
         // Error to file 
-        self.error_to_file = if let Some(error_file) = args.value_of("error") {
+        self.error_to_file = if let Some(error_file) = args.value_of("err") {
             Some(PathBuf::from(error_file))
         } else { None };
 
