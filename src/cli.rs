@@ -4,7 +4,8 @@
 //! Cli module is only included in binary feature flag.
 
 use clap::clap_app;
-use crate::{error::RadError, processor::auth::AuthType};
+use crate::error::RadError;
+use crate::auth::AuthType;
 use crate::processor::Processor;
 use crate::utils::Utils;
 use std::path::{Path, PathBuf};
@@ -49,6 +50,7 @@ impl Cli {
             .greedy(args.is_present("greedy"))
             .strict(args.is_present("greedy"))
             .silent(args.is_present("silent"))
+            .nopanic(args.is_present("nopanic"))
             .allow(std::mem::replace(&mut self.allow_auth,None))
             .allow_with_warning(std::mem::replace(&mut self.allow_auth_warn,None))
             .unix_new_line(args.is_present("newline"))
@@ -70,6 +72,10 @@ impl Cli {
 
         // ========
         // Main options
+        // print permission
+        processor.print_permission()?;
+        
+        // Process
         // -->> Read from files
         if let Some(files) = args.values_of("FILE") {
             // Also read from stdin if given combiation option
@@ -164,6 +170,7 @@ impl Cli {
             (@arg melt: ... -m +takes_value "Frozen file to reads")
             (@arg freeze: -f +takes_value "Freeze to file")
             (@arg purge: -p "Purge unused macros")
+            (@arg nopanic: --nopanic "Allow panic")
             (@arg strict: -S "Strict mode")
             (@arg debug: -d --debug "Debug mode")
             (@arg log: -l --log "Debug log mode")
@@ -174,7 +181,7 @@ impl Cli {
             (@arg allow_warn: -w +takes_value "Allow permission with warnings (fin|fout|cmd|env)")
             (@arg allow_all: -A "Allow all permission")
             (@arg allow_all_warn: -W "Allow all permission with warning")
-            (@arg silent: -s "Supress error and warning")
+            (@arg silent: -s "Supress warnings")
             (@arg newline: -n "Use unix newline for formatting")
         ).get_matches()
     }
