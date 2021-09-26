@@ -49,7 +49,7 @@ I'm out of idea and I need some texts, $lipsum(15)
 title : R4d demo
 author : Simon Creek
 ---
-My name is SimonCreek and I made r4d to make macros can be used within various
+My name is Simon Creek and I made r4d to make macros can be used within various
 forms of texts. This article was written in 2021-09-26 21:36:59.
 
 
