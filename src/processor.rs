@@ -19,7 +19,8 @@
 //! let mut processor = Processor::new()
 //!     .purge(true)                                         // Purge undefined macro
 //!     .greedy(true)                                        // Makes all macro greedy
-//!     .silent(true)                                        // Silents all errors and warnings
+//!     .silent(true)                                        // Silents all warnings
+//!     .nopanic(true)                                       // No panic in any circumstances
 //!     .strict(true)                                        // Enable strict mode, panicks on any error
 //!     .custom_rules(Some(vec![Path::new("rule.r4f")]))?    // Read from frozen rule files
 //!     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
@@ -39,9 +40,23 @@
 //! // Use Processor::empty() instead of Processor::new()
 //! // if you don't want any default macros
 //! 
+//! // Print information about current processor permissions
+//! // This is an warning and can be suppressed with silent option
+//! processor.print_permission()?;
+//!
 //! // Add basic rules(= register functions)
 //! // test function is not included in this demo
 //! processor.add_basic_rules(vec![("test", test as MacroType)]);
+//!
+//! // You can add basic rule in form of closure too
+//! processor.add_closure_rule(
+//!     "test",                                          // Name of macro
+//!     2,                                               // Count of arguments
+//!     Box::new(|args: Vec<String>| -> Option<String> { // Closure as an internal logic
+//!         Some(format!("First : {}\nSecond: {}", args[0], args[1]))
+//!     })
+//! );
+//!
 //! 
 //! // Add custom rules(in order of "name, args, body") 
 //! processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
@@ -53,7 +68,7 @@
 //! processor.print_result()?;                       // Print out warning and errors count
 //! ```
 
-use auth::{AuthType, AuthFlags, AuthState};
+use crate::auth::{AuthType, AuthFlags, AuthState};
 #[cfg(feature = "debug")]
 use std::io::Read;
 use std::io::{self, BufReader, Write};
@@ -61,6 +76,7 @@ use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::{ Path , PathBuf};
 use crate::basic::MacroType;
+use crate::closure_map::ClosureMap;
 use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
@@ -88,6 +104,7 @@ pub struct Processor{
     current_input : String, // This is either "stdin" or currently being read file's name
     auth_flags: AuthFlags,
     map: MacroMap,
+    closure_map: ClosureMap,
     define_parse: DefineParser,
     write_option: WriteOption,
     logger: Logger,
@@ -111,6 +128,7 @@ pub struct Processor{
     sandbox: bool,
     purge: bool,
     strict: bool,
+    pub(crate) nopanic: bool,
     always_greedy: bool,
     // Temp target needs to save both path and file
     // because file doesn't necessarily have path. 
@@ -151,7 +169,7 @@ impl Processor {
         );
 
         let mut logger = Logger::new();
-        logger.set_write_options(Some(WriteOption::Stdout));
+        logger.set_write_options(Some(WriteOption::Terminal));
 
         let map = if use_basic {
             MacroMap::new()
@@ -163,7 +181,8 @@ impl Processor {
             current_input: String::from("stdin"),
             auth_flags: AuthFlags::new(),
             map,
-            write_option: WriteOption::Stdout,
+            closure_map: ClosureMap::new(),
+            write_option: WriteOption::Terminal,
             define_parse: DefineParser::new(),
             logger,
             checker : UnbalancedChecker::new(),
@@ -173,6 +192,7 @@ impl Processor {
             redirect: false,
             purge: false,
             strict: false,
+            nopanic: false,
             sandbox : false,
             #[cfg(feature = "debug")]
             debug: false,
@@ -255,8 +275,15 @@ impl Processor {
     /// Set silent option
     pub fn silent(&mut self, silent: bool) -> &mut Self {
         if silent {
-            self.logger = Logger::new();
-            self.logger.set_write_options(None);
+            self.logger.suppress_warning = true;
+        }
+        self
+    }
+
+    /// Set nopanic
+    pub fn nopanic(&mut self, nopanic: bool) -> &mut Self {
+        if nopanic {
+            self.nopanic = nopanic;
         }
         self
     }
@@ -342,6 +369,18 @@ impl Processor {
     // Processing methods
     // <PROCESS>
     //
+
+    /// Print current permission status
+    #[allow(dead_code)]
+    pub fn print_permission(&mut self) -> Result<(), RadError> {
+        if let Some(status) = self.auth_flags.get_status_string() {
+            let mut status_with_header = String::from("Permission granted");
+            status_with_header.push_str(&status);
+            self.log_warning(&status_with_header)?;
+        }
+        Ok(())
+    }
+
     /// Print the result of a processing
     #[allow(dead_code)]
     pub fn print_result(&mut self) -> Result<(), RadError> {
@@ -360,6 +399,21 @@ impl Processor {
         for (name, macro_ref) in basic_rules {
             self.map.basic.add_new_rule(name, macro_ref);
         }
+    }
+
+    /// Add new closure rule
+    ///
+    /// Accessing index bigger or equal to the length of argument vector is panicking error
+    /// while "insufficient arguments" will simply prints error without panicking and stop
+    /// evaluation.
+    ///
+    /// # Args
+    ///
+    /// * `name` - Name of the macro to add
+    /// * `arg_count` - Count of macro's argument
+    /// * `closure` - Vector of string is an parsed arguments with given length.
+    pub fn add_closure_rule(&mut self, name: &'static str, arg_count: usize, closure : Box<dyn FnMut(Vec<String>) -> Option<String>>) {
+        self.closure_map.add_new(name, arg_count, closure);
     }
 
     /// Add custom rules without builder pattern
@@ -956,6 +1010,11 @@ impl Processor {
             let final_result = self.map.basic.clone().call(name, &args, greedy, self)?;
             return Ok(EvalResult::Eval(final_result));
         } 
+        // Find closure map
+        else if self.closure_map.contains(&name) {
+            let final_result = self.closure_map.call(name, &args, greedy)?;
+            return Ok(EvalResult::Eval(final_result));
+        }
         // No macros found to evaluate
         else { 
             return Ok(EvalResult::None);
@@ -1021,7 +1080,7 @@ impl Processor {
             } else {
                 match &mut self.write_option {
                     WriteOption::File(f) => f.write_all(content.as_bytes())?,
-                    WriteOption::Stdout => print!("{}", content),
+                    WriteOption::Terminal => print!("{}", content),
                     WriteOption::Discard => () // Don't print anything
                 }
             }
@@ -1591,78 +1650,6 @@ struct SandboxBackup {
     current_input: String,
     local_macro_map: HashMap<String,String>,
     logger_lines: LoggerLines,
-}
-
-/// Authorization(Permission)
-///
-/// Permission should be given for some basic macro types
-pub(crate) mod auth {
-    #[derive(Debug)]
-    /// Struct that stores auth states
-    pub(crate) struct AuthFlags{
-        auths: Vec<AuthState>,
-    }
-
-    impl AuthFlags {
-        pub fn new() -> Self {
-            let mut auths = Vec::new();
-            for _ in 0..AuthType::LEN as usize {
-                auths.push(AuthState::Restricted);
-            }
-
-            Self {
-                auths,
-            }
-        }
-
-        pub fn set_state(&mut self, auth_type: &AuthType, auth_state: AuthState) {
-            self.auths[*auth_type as usize] = auth_state;
-        }
-
-        pub fn get_state(&self, auth_type: &AuthType) -> &AuthState {
-            &self.auths[*auth_type as usize]
-        }
-    }
-
-    #[derive(Debug, Clone, Copy)]
-    /// Authorization type
-    ///
-    /// ```text
-    /// Each variants means
-    /// - ENV  : environment variable permission
-    /// - FIN  : File in(read) permission
-    /// - FOUT : File out(write) permission
-    /// - CMD  : System command permission
-    /// - LEN  : This is a functional variant not a real value, namely a length
-    /// ```
-    pub enum AuthType {
-        ENV = 0,
-        FIN = 1,
-        FOUT = 2,
-        CMD = 3,
-        LEN = 4,
-    }
-
-    impl AuthType {
-        /// Convert str slice into AuthType
-        pub fn from(string: &str) -> Option<Self> {
-            match string.to_lowercase().as_str() {
-                "fin" =>  Some(Self::FIN),
-                "fout" =>  Some(Self::FOUT),
-                "cmd" => Some(Self::CMD),
-                "env" => Some(Self::ENV),
-                _ => None
-            }
-        }
-    }
-
-    #[derive(Clone, Copy, Debug)]
-    /// Current state authorization
-    pub(crate) enum AuthState {
-        Restricted,
-        Warn,
-        Open,
-    }
 }
 
 enum EvalResult {
