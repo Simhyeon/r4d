@@ -15,7 +15,8 @@ use crate::arg_parser::ArgParser;
 use crate::consts::MAIN_CALLER;
 use regex::Regex;
 use crate::utils::Utils;
-use crate::processor::{Processor, auth::{AuthState, AuthType}};
+use crate::processor::Processor;
+use crate::auth::{AuthState, AuthType};
 #[cfg(feature = "csv")]
 use crate::formatter::Formatter;
 #[cfg(feature = "lipsum")]
@@ -134,8 +135,7 @@ impl BasicMacro {
     fn is_granted(name:&str, auth_type: AuthType, processor: &mut Processor) -> Result<bool, RadError> {
         match processor.get_auth_state(&auth_type) {
             AuthState::Restricted => {
-                processor.log_error(&format!("\"{}\" not allowed.\"{:?}\" permission is required", name, auth_type))?;
-                Ok(false)
+                Err(RadError::PermissionDenied(name.to_owned(), auth_type))
             }
             AuthState::Warn => {
                 processor.log_warning(&format!("\"{}\" was called with \"{:?}\" permission", name, auth_type))?;
@@ -158,8 +158,10 @@ impl BasicMacro {
             // Print out macro call result
             let result = func(args, greedy, processor);
             if let Err(err) = result {
-                eprintln!("{}",err);
-                Ok(None)
+                if processor.nopanic {
+                    processor.log_error(&format!("{}",err))?;
+                    Ok(None)
+                } else { Err(err) }
             } else { result }
         } else {
             Ok(None)
