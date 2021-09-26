@@ -52,18 +52,20 @@ mod error;
 // This is necessary for docs.rs documentation
 pub mod processor;
 
+pub(crate) mod arg_parser;
+pub(crate) mod auth;
 pub(crate) mod basic;
+pub(crate) mod closure_map;
 pub(crate) mod consts;
 pub(crate) mod lexor;
+pub(crate) mod logger;
 pub(crate) mod models;
 pub(crate) mod utils;
-pub(crate) mod arg_parser;
-pub(crate) mod logger;
 
 pub use error::RadError;
 pub use basic::MacroType;
 pub use processor::Processor;
-pub use processor::auth::AuthType;
+pub use auth::AuthType;
 
 // Optional
 
