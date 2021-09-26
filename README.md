@@ -16,8 +16,53 @@ are solved.
 - Absence of critical bugs
 - No more basic macro behaviour(internal logic) changes
 
-Therefore it is quite stable, in terms of non-breakable syntax(interface), but
-there will be bug fixes and non breaking changes.
+Therefore it is quite stable, in terms of non-breakable syntax, but there will
+be bug fixes and non breaking changes.
+
+### Demo
+
+**Raw texts**
+```text
+$define(author=Simon Creek)
+$define(title=R4d demo)
+---
+title : $title()
+author : $author()
+---
+My name is $author() and I made r4d to make macros can be used within various
+forms of texts. This article was written in $date() $time().
+
+$ifdef(test, This should be only printed when I'm testing not in release)
+
+This is some important table automatically formatted according to environment
+variable.
+
+$table($env(TABLE_FORM),\*H1,H2,H3
+a,b,c
+d,e,f*\)
+
+I'm out of idea and I need some texts, $lipsum(15) 
+```
+**Processed texts**
+```
+---
+title : R4d demo
+author : Simon Creek
+---
+My name is SimonCreek and I made r4d to make macros can be used within various
+forms of texts. This article was written in 2021-09-26 21:36:59.
+
+
+This is some important table automatically formatted according to environment
+variable.
+
+|H1|H2|H3|
+|-|-|-|
+|a|b|c|
+|d|e|f|
+
+I'm out of idea and I need some texts, Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.
+```
 
 ### Install
 
@@ -65,9 +110,22 @@ processor.print_result()?;
 
 [Macro syntax](./docs/macro_syntax.md)
 
-### Built-in macros (or macro-like functions)
+### Basic macros (or macro-like functions)
 
 [Macros](./docs/basic_macros.md)
+
+**What's a difference between custom macro and basic macros?**
+
+Basic macro is a macro like function pointer or closure. While custom macro is
+a macro that doesn't include complicate logics but only gets expanded according
+to given rules.
+
+**Why the name basic?**
+
+Well, it is because basic macro was not configurable at first and given as
+default macros. But r4d has evolved and even basic macro is configurable and
+can be disabled, so technically its name doesn't necessarily represents its
+characteristic properly. Still I'm not sure if I should rename it.
 
 ### How to debug
 
