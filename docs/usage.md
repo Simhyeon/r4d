@@ -18,31 +18,33 @@ printf '...text...' | rad -o out_file.txt
 printf '...text...' | rad 
 
 # Some macros need permission to process
-# use following options to grant permission
--a env      # Give environment permission
--a cmd      # Give syscmd permission
--a fin+fout # give both file read and file write permission
--A          # Give all permission. this is same with '-a env+cmd+fin+fout'
--w env      # Give permission but warn when macro is used
--W          # Same with '-A' but for warning
+# use following options to grant permission.
+# Permission argument is case insensitive
+-a env                # Give environment permission
+-a cmd                # Give syscmd permission
+-a fin+fout           # give both file read and file write permission
+-A                    # Give all permission. this is same with '-a env+cmd+fin+fout'
+-w env                # Give permission but warn when macro is used
+-W                    # Same with '-A' but for warning
 
 # Use following options to decide error behaviours
 # default is stderr
--e <FILE>   # Log error to <FILE>
--s          # Suppress error and warnings
--S          # Strict mode makes every error panicking
+-e, --err <FILE>      # Log error to <FILE>
+-s, --silent          # Suppress warnings
+    --nopanic         # Don't panic in any circumstances
+-S, --strict          # Strict mode makes every error panicking
 
 # Use following options to decide deubbing behaviours
 # default is not to debug
--d          # Start debug mode
--l          # Print all macro invocation logs
--i          # Start debug mode as interactive, this makes stdout unwrapped
+-d, --debug           # Start debug mode
+-l, --log             # Print all macro invocation logs
+-i                    # Start debug mode as interactive, this makes stdout unwrapped
 
 # Other flags
--n          # Always use unix newline (default is '\r\n' in windows platform)
--p          # Purge mode, print nothing if a macro doesn't exist
--g          # Always enable greedy for every macro invocation
---discard   # Discard all output
+-n                    # Always use unix newline (default is '\r\n' in windows platform)
+-p, --purge           # Purge mode, print nothing if a macro doesn't exist
+-g, --greedy          # Always enable greedy for every macro invocation
+-D, --discard         # Discard all output
 
 # Freeze(zip to binary) rules to a single file
 rad test -f frozen.r4f
@@ -83,7 +85,8 @@ use std::path::Path;
 let mut processor = Processor::new()
     .purge(true)                                         // Purge undefined macro
     .greedy(true)                                        // Makes all macro greedy
-    .silent(true)                                        // Silents all errors and warnings
+    .silent(true)                                        // Silents all warnings
+	.nopanic(true)                                       // No panic in any circumstances
     .strict(true)                                        // Enable strict mode, panicks on any error
     .custom_rules(Some(vec![Path::new("rule.r4f")]))?    // Read from frozen rule files
     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
@@ -103,9 +106,22 @@ let mut processor = Processor::new()
 // Use Processor::empty() instead of Processor::new()
 // if you don't want any default macros
 
+// Print information about current processor permissions
+// This is an warning and can be suppressed with silent option
+processor.print_permission()?;
+
 // Add basic rules(= register functions)
 // test function is not included in this demo
 processor.add_basic_rules(vec![("test", test as MacroType)]);
+
+// You can add basic rule in form of closure too
+processor.add_closure_rule(
+    "test",                                                       // Name of macro
+    2,                                                            // Count of arguments
+    Box::new(|args: Vec<String>| -> Option<String> {              // Closure as an internal logic
+        Some(format!("First : {}\nSecond: {}", args[0], args[1]))
+    })
+);
 
 // Add custom rules(in order of "name, args, body") 
 processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);

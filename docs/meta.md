@@ -1,7 +1,16 @@
+### Update note
+
+- Made basic macro error non panickable by flag
+- Added color support for pager (by overriding color environment)
+- Added closure based macro addition
+- Added print permission
+- Made permission error panicking
+- Added color support for panicking error
+- Fixed where write error to file was actually not working LUL.
+
 ### TODOs
 
 * [ ] Improve projects performance
-* [ ] Maybe fallable option
 
 ### How macro parsing works?
 
@@ -41,6 +50,15 @@ basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
 
+* [x] Segrate some structs into separate files
+* [x] Add new error type permission denied as panicking
+* [x] WriteOption::Stdout is weird in err context because it is always stderr
+- Changed to WriteOption::Terminal
+* [x] Panicking error red colored
+* [x] Make basic macro failable not a panicking
+- Make it an option
+* [x] Add new basic macro with closure without knowing macrotype
+* [x] Print permission
 * [x] Divided io into fin and fout
 * [x] Fixed a bug wherer dollar sign doesn't restart framgent check
 * [-] Currently disabled escape with parenthesis for eaiser maintain
