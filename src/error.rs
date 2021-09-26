@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use crate::AuthType;
+
 /// R4d's error type
 #[derive(Error, Debug)]
 pub enum RadError {
@@ -29,6 +31,8 @@ pub enum RadError {
     CsvError(csv::Error),
     #[error("Failed frozen operation\n= {0}")]
     BincodeError(String),
+    #[error("Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.")]
+    PermissionDenied(String,AuthType),
     #[error("Processor panicked, exiting...")]
     StrictPanic,
     #[error("Processor panicked, exiting...")]
