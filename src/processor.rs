@@ -50,9 +50,9 @@
 //!
 //! // You can add basic rule in form of closure too
 //! processor.add_closure_rule(
-//!     "test",                                          // Name of macro
-//!     2,                                               // Count of arguments
-//!     Box::new(|args: Vec<String>| -> Option<String> { // Closure as an internal logic
+//!     "test",                                                       // Name of macro
+//!     2,                                                            // Count of arguments
+//!     Box::new(|args: Vec<String>| -> Option<String> {              // Closure as an internal logic
 //!         Some(format!("First : {}\nSecond: {}", args[0], args[1]))
 //!     })
 //! );
