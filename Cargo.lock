@@ -407,7 +407,7 @@ dependencies = [
 
 [[package]]
 name = "r4d"
-version = "0.8.5"
+version = "0.9.0"
 dependencies = [
  "bincode",
  "chrono",
