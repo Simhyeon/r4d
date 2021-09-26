@@ -20,6 +20,7 @@ pub(crate) struct Logger {
     pub(crate) last_char_number: usize,
     current_file: String,
     write_option: Option<WriteOption>,
+    pub(crate) suppress_warning: bool,
     error_count: usize,
     warning_count: usize,
     chunked: usize,
@@ -44,6 +45,7 @@ impl Logger{
             last_char_number: 0,
             current_file: String::from("stdin"),
             write_option: None,
+            suppress_warning: false,
             error_count:0,
             warning_count:0,
             chunked : 0,
@@ -128,8 +130,8 @@ impl Logger{
     // Debug method for development not rdb debugger
     #[allow(dead_code)]
     pub(crate) fn deb(&self) {
-        println!("LAST : {}", self.last_line_number);
-        println!("LINE : {}", self.line_number);
+        eprintln!("LAST : {}", self.last_line_number);
+        eprintln!("LINE : {}", self.line_number);
     }
 
     /// Try getting last character
@@ -161,7 +163,7 @@ impl Logger{
                         ).as_bytes()
                     )?;
                 }
-                WriteOption::Stdout => {
+                WriteOption::Terminal => {
                     eprint!(
                         "{}: {} {} --> {}:{}:{}{}",
                         Utils::red("error"),
@@ -181,6 +183,7 @@ impl Logger{
 
     /// Log warning
     pub fn wlog(&mut self, log : &str) -> Result<(), RadError> {
+        if self.suppress_warning { return Ok(()); }
         self.warning_count = self.warning_count + 1; 
         let last_char = self.try_get_last_char();
         if let Some(option) = &mut self.write_option {
@@ -197,7 +200,7 @@ impl Logger{
                         ).as_bytes()
                     )?;
                 }
-                WriteOption::Stdout => {
+                WriteOption::Terminal => {
                     eprintln!(
                         "{}: {} {} --> {}:{}:{}",
                         Utils::yellow("warning"),
@@ -231,7 +234,7 @@ impl Logger{
                     if self.error_count > 0 {file.write_all(error_result.as_bytes())?;}
                     if self.warning_count > 0 {file.write_all(warning_result.as_bytes())?;}
                 }
-                WriteOption::Stdout => {
+                WriteOption::Terminal => {
                     if self.error_count > 0 { eprintln!("{}",error_result);}
                     if self.warning_count > 0 {eprintln!("{}",warning_result);}
                 }
@@ -276,7 +279,7 @@ impl Logger{
 
         let mut input = String::new();
         let prompt = if let Some(content) = prompt { content } else { "" };
-        println!("{} : {}",Utils::green(&format!("({})", &prompt)), log);
+        eprintln!("{} : {}",Utils::green(&format!("({})", &prompt)), log);
         print!(">> ");
 
         // Restore wrapping
