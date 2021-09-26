@@ -31,12 +31,12 @@ impl AuthFlags {
     pub fn get_status_string(&self) -> Option<String> {
         let mut format = String::new();
         for index in 0..AuthType::LEN as usize {
-            // Add newline before
-            format.push_str("
-                ");
             let auth_type = AuthType::from_usize(index).unwrap();
             match self.get_state(&auth_type) {
                 &AuthState::Warn | &AuthState::Open  => {
+                    // Add newline before
+                    format.push_str("
+");
                     format.push_str(&format!("Auth : {:?} is open.", auth_type));
                 }
                 &AuthState::Restricted => ()
