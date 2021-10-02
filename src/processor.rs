@@ -68,6 +68,9 @@
 //! processor.print_result()?;                       // Print out warning and errors count
 //! ```
 
+#[cfg(feature = "debug")]
+use similar::ChangeTag;
+
 use crate::auth::{AuthType, AuthFlags, AuthState};
 #[cfg(feature = "debug")]
 use std::io::Read;
@@ -134,6 +137,13 @@ pub struct Processor{
     // because file doesn't necessarily have path. 
     // Especially in unix, this is not so an unique case
     temp_target: (PathBuf,File), 
+    #[cfg(feature = "debug")]
+    yield_diff: bool,
+    /// File handle for given sources
+    #[cfg(feature = "debug")]
+    diff_original : Option<File>,
+    #[cfg(feature = "debug")]
+    diff_processed : Option<File>,
 }
 
 impl Processor {
@@ -206,12 +216,22 @@ impl Processor {
             line_caches: HashMap::new(),
             always_greedy: false,
             temp_target,
+            #[cfg(feature = "debug")]
+            yield_diff: false,
+            #[cfg(feature = "debug")]
+            diff_original: None,
+            #[cfg(feature = "debug")]
+            diff_processed: None,
         }
     }
 
     /// Set write option to yield output to the file
     pub fn write_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
+            // If parent doesn't exist it is not a vlid write file
+            if let Some(parent) = target_file.as_ref().parent() {
+                Utils::is_real_path(parent)?;
+            }
             let target_file = OpenOptions::new()
                 .create(true)
                 .write(true)
@@ -226,6 +246,11 @@ impl Processor {
     /// Yield error to the file
     pub fn error_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
+            // If parent doesn't exist it is not a vlid write file
+            if let Some(parent) = target_file.as_ref().parent() {
+                Utils::is_real_path(parent)?;
+            }
+
             let target_file = OpenOptions::new()
                 .create(true)
                 .write(true)
@@ -306,6 +331,31 @@ impl Processor {
         self
     }
 
+    /// Add diff option
+    #[cfg(feature = "debug")]
+    pub fn diff(&mut self, diff: bool) -> Result<&mut Self, RadError> {
+        if diff {
+            self.yield_diff = true;
+            self.diff_original = Some(
+                OpenOptions::new()
+                .create(true)
+                .write(true)
+                .read(true)
+                .truncate(true)
+                .open(Path::new(DIFF_SOURCE_FILE))?
+            );
+            self.diff_processed = Some(
+                OpenOptions::new()
+                .create(true)
+                .write(true)
+                .read(true)
+                .truncate(true)
+                .open(Path::new(DIFF_OUT_FILE))?
+            );
+        }
+        Ok(self)
+    }
+
     /// Add debug interactive options
     #[cfg(feature = "debug")]
     pub fn interactive(&mut self, interactive: bool) -> &mut Self {
@@ -320,6 +370,7 @@ impl Processor {
         if let Some(paths) = paths {
             let mut rule_file = RuleFile::new(None);
             for p in paths.iter() {
+                // File validity is checked by melt methods
                 rule_file.melt(p.as_ref())?;
             }
             self.map.custom.extend(rule_file.rules);
@@ -385,11 +436,35 @@ impl Processor {
     #[allow(dead_code)]
     pub fn print_result(&mut self) -> Result<(), RadError> {
         self.logger.print_result()?;
+
+        #[cfg(feature = "debug")]
+        if self.yield_diff {
+            eprintln!("{0}DIFF : {0}",LINE_ENDING);
+            let source = std::fs::read_to_string(Path::new(DIFF_SOURCE_FILE))?;
+            let processed = std::fs::read_to_string(Path::new(DIFF_OUT_FILE))?;
+            let result = similar::TextDiff::from_lines(&source,&processed);
+
+            for change in result.iter_all_changes() {
+                match change.tag() {
+                    ChangeTag::Delete => {
+                        eprint!("{}", Utils::red(&format!("- {}", change)));
+                    }
+                    ChangeTag::Insert => {
+                        eprint!("{}", Utils::green(&format!("+ {}", change)));
+                    }
+                    ChangeTag::Equal => {
+                        eprint!("  {}",change);
+                    }
+                }
+            }
+        }
+
         Ok(())
     }
 
     /// Freeze to single file
     pub fn freeze_to_file(&self, path: impl AsRef<Path>) -> Result<(), RadError> {
+        // File path validity is checked by freeze method
         RuleFile::new(Some(self.map.custom.clone())).freeze(path.as_ref())?;
         Ok(())
     }
@@ -832,6 +907,13 @@ impl Processor {
         self.logger.add_line_number();
         if let Some(line) = lines.next() {
             let line = line?;
+
+            // Save to original
+            #[cfg(feature = "debug")]
+            if self.yield_diff {
+                self.diff_original.as_ref().unwrap().write_all(line.as_bytes())?;
+            }
+
             let remainder = self.parse(lexor, frag, &line, 0, MAIN_CALLER)?;
 
             // Clear local variable macros
@@ -1069,6 +1151,13 @@ impl Processor {
     fn write_to(&mut self, content: &str, container: &mut Option<&mut String>) -> Result<(), RadError> {
         // Don't try to write empty string, because it's a waste
         if content.len() == 0 { return Ok(()); }
+
+        // Save to "source" file for debuggin
+        #[cfg(feature = "debug")]
+        if self.yield_diff {
+            self.diff_processed.as_ref().unwrap().write_all(content.as_bytes())?;
+        }
+
         // Save to container
         if let Some(container) = container {
             container.push_str(content);
@@ -1333,6 +1422,8 @@ impl Processor {
     }
 
     /// Change temp file target
+    ///
+    /// This will create a new temp file if not existent
     pub(crate) fn set_temp_file(&mut self, path: &Path) {
         self.temp_target = (path.to_owned(),OpenOptions::new()
             .create(true)
