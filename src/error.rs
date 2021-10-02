@@ -20,6 +20,8 @@ pub enum RadError {
     InvalidArgInt(std::num::ParseIntError),
     #[error("Invalid argument type\n= {0}")]
     InvalidArgBoolean(std::str::ParseBoolError),
+    #[error("File,\"{0}\", does not exist")]
+    InvalidFile(String),
     #[error("Standard IO error\n= {0}")]
     StdIo(std::io::Error),
     #[error("Failed to convert to utf8 string\n= {0}")]
