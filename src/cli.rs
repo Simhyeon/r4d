@@ -60,6 +60,7 @@ impl Cli {
             .error_to_file(std::mem::replace(&mut self.error_to_file,None))?
             .debug(args.is_present("debug"))
             .log(args.is_present("log"))
+            .diff(args.is_present("diff"))?
             .interactive(args.is_present("interactive"))
             .build();
 
@@ -174,6 +175,7 @@ impl Cli {
             (@arg strict: -S --strict conflicts_with[nopanic purge] "Strict mode")
             (@arg debug: -d --debug "Debug mode")
             (@arg log: -l --log "Debug log mode")
+            (@arg diff: --diff "Show diff result")
             (@arg interactive: -i --interactive "Use interactive debug mode")
             (@arg combination: -c "Read from both stdin and file inputs")
             (@arg discard: -D --discard "Discard output without print out")
