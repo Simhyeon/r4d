@@ -144,4 +144,12 @@ impl Utils {
 
         Ok(())
     }
+
+    /// Check if path is really in file system or not
+    pub fn is_real_path(path: &std::path::Path) -> Result<(), RadError> {
+        if !path.exists() { 
+            return Err(RadError::InvalidFile(path.display().to_string()));
+        }
+        Ok(())
+    }
 }
