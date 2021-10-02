@@ -175,6 +175,7 @@ impl RuleFile {
 
     /// Read from rule file and make it into hash map
     pub fn melt(&mut self, path : &Path) -> Result<(), RadError> {
+        Utils::is_real_path(path)?;
         let result = bincode::deserialize::<Self>(&std::fs::read(path)?);
         if let Err(_) = result {
             Err(RadError::BincodeError(format!("Failed to melt the file : {}", path.display())))
@@ -186,6 +187,7 @@ impl RuleFile {
 
     /// Convert custom rules into a single binary file
     pub(crate) fn freeze(&self, path: &std::path::Path) -> Result<(), RadError> {
+        Utils::is_real_path(path)?;
         let result = bincode::serialize(self);
         if let Err(_) = result {
             Err(RadError::BincodeError(format!("Failed to freeze to the file : {}", path.display())))
