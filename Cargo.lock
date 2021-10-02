@@ -420,6 +420,7 @@ dependencies = [
  "lipsum",
  "regex",
  "serde",
+ "similar",
  "thiserror",
 ]
 
@@ -556,6 +557,12 @@ checksum = "e51e73328dc4ac0c7ccbda3a494dfa03df1de2f46018127f60c693f2648455b0"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "similar"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bf11003835e462f07851028082d2a1c89d956180ce4b4b50e07fb085ec4131a"
 
 [[package]]
 name = "smallvec"

@@ -21,7 +21,7 @@ path = "src/lib.rs"
 [features]
 binary = [ "csv", "evalexpr", "lipsum", "chrono", "clap", "debug"]
 full = [ "csv", "evalexpr", "lipsum", "chrono" ]
-debug = [ "crossterm" ]
+debug = [ "crossterm", "similar" ]
 color = [ "colored" ]
 
 [dependencies]
@@ -37,3 +37,4 @@ regex = "1.5.4"
 serde = { version = "1.0.126", features = ["derive"]}
 thiserror = "1.0.25"
 crossterm = {version = "0.20.0", optional = true}
+similar = { version = "2.0.0", optional = true}
