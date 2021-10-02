@@ -61,11 +61,19 @@
 //! // Add custom rules(in order of "name, args, body") 
 //! processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
 //! 
+//! // Process with inputs
+//! // This prints to desginated write destinations
 //! processor.from_string(r#"$define(test=Test)"#)?;
 //! processor.from_stdin()?;
 //! processor.from_file(Path::new("from.txt"))?;
+//! 
 //! processor.freeze_to_file(Path::new("out.r4f"))?; // Create frozen file
-//! processor.print_result()?;                       // Print out warning and errors count
+//! 
+//! // Print out result
+//! // This will print counts of warning and errors.
+//! // It will also print diff between source and processed if diff option was
+//! // given as builder pattern.
+//! processor.print_result()?;                       
 //! ```
 
 #[cfg(feature = "debug")]

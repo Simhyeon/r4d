@@ -39,6 +39,7 @@ printf '...text...' | rad
 -d, --debug           # Start debug mode
 -l, --log             # Print all macro invocation logs
 -i                    # Start debug mode as interactive, this makes stdout unwrapped
+    --diff            # Show diff result between source and processed result
 
 # Other flags
 -n                    # Always use unix newline (default is '\r\n' in windows platform)
@@ -59,7 +60,7 @@ Type ```-h``` or ```--help``` to see full options.
 **Cargo.toml**
 ```toml
 [dependencies]
-rad = { version = "0.8.0", features = ["full"] }
+rad = { version = "0.9.1", features = ["full"] }
 
 # Other available features are 
 # "evalexpr", "chrono", "lipsum", "csv", "debug", "color", "full"
@@ -69,7 +70,7 @@ rad = { version = "0.8.0", features = ["full"] }
 # lipsum   - "lipsum" macro
 # csv      - "from", "table" macro
 
-# debug    - Enable debug method
+# debug    - Enable debug methods
 # color    - Enable color prompt
 # full     - Enable evalexpr, chrono, lipsum and csv
 ```
@@ -100,6 +101,7 @@ let mut processor = Processor::new()
     .debug(true)                                         // Turn on debug mode
     .log(true)                                           // Use logging to terminal
     .interactive(true)                                   // Use interactive mode
+	.diff(true)                                          // Eanble diff variant
     // Create unreferenced instance
     .build(); 
 
@@ -126,9 +128,17 @@ processor.add_closure_rule(
 // Add custom rules(in order of "name, args, body") 
 processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
 
+// Process with inputs
+// This prints to desginated write destinations
 processor.from_string(r#"$define(test=Test)"#)?;
 processor.from_stdin()?;
 processor.from_file(Path::new("from.txt"))?;
+
 processor.freeze_to_file(Path::new("out.r4f"))?; // Create frozen file
-processor.print_result()?;                       // Print out warning and errors count
+
+// Print out result
+// This will print counts of warning and errors.
+// It will also print diff between source and processed if diff option was
+// given as builder pattern.
+processor.print_result()?;                       
 ```

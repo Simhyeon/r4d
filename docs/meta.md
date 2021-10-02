@@ -1,14 +1,9 @@
 ### Update note
 
-- Made basic macro error non panickable by flag
-- Added color support for pager (by overriding color environment)
-- Added closure based macro addition
-- Added print permission
-- Made permission error panicking
-- Added color support for panicking error
-- Fixed where write error to file was actually not working LUL.
-
 ### TODOs
+
+* [ ] Make gui application with help of klask
+- This requires nightly so different version of toolchain is used. 
 
 * [ ] Improve projects performance
 
@@ -49,6 +44,12 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [x] Make error messages much more accurate for various situations.
+* [x] Add a diff tool for debugging
+	* [x] Set diff original and diff processed when necessary
+	* [x] Print diff in result if certain option was given => Diff option
+* [x] Add conflicts with option for more ergonomic options
 
 * [x] Segrate some structs into separate files
 * [x] Add new error type permission denied as panicking

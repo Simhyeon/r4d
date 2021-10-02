@@ -1,5 +1,7 @@
 ### How to debug?
 
+#### Debug mode
+
 Simply start debug mode with ```-d``` or ```--debug``` flag.
 
 I highly recommend using only file input for debugging because stdin doesn't
@@ -18,6 +20,7 @@ rad -d
 rad --debug <FILE>
 
 # Log mod, which prints all macro invocation info into terminal
+# this will be explained later
 rad --log
 
 # Interactive mode, like a game you know.
@@ -129,3 +132,53 @@ End of file
 ```
 
 You can also clear termianl with command clear(cl in short).
+
+#### Loggig
+
+Logging flag sets processor to print every macro invocation's information.
+
+e.g.
+```
+15:log :
+Level = "2"
+Name = "env"
+Args = "TABLE_FORM"
+```
+
+#### Diff
+
+Diff flag prints difference between source input and processed output
+
+d.g.
+```
+DIFF :
+
+- $define(author=SimonCreek)
+- $define(title=R4d demo)
+  ---
+- title : $title()
+- author : $author()
++ title : R4d demo
++ author : SimonCreek
+  ---
+- My name is $author() and I made r4d to make macros can be used within various
+- forms of texts. This article was written in $date() $time().
++ My name is SimonCreek and I made r4d to make macros can be used within various
++ forms of texts. This article was written in 2021-10-03 03:05:26.
+
+- $if($ifdef(test), This should be only printed when I'm testing not in release)
+
+  This is some important table automatically formatted according to environment
+  variable.
+
+- $table($env(TABLE_FORM),\*H1,H2,H3
+- a,b,c
+- d,e,f*\)
++ |H1|H2|H3|
++ |-|-|-|
++ |a|b|c|
++ |d|e|f|
+
+- I'm out of idea and I need some texts, $lipsum(15)
++ I'm out of idea and I need some texts, Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.
+```
