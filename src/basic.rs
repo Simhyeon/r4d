@@ -865,7 +865,7 @@ impl BasicMacro {
     ///
     /// $tempout(Content)
     fn temp_out(args: &str, greedy: bool, p: &mut Processor) -> Result<Option<String>, RadError> {
-        if !Self::is_granted("temput", AuthType::FOUT,p)? {
+        if !Self::is_granted("tempout", AuthType::FOUT,p)? {
             return Ok(None);
         }
 
