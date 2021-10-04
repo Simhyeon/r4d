@@ -329,7 +329,15 @@ impl BasicMacro {
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let raw = Utils::trim(&args[0])?;
-            let file_path = std::path::Path::new(&raw);
+            let mut file_path = PathBuf::from(&raw);
+
+            // if current input is not stdin and file path is relative
+            // Create new file path that starts from current file path
+            if processor.current_input != "stdin" && file_path.is_relative() {
+                // It is ok get parent because any path that has a length can return parent
+                file_path = PathBuf::from(&processor.current_input).parent().unwrap().join(file_path);
+            }
+
             if file_path.is_file() { 
                 processor.set_sandbox();
                 let result = processor.from_file(file_path)?;

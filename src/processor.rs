@@ -112,7 +112,7 @@ use crate::arg_parser::{ArgParser, GreedyState};
 
 /// Processor that parses(lexes) given input and print out to desginated output
 pub struct Processor{
-    current_input : String, // This is either "stdin" or currently being read file's name
+    pub(crate) current_input : String, // This is either "stdin" or currently being read file's name
     auth_flags: AuthFlags,
     map: MacroMap,
     closure_map: ClosureMap,
