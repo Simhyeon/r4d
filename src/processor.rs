@@ -544,7 +544,7 @@ impl Processor {
         self.set_input("String")?;
 
         let mut reader = content.as_bytes();
-        self.from_buffer(&mut reader)
+        self.from_buffer(&mut reader, None)
     }
 
     /// Read from standard input
@@ -561,28 +561,27 @@ impl Processor {
             let mut input = String::new();
             stdin.lock().read_to_string(&mut input)?;
             // This is necessary to prevent unexpected output from being captured.
-            return self.from_buffer(&mut input.as_bytes());
+            return self.from_buffer(&mut input.as_bytes(), None);
         }
 
         let mut reader = stdin.lock();
-        self.from_buffer(&mut reader)
+        self.from_buffer(&mut reader, None)
     }
 
     /// Process contents from a file
     pub fn from_file(&mut self, path :impl AsRef<Path>) -> Result<String, RadError> {
-
+        // Sandboxed environment, backup
+        let backup = if self.sandbox { Some(self.backup()) } else { None };
         // Set file as name of given path
         self.set_file(path.as_ref().to_str().unwrap())?;
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
-        self.from_buffer(&mut reader)
+        self.from_buffer(&mut reader, backup)
     }
 
     /// Internal method for processing buffers line by line
-    fn from_buffer(&mut self,buffer: &mut impl std::io::BufRead) -> Result<String, RadError> {
-        // Sandboxed environment, backup
-        let backup = if self.sandbox { Some(self.backup()) } else { None };
+    fn from_buffer(&mut self,buffer: &mut impl std::io::BufRead, backup: Option<SandboxBackup>) -> Result<String, RadError> {
         let mut line_iter = Utils::full_lines(buffer).peekable();
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
@@ -636,6 +635,7 @@ impl Processor {
 
         // Recover
         if let Some(backup) = backup { self.recover(backup); self.sandbox = false; }
+
 
         Ok(content)
     }
