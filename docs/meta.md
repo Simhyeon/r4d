@@ -6,10 +6,15 @@
 * [x] Make include respects currently set file
 - For example, relative file is evaluated based upon currently read file's path
 * [x] Made include input file is properly set, was actually a bug
+* [x] No env value is currently panicking... which is not so desirable, I guess
+* [x] Env values such as INPUT\_FILE or INUPT\_DIR would be usefule
+- It has been decided as RAD_FILE and RAD_FILE_DIR
 
 ### TODOs
 
 * [ ] Consider how to refactor sandbox environment
+- Currently it gets chunk of string and return as chunk of string,
+which might not be so good for memory efficiency
 * [x] Add comments for add custom rules
 * [x] Make include respects currently set file
 - For example, relative file is evaluated based upon currently read file's path
