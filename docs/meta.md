@@ -5,9 +5,11 @@
 * [x] Add comments for add custom rules
 * [x] Make include respects currently set file
 - For example, relative file is evaluated based upon currently read file's path
+* [x] Made include input file is properly set, was actually a bug
 
 ### TODOs
 
+* [ ] Consider how to refactor sandbox environment
 * [x] Add comments for add custom rules
 * [x] Make include respects currently set file
 - For example, relative file is evaluated based upon currently read file's path
