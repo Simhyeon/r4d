@@ -415,7 +415,7 @@ impl Processor {
         self
     }
 
-    /// Creates a unreferenced instance of processor
+    /// Creates an unreferenced instance of processor
     pub fn build(&mut self) -> Self {
         std::mem::replace(self, Processor::new())
     }
@@ -471,6 +471,8 @@ impl Processor {
     }
 
     /// Freeze to single file
+    ///
+    /// Frozen file is a bincode encoded binary format file.
     pub fn freeze_to_file(&self, path: impl AsRef<Path>) -> Result<(), RadError> {
         // File path validity is checked by freeze method
         RuleFile::new(Some(self.map.custom.clone())).freeze(path.as_ref())?;
@@ -495,11 +497,33 @@ impl Processor {
     /// * `name` - Name of the macro to add
     /// * `arg_count` - Count of macro's argument
     /// * `closure` - Vector of string is an parsed arguments with given length.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// processor.add_closure_rule(
+    ///     "test",                                                       
+    ///     2,                                                            
+    ///     Box::new(|args: Vec<String>| -> Option<String> {              
+    ///         Some(format!("First : {}\nSecond: {}", args[0], args[1]))
+    ///     })
+    /// );
+    /// ```
     pub fn add_closure_rule(&mut self, name: &'static str, arg_count: usize, closure : Box<dyn FnMut(Vec<String>) -> Option<String>>) {
         self.closure_map.add_new(name, arg_count, closure);
     }
 
     /// Add custom rules without builder pattern
+    ///
+    /// # Args
+    ///
+    /// The order of argument is "name, args, body"
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// processor.add_custom_rules(vec![("macro_name","macro_arg1 macro_arg2","macro_body=$macro_arg1()")]);
+    /// ```
     pub fn add_custom_rules(&mut self, rules: Vec<(&str,&str,&str)>) {
         for (name,args,body) in rules {
             self.map.custom.insert(
