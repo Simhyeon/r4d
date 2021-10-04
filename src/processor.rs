@@ -1501,6 +1501,9 @@ impl Processor {
         self.current_input = backup.current_input;
         self.map.local= backup.local_macro_map; 
         self.logger.recover_lines(backup.logger_lines);
+
+        // Also recover env values
+        self.set_file_env(&self.current_input);
     }
 
     /// Log error
@@ -1524,8 +1527,16 @@ impl Processor {
         } else {
             self.current_input = file.to_owned();
             self.logger.set_file(file);
+            self.set_file_env(file);
             Ok(())
         }
+    }
+
+    /// Set some useful env values
+    fn set_file_env(&self, file: &str) {
+        let path = Path::new(file);
+        std::env::set_var("RAD_FILE", file);
+        std::env::set_var("RAD_DIR", path.parent().unwrap().to_str().unwrap());
     }
 
     /// Set input as string not as &path
