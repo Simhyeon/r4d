@@ -1,6 +1,16 @@
 ### Update note
 
+### Changed
+
+* [x] Add comments for add custom rules
+* [x] Make include respects currently set file
+- For example, relative file is evaluated based upon currently read file's path
+
 ### TODOs
+
+* [x] Add comments for add custom rules
+* [x] Make include respects currently set file
+- For example, relative file is evaluated based upon currently read file's path
 
 * [ ] Make gui application with help of klask
 - This requires nightly so different version of toolchain is used. 
