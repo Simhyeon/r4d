@@ -1536,7 +1536,7 @@ impl Processor {
     fn set_file_env(&self, file: &str) {
         let path = Path::new(file);
         std::env::set_var("RAD_FILE", file);
-        std::env::set_var("RAD_DIR", path.parent().unwrap().to_str().unwrap());
+        std::env::set_var("RAD_FILE_DIR", path.parent().unwrap().to_str().unwrap());
     }
 
     /// Set input as string not as &path
