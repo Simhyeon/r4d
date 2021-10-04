@@ -669,8 +669,12 @@ impl BasicMacro {
         if !Self::is_granted("env", AuthType::ENV,p)? {
             return Ok(None);
         }
-        let out = std::env::var(args)?;
-        Ok(Some(out))
+        if let Ok(out) = std::env::var(args) {
+            Ok(Some(out))
+        } else { 
+            p.log_warning(&format!("Env : \"{}\" is not defined.", args))?;
+            Ok(None) 
+        }
     }
 
     /// Merge two path into a single path
