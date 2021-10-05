@@ -75,6 +75,7 @@ impl BasicMacro {
             ("include".to_owned(), BasicMacro::include          as MacroType),
             ("len".to_owned(),     BasicMacro::len              as MacroType),
             ("name".to_owned(),    BasicMacro::get_name         as MacroType),
+            ("not".to_owned(),     BasicMacro::not              as MacroType),
             ("nl".to_owned(),      BasicMacro::newline          as MacroType),
             ("parent".to_owned(),  BasicMacro::get_parent       as MacroType),
             ("path".to_owned(),    BasicMacro::merge_path       as MacroType),
@@ -226,6 +227,26 @@ impl BasicMacro {
             Ok(Some(result.to_string()))
         } else {
             Err(RadError::InvalidArgument("Eval requires an argument".to_owned()))
+        }
+    }
+
+    /// Negate given value
+    ///
+    /// This returns true, false or evaluated number
+    ///
+    /// # Usage
+    ///
+    /// $not(expression)
+    fn not(args: &str, greedy: bool,_: &mut Processor ) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
+            let args = &args[0];
+            if let Ok(value) = Utils::is_arg_true(args) {
+                Ok(Some((!value).to_string()))
+            } else {
+                Err(RadError::InvalidArgument(format!("Not requires either true/false or zero/nonzero integer but given \"{}\"", args)))
+            }
+        } else {
+            Err(RadError::InvalidArgument("Not requires an argument".to_owned()))
         }
     }
 
