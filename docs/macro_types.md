@@ -9,7 +9,8 @@ to given rules.
 Well, it is because basic macro was not configurable at first and given as
 default macros. But r4d has evolved and even basic macro is configurable and
 can be disabled, so technically its name doesn't necessarily represents its
-characteristic properly. Still I'm not sure if I should rename it.
+characteristic properly. In terms of non-configurable defaults, keyword macros
+is a truely basic macros.
 
 ## What is a keyword macro?
 
@@ -39,3 +40,7 @@ error: found 1 errors
 In this case, custom macro ifc can handle dynamically constructed arguments
 because its argument is expanded before macro's evaluation. While if's
 arguments are first split into array and then evaluated.
+
+One other important difference is that you **cannot undefine or override
+keyword macros**. Even with empty macro map, keyword macro is always evaluated
+if found any.

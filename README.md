@@ -114,18 +114,9 @@ processor.print_result()?;
 
 [Macros](./docs/basic_macros.md)
 
-**What's a difference between custom macro and basic macros?**
+### Macro types
 
-Basic macro is a macro like function pointer or closure. While custom macro is
-a macro that doesn't include complicate logics but only gets expanded according
-to given rules.
-
-**Why the name basic?**
-
-Well, it is because basic macro was not configurable at first and given as
-default macros. But r4d has evolved and even basic macro is configurable and
-can be disabled, so technically its name doesn't necessarily represents its
-characteristic properly. Still I'm not sure if I should rename it.
+[Types](./docs/macro_types.md)
 
 ### How to debug
 

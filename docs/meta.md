@@ -9,15 +9,21 @@
 * [x] No env value is currently panicking... which is not so desirable, I guess
 * [x] Env values such as INPUT\_FILE or INUPT\_DIR would be usefule
 - It has been decided as RAD_FILE and RAD_FILE_DIR
+* [x] New basic macros
+- Get parent
+- Get filename
+- Merge paths
+* [x] Is warning for env is also harsh? Should be empty?
+- Now this only yield on strict mode
+* [x] Remove unnecessary hashamp clone
+* [x] Make some macros a speical type
+    * [x] Make if,ifelse,foreach,foloop as a keyword macro such as pause and define
+	* [x] Create new struct keyword maps
+* [x] Refactor sandbox environment
 
 ### TODOs
 
-* [ ] Consider how to refactor sandbox environment
-- Currently it gets chunk of string and return as chunk of string,
-which might not be so good for memory efficiency
-* [x] Add comments for add custom rules
-* [x] Make include respects currently set file
-- For example, relative file is evaluated based upon currently read file's path
+* [ ] Optional parameter?
 
 * [ ] Make gui application with help of klask
 - This requires nightly so different version of toolchain is used. 

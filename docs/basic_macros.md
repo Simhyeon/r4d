@@ -1,8 +1,8 @@
 #### Format
 
-If permission is necessary,
+If any permission is necessary, it is displayed as
 
-AUTH : ENV or FIN or FOUT or CMD
+AUTH : (ENV|FIN|FOUT|CMD)
 
 ```
 $macro_invocation(...)
@@ -62,7 +62,7 @@ $test()
 TEST CASE
 ```
 
-**pause**
+**pause** (keyword macro)
 
 Pause literally pauses every macro execution except pause macro. Even define is
 not evaluated
@@ -158,12 +158,42 @@ $env(HOME)
 
 **path**
 
-Merge two path into one.
+Join a path into the first path.
 
 ```
 $path($env(HOME),document)
 ===
 /home/simoncreek/document
+```
+
+**paths**
+
+Join multiple paths separated with spaces
+
+```
+$paths(a b c)
+===
+a/b/c
+```
+
+**name**
+
+Get file name from input
+
+```
+$name(/home/test/Documents/info.txt)
+===
+info.txt
+```
+
+**parent**
+
+Get parent path from input
+
+```
+$parent(/home/test/Documents/info.txt)
+===
+/home/test/Documents
 ```
 
 **bind**
@@ -213,7 +243,7 @@ Content to be repeated
 
 ```
 
-**foreach**
+**foreach** (keyword macro)
 
 Loop around given value. Value is separated with commas. Thus values should be
 always enclosed with double quotes.
@@ -228,7 +258,7 @@ Value: c
 
 ```
 
-**forloop**
+**forloop** (keyword macro)
 
 Loop around given range. Value is separated with commas. 
 
@@ -243,39 +273,6 @@ Number: 4
 Number: 5
 
 ```
-
-**forloop, foreach with nested macro usage**
-
-Forloop and foreach's ```$:``` is a substituion rather than macro expansion.
-And first of all rad doesn't create any form of AST from given source thus, $:
-is expanded at the last stage, which means for loop's target are **once more evaluated** after.
-
-```
-$define(styles,a_styles=<style>
-$foreach($a_styles*(),
-$include($path($env(GDE_MODULE),$:.css)))
-</style>
-)
-$styles(\*a,b,c*\)
-=== 
-// This fails because include tries to get path of $GDE_MODULE/$:.css
-```
-Thus enclose the body with literal rule which will deter evaluation for a time.
-
-```
-$define(styles,a_styles=<style>
-$foreach($a_styles*(),
-\*$include($path($env(GDE_MODULE),$:.css))*\)
-</style>
-)
-$styles(\*a,b,c*\)
-===
-// This will execute macro of 
-// $include($GDE_MODULE/a.css) 
-// $include($GDE_MODULE/b.css)
-// $include($GDE_MODULE/c.css)
-```
-
 **eval**
 
 Eval evaluates expression. This macro(function) uses rust's evalexpr crate
@@ -290,7 +287,7 @@ $eval(0.1+0.2)
 0.30000000000000004
 ```
 
-**if**
+**if** (keyword macro)
 
 If gets a condition and prints if given value is true
 
@@ -298,20 +295,14 @@ Text "true" and "false", non "0" integer and "0" are valid inputs. "true" and
 "false" is case sensitive. 0 is false and any number other than 0 is true even
 negative integer is valid input. Floating point number is not allowed.
 
-One important note is that, ```if``` and ```ifelse``` evalutes target statement
-once more after evaluation.
-
 ```
 $if(true,TRUE)
-$define(wrapper,a_src=$fileout(true,a_src,Hello World))
-$if(false,$wrapper*())
+$if(false,False)
 ===
 TRUE
-// If always evaluate inner arguments while
-// second "if" doesn't evaluate wrapper macro content thus no fileout occurs
 ```
 
-**ifelse**
+**ifelse** (keyword macro)
 
 Ifelse gets two branches and print out one according to given condition.
 
