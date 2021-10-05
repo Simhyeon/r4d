@@ -138,7 +138,7 @@ pub struct Processor{
     pub(crate) line_caches: HashMap<usize, String>,
     sandbox: bool,
     purge: bool,
-    strict: bool,
+    pub(crate) strict: bool,
     pub(crate) nopanic: bool,
     always_greedy: bool,
     // Temp target needs to save both path and file
@@ -1313,8 +1313,10 @@ impl Processor {
                 }
             }
             frag.clear();
-        } 
-        else { // Invoke macro
+        } else if self.map.is_keyword(&frag.name) { // Is a keyword
+            let macro_func = self.map.keyword.get(&frag.name).unwrap();
+            macro_func(&frag.args,level,self)?;
+        } else { // Invoke macro
             // Debug
             #[cfg(feature = "debug")]
             {
