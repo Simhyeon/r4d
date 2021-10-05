@@ -56,6 +56,7 @@ pub(crate) mod arg_parser;
 pub(crate) mod auth;
 pub(crate) mod basic;
 pub(crate) mod closure_map;
+pub(crate) mod keyword_map;
 pub(crate) mod consts;
 pub(crate) mod lexor;
 pub(crate) mod logger;
