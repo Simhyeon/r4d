@@ -128,6 +128,11 @@ impl BasicMacro {
         self.macros.contains_key(name)
     }
 
+    /// Get function reference by name
+    pub fn get(&self, name: &str) -> Option<&MacroType> {
+        self.macros.get(name)
+    }
+
     /// Check file authority
     fn is_granted(name:&str, auth_type: AuthType, processor: &mut Processor) -> Result<bool, RadError> {
         match processor.get_auth_state(&auth_type) {
@@ -139,29 +144,6 @@ impl BasicMacro {
                 Ok(true)
             }
             AuthState::Open => Ok(true),
-        }
-    }
-
-    /// Call a macro
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - Name of the macro to call
-    /// * `args` - Argument sto supply to macro
-    /// * `greedy` - Whether macro should interpret arguments greedily
-    /// * `processor` - Processor instance to execute macro
-    pub fn call(&mut self, name : &str, args: &str,greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(func) = self.macros.get(name) {
-            // Print out macro call result
-            let result = func(args, greedy, processor);
-            if let Err(err) = result {
-                if processor.nopanic {
-                    processor.log_error(&format!("{}",err))?;
-                    Ok(None)
-                } else { Err(err) }
-            } else { result }
-        } else {
-            Ok(None)
         }
     }
 
@@ -337,8 +319,8 @@ impl BasicMacro {
 
             if file_path.is_file() { 
                 processor.set_sandbox();
-                let result = processor.from_file(file_path)?;
-                Ok(Some(result))
+                processor.from_file(file_path)?;
+                Ok(None)
             } else {
                 let formatted = format!("File path : \"{}\" doesn't exist or not a file", file_path.display());
                 Err(RadError::InvalidArgument(formatted))
@@ -855,7 +837,8 @@ impl BasicMacro {
         }
         let file = processor.get_temp_path().to_owned();
         processor.set_sandbox();
-        Ok(Some(processor.from_file(&file)?))
+        processor.from_file(&file)?;
+        Ok(None)
     }
 
     /// Redirect all text into temporary file
