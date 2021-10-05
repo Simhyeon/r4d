@@ -8,11 +8,10 @@ use std::io::Write;
 use std::fs::OpenOptions;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use std::path::PathBuf;
+use std::path::{PathBuf,Path};
 use std::process::Command;
 use crate::error::RadError;
 use crate::arg_parser::ArgParser;
-use crate::consts::MAIN_CALLER;
 use regex::Regex;
 use crate::utils::Utils;
 use crate::processor::Processor;
@@ -65,53 +64,51 @@ impl BasicMacro {
         // Create hashmap of functions
         #[allow(unused_mut)]
         let mut map = HashMap::from_iter(IntoIter::new([
-            ("regex".to_owned(), BasicMacro::regex_sub as MacroType),
-            ("trim".to_owned(), BasicMacro::trim as MacroType),
-            ("chomp".to_owned(), BasicMacro::chomp as MacroType).to_owned(),
-            ("comp".to_owned(), BasicMacro::compress as MacroType).to_owned(),
-            ("include".to_owned(), BasicMacro::include as MacroType).to_owned(),
-            ("repeat".to_owned(), BasicMacro::repeat as MacroType).to_owned(),
-            ("syscmd".to_owned(), BasicMacro::syscmd as MacroType).to_owned(),
-            ("if".to_owned(), BasicMacro::if_cond as MacroType).to_owned(),
-            ("ifelse".to_owned(), BasicMacro::ifelse as MacroType).to_owned(),
-            ("ifdef".to_owned(), BasicMacro::ifdef as MacroType).to_owned(),
-            ("foreach".to_owned(), BasicMacro::foreach as MacroType).to_owned(),
-            ("forloop".to_owned(), BasicMacro::forloop as MacroType).to_owned(),
-            ("undef".to_owned(), BasicMacro::undefine_call as MacroType).to_owned(),
-            ("rename".to_owned(), BasicMacro::rename_call as MacroType).to_owned(),
-            ("append".to_owned(), BasicMacro::append as MacroType).to_owned(),
-            ("len".to_owned(), BasicMacro::len as MacroType).to_owned(),
-            ("tr".to_owned(), BasicMacro::translate as MacroType).to_owned(),
-            ("sub".to_owned(), BasicMacro::substring as MacroType).to_owned(),
-            ("pause".to_owned(), BasicMacro::pause as MacroType).to_owned(),
-            ("tempto".to_owned(), BasicMacro::set_temp_target as MacroType).to_owned(),
-            ("tempout".to_owned(), BasicMacro::temp_out as MacroType).to_owned(),
-            ("tempin".to_owned(), BasicMacro::temp_include as MacroType).to_owned(),
-            ("redir".to_owned(), BasicMacro::temp_redirect as MacroType).to_owned(),
-            ("fileout".to_owned(), BasicMacro::file_out as MacroType).to_owned(),
-            ("pipe".to_owned(), BasicMacro::pipe as MacroType).to_owned(),
-            ("bind".to_owned(), BasicMacro::bind_to_local as MacroType).to_owned(),
-            ("env".to_owned(), BasicMacro::get_env as MacroType).to_owned(),
-            ("path".to_owned(), BasicMacro::merge_path as MacroType).to_owned(),
-            ("nl".to_owned(), BasicMacro::newline as MacroType).to_owned(),
-            ("-".to_owned(), BasicMacro::get_pipe as MacroType).to_owned(),
+            ("-".to_owned(),       BasicMacro::get_pipe         as MacroType),
+            ("append".to_owned(),  BasicMacro::append           as MacroType),
+            ("bind".to_owned(),    BasicMacro::bind_to_local    as MacroType),
+            ("chomp".to_owned(),   BasicMacro::chomp            as MacroType),
+            ("comp".to_owned(),    BasicMacro::compress         as MacroType),
+            ("env".to_owned(),     BasicMacro::get_env          as MacroType),
+            ("fileout".to_owned(), BasicMacro::file_out         as MacroType),
+            ("ifdef".to_owned(),   BasicMacro::ifdef            as MacroType),
+            ("include".to_owned(), BasicMacro::include          as MacroType),
+            ("len".to_owned(),     BasicMacro::len              as MacroType),
+            ("name".to_owned(),    BasicMacro::get_name         as MacroType),
+            ("nl".to_owned(),      BasicMacro::newline          as MacroType),
+            ("parent".to_owned(),  BasicMacro::get_parent       as MacroType),
+            ("path".to_owned(),    BasicMacro::merge_path       as MacroType),
+            ("paths".to_owned(),   BasicMacro::merge_path_vec   as MacroType),
+            ("pipe".to_owned(),    BasicMacro::pipe             as MacroType),
+            ("redir".to_owned(),   BasicMacro::temp_redirect    as MacroType),
+            ("regex".to_owned(),   BasicMacro::regex_sub        as MacroType),
+            ("rename".to_owned(),  BasicMacro::rename_call      as MacroType),
+            ("repeat".to_owned(),  BasicMacro::repeat           as MacroType),
+            ("sub".to_owned(),     BasicMacro::substring        as MacroType),
+            ("syscmd".to_owned(),  BasicMacro::syscmd           as MacroType),
+            ("tempin".to_owned(),  BasicMacro::temp_include     as MacroType),
+            ("tempout".to_owned(), BasicMacro::temp_out         as MacroType),
+            ("tempto".to_owned(),  BasicMacro::set_temp_target  as MacroType),
+            ("tr".to_owned(),      BasicMacro::translate        as MacroType),
+            ("trim".to_owned(),    BasicMacro::trim             as MacroType),
+            ("undef".to_owned(),   BasicMacro::undefine_call    as MacroType),
         ]));
         
         // Optional macros
         #[cfg(feature = "csv")]
         {
             map.insert("from".to_owned(), BasicMacro::from_data as MacroType);
-            map.insert("table".to_owned(), BasicMacro::table as MacroType);
+            map.insert("table".to_owned(), BasicMacro::table    as MacroType);
         }
         #[cfg(feature = "chrono")]
         {
-            map.insert("time".to_owned(), BasicMacro::time as MacroType);
-            map.insert("date".to_owned(), BasicMacro::date as MacroType);
+            map.insert("time".to_owned(), BasicMacro::time      as MacroType);
+            map.insert("date".to_owned(), BasicMacro::date      as MacroType);
         }
         #[cfg(feature = "lipsum")]
         map.insert("lipsum".to_owned(), BasicMacro::placeholder as MacroType);
         #[cfg(feature = "evalexpr")]
-        map.insert("eval".to_owned(), BasicMacro::eval as MacroType);
+        map.insert("eval".to_owned(), BasicMacro::eval          as MacroType);
 
         // Return struct
         Self { macros : map }
@@ -414,77 +411,6 @@ impl BasicMacro {
         }
     }
 
-    /// Print content according to given condition
-    /// 
-    /// If macro's second argument is evaluated twice.
-    ///
-    /// # Usage 
-    ///
-    /// $if(evaluation, \*ifstate*\)
-    fn if_cond(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let boolean = &args[0];
-            let if_state = &args[1];
-
-            // Given condition is true
-            let trimmed_cond = Utils::trim(boolean)?;
-            if let Ok(cond) = trimmed_cond.parse::<bool>() {
-                if cond { 
-                    let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), if_state)?;
-                    return Ok(Some(result)); 
-                }
-            } else if let Ok(number) = trimmed_cond.parse::<i32>() {
-                if number != 0 { 
-                    let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), if_state)?;
-                    return Ok(Some(result)); 
-                }
-            } else {
-                return Err(RadError::InvalidArgument(format!("If requires either true/false or zero/nonzero integer but given \"{}\"", trimmed_cond)))
-            }
-
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument("if requires two arguments".to_owned()))
-        }
-    }
-
-    /// Print content according to given condition
-    /// 
-    /// Ifelse second and third arguemtns are evaluated twice.
-    ///
-    /// # Usage 
-    ///
-    /// $ifelse(evaluation, \*ifstate*\, \*elsestate*\)
-    fn ifelse(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
-            let boolean = &args[0];
-            let if_state = &args[1];
-
-            // Given condition is true
-            let trimmed_cond = Utils::trim(boolean)?;
-            if let Ok(cond) = trimmed_cond.parse::<bool>() {
-                if cond { 
-                    let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), if_state)?;
-                    return Ok(Some(result)); 
-                }
-            } else if let Ok(number) = trimmed_cond.parse::<i32>() {
-                if number != 0 { 
-                    let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), if_state)?;
-                    return Ok(Some(result)); 
-                }
-            } else {
-                return Err(RadError::InvalidArgument(format!("Ifelse requires either true/false or zero/nonzero integer but given \"{}\"",trimmed_cond)))
-            }
-
-            // Else state
-            let else_state = &args[2];
-            let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), else_state)?;
-            return Ok(Some(result));
-        } else {
-            Err(RadError::InvalidArgument("ifelse requires three argument".to_owned()))
-        }
-    }
-
     /// Check if macro is defined or not
     ///
     /// This return 'true' or 'false'
@@ -531,61 +457,6 @@ impl BasicMacro {
         }
     }
 
-    /// Loop around given values and substitute iterators  with the value
-    ///
-    /// Foreach's second macro is evaluated twice.
-    ///
-    /// # Usage 
-    ///
-    /// $foreach(\*a,b,c*\,\*$:*\)
-    fn foreach(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let mut sums = String::new();
-            let target = &args[1]; // evaluate on loop
-            let loopable = &args[0];
-
-            for value in loopable.split(',') {
-                let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), &target.replace("$:", value))?;
-                sums.push_str(&result);
-            }
-            Ok(Some(sums))
-        } else {
-            Err(RadError::InvalidArgument("Foreach requires two argument".to_owned()))
-        }
-    }
-
-    /// For loop around given min, max value and finally substitue iterators with value
-    ///
-    /// Forloop's second macro is evaluated twice.
-    ///
-    /// # Usage
-    ///
-    /// $forloop(1,5,\*$:*\)
-    fn forloop(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
-            let mut sums = String::new();
-            let expression = &args[2]; // evaluate on loop
-
-            let min: usize; 
-            let max: usize; 
-            if let Ok(num) = Utils::trim(&args[0])?.parse::<usize>() {
-                min = num;
-            } else { return Err(RadError::InvalidArgument(format!("Forloop's min value should be non zero positive integer but given {}", &args[0]))); }
-            if let Ok(num) = Utils::trim(&args[1])?.parse::<usize>() {
-                max = num
-            } else { return Err(RadError::InvalidArgument(format!("Forloop's min value should be non zero positive integer gut given \"{}\"", &args[1]))); }
-            
-            for value in min..=max {
-                let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), &expression.replace("$:", &value.to_string()))?;
-                sums.push_str(&result);
-            }
-
-            Ok(Some(sums))
-        } else {
-            Err(RadError::InvalidArgument("Forloop requires two argument".to_owned()))
-        }
-    }
-
     /// Create multiple macro executions from given csv value
     ///
     /// # Usage
@@ -600,7 +471,7 @@ impl BasicMacro {
 
             let result = Formatter::csv_to_macros(macro_name, macro_data, &processor.newline)?;
             // This is necessary
-            let result = processor.parse_chunk_args(0, &MAIN_CALLER.to_owned(), &result)?;
+            let result = processor.parse_chunk_args(0, "", &result)?;
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument("From requires two arguments".to_owned()))
@@ -672,7 +543,9 @@ impl BasicMacro {
         if let Ok(out) = std::env::var(args) {
             Ok(Some(out))
         } else { 
-            p.log_warning(&format!("Env : \"{}\" is not defined.", args))?;
+            if p.strict {
+                p.log_warning(&format!("Env : \"{}\" is not defined.", args))?;
+            }
             Ok(None) 
         }
     }
@@ -696,6 +569,30 @@ impl BasicMacro {
         }
     }
 
+    /// Merge multiple paths into a single path
+    ///
+    /// This creates platform agonistic path which can be consumed by other macros.
+    ///
+    /// # Usage
+    ///
+    /// $paths($env(HOME) document test.docx)
+    fn merge_path_vec(args: &str, _: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, false) {
+            let trimmed = Utils::trim(&args[0])?;
+            let vec = trimmed.split(' ').collect::<Vec<&str>>();
+
+            let out = vec.iter().collect::<PathBuf>();
+
+            if let Some(value) = out.to_str() {
+                Ok(Some(value.to_owned()))
+            } else {
+                Err(RadError::InvalidArgument(format!("Invalid path : {}", out.display())))
+            }
+        } else {
+            Err(RadError::InvalidArgument("Paths macro needs an argument".to_owned()))
+        }
+    }
+
     /// Yield newline according to platform or user option
     ///
     /// # Usage
@@ -703,6 +600,48 @@ impl BasicMacro {
     /// $nl()
     fn newline(_: &str, _: bool, p: &mut Processor) -> Result<Option<String>, RadError> {
         Ok(Some(p.newline.to_owned()))
+    }
+
+    /// Get name from given path
+    ///
+    /// # Usage
+    ///
+    /// $name(path/file.exe)
+    fn get_name(args: &str, _: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, false) {
+
+            let path = Path::new(&args[0]);
+
+            if let Some(name) = path.file_name() {
+                if let Some(value) = name.to_str() {
+                    return Ok(Some(value.to_owned()));
+                }
+            } 
+            Err(RadError::InvalidArgument(format!("Invalid path : {}", path.display())))
+        } else {
+            Err(RadError::InvalidArgument("name requires an argument".to_owned()))
+        }
+    }
+
+    /// Get parent from given path
+    ///
+    /// # Usage
+    ///
+    /// $parent(path/file.exe)
+    fn get_parent(args: &str, _: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, false) {
+
+            let path = Path::new(&args[0]);
+
+            if let Some(name) = path.parent() {
+                if let Some(value) = name.to_str() {
+                    return Ok(Some(value.to_owned()));
+                }
+            } 
+            Err(RadError::InvalidArgument(format!("Invalid path : {}", path.display())))
+        } else {
+            Err(RadError::InvalidArgument("parent requires an argument".to_owned()))
+        }
     }
 
     /// Pop pipe value
@@ -839,35 +778,6 @@ impl BasicMacro {
 
         } else {
             Err(RadError::InvalidArgument("Sub requires three arguments".to_owned()))
-        }
-    }
-
-    // TODO Make pause should be a logic branch not a basic macro?
-    /// Pause every macro expansion
-    ///
-    /// Only other pause call is evaluated
-    ///
-    /// # Usage
-    /// 
-    /// $pause(true)
-    /// $pause(false)
-    fn pause(args: &str, greedy: bool, processor : &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
-            let arg = &args[0];
-            if let Ok(value) =Utils::is_arg_true(arg) {
-                if value {
-                    processor.paused = true;
-                } else {
-                    processor.paused = false;
-                }
-                Ok(None)
-            } 
-            // Failed to evaluate
-            else {
-                Err(RadError::InvalidArgument(format!("Pause requires either true/false or zero/nonzero integer, but given \"{}\"", arg)))
-            }
-        } else {
-            Err(RadError::InvalidArgument("Pause requires an argument".to_owned()))
         }
     }
 
