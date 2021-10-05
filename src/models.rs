@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::path::Path;
-use crate::basic::BasicMacro;
+use crate::{basic::BasicMacro, keyword_map::KeywordMacro};
 use crate::error::RadError;
 use crate::utils::Utils;
 use serde::{Deserialize, Serialize};
@@ -44,15 +44,19 @@ impl MacroRule {
 /// - Custom macro
 /// - Local bound macro
 pub struct MacroMap {
+    pub keyword: KeywordMacro,
     pub basic : BasicMacro,
     pub custom : HashMap<String, MacroRule>,
     pub local : HashMap<String, String>,
 }
 
 impl MacroMap {
-    /// Creates empty map withotu default basic macros
+    /// Creates empty map without default basic macros
+    ///
+    /// Keyword macro cannot be empty
     pub fn empty() -> Self {
         Self {
+            keyword: KeywordMacro::new(),
             basic: BasicMacro::empty(),
             custom: HashMap::new(),
             local: HashMap::new(),
@@ -62,6 +66,7 @@ impl MacroMap {
     /// Creates default map with default basic macros
     pub fn new() -> Self {
         Self { 
+            keyword: KeywordMacro::new(),
             basic: BasicMacro::new(),
             custom: HashMap::new(),
             local: HashMap::new(),
@@ -76,6 +81,10 @@ impl MacroMap {
     /// Clear all local macros
     pub fn clear_local(&mut self) {
         self.local.clear();
+    }
+
+    pub fn is_keyword(&self, name:&str) -> bool {
+        self.keyword.contains(name)
     }
 
     /// Check if macro exists
