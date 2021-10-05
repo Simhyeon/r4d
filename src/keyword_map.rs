@@ -106,14 +106,21 @@ impl KeywordMacro {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
             let mut sums = String::new();
 
+            let min_src = processor.parse_chunk_args(level, "",&Utils::trim(&args[0])?)?;
+            let max_src = processor.parse_chunk_args(level, "",&Utils::trim(&args[1])?)?;
+
             let min: usize; 
             let max: usize; 
-            if let Ok(num) = Utils::trim(&args[0])?.parse::<usize>() {
+            if let Ok(num) = min_src.parse::<usize>() {
                 min = num;
-            } else { return Err(RadError::InvalidArgument(format!("Forloop's min value should be non zero positive integer but given {}", &args[0]))); }
-            if let Ok(num) = Utils::trim(&args[1])?.parse::<usize>() {
+            } else { 
+                return Err(RadError::InvalidArgument(format!("Forloop's min value should be non zero positive integer but given {}", &args[0]))); 
+            }
+            if let Ok(num) = max_src.parse::<usize>() {
                 max = num
-            } else { return Err(RadError::InvalidArgument(format!("Forloop's min value should be non zero positive integer gut given \"{}\"", &args[1]))); }
+            } else { 
+                return Err(RadError::InvalidArgument(format!("Forloop's min value should be non zero positive integer gut given \"{}\"", &args[1]))); 
+            }
             
             for value in min..=max {
                 let result = processor.parse_chunk_args(level, "", &args[2].replace("$:", &value.to_string()))?;
