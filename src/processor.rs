@@ -539,19 +539,20 @@ impl Processor {
 
 
     /// Read from string
-    pub fn from_string(&mut self, content: &str) -> Result<String, RadError> {
+    pub fn from_string(&mut self, content: &str) -> Result<(), RadError> {
         // Set name as string
         self.set_input("String")?;
 
         let mut reader = content.as_bytes();
-        self.from_buffer(&mut reader, None)
+        self.from_buffer(&mut reader, None)?;
+        Ok(())
     }
 
     /// Read from standard input
     ///
     /// If debug mode is enabled this, doesn't read stdin line by line but by chunk because user
     /// input is also a standard input and processor cannot distinguish the two
-    pub fn from_stdin(&mut self) -> Result<String, RadError> {
+    pub fn from_stdin(&mut self) -> Result<(), RadError> {
         let stdin = io::stdin();
 
         // Early return if debug
@@ -561,15 +562,17 @@ impl Processor {
             let mut input = String::new();
             stdin.lock().read_to_string(&mut input)?;
             // This is necessary to prevent unexpected output from being captured.
-            return self.from_buffer(&mut input.as_bytes(), None);
+            self.from_buffer(&mut input.as_bytes(), None)?;
+            return Ok(());
         }
 
         let mut reader = stdin.lock();
-        self.from_buffer(&mut reader, None)
+        self.from_buffer(&mut reader, None)?;
+        Ok(())
     }
 
     /// Process contents from a file
-    pub fn from_file(&mut self, path :impl AsRef<Path>) -> Result<String, RadError> {
+    pub fn from_file(&mut self, path :impl AsRef<Path>) -> Result<(), RadError> {
         // Sandboxed environment, backup
         let backup = if self.sandbox { Some(self.backup()) } else { None };
         // Set file as name of given path
@@ -577,17 +580,15 @@ impl Processor {
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
-        self.from_buffer(&mut reader, backup)
+        self.from_buffer(&mut reader, backup)?;
+        Ok(())
     }
 
     /// Internal method for processing buffers line by line
-    fn from_buffer(&mut self,buffer: &mut impl std::io::BufRead, backup: Option<SandboxBackup>) -> Result<String, RadError> {
+    fn from_buffer(&mut self,buffer: &mut impl std::io::BufRead, backup: Option<SandboxBackup>) -> Result<(), RadError> {
         let mut line_iter = Utils::full_lines(buffer).peekable();
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
-        let mut content = String::new();
-        // Container is where sandboxed output is saved
-        let mut container = if self.sandbox { Some(&mut content) } else { None };
         #[cfg(feature = "debug")]
         self.user_input_on_start()?;
         loop {
@@ -604,7 +605,7 @@ impl Processor {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(remainder) => {
-                    self.write_to(&remainder, &mut container)?;
+                    self.write_to(&remainder)?;
 
                     // Test if this works
                     #[cfg(feature = "debug")]
@@ -616,7 +617,7 @@ impl Processor {
                     }
                 }
                 ParseResult::FoundMacro(remainder) => {
-                    self.write_to(&remainder, &mut container)?;
+                    self.write_to(&remainder)?;
                 }
                 // This happens only when given macro involved text should not be printed
                 ParseResult::NoPrint => { }
@@ -637,7 +638,7 @@ impl Processor {
         if let Some(backup) = backup { self.recover(backup); self.sandbox = false; }
 
 
-        Ok(content)
+        Ok(())
     }
 
     // End of process methods
@@ -1121,7 +1122,9 @@ impl Processor {
         }
         // Find basic macro
         else if self.map.basic.contains(&name) {
-            let final_result = self.map.basic.clone().call(name, &args, greedy, self)?;
+            // Func always exists, because contains succeeded.
+            let func = self.map.basic.get(name).unwrap();
+            let final_result = func(&args, greedy, self)?;
             return Ok(EvalResult::Eval(final_result));
         } 
         // Find closure map
@@ -1180,7 +1183,7 @@ impl Processor {
     }
 
     /// Write text to either file or standard output according to processor's write option
-    fn write_to(&mut self, content: &str, container: &mut Option<&mut String>) -> Result<(), RadError> {
+    fn write_to(&mut self, content: &str) -> Result<(), RadError> {
         // Don't try to write empty string, because it's a waste
         if content.len() == 0 { return Ok(()); }
 
@@ -1189,21 +1192,14 @@ impl Processor {
         if self.yield_diff {
             self.diff_processed.as_ref().unwrap().write_all(content.as_bytes())?;
         }
-
-        // Save to container
-        if let Some(container) = container {
-            container.push_str(content);
-        } 
         // Write out to file or stdout
-        else {
-            if self.redirect {
-                self.temp_target.1.write(content.as_bytes())?;
-            } else {
-                match &mut self.write_option {
-                    WriteOption::File(f) => f.write_all(content.as_bytes())?,
-                    WriteOption::Terminal => print!("{}", content),
-                    WriteOption::Discard => () // Don't print anything
-                }
+        if self.redirect {
+            self.temp_target.1.write(content.as_bytes())?;
+        } else {
+            match &mut self.write_option {
+                WriteOption::File(f) => f.write_all(content.as_bytes())?,
+                WriteOption::Terminal => print!("{}", content),
+                WriteOption::Discard => () // Don't print anything
             }
         }
 
@@ -1315,7 +1311,17 @@ impl Processor {
             frag.clear();
         } else if self.map.is_keyword(&frag.name) { // Is a keyword
             let macro_func = self.map.keyword.get(&frag.name).unwrap();
-            macro_func(&frag.args,level,self)?;
+            let result = macro_func(&frag.args,level,self)?;
+
+            // Result
+            if let Some(text) = result {
+                self.write_to(&text)?;
+            } else {
+                lexor.escape_nl = true;
+            }
+
+            // Clear fragment regardless of success
+            frag.clear()
         } else { // Invoke macro
             // Debug
             #[cfg(feature = "debug")]
