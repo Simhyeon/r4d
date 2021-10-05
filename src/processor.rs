@@ -1311,17 +1311,46 @@ impl Processor {
             frag.clear();
         } else if self.map.is_keyword(&frag.name) { // Is a keyword
             let macro_func = self.map.keyword.get(&frag.name).unwrap();
-            let result = macro_func(&frag.args,level,self)?;
+            let result = macro_func(&frag.args,level,self);
 
-            // Result
-            if let Some(text) = result {
-                self.write_to(&text)?;
-            } else {
-                lexor.escape_nl = true;
+            match result {
+                Ok(option) => {
+                    // Something to print
+                    if let Some(text) = option {
+                        self.write_to(&text)?;
+                    } else { // Nothing to print
+                        lexor.escape_nl = true;
+                    }
+
+                    // Clear fragment regardless of success
+                    frag.clear();
+                }
+                Err(err) => {
+                    self.log_error(&format!("{}", err))?;
+
+                    // If nopanic then don't panic
+                    if self.nopanic {
+                        // If purge mode is set, don't print anything 
+                        if !self.purge {
+                            remainder.push_str(&frag.whole_string);
+                        } else {
+                            // If purge mode
+                            // set escape new line 
+                            lexor.escape_nl = true;
+                        }
+
+                        // Clear fragment regardless of success
+                        frag.clear();
+
+                        return Ok(());
+                    } else {
+
+                        // Clear fragment regardless of success
+                        frag.clear();
+                        return Err(RadError::Panic);
+                    }
+                }
             }
-
-            // Clear fragment regardless of success
-            frag.clear()
         } else { // Invoke macro
             // Debug
             #[cfg(feature = "debug")]
@@ -1363,7 +1392,13 @@ impl Processor {
         } else {
             self.log_error(&format!("{}", error))?;
         }
-        return Err(RadError::Panic);
+
+        // If nopanic don't panic
+        if self.nopanic {
+            Ok(())
+        } else {
+            Err(RadError::Panic)
+        }
     }
 
     fn lex_branch_end_frag_eval_result_ok(&mut self, variant : EvalResult, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize) -> Result<(), RadError> {
