@@ -235,6 +235,21 @@ I'm going to be used by a pipe macro
 \*I'll be requoted with literal*\
 ```
 
+A caveat with piped values
+
+```
+$eval|("test" == "test")
+$define(result=$-())
+$result()
+$result()
+===
+true
+
+```
+
+Result calls pipe macro not saves piped value into itself, thus using result
+second time will yield nothing.
+
 **Yield literal**
 
 Yield literal attribute ```*``` makes output printed as literal form. This is

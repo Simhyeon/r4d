@@ -23,6 +23,7 @@
 
 ### TODOs
 
+* [ ] Add not macro
 * [ ] Optional parameter?
 
 * [ ] Make gui application with help of klask

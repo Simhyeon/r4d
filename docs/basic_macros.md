@@ -332,6 +332,22 @@ true
 false
 ```
 
+**not**
+
+Not negates given boolean value.
+
+```
+$not(true)
+$not(false)
+$not(1)
+$not(0)
+===
+false
+true
+false
+true
+```
+
 **syscmd**
 
 AUTH : CMD
