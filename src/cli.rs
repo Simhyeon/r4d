@@ -48,7 +48,7 @@ impl Cli {
         let mut processor = Processor::new()
             .purge(args.is_present("purge"))
             .greedy(args.is_present("greedy"))
-            .strict(args.is_present("greedy"))
+            .lenient(args.is_present("lenient"))
             .silent(args.is_present("silent"))
             .nopanic(args.is_present("nopanic"))
             .allow(std::mem::replace(&mut self.allow_auth,None))
@@ -161,7 +161,7 @@ impl Cli {
     /// Creates argument template wich clap macro
     fn args_builder() -> clap::ArgMatches {
         clap_app!(rad =>
-            (version: "0.10.2")
+            (version: "0.11.0")
             (author: "Simon Creek <simoncreek@tutanota.com>")
             (about: "R4d is a modern macro processor made with rust")
             (@arg FILE: ... "Files to execute processing")
@@ -171,10 +171,10 @@ impl Cli {
             (@arg melt: ... -m --melt +takes_value "Frozen file to reads")
             (@arg freeze: -f --freeze +takes_value "Freeze to file")
             (@arg purge: -p --purge "Purge unused macros")
-            (@arg nopanic: --nopanic "Don't panic in any circumstances")
-            (@arg strict: -S --strict conflicts_with[nopanic purge] "Strict mode")
+            (@arg lenient: -l --lenient "Lenient mode, disables strict mode")
+            (@arg nopanic: --nopanic "Don't panic in any circumstances, the most lenient mode")
             (@arg debug: -d --debug "Debug mode")
-            (@arg log: -l --log "Debug log mode")
+            (@arg log: --log "Debug log mode")
             (@arg diff: --diff "Show diff result")
             (@arg interactive: -i --interactive "Use interactive debug mode")
             (@arg combination: -c "Read from both stdin and file inputs")
