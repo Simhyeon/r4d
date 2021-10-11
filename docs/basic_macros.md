@@ -49,6 +49,16 @@ $length(I'm long)
 8
 ```
 
+**repl**
+
+Replace contents of the macro
+
+```
+$define(before=BEFORE)
+$repl(before,AFTER)
+$before()
+```
+
 **append**
 
 Append append given string into the macro. Only
