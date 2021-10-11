@@ -1165,14 +1165,15 @@ impl Processor {
     ///
     /// This doesn't clear fragment
     fn add_rule(&mut self, frag: &MacroFragment, remainder: &mut String) -> Result<(), RadError> {
-        // Strict mode
-        // Overriding is prohibited
-        if self.strict && self.map.contains(&frag.name) {
-            self.log_error("Can't add exsiting macro name on strict mode")?;
-            return Err(RadError::StrictPanic);
-        }
-
         if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
+
+            // Strict mode
+            // Overriding is prohibited
+            if self.strict && self.map.contains(&name) {
+                self.log_error("Can't override exsiting macro on strict mode")?;
+                return Err(RadError::StrictPanic);
+            }
+
             self.map.register(&name, &args, &body)?;
         } else {
             self.log_error(&format!(
