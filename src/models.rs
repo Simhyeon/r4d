@@ -43,7 +43,7 @@ impl MacroRule {
 /// - Basic macro
 /// - Custom macro
 /// - Local bound macro
-pub struct MacroMap {
+pub(crate) struct MacroMap {
     pub keyword: KeywordMacro,
     pub basic : BasicMacro,
     pub custom : HashMap<String, MacroRule>,
@@ -102,8 +102,8 @@ impl MacroMap {
     ) -> Result<(),RadError> {
         // Trim all whitespaces and newlines from the string
         let mac = MacroRule::new(
-            &Utils::trim(name)?, 
-            &Utils::trim(args)?, 
+            &Utils::trim(name), 
+            &Utils::trim(args), 
             body);
         self.custom.insert(name.to_owned(), mac);
         Ok(())
@@ -133,6 +133,16 @@ impl MacroMap {
         if self.custom.contains_key(name) {
             let rule = self.custom.get_mut(name).unwrap();
             rule.body.push_str(target);
+        }
+    }
+
+    pub fn replace(&mut self, name: &str, target: &str) -> bool {
+        if self.custom.contains_key(name) {
+            let rule = self.custom.get_mut(name).unwrap();
+            rule.body = target.to_owned();
+            true
+        } else {
+            false
         }
     }
 }
