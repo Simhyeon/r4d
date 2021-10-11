@@ -14,11 +14,10 @@ use crate::utils::Utils;
 /// Struct that validated a given character
 pub struct Lexor {
     previous_char : Option<char>,
-    pub cursor: Cursor,
-    pub escape_next : bool,
-    pub lit_count: usize,
-    pub paren_count : usize,
-    pub escape_nl : bool,
+    cursor: Cursor,
+    lit_count: usize,
+    paren_count : usize,
+    escape_nl : bool,
 }
 
 impl Lexor {
@@ -26,7 +25,6 @@ impl Lexor {
         Lexor {
             previous_char : None,
             cursor: Cursor::None,
-            escape_next : false,
             escape_nl : false,
             lit_count : 0,
             paren_count : 0,
@@ -36,9 +34,17 @@ impl Lexor {
     pub fn reset(&mut self) {
         self.previous_char = None;
         self.cursor= Cursor::None;
-        self.escape_next = false;
         self.escape_nl = false;
         self.paren_count = 0;
+    }
+
+    /// Escape comming new line
+    pub fn escape_next_newline(&mut self) {
+        self.escape_nl = true;
+    }
+
+    pub fn reset_escape(&mut self) {
+        self.escape_nl = false;
     }
 
     /// Validate the character
