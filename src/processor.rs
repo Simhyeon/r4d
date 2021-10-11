@@ -21,7 +21,7 @@
 //!     .greedy(true)                                        // Makes all macro greedy
 //!     .silent(true)                                        // Silents all warnings
 //!     .nopanic(true)                                       // No panic in any circumstances
-//!     .strict(true)                                        // Enable strict mode, panicks on any error
+//!     .lenient(true)                                       // Disable strict mode
 //!     .custom_rules(Some(vec![Path::new("rule.r4f")]))?    // Read from frozen rule files
 //!     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
 //!     .error_to_file(Some(Path::new("err.txt")))?          // default is stderr
@@ -209,7 +209,7 @@ impl Processor {
             paused: false,
             redirect: false,
             purge: false,
-            strict: false,
+            strict: true,
             nopanic: false,
             sandbox : false,
             #[cfg(feature = "debug")]
@@ -291,24 +291,20 @@ impl Processor {
     pub fn purge(&mut self, purge: bool) -> &mut Self {
         if purge {
             self.purge = true;
-            self.strict = false;
         }
         self
     }
 
-    /// Set strict option
-    pub fn strict(&mut self, strict: bool) -> &mut Self {
-        if strict {
-            self.strict = true;
-            self.purge = false;
-        }
+    /// Set lenient
+    pub fn lenient(&mut self, lenient: bool) -> &mut Self {
+        self.strict = !lenient;
         self
     }
 
     /// Set silent option
     pub fn silent(&mut self, silent: bool) -> &mut Self {
         if silent {
-            self.logger.suppress_warning = true;
+            self.logger.suppress_warning();
         }
         self
     }
@@ -636,7 +632,6 @@ impl Processor {
 
         // Recover
         if let Some(backup) = backup { self.recover(backup); self.sandbox = false; }
-
 
         Ok(())
     }
@@ -1024,7 +1019,7 @@ impl Processor {
         let mut remainder = String::new();
 
         // Reset lexor's escape_nl 
-        lexor.escape_nl = false;
+        lexor.reset_escape();
         for ch in line.chars() {
             self.logger.add_char_number();
 
@@ -1170,6 +1165,13 @@ impl Processor {
     ///
     /// This doesn't clear fragment
     fn add_rule(&mut self, frag: &MacroFragment, remainder: &mut String) -> Result<(), RadError> {
+        // Strict mode
+        // Overriding is prohibited
+        if self.strict && self.map.contains(&frag.name) {
+            self.log_error("Can't add exsiting macro name on strict mode")?;
+            return Err(RadError::StrictPanic);
+        }
+
         if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
             self.map.register(&name, &args, &body)?;
         } else {
@@ -1245,15 +1247,16 @@ impl Processor {
     }
 
     fn lex_branch_empty_name(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor) {
+        // THis is necessary because whole string should be whole anyway
         frag.whole_string.push(ch);
-        // If paused, then reset lexor context
+        // Freeze needed for logging
         self.logger.freeze_number(); 
+        // If paused, then reset lexor context to remove cost
         if self.paused {
             lexor.reset();
             remainder.push_str(&frag.whole_string);
             frag.clear();
         }
-
     }
 
     fn lex_branch_add_to_remainder(&mut self, ch: char,remainder: &mut String) -> Result<(), RadError> {
@@ -1291,96 +1294,120 @@ impl Processor {
     fn lex_branch_end_frag(&mut self, ch: char, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize, caller: &str) -> Result<(), RadError> {
         // Push character to whole string anyway
         frag.whole_string.push(ch);
-        // define
-        if frag.name == "define" {
-            self.add_rule(frag, remainder)?;
-            lexor.escape_nl = true;
-            #[cfg(feature = "debug")]
-            {
-                // If debug switch target is next macro
-                // Stop and wait for input
-                // Only on main level macro
-                if level == 0 { self.user_input_on_macro(&frag)?; }
-                else {self.user_input_on_step(&frag)?;}
 
-                // Clear line_caches
-                if level == 0 {
-                    self.line_caches.clear();
-                }
-            }
-            frag.clear();
+        if frag.name == "define" { // define
+            self.lex_branch_end_frag_define(lexor, frag, remainder, level)?;
         } else if self.map.is_keyword(&frag.name) { // Is a keyword
-            let macro_func = self.map.keyword.get(&frag.name).unwrap();
-            let result = macro_func(&frag.args,level,self);
+            self.lex_branch_end_keyword(lexor, frag, remainder, level)?;
+        } else { // Invoke macro
+            self.lex_branch_end_invoke(lexor,frag,remainder, level, caller)?;
+        }
 
-            match result {
-                Ok(option) => {
-                    // Something to print
-                    if let Some(text) = option {
-                        self.write_to(&text)?;
-                    } else { // Nothing to print
-                        lexor.escape_nl = true;
+        Ok(())
+    }
+
+    // Level is necessary for debug feature
+    fn lex_branch_end_frag_define(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize) -> Result<(), RadError> {
+        self.add_rule(frag, remainder)?;
+        lexor.escape_next_newline();
+        #[cfg(feature = "debug")]
+        {
+            // If debug switch target is next macro
+            // Stop and wait for input
+            // Only on main level macro
+            if level == 0 { self.user_input_on_macro(&frag)?; }
+            else {self.user_input_on_step(&frag)?;}
+
+            // Clear line_caches
+            if level == 0 {
+                self.line_caches.clear();
+            }
+        }
+        frag.clear();
+        Ok(())
+    }
+
+    fn lex_branch_end_keyword(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize) -> Result<(), RadError> {
+        let macro_func = self.map.keyword.get(&frag.name).unwrap();
+        let result = macro_func(&frag.args,level,self);
+
+        match result {
+            Ok(option) => {
+                // Something to print
+                if let Some(text) = option {
+                    self.write_to(&text)?;
+                } else { // Nothing to print
+                    lexor.escape_next_newline();
+                }
+
+                // Clear fragment regardless of success
+                frag.clear();
+            }
+            Err(err) => {
+                self.log_error(&format!("{}", err))?;
+
+                // If nopanic then don't panic
+                if self.nopanic {
+                    // If purge mode is set, don't print anything 
+                    if !self.purge {
+                        remainder.push_str(&frag.whole_string);
+                    } else {
+                        // If purge mode
+                        // set escape new line 
+                        lexor.escape_next_newline();
                     }
 
                     // Clear fragment regardless of success
                     frag.clear();
-                }
-                Err(err) => {
-                    self.log_error(&format!("{}", err))?;
 
-                    // If nopanic then don't panic
-                    if self.nopanic {
-                        // If purge mode is set, don't print anything 
-                        if !self.purge {
-                            remainder.push_str(&frag.whole_string);
-                        } else {
-                            // If purge mode
-                            // set escape new line 
-                            lexor.escape_nl = true;
-                        }
-
-                        // Clear fragment regardless of success
-                        frag.clear();
-
-                        return Ok(());
-                    } else {
-
-                        // Clear fragment regardless of success
-                        frag.clear();
-                        return Err(RadError::Panic);
-                    }
-                }
-            }
-        } else { // Invoke macro
-            // Debug
-            #[cfg(feature = "debug")]
-            {
-                // If debug switch target is break point
-                // Set switch to next line.
-                self.break_point(frag)?;
-                // Break point is true , continue
-                if frag.name.len() == 0 {
-                    lexor.escape_nl = true;
                     return Ok(());
+                } else {
+
+                    // Clear fragment regardless of success
+                    frag.clear();
+                    return Err(RadError::Panic);
                 }
             }
+        }
+        Ok(())
+    }
 
-            // Try to evaluate
-            let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy);
-
-            match evaluation_result {
-                // If panicked, this means unrecoverable error occured.
-                Err(error) => {
-                    self.lex_branch_end_frag_eval_result_error(error)?;
-                }
-                Ok(eval_variant) => {
-                    self.lex_branch_end_frag_eval_result_ok(eval_variant,frag,remainder,lexor,level)?;
-                }
-            }
-            // Clear fragment regardless of success
-            frag.clear()
+    fn lex_branch_end_invoke(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize, caller: &str) -> Result<(), RadError> {
+        // Name is empty
+        if frag.name.len() == 0 {
+            self.log_error("Name is empty")?;
+            remainder.push_str(&frag.whole_string);
+            frag.clear();
+            return Ok(());
         }
 
+        // Debug
+        #[cfg(feature = "debug")]
+        {
+            // If debug switch target is break point
+            // Set switch to next line.
+            self.break_point(frag)?;
+            // Break point is true , continue
+            if frag.name.len() == 0 {
+                lexor.escape_next_newline();
+                return Ok(());
+            }
+        }
+
+        // Try to evaluate
+        let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy);
+
+        match evaluation_result {
+            // If panicked, this means unrecoverable error occured.
+            Err(error) => {
+                self.lex_branch_end_frag_eval_result_error(error)?;
+            }
+            Ok(eval_variant) => {
+                self.lex_branch_end_frag_eval_result_ok(eval_variant,frag,remainder,lexor,level)?;
+            }
+        }
+        // Clear fragment regardless of success
+        frag.clear();
         Ok(())
     }
 
@@ -1401,6 +1428,7 @@ impl Processor {
         }
     }
 
+    // Level is needed for feature debug codes
     fn lex_branch_end_frag_eval_result_ok(&mut self, variant : EvalResult, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize) -> Result<(), RadError> {
         match variant {
             // else it is ok to proceed.
@@ -1427,11 +1455,11 @@ impl Processor {
                 // If content is none
                 // Ignore new line after macro evaluation until any character
                 if let None = content {
-                    lexor.escape_nl = true;
+                    lexor.escape_next_newline();
                 } else {
                     let mut content = content.unwrap();
                     if frag.trimmed {
-                        content = Utils::trim(&content)?;
+                        content = Utils::trim(&content);
                     }
                     if frag.yield_literal {
                         content = format!("\\*{}*\\", content);
@@ -1440,7 +1468,7 @@ impl Processor {
                     // This should come later!!
                     if frag.pipe {
                         self.pipe_value = content;
-                        lexor.escape_nl = true;
+                        lexor.escape_next_newline();
                     } else {
                         remainder.push_str(&content);
                     }
@@ -1462,7 +1490,7 @@ impl Processor {
                 } else {
                     // If purge mode
                     // set escape new line 
-                    lexor.escape_nl = true;
+                    lexor.escape_next_newline();
                 }
             }
         } // End match
