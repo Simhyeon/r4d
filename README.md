@@ -4,20 +4,13 @@ R4d is a text oriented macro prosessor made with rust.
 
 ### NOTE
 
-**Is it stable?**
+**0.11 has breaking changes**
 
-I'm currently dog fooding for bug detections, and there might be some
-undetected bugs. However it doesn't mean that the syntax will change in the
-future without breaking release. (At least until 2.0)
+Though there were several minor breaking changes, this version has several
+breaking changes over command line arguments, how processing works by default,
+how macros worrk by default.
 
-The reason r4d is not yet in 1.0 is that I want to make sure that followings
-are solved.
-
-- Absence of critical bugs
-- No more basic macro behaviour(internal logic) changes
-
-Therefore it is quite stable, in terms of non-breakable syntax, but there will
-be bug fixes and non breaking changes.
+Changes are illustrated in release page.
 
 ### Demo
 
@@ -93,7 +86,6 @@ use rad::RadError;
 use rad::Processor;
 
 let processor = Processor::new()
-    .purge(true)
     .greedy(true)
     .write_to_file(Some(PathBuf::from("cache.txt")))?
     .build(); 
@@ -127,8 +119,8 @@ processor.print_result()?;
 R4d aims to be a modern alternative to m4 processor, which means
 
 - No trivial m4 quotes for macro definition
-- An explicit rule for macro definition and usage so that de facto underscore rule
-is not necessary
+- An explicit rule for macro definition and usage so that de facto underscore
+rule is not necessary
 - Easier binding with other programming languages(Rust's c binding)
 - Enable combination of file stream and stdout
 - As expressive as current m4 macro processor
