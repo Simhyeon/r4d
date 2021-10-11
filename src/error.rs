@@ -35,7 +35,7 @@ pub enum RadError {
     BincodeError(String),
     #[error("Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.")]
     PermissionDenied(String,AuthType),
-    #[error("Processor panicked, exiting...")]
+    #[error("Error occured, exiting...")]
     StrictPanic,
     #[error("Processor panicked, exiting...")]
     Panic,
