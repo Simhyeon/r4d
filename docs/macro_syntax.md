@@ -33,6 +33,8 @@ $define(v_name=Simon creek)
 
 ##### Caveats
 
+**Define is not evalued on declaration**
+
 Definition's body can include any macro invocation in itself, thus wrong
 argument declaration cannot be detected at the time of definition. To make
 matters worse, arguments doesn't have any types either.
@@ -47,6 +49,23 @@ error: Failed to invoke a macro : "calm"
  --> stdin:2:2
 $calm()
 KALM // After defnition it prints out without error
+```
+
+**Define is evaluated on every call**
+
+Because defined macro is called on every invocation. This may not be a desired
+behaviour. Use global macro if you want statically saved value.
+
+```
+$define(counter=0)
+$define(print_counter=$counter())
+$global(print_counter_as_static,$counter())
+$append(counter,0000)
+$print_counter()
+$print_counter_as_static()
+===
+00000
+0
 ```
 
 **Escape characters**

@@ -148,12 +148,22 @@ $fileout(false,file_name.txt,This is appended)
 
 AUTH : ENV
 
-Print environment variable. Wrong name yields error
+Print environment variable. Non existent env varaible will yield warning.
 
 ```
 $env(HOME)
 ===
 /home/simoncreek
+```
+
+**ifenv** (keyword macro)
+
+AUTH: ENV
+
+If environment variable is defined, execute expression
+
+```
+$ifenv(HOME,$env(HOME)) 
 ```
 
 **path**
@@ -168,10 +178,10 @@ $path($env(HOME),document)
 
 **paths**
 
-Join multiple paths separated with spaces
+Join multiple paths
 
 ```
-$paths(a b c)
+$paths(a,b,c)
 ===
 a/b/c
 ```
@@ -211,23 +221,38 @@ $test+(temp,Hello World)
 // Now ./cache/temp file contains string "Hello World"
 ```
 
+**Global**
+
+Global binds global macro that persists for the processing. Global bind is
+useful when you don't need dynamic evaluation but static binding. Because
+definition is evaluated on every call it might be necessarily efficient or not
+be an intended behaviour.
+
+```
+$define(test=$time())
+$test()
+$global(test=$time())
+$test()
+===
+17:08:39 // This will yield different result according to time.
+17:08:39 // This will always yield same result
+```
+
+Though, time will most likely print same thing for a single document
+processing. Other operations might need consistent bound values.
+
 **pipe, -, \* **
 
-Pipe macro simply saves value to pipe. $-() returns piped value and clears
-pipe. $*() returns piped value in literal form.
+Pipe macro simply saves value to pipe. $-() returns piped value 
+$-*() returns piped value in literal form.
 
 ```
 $pipe(Value)
 $-()
-$-() 
-$pipe(Value)
-$*()
 $*() 
 ===
 Value
-
 \*Value*\
-\**\
 ```
 
 **Repeat**
@@ -318,18 +343,17 @@ I'm true
 I'm false
 ```
 
-**ifdef**
+**ifdef** (keyword macro)
 
-Check if given macro is defined or not.
+If macro is defined then execute expr
 
 ```
 $define(some=value)
-$ifdef(some)
+$ifdef(some,Defined)
 $undef(some)
-$ifdef(some)
+$ifdef(some,Not defined)
 ===
-true
-false
+Defined
 ```
 
 **not**
@@ -510,23 +534,30 @@ $date()
 **from**
 
 From creates formatted macro invocations with given csv values. The given macro
-name doesn't need dollar sign prefix. This requires features "csv".
+name doesn't need dollar sign prefix. This requires features **"csv"**.
 
 ```
 $define(three,a1 a2 a3=1-$a1(), 2-$a2(), 3-$a3())
-$from(\*a,b,c
-d,e,f*\,three)
+$from+(three,
+a,b,c
+d,e,f
+)
 ===
 1-a, 2-b, 3-c
 1-d, 2-e, 3-f
 ```
+
+NOTE
+
+Former syntax required data as first parameter, however it was such an pain to
+always quote values, thus I found second value as csv was much more ergonomic.
 
 **table**
 
 Table creates a formatted table from given csv values. Currently supported
 formats are ```github```, ```wikitext``` and ```html```. This macro doesn't
 pretty print but just make it readable from other programs. This requires
-features "csv".
+features **"csv"**.
 
 ```
 $table(github,\*a,b,c

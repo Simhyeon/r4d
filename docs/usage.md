@@ -31,13 +31,13 @@ printf '...text...' | rad
 # default is stderr
 -e, --err <FILE>      # Log error to <FILE>
 -s, --silent          # Suppress warnings
+-l, --lenient         # Disable strict mode
     --nopanic         # Don't panic in any circumstances
--S, --strict          # Strict mode makes every error panicking
 
 # Use following options to decide deubbing behaviours
 # default is not to debug
 -d, --debug           # Start debug mode
--l, --log             # Print all macro invocation logs
+    --log             # Print all macro invocation logs
 -i                    # Start debug mode as interactive, this makes stdout unwrapped
     --diff            # Show diff result between source and processed result
 
@@ -88,7 +88,7 @@ let mut processor = Processor::new()
     .greedy(true)                                        // Makes all macro greedy
     .silent(true)                                        // Silents all warnings
 	.nopanic(true)                                       // No panic in any circumstances
-    .strict(true)                                        // Enable strict mode, panicks on any error
+    .lenient(true)                                       // Disable strict mode
     .custom_rules(Some(vec![Path::new("rule.r4f")]))?    // Read from frozen rule files
     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
     .error_to_file(Some(Path::new("err.txt")))?          // default is stderr

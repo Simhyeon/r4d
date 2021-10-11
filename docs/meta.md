@@ -1,29 +1,23 @@
-### Update note
-
 ### Changed
 
-* [x] Add comments for add custom rules
-* [x] Make include respects currently set file
-- For example, relative file is evaluated based upon currently read file's path
-* [x] Made include input file is properly set, was actually a bug
-* [x] No env value is currently panicking... which is not so desirable, I guess
-* [x] Env values such as INPUT\_FILE or INUPT\_DIR would be usefule
-- It has been decided as RAD_FILE and RAD_FILE_DIR
-* [x] New basic macros
-- Get parent
-- Get filename
-- Merge paths
-* [x] Is warning for env is also harsh? Should be empty?
-- Now this only yield on strict mode
-* [x] Remove unnecessary hashamp clone
-* [x] Make some macros a speical type
-    * [x] Make if,ifelse,foreach,foloop as a keyword macro such as pause and define
-	* [x] Create new struct keyword maps
-* [x] Refactor sandbox environment
+* [x] Empty name is problematic or say inconsistent
+* [x] Does removing piped value necessary? It doesn't give that much benefits, I think...
+* [x] Change "from" syntax, a breaking change though, better choice for ergonomics.
+* [x] Global bind which evaluates to value
+* [x] Changed paths syntax
+* [x] Overriding is prohibited in strict mode
+* [x] Make strict by default
+- Make lenient option rather 
+- Also apply to documents -> Not yet
+* [x] Basic macro changes
+	* [x] Make ifdef work as if and if else
+	* [x] Make ifenv macro also as if and ifelse
+* [x] New replace macro
+* [x] Changed several cli options
 
 ### TODOs
 
-* [ ] Add not macro
+* [ ] Maybe some data binding?
 * [ ] Optional parameter?
 
 * [ ] Make gui application with help of klask
@@ -68,6 +62,26 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [x] Add comments for add custom rules
+* [x] Make include respects currently set file
+- For example, relative file is evaluated based upon currently read file's path
+* [x] Made include input file is properly set, was actually a bug
+* [x] No env value is currently panicking... which is not so desirable, I guess
+* [x] Env values such as INPUT\_FILE or INUPT\_DIR would be usefule
+- It has been decided as RAD_FILE and RAD_FILE_DIR
+* [x] New basic macros
+- Get parent
+- Get filename
+- Merge paths
+* [x] Is warning for env is also harsh? Should be empty?
+- Now this only yield on strict mode
+* [x] Remove unnecessary hashamp clone
+* [x] Make some macros a speical type
+    * [x] Make if,ifelse,foreach,foloop as a keyword macro such as pause and define
+	* [x] Create new struct keyword maps
+* [x] Refactor sandbox environment
+* [x] Add not macro
 
 * [x] Make error messages much more accurate for various situations.
 * [x] Add a diff tool for debugging
