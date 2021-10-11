@@ -11,7 +11,7 @@ use std::iter::FromIterator;
 use std::path::{PathBuf,Path};
 use std::process::Command;
 use crate::error::RadError;
-use crate::arg_parser::ArgParser;
+use crate::arg_parser::{ArgParser, GreedyState};
 use regex::Regex;
 use crate::utils::Utils;
 use crate::processor::Processor;
@@ -71,7 +71,7 @@ impl BasicMacro {
             ("comp".to_owned(),    BasicMacro::compress         as MacroType),
             ("env".to_owned(),     BasicMacro::get_env          as MacroType),
             ("fileout".to_owned(), BasicMacro::file_out         as MacroType),
-            ("ifdef".to_owned(),   BasicMacro::ifdef            as MacroType),
+            ("global".to_owned(),  BasicMacro::global           as MacroType),
             ("include".to_owned(), BasicMacro::include          as MacroType),
             ("len".to_owned(),     BasicMacro::len              as MacroType),
             ("name".to_owned(),    BasicMacro::get_name         as MacroType),
@@ -85,6 +85,7 @@ impl BasicMacro {
             ("regex".to_owned(),   BasicMacro::regex_sub        as MacroType),
             ("rename".to_owned(),  BasicMacro::rename_call      as MacroType),
             ("repeat".to_owned(),  BasicMacro::repeat           as MacroType),
+            ("repl".to_owned(),    BasicMacro::replace          as MacroType),
             ("sub".to_owned(),     BasicMacro::substring        as MacroType),
             ("syscmd".to_owned(),  BasicMacro::syscmd           as MacroType),
             ("tempin".to_owned(),  BasicMacro::temp_include     as MacroType),
@@ -257,7 +258,7 @@ impl BasicMacro {
     /// $trim(expression)
     fn trim(args: &str, greedy: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
-            Ok(Some(Utils::trim(&args[0])?))
+            Ok(Some(Utils::trim(&args[0])))
         } else {
             Err(RadError::InvalidArgument("Trim requires an argument".to_owned()))
         }
@@ -289,9 +290,9 @@ impl BasicMacro {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let source = &args[0];
             // Chomp and then compress
-            let result = Utils::trim(&BasicMacro::chomp(source,greedy, processor)?.unwrap())?;
+            let result = Utils::trim(&BasicMacro::chomp(source,greedy, processor)?.unwrap());
 
-            Ok(Some(result.to_string()))
+            Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument("Compress requires an argument".to_owned()))
         }
@@ -306,7 +307,7 @@ impl BasicMacro {
     fn placeholder(args: &str, greedy: bool,_: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let word_count = &args[0];
-            if let Ok(count) = Utils::trim(word_count)?.parse::<usize>() {
+            if let Ok(count) = Utils::trim(word_count).parse::<usize>() {
                 Ok(Some(lipsum(count)))
             } else {
                 Err(RadError::InvalidArgument(format!("Lipsum needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", word_count)))
@@ -328,7 +329,7 @@ impl BasicMacro {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
-            let raw = Utils::trim(&args[0])?;
+            let raw = Utils::trim(&args[0]);
             let mut file_path = PathBuf::from(&raw);
 
             // if current input is not stdin and file path is relative
@@ -359,7 +360,7 @@ impl BasicMacro {
     fn repeat(args: &str, greedy: bool,_: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let repeat_count;
-            if let Ok(count) = Utils::trim(&args[0])?.parse::<usize>() {
+            if let Ok(count) = Utils::trim(&args[0]).parse::<usize>() {
                 repeat_count = count;
             } else {
                 return Err(RadError::InvalidArgument(format!("Repeat needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", &args[0])));
@@ -414,29 +415,6 @@ impl BasicMacro {
         }
     }
 
-    /// Check if macro is defined or not
-    ///
-    /// This return 'true' or 'false'
-    ///
-    /// # Usage
-    ///
-    /// $ifdef(macro_name) 
-    fn ifdef(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
-            let name = &Utils::trim(&args[0])?;
-            let map = processor.get_map();
-
-            // Return true or false by the definition
-            if map.basic.contains(name) || map.custom.contains_key(name) {
-                Ok(Some("true".to_owned()))
-            } else {
-                Ok(Some("false".to_owned()))
-            }
-        } else {
-            Err(RadError::InvalidArgument("Ifdef requires an argument".to_owned()))
-        }
-    }
-
     /// Undefine a macro 
     ///
     /// 'Define' and 'BR' cannot be undefined because it is not actually a macro 
@@ -446,11 +424,11 @@ impl BasicMacro {
     /// $undef(macro_name)
     fn undefine_call(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
-            let name = &Utils::trim(&args[0])?;
+            let name = Utils::trim(&args[0]);
 
             let map = processor.get_map();
-            if map.contains(name) { 
-                map.undefine(name);
+            if map.contains(&name) { 
+                map.undefine(&name);
             } else {
                 processor.log_error(&format!("Macro \"{}\" doesn't exist, therefore cannot undefine", name))?;
             }
@@ -464,15 +442,22 @@ impl BasicMacro {
     ///
     /// # Usage
     ///
-    /// $from(\*1,2,3
-    /// 4,5,6*\, macro_name)
+    /// $from(macro_name,\*1,2,3
+    /// 4,5,6*\)
+    ///
+    /// $from+(macro_name,
+    /// 1,2,3
+    /// 4,5,6
+    /// )
     #[cfg(feature = "csv")]
     fn from_data(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let macro_data = &args[0];
-            let macro_name = &Utils::trim(&args[1])?;
+            let macro_name = Utils::trim(&args[0]);
+            // Trimming data might be very costly operation
+            // Plus, it is already trimmed by csv crate.
+            let macro_data = &args[1];
 
-            let result = Formatter::csv_to_macros(macro_name, macro_data, &processor.newline)?;
+            let result = Formatter::csv_to_macros(&macro_name, macro_data, &processor.newline)?;
             // This is necessary
             let result = processor.parse_chunk_args(0, "", &result)?;
             Ok(Some(result))
@@ -511,6 +496,23 @@ impl BasicMacro {
     fn pipe(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             processor.pipe_value = args[0].to_owned();
+        }
+        Ok(None)
+    }
+
+    /// Bind a global macro
+    ///
+    /// # Usage
+    ///
+    /// $global(name,value)
+    fn global(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let name = &args[0];
+            let value = &args[1];
+            if processor.get_map().contains(name) {
+                processor.log_warning(&format!("Creating a global with a name already existing : \"{}\"", name))?;
+            }
+            processor.add_custom_rules(vec![(name,"",value)]);
         }
         Ok(None)
     }
@@ -562,8 +564,8 @@ impl BasicMacro {
     /// $path($env(HOME),document)
     fn merge_path(args: &str, greedy: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let target = Utils::trim(&args[0])?;
-            let added = Utils::trim(&args[1])?;
+            let target = Utils::trim(&args[0]);
+            let added = Utils::trim(&args[1]);
 
             let out = format!("{}",&std::path::Path::new(&target).join(&added).display());
             Ok(Some(out))
@@ -580,19 +582,17 @@ impl BasicMacro {
     ///
     /// $paths($env(HOME) document test.docx)
     fn merge_path_vec(args: &str, _: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 1, false) {
-            let trimmed = Utils::trim(&args[0])?;
-            let vec = trimmed.split(' ').collect::<Vec<&str>>();
+        let vec = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
 
-            let out = vec.iter().collect::<PathBuf>();
+        let out = vec
+            .iter()
+            .map(|s| Utils::trim(s))
+            .collect::<PathBuf>();
 
-            if let Some(value) = out.to_str() {
-                Ok(Some(value.to_owned()))
-            } else {
-                Err(RadError::InvalidArgument(format!("Invalid path : {}", out.display())))
-            }
+        if let Some(value) = out.to_str() {
+            Ok(Some(value.to_owned()))
         } else {
-            Err(RadError::InvalidArgument("Paths macro needs an argument".to_owned()))
+            Err(RadError::InvalidArgument(format!("Invalid path : {}", out.display())))
         }
     }
 
@@ -647,14 +647,13 @@ impl BasicMacro {
         }
     }
 
-    /// Pop pipe value
+    /// Get pipe value
     ///
     /// # Usage
     ///
     /// $-()
     fn get_pipe(_: &str, _: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
         let out = processor.pipe_value.clone();
-        processor.pipe_value.clear();
         Ok(Some(out))
     }
 
@@ -758,8 +757,8 @@ impl BasicMacro {
             let mut min: Option<usize> = None;
             let mut max: Option<usize> = None;
 
-            let start = Utils::trim(&args[0])?;
-            let end = Utils::trim(&args[1])?;
+            let start = Utils::trim(&args[0]);
+            let end = Utils::trim(&args[1]);
 
             if let Ok(num) = start.parse::<usize>() {
                 min.replace(num);
@@ -901,6 +900,24 @@ impl BasicMacro {
             Ok(None)
         } else {
             Err(RadError::InvalidArgument("Temp requires an argument".to_owned()))
+        }
+    }
+
+    /// Replace value
+    ///
+    /// # Usage
+    ///
+    /// $repl(macro,value)
+    fn replace(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let name = args[0].as_str();
+            let target = args[1].as_str();
+            if !processor.get_map().replace(name, target) {
+                return Err(RadError::InvalidArgument(format!("{} doesn't exist, thus cannot replace it's content", name)))
+            }
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("Replace requires two arguments".to_owned()))
         }
     }
 }
