@@ -6,10 +6,10 @@ use std::{iter::Peekable, str::Chars};
 
 use crate::consts::{ESCAPE_CHAR, LIT_CHAR};
 pub(crate) struct ArgParser{
-        values :Vec<String>,
-        previous : Option<char>,
-        lit_count : usize,
-        no_previous : bool,
+    values :Vec<String>,
+    previous : Option<char>,
+    lit_count : usize,
+    no_previous : bool,
 }
 
 /// State indicates whether argument should be parsed greedily or not
