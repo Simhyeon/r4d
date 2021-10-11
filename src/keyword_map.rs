@@ -21,6 +21,8 @@ impl KeywordMacro {
             ("forloop".to_owned(), KeywordMacro::forloop          as KeywordMacType),
             ("if".to_owned(),      KeywordMacro::if_cond          as KeywordMacType),
             ("ifelse".to_owned(),  KeywordMacro::ifelse           as KeywordMacType),
+            ("ifdef".to_owned(),   KeywordMacro::ifdef            as KeywordMacType),
+            ("ifenv".to_owned(),   KeywordMacro::ifenv            as KeywordMacType),
         ]));
         Self {
             macros: map,
@@ -106,8 +108,8 @@ impl KeywordMacro {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
             let mut sums = String::new();
 
-            let min_src = processor.parse_chunk_args(level, "",&Utils::trim(&args[0])?)?;
-            let max_src = processor.parse_chunk_args(level, "",&Utils::trim(&args[1])?)?;
+            let min_src = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
+            let max_src = processor.parse_chunk_args(level, "",&Utils::trim(&args[1]))?;
 
             let min: usize; 
             let max: usize; 
@@ -145,7 +147,7 @@ impl KeywordMacro {
             let boolean = &processor.parse_chunk_args(level,"",&args[0])?;
 
             // Given condition is true
-            let cond = Utils::is_arg_true(&Utils::trim(boolean)?);
+            let cond = Utils::is_arg_true(&Utils::trim(boolean));
             if let Ok(cond) = cond {
                 if cond { 
                     let if_expr = processor.parse_chunk_args(level,"",&args[1])?;
@@ -173,7 +175,7 @@ impl KeywordMacro {
             let boolean = &processor.parse_chunk_args(level,"",&args[0])?;
 
             // Given condition is true
-            let cond = Utils::is_arg_true(&Utils::trim(boolean)?);
+            let cond = Utils::is_arg_true(&Utils::trim(boolean));
             if let Ok(cond) = cond {
                 if cond { 
                     let if_expr = processor.parse_chunk_args(level,"",&args[1])?;
@@ -188,6 +190,54 @@ impl KeywordMacro {
             return Ok(Some(else_expr));
         } else {
             Err(RadError::InvalidArgument("ifelse requires three argument".to_owned()))
+        }
+    }
+
+    /// If macro exists, then execute expresion
+    ///
+    /// # Usage
+    ///
+    /// $ifdef(macro_name, expr)
+    fn ifdef(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let name = Utils::trim(&args[0]);
+            let map = processor.get_map();
+
+            let boolean = map.contains(&name);
+            // Return true or false by the definition
+            if boolean { 
+                let if_expr = processor.parse_chunk_args(level,"",&args[1])?;
+                return Ok(Some(if_expr)); 
+            }
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("ifdef requires two arguments".to_owned()))
+        }
+    }
+
+    /// If env exists, then execute expresion
+    ///
+    /// # Usage
+    ///
+    /// $ifenv(env_name, expr)
+    fn ifenv(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let name = Utils::trim(&args[0]);
+
+            let boolean = if let Ok(_) = std::env::var(name) {
+                true
+            } else {
+                false
+            };
+
+            // Return true or false by the definition
+            if boolean { 
+                let if_expr = processor.parse_chunk_args(level,"",&args[1])?;
+                return Ok(Some(if_expr)); 
+            }
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("ifenv requires two arguments".to_owned()))
         }
     }
 
