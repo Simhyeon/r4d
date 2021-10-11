@@ -1,6 +1,11 @@
 use crate::error::RadError;
 use regex::Regex;
 use std::io::BufRead;
+use lazy_static::lazy_static;
+
+lazy_static!{
+   pub static ref TRIM: Regex = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap();
+}
 
 #[cfg(feature = "color")]
 use colored::*;
@@ -18,11 +23,10 @@ impl Utils {
     /// # Arguments
     ///
     /// * `args` - Text to trim
-    pub(crate) fn trim(args: &str) -> Result<String, RadError> {
-        let reg = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$")?;
-        let result = reg.replace_all(args, "");
+    pub(crate) fn trim(args: &str) -> String {
+        let result = TRIM.replace_all(args, "");
 
-        Ok(result.to_string())
+        result.to_string()
     }
 
     // Shamelessly copied from 
@@ -48,7 +52,7 @@ impl Utils {
     ///
     /// In this contenxt, true and non zero number is 'true' while false and zero number is false
     pub(crate) fn is_arg_true(arg: &str) -> Result<bool, RadError> {
-        let arg = Utils::trim(arg)?;
+        let arg = Utils::trim(arg);
         if let Ok(value) = arg.parse::<usize>() {
             if value == 0 {
                 return Ok(false);
