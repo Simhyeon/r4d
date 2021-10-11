@@ -14,13 +14,13 @@ use crate::error::RadError;
 
 /// Logger that controls logging
 pub(crate) struct Logger {
-    pub(crate) line_number: usize,
-    pub(crate) char_number: usize,
-    pub(crate) last_line_number: usize,
-    pub(crate) last_char_number: usize,
+    line_number: usize,
+    char_number: usize,
+    last_line_number: usize,
+    last_char_number: usize,
     current_file: String,
     write_option: Option<WriteOption>,
-    pub(crate) suppress_warning: bool,
+    suppress_warning: bool,
     error_count: usize,
     warning_count: usize,
     chunked: usize,
@@ -52,6 +52,10 @@ impl Logger{
             #[cfg(feature = "debug")]
             debug_interactive: false,
         }
+    }
+
+    pub fn suppress_warning(&mut self) {
+        self.suppress_warning = true;
     }
 
     /// Enables "chunk" mode whtin logger
