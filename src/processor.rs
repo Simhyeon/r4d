@@ -540,7 +540,7 @@ impl Processor {
         self.set_input("String")?;
 
         let mut reader = content.as_bytes();
-        self.from_buffer(&mut reader, None)?;
+        self.from_buffer(&mut reader, None, false)?;
         Ok(())
     }
 
@@ -558,12 +558,12 @@ impl Processor {
             let mut input = String::new();
             stdin.lock().read_to_string(&mut input)?;
             // This is necessary to prevent unexpected output from being captured.
-            self.from_buffer(&mut input.as_bytes(), None)?;
+            self.from_buffer(&mut input.as_bytes(),None,false)?;
             return Ok(());
         }
 
         let mut reader = stdin.lock();
-        self.from_buffer(&mut reader, None)?;
+        self.from_buffer(&mut reader, None, false)?;
         Ok(())
     }
 
@@ -576,15 +576,34 @@ impl Processor {
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
-        self.from_buffer(&mut reader, backup)?;
+        self.from_buffer(&mut reader, backup, false)?;
         Ok(())
     }
 
+    pub(crate) fn from_file_as_chunk(&mut self, path :impl AsRef<Path>) -> Result<Option<String>, RadError> {
+        // Sandboxed environment, backup
+        let backup = if self.sandbox { Some(self.backup()) } else { None };
+        // Set file as name of given path
+        self.set_file(path.as_ref().to_str().unwrap())?;
+
+        let file_stream = File::open(path)?;
+        let mut reader = BufReader::new(file_stream);
+        let debug = self.from_buffer(&mut reader, backup, true);
+        debug
+    }
+
     /// Internal method for processing buffers line by line
-    fn from_buffer(&mut self,buffer: &mut impl std::io::BufRead, backup: Option<SandboxBackup>) -> Result<(), RadError> {
+    fn from_buffer(&mut self,buffer: &mut impl std::io::BufRead, backup: Option<SandboxBackup>, use_container: bool) -> Result<Option<String>, RadError> {
         let mut line_iter = Utils::full_lines(buffer).peekable();
         let mut lexor = Lexor::new();
         let mut frag = MacroFragment::new();
+
+        // Container can be used when file include is nested inside macro definition
+        // In that case, bufstream include will print first and other parts of 
+        // macro will be printed later
+        let container = String::new(); // Don't remove this!
+        let mut cont = if use_container{ Some(container) } else { None };
+
         #[cfg(feature = "debug")]
         self.user_input_on_start()?;
         loop {
@@ -601,7 +620,7 @@ impl Processor {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(remainder) => {
-                    self.write_to(&remainder)?;
+                    self.write_to(&remainder,&mut cont)?;
 
                     // Test if this works
                     #[cfg(feature = "debug")]
@@ -613,12 +632,19 @@ impl Processor {
                     }
                 }
                 ParseResult::FoundMacro(remainder) => {
-                    self.write_to(&remainder)?;
+                    self.write_to(&remainder,&mut cont)?;
                 }
                 // This happens only when given macro involved text should not be printed
                 ParseResult::NoPrint => { }
                 // End of input, end loop
-                ParseResult::EOI => break,
+                ParseResult::EOI => {
+                    // THis is necessary somehow, its kinda hard to explain
+                    // but chunk read makes trailing new line and it should be deleted
+                    if use_container {
+                        Utils::pop_newline(cont.as_mut().unwrap());
+                    }
+                    break
+                }
             }
             // Increaing number should be followed after evaluation
             // To ensure no panick occurs during user_input_on_line, which is caused by
@@ -633,7 +659,11 @@ impl Processor {
         // Recover
         if let Some(backup) = backup { self.recover(backup); self.sandbox = false; }
 
-        Ok(())
+        if use_container {
+            Ok(cont)
+        } else {
+            Ok(None)
+        }
     }
 
     // End of process methods
@@ -1186,9 +1216,15 @@ impl Processor {
     }
 
     /// Write text to either file or standard output according to processor's write option
-    fn write_to(&mut self, content: &str) -> Result<(), RadError> {
+    fn write_to(&mut self, content: &str, container: &mut Option<String>) -> Result<(), RadError> {
         // Don't try to write empty string, because it's a waste
         if content.len() == 0 { return Ok(()); }
+
+        // Save to container if it has value then return
+        if let Some(cont) = container.as_mut() {
+            cont.push_str(content);
+            return Ok(());
+        }
 
         // Save to "source" file for debuggin
         #[cfg(feature = "debug")]
@@ -1336,7 +1372,7 @@ impl Processor {
             Ok(option) => {
                 // Something to print
                 if let Some(text) = option {
-                    self.write_to(&text)?;
+                    self.write_to(&text,&mut None)?;
                 } else { // Nothing to print
                     lexor.escape_next_newline();
                 }
