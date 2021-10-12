@@ -1,7 +1,7 @@
 use std::array::IntoIter;
 use std::iter::FromIterator;
 use std::collections::HashMap;
-use crate::RadError;
+use crate::{AuthType, RadError};
 use crate::utils::Utils;
 use crate::arg_parser::ArgParser;
 use crate::Processor;
@@ -221,6 +221,9 @@ impl KeywordMacro {
     ///
     /// $ifenv(env_name, expr)
     fn ifenv(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if !Utils::is_granted("ifenv", AuthType::ENV,processor)? {
+            return Ok(None);
+        }
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let name = Utils::trim(&args[0]);
 

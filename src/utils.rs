@@ -1,4 +1,6 @@
 use crate::error::RadError;
+use crate::auth::{AuthType, AuthState};
+use crate::Processor;
 use regex::Regex;
 use std::io::BufRead;
 use lazy_static::lazy_static;
@@ -163,6 +165,20 @@ impl Utils {
             if s.ends_with('\r') {
                 s.pop();
             }
+        }
+    }
+
+    /// Check file authority
+    pub(crate) fn is_granted(name:&str, auth_type: AuthType, processor: &mut Processor) -> Result<bool, RadError> {
+        match processor.get_auth_state(&auth_type) {
+            AuthState::Restricted => {
+                Err(RadError::PermissionDenied(name.to_owned(), auth_type))
+            }
+            AuthState::Warn => {
+                processor.log_warning(&format!("\"{}\" was called with \"{:?}\" permission", name, auth_type))?;
+                Ok(true)
+            }
+            AuthState::Open => Ok(true),
         }
     }
 }

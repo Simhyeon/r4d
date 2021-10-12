@@ -136,20 +136,6 @@ impl BasicMacro {
         self.macros.get(name)
     }
 
-    /// Check file authority
-    fn is_granted(name:&str, auth_type: AuthType, processor: &mut Processor) -> Result<bool, RadError> {
-        match processor.get_auth_state(&auth_type) {
-            AuthState::Restricted => {
-                Err(RadError::PermissionDenied(name.to_owned(), auth_type))
-            }
-            AuthState::Warn => {
-                processor.log_warning(&format!("\"{}\" was called with \"{:?}\" permission", name, auth_type))?;
-                Ok(true)
-            }
-            AuthState::Open => Ok(true),
-        }
-    }
-
     /// Undefine a macro
     ///
     /// # Arguments
@@ -330,7 +316,7 @@ impl BasicMacro {
     ///
     /// $include(path)
     fn include(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if !Self::is_granted("include", AuthType::FIN,processor)? {
+        if !Utils::is_granted("include", AuthType::FIN,processor)? {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
@@ -368,7 +354,7 @@ impl BasicMacro {
     ///
     /// $read(path)
     fn read(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if !Self::is_granted("include", AuthType::FIN,processor)? {
+        if !Utils::is_granted("read", AuthType::FIN,processor)? {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
@@ -429,7 +415,7 @@ impl BasicMacro {
     ///
     /// $syscmd(system command -a arguments)
     fn syscmd(args: &str, _: bool,p: &mut Processor) -> Result<Option<String>, RadError> {
-        if !Self::is_granted("syscmd", AuthType::CMD,p)? {
+        if !Utils::is_granted("syscmd", AuthType::CMD,p)? {
             return Ok(None);
         }
         if let Some(args_content) = ArgParser::new().args_with_len(args, 1, true) {
@@ -585,7 +571,7 @@ impl BasicMacro {
     ///
     /// $env(SHELL)
     fn get_env(args: &str, _: bool, p : &mut Processor) -> Result<Option<String>, RadError> {
-        if !Self::is_granted("env", AuthType::ENV,p)? {
+        if !Utils::is_granted("env", AuthType::ENV,p)? {
             return Ok(None);
         }
         if let Ok(out) = std::env::var(args) {
@@ -832,7 +818,7 @@ impl BasicMacro {
     ///
     /// $tempout(Content)
     fn temp_out(args: &str, greedy: bool, p: &mut Processor) -> Result<Option<String>, RadError> {
-        if !Self::is_granted("tempout", AuthType::FOUT,p)? {
+        if !Utils::is_granted("tempout", AuthType::FOUT,p)? {
             return Ok(None);
         }
 
@@ -851,7 +837,7 @@ impl BasicMacro {
     ///
     /// $fileout(true,file_name,Content)
     fn file_out(args: &str, greedy: bool, p: &mut Processor) -> Result<Option<String>, RadError> {
-        if !Self::is_granted("fileout", AuthType::FOUT,p)? {
+        if !Utils::is_granted("fileout", AuthType::FOUT,p)? {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
@@ -897,7 +883,7 @@ impl BasicMacro {
     ///
     /// $tempin()
     fn temp_include(_: &str, _: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if !Self::is_granted("tempin", AuthType::FIN,processor)? {
+        if !Utils::is_granted("tempin", AuthType::FIN,processor)? {
             return Ok(None);
         }
         let file = processor.get_temp_path().to_owned();
@@ -915,7 +901,7 @@ impl BasicMacro {
     /// $redir(true) 
     /// $redir(false) 
     fn temp_redirect(args: &str, _: bool, p: &mut Processor) -> Result<Option<String>, RadError> {
-        if !Self::is_granted("redir", AuthType::FOUT,p)? {
+        if !Utils::is_granted("redir", AuthType::FOUT,p)? {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, false) {
@@ -937,7 +923,7 @@ impl BasicMacro {
     ///
     /// $tempto(file_name)
     fn set_temp_target(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if !Self::is_granted("tempto", AuthType::FOUT,processor)? {
+        if !Utils::is_granted("tempto", AuthType::FOUT,processor)? {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
