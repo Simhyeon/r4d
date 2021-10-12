@@ -15,7 +15,7 @@ use crate::arg_parser::{ArgParser, GreedyState};
 use regex::Regex;
 use crate::utils::Utils;
 use crate::processor::Processor;
-use crate::auth::{AuthState, AuthType};
+use crate::auth::AuthType;
 #[cfg(feature = "csv")]
 use crate::formatter::Formatter;
 #[cfg(feature = "lipsum")]
