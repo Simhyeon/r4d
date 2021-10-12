@@ -156,4 +156,13 @@ impl Utils {
         }
         Ok(())
     }
+
+    pub fn pop_newline(s: &mut String) {
+        if s.ends_with('\n') {
+            s.pop();
+            if s.ends_with('\r') {
+                s.pop();
+            }
+        }
+    }
 }
