@@ -1,24 +1,11 @@
 ### Changed
 
-* [x] Empty name is problematic or say inconsistent
-* [x] Does removing piped value necessary? It doesn't give that much benefits, I think...
-* [x] Change "from" syntax, a breaking change though, better choice for ergonomics.
-* [x] Global bind which evaluates to value
-* [x] Changed paths syntax
-* [x] Overriding is prohibited in strict mode
-* [x] Make strict by default
-- Make lenient option rather 
-- Also apply to documents -> Not yet
-* [x] Basic macro changes
-	* [x] Make ifdef work as if and if else
-	* [x] Make ifenv macro also as if and ifelse
-* [x] New replace macro
-* [x] Changed several cli options
-
 ### TODOs
 
 * [ ] Maybe some data binding?
 * [ ] Optional parameter?
+* [x] Reimplement a include 
+* [x] Add new macro read
 
 * [ ] Make gui application with help of klask
 - This requires nightly so different version of toolchain is used. 
@@ -62,6 +49,20 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+* [x] Empty name is problematic or say inconsistent
+* [x] Does removing piped value necessary? It doesn't give that much benefits, I think...
+* [x] Change "from" syntax, a breaking change though, better choice for ergonomics.
+* [x] Global bind which evaluates to value
+* [x] Changed paths syntax
+* [x] Overriding is prohibited in strict mode
+* [x] Make strict by default
+- Make lenient option rather 
+- Also apply to documents -> Not yet
+* [x] Basic macro changes
+	* [x] Make ifdef work as if and if else
+	* [x] Make ifenv macro also as if and ifelse
+* [x] New replace macro
+* [x] Changed several cli options
 
 * [x] Add comments for add custom rules
 * [x] Make include respects currently set file

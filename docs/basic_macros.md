@@ -98,10 +98,34 @@ AUTH : FIN
 Include macro include given file and paste into the position. Included file's
 contents are all expanded.
 
+Include macro read whole file contents into a single string. This is an
+intended behaviour so that nested include macro inside definition can respect
+order of expressions. If you are using big chunk of data and you don't use
+macros inside other declared macro, try use read macro which read files and
+write on the way.
+
 ```
 $include(src/content.rs)
 ===
 // Content of src/content.rs is pasted in here
+```
+
+**read**
+
+"Read" include file's content but int a streamlined way. It straight include
+files without saving to any memory. Use this macro when you read from huge file
+which might affect memory usage but make sure macro is directly invoked or use
+some detour.
+
+```
+$define(read_from,a_src=This go before
+$read($a_src())
+This go after)
+$read_from(source.txt)
+===
+{{Read contents comes here}}
+This go before
+This go after
 ```
 
 **tempin, tempout, tempto**
