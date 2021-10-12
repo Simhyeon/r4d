@@ -1372,7 +1372,7 @@ impl Processor {
             Ok(option) => {
                 // Something to print
                 if let Some(text) = option {
-                    self.write_to(&text,&mut None)?;
+                    remainder.push_str(&text);
                 } else { // Nothing to print
                     lexor.escape_next_newline();
                 }

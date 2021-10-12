@@ -77,11 +77,9 @@ impl KeywordMacro {
 
     /// Loop around given values and substitute iterators  with the value
     ///
-    /// Foreach's second macro is evaluated twice.
-    ///
     /// # Usage 
     ///
-    /// $foreach(\*a,b,c*\,\*$:*\)
+    /// $foreach(\*a,b,c*\,$:)
     fn foreach(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let mut sums = String::new();
@@ -99,11 +97,9 @@ impl KeywordMacro {
 
     /// For loop around given min, max value and finally substitue iterators with value
     ///
-    /// Forloop's second macro is evaluated twice.
-    ///
     /// # Usage
     ///
-    /// $forloop(1,5,\*$:*\)
+    /// $forloop(1,5,$:)
     fn forloop(args: &str, level: usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
             let mut sums = String::new();
@@ -136,8 +132,6 @@ impl KeywordMacro {
     }
 
     /// Print content according to given condition
-    /// 
-    /// If macro's second argument is evaluated twice.
     ///
     /// # Usage 
     ///
@@ -164,8 +158,6 @@ impl KeywordMacro {
     }
 
     /// Print content according to given condition
-    /// 
-    /// Ifelse second and third arguemtns are evaluated twice.
     ///
     /// # Usage 
     ///
