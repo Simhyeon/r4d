@@ -95,6 +95,8 @@ impl BasicMacro {
             ("tr".to_owned(),      BasicMacro::translate        as MacroType),
             ("trim".to_owned(),    BasicMacro::trim             as MacroType),
             ("undef".to_owned(),   BasicMacro::undefine_call    as MacroType),
+            // THis is simply a "phantomtype"
+            ("define".to_owned(),  BasicMacro::define_type      as MacroType),
         ]));
         
         // Optional macros
@@ -465,6 +467,11 @@ impl BasicMacro {
         } else {
             Err(RadError::InvalidArgument("Undefine requires an argument".to_owned()))
         }
+    }
+
+    /// Placeholder for define
+    fn define_type(_: &str, _dy: bool, _essor: &mut Processor) -> Result<Option<String>, RadError> {
+        Ok(None)
     }
 
     /// Create multiple macro executions from given csv value
