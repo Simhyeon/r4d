@@ -192,7 +192,7 @@ impl KeywordMacro {
     /// $ifdef(macro_name, expr)
     fn ifdef(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
-            let name = Utils::trim(&args[0]);
+            let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
             let map = processor.get_map();
 
             let boolean = map.contains(&name);
@@ -217,7 +217,7 @@ impl KeywordMacro {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
-            let name = Utils::trim(&args[0]);
+            let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
 
             let boolean = if let Ok(_) = std::env::var(name) {
                 true
