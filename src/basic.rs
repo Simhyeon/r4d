@@ -81,6 +81,7 @@ impl BasicMacro {
             ("path".to_owned(),    BasicMacro::merge_path       as MacroType),
             ("paths".to_owned(),   BasicMacro::merge_path_vec   as MacroType),
             ("pipe".to_owned(),    BasicMacro::pipe             as MacroType),
+            ("read".to_owned(),    BasicMacro::read             as MacroType),
             ("redir".to_owned(),   BasicMacro::temp_redirect    as MacroType),
             ("regex".to_owned(),   BasicMacro::regex_sub        as MacroType),
             ("rename".to_owned(),  BasicMacro::rename_call      as MacroType),
@@ -321,10 +322,52 @@ impl BasicMacro {
     ///
     /// Every macros within the file is also expanded
     ///
+    /// Include read file's content into a single string and print out.
+    /// This enables ergonomic process of macro execution. If you want file 
+    /// inclusion to happen as bufstream, use read instead.
+    ///
     /// # Usage
     ///
     /// $include(path)
     fn include(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if !Self::is_granted("include", AuthType::FIN,processor)? {
+            return Ok(None);
+        }
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
+            let raw = Utils::trim(&args[0]);
+            let mut file_path = PathBuf::from(&raw);
+
+            // if current input is not stdin and file path is relative
+            // Create new file path that starts from current file path
+            if processor.current_input != "stdin" && file_path.is_relative() {
+                // It is ok get parent because any path that has a length can return parent
+                file_path = PathBuf::from(&processor.current_input).parent().unwrap().join(file_path);
+            }
+
+            if file_path.is_file() { 
+                processor.set_sandbox();
+                let chunk = processor.from_file_as_chunk(file_path)?;
+                Ok(chunk)
+            } else {
+                let formatted = format!("File path : \"{}\" doesn't exist or not a file", file_path.display());
+                Err(RadError::InvalidArgument(formatted))
+            }
+        } else {
+            Err(RadError::InvalidArgument("Include requires an argument".to_owned()))
+        }
+    }
+
+    /// Paste given file's content as bufstream
+    ///
+    /// Every macros within the file is also expanded
+    ///
+    /// Read include given file's content as form of bufstream and doesn't 
+    /// save to memory. Therefore cannot be used with macro definition.
+    ///
+    /// # Usage
+    ///
+    /// $read(path)
+    fn read(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
         if !Self::is_granted("include", AuthType::FIN,processor)? {
             return Ok(None);
         }
@@ -848,6 +891,8 @@ impl BasicMacro {
 
     /// Include but for temporary file
     ///
+    /// This reads file's content into memory. Use read macro if streamed write is needed.
+    ///
     /// # Usage
     ///
     /// $tempin()
@@ -857,8 +902,8 @@ impl BasicMacro {
         }
         let file = processor.get_temp_path().to_owned();
         processor.set_sandbox();
-        processor.from_file(&file)?;
-        Ok(None)
+        let chunk = processor.from_file_as_chunk(&file)?;
+        Ok(chunk)
     }
 
     /// Redirect all text into temporary file
