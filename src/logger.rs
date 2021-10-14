@@ -308,8 +308,18 @@ impl Logger{
 
     /// Log debug information
     #[cfg(feature = "debug")]
-    pub fn dlog_print(&self, log : &str) -> Result<(), RadError> {
-        print!("{} :{}{}", Utils::green(&format!("{}:{}", self.last_line_number,"log")),LINE_ENDING,log);
+    pub fn dlog_print(&mut self, log : &str) -> Result<(), RadError> {
+        if let Some(option) = &mut self.write_option {
+            match option {
+                WriteOption::Terminal => {
+                    eprint!("{}{}{}", Utils::green(&format!("{}:{}", self.last_line_number,"log")),LINE_ENDING,log);
+                }
+                WriteOption::File(file) => {
+                    file.write_all(format!("{}:log :{}{}", self.last_line_number,LINE_ENDING,log).as_bytes())?;
+                }
+                _ => ()
+            }
+        }
         Ok(())
     }
 
