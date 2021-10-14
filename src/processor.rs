@@ -236,17 +236,17 @@ impl Processor {
     /// Set write option to yield output to the file
     pub fn write_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
-            // If parent doesn't exist it is not a vlid write file
-            if let Some(parent) = target_file.as_ref().parent() {
-                Utils::is_real_path(parent)?;
-            }
-            let target_file = OpenOptions::new()
+            let file = OpenOptions::new()
                 .create(true)
                 .write(true)
                 .truncate(true)
-                .open(target_file)?;
+                .open(&target_file);
 
-            self.write_option = WriteOption::File(target_file);
+            if let Err(_) = file {
+                return Err(RadError::InvalidCommandOption(format!("Could not create file \"{}\"", target_file.as_ref().display())));
+            } else {
+                self.write_option = WriteOption::File(file.unwrap());
+            }
         }
         Ok(self)
     }
@@ -254,19 +254,18 @@ impl Processor {
     /// Yield error to the file
     pub fn error_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> Result<&mut Self, RadError> {
         if let Some(target_file) = target_file {
-            // If parent doesn't exist it is not a vlid write file
-            if let Some(parent) = target_file.as_ref().parent() {
-                Utils::is_real_path(parent)?;
-            }
-
-            let target_file = OpenOptions::new()
+            let file = OpenOptions::new()
                 .create(true)
                 .write(true)
                 .truncate(true)
-                .open(target_file)?;
+                .open(&target_file);
 
-            self.logger = Logger::new();
-            self.logger.set_write_options(Some(WriteOption::File(target_file)));
+            if let Err(_) = file {
+                return Err(RadError::InvalidCommandOption(format!("Could not create file \"{}\"", target_file.as_ref().display())));
+            } else {
+                self.logger = Logger::new();
+                self.logger.set_write_options(Some(WriteOption::File(file.unwrap())));
+            }
         }
         Ok(self)
     }
@@ -940,14 +939,34 @@ impl Processor {
 
     #[cfg(feature = "debug")]
     /// Bridge function to that waits user's stdin
-    pub(crate) fn debug_wait_input(&self, log: &str, prompt: Option<&str>) -> Result<String, RadError> {
+    fn debug_wait_input(&self, log: &str, prompt: Option<&str>) -> Result<String, RadError> {
         Ok(self.logger.dlog_command(log, prompt)?)
     }
-    #[cfg(feature = "debug")]
     /// Bridge function to that prints given log as debug form
-    pub(crate) fn debug_print_log(&self,log : &str) -> Result<(), RadError> {
-        self.logger.dlog_print(log)?;
+    #[cfg(feature = "debug")]
+    fn debug_print_log(&mut self, macro_name: &str, raw_args: &str, frag: &MacroFragment) -> Result<(), RadError> {
+        if !self.debug_log { return Ok(());}
+        let attributes = self.debug_print_attr(frag);
+        self.logger.dlog_print(
+            &format!(
+                r#"Name    = "{}"{}Attributes{}{}Args    = "{}"{}"#,
+                macro_name, LINE_ENDING,
+                LINE_ENDING,attributes,
+                raw_args, LINE_ENDING,
+            )
+        )?;
         Ok(())
+    }
+
+    #[cfg(feature = "debug")]
+    fn debug_print_attr(&self, frag: &MacroFragment) -> String {
+        format!(
+            r#"Greedy  : {}{}Pipe    : {}{}Literal : {}{}Trimmed : {}{}"#,
+            frag.greedy || self.always_greedy, LINE_ENDING,
+            frag.pipe,LINE_ENDING,
+            frag.yield_literal,LINE_ENDING,
+            frag.trimmed,LINE_ENDING
+        )
     }
 
     // </DEBUG>
@@ -1101,29 +1120,27 @@ impl Processor {
     /// - Custom macro
     /// - Basic macro
     fn evaluate(&mut self,level: usize, caller: &str, name: &str, raw_args: &str, greedy: bool) -> Result<EvalResult, RadError> {
+        // Increase level to represent nestedness
         let level = level + 1;
-        // This parses and processes arguments
-        // and macro should be evaluated after
-        let args = self.parse_chunk_args(level, name, raw_args)?;
 
-        #[cfg(feature = "debug")]
-        if self.debug_log { 
-            self.debug_print_log(
-                &format!(
-                    "Level = \"{}\"{}Name = \"{}\"{}Args = \"{}\"{}",
-                    level,
-                    LINE_ENDING,
-                    name,
-                    LINE_ENDING,
-                    raw_args,
-                    LINE_ENDING,
-                )
-            )?; 
+        let mut args : String = raw_args.to_owned();
+        // Preprocess only when macro is not a keyword macro
+        if !self.map.is_keyword(name) {
+            // This parses and processes arguments
+            // and macro should be evaluated after
+            args = self.parse_chunk_args(level, name, raw_args)?;
         }
 
         // Possibly inifinite loop so warn user
         if caller == name {
             self.log_warning(&format!("Calling self, which is \"{}\", can possibly trigger infinite loop", name))?;
+        }
+
+        // Find keyword macro
+        if self.map.is_keyword(name) {
+            let func = self.map.keyword.get(name).unwrap();
+            let final_result = func(&args, level,self)?;
+            return Ok(EvalResult::Eval(final_result));
         }
 
         // Find local macro
@@ -1334,8 +1351,6 @@ impl Processor {
 
         if frag.name == "define" { // define
             self.lex_branch_end_frag_define(lexor, frag, remainder, level)?;
-        } else if self.map.is_keyword(&frag.name) { // Is a keyword
-            self.lex_branch_end_keyword(lexor, frag, remainder, level)?;
         } else { // Invoke macro
             self.lex_branch_end_invoke(lexor,frag,remainder, level, caller)?;
         }
@@ -1364,51 +1379,6 @@ impl Processor {
         Ok(())
     }
 
-    fn lex_branch_end_keyword(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize) -> Result<(), RadError> {
-        let macro_func = self.map.keyword.get(&frag.name).unwrap();
-        let result = macro_func(&frag.args,level,self);
-
-        match result {
-            Ok(option) => {
-                // Something to print
-                if let Some(text) = option {
-                    remainder.push_str(&text);
-                } else { // Nothing to print
-                    lexor.escape_next_newline();
-                }
-
-                // Clear fragment regardless of success
-                frag.clear();
-            }
-            Err(err) => {
-                self.log_error(&format!("{}", err))?;
-
-                // If nopanic then don't panic
-                if self.nopanic {
-                    // If purge mode is set, don't print anything 
-                    if !self.purge {
-                        remainder.push_str(&frag.whole_string);
-                    } else {
-                        // If purge mode
-                        // set escape new line 
-                        lexor.escape_next_newline();
-                    }
-
-                    // Clear fragment regardless of success
-                    frag.clear();
-
-                    return Ok(());
-                } else {
-
-                    // Clear fragment regardless of success
-                    frag.clear();
-                    return Err(RadError::Panic);
-                }
-            }
-        }
-        Ok(())
-    }
-
     fn lex_branch_end_invoke(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize, caller: &str) -> Result<(), RadError> {
         // Name is empty
         if frag.name.len() == 0 {
@@ -1421,6 +1391,9 @@ impl Processor {
         // Debug
         #[cfg(feature = "debug")]
         {
+            // Print a log information
+            self.debug_print_log(&frag.name,&frag.args, frag)?; 
+
             // If debug switch target is break point
             // Set switch to next line.
             self.break_point(frag)?;
