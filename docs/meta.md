@@ -1,16 +1,16 @@
 ### Changed
 
-### TODOs
+* [x] Fixed keyword macros being written without chunk respect
+* [x] Print macro attributes in logging
+* [x] Refactor codes so that keyword and macro evaluation is merged.
 
-* [ ] Maybe some data binding?
-* [ ] Optional parameter?
-* [x] Reimplement a include 
-* [x] Add new macro read
+### TODOs
 
 * [ ] Make gui application with help of klask
 - This requires nightly so different version of toolchain is used. 
-
 * [ ] Improve projects performance
+- Refactor codes into multiple chunks of functions for better readability
+- Probably make a new model called debugger and segregate logic.
 
 ### How macro parsing works?
 
