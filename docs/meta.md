@@ -1,16 +1,13 @@
 ### Changed
 
-* [x] Yield diff as error
-* [x] Log as error
-* [x] Segreated debugger module sueccesfully
-* [x] Added a custom prompt log logic
-* [x] Added a custom prompt log for from macro
-
 ### TODOs
 
 * [ ] Make parser separated
 * [ ] Make gui application with help of klask
 - This requires nightly so different version of toolchain is used. 
+* [ ] Create man page
+* [ ] vimsnippet update
+- List basic+keyword macros easily
 * [ ] Improve projects performance
 - Refactor codes into multiple chunks of functions for better readability
 - Probably make a new model called debugger and segregate logic.
@@ -52,6 +49,12 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [x] Yield diff as error
+* [x] Log as error
+* [x] Segreated debugger module sueccesfully
+* [x] Added a custom prompt log logic
+* [x] Added a custom prompt log for from macro
 
 * [x] Fixed keyword macros being written without chunk respect
 * [x] Print macro attributes in logging

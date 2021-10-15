@@ -69,7 +69,7 @@ $BR() // This is a break point
 $arg(Hello World)
 
 $arg(
-	$test()
+    $test()
 )
 End of file
 ```
@@ -154,7 +154,7 @@ Args    = "define,Define is defined of course"
 
 #### Diff
 
-Diff flag prints difference between source input and processed output
+Diff flag, ```--diff``` , prints difference between source input and processed output
 
 You can save diff to specific file with flag ```-e ErrorFile```.
 

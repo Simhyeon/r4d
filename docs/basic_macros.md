@@ -4,6 +4,8 @@ If any permission is necessary, it is displayed as
 
 AUTH : (ENV|FIN|FOUT|CMD)
 
+Macro expansion demonstration is displayed as
+
 ```
 $macro_invocation(...)
 ===
@@ -51,7 +53,7 @@ $length(I'm long)
 
 **repl**
 
-Replace contents of the macro
+Replace contents of the custom macro.
 
 ```
 $define(before=BEFORE)
@@ -95,10 +97,10 @@ $eval(1 + 2)
 
 AUTH : FIN
 
-Include macro include given file and paste into the position. Included file's
+Include macro reads given file and paste into the position. Included file's
 contents are all expanded.
 
-Include macro read whole file contents into a single string. This is an
+Include macro read a whole file's contents into a single string. This is an
 intended behaviour so that nested include macro inside definition can respect
 order of expressions. If you are using big chunk of data and you don't use
 macros inside other declared macro, try use read macro which read files and
@@ -112,10 +114,10 @@ $include(src/content.rs)
 
 **read**
 
-"Read" include file's content but int a streamlined way. It straight include
-files without saving to any memory. Use this macro when you read from huge file
-which might affect memory usage but make sure macro is directly invoked or use
-some detour.
+"Read" include file's content but in a streamlined way. It include files
+without saving to any memory. Use this macro when you read from huge file which
+might affect memory usage but make sure macro is directly invoked or use some
+detour.
 
 ```
 $define(read_from,a_src=This go before
@@ -169,7 +171,7 @@ $redir(false)
 
 AUTH : FOUT
 
-Fileout saves contents to the file. If truncate is false, non existent file
+Fileout saves contents to a file. If truncate is false, non existent file
 argument is panic behaviour.
 
 ```
@@ -182,7 +184,8 @@ $fileout(false,file_name.txt,This is appended)
 
 AUTH : ENV
 
-Print environment variable. Non existent env varaible will yield warning.
+Print environment variable. Non existent env varaible will yield warning on
+strict mode.
 
 ```
 $env(HOME)
@@ -222,7 +225,7 @@ a/b/c
 
 **name**
 
-Get file name from input
+Get file name(last part) from input
 
 ```
 $name(/home/test/Documents/info.txt)
@@ -253,14 +256,15 @@ $fileout(false,$source(),$a\_content())
 $test+(temp,Hello World)
 ===
 // Now ./cache/temp file contains string "Hello World"
+// cannot reference "source" macro after macro execution
 ```
 
 **Global**
 
-Global binds global macro that persists for the processing. Global bind is
+Global binds a macro that persists for the whole processing. Global bind is
 useful when you don't need dynamic evaluation but static binding. Because
-definition is evaluated on every call it might be necessarily efficient or not
-be an intended behaviour.
+definition is evaluated on every call which might not be necessarily efficient
+or not be an intended behaviour.
 
 ```
 $define(test=$time())
@@ -275,7 +279,7 @@ $test()
 Though, time will most likely print same thing for a single document
 processing. Other operations might need consistent bound values.
 
-**pipe, -, \* **
+**pipe, -, \***
 
 Pipe macro simply saves value to pipe. $-() returns piped value 
 $-*() returns piped value in literal form.
@@ -305,7 +309,8 @@ Content to be repeated
 **foreach** (keyword macro)
 
 Loop around given value. Value is separated with commas. Thus values should be
-always enclosed with double quotes.
+always enclosed with double quotes. Iterated values are references with
+```$:```.
 
 ```
 $foreach(\*a,b,c*\,Value: $:
@@ -319,7 +324,9 @@ Value: c
 
 **forloop** (keyword macro)
 
-Loop around given range. Value is separated with commas. 
+Loop around given range. Value is separated with commas. Iterated values are
+references with ```$:```.
+
 
 Range is inclusive e.g. 1 and 3 means from 1 to 3.
 
@@ -379,7 +386,7 @@ I'm false
 
 **ifdef** (keyword macro)
 
-If macro is defined then execute expr
+If macro is defined then execute given expression.
 
 ```
 $define(some=value)

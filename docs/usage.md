@@ -30,7 +30,7 @@ printf '...text...' | rad
 # Use following options to decide error behaviours
 # default is stderr
 -e, --err <FILE>      # Log error to <FILE>
--s, --silent          # Suppress warnings
+-s,                   # Suppress warnings
 -l, --lenient         # Disable strict mode
     --nopanic         # Don't panic in any circumstances
 
@@ -43,7 +43,7 @@ printf '...text...' | rad
 
 # Other flags
 -n                    # Always use unix newline (default is '\r\n' in windows platform)
--p, --purge           # Purge mode, print nothing if a macro doesn't exist
+-p, --purge           # Purge mode, print nothing if a macro doesn't exist doesn't work in strict mode
 -g, --greedy          # Always enable greedy for every macro invocation
 -D, --discard         # Discard all output
 
@@ -87,7 +87,7 @@ let mut processor = Processor::new()
     .purge(true)                                         // Purge undefined macro
     .greedy(true)                                        // Makes all macro greedy
     .silent(true)                                        // Silents all warnings
-	.nopanic(true)                                       // No panic in any circumstances
+    .nopanic(true)                                       // No panic in any circumstances
     .lenient(true)                                       // Disable strict mode
     .custom_rules(Some(vec![Path::new("rule.r4f")]))?    // Read from frozen rule files
     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
@@ -101,7 +101,7 @@ let mut processor = Processor::new()
     .debug(true)                                         // Turn on debug mode
     .log(true)                                           // Use logging to terminal
     .interactive(true)                                   // Use interactive mode
-	.diff(true)                                          // Eanble diff variant
+    .diff(true)                                          // Eanble diff variant
     // Create unreferenced instance
     .build(); 
 

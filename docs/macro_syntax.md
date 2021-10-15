@@ -35,8 +35,8 @@ $define(v_name=Simon creek)
 
 **Define is not evalued on declaration**
 
-Definition's body can include any macro invocation in itself, thus wrong
-argument declaration cannot be detected at the time of definition. To make
+Definition's body can include any macro invocation in itself, but wrong macro
+use inside definition cannot be detected at the time of definition. To make
 matters worse, arguments doesn't have any types either.
 
 ```
@@ -53,8 +53,8 @@ KALM // After defnition it prints out without error
 
 **Define is evaluated on every call**
 
-Because defined macro is called on every invocation. This may not be a desired
-behaviour. Use global macro if you want statically saved value.
+Because defined macro is evaluated on every invocation. This may not be a
+desired behaviour. Use global macro if you want statically saved value.
 
 ```
 $define(counter=0)
@@ -151,20 +151,6 @@ I'm,comma,separated
 I'm,comma,separated
 // Result is same
 ```
-### Doublely evaluated macros
-
-Some macros' arguments are evaluated twice such as ```foreach, forloop, if and
-ifelse```.
-
-Try enclose it with literal to prevent from unexpected behaviour.
-
-e.g.
-```
-$if(true,\*$macro()*\)
-$ifelse(true,\*$macro()*\,\*$macro()*\)
-$foreach(\*1,2,3*\,\*$:*\)
-$forloop(1,3,\*$:*\)
-```
 
 ### Macro attributes
 
@@ -178,17 +164,17 @@ for e.g.
 
 ```
 $define(
-	test,
-	a_expr a_path
-	=                                        // This new line
-	$bind+(cond,$eval($a_expr()))            // Whitespaces before "$bind"
-	$bind+(true_path,$path(cache,$a_path())) // Whitespaces before "$bind"
-	$bind+(false_path,$path(cache,index.md)) // Whitespaces before "$bind"
-	$ifelse(                                 // Whitespaces before "$ifelse"
-		$cond(),
-		$include($true_path()),
-		$include($false_path())
-	)                                        // This new line
+    test,
+    a_expr a_path
+    =                                        // This new line
+    $bind+(cond,$eval($a_expr()))            // Whitespaces before "$bind"
+    $bind+(true_path,$path(cache,$a_path())) // Whitespaces before "$bind"
+    $bind+(false_path,$path(cache,index.md)) // Whitespaces before "$bind"
+    $ifelse(                                 // Whitespaces before "$ifelse"
+        $cond(),
+        $include($true_path()),
+        $include($false_path())
+    )                                        // This new line
 )
 $test(1==1,out.md)
 ===
