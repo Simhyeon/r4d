@@ -8,6 +8,7 @@
 
 ### TODOs
 
+* [ ] Make parser separated
 * [ ] Make gui application with help of klask
 - This requires nightly so different version of toolchain is used. 
 * [ ] Improve projects performance
