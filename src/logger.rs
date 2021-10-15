@@ -2,11 +2,7 @@
 //!
 //! Logger handles all kinds of logging logics. Such log can be warning, error or debug logs.
 
-#[cfg(feature = "debug")]
-use std::io::BufRead;
 use std::io::Write;
-#[cfg(feature = "debug")]
-use crossterm::{ExecutableCommand, terminal::ClearType};
 use crate::models::WriteOption;
 use crate::consts::*;
 use crate::utils::Utils;
@@ -24,8 +20,6 @@ pub(crate) struct Logger {
     error_count: usize,
     warning_count: usize,
     chunked: usize,
-    #[cfg(feature = "debug")]
-    debug_interactive: bool,
 }
 /// Struct specifically exists to backup information of logger
 #[derive(Debug)]
@@ -49,8 +43,6 @@ impl Logger{
             error_count:0,
             warning_count:0,
             chunked : 0,
-            #[cfg(feature = "debug")]
-            debug_interactive: false,
         }
     }
 
@@ -70,11 +62,6 @@ impl Logger{
         } else {
             self.chunked = self.chunked - 1;
         }
-    }
-
-    #[cfg(feature = "debug")]
-    pub fn set_debug_interactive(&mut self) {
-        self.debug_interactive = true;
     }
 
     pub fn set_write_options(&mut self, write_option: Option<WriteOption>) {
@@ -185,6 +172,22 @@ impl Logger{
         Ok(())
     }
 
+    #[cfg(feature = "debug")]
+    pub fn elog_no_prompt(&mut self, log : impl std::fmt::Display) -> Result<(), RadError> {
+        if let Some(option) = &mut self.write_option {
+            match option {
+                WriteOption::File(file) => {
+                    file.write_all(log.to_string().as_bytes())?;
+                }
+                WriteOption::Terminal => {
+                    eprint!("{}",log);
+                }
+                WriteOption::Discard => ()
+            } // match end
+        } 
+        Ok(())
+    }
+
     /// Log warning
     pub fn wlog(&mut self, log : &str) -> Result<(), RadError> {
         if self.suppress_warning { return Ok(()); }
@@ -274,83 +277,21 @@ impl Logger{
 
     /// Log debug information
     #[cfg(feature = "debug")]
-    pub fn dlog_command(&self, log : &str, prompt: Option<&str>) -> Result<String, RadError> {
-        // Disable line wrap
-        if self.debug_interactive {
-            std::io::stdout()
-                .execute(crossterm::terminal::DisableLineWrap)?;
-        }
-
-        let mut input = String::new();
-        let prompt = if let Some(content) = prompt { content } else { "" };
-        eprintln!("{} : {}",Utils::green(&format!("({})", &prompt)), log);
-        print!(">> ");
-
-        // Restore wrapping
-        if self.debug_interactive {
-            std::io::stdout()
-                .execute(crossterm::terminal::EnableLineWrap)?;
-        }
-        // Flush because print! is not "printed" yet
-        std::io::stdout().flush()?;
-
-        // Get user input
-        let stdin = std::io::stdin();
-        stdin.lock().read_line(&mut input)?;
-        if self.debug_interactive {
-            // Clear user input line
-            // Preceding 1 is for "(input)" prompt
-            self.remove_terminal_lines(1 + Utils::count_sentences(log))?;
-        }
-
-        Ok(input)
-    }
-
-    /// Log debug information
-    #[cfg(feature = "debug")]
     pub fn dlog_print(&mut self, log : &str) -> Result<(), RadError> {
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::Terminal => {
-                    eprint!("{}{}{}", Utils::green(&format!("{}:{}", self.last_line_number,"log")),LINE_ENDING,log);
+                    eprint!("{}{}{}", Utils::green(&format!("{}:log", self.last_line_number)),LINE_ENDING,log);
                 }
                 WriteOption::File(file) => {
-                    file.write_all(format!("{}:log :{}{}", self.last_line_number,LINE_ENDING,log).as_bytes())?;
+                    file.write_all(format!("{}:log{}{}", self.last_line_number,LINE_ENDING,log).as_bytes())?;
                 }
                 _ => ()
             }
         }
         Ok(())
     }
-
-    #[cfg(feature = "debug")]
-    fn remove_terminal_lines(&self, count: usize) -> Result<(), RadError> {
-
-        std::io::stdout()
-            .execute(crossterm::terminal::Clear(ClearType::CurrentLine))?;
-
-        // Range is max exclusive thus min should start from 0
-        // e.g. 0..1 only tries once with index 0
-        for _ in 0..count {
-            std::io::stdout()
-                .execute(crossterm::cursor::MoveUp(1))?
-                .execute(crossterm::terminal::Clear(ClearType::CurrentLine))?;
-        }
-
-        Ok(())
-    }
-
     // End of debug related methods
     // </DEBUG>
     // ----------
 } 
-
-/// Debug switch(state) that indicates what debugging behaviours are intended for next branch
-#[cfg(feature = "debug")]
-pub enum DebugSwitch {
-    UntilMacro,
-    NextLine,
-    NextMacro,
-    StepMacro,
-    NextBreakPoint(String),
-}
