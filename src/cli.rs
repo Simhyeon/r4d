@@ -161,7 +161,7 @@ impl Cli {
     /// Creates argument template wich clap macro
     fn args_builder() -> clap::ArgMatches {
         clap_app!(rad =>
-            (version: "0.11.3")
+            (version: "0.11.4")
             (author: "Simon Creek <simoncreek@tutanota.com>")
             (about: "R4d is a modern macro processor made with rust")
             (@arg FILE: ... "Files to execute processing")
@@ -178,7 +178,7 @@ impl Cli {
             (@arg diff: --diff "Show diff result")
             (@arg interactive: -i --interactive "Use interactive debug mode")
             (@arg combination: -c "Read from both stdin and file inputs")
-            (@arg discard: -D --discard "Discard output without print out")
+            (@arg discard: -D --discard "Discard output")
             (@arg allow: -a +takes_value "Allow permission (fin|fout|cmd|env)")
             (@arg allow_warn: -w +takes_value "Allow permission with warnings (fin|fout|cmd|env)")
             (@arg allow_all: -A conflicts_with[allow_all_warn] "Allow all permission")
