@@ -52,7 +52,10 @@ mod error;
 // This is necessary for docs.rs documentation
 pub mod processor;
 
+#[cfg(feature = "debug")]
+pub(crate) mod debugger;
 pub(crate) mod arg_parser;
+pub(crate) mod define_parser;
 pub(crate) mod auth;
 pub(crate) mod basic;
 pub(crate) mod closure_map;
