@@ -216,3 +216,50 @@ impl RuleFile {
         }
     }
 }
+
+/// Macro framgent that processor saves fragmented information of the mcaro invocation
+#[derive(Debug)]
+pub(crate) struct MacroFragment {
+    pub whole_string: String,
+    pub name: String,
+    pub args: String,
+
+    // Macro attributes
+    pub pipe: bool,
+    pub greedy: bool,
+    pub yield_literal : bool,
+    pub trimmed : bool,
+}
+
+impl MacroFragment {
+    pub fn new() -> Self {
+        MacroFragment {
+            whole_string : String::new(),
+            name : String::new(),
+            args : String::new(),
+            pipe: false,
+            greedy: false,
+            yield_literal : false,
+            trimmed: false,
+        }
+    }
+
+    /// Reset all state
+    pub(crate) fn clear(&mut self) {
+        self.whole_string.clear();
+        self.name.clear();
+        self.args.clear();
+        self.pipe = false; 
+        self.greedy = false; 
+        self.yield_literal = false;
+        self.trimmed = false; 
+    }
+
+    /// Check if fragment is empty or not
+    ///
+    /// This also enables user to check if fragment has been cleared or not
+    pub(crate) fn is_empty(&self) -> bool {
+        self.whole_string.len() == 0
+    }
+}
+
