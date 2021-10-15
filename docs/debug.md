@@ -137,22 +137,30 @@ You can also clear termianl with command clear(cl in short).
 
 Logging flag sets processor to print every macro invocation's information.
 
+You can save log to specific file with flag ```-e ErrorFile```.
+
 e.g.
 ```
-15:log :
-Level = "2"
-Name = "env"
-Args = "TABLE_FORM"
+4:log
+Name    = "ifdef"
+Attr    =
+Greedy  : false
+Pipe    : false
+Literal : false
+Trimmed : false
+Args    = "define,Define is defined of course"
+---
 ```
 
 #### Diff
 
 Diff flag prints difference between source input and processed output
 
+You can save diff to specific file with flag ```-e ErrorFile```.
+
 d.g.
 ```
 DIFF :
-
 - $define(author=SimonCreek)
 - $define(title=R4d demo)
   ---

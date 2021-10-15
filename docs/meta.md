@@ -1,8 +1,10 @@
 ### Changed
 
-* [x] Fixed keyword macros being written without chunk respect
-* [x] Print macro attributes in logging
-* [x] Refactor codes so that keyword and macro evaluation is merged.
+* [x] Yield diff as error
+* [x] Log as error
+* [x] Segreated debugger module sueccesfully
+* [x] Added a custom prompt log logic
+* [x] Added a custom prompt log for from macro
 
 ### TODOs
 
@@ -49,6 +51,10 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [x] Fixed keyword macros being written without chunk respect
+* [x] Print macro attributes in logging
+* [x] Refactor codes so that keyword and macro evaluation is merged.
 * [x] Empty name is problematic or say inconsistent
 * [x] Does removing piped value necessary? It doesn't give that much benefits, I think...
 * [x] Change "from" syntax, a breaking change though, better choice for ergonomics.
