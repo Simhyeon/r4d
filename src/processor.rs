@@ -76,10 +76,8 @@
 //! processor.print_result()?;                       
 //! ```
 
-#[cfg(feature = "debug")]
-use similar::ChangeTag;
-
 use crate::auth::{AuthType, AuthFlags, AuthState};
+use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
 use std::io::Read;
 use std::io::{self, BufReader, Write};
@@ -91,11 +89,16 @@ use crate::closure_map::ClosureMap;
 use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
-use crate::logger::DebugSwitch;
-use crate::models::{MacroMap, MacroRule, RuleFile, UnbalancedChecker, WriteOption};
+use crate::debugger::Debugger;
+use crate::models::{
+    MacroMap, MacroRule, RuleFile, 
+    UnbalancedChecker, WriteOption, 
+    MacroFragment
+};
 use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
+use crate::define_parser::DefineParser;
 use crate::arg_parser::{ArgParser, GreedyState};
 
 // Methods of processor consists of multiple sections followed as
@@ -116,26 +119,16 @@ pub struct Processor{
     auth_flags: AuthFlags,
     map: MacroMap,
     closure_map: ClosureMap,
-    define_parse: DefineParser,
+    defparser: DefineParser,
     write_option: WriteOption,
     logger: Logger,
+    #[cfg(feature = "debug")]
+    debugger: Debugger,
     checker: UnbalancedChecker,
     pub(crate) pipe_value: String,
     pub(crate) newline: String,
     pub(crate) paused: bool,
     pub(crate) redirect: bool,
-    #[cfg(feature = "debug")]
-    pub(crate) debug: bool,
-    #[cfg(feature = "debug")]
-    pub(crate) debug_log: bool,
-    #[cfg(feature = "debug")]
-    debug_switch : DebugSwitch,
-    // This is a global line number storage for various deubbing usages
-    #[cfg(feature = "debug")]
-    line_number : usize,
-    // This is a bit bloaty, but debugging needs functionality over efficiency
-    #[cfg(feature = "debug")]
-    pub(crate) line_caches: HashMap<usize, String>,
     sandbox: bool,
     purge: bool,
     pub(crate) strict: bool,
@@ -145,13 +138,6 @@ pub struct Processor{
     // because file doesn't necessarily have path. 
     // Especially in unix, this is not so an unique case
     temp_target: (PathBuf,File), 
-    #[cfg(feature = "debug")]
-    yield_diff: bool,
-    /// File handle for given sources
-    #[cfg(feature = "debug")]
-    diff_original : Option<File>,
-    #[cfg(feature = "debug")]
-    diff_processed : Option<File>,
 }
 
 impl Processor {
@@ -201,8 +187,10 @@ impl Processor {
             map,
             closure_map: ClosureMap::new(),
             write_option: WriteOption::Terminal,
-            define_parse: DefineParser::new(),
+            defparser: DefineParser::new(),
             logger,
+            #[cfg(feature = "debug")]
+            debugger : Debugger::new(),
             checker : UnbalancedChecker::new(),
             newline : LINE_ENDING.to_owned(),
             pipe_value: String::new(),
@@ -212,24 +200,8 @@ impl Processor {
             strict: true,
             nopanic: false,
             sandbox : false,
-            #[cfg(feature = "debug")]
-            debug: false,
-            #[cfg(feature = "debug")]
-            debug_log: false,
-            #[cfg(feature = "debug")]
-            debug_switch: DebugSwitch::NextLine,
-            #[cfg(feature = "debug")]
-            line_number: 1,
-            #[cfg(feature = "debug")]
-            line_caches: HashMap::new(),
             always_greedy: false,
             temp_target,
-            #[cfg(feature = "debug")]
-            yield_diff: false,
-            #[cfg(feature = "debug")]
-            diff_original: None,
-            #[cfg(feature = "debug")]
-            diff_processed: None,
         }
     }
 
@@ -319,9 +291,7 @@ impl Processor {
     /// Add debug options
     #[cfg(feature = "debug")]
     pub fn debug(&mut self, debug: bool) -> &mut Self {
-        if debug {
-            self.debug = true;
-        }
+        self.debugger.debug = debug;
         self
     }
 
@@ -329,7 +299,7 @@ impl Processor {
     #[cfg(feature = "debug")]
     pub fn log(&mut self, log: bool) -> &mut Self {
         if log {
-            self.debug_log = true;
+            self.debugger.log = true;
         }
         self
     }
@@ -338,23 +308,7 @@ impl Processor {
     #[cfg(feature = "debug")]
     pub fn diff(&mut self, diff: bool) -> Result<&mut Self, RadError> {
         if diff {
-            self.yield_diff = true;
-            self.diff_original = Some(
-                OpenOptions::new()
-                .create(true)
-                .write(true)
-                .read(true)
-                .truncate(true)
-                .open(Path::new(DIFF_SOURCE_FILE))?
-            );
-            self.diff_processed = Some(
-                OpenOptions::new()
-                .create(true)
-                .write(true)
-                .read(true)
-                .truncate(true)
-                .open(Path::new(DIFF_OUT_FILE))?
-            );
+            self.debugger.enable_diff()?;
         }
         Ok(self)
     }
@@ -363,7 +317,8 @@ impl Processor {
     #[cfg(feature = "debug")]
     pub fn interactive(&mut self, interactive: bool) -> &mut Self {
         if interactive {
-            self.logger.set_debug_interactive();
+            // TODO
+            self.debugger.set_interactive();
         }
         self
     }
@@ -441,26 +396,7 @@ impl Processor {
         self.logger.print_result()?;
 
         #[cfg(feature = "debug")]
-        if self.yield_diff {
-            eprintln!("{0}DIFF : {0}",LINE_ENDING);
-            let source = std::fs::read_to_string(Path::new(DIFF_SOURCE_FILE))?;
-            let processed = std::fs::read_to_string(Path::new(DIFF_OUT_FILE))?;
-            let result = similar::TextDiff::from_lines(&source,&processed);
-
-            for change in result.iter_all_changes() {
-                match change.tag() {
-                    ChangeTag::Delete => {
-                        eprint!("{}", Utils::red(&format!("- {}", change)));
-                    }
-                    ChangeTag::Insert => {
-                        eprint!("{}", Utils::green(&format!("+ {}", change)));
-                    }
-                    ChangeTag::Equal => {
-                        eprint!("  {}",change);
-                    }
-                }
-            }
-        }
+        self.debugger.yield_diff(&mut self.logger)?;
 
         Ok(())
     }
@@ -553,7 +489,7 @@ impl Processor {
         // Early return if debug
         // This read whole chunk of string 
         #[cfg(feature = "debug")]
-        if self.debug {
+        if self.is_debug() {
             let mut input = String::new();
             stdin.lock().read_to_string(&mut input)?;
             // This is necessary to prevent unexpected output from being captured.
@@ -587,8 +523,8 @@ impl Processor {
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
-        let debug = self.from_buffer(&mut reader, backup, true);
-        debug
+        let chunk = self.from_buffer(&mut reader, backup, true);
+        chunk
     }
 
     /// Internal method for processing buffers line by line
@@ -598,21 +534,21 @@ impl Processor {
         let mut frag = MacroFragment::new();
 
         // Container can be used when file include is nested inside macro definition
-        // In that case, bufstream include will print first and other parts of 
-        // macro will be printed later
+        // Without container, namely read macro, will not preserve the order 
+        // of definition and simply print everything before evaluation
         let container = String::new(); // Don't remove this!
         let mut cont = if use_container{ Some(container) } else { None };
 
         #[cfg(feature = "debug")]
-        self.user_input_on_start()?;
+        self.debugger.user_input_on_start(&self.current_input,&mut self.logger)?;
         loop {
             #[cfg(feature = "debug")]
             if let Some(line) = line_iter.peek() {
                 let line = line.as_ref().unwrap();
                 // Update line cache
-                self.line_caches.insert(self.line_number, line.lines().next().unwrap().to_owned());
+                self.debugger.add_line_cache(line);
                 // Only if debug switch is nextline
-                self.user_input_on_line(&frag)?;
+                self.debugger.user_input_on_line(&frag, &mut self.logger)?;
             }
             let result = self.parse_line(&mut line_iter, &mut lexor ,&mut frag)?;
             match result {
@@ -623,7 +559,7 @@ impl Processor {
 
                     // Test if this works
                     #[cfg(feature = "debug")]
-                    self.line_caches.clear();
+                    self.debugger.clear_line_cache();
 
                     // Reset fragment
                     if &frag.whole_string != "" {
@@ -648,11 +584,9 @@ impl Processor {
             // Increaing number should be followed after evaluation
             // To ensure no panick occurs during user_input_on_line, which is caused by
             // out of index exception from getting current line_cache
+            // Increase absolute line number
             #[cfg(feature = "debug")]
-            {
-                // Increase absolute line number
-                self.line_number = self.line_number + 1; 
-            }
+            self.debugger.inc_line_number();
         } // Loop end
 
         // Recover
@@ -668,7 +602,6 @@ impl Processor {
     // End of process methods
     // </PROCESS>
     // ----------
-
 
     // ===========
     // Debug related methods
@@ -689,284 +622,23 @@ impl Processor {
         false
     }
 
-    /// Process breakpoint
+    /// Check if debug macro should be executed
     #[cfg(feature = "debug")]
-    fn break_point(&mut self, frag: &mut MacroFragment) -> Result<(), RadError> {
-        if &frag.name == "BR" {
-            if self.debug {
-                if let DebugSwitch::NextBreakPoint(name) = &self.debug_switch {
-                    // Name is empty or same with frag.args
-                    if name == &frag.args || name == "" {
-                        self.debug_switch = DebugSwitch::NextLine;
-                    }
-                }
-                // Clear fragment
-                frag.clear();
-                return Ok(());
-            } 
+    fn check_debug_macro(&mut self, frag: &mut MacroFragment, level: usize) -> Result<(), RadError> {
+        // Early return if not in a debug mode
+        if !self.is_debug() { return Ok(()); }
 
-            self.logger.wlog("Breakpoint in non debug mode")?;
-            frag.clear();
-        }
+        // If debug switch target is next macro
+        // Stop and wait for input
+        // Only on main level macro
+        if level == 0 { self.debugger.user_input_on_macro(&frag, &mut self.logger)?; }
+        else {self.debugger.user_input_on_step(&frag, &mut self.logger)?;}
 
-        Ok(())
-    }
-
-    // Though this implementation is same with user_input_prompt
-    // I thought modifying user_input_prompt isn't worth.
-    /// Get user input command before processing starts
-    #[cfg(feature = "debug")]
-    fn user_input_on_start(&mut self) -> Result<(), RadError> {
-        // Stop by lines if debug option is lines
-        if self.debug {
-
-            let mut log = "Default is next. Ctrl + c to exit.".to_owned();
-            let mut prompt = self.current_input.as_str();
-            let mut do_continue = true;
-            while do_continue {
-                // This technically strips newline feed regardless of platforms 
-                // It is ok to simply convert to a single line because it is logically a single
-                // line
-                let input = self.debug_wait_input(&log, Some(prompt))?;
-                // Strip newline
-                let input = input.lines().next().unwrap();
-
-                do_continue = self.parse_debug_command_and_continue(&input, None, &mut log)?;
-                prompt = "output";
-            }
+        // Clear line_caches
+        if level == 0 {
+            self.debugger.clear_line_cache();
         }
         Ok(())
-    }
-
-    #[cfg(feature = "debug")]
-    /// Prompt user input until break condition has been met
-    fn user_input_prompt(&mut self, frag: &MacroFragment, initial_prompt: &str) -> Result<(), RadError> {
-        let mut do_continue = true;
-        let mut log = match &self.debug_switch {
-            &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => {
-                self.line_caches.get(&self.logger.get_abs_last_line()).unwrap().to_owned()
-            }
-            _ => {
-                self.line_caches.get(&self.line_number).unwrap().to_owned()
-            }
-        };
-        let mut prompt = initial_prompt;
-        while do_continue {
-            let input = self.debug_wait_input(
-                &log,
-                Some(prompt)
-            )?;
-            // Strip newline
-            let input = input.lines().next().unwrap();
-
-            do_continue = self.parse_debug_command_and_continue(&input, Some(frag),&mut log)?;
-            prompt = "output";
-        }
-
-        Ok(())
-    }
-
-    #[cfg(feature = "debug")]
-    /// Get user input on line 
-    ///
-    /// This method should be called before evaluation of a line
-    fn user_input_on_line(&mut self,frag: &MacroFragment) -> Result<(), RadError> {
-        // Stop by lines if debug option is lines
-        if self.debug {
-            // Only when debugswitch is nextline
-            if let DebugSwitch::NextLine = self.debug_switch {
-                // Continue;
-            } else {
-                return Ok(()); // Return early
-            }
-            self.user_input_prompt(frag, "line")?;
-        }
-        Ok(())
-    }
-
-    #[cfg(feature = "debug")]
-    /// Get user input before macro execution
-    fn user_input_before_macro(&mut self, frag: &MacroFragment) -> Result<(), RadError> {
-        // Stop by lines if debug option is lines
-        if self.debug {
-            match &self.debug_switch {
-                &DebugSwitch::UntilMacro => (),
-                _ => return Ok(()),
-            }
-            self.user_input_prompt(frag, "until")?;
-        }
-        Ok(())
-    }
-
-    // This is possibly loopable
-    #[cfg(feature = "debug")]
-    /// Get user input after execution
-    fn user_input_on_macro(&mut self, frag: &MacroFragment) -> Result<(), RadError> {
-        // Stop by lines if debug option is lines
-        if self.debug {
-            match &self.debug_switch {
-                &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => (),
-                _ => return Ok(()),
-            }
-            self.user_input_prompt(frag, "macro")?;
-        }
-        Ok(())
-    }
-
-    // This is possibly loopable
-    #[cfg(feature = "debug")]
-    /// Get user input on execution but also nested macro can be targeted
-    fn user_input_on_step(&mut self, frag: &MacroFragment) -> Result<(), RadError> {
-        // Stop by lines if debug option is lines
-        if self.debug {
-            if let &DebugSwitch::StepMacro = &self.debug_switch {
-                // Continue;
-            } else {
-                return Ok(()); // Return early
-            }
-            self.user_input_prompt(frag, "step")?;
-        }
-        Ok(())
-    }
-
-    #[cfg(feature = "debug")]
-    /// Get user input and evaluates whether loop of input prompt should be breaked or not
-    fn parse_debug_command_and_continue(&mut self, command_input: &str, frag: Option<&MacroFragment>, log: &mut String) -> Result<bool, RadError> {
-        let command_input: Vec<&str> = command_input.split(' ').collect();
-        let command = command_input[0];
-        // Default is empty &str ""
-        let command_args = if command_input.len() == 2 {command_input[1]} else { "" };
-
-        match command.to_lowercase().as_str() {
-            // Continues until next break point
-            "cl" | "clear" => {
-                Utils::clear_terminal()?;
-                return Ok(true);
-            }
-            "c" | "continue" => {
-                self.debug_switch = DebugSwitch::NextBreakPoint(command_args.to_owned());
-            }
-            // Continue to next line
-            "n" | "next" | "" => {
-                self.debug_switch = DebugSwitch::NextLine;
-            }
-            // Continue to next macro
-            "m" | "macro" => {
-                self.debug_switch = DebugSwitch::NextMacro;
-            }
-            // Continue to until next macro
-            "u" | "until" => {
-                self.debug_switch = DebugSwitch::UntilMacro;
-            }
-            // Setp into macro
-            "s" | "step" => {
-                self.debug_switch = DebugSwitch::StepMacro;
-            }
-            "h" | "help" => {
-                *log = RDB_HELP.to_owned();
-                return Ok(true);
-            }
-            // Print "variable"
-            "p" | "print" => {
-                if let Some(frag) = frag {
-                    match command_args.to_lowercase().as_str() {
-                        "name" | "n" => {
-                           *log = frag.name.to_owned();
-                        }
-                        "line" | "l" => {
-                            match &self.debug_switch{
-                                DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                                    *log = self.logger.get_abs_last_line().to_string();
-                                }
-                                _ => {
-                                    *log = self.line_number.to_string();
-                                }
-                            } 
-                        }
-                        "span" | "s" => {
-                            let mut line_number = match &self.debug_switch {
-                                &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => {
-                                    self.logger.get_abs_line()
-                                }
-                                _ => self.line_number
-                            };
-
-                            let mut sums = String::new();
-                            while let Some(line) = self.line_caches.get(&line_number) {
-                                let mut this_line = format!("{}{}",LINE_ENDING,line);
-                                this_line.push_str(&sums);
-                                sums = this_line;
-                                line_number = line_number - 1;
-                            }
-                            *log = sums;
-                        }
-                        "text" | "t" => {
-                            match &self.debug_switch{
-                                DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                                    *log = self.line_caches.get(&self.logger.get_abs_last_line()).unwrap().to_owned();
-                                }
-                                _ => {
-                                    *log = self.line_caches.get(&self.line_number).unwrap().to_owned();
-                                }
-                            } 
-                        }
-                        "arg" | "a" => {
-                            *log = frag.args.to_owned();
-                        }
-                        _ => {
-                            *log = format!("Invalid argument \"{}\"",&command_args);
-                        } 
-                    } // end inner match
-                } // End if let
-                else { // No fragment which means it is the start of file
-                    return Ok(false);
-                }
-
-                // Get user input again
-                return Ok(true); 
-
-            } // End print match
-            _ => {
-                *log = format!("Invalid command : {} {}",command, &command_args);
-                return Ok(true);
-            },
-        } // End Outer match
-
-        // Unless specific cases,
-        // Continue without any loop
-        Ok(false)
-    }
-
-    #[cfg(feature = "debug")]
-    /// Bridge function to that waits user's stdin
-    fn debug_wait_input(&self, log: &str, prompt: Option<&str>) -> Result<String, RadError> {
-        Ok(self.logger.dlog_command(log, prompt)?)
-    }
-    /// Bridge function to that prints given log as debug form
-    #[cfg(feature = "debug")]
-    fn debug_print_log(&mut self, macro_name: &str, raw_args: &str, frag: &MacroFragment) -> Result<(), RadError> {
-        if !self.debug_log { return Ok(());}
-        let attributes = self.debug_print_attr(frag);
-        self.logger.dlog_print(
-            &format!(
-                r#"Name    = "{}"{}Attributes{}{}Args    = "{}"{}"#,
-                macro_name, LINE_ENDING,
-                LINE_ENDING,attributes,
-                raw_args, LINE_ENDING,
-            )
-        )?;
-        Ok(())
-    }
-
-    #[cfg(feature = "debug")]
-    fn debug_print_attr(&self, frag: &MacroFragment) -> String {
-        format!(
-            r#"Greedy  : {}{}Pipe    : {}{}Literal : {}{}Trimmed : {}{}"#,
-            frag.greedy || self.always_greedy, LINE_ENDING,
-            frag.pipe,LINE_ENDING,
-            frag.yield_literal,LINE_ENDING,
-            frag.trimmed,LINE_ENDING
-        )
     }
 
     // </DEBUG>
@@ -987,9 +659,7 @@ impl Processor {
 
             // Save to original
             #[cfg(feature = "debug")]
-            if self.yield_diff {
-                self.diff_original.as_ref().unwrap().write_all(line.as_bytes())?;
-            }
+            self.debugger.write_to_original(&line)?;
 
             let remainder = self.parse(lexor, frag, &line, 0, MAIN_CALLER)?;
 
@@ -1212,7 +882,7 @@ impl Processor {
     ///
     /// This doesn't clear fragment
     fn add_rule(&mut self, frag: &MacroFragment, remainder: &mut String) -> Result<(), RadError> {
-        if let Some((name,args,body)) = self.define_parse.parse_define(&frag.args) {
+        if let Some((name,args,body)) = self.defparser.parse_define(&frag.args) {
 
             // Strict mode
             // Overriding is prohibited
@@ -1245,9 +915,8 @@ impl Processor {
 
         // Save to "source" file for debuggin
         #[cfg(feature = "debug")]
-        if self.yield_diff {
-            self.diff_processed.as_ref().unwrap().write_all(content.as_bytes())?;
-        }
+        self.debugger.write_to_processed(content)?;
+
         // Write out to file or stdout
         if self.redirect {
             self.temp_target.1.write(content.as_bytes())?;
@@ -1286,7 +955,7 @@ impl Processor {
 
     fn lex_branch_start_frag(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor) -> Result<(), RadError> {
         #[cfg(feature = "debug")]
-        self.user_input_before_macro(&frag)?;
+        self.debugger.user_input_before_macro(&frag, &mut self.logger)?;
 
         frag.whole_string.push(ch);
 
@@ -1354,7 +1023,6 @@ impl Processor {
         } else { // Invoke macro
             self.lex_branch_end_invoke(lexor,frag,remainder, level, caller)?;
         }
-
         Ok(())
     }
 
@@ -1363,18 +1031,8 @@ impl Processor {
         self.add_rule(frag, remainder)?;
         lexor.escape_next_newline();
         #[cfg(feature = "debug")]
-        {
-            // If debug switch target is next macro
-            // Stop and wait for input
-            // Only on main level macro
-            if level == 0 { self.user_input_on_macro(&frag)?; }
-            else {self.user_input_on_step(&frag)?;}
+        self.check_debug_macro(frag, level)?;
 
-            // Clear line_caches
-            if level == 0 {
-                self.line_caches.clear();
-            }
-        }
         frag.clear();
         Ok(())
     }
@@ -1392,11 +1050,11 @@ impl Processor {
         #[cfg(feature = "debug")]
         {
             // Print a log information
-            self.debug_print_log(&frag.name,&frag.args, frag)?; 
+            self.debugger.print_log(&frag.name,&frag.args, frag, &mut self.logger)?; 
 
             // If debug switch target is break point
             // Set switch to next line.
-            self.break_point(frag)?;
+            self.debugger.break_point(frag, &mut self.logger)?;
             // Break point is true , continue
             if frag.name.len() == 0 {
                 lexor.escape_next_newline();
@@ -1450,16 +1108,8 @@ impl Processor {
                 // This goes to last line and print last line
                 #[cfg(feature = "debug")]
                 if !self.is_local(level + 1, &frag.name) {
-                    // If debug switch target is next macro
-                    // Stop and wait for input
-                    // Only on main level macro
-                    if level == 0 {self.user_input_on_macro(&frag)?;}
-                    else {self.user_input_on_step(&frag)?;}
-
-                    // Clear line_caches
-                    if level == 0 {
-                        self.line_caches.clear();
-                    }
+                    // Only when macro is not a local macro
+                    self.check_debug_macro(frag, level)?;
                 }
 
                 // If content is none
@@ -1504,7 +1154,6 @@ impl Processor {
                 }
             }
         } // End match
-
         Ok(())
     }
 
@@ -1629,224 +1278,26 @@ impl Processor {
         Ok(())
     }
 
+    #[cfg(feature = "debug")]
+    pub(crate) fn is_debug(&self) -> bool {
+        self.debugger.debug
+    }
+
+    /// Get debug switch
+    #[cfg(feature = "debug")]
+    pub(crate) fn get_debug_switch(&self) -> &DebugSwitch {
+        &self.debugger.debug_switch
+    }
+
+    /// Set custom prompt log
+    #[cfg(feature = "debug")]
+    pub(crate) fn set_prompt_log(&mut self, prompt: &str) {
+        self.debugger.set_prompt_log(prompt);
+    }
+
     // End of miscellaenous methods
     // </MISC>
     // ----------
-}
-
-/// Struct for deinition parsing
-struct DefineParser{
-    arg_cursor :DefineCursor,
-    name: String,
-    args: String,
-    body: String,
-    bind: bool,
-    container: String,
-}
-
-impl DefineParser {
-    fn new() -> Self {
-        Self {
-            arg_cursor : DefineCursor::Name,
-            name : String::new(),
-            args : String::new(),
-            body : String::new(),
-            bind : false,
-            container : String::new(),
-        }
-    }
-
-    /// Clear state
-    fn clear(&mut self) {
-        self.arg_cursor = DefineCursor::Name;
-        self.name.clear();
-        self.args.clear();
-        self.body.clear();
-        self.bind = false;
-        self.container.clear();
-    }
-
-    /// Parse macro definition body
-    ///
-    /// NOTE: This method expects valid form of macro invocation
-    /// which means given value should be presented without outer prentheses
-    /// e.g. ) name,a1 a2=body text
-    ///
-    /// If definition doesn't comply with naming rules or syntaxes, if returnes "None"
-    fn parse_define(&mut self, text: &str) -> Option<(String, String, String)> {
-        self.clear(); // Start in fresh state
-        let mut char_iter = text.chars().peekable();
-        while let Some(ch) = char_iter.next() {
-            match self.arg_cursor {
-                DefineCursor::Name => {
-                    if let ParseIgnore::Ignore = self.branch_name(ch) {continue;}
-                    // If not valid name return None
-                    if !self.is_valid_name(ch) { return None; }
-                }
-                DefineCursor::Args => {
-                    if let ParseIgnore::Ignore = self.branch_args(ch) {continue;}
-                    // If not valid name return None
-                    if !self.is_valid_name(ch) { return None; }
-                }
-                // Add everything
-                DefineCursor::Body => ()
-            } 
-            self.container.push(ch);
-        }
-
-        // This means pattern such as
-        // $define(test,Test) 
-        // -> This is not a valid pattern
-        if self.args.len() == 0 && !self.bind {
-            return None;
-        }
-
-        // End of body
-        self.body.push_str(&self.container);
-
-        Some((self.name.clone(), self.args.clone(), self.body.clone()))
-    }
-
-    /// Check if name complies with naming rule
-    fn is_valid_name(&mut self, ch : char) -> bool {
-        if self.container.len() == 0 { // Start of string
-            // Not alphabetic 
-            // $define( 1name ) -> Not valid
-            if !ch.is_alphabetic() {
-                return false;
-            }
-        } else { // middle of string
-            // Not alphanumeric and not underscore
-            // $define( na*1me ) -> Not valid
-            // $define( na_1me ) -> Valid
-            if !ch.is_alphanumeric() && ch != '_' {
-                return false;
-            }
-        }
-        true
-    }
-    
-    // ---------
-    // Start of branche methods
-    // <DEF_BRANCH>
-    
-    fn branch_name(&mut self, ch: char) -> ParseIgnore {
-        // $define(variable=something)
-        // Don't set argument but directly bind variable to body
-        if ch == '=' {
-            self.name.push_str(&self.container);
-            self.container.clear();
-            self.arg_cursor = DefineCursor::Body;
-            self.bind = true;
-            ParseIgnore::Ignore
-        } 
-        else if Utils::is_blank_char(ch) {
-            // This means pattern like this
-            // $define( name ) -> name is registered
-            // $define( na me ) -> na is ignored and take me instead
-            if self.name.len() != 0 {
-                self.container.clear();
-                ParseIgnore::None
-            } else {
-                // Ignore
-                ParseIgnore::Ignore
-            }
-        } 
-        // Comma go to args
-        else if ch == ',' {
-            self.name.push_str(&self.container);
-            self.container.clear();
-            self.arg_cursor = DefineCursor::Args;
-            ParseIgnore::Ignore
-        } else {
-            ParseIgnore::None
-        }
-    }
-
-    fn branch_args(&mut self, ch: char) -> ParseIgnore {
-        // Blank space separates arguments 
-        // TODO: Why check name's length? Is it necessary?
-        if Utils::is_blank_char(ch) && self.name.len() != 0 {
-            if self.container.len() != 0 {
-                self.args.push_str(&self.container);
-                self.args.push(' ');
-                self.container.clear();
-            }
-            ParseIgnore::Ignore
-        } 
-        // Go to body
-        else if ch == '=' {
-            self.args.push_str(&self.container);
-            self.container.clear();
-            self.arg_cursor = DefineCursor::Body; 
-            ParseIgnore::Ignore
-        } 
-        // Others
-        else {
-            ParseIgnore::None
-        }
-    }
-
-    // End of branche methods
-    // </DEF_BRANCH>
-    // ---------
-}
-
-enum DefineCursor {
-    Name,
-    Args,
-    Body,
-}
-
-enum ParseIgnore {
-    Ignore,
-    None
-}
-
-/// Macro framgent that processor saves fragmented information of the mcaro invocation
-#[derive(Debug)]
-struct MacroFragment {
-    pub whole_string: String,
-    pub name: String,
-    pub args: String,
-
-    // Macro attributes
-    pub pipe: bool,
-    pub greedy: bool,
-    pub yield_literal : bool,
-    pub trimmed : bool,
-}
-
-impl MacroFragment {
-    fn new() -> Self {
-        MacroFragment {
-            whole_string : String::new(),
-            name : String::new(),
-            args : String::new(),
-            pipe: false,
-            greedy: false,
-            yield_literal : false,
-            trimmed: false,
-        }
-    }
-
-    /// Reset all state
-    fn clear(&mut self) {
-        self.whole_string.clear();
-        self.name.clear();
-        self.args.clear();
-        self.pipe = false; 
-        self.greedy = false; 
-        self.yield_literal = false;
-        self.trimmed = false; 
-    }
-
-    /// Check if fragment is empty or not
-    ///
-    /// This also enables user to check if fragment has been cleared or not
-    fn is_empty(&self) -> bool {
-        self.whole_string.len() == 0
-    }
 }
 
 #[derive(Debug)]
