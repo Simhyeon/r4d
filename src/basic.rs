@@ -494,8 +494,31 @@ impl BasicMacro {
             let macro_data = &args[1];
 
             let result = Formatter::csv_to_macros(&macro_name, macro_data, &processor.newline)?;
-            // This is necessary
+
+            // TODO 
+            // This behaviour might can be improved
+            // Disable debugging for nested macro expansion
+            #[cfg(feature = "debug")]
+            let original = processor.is_debug();
+            processor.debug(false);
+
+            // Parse macros
             let result = processor.parse_chunk_args(0, "", &result)?;
+
+            // Set custom prompt log to indicate user thatn from macro doesn't support
+            // debugging inside macro expansion
+            #[cfg(feature = "debug")]
+            {
+                use crate::debugger::DebugSwitch;
+                processor.debug(original);
+                match processor.get_debug_switch() {
+                    DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
+                        processor.set_prompt_log("\"From macro\"")
+                    }
+                    _ => ()
+                }
+            }
+
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument("From requires two arguments".to_owned()))
