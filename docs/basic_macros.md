@@ -1,4 +1,4 @@
-#### Format
+## Format
 
 If any permission is necessary, it is displayed as
 
@@ -13,11 +13,51 @@ Expanded text from macro
 // As some comments
 ```
 
-#### Basic(default) macros
+## Basic(default) macros
 
 All macros are case sensitive and should come with dollar sign prefix.
 
-**define**
+* [define](#define)
+* [undef](#undef)
+* [rename](#rename)
+* [repl](#repl)
+* [append](#append)
+* [pause (keyword macro)](#pause--keyword-macro-)
+* [include](#include)
+* [read](#read)
+* [tempin, tempout, tempto](#tempin--tempout--tempto)
+* [redir](#redir)
+* [fileout](#fileout)
+* [env](#env)
+* [ifenv (keyword macro)](#ifenv--keyword-macro-)
+* [path](#path)
+* [paths](#paths)
+* [name](#name)
+* [parent](#parent)
+* [bind](#bind)
+* [Global](#global)
+* [pipe, -, \*](#pipe-------)
+* [Repeat](#repeat)
+* [foreach (keyword macro)](#foreach--keyword-macro-)
+* [forloop (keyword macro)](#forloop--keyword-macro-)
+* [eval](#eval)
+* [if (keyword macro)](#if--keyword-macro-)
+* [ifelse (keyword macro)](#ifelse--keyword-macro-)
+* [ifdef (keyword macro)](#ifdef--keyword-macro-)
+* [not](#not)
+* [syscmd](#syscmd)
+* [sub](#sub)
+* [tr](#tr)
+* [len](#len)
+* [regex](#regex)
+* [trim, chomp, comp](#trim--chomp--comp)
+* [nl](#nl)
+* [lipsum](#lipsum)
+* [time, date](#time--date)
+* [from](#from)
+* [table](#table)
+
+### define
 
 Define creates an custom macro. This macro is actually not a macro but special
 function. Define cannot be renamed or undefined. Define macro cannot be
@@ -28,7 +68,7 @@ $define(name,a1 a2="$a1(),$a2()")
 ===
 // Define doesn't print new line if it is a single input in the line
 ```
-**undef**
+### undef
 
 Undef can undefine every macros including basic(default) macros. However
 ```define``` cannot be undefined.
@@ -39,7 +79,7 @@ $undef(name)
 // Undef doesn't print new line if it is a single input in the line
 ```
 
-**rename**
+### rename
 
 Rename can change the name of the macro. This applies both to basic and custom
 macro. You cannot rename define.
@@ -51,7 +91,7 @@ $length(I'm long)
 8
 ```
 
-**repl**
+### repl
 
 Replace contents of the custom macro.
 
@@ -61,7 +101,7 @@ $repl(before,AFTER)
 $before()
 ```
 
-**append**
+### append
 
 Append append given string into the macro. Only
 custom macro can be appended.
@@ -74,7 +114,7 @@ $test()
 TEST CASE
 ```
 
-**pause** (keyword macro)
+### pause (keyword macro)
 
 Pause literally pauses every macro execution except pause macro. Even define is
 not evaluated
@@ -93,7 +133,7 @@ $eval(1 + 2)
 3
 ```
 
-**include**
+### include
 
 AUTH : FIN
 
@@ -112,7 +152,7 @@ $include(src/content.rs)
 // Content of src/content.rs is pasted in here
 ```
 
-**read**
+### read
 
 "Read" include file's content but in a streamlined way. It include files
 without saving to any memory. Use this macro when you read from huge file which
@@ -130,7 +170,7 @@ This go before
 This go after
 ```
 
-**tempin, tempout, tempto**
+### tempin, tempout, tempto
 
 AUTH : FIN or FOUT
 
@@ -150,7 +190,7 @@ Hello world
 {"name":"simon creek"}
 ```
 
-**redir**
+### redir
 
 AUTH : FOUT
 
@@ -167,7 +207,7 @@ $redir(false)
 // Content is saved to current temp file.
 ```
 
-**fileout**
+### fileout
 
 AUTH : FOUT
 
@@ -180,7 +220,7 @@ $fileout(false,file_name.txt,This is appended)
 ===
 ```
 
-**env**
+### env
 
 AUTH : ENV
 
@@ -193,7 +233,7 @@ $env(HOME)
 /home/simoncreek
 ```
 
-**ifenv** (keyword macro)
+### ifenv (keyword macro)
 
 AUTH: ENV
 
@@ -203,7 +243,7 @@ If environment variable is defined, execute expression
 $ifenv(HOME,$env(HOME)) 
 ```
 
-**path**
+### path
 
 Join a path into the first path.
 
@@ -213,7 +253,7 @@ $path($env(HOME),document)
 /home/simoncreek/document
 ```
 
-**paths**
+### paths
 
 Join multiple paths
 
@@ -223,7 +263,7 @@ $paths(a,b,c)
 a/b/c
 ```
 
-**name**
+### name
 
 Get file name(last part) from input
 
@@ -233,7 +273,7 @@ $name(/home/test/Documents/info.txt)
 info.txt
 ```
 
-**parent**
+### parent
 
 Get parent path from input
 
@@ -243,7 +283,7 @@ $parent(/home/test/Documents/info.txt)
 /home/test/Documents
 ```
 
-**bind**
+### bind
 
 Bind macro makes new local macro inside definition. This macro is automatically
 clared after evalution of the macro.
@@ -259,7 +299,7 @@ $test+(temp,Hello World)
 // cannot reference "source" macro after macro execution
 ```
 
-**Global**
+### Global
 
 Global binds a macro that persists for the whole processing. Global bind is
 useful when you don't need dynamic evaluation but static binding. Because
@@ -279,7 +319,7 @@ $test()
 Though, time will most likely print same thing for a single document
 processing. Other operations might need consistent bound values.
 
-**pipe, -, \***
+### pipe, -, \*
 
 Pipe macro simply saves value to pipe. $-() returns piped value 
 $-*() returns piped value in literal form.
@@ -293,7 +333,7 @@ Value
 \*Value*\
 ```
 
-**Repeat**
+### Repeat
 
 Repeat given content for given times
 ```
@@ -306,7 +346,7 @@ Content to be repeated
 
 ```
 
-**foreach** (keyword macro)
+### foreach (keyword macro)
 
 Loop around given value. Value is separated with commas. Thus values should be
 always enclosed with double quotes. Iterated values are references with
@@ -322,7 +362,7 @@ Value: c
 
 ```
 
-**forloop** (keyword macro)
+### forloop (keyword macro)
 
 Loop around given range. Value is separated with commas. Iterated values are
 references with ```$:```.
@@ -339,7 +379,7 @@ Number: 4
 Number: 5
 
 ```
-**eval**
+### eval
 
 Eval evaluates expression. This macro(function) uses rust's evalexpr crate
 [crate link](https://crates.io/crates/evalexpr). Therefore argument formula
@@ -353,7 +393,7 @@ $eval(0.1+0.2)
 0.30000000000000004
 ```
 
-**if** (keyword macro)
+### if (keyword macro)
 
 If gets a condition and prints if given value is true
 
@@ -368,7 +408,7 @@ $if(false,False)
 TRUE
 ```
 
-**ifelse** (keyword macro)
+### ifelse (keyword macro)
 
 Ifelse gets two branches and print out one according to given condition.
 
@@ -384,7 +424,7 @@ I'm true
 I'm false
 ```
 
-**ifdef** (keyword macro)
+### ifdef (keyword macro)
 
 If macro is defined then execute given expression.
 
@@ -397,7 +437,7 @@ $ifdef(some,Not defined)
 Defined
 ```
 
-**not**
+### not
 
 Not negates given boolean value.
 
@@ -413,7 +453,7 @@ false
 true
 ```
 
-**syscmd**
+### syscmd
 
 AUTH : CMD
 
@@ -430,7 +470,7 @@ Microsoft Windows [Version 10......]
 
 ```
 
-**sub**
+### sub
 
 Sub gets substring from given input range. You can give empty value. This is technically same with rust's syntax ```[min..max]```. Also supports utf8 characters.
 
@@ -444,7 +484,7 @@ $sub(,6,123456789)
 123456
 ```
 
-**tr**
+### tr
 
 Tr translate characters to other characters. Utf8 characters work.
 
@@ -454,7 +494,7 @@ $tr(Given String,iSg,aOs)
 Gaven Otrans
 ```
 
-**len**
+### len
 
 Return the length of given string. This operation takes O(n) not like
 traditional O(1) from rust' string data. This is because len returns length of
@@ -478,7 +518,7 @@ $len(我们刚才从图书馆来了)
 10
 ```
 
-**regex**
+### regex
 
 Regex substitution and regex deletion gets source and additional arguments to
 process regex operation. Second argument is regex expression. This use [regex
@@ -491,7 +531,7 @@ Hello rust
 Hello World
 ```
 
-**trim, chomp, comp**
+### trim, chomp, comp
 
 ```Trim``` removes preceding and trailing new lines, tabs and whitespaces from
 given input. ```Chomp``` removed duplicate newlines from given input.
@@ -535,7 +575,7 @@ DOWN
 --
 ```
 
-**nl**
+### nl
 
 Simply print out "newline" characters. This newline respects formatter's
 newline. Which is ```\r\n``` for windows and a ```\n``` in *nix systems by
@@ -548,7 +588,7 @@ $nl()
 // This is useful when you want to construct an output in one-liner
 ```
 
-**lipsum**
+### lipsum
 
 Lipsum creates a placehoder with given word counts. This requires features
 "lipsum".
@@ -559,7 +599,7 @@ $lipsum(5)
 Lorem ipsum dolor sit amet.
 ```
 
-**time, date**
+### time, date
 
 Time and date prints current local time and date. This requires features
 "chrono".
@@ -572,7 +612,7 @@ $date()
 2021-08-20
 ```
 
-**from**
+### from
 
 From creates formatted macro invocations with given csv values. The given macro
 name doesn't need dollar sign prefix. This requires features **"csv"**.
@@ -593,7 +633,7 @@ NOTE
 Former syntax required data as first parameter, however it was such an pain to
 always quote values, thus I found second value as csv was much more ergonomic.
 
-**table**
+### table
 
 Table creates a formatted table from given csv values. Currently supported
 formats are ```github```, ```wikitext``` and ```html```. This macro doesn't
