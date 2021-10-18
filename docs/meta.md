@@ -2,6 +2,7 @@
 
 ### TODOs
 
+* [x] Windows path sanity is broken shit...
 * [ ] Make parser separated
 * [ ] Make gui application with help of klask
 - This requires nightly so different version of toolchain is used. 
