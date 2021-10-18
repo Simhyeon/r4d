@@ -68,27 +68,6 @@ $print_counter_as_static()
 0
 ```
 
-**Escape characters**
-
-Defnition body can include any text except unbalanced parenthesis. Even escape
-character is saved into body as it is.
-
-However escape characters are escaped in arguments. Use double escape chraacter
-to use literal escape character.
-
-```
-$define(test,a_arg=Inside arg
-$a_arg()
-while body's escape is '\')
-$test(First escape is : '\'
-Second escape is '\\')
-===
-Inside arg
-First escape is : ''
-Second escape is '\'
-while body's escape is '\'
-```
-
 #### Macro inovocation
 
 Prefix is a dollar sign($)

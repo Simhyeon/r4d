@@ -2,16 +2,6 @@
 
 R4d is a text oriented macro prosessor made with rust.
 
-### NOTE
-
-**0.11 has breaking changes**
-
-Though there were several minor breaking changes, this version has several
-breaking changes over command line arguments, how processing works by default,
-how macros worrk by default.
-
-Changes are illustrated in release page.
-
 ### Demo
 
 **Raw texts**
@@ -113,6 +103,22 @@ processor.print_result()?;
 ### How to debug
 
 [Debug](./docs/debug.md)
+
+### NOTE
+
+**0.11 has breaking changes**
+
+Though there were several minor breaking changes, this version has several
+breaking changes over command line arguments, how processing works by default,
+how macros worrk by default.
+
+Changes are illustrated in release page.
+
+**Windows path bug was fixed in 0.11.5**
+
+Because windows also accept ```Slash (/)``` as path delimiter, I didn't find
+any problem until I found windows's default path delimiter is ```Reverse slash
+(\)```. This was fixed in 0.11.5
 
 ### Goal
 
