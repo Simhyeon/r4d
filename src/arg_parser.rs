@@ -61,10 +61,8 @@ impl ArgParser {
         while let Some(ch) = arg_iter.next() {
             if ch == delimiter {
                 self.branch_delimiter(ch, &mut value, &mut greedy_state);
-            } 
-            // Default behaviour of escape_char is not adding
-            else if ch == ESCAPE_CHAR { 
-                self.branch_escape_char(ch, &mut value);
+            } else if ch == ESCAPE_CHAR { 
+                self.branch_escape_char(ch, &mut value, arg_iter.peek());
             }
             else { // This pushes value in the end, so use continue not push the value
                 if ch == LIT_CHAR { // '*'
@@ -124,17 +122,17 @@ impl ArgParser {
         } // else end
     }
 
-    fn branch_escape_char(&mut self, ch: char, value: &mut String) {
+    fn branch_escape_char(&mut self, ch: char, value: &mut String, next: Option<&char>) {
         // If literal print everything without escaping
         if self.lit_count > 0 {
             value.push(ch);
-        }
-        // Previous was escape, then add
-        else if self.previous.unwrap_or('0') == ESCAPE_CHAR  {
+        } else if let Some(&LIT_CHAR) = next{
+            // if next is literal character
+            // Do nothing
+        } else {
+            // if next is anything simply add
             value.push(ch);
-            // Current escape is consumed and doesn't affect next character
-            self.no_previous = true;
-        } 
+        }
     } // end function
 
     fn branch_literal_char(&mut self, ch: char, value: &mut String ,arg_iter: &mut Peekable<Chars>) {
