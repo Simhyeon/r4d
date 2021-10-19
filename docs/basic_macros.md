@@ -31,7 +31,6 @@ All macros are case sensitive and should come with dollar sign prefix.
 * [env](#env)
 * [ifenv (keyword macro)](#ifenv--keyword-macro-)
 * [path](#path)
-* [paths](#paths)
 * [name](#name)
 * [parent](#parent)
 * [bind](#bind)
@@ -245,21 +244,13 @@ $ifenv(HOME,$env(HOME))
 
 ### path
 
-Join a path into the first path.
+Join elements into a path.
 
 ```
 $path($env(HOME),document)
-===
-/home/simoncreek/document
-```
-
-### paths
-
-Join multiple paths
-
-```
 $paths(a,b,c)
 ===
+/home/simoncreek/document
 a/b/c
 ```
 
