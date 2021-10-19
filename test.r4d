@@ -1,0 +1,152 @@
+// run "rad --nopanic --discard -A" to test and compare warning counts
+
+// Define 
+// Custom macro argument parsing
+$define(define_test,arg1 arg2=$arg1 + $arg2)
+$define(define_bind=Bound text)
+
+$define_test(1,2)         
+$define_test(\*1*\,\*2*\) 
+$define_test(\*1,2,3*\,4) 
+$define_test()
+$define_test(1)
+$define_test(\*1*\)
+$define_test(\*1,2,3*\)
+$define_test(\**\)
+$define_bind()            // Success
+$define_bind(1)           // Success
+$define_bind(\*1*\)       // Success
+$define_bind(\*1,2,3*\)   // Success
+$define_bind(\**\)        // Success
+
+// Undef
+
+$define(test=Test)
+$test()                   // Success
+$undef(test)
+$nassert($test(),Test)
+
+// Rename
+
+$define(test=Test)
+$test()                   // Success
+$rename(test,retest)
+$retest()                 // Success
+$nassert($test(),Test)
+
+// Replace
+
+$define(test=Test)
+$define(test_arg,arg1 arg2=Test)
+$assert($test(),Test)            // Success
+$assert($test_arg(1,2),Test)     // Success
+$repl(test,Test Test Test)
+$assert($test(),Test Test Test)  // Success
+$repl(test_arg,$arg1() $arg2())
+$assert($test_arg(First,Second),First Second) // Success
+
+// Append
+
+$define(test=Test)
+$assert($test(),Test)            // Success
+$append(test,12345)
+$assert($test(),Test12345)       // Success
+
+// pause
+
+$define(app=APP)
+$define(rep=REP)
+$pause(true)
+$assert(12345,1234)              // Literal
+$define(paused_test=NON)
+$append(app,END)
+$repl(rep,REPLACED)
+$pause(false)
+$nassert($paused_test(),NON)
+$assert($app(),APP)              // Success
+$assert($rep(),REP)              // Success
+
+// include
+$fileout(true,test_file.txt,11$nl()22$nl()33)
+$assert($include(test_file.txt),11$nl()22$nl()33) // Success
+
+// read
+// TODO
+
+// tempin, tempout, tempto
+
+// redir
+
+// fileout
+$fileout(false,test_file.txt,44$nl()55$nl()66)
+
+// env
+$env(HOME)
+$assert($env(NONONO),)           // Success
+
+// ifenv
+$ifenv(HOME,HOME exists)
+
+// path
+$assert($path(1,2,3),1/2/3)
+$assert($path(dir,test,nested),dir/test/nested)
+
+// name
+$define(example=/home/dir/nested/file.txt)
+$assert($name($example()),file.txt)
+
+// parent
+$assert($parent($example()),/home/dir/nested)
+
+// bind
+$define(bind_test,p=
+	$bind(p1,$name($p()))
+	$bind(p2,$parent($p()))
+	$assert($p1(),file.txt)
+	$assert($p2(),/home/dir/nested)
+)
+$bind_test($example()) // Success
+
+// global
+$global(global_var,VAR)
+$assert($global_var(),VAR)
+
+// pipe
+
+// repeat
+
+// foreach
+
+// forloop
+
+// eval
+
+// if
+
+// ifelse
+
+// ifdef
+
+// not
+
+// syscmd
+
+// sub
+
+// tr
+
+// len
+
+// regex
+
+// trim chomp, comp
+
+// nl
+
+// lipsum
+
+// time date
+
+// from
+
+// table
