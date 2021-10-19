@@ -66,6 +66,8 @@ impl BasicMacro {
         let mut map = HashMap::from_iter(IntoIter::new([
             ("-".to_owned(),       BasicMacro::get_pipe         as MacroType),
             ("append".to_owned(),  BasicMacro::append           as MacroType),
+            ("assert".to_owned(),  BasicMacro::assert           as MacroType),
+            ("nassert".to_owned(), BasicMacro::assert_ne        as MacroType),
             ("bind".to_owned(),    BasicMacro::bind_to_local    as MacroType),
             ("chomp".to_owned(),   BasicMacro::chomp            as MacroType),
             ("comp".to_owned(),    BasicMacro::compress         as MacroType),
@@ -79,14 +81,12 @@ impl BasicMacro {
             ("nl".to_owned(),      BasicMacro::newline          as MacroType),
             ("parent".to_owned(),  BasicMacro::get_parent       as MacroType),
             ("path".to_owned(),    BasicMacro::merge_path       as MacroType),
-            ("paths".to_owned(),   BasicMacro::merge_path_vec   as MacroType),
             ("pipe".to_owned(),    BasicMacro::pipe             as MacroType),
             ("read".to_owned(),    BasicMacro::read             as MacroType),
             ("redir".to_owned(),   BasicMacro::temp_redirect    as MacroType),
             ("regex".to_owned(),   BasicMacro::regex_sub        as MacroType),
             ("rename".to_owned(),  BasicMacro::rename_call      as MacroType),
             ("repeat".to_owned(),  BasicMacro::repeat           as MacroType),
-            ("repl".to_owned(),    BasicMacro::replace          as MacroType),
             ("sub".to_owned(),     BasicMacro::substring        as MacroType),
             ("syscmd".to_owned(),  BasicMacro::syscmd           as MacroType),
             ("tempin".to_owned(),  BasicMacro::temp_include     as MacroType),
@@ -470,8 +470,42 @@ impl BasicMacro {
     }
 
     /// Placeholder for define
-    fn define_type(_: &str, _dy: bool, _essor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn define_type(_: &str, _: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
         Ok(None)
+    }
+
+    /// Assert
+    ///
+    /// # Usage
+    ///
+    /// $assert(abc,abc)
+    fn assert(args: &str, greedy: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            if args[0] == args[1] {
+                Ok(None)
+            } else {
+                Err(RadError::AssertFail)
+            }
+        } else {
+            Err(RadError::InvalidArgument("Assert requires two arguments".to_owned()))
+        }
+    }
+
+    /// Assert not equal
+    ///
+    /// # Usage
+    ///
+    /// $nassert(abc,abc)
+    fn assert_ne(args: &str, greedy: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            if args[0] != args[1] {
+                Ok(None)
+            } else {
+                Err(RadError::AssertFail)
+            }
+        } else {
+            Err(RadError::InvalidArgument("Assert_ne requires two arguments".to_owned()))
+        }
     }
 
     /// Create multiple macro executions from given csv value
@@ -572,8 +606,10 @@ impl BasicMacro {
                 processor.log_warning(&format!("Creating a global with a name already existing : \"{}\"", name))?;
             }
             processor.add_custom_rules(vec![(name,"",value)]);
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("Global requires two argument".to_owned()))
         }
-        Ok(None)
     }
 
     /// Bind a local macro
@@ -591,8 +627,10 @@ impl BasicMacro {
             if processor.get_map().contains(name) {
                 processor.log_warning(&format!("Creating a binding with a name already existing : \"{}\"", name))?;
             }
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("Bind requires two argument".to_owned()))
         }
-        Ok(None)
     }
 
     /// Get environment variable with given name
@@ -614,33 +652,14 @@ impl BasicMacro {
         }
     }
 
-    /// Merge two path into a single path
-    ///
-    /// This creates platform agonistic path which can be consumed by other macros.
-    ///
-    /// # Usage
-    ///
-    /// $path($env(HOME),document)
-    fn merge_path(args: &str, greedy: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let target = Utils::trim(&args[0]);
-            let added = Utils::trim(&args[1]);
-
-            let out = format!("{}",&std::path::Path::new(&target).join(&added).display());
-            Ok(Some(out))
-        } else {
-            Err(RadError::InvalidArgument("Path macro needs two arguments".to_owned()))
-        }
-    }
-
     /// Merge multiple paths into a single path
     ///
     /// This creates platform agonistic path which can be consumed by other macros.
     ///
     /// # Usage
     ///
-    /// $paths($env(HOME) document test.docx)
-    fn merge_path_vec(args: &str, _: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
+    /// $path($env(HOME),document,test.docx)
+    fn merge_path(args: &str, _: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
         let vec = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
 
         let out = vec
@@ -961,24 +980,6 @@ impl BasicMacro {
             Ok(None)
         } else {
             Err(RadError::InvalidArgument("Temp requires an argument".to_owned()))
-        }
-    }
-
-    /// Replace value
-    ///
-    /// # Usage
-    ///
-    /// $repl(macro,value)
-    fn replace(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let name = args[0].as_str();
-            let target = args[1].as_str();
-            if !processor.get_map().replace(name, target) {
-                return Err(RadError::InvalidArgument(format!("{} doesn't exist, thus cannot replace it's content", name)))
-            }
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument("Replace requires two arguments".to_owned()))
         }
     }
 }
