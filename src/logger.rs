@@ -287,10 +287,10 @@ impl Logger{
             // There is either error or warning
             let error_result = format!("{}: found {} errors",Utils::red("error"), self.error_count);
             let warning_result = format!("{}: found {} warnings",Utils::yellow("warning"), self.warning_count);
-            let assert_result = format!(
-"{} :
+            let assert_result = format!("
+{}
 SUCCESS : {}
-FAIL: {}",Utils::green("assert"), self.assert_success, self.assert_fail
+FAIL: {}",Utils::green("Assert"), self.assert_success, self.assert_fail
             );
             match option {
                 WriteOption::File(file) => {
