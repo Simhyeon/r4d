@@ -1,8 +1,14 @@
 ### Changed
 
+* [x] Merged into a single macro path becuase paths is redundant
+* [x] Assert, nassert, fassert
+* [x] Repl as keyword macro because replacement should not be expanded
+* [x] Made error branch for invalid argument
+
 ### TODOs
 
-* [x] Windows path sanity is broken shit...
+* [ ] Create unit test before 1.0
+    * [x] Assert cli mode for better assertion result print
 * [ ] Make parser separated
 * [ ] Make gui application with help of klask
 - This requires nightly so different version of toolchain is used. 
@@ -51,6 +57,7 @@ basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
 
+* [x] Windows path sanity is broken shit...
 * [x] Yield diff as error
 * [x] Log as error
 * [x] Segreated debugger module sueccesfully

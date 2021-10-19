@@ -33,6 +33,7 @@ printf '...text...' | rad
 -s,                   # Suppress warnings
 -l, --lenient         # Disable strict mode
     --nopanic         # Don't panic in any circumstances
+	--assert          # Enable assertion mode
 
 # Use following options to decide deubbing behaviours
 # default is not to debug
@@ -88,6 +89,7 @@ let mut processor = Processor::new()
     .greedy(true)                                        // Makes all macro greedy
     .silent(true)                                        // Silents all warnings
     .nopanic(true)                                       // No panic in any circumstances
+    .assert(true)                                        // Enable assertion mode
     .lenient(true)                                       // Disable strict mode
     .custom_rules(Some(vec![Path::new("rule.r4f")]))?    // Read from frozen rule files
     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
