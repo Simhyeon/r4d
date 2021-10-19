@@ -4,11 +4,10 @@
 * [x] Assert, nassert, fassert
 * [x] Repl as keyword macro because replacement should not be expanded
 * [x] Made error branch for invalid argument
+* [x] Create unit test
 
 ### TODOs
 
-* [ ] Create unit test before 1.0
-    * [x] Assert cli mode for better assertion result print
 * [ ] Make parser separated
 * [ ] Make gui application with help of klask
 - This requires nightly so different version of toolchain is used. 
