@@ -19,7 +19,10 @@ pub(crate) struct Logger {
     suppress_warning: bool,
     error_count: usize,
     warning_count: usize,
+    assert_success: usize,
+    assert_fail: usize,
     chunked: usize,
+    pub(crate) assert: bool,
 }
 /// Struct specifically exists to backup information of logger
 #[derive(Debug)]
@@ -42,8 +45,15 @@ impl Logger{
             suppress_warning: false,
             error_count:0,
             warning_count:0,
+            assert_success : 0,
+            assert_fail: 0, 
             chunked : 0,
+            assert: false,
         }
+    }
+
+    pub fn assert(&mut self) {
+        self.assert = true;
     }
 
     pub fn suppress_warning(&mut self) {
@@ -139,6 +149,8 @@ impl Logger{
     /// Log error
     pub fn elog(&mut self, log : &str) -> Result<(), RadError> {
         self.error_count = self.error_count + 1; 
+
+        if self.assert { return Ok(()); }
         let last_char = self.try_get_last_char();
         if let Some(option) = &mut self.write_option {
             match option {
@@ -192,6 +204,8 @@ impl Logger{
     pub fn wlog(&mut self, log : &str) -> Result<(), RadError> {
         if self.suppress_warning { return Ok(()); }
         self.warning_count = self.warning_count + 1; 
+
+        if self.assert { return Ok(()); }
         let last_char = self.try_get_last_char();
         if let Some(option) = &mut self.write_option {
             match option {
@@ -225,6 +239,44 @@ impl Logger{
         Ok(())
     }
 
+    /// Assertion log
+    pub fn alog(&mut self, success: bool) -> Result<(), RadError> {
+        if success { 
+            self.assert_success = self.assert_success + 1; 
+            return Ok(());
+        } 
+        self.assert_fail = self.assert_fail + 1; 
+        let last_char = self.try_get_last_char();
+
+        if let Some(option) = &mut self.write_option {
+            match option {
+                WriteOption::File(file) => {
+                    file.write_all(
+                        format!(
+                            "assert fail -> {}:{}:{}{}",
+                            self.current_file,
+                            self.last_line_number,
+                            last_char,
+                            LINE_ENDING
+                        ).as_bytes()
+                    )?;
+                }
+                WriteOption::Terminal => {
+                    eprintln!(
+                        "{} -> {}:{}:{}", 
+                        Utils::red("assert fail"),
+                        self.current_file,
+                        self.last_line_number,
+                        last_char
+                    );
+                }
+                WriteOption::Discard => ()
+            } // match end
+        } 
+
+        Ok(())
+    }
+
     /// Print result of logging of warnings and errors
     pub fn print_result(&mut self) -> Result<(), RadError> {
         if let Some(option) = &mut self.write_option {
@@ -232,18 +284,24 @@ impl Logger{
             if self.error_count == 0 && self.warning_count == 0 {
                 return Ok(())
             }
-    
             // There is either error or warning
             let error_result = format!("{}: found {} errors",Utils::red("error"), self.error_count);
             let warning_result = format!("{}: found {} warnings",Utils::yellow("warning"), self.warning_count);
+            let assert_result = format!(
+"{} :
+SUCCESS : {}
+FAIL: {}",Utils::green("assert"), self.assert_success, self.assert_fail
+            );
             match option {
                 WriteOption::File(file) => {
                     if self.error_count > 0 {file.write_all(error_result.as_bytes())?;}
                     if self.warning_count > 0 {file.write_all(warning_result.as_bytes())?;}
+                    if self.assert{ file.write_all(assert_result.as_bytes())?; }
                 }
                 WriteOption::Terminal => {
                     if self.error_count > 0 { eprintln!("{}",error_result);}
                     if self.warning_count > 0 {eprintln!("{}",warning_result);}
+                    if self.assert {eprintln!("{}",assert_result);}
                 }
                 WriteOption::Discard => ()
             }
