@@ -479,11 +479,13 @@ impl BasicMacro {
     /// # Usage
     ///
     /// $assert(abc,abc)
-    fn assert(args: &str, greedy: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
+    fn assert(args: &str, greedy: bool, p: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             if args[0] == args[1] {
+                p.track_assertion(true)?;
                 Ok(None)
             } else {
+                p.track_assertion(false)?;
                 Err(RadError::AssertFail)
             }
         } else {
@@ -496,11 +498,13 @@ impl BasicMacro {
     /// # Usage
     ///
     /// $nassert(abc,abc)
-    fn assert_ne(args: &str, greedy: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
+    fn assert_ne(args: &str, greedy: bool, p: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             if args[0] != args[1] {
+                p.track_assertion(true)?;
                 Ok(None)
             } else {
+                p.track_assertion(false)?;
                 Err(RadError::AssertFail)
             }
         } else {

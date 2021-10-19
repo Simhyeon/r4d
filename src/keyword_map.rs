@@ -264,8 +264,10 @@ impl KeywordMacro {
     fn assert_fail(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
         let result = processor.parse_chunk_args(level, "", args);
         if let Err(_) = result {
+            processor.track_assertion(true)?;
             Ok(None)
         } else {
+            processor.track_assertion(false)?;
             Err(RadError::AssertFail)
         }
     }
