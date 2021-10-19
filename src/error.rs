@@ -5,10 +5,14 @@ use crate::AuthType;
 /// R4d's error type
 #[derive(Error, Debug)]
 pub enum RadError {
+    #[error("Assert failed")]
+    AssertFail,
     #[error("Invalid command option\n= {0}")]
     InvalidCommandOption(String),
     #[error("Invalid environment name\n= {0}")]
     EnvError(std::env::VarError),
+    #[error("Invalid macro name\n= {0}")]
+    InvalidMacroName(String),
     #[error("Failed regex operation\n= {0}")]
     InvalidRegex(regex::Error),
     #[cfg(feature = "evalexpr")]
@@ -35,7 +39,7 @@ pub enum RadError {
     BincodeError(String),
     #[error("Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.")]
     PermissionDenied(String,AuthType),
-    #[error("Error occured, exiting...")]
+    #[error("Strict error, exiting...")]
     StrictPanic,
     #[error("Processor panicked, exiting...")]
     Panic,
