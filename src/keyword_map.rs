@@ -23,6 +23,8 @@ impl KeywordMacro {
             ("ifelse".to_owned(),  KeywordMacro::ifelse           as KeywordMacType),
             ("ifdef".to_owned(),   KeywordMacro::ifdef            as KeywordMacType),
             ("ifenv".to_owned(),   KeywordMacro::ifenv            as KeywordMacType),
+            ("repl".to_owned(),    KeywordMacro::replace          as KeywordMacType),
+            ("fassert".to_owned(), KeywordMacro::assert_fail      as KeywordMacType),
         ]));
         Self {
             macros: map,
@@ -233,6 +235,38 @@ impl KeywordMacro {
             Ok(None)
         } else {
             Err(RadError::InvalidArgument("ifenv requires two arguments".to_owned()))
+        }
+    }
+
+    /// Replace value
+    ///
+    /// # Usage
+    ///
+    /// $repl(macro,value)
+    fn replace(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
+            let target = args[1].as_str();
+            if !processor.get_map().replace(&name, target) {
+                return Err(RadError::InvalidArgument(format!("{} doesn't exist, thus cannot replace it's content", name)))
+            }
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("Replace requires two arguments".to_owned()))
+        }
+    }
+
+    /// Assert fail
+    ///
+    /// # Usage
+    ///
+    /// $fassert(abc,abc)
+    fn assert_fail(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+        let result = processor.parse_chunk_args(level, "", args);
+        if let Err(_) = result {
+            Ok(None)
+        } else {
+            Err(RadError::AssertFail)
         }
     }
 
