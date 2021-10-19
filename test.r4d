@@ -71,7 +71,6 @@ $fileout(true,test_file.txt,11$nl()22$nl()33)
 $assert($include(test_file.txt),11$nl()22$nl()33) // Success
 
 // read
-// TODO
 
 // tempin, tempout, tempto
 
@@ -112,41 +111,56 @@ $global(global_var,VAR)
 $assert($global_var(),VAR)
 
 // pipe
+$pipe(Value to be piped)
+$assert($-(),Value to be piped)
 
 // repeat
+$assert($repeat(2,ABC$nl()),ABC$nl()ABC$nl())
 
 // foreach
+$assert($foreach(\*1,2,3*\,$eval($: + 5)),678)
 
 // forloop
+$assert($forloop(3,5,$eval($: + 5)),8910)
 
 // eval
+$assert(1,$eval((2 + 3) / 5))
 
-// if
+// if && not
+$define(print_true=true)
+$define(print_false=false)
+$assert($if($print_true(),I'm true),I'm true)
+$assert($if($not($print_false()),I was false),I was false)
 
 // ifelse
+$define(iss,a_cond=$ifelse($a_cond(),TRUE,FALSE))
+$assert($iss($print_true()),TRUE)
+$assert($iss($print_false()),FALSE)
 
 // ifdef
-
-// not
+$assert($ifdef(iss,DEFINED),DEFINED)
 
 // syscmd
 
 // sub
+$assert($sub(0,1,안녕하세요),안녕)
+$assert($sub(0,6,Hello world),Hello w)
 
 // tr
+$assert($tr(안녕 세상아,안녕,잘가),잘가 세상아)
+$assert($tr(Hello world,ed,as),Hallo worls)
 
 // len
+$assert($len(앍뷁헑않캲),5)
+$assert($len(ABCDEFGHIJKLMNOP),16)
 
 // regex
 
 // trim chomp, comp
 
-// nl
-
-// lipsum
-
-// time date
-
 // from
 
 // table
+
+// lipsum
+// time date
