@@ -21,6 +21,7 @@
 //!     .greedy(true)                                        // Makes all macro greedy
 //!     .silent(true)                                        // Silents all warnings
 //!     .nopanic(true)                                       // No panic in any circumstances
+//!     .assert(true)                                        // Enable assertion mode
 //!     .lenient(true)                                       // Disable strict mode
 //!     .custom_rules(Some(vec![Path::new("rule.r4f")]))?    // Read from frozen rule files
 //!     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
@@ -77,6 +78,7 @@
 //! ```
 
 use crate::auth::{AuthType, AuthFlags, AuthState};
+#[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
 use std::io::Read;
@@ -284,6 +286,18 @@ impl Processor {
     pub fn nopanic(&mut self, nopanic: bool) -> &mut Self {
         if nopanic {
             self.nopanic = nopanic;
+            self.strict = false; 
+        }
+        self
+    }
+
+    /// Set assertion mode
+    pub fn assert(&mut self, assert: bool) -> &mut Self {
+        if assert { 
+            self.logger.assert(); 
+            self.write_option = WriteOption::Discard;
+            self.nopanic = true;
+            self.strict  = false;
         }
         self
     }
@@ -829,7 +843,7 @@ impl Processor {
             if let Some(result) = self.invoke_rule(level, name, &args, greedy)? {
                 return Ok(EvalResult::Eval(Some(result)));
             } else {
-                return Ok(EvalResult::None);
+                return Ok(EvalResult::InvalidArg);
             }
         }
         // Find basic macro
@@ -846,7 +860,7 @@ impl Processor {
         }
         // No macros found to evaluate
         else { 
-            return Ok(EvalResult::None);
+            return Ok(EvalResult::InvalidName);
         }
     }
 
@@ -1134,23 +1148,27 @@ impl Processor {
                     }
                 }
             }
-            EvalResult::None =>  { // Failed to invoke
+            EvalResult::InvalidArg => {
+                if self.strict {
+                    return Err(RadError::StrictPanic);
+                }
+            }
+            EvalResult::InvalidName =>  { // Failed to invoke
                 // because macro doesn't exist
 
                 // If strict mode is set, every error is panic error
                 if self.strict {
-                    self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
-                    return Err(RadError::StrictPanic);
+                    return Err(RadError::InvalidMacroName(format!("Failed to invoke a macro : \"{}\"", frag.name)));
                 } 
                 // If purge mode is set, don't print anything 
                 // and don't print error
-                if !self.purge {
-                    self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
-                    remainder.push_str(&frag.whole_string);
-                } else {
+                else if self.purge {
                     // If purge mode
                     // set escape new line 
                     lexor.escape_next_newline();
+                } else {
+                    self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
+                    remainder.push_str(&frag.whole_string);
                 }
             }
         } // End match
@@ -1234,6 +1252,11 @@ impl Processor {
 
         // Also recover env values
         self.set_file_env(&self.current_input);
+    }
+
+    pub(crate) fn track_assertion(&mut self, success: bool) -> Result<(), RadError> {
+        self.logger.alog(success)?;
+        Ok(())
     }
 
     /// Log error
@@ -1320,5 +1343,6 @@ struct SandboxBackup {
 
 enum EvalResult {
     Eval(Option<String>),
-    None,
+    InvalidName,
+    InvalidArg,
 }
