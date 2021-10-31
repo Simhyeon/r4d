@@ -22,7 +22,9 @@ impl KeywordMacro {
             ("if".to_owned(),      KeywordMacro::if_cond          as KeywordMacType),
             ("ifelse".to_owned(),  KeywordMacro::ifelse           as KeywordMacType),
             ("ifdef".to_owned(),   KeywordMacro::ifdef            as KeywordMacType),
+            ("ifdefel".to_owned(), KeywordMacro::ifdefel          as KeywordMacType),
             ("ifenv".to_owned(),   KeywordMacro::ifenv            as KeywordMacType),
+            ("ifenvel".to_owned(), KeywordMacro::ifenvel          as KeywordMacType),
             ("repl".to_owned(),    KeywordMacro::replace          as KeywordMacType),
             ("fassert".to_owned(), KeywordMacro::assert_fail      as KeywordMacType),
         ]));
@@ -209,6 +211,30 @@ impl KeywordMacro {
         }
     }
 
+    /// If macro exists, then execute expresion else exectue another
+    ///
+    /// # Usage
+    ///
+    /// $ifdefelse(macro_name,expr,expr2)
+    fn ifdefel(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
+            let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
+            let map = processor.get_map();
+
+            let boolean = map.contains(&name);
+            // Return true or false by the definition
+            if boolean { 
+                let if_expr = processor.parse_chunk_args(level,"",&args[1])?;
+                return Ok(Some(if_expr)); 
+            } else {
+                let else_expr = processor.parse_chunk_args(level,"",&args[2])?;
+                return Ok(Some(else_expr)); 
+            }
+        } else {
+            Err(RadError::InvalidArgument("ifdefel requires three arguments".to_owned()))
+        }
+    }
+
     /// If env exists, then execute expresion
     ///
     /// # Usage
@@ -235,6 +261,37 @@ impl KeywordMacro {
             Ok(None)
         } else {
             Err(RadError::InvalidArgument("ifenv requires two arguments".to_owned()))
+        }
+    }
+
+    /// If env exists, then execute expresion else execute another
+    ///
+    /// # Usage
+    ///
+    /// $ifenvel(env_name,expr,expr2)
+    fn ifenvel(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if !Utils::is_granted("ifenvel", AuthType::ENV,processor)? {
+            return Ok(None);
+        }
+        if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
+            let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
+
+            let boolean = if let Ok(_) = std::env::var(name) {
+                true
+            } else {
+                false
+            };
+
+            // Return true or false by the definition
+            if boolean { 
+                let if_expr = processor.parse_chunk_args(level,"",&args[1])?;
+                return Ok(Some(if_expr)); 
+            } else {
+                let else_expr = processor.parse_chunk_args(level,"",&args[2])?;
+                return Ok(Some(else_expr)); 
+            }
+        } else {
+            Err(RadError::InvalidArgument("ifenvel requires three arguments".to_owned()))
         }
     }
 
