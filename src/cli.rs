@@ -46,6 +46,7 @@ impl Cli {
         self.parse_options(args);
         // Build processor
         let mut processor = Processor::new()
+            .comment(args.is_present("comment"))
             .purge(args.is_present("purge"))
             .greedy(args.is_present("greedy"))
             .lenient(args.is_present("lenient"))
@@ -162,7 +163,7 @@ impl Cli {
     /// Creates argument template wich clap macro
     fn args_builder() -> clap::ArgMatches {
         clap_app!(rad =>
-            (version: "1.0.0")
+            (version: "1.1.0")
             (author: "Simon Creek <simoncreek@tutanota.com>")
             (about: "R4d is a modern macro processor made with rust")
             (@arg FILE: ... "Files to execute processing")
@@ -178,6 +179,7 @@ impl Cli {
             (@arg debug: -d --debug "Debug mode")
             (@arg log: --log "Debug log mode")
             (@arg diff: --diff "Show diff result")
+            (@arg comment: --comment "Use comment option")
             (@arg interactive: -i --interactive "Use interactive debug mode")
             (@arg combination: -c "Read from both stdin and file inputs")
             (@arg discard: -D --discard "Discard output")
@@ -185,7 +187,7 @@ impl Cli {
             (@arg allow_warn: -w +takes_value "Allow permission with warnings (fin|fout|cmd|env)")
             (@arg allow_all: -A conflicts_with[allow_all_warn] "Allow all permission")
             (@arg allow_all_warn: -W "Allow all permission with warning")
-            (@arg silent: -s "Supress warnings")
+            (@arg silent: -s --silent "Supress warnings")
             (@arg newline: -n "Use unix newline for formatting")
         ).get_matches()
     }
