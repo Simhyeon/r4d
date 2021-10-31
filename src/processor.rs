@@ -17,6 +17,7 @@
 //! 
 //! // Builder
 //! let mut processor = Processor::new()
+//!     .comment(true)                                       // Use comments
 //!     .purge(true)                                         // Purge undefined macro
 //!     .greedy(true)                                        // Makes all macro greedy
 //!     .silent(true)                                        // Silents all warnings
@@ -133,6 +134,7 @@ pub struct Processor{
     pub(crate) redirect: bool,
     sandbox: bool,
     purge: bool,
+    pub(crate) use_comment: bool,
     pub(crate) strict: bool,
     pub(crate) nopanic: bool,
     always_greedy: bool,
@@ -200,6 +202,7 @@ impl Processor {
             redirect: false,
             purge: false,
             strict: true,
+            use_comment: false,
             nopanic: false,
             sandbox : false,
             always_greedy: false,
@@ -254,23 +257,25 @@ impl Processor {
 
     /// Set greedy option
     pub fn greedy(&mut self, greedy: bool) -> &mut Self {
-        if greedy {
-            self.always_greedy = true;
-        }
+        self.always_greedy = greedy;
         self
     }
 
     /// Set purge option
     pub fn purge(&mut self, purge: bool) -> &mut Self {
-        if purge {
-            self.purge = true;
-        }
+        self.purge = purge;
         self
     }
 
     /// Set lenient
     pub fn lenient(&mut self, lenient: bool) -> &mut Self {
         self.strict = !lenient;
+        self
+    }
+
+    /// Use comment
+    pub fn comment(&mut self, comment: bool) -> &mut Self {
+        self.use_comment = comment; 
         self
     }
 
@@ -312,28 +317,21 @@ impl Processor {
     /// Add debug log options
     #[cfg(feature = "debug")]
     pub fn log(&mut self, log: bool) -> &mut Self {
-        if log {
-            self.debugger.log = true;
-        }
+        self.debugger.log = log;
         self
     }
 
     /// Add diff option
     #[cfg(feature = "debug")]
     pub fn diff(&mut self, diff: bool) -> Result<&mut Self, RadError> {
-        if diff {
-            self.debugger.enable_diff()?;
-        }
+        if diff { self.debugger.enable_diff()?; }
         Ok(self)
     }
 
     /// Add debug interactive options
     #[cfg(feature = "debug")]
     pub fn interactive(&mut self, interactive: bool) -> &mut Self {
-        if interactive {
-            // TODO
-            self.debugger.set_interactive();
-        }
+        if interactive { self.debugger.set_interactive(); }
         self
     }
 
@@ -753,7 +751,15 @@ impl Processor {
 
         // Reset lexor's escape_nl 
         lexor.reset_escape();
+
+        // Check comment line
+        // If it is a comment then return nothing and write nothing
+        if self.use_comment && line.starts_with(COMMENT_CHAR) {
+            return Ok(String::new());
+        }
+
         for ch in line.chars() {
+
             self.logger.add_char_number();
 
             let lex_result = lexor.lex(ch)?;
