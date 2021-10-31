@@ -30,7 +30,7 @@ printf '...text...' | rad
 # Use following options to decide error behaviours
 # default is stderr
 -e, --err <FILE>      # Log error to <FILE>
--s,                   # Suppress warnings
+-s, --silent          # Suppress warnings
 -l, --lenient         # Disable strict mode
     --nopanic         # Don't panic in any circumstances
 	--assert          # Enable assertion mode
@@ -61,7 +61,7 @@ Type ```-h``` or ```--help``` to see full options.
 **Cargo.toml**
 ```toml
 [dependencies]
-rad = { version = "0.9.1", features = ["full"] }
+rad = { version = "0.1.0", features = ["full"] }
 
 # Other available features are 
 # "evalexpr", "chrono", "lipsum", "csv", "debug", "color", "full"
@@ -70,10 +70,10 @@ rad = { version = "0.9.1", features = ["full"] }
 # chrono   - "date", "time" macro
 # lipsum   - "lipsum" macro
 # csv      - "from", "table" macro
+# full     - Enable evalexpr, chrono, lipsum and csv
 
 # debug    - Enable debug methods
 # color    - Enable color prompt
-# full     - Enable evalexpr, chrono, lipsum and csv
 ```
 **rust file**
 ```rust
@@ -85,6 +85,7 @@ use std::path::Path;
 
 // Builder
 let mut processor = Processor::new()
+    .comment(true)                                       // Use comment
     .purge(true)                                         // Purge undefined macro
     .greedy(true)                                        // Makes all macro greedy
     .silent(true)                                        // Silents all warnings

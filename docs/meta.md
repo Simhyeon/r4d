@@ -1,19 +1,15 @@
 ### Changed
 
-* [x] Merged into a single macro path becuase paths is redundant
-* [x] Assert, nassert, fassert
-* [x] Repl as keyword macro because replacement should not be expanded
-* [x] Made error branch for invalid argument
-* [x] Create unit test
+* [x] Comment rule
+* [x] New basic macros
+	* [x] If env else
+	* [x] if def else
 
 ### TODOs
 
 * [ ] Make parser separated
 * [ ] Make gui application with help of klask
 - This requires nightly so different version of toolchain is used. 
-* [ ] Create man page
-* [ ] vimsnippet update
-- List basic+keyword macros easily
 * [ ] Improve projects performance
 - Refactor codes into multiple chunks of functions for better readability
 - Probably make a new model called debugger and segregate logic.
@@ -55,6 +51,12 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [x] Merged into a single macro path becuase paths is redundant
+* [x] Assert, nassert, fassert
+* [x] Repl as keyword macro because replacement should not be expanded
+* [x] Made error branch for invalid argument
+* [x] Create unit test
 
 * [x] Windows path sanity is broken shit...
 * [x] Yield diff as error

@@ -64,7 +64,8 @@ $define(arg,a_arg=Arg is : $a_arg())
 3
 4
 5
-$BR() // This is a break point
+% This is a break point
+$BR() 
 
 $arg(Hello World)
 
@@ -74,7 +75,8 @@ $arg(
 End of file
 ```
 Following is a sequences of user input and program output.
-Text After ```//``` is a comment and should not be in included in real usage
+Text After ```//``` is usaed as a comment for demonstration purpose and should
+not be in included in real usage.
 
 ```
 (filename) : Default is next. Ctrl + c to exit.

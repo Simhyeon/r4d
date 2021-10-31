@@ -10,7 +10,7 @@ Macro expansion demonstration is displayed as
 $macro_invocation(...)
 ===
 Expanded text from macro
-// As some comments
+% As some comments
 ```
 
 ## Basic(default) macros
@@ -30,12 +30,13 @@ All macros are case sensitive and should come with dollar sign prefix.
 * [fileout](#fileout)
 * [env](#env)
 * [ifenv (keyword macro)](#ifenv--keyword-macro-)
+* [ifenvel (keyword macro)](#ifenvel--keyword-macro-)
 * [path](#path)
 * [name](#name)
 * [parent](#parent)
 * [bind](#bind)
 * [Global](#global)
-* [pipe, -, \*](#pipe-------)
+* [pipe](#pipe)
 * [Repeat](#repeat)
 * [foreach (keyword macro)](#foreach--keyword-macro-)
 * [forloop (keyword macro)](#forloop--keyword-macro-)
@@ -43,6 +44,7 @@ All macros are case sensitive and should come with dollar sign prefix.
 * [if (keyword macro)](#if--keyword-macro-)
 * [ifelse (keyword macro)](#ifelse--keyword-macro-)
 * [ifdef (keyword macro)](#ifdef--keyword-macro-)
+* [ifdefel (keyword macro)](#ifdefel--keyword-macro-)
 * [not](#not)
 * [syscmd](#syscmd)
 * [sub](#sub)
@@ -65,7 +67,7 @@ overriden too.
 ```
 $define(name,a1 a2="$a1(),$a2()")
 ===
-// Define doesn't print new line if it is a single input in the line
+% Define doesn't print new line if it is a single input in the line
 ```
 ### undef
 
@@ -75,7 +77,7 @@ Undef can undefine every macros including basic(default) macros. However
 ```
 $undef(name)
 ===
-// Undef doesn't print new line if it is a single input in the line
+% Undef doesn't print new line if it is a single input in the line
 ```
 
 ### rename
@@ -148,7 +150,7 @@ write on the way.
 ```
 $include(src/content.rs)
 ===
-// Content of src/content.rs is pasted in here
+% Content of src/content.rs is pasted in here
 ```
 
 ### read
@@ -202,8 +204,8 @@ $foreach(\*1,2,3*\,Value: $:
 1,2,3,4,5
 $redir(false)
 ===
-// Yield nothing regardless of -o option
-// Content is saved to current temp file.
+% Yield nothing regardless of -o option
+% Content is saved to current temp file.
 ```
 
 ### fileout
@@ -240,6 +242,21 @@ If environment variable is defined, execute expression
 
 ```
 $ifenv(HOME,$env(HOME)) 
+===
+/home/username
+```
+
+### ifenv (keyword macro)
+
+AUTH: ENV
+
+If environment variable is defined, execute expression else execute another expression
+
+```
+$ifenvel(HOME,$env(HOME),No home is defined) 
+===
+% Home is most likely always defined
+/home/username
 ```
 
 ### path
@@ -286,8 +303,8 @@ $fileout(false,$source(),$a\_content())
 )
 $test+(temp,Hello World)
 ===
-// Now ./cache/temp file contains string "Hello World"
-// cannot reference "source" macro after macro execution
+% Now ./cache/temp file contains string "Hello World"
+% cannot reference "source" macro after macro execution
 ```
 
 ### Global
@@ -303,14 +320,14 @@ $test()
 $global(test=$time())
 $test()
 ===
-17:08:39 // This will yield different result according to time.
-17:08:39 // This will always yield same result
+17:08:39 % This will yield different result according to time.
+17:08:39 % This will always yield same result
 ```
 
 Though, time will most likely print same thing for a single document
 processing. Other operations might need consistent bound values.
 
-### pipe, -, \*
+### pipe
 
 Pipe macro simply saves value to pipe. $-() returns piped value 
 $-*() returns piped value in literal form.
@@ -576,7 +593,7 @@ default.
 $nl()
 ===
 
-// This is useful when you want to construct an output in one-liner
+% This is useful when you want to construct an output in one-liner
 ```
 
 ### lipsum

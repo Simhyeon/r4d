@@ -48,7 +48,8 @@ $panik()
 error: Failed to invoke a macro : "calm"
  --> stdin:2:2
 $calm()
-KALM // After defnition it prints out without error
+KALM 
+% After calm is defined, it prints out without error
 ```
 
 **Define is evaluated on every call**
@@ -123,12 +124,28 @@ To include commas you need to enclose with string literal
 ```
 $repeat(2,\*I'm,comma,separated*\
 )
-// Easier alternative is greddy attribute in this case
+% Easier alternative is greddy attribute in this case
 $repeat+(2,I'm,comma,separated)
 ===
 I'm,comma,separated
 I'm,comma,separated
-// Result is same
+% Result is same
+```
+
+### Comments
+
+Comment is disabled by default because comment character can intefere with
+macro expansion and user expectance. You can enable comment mode with
+```--comment``` flag.
+
+Comment character is ```%```. If you have used LaTex before, it would be
+familar.
+
+```
+% This is a comment
+  % Comment should start from the first character or else it will be ignored
+===
+  % Comment should start from the first character or else it will be ignored
 ```
 
 ### Macro attributes
@@ -175,8 +192,8 @@ attribute comes handy, although you can always manually call trim macro.
 ```
 ...
 $test^(1==1,out.md)
-// This is same with 
-// $trim($test(1==1,out.md))
+% This is same with 
+% $trim($test(1==1,out.md))
 ===
 1
 2
@@ -259,7 +276,7 @@ Iterated: \*
 Iterated: *\)
 
 warning: found 1 warnings
-// This is because foreach evaluate expression once more and "*\)" doesn't have
+% This is because foreach evaluate expression once more and "*\)" doesn't have
 matching "(" character.
 ```
 
