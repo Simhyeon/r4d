@@ -2,10 +2,14 @@
 pub const MACRO_START_CHAR: char = '$';
 pub const ESCAPE_CHAR: char ='\\';
 pub const MAIN_CALLER: &str = "@MAIN@";
+#[cfg(feature = "debug")]
 pub const DIFF_SOURCE_FILE : &str = "diff.src";
+#[cfg(feature = "debug")]
 pub const DIFF_OUT_FILE : &str = "diff.out";
+pub const COMMENT_CHAR : char = '%';
 
 // Platform specific consts
+
 #[cfg(windows)]
 pub const LINE_ENDING: &'static str = "\r\n";
 #[cfg(not(windows))]
