@@ -64,9 +64,9 @@ impl KeywordMacro {
 
             if let Ok(value) =Utils::is_arg_true(arg) {
                 if value {
-                    processor.paused = true;
+                    processor.state.paused = true;
                 } else {
-                    processor.paused = false;
+                    processor.state.paused = false;
                 }
                 Ok(None)
             } 

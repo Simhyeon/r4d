@@ -116,10 +116,49 @@ use crate::arg_parser::{ArgParser, GreedyState};
 //
 // e.g. <BUILDER> for builder section start and </BUILDER> for builder section end
 
+pub(crate) struct ProcessorState {
+    // Current_input is either "stdin" or currently being read file's name thus it should not be a
+    // path derivative
+    pub always_greedy: bool,
+    pub auth_flags: AuthFlags,
+    pub current_input : String, 
+    pub newline: String,
+    pub nopanic: bool,
+    pub paused: bool,
+    pub pipe_value: String,
+    pub purge: bool,
+    pub redirect: bool,
+    pub sandbox: bool,
+    pub strict: bool,
+    pub use_comment: bool,
+    // Temp target needs to save both path and file
+    // because file doesn't necessarily have path. 
+    // Especially in unix, this is not so an unique case
+    pub temp_target: (PathBuf,File), 
+}
+
+impl ProcessorState {
+    pub fn new(temp_target : (PathBuf, File)) -> Self {
+        Self {
+            current_input: String::from("stdin"),
+            auth_flags: AuthFlags::new(),
+            newline : LINE_ENDING.to_owned(),
+            pipe_value: String::new(),
+            paused: false,
+            redirect: false,
+            purge: false,
+            strict: true,
+            use_comment: false,
+            nopanic: false,
+            sandbox : false,
+            always_greedy: false,
+            temp_target,
+        }
+    }
+}
+
 /// Processor that parses(lexes) given input and print out to desginated output
 pub struct Processor{
-    pub(crate) current_input : String, // This is either "stdin" or currently being read file's name
-    auth_flags: AuthFlags,
     map: MacroMap,
     closure_map: ClosureMap,
     defparser: DefineParser,
@@ -128,20 +167,7 @@ pub struct Processor{
     #[cfg(feature = "debug")]
     debugger: Debugger,
     checker: UnbalancedChecker,
-    pub(crate) pipe_value: String,
-    pub(crate) newline: String,
-    pub(crate) paused: bool,
-    pub(crate) redirect: bool,
-    sandbox: bool,
-    purge: bool,
-    pub(crate) use_comment: bool,
-    pub(crate) strict: bool,
-    pub(crate) nopanic: bool,
-    always_greedy: bool,
-    // Temp target needs to save both path and file
-    // because file doesn't necessarily have path. 
-    // Especially in unix, this is not so an unique case
-    temp_target: (PathBuf,File), 
+    pub(crate) state: ProcessorState,
 }
 
 impl Processor {
@@ -186,8 +212,6 @@ impl Processor {
         };
 
         Self {
-            current_input: String::from("stdin"),
-            auth_flags: AuthFlags::new(),
             map,
             closure_map: ClosureMap::new(),
             write_option: WriteOption::Terminal,
@@ -196,17 +220,7 @@ impl Processor {
             #[cfg(feature = "debug")]
             debugger : Debugger::new(),
             checker : UnbalancedChecker::new(),
-            newline : LINE_ENDING.to_owned(),
-            pipe_value: String::new(),
-            paused: false,
-            redirect: false,
-            purge: false,
-            strict: true,
-            use_comment: false,
-            nopanic: false,
-            sandbox : false,
-            always_greedy: false,
-            temp_target,
+            state: ProcessorState::new(temp_target),
         }
     }
 
@@ -250,32 +264,32 @@ impl Processor {
     /// Use unix line ending instead of operating system's default one
     pub fn unix_new_line(&mut self, use_unix_new_line: bool) -> &mut Self {
         if use_unix_new_line {
-            self.newline = "\n".to_owned();
+            self.state.newline = "\n".to_owned();
         }
         self
     }
 
     /// Set greedy option
     pub fn greedy(&mut self, greedy: bool) -> &mut Self {
-        self.always_greedy = greedy;
+        self.state.always_greedy = greedy;
         self
     }
 
     /// Set purge option
     pub fn purge(&mut self, purge: bool) -> &mut Self {
-        self.purge = purge;
+        self.state.purge = purge;
         self
     }
 
     /// Set lenient
     pub fn lenient(&mut self, lenient: bool) -> &mut Self {
-        self.strict = !lenient;
+        self.state.strict = !lenient;
         self
     }
 
     /// Use comment
     pub fn comment(&mut self, comment: bool) -> &mut Self {
-        self.use_comment = comment; 
+        self.state.use_comment = comment; 
         self
     }
 
@@ -290,8 +304,8 @@ impl Processor {
     /// Set nopanic
     pub fn nopanic(&mut self, nopanic: bool) -> &mut Self {
         if nopanic {
-            self.nopanic = nopanic;
-            self.strict = false; 
+            self.state.nopanic = nopanic;
+            self.state.strict = false; 
         }
         self
     }
@@ -301,8 +315,8 @@ impl Processor {
         if assert { 
             self.logger.assert(); 
             self.write_option = WriteOption::Discard;
-            self.nopanic = true;
-            self.strict  = false;
+            self.state.nopanic = true;
+            self.state.strict  = false;
         }
         self
     }
@@ -353,7 +367,7 @@ impl Processor {
     pub fn allow(&mut self, auth_types : Option<Vec<AuthType>>) -> &mut Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
-                self.auth_flags.set_state(&auth, AuthState::Open)
+                self.state.auth_flags.set_state(&auth, AuthState::Open)
             }
         }
         self
@@ -363,7 +377,7 @@ impl Processor {
     pub fn allow_with_warning(&mut self, auth_types : Option<Vec<AuthType>>) -> &mut Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
-                self.auth_flags.set_state(&auth, AuthState::Warn)
+                self.state.auth_flags.set_state(&auth, AuthState::Warn)
             }
         }
         self
@@ -394,7 +408,7 @@ impl Processor {
     /// Print current permission status
     #[allow(dead_code)]
     pub fn print_permission(&mut self) -> Result<(), RadError> {
-        if let Some(status) = self.auth_flags.get_status_string() {
+        if let Some(status) = self.state.auth_flags.get_status_string() {
             let mut status_with_header = String::from("Permission granted");
             status_with_header.push_str(&status);
             self.log_warning(&status_with_header)?;
@@ -517,7 +531,7 @@ impl Processor {
     /// Process contents from a file
     pub fn from_file(&mut self, path :impl AsRef<Path>) -> Result<(), RadError> {
         // Sandboxed environment, backup
-        let backup = if self.sandbox { Some(self.backup()) } else { None };
+        let backup = if self.state.sandbox { Some(self.backup()) } else { None };
         // Set file as name of given path
         self.set_file(path.as_ref().to_str().unwrap())?;
 
@@ -529,7 +543,7 @@ impl Processor {
 
     pub(crate) fn from_file_as_chunk(&mut self, path :impl AsRef<Path>) -> Result<Option<String>, RadError> {
         // Sandboxed environment, backup
-        let backup = if self.sandbox { Some(self.backup()) } else { None };
+        let backup = if self.state.sandbox { Some(self.backup()) } else { None };
         // Set file as name of given path
         self.set_file(path.as_ref().to_str().unwrap())?;
 
@@ -552,7 +566,7 @@ impl Processor {
         let mut cont = if use_container{ Some(container) } else { None };
 
         #[cfg(feature = "debug")]
-        self.debugger.user_input_on_start(&self.current_input,&mut self.logger)?;
+        self.debugger.user_input_on_start(&self.state.current_input,&mut self.logger)?;
         loop {
             #[cfg(feature = "debug")]
             if let Some(line) = line_iter.peek() {
@@ -602,7 +616,7 @@ impl Processor {
         } // Loop end
 
         // Recover
-        if let Some(backup) = backup { self.recover(backup); self.sandbox = false; }
+        if let Some(backup) = backup { self.recover(backup); self.state.sandbox = false; }
 
         if use_container {
             Ok(cont)
@@ -754,7 +768,7 @@ impl Processor {
 
         // Check comment line
         // If it is a comment then return nothing and write nothing
-        if self.use_comment && line.starts_with(COMMENT_CHAR) {
+        if self.state.use_comment && line.starts_with(COMMENT_CHAR) {
             return Ok(String::new());
         }
 
@@ -906,7 +920,7 @@ impl Processor {
 
             // Strict mode
             // Overriding is prohibited
-            if self.strict && self.map.contains(&name) {
+            if self.state.strict && self.map.contains(&name) {
                 self.log_error("Can't override exsiting macro on strict mode")?;
                 return Err(RadError::StrictPanic);
             }
@@ -938,8 +952,8 @@ impl Processor {
         self.debugger.write_to_processed(content)?;
 
         // Write out to file or stdout
-        if self.redirect {
-            self.temp_target.1.write(content.as_bytes())?;
+        if self.state.redirect {
+            self.state.temp_target.1.write(content.as_bytes())?;
         } else {
             match &mut self.write_option {
                 WriteOption::File(f) => f.write_all(content.as_bytes())?,
@@ -980,7 +994,7 @@ impl Processor {
         frag.whole_string.push(ch);
 
         // If paused and not pause, then reset lexor context
-        if self.paused && frag.name != "pause" {
+        if self.state.paused && frag.name != "pause" {
             lexor.reset();
             remainder.push_str(&frag.whole_string);
             frag.clear();
@@ -995,7 +1009,7 @@ impl Processor {
         // Freeze needed for logging
         self.logger.freeze_number(); 
         // If paused, then reset lexor context to remove cost
-        if self.paused {
+        if self.state.paused {
             lexor.reset();
             remainder.push_str(&frag.whole_string);
             frag.clear();
@@ -1003,7 +1017,7 @@ impl Processor {
     }
 
     fn lex_branch_add_to_remainder(&mut self, ch: char,remainder: &mut String) -> Result<(), RadError> {
-        if !self.checker.check(ch) && !self.paused {
+        if !self.checker.check(ch) && !self.state.paused {
             self.logger.freeze_number();
             self.log_warning("Unbalanced parenthesis detected.")?;
         }
@@ -1083,7 +1097,7 @@ impl Processor {
         }
 
         // Try to evaluate
-        let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.always_greedy);
+        let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.state.always_greedy);
 
         match evaluation_result {
             // If panicked, this means unrecoverable error occured.
@@ -1109,7 +1123,7 @@ impl Processor {
         }
 
         // If nopanic don't panic
-        if self.nopanic {
+        if self.state.nopanic {
             Ok(())
         } else {
             Err(RadError::Panic)
@@ -1147,7 +1161,7 @@ impl Processor {
                     // NOTE
                     // This should come later!!
                     if frag.pipe {
-                        self.pipe_value = content;
+                        self.state.pipe_value = content;
                         lexor.escape_next_newline();
                     } else {
                         remainder.push_str(&content);
@@ -1155,7 +1169,7 @@ impl Processor {
                 }
             }
             EvalResult::InvalidArg => {
-                if self.strict {
+                if self.state.strict {
                     return Err(RadError::StrictPanic);
                 }
             }
@@ -1163,12 +1177,12 @@ impl Processor {
                 // because macro doesn't exist
 
                 // If strict mode is set, every error is panic error
-                if self.strict {
+                if self.state.strict {
                     return Err(RadError::InvalidMacroName(format!("Failed to invoke a macro : \"{}\"", frag.name)));
                 } 
                 // If purge mode is set, don't print anything 
                 // and don't print error
-                else if self.purge {
+                else if self.state.purge {
                     // If purge mode
                     // set escape new line 
                     lexor.escape_next_newline();
@@ -1204,14 +1218,14 @@ impl Processor {
 
     /// Bridge method to get auth state
     pub(crate) fn get_auth_state(&self, auth_type : &AuthType) -> AuthState {
-        *self.auth_flags.get_state(auth_type)
+        *self.state.auth_flags.get_state(auth_type)
     }
 
     /// Change temp file target
     ///
     /// This will create a new temp file if not existent
     pub(crate) fn set_temp_file(&mut self, path: &Path) {
-        self.temp_target = (path.to_owned(),OpenOptions::new()
+        self.state.temp_target = (path.to_owned(),OpenOptions::new()
             .create(true)
             .write(true)
             .truncate(true)
@@ -1226,23 +1240,23 @@ impl Processor {
     /// Sandbox means that current state(cursor) of processor should not be applied for following
     /// independent processing
     pub(crate) fn set_sandbox(&mut self) {
-        self.sandbox = true; 
+        self.state.sandbox = true; 
     }
 
     /// Get temp file's path
     pub(crate) fn get_temp_path(&self) -> &Path {
-        self.temp_target.0.as_ref()
+        self.state.temp_target.0.as_ref()
     }
 
     /// Get temp file's "file" struct
     pub(crate) fn get_temp_file(&self) -> &File {
-        &self.temp_target.1
+        &self.state.temp_target.1
     }
 
     /// Backup information of current file before processing sandboxed input
     fn backup(&self) -> SandboxBackup {
         SandboxBackup { 
-            current_input: self.current_input.clone(), 
+            current_input: self.state.current_input.clone(), 
             local_macro_map: self.map.local.clone(),
             logger_lines: self.logger.backup_lines(),
         }
@@ -1252,12 +1266,12 @@ impl Processor {
     fn recover(&mut self, backup: SandboxBackup) {
         // NOTE ::: Set file should come first becuase set_file override line number and character number
         self.logger.set_file(&backup.current_input);
-        self.current_input = backup.current_input;
+        self.state.current_input = backup.current_input;
         self.map.local= backup.local_macro_map; 
         self.logger.recover_lines(backup.logger_lines);
 
         // Also recover env values
-        self.set_file_env(&self.current_input);
+        self.set_file_env(&self.state.current_input);
     }
 
     pub(crate) fn track_assertion(&mut self, success: bool) -> Result<(), RadError> {
@@ -1284,7 +1298,7 @@ impl Processor {
         if !path.exists() {
             Err(RadError::InvalidCommandOption(format!("File, \"{}\" doesn't exist, therefore cannot be read by r4d.", path.display())))
         } else {
-            self.current_input = file.to_owned();
+            self.state.current_input = file.to_owned();
             self.logger.set_file(file);
             self.set_file_env(file);
             Ok(())
@@ -1302,7 +1316,7 @@ impl Processor {
     /// 
     /// This is conceptualy identical to set_file but doesn't validate if given input is existent
     fn set_input(&mut self, input: &str) -> Result<(), RadError> {
-        self.current_input = input.to_owned();
+        self.state.current_input = input.to_owned();
         self.logger.set_file(input);
         Ok(())
     }

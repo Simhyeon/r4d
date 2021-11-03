@@ -261,8 +261,8 @@ impl BasicMacro {
     fn chomp(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let source = &args[0];
-            let reg = Regex::new(&format!(r"{0}\s*{0}", &processor.newline))?;
-            let result = reg.replace_all(source, &format!("{0}{0}", &processor.newline));
+            let reg = Regex::new(&format!(r"{0}\s*{0}", &processor.state.newline))?;
+            let result = reg.replace_all(source, &format!("{0}{0}", &processor.state.newline));
 
             Ok(Some(result.to_string()))
         } else {
@@ -327,9 +327,9 @@ impl BasicMacro {
 
             // if current input is not stdin and file path is relative
             // Create new file path that starts from current file path
-            if processor.current_input != "stdin" && file_path.is_relative() {
+            if processor.state.current_input != "stdin" && file_path.is_relative() {
                 // It is ok get parent because any path that has a length can return parent
-                file_path = PathBuf::from(&processor.current_input).parent().unwrap().join(file_path);
+                file_path = PathBuf::from(&processor.state.current_input).parent().unwrap().join(file_path);
             }
 
             if file_path.is_file() { 
@@ -365,9 +365,9 @@ impl BasicMacro {
 
             // if current input is not stdin and file path is relative
             // Create new file path that starts from current file path
-            if processor.current_input != "stdin" && file_path.is_relative() {
+            if processor.state.current_input != "stdin" && file_path.is_relative() {
                 // It is ok get parent because any path that has a length can return parent
-                file_path = PathBuf::from(&processor.current_input).parent().unwrap().join(file_path);
+                file_path = PathBuf::from(&processor.state.current_input).parent().unwrap().join(file_path);
             }
 
             if file_path.is_file() { 
@@ -531,7 +531,7 @@ impl BasicMacro {
             // Plus, it is already trimmed by csv crate.
             let macro_data = &args[1];
 
-            let result = Formatter::csv_to_macros(&macro_name, macro_data, &processor.newline)?;
+            let result = Formatter::csv_to_macros(&macro_name, macro_data, &processor.state.newline)?;
 
             // TODO 
             // This behaviour might can be improved
@@ -576,7 +576,7 @@ impl BasicMacro {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let table_format = &args[0]; // Either gfm, wikitex, latex, none
             let csv_content = &args[1];
-            let result = Formatter::csv_to_table(table_format, csv_content, &p.newline)?;
+            let result = Formatter::csv_to_table(table_format, csv_content, &p.state.newline)?;
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument("Table requires two arguments".to_owned()))
@@ -592,7 +592,7 @@ impl BasicMacro {
     /// $pipe(Value)
     fn pipe(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
-            processor.pipe_value = args[0].to_owned();
+            processor.state.pipe_value = args[0].to_owned();
         }
         Ok(None)
     }
@@ -649,7 +649,7 @@ impl BasicMacro {
         if let Ok(out) = std::env::var(args) {
             Ok(Some(out))
         } else { 
-            if p.strict {
+            if p.state.strict {
                 p.log_warning(&format!("Env : \"{}\" is not defined.", args))?;
             }
             Ok(None) 
@@ -684,7 +684,7 @@ impl BasicMacro {
     ///
     /// $nl()
     fn newline(_: &str, _: bool, p: &mut Processor) -> Result<Option<String>, RadError> {
-        Ok(Some(p.newline.to_owned()))
+        Ok(Some(p.state.newline.to_owned()))
     }
 
     /// Get name from given path
@@ -735,7 +735,7 @@ impl BasicMacro {
     ///
     /// $-()
     fn get_pipe(_: &str, _: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        let out = processor.pipe_value.clone();
+        let out = processor.state.pipe_value.clone();
         Ok(Some(out))
     }
 
@@ -963,7 +963,7 @@ impl BasicMacro {
             } else {
                 return Err(RadError::InvalidArgument(format!("Redir's agument should be valid boolean value but given \"{}\"", &args[0])));
             };
-            p.redirect = toggle;
+            p.state.redirect = toggle;
             Ok(None)
         } else {
             Err(RadError::InvalidArgument("Redir requires an argument".to_owned()))
