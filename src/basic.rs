@@ -20,6 +20,12 @@ use crate::auth::AuthType;
 use crate::formatter::Formatter;
 #[cfg(feature = "lipsum")]
 use lipsum::lipsum;
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref CLRF_MATCH: Regex = Regex::new(r#"\r\n"#).unwrap();
+    static ref CHOMP_MATCH : Regex = Regex::new(r#"\n\s*\n"#).expect("Failed to crate chomp regex");
+}
 
 /// Type signature of basic macros
 ///
@@ -261,10 +267,11 @@ impl BasicMacro {
     fn chomp(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let source = &args[0];
-            let reg = Regex::new(&format!(r"{0}\s*{0}", &processor.state.newline))?;
-            let result = reg.replace_all(source, &format!("{0}{0}", &processor.state.newline));
+            // First convert all '\r\n' into '\n' and reformat it into current newline characters
+            let lf_converted = &*CLRF_MATCH.replace_all(source, r#"\n"#);
+            let chomp_result = &*CHOMP_MATCH.replace_all(lf_converted, format!("{0}{0}",&processor.state.newline));
 
-            Ok(Some(result.to_string()))
+            Ok(Some(chomp_result.to_string()))
         } else {
             Err(RadError::InvalidArgument("Chomp requires an argument".to_owned()))
         }
