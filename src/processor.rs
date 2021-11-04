@@ -731,6 +731,13 @@ impl Processor {
 
             self.logger.add_line_number();
         }
+    
+        // If unexpanded texts remains
+        // Add to result
+        if !frag.whole_string.is_empty() {
+            result.push_str(&frag.whole_string);
+        }
+
         self.logger.set_chunk(false);
         self.logger.recover_lines(backup);
         return Ok(result);
