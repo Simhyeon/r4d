@@ -62,8 +62,8 @@ impl Logger{
 
     /// Enables "chunk" mode whtin logger
     ///
-    /// If chunk mode is enabled line_number doesn't mean real line number, rather it means how
-    /// much lines has passed since last_line_number.
+    /// If chunk mode is enabled line_number doesn't mean real line number, 
+    /// rather it means how much lines has passed since last_line_number.
     pub fn set_chunk(&mut self, switch: bool) {
         if switch {
             self.chunked = self.chunked + 1;
