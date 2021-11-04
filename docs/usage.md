@@ -17,6 +17,11 @@ printf '...text...' | rad -o out_file.txt
 # Read from stdin and print to stdout 
 printf '...text...' | rad 
 
+# Use comment in input texts
+# Comment character(%) should start from start of the line
+# Refer macro_syntax for further information
+rad --comment
+
 # Some macros need permission to process
 # use following options to grant permission.
 # Permission argument is case insensitive
