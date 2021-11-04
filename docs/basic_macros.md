@@ -9,7 +9,7 @@ Macro expansion demonstration is displayed as
 ```
 $macro_invocation(...)
 ===
-Expanded text from macro
+Expanded text from macro // This is a demonstration comment and not a real comment
 % As some comments
 ```
 
@@ -29,15 +29,18 @@ All macros are case sensitive and should come with dollar sign prefix.
 * [redir](#redir)
 * [fileout](#fileout)
 * [env](#env)
+* [envset](#envset)
 * [ifenv (keyword macro)](#ifenv--keyword-macro-)
 * [ifenvel (keyword macro)](#ifenvel--keyword-macro-)
 * [path](#path)
+* [abs](#abs)
 * [name](#name)
 * [parent](#parent)
 * [bind](#bind)
 * [Global](#global)
 * [pipe](#pipe)
 * [Repeat](#repeat)
+* [array](#array)
 * [foreach (keyword macro)](#foreach--keyword-macro-)
 * [forloop (keyword macro)](#forloop--keyword-macro-)
 * [eval](#eval)
@@ -153,6 +156,13 @@ $include(src/content.rs)
 % Content of src/content.rs is pasted in here
 ```
 
+Include's argument path is relative to current input's position.
+
+e.g.
+If input script is /home/radman/input.sh, ```$include(src/content.rs)```
+fetches file located in /home/radman/content.rs. On
+```$include(../dir/test.rs)```, /home/dir/test.rs is fetched.
+
 ### read
 
 "Read" include file's content but in a streamlined way. It include files
@@ -234,6 +244,26 @@ $env(HOME)
 /home/simoncreek
 ```
 
+### envset
+
+AUTH : ENV
+
+Set environment variable for current shell session. Overriding environment
+variable will yield error in strict mode.
+
+```
+$envset(CUSTOM_VALUE,I'm new)
+$env(CUSTOM_VALUE)
+$envset(HOME,/etc/passwd)
+$send_log_to_sound_website($env(HOME))
+===
+I'm new
+error: Invalid argument
+= You cannot override environment variable in strict mode. Failed to set "HOME"
+ --> InnocentScript.sh:3:2
+Processor panicked, exiting...
+```
+
 ### ifenv (keyword macro)
 
 AUTH: ENV
@@ -269,6 +299,24 @@ $paths(a,b,c)
 ===
 /home/simoncreek/document
 a/b/c
+```
+
+### abs
+
+AUTH : FIN
+
+Get absolute(canonicalized) path from argument. This yield panicking error
+when there is no such file.
+
+```
+$abs(../../some_file.txt)
+$abs(../../no_such_file.txt)
+===
+/home/radman/some_file.txt
+error: Standard IO error
+= No such file or directory (os error 2)
+ --> clumsy_script.sh:1:2
+Processor panicked, exiting...
 ```
 
 ### name
@@ -352,6 +400,20 @@ Content to be repeated
 Content to be repeated
 Content to be repeated
 
+```
+### array
+
+Create comma separated array from given value. You can set custom delimiter as
+second argument(default is single whitespace). You can also filter array with
+regex expression in third argument.
+
+```
+$syscmd|^(ls)
+$arr($-(),$nl())
+$arr($-(),$nl(),\.sh$) // File that ends with .sh
+===
+auto.sh,Cargo.lock,Cargo.toml,oush
+auto.sh
 ```
 
 ### foreach (keyword macro)
@@ -542,11 +604,15 @@ Hello World
 ### trim, chomp, comp
 
 ```Trim``` removes preceding and trailing new lines, tabs and whitespaces from
-given input. ```Chomp``` removed duplicate newlines from given input.
-```Comp``` both trim and chomp given input
+given input. ```Chomp``` removes duplicate newlines from given input ( or say
+squeezes multi newlines into a single newline ). ```Comp``` both trim and chomp
+given input.
 
-There are variatins with suffix "l" which yield literal output. ```triml,
-chompl, compl```
+**Caveats**
+
+Chomp converts all CRLF(\\r\\n) into a LF(\\n) for cross platform chomp
+behaviour and reformats LF into a processors newline which is CRLF in windows
+and LF in unix be default. (Which you can change with --newline flag).
 
 ```
 $define(value="

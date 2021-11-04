@@ -4,15 +4,19 @@
 * [x] New basic macros
 	* [x] If env else
 	* [x] if def else
+	* [x] abs
+	* [x] arr
+	* [x] envset
+* [x] Newline consistency in chomp macro
+* [x] Fixed a bug where unterminated macro was not properly evaluated 
 
 ### TODOs
 
-* [ ] Make parser separated
-* [ ] Make gui application with help of klask
-- This requires nightly so different version of toolchain is used. 
 * [ ] Improve projects performance
 - Refactor codes into multiple chunks of functions for better readability
-- Probably make a new model called debugger and segregate logic.
+
+* [-] Make parser separated
+This is hard to make it right... for current status
 
 ### How macro parsing works?
 
