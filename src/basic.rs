@@ -271,7 +271,7 @@ impl BasicMacro {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let source = &args[0];
             // First convert all '\r\n' into '\n' and reformat it into current newline characters
-            let lf_converted = &*CLRF_MATCH.replace_all(source, r#"\n"#);
+            let lf_converted = &*CLRF_MATCH.replace_all(source, "\n");
             let chomp_result = &*CHOMP_MATCH.replace_all(lf_converted, format!("{0}{0}",&processor.state.newline));
 
             Ok(Some(chomp_result.to_string()))
