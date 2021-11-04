@@ -1,15 +1,5 @@
 ### Changed
 
-* [x] Comment rule
-* [x] New basic macros
-	* [x] If env else
-	* [x] if def else
-	* [x] abs
-	* [x] arr
-	* [x] envset
-* [x] Newline consistency in chomp macro
-* [x] Fixed a bug where unterminated macro was not properly evaluated 
-
 ### TODOs
 
 * [ ] Improve projects performance
@@ -55,6 +45,16 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [x] Comment rule
+* [x] New basic macros
+	* [x] Ifenvel
+	* [x] ifdefel
+	* [x] abs
+	* [x] arr
+	* [x] envset
+* [x] Newline consistency in chomp macro
+* [x] Fixed a bug where unterminated macro was not properly evaluated 
 
 * [x] Merged into a single macro path becuase paths is redundant
 * [x] Assert, nassert, fassert
