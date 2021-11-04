@@ -71,13 +71,16 @@ impl BasicMacro {
         #[allow(unused_mut)]
         let mut map = HashMap::from_iter(IntoIter::new([
             ("-".to_owned(),       BasicMacro::get_pipe         as MacroType),
+            ("abs".to_owned(),     BasicMacro::absolute_path    as MacroType),
             ("append".to_owned(),  BasicMacro::append           as MacroType),
+            ("arr".to_owned(),     BasicMacro::array            as MacroType),
             ("assert".to_owned(),  BasicMacro::assert           as MacroType),
             ("nassert".to_owned(), BasicMacro::assert_ne        as MacroType),
             ("bind".to_owned(),    BasicMacro::bind_to_local    as MacroType),
             ("chomp".to_owned(),   BasicMacro::chomp            as MacroType),
             ("comp".to_owned(),    BasicMacro::compress         as MacroType),
             ("env".to_owned(),     BasicMacro::get_env          as MacroType),
+            ("envset".to_owned(),  BasicMacro::set_env          as MacroType),
             ("fileout".to_owned(), BasicMacro::file_out         as MacroType),
             ("global".to_owned(),  BasicMacro::global           as MacroType),
             ("include".to_owned(), BasicMacro::include          as MacroType),
@@ -481,6 +484,36 @@ impl BasicMacro {
         Ok(None)
     }
 
+
+
+    /// Array
+    ///
+    /// # Usage
+    ///
+    /// $arr(1 2 3)
+    fn array(args: &str, _: bool, _: &mut Processor) -> Result<Option<String>, RadError> {
+        let parsed = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        if parsed.len() == 0 {
+            Err(RadError::InvalidArgument("Array requires an argument".to_owned()))
+        } else {
+            let separater = if parsed.len() >= 2 {
+                &parsed[1] // Use given separater
+            } else { " " }; // Use whitespace as default
+            let mut vec = parsed[0].split(separater).collect::<Vec<&str>>();
+
+            // Also given filter argument, then filter with regex expression
+            if parsed.len() == 3 {
+                let reg = Regex::new(&parsed[2])?;
+                vec = vec.into_iter().filter(|&item| reg.is_match(item)).collect();
+            }
+
+            // Join as csv
+            let joined = vec.join(",");
+
+            Ok(Some(joined))
+        }
+    }
+
     /// Assert
     ///
     /// # Usage
@@ -663,6 +696,30 @@ impl BasicMacro {
         }
     }
 
+    /// Set environment variable with given name
+    ///
+    /// # Usage
+    ///
+    /// $envset(SHELL,value)
+    fn set_env(args: &str, greedy: bool, p : &mut Processor) -> Result<Option<String>, RadError> {
+        if !Utils::is_granted("envset", AuthType::ENV,p)? {
+            return Ok(None);
+        }
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let name = &args[0];
+            let value = &args[1];
+
+            if p.state.strict && std::env::var(name).is_ok() {
+                return Err(RadError::InvalidArgument(format!("You cannot override environment variable in strict mode. Failed to set \"{}\"", name)));
+            }
+
+            std::env::set_var(name, value);
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("Envset requires two arguments".to_owned()))
+        }
+    }
+
     /// Merge multiple paths into a single path
     ///
     /// This creates platform agonistic path which can be consumed by other macros.
@@ -712,6 +769,25 @@ impl BasicMacro {
             Err(RadError::InvalidArgument(format!("Invalid path : {}", path.display())))
         } else {
             Err(RadError::InvalidArgument("name requires an argument".to_owned()))
+        }
+    }
+
+    /// Get absolute path from given path
+    ///
+    /// # Usage
+    ///
+    /// $abs(../canonic_path.txt)
+    fn absolute_path(args: &str, _: bool, p: &mut Processor) -> Result<Option<String>, RadError> {
+        if !Utils::is_granted("abs", AuthType::FIN, p)? {
+            return Ok(None);
+        }
+
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, false) {
+            let path = Path::new(&args[0]);
+            let canonic = std::fs::canonicalize(path)?.to_str().unwrap().to_owned();
+            Ok(Some(canonic))
+        } else {
+            Err(RadError::InvalidArgument("Abs requires an argument".to_owned()))
         }
     }
 
