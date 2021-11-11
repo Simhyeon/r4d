@@ -2,6 +2,16 @@
 
 R4d is a text oriented macro prosessor made with rust.
 
+### CVE relates issus
+
+[Setvar data races
+vulnerability](https://nvd.nist.gov/vuln/detail/CVE-2020-26235) is known issue
+at the time but for current state, it doesn't affect r4d since r4d doesn't
+utillize multi threading in processing. Every time,date call and env_set calls
+are sequential and doensn't overlap.
+
+If you're using an operating system that doesn't utilize libc, then its fine.
+
 ### Demo
 
 **Raw texts**
