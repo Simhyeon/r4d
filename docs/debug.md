@@ -1,6 +1,6 @@
 # TOC
 
-- [How to debug?](#how-to-debug-)
+- [How to debug?](#how-to-debug)
 - [Debug mode](#debug-mode)
 - [Example](#example)
 - [Logging](#logging)

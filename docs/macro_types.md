@@ -2,7 +2,7 @@
 
 - [Custom and basic](#custom-and-basic)
 - [Why the name basic](#why-the-name-basic)
-- [What is a keyword macro?](#what-is-a-keyword-macro-)
+- [What is a keyword macro?](#what-is-a-keyword-macro)
 - [Local and global](#local-and-global)
 
 ## Custom and basic
