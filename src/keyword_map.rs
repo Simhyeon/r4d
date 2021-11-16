@@ -16,17 +16,22 @@ pub struct KeywordMacro {
 impl KeywordMacro {
     pub fn new() -> Self {
         let map = HashMap::from_iter(IntoIter::new([
-            ("pause".to_owned(),   KeywordMacro::pause            as KeywordMacType),
+            ("bind".to_owned(),    KeywordMacro::bind_depre       as KeywordMacType),
+            ("declare".to_owned(), KeywordMacro::declare          as KeywordMacType),
+            ("fassert".to_owned(), KeywordMacro::assert_fail      as KeywordMacType),
             ("foreach".to_owned(), KeywordMacro::foreach          as KeywordMacType),
             ("forloop".to_owned(), KeywordMacro::forloop          as KeywordMacType),
+            ("global".to_owned(),  KeywordMacro::global_depre     as KeywordMacType),
             ("if".to_owned(),      KeywordMacro::if_cond          as KeywordMacType),
-            ("ifelse".to_owned(),  KeywordMacro::ifelse           as KeywordMacType),
             ("ifdef".to_owned(),   KeywordMacro::ifdef            as KeywordMacType),
             ("ifdefel".to_owned(), KeywordMacro::ifdefel          as KeywordMacType),
+            ("ifelse".to_owned(),  KeywordMacro::ifelse           as KeywordMacType),
             ("ifenv".to_owned(),   KeywordMacro::ifenv            as KeywordMacType),
             ("ifenvel".to_owned(), KeywordMacro::ifenvel          as KeywordMacType),
+            ("let".to_owned(),     KeywordMacro::bind_to_local    as KeywordMacType),
+            ("pause".to_owned(),   KeywordMacro::pause            as KeywordMacType),
             ("repl".to_owned(),    KeywordMacro::replace          as KeywordMacType),
-            ("fassert".to_owned(), KeywordMacro::assert_fail      as KeywordMacType),
+            ("static".to_owned(),  KeywordMacro::define_static    as KeywordMacType),
         ]));
         Self {
             macros: map,
@@ -326,6 +331,99 @@ impl KeywordMacro {
         } else {
             processor.track_assertion(false)?;
             Err(RadError::AssertFail)
+        }
+    }
+
+    #[deprecated(since = "1.2", note = "Bind is deprecated and will be removed in 2.0")]
+    fn bind_depre(args: &str, level:usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
+        processor.log_warning("Bind is deprecated and will be removed in 2.0 version. Use let instead.")?;
+        Self::bind_to_local(args, level, processor)
+    }
+
+    /// Declare an empty macros
+    ///
+    /// # Usage
+    ///
+    /// $declare(n1,n2,n3)
+    fn declare(args: &str, level:usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
+        let names = processor.parse_chunk_args(level, "",&Utils::trim(args))?;
+        // TODO Create empty macro rules
+        let custom_rules = names
+            .split(',')
+            .map(|name| { (Utils::trim(name),"","") } )
+            .collect::<Vec<(String,&str,&str)>>();
+
+        // Check overriding. Wanr or yield error
+        for (name,_,_) in custom_rules.iter() {
+            if processor.get_map().contains(&name) {
+                if processor.state.strict {
+                    return Err(RadError::InvalidMacroName(format!("Declaring a macro with a name already existing : \"{}\"", name)))
+                } else {
+                    processor.log_warning(&format!("Declaring a macro with a name already existing : \"{}\"", name))?;
+                }
+            }
+        }
+
+        // Add custom rules
+        processor.add_custom_rules(custom_rules)?;
+        Ok(None)
+    }
+
+    /// Declare a local macro
+    ///
+    /// Local macro gets deleted after macro execution
+    ///
+    /// # Usage
+    ///
+    /// $let(name,value)
+    fn bind_to_local(args: &str, level:usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
+            let value = processor.parse_chunk_args(level, "",&Utils::trim(&args[1]))?;
+            // Let shadows varaible so it is ok to have existing name
+            // TODO
+            // I'm not so sure if Level 1 is fine for all cases?
+            processor.get_map().new_local(1, &name, &value);
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("Let requires two argument".to_owned()))
+        }
+    }
+
+    /// Global macro (Deprecated)
+    ///
+    /// This is technically same with static
+    /// This macro will be completely removed in 2.0
+    #[deprecated(since = "1.2", note = "Global is deprecated and will be removed in 2.0")]
+    fn global_depre(args: &str, level: usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
+        processor.log_warning("Global is deprecated and will be removed in 2.0 version. Use static instead.")?;
+        Self::define_static(args,level,processor)
+    }
+
+    /// Define a static macro
+    ///
+    /// # Usage
+    ///
+    /// $static(name,value)
+    fn define_static(args: &str, level : usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
+            let value = processor.parse_chunk_args(level, "",&Utils::trim(&args[1]))?;
+            // Macro name already exists
+            if processor.get_map().contains(&name) {
+                // Strict mode prevents overriding
+                // Return error
+                if processor.state.strict {
+                    return Err(RadError::InvalidMacroName(format!("Creating a static macro with a name already existing : \"{}\"", name)));
+                } else {
+                    // Its warn-able anyway
+                    processor.log_warning(&format!("Creating a static macro with a name already existing : \"{}\"", name))?;
+                }
+            }
+            processor.add_custom_rules(vec![(&name,"",&value)])?;
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("Static requires two argument".to_owned()))
         }
     }
 
