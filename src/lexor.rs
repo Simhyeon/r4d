@@ -9,6 +9,7 @@
 
 use crate::error::RadError;
 use crate::consts::*;
+use crate::models::CommentType;
 use crate::utils::Utils;
 
 /// Struct that validated a given character
@@ -18,16 +19,25 @@ pub struct Lexor {
     lit_count: usize,
     paren_count : usize,
     escape_nl : bool,
+    macro_char: char,
+    comment_char: Option<char>,
 }
 
 impl Lexor {
-    pub fn new() -> Self {
+    pub fn new(macro_char: char, comment_char: char, comment_type: &CommentType) -> Self {
+        let comment_char = if let CommentType::Any = comment_type {
+            Some(comment_char)
+        } else {
+            None
+        };
         Lexor {
             previous_char : None,
             cursor: Cursor::None,
             escape_nl : false,
             lit_count : 0,
             paren_count : 0,
+            macro_char,
+            comment_char
         }
     }
     /// Reset lexor state
@@ -50,6 +60,7 @@ impl Lexor {
     /// Validate the character
     pub fn lex(&mut self, ch: char) -> Result<LexResult, RadError> {
         let result: LexResult;
+        // Literal related
         if self.start_literal(ch) {
             self.previous_char.replace('0');
             return Ok(LexResult::Literal(self.cursor)); 
@@ -60,6 +71,17 @@ impl Lexor {
             self.previous_char.replace(ch);
             return Ok(LexResult::Literal(self.cursor)); 
         }
+
+        // Exit if comment_type is configured
+        // cch == comment char
+        if let Some(cch) = self.comment_char {
+            if cch == ch {
+                self.reset();
+                return Ok(LexResult::CommentExit);
+            }
+        } 
+
+        // Non literal related logics
         match self.cursor {
             Cursor::None => {
                 result = self.branch_none(ch);
@@ -84,7 +106,7 @@ impl Lexor {
 
     fn branch_none(&mut self, ch: char) -> LexResult {
         let result: LexResult;
-        if ch == MACRO_START_CHAR 
+        if ch == self.macro_char
             && self.previous_char.unwrap_or('0') != ESCAPE_CHAR 
         {
             self.cursor = Cursor::Name;
@@ -121,11 +143,11 @@ impl Lexor {
             self.paren_count = 1;
             result = LexResult::StartFrag;
             // Empty name
-            if self.previous_char.unwrap_or('0') == '$' {
+            if self.previous_char.unwrap_or('0') == self.macro_char {
                 result = LexResult::EmptyName;
             }
         } 
-        else if ch == '$' {
+        else if ch == self.macro_char {
             result = LexResult::RestartName;
         }
         else {
@@ -193,6 +215,7 @@ pub enum LexResult {
     EndFrag,
     ExitFrag,
     Literal(Cursor),
+    CommentExit,
 }
 
 /// Cursor that carries state information of lexor
