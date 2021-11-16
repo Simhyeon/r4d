@@ -1,9 +1,9 @@
 # TOC
 
-* [Custom and basic macro](#Custom--and--basic)
-* [Why the name basic](#Why--the--name--basic)
-* [What is a keyword macro](#What--is--a--keyword--macro)
-* [Local and global](#Local--and--global)
+- [Custom and basic](#custom-and-basic)
+- [Why the name basic](#why-the-name-basic)
+- [What is a keyword macro?](#what-is-a-keyword-macro-)
+- [Local and global](#local-and-global)
 
 ## Custom and basic
 
@@ -52,7 +52,7 @@ One other important difference is that you **cannot undefine or override
 keyword macros**. Even with empty macro map, keyword macro is always evaluated
 if found any.
 
-### Local and global
+## Local and global
 
 There are two macro types in terms of macro scope. Local macro and global
 macro. Local macro is a macro that only persists for certain period or scope.

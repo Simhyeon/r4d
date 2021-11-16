@@ -105,7 +105,7 @@ processor.print_result()?;
 
 [Macro syntax](./docs/macro_syntax.md)
 
-### Basic macros (or macro-like functions)
+### Built-in macros
 
 [Macros](./docs/macro_indices.md)
 
