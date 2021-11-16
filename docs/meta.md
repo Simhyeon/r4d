@@ -8,7 +8,7 @@
 
 ### TODOs
 
-* [ ] Assert only success is not properly displayed
+* [ ] Assert result is not properly displayed when only success exists
 
 * [ ] Improve projects performance
 - Utilize regex engine for fast parsing especially, define parsing. Possibly
