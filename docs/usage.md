@@ -18,9 +18,10 @@ printf '...text...' | rad -o out_file.txt
 printf '...text...' | rad 
 
 # Use comment in input texts
-# Comment character(%) should start from start of the line
+# Comment character is '%'
 # Refer macro_syntax for further information
 rad --comment
+rad --comment any
 
 # Some macros need permission to process
 # use following options to grant permission.
@@ -86,11 +87,12 @@ use rad::RadError;
 use rad::Processor;
 use rad::MacroType;
 use rad::AuthType;
+use rad::CommentType;
 use std::path::Path;
 
 // Builder
 let mut processor = Processor::new()
-    .comment(true)                                       // Use comment
+    .comment(CommentType::Start)                         // Use comment
     .purge(true)                                         // Purge undefined macro
     .greedy(true)                                        // Makes all macro greedy
     .silent(true)                                        // Silents all warnings

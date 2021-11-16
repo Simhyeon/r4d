@@ -1,12 +1,31 @@
 ### Changed
 
+* [x] Deprecating global in favor keyword macro ```static```
+* [x] Deprecating bind in favor keyword macro ```let```
+* [x] Declare macros
+* [x] Custom special character 
+* [x] Comment type addition
+
 ### TODOs
 
+* [ ] Assert only success is not properly displayed
+
 * [ ] Improve projects performance
+- Utilize regex engine for fast parsing especially, define parsing. Possibly
+whole parsing process, meh I don't think I can... Focus on define parsing.
 - Refactor codes into multiple chunks of functions for better readability
 
 * [-] Make parser separated
 This is hard to make it right... for current status
+
+* [ ] New basic macros
+	* [ ] Lipsum variants
+	- Lipsum width word limit (new lines after certain words)
+	- Lipsum width width
+	- Lipsum cache which utilizes cache files saved in tmp directory.
+This is useful because calculating length and word limit is much more expensive
+then simple random generation.
+	- Lipsum with custom separator
 
 ### How macro parsing works?
 

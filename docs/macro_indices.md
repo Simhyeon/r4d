@@ -17,7 +17,10 @@ Expanded text from macro // This is a demonstration comment and not a real comme
 
 All macros are case sensitive and should come with dollar sign prefix.
 
+For assertion macros refer [debug part](./debug.md) 
+
 * [define](#define)
+* [declare](#declare)
 * [undef](#undef)
 * [rename](#rename)
 * [repl](#repl)
@@ -36,8 +39,10 @@ All macros are case sensitive and should come with dollar sign prefix.
 * [abs](#abs)
 * [name](#name)
 * [parent](#parent)
-* [bind](#bind)
-* [Global](#global)
+* [bind(Deprecated)](#let--keyword--macro-)
+* [let (keyword macro)](#let--keyword--macro-)
+* [Global(Deprecated)](#static--keyword-macro-)
+* [Static (keyword macro)](#static--keyword-macro-)
 * [pipe](#pipe)
 * [Repeat](#repeat)
 * [array](#array)
@@ -72,6 +77,21 @@ $define(name,a1 a2="$a1(),$a2()")
 ===
 % Define doesn't print new line if it is a single input in the line
 ```
+
+### declare
+
+You can simply declare a macro or macros without defining its body.
+
+```
+$declare(name)
+$declare(n1 n2 n3)
+$ifdef(name,I'm defined)
+$ifdef(n3,I'm also defined)
+===
+I'm defined
+I'm also defined
+```
+
 ### undef
 
 Undef can undefine every macros including basic(default) macros. However
@@ -339,14 +359,16 @@ $parent(/home/test/Documents/info.txt)
 /home/test/Documents
 ```
 
-### bind
+### let (keyword macro)
 
-Bind macro makes new local macro inside definition. This macro is automatically
-clared after evalution of the macro.
+Macro ```bind```  is deprecated and will be removed in 2.0 version. Use ```let```instead.
+
+Declares a new local macro. This macro is automatically clared after evalution
+of the macro.
 
 ```
 $define(test,a\_src a\_content=
-$bind+(source,$path(cache,$a\_src()))
+$let+(source,$path(cache,$a\_src()))
 $fileout(false,$source(),$a\_content())
 )
 $test+(temp,Hello World)
@@ -355,17 +377,20 @@ $test+(temp,Hello World)
 % cannot reference "source" macro after macro execution
 ```
 
-### Global
+### static (keyword macro)
 
-Global binds a macro that persists for the whole processing. Global bind is
-useful when you don't need dynamic evaluation but static binding. Because
-definition is evaluated on every call which might not be necessarily efficient
-or not be an intended behaviour.
+```global```is deprecated for intuitive naming. Global keyword will be removed
+in 2.0 version. Use ```static``` instead.
+
+Statically binds an expression that persists for the whole processing. Static
+is useful when you don't need dynamic evaluation but statically bound value.
+Because definition is evaluated on every call which might not be necessarily
+efficient or not be an intended behaviour.
 
 ```
 $define(test=$time())
 $test()
-$global(test=$time())
+$static(test=$time())
 $test()
 ===
 17:08:39 % This will yield different result according to time.

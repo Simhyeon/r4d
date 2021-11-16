@@ -1,3 +1,12 @@
+# TOC
+
+- [How to debug?](#how-to-debug-)
+- [Debug mode](#debug-mode)
+- [Example](#example)
+- [Logging](#logging)
+- [Diff](#diff)
+- [Assertion](#assertion)
+
 ### How to debug?
 
 #### Debug mode
@@ -135,7 +144,7 @@ End of file
 
 You can also clear termianl with command clear(cl in short).
 
-#### Loggig
+#### Logging
 
 Logging flag sets processor to print every macro invocation's information.
 
@@ -191,4 +200,43 @@ DIFF :
 
 - I'm out of idea and I need some texts, $lipsum(15)
 + I'm out of idea and I need some texts, Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.
+```
+
+#### Assertion
+
+Sometimes you want an assertion useful for debugging. R4d comes with several
+assertion macros as basic macro.
+
+Basic usages are followed.
+
+```
+% Every assertion panicks when fails
+% Pases when $test is same with Test
+$assert($test(),Test)
+% Pases when $test() is NOT same with Test
+$nassert($test(),Test)
+% Pases when inner argument panicks
+$fassert($eval(a + b))
+```
+
+You can use assertion mode with ```--assert``` flag which prevents assertion
+panics and prints assertion result after processing.
+
+```
+% Ran with rad <INPUT> --assert
+$assert(test,test)
+$assert(test,test1)
+$nassert(test,test)
+$nassert(test,test1)
+$fassert(Test)
+$assert($eval(a + b))
+===
+assert fail -> test:2:2
+assert fail -> test:3:2
+assert fail -> test:5:2
+error: found 5 errors
+
+Assert
+SUCCESS : 2
+FAIL: 3
 ```

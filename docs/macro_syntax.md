@@ -1,3 +1,13 @@
+# TOC
+
+* [Macro definition](#macro-definition)
+  * [Caveats](#caveats)
+* [Macro invocation](#macro-invocation)
+* [Comments](#comments)
+* [Macro attributes](#macro-attributes)
+* [Errors](#errors)
+* [Break point](#break-point)
+
 #### Macro definition
 
 Definition syntax is similar to macro invocation but requires a specific form
@@ -25,10 +35,13 @@ Third argument is a macro body. Any text can be included in the macro body
 while an unbalanced parenthesis will prevent processor's work. Currently there
 is no way to include unbalanced parenthesis inside definition body. 
 
-You can also simply bind the value without giving arguments.
+You can also simply bind the value without giving arguments. Which is mostly
+similar to static macro.
 
 ```
 $define(v_name=Simon creek)
+% Which is same with
+$static(v_name,Simon creek)
 ```
 
 ##### Caveats
@@ -55,12 +68,12 @@ KALM
 **Define is evaluated on every call**
 
 Because defined macro is evaluated on every invocation. This may not be a
-desired behaviour. Use global macro if you want statically saved value.
+desired behaviour. Use static macro if you want statically bound value.
 
 ```
 $define(counter=0)
 $define(print_counter=$counter())
-$global(print_counter_as_static,$counter())
+$static(print_counter_as_static,$counter())
 $append(counter,0000)
 $print_counter()
 $print_counter_as_static()
@@ -69,7 +82,7 @@ $print_counter_as_static()
 0
 ```
 
-#### Macro inovocation
+#### Macro invocation
 
 Prefix is a dollar sign($)
 ```
@@ -138,14 +151,16 @@ Comment is disabled by default because comment character can intefere with
 macro expansion and user expectance. You can enable comment mode with
 ```--comment``` flag.
 
-Comment character is ```%```. If you have used LaTex before, it would be
-familar.
+There are three types of comment mode. Those are none,start and any. None is
+the default and ```--comment``` is same with ```--comment start```.
+```--comment any``` enables comments for any positions.
+
+Default comment character is ```%```. If you have used LaTex before, it would
+be familar. This can be configured with builder method.
 
 ```
-% This is a comment
-  % Comment should start from the first character or else it will be ignored
-===
-  % Comment should start from the first character or else it will be ignored
+% This is a valid comment on both start and any mode
+Prior content goes here  % This is only valid comment on any mode.
 ```
 
 ### Macro attributes
@@ -163,9 +178,9 @@ $define(
     test,
     a_expr a_path
     =                                        // This new line
-    $bind+(cond,$eval($a_expr()))            // Whitespaces before "$bind"
-    $bind+(true_path,$path(cache,$a_path())) // Whitespaces before "$bind"
-    $bind+(false_path,$path(cache,index.md)) // Whitespaces before "$bind"
+    $let+(cond,$eval($a_expr()))            // Whitespaces before "$let"
+    $let+(true_path,$path(cache,$a_path())) // Whitespaces before "$let"
+    $let+(false_path,$path(cache,index.md)) // Whitespaces before "$let"
     $ifelse(                                 // Whitespaces before "$ifelse"
         $cond(),
         $include($true_path()),
