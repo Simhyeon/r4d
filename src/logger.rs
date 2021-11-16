@@ -280,10 +280,6 @@ impl Logger{
     /// Print result of logging of warnings and errors
     pub fn print_result(&mut self) -> Result<(), RadError> {
         if let Some(option) = &mut self.write_option {
-            // No warning or error
-            if self.error_count == 0 && self.warning_count == 0 {
-                return Ok(())
-            }
             // There is either error or warning
             let error_result = format!("{}: found {} errors",Utils::red("error"), self.error_count);
             let warning_result = format!("{}: found {} warnings",Utils::yellow("warning"), self.warning_count);

@@ -8,9 +8,10 @@ Macro expansion demonstration is displayed as
 
 ```
 $macro_invocation(...)
-===
-Expanded text from macro // This is a demonstration comment and not a real comment
 % As some comments
+===
+Evaluated text goes here
+Expanded text from macro // This is a demonstration comment and not a real comment
 ```
 
 ## Basic(default) macros
@@ -81,6 +82,9 @@ $define(name,a1 a2="$a1(),$a2()")
 ### declare
 
 You can simply declare a macro or macros without defining its body.
+
+This is useful when you simply need a macro to be defined so that ifdef or
+ifdefel can be used with.
 
 ```
 $declare(name)
