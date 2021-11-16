@@ -93,16 +93,19 @@ use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::models::{
-    MacroMap, MacroRule, RuleFile, 
-    UnbalancedChecker, WriteOption, 
-    MacroFragment
-};
+use crate::models::{CommentType, MacroFragment, MacroMap, MacroRule, RuleFile, UnbalancedChecker, WriteOption};
 use crate::utils::Utils;
 use crate::consts::*;
 use crate::lexor::*;
 use crate::define_parser::DefineParser;
 use crate::arg_parser::{ArgParser, GreedyState};
+use regex::Regex;
+use lazy_static::lazy_static;
+
+lazy_static! {
+    // Source : https://stackoverflow.com/questions/17564088/how-to-form-a-regex-to-recognize-correct-declaration-of-variable-names/17564142
+    static ref MAC_NAME : Regex = Regex::new(r#"^[_a-zA-Z]\w*$"#).expect("Failed to create regex expression");
+}
 
 // Methods of processor consists of multiple sections followed as
 // <BUILDER>            -> Builder pattern related
@@ -130,11 +133,13 @@ pub(crate) struct ProcessorState {
     pub redirect: bool,
     pub sandbox: bool,
     pub strict: bool,
-    pub use_comment: bool,
+    pub comment_type: CommentType,
     // Temp target needs to save both path and file
     // because file doesn't necessarily have path. 
     // Especially in unix, this is not so an unique case
     pub temp_target: (PathBuf,File), 
+    pub comment_char : Option<char>,
+    pub macro_char : Option<char>,
 }
 
 impl ProcessorState {
@@ -148,11 +153,13 @@ impl ProcessorState {
             redirect: false,
             purge: false,
             strict: true,
-            use_comment: false,
+            comment_type: CommentType::None,
             nopanic: false,
             sandbox : false,
             always_greedy: false,
             temp_target,
+            comment_char: None,
+            macro_char: None,
         }
     }
 }
@@ -261,6 +268,31 @@ impl Processor {
         Ok(self)
     }
 
+    /// Custom comment character
+    pub fn custom_comment_char(&mut self, character: char) -> Result<&mut Self, RadError> {
+        // check if unallowed character
+        if UNALLOWED_CHARS.is_match(&character.to_string()) {
+            return Err(RadError::UnallowedChar(format!("\"{}\" is not allowed", character)));
+        } else if self.get_macro_char() == character {
+            // macro char and comment char should not be equal
+            return Err(RadError::UnallowedChar(format!("\"{}\" is already defined for macro character", character)));
+        }
+        self.state.comment_char.replace(character);
+        Ok(self)
+    }
+
+    /// Custom macro character
+    pub fn custom_macro_char(&mut self, character: char) -> Result<&mut Self, RadError> {
+        if UNALLOWED_CHARS.is_match(&character.to_string()) {
+            return Err(RadError::UnallowedChar(format!("\"{}\" is not allowed", character)));
+        } else if self.get_comment_char() == character {
+            // macro char and comment char should not be equal
+            return Err(RadError::UnallowedChar(format!("\"{}\" is already defined for comment character", character)));
+        }
+        self.state.macro_char.replace(character);
+        Ok(self)
+    }
+
     /// Use unix line ending instead of operating system's default one
     pub fn unix_new_line(&mut self, use_unix_new_line: bool) -> &mut Self {
         if use_unix_new_line {
@@ -288,8 +320,18 @@ impl Processor {
     }
 
     /// Use comment
+    ///
+    /// This is deprecated and will be removed in 2.0 version.
+    /// Use set_comment_type instead.
+    #[deprecated(since = "1.2", note = "Comment is deprecated and will be removed in 2.0 version.")]
     pub fn comment(&mut self, comment: bool) -> &mut Self {
-        self.state.use_comment = comment; 
+        if comment { self.state.comment_type = CommentType::Start; }
+        self
+    }
+
+    /// Set comment type
+    pub fn set_comment_type(&mut self, comment_type: CommentType) -> &mut Self {
+        self.state.comment_type = comment_type;
         self
     }
 
@@ -481,8 +523,13 @@ impl Processor {
     /// ```rust
     /// processor.add_custom_rules(vec![("macro_name","macro_arg1 macro_arg2","macro_body=$macro_arg1()")]);
     /// ```
-    pub fn add_custom_rules(&mut self, rules: Vec<(&str,&str,&str)>) {
+    pub fn add_custom_rules(&mut self, rules: Vec<(impl AsRef<str>,&str,&str)>) -> Result<(), RadError> {
         for (name,args,body) in rules {
+            let name = name.as_ref();
+            // TODO Check name sanity
+            if !MAC_NAME.is_match(name) {
+                return Err(RadError::InvalidMacroName(format!("Name : \"{}\" is not a valid macro name", name)));
+            }
             self.map.custom.insert(
                 name.to_owned(), 
                 MacroRule { 
@@ -492,6 +539,7 @@ impl Processor {
                 }
             );
         }
+        Ok(())
     }
 
 
@@ -556,7 +604,7 @@ impl Processor {
     /// Internal method for processing buffers line by line
     fn from_buffer(&mut self,buffer: &mut impl std::io::BufRead, backup: Option<SandboxBackup>, use_container: bool) -> Result<Option<String>, RadError> {
         let mut line_iter = Utils::full_lines(buffer).peekable();
-        let mut lexor = Lexor::new();
+        let mut lexor = Lexor::new(self.get_macro_char(), self.get_comment_char(), &self.state.comment_type);
         let mut frag = MacroFragment::new();
 
         // Container can be used when file include is nested inside macro definition
@@ -714,7 +762,7 @@ impl Processor {
 
     /// Parse chunk args by separating it into lines which implements BufRead
     pub(crate) fn parse_chunk_args(&mut self, level: usize, _caller: &str, chunk: &str) -> Result<String, RadError> {
-        let mut lexor = Lexor::new();
+        let mut lexor = Lexor::new(self.get_macro_char(), self.get_comment_char(), &self.state.comment_type);
         let mut frag = MacroFragment::new();
         let mut result = String::new();
         let backup = self.logger.backup_lines();
@@ -748,7 +796,7 @@ impl Processor {
     /// In contrast to parse_chunk_lines, parse_chunk doesn't create lines iterator but parses the
     /// chunk as a single entity or line.
     fn parse_chunk_body(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
-        let mut lexor = Lexor::new();
+        let mut lexor = Lexor::new(self.get_macro_char(), self.get_comment_char(), &self.state.comment_type);
         let mut frag = MacroFragment::new();
         let backup = self.logger.backup_lines();
 
@@ -775,8 +823,9 @@ impl Processor {
 
         // Check comment line
         // If it is a comment then return nothing and write nothing
-        if self.state.use_comment && line.starts_with(COMMENT_CHAR) {
-            return Ok(String::new());
+        if self.state.comment_type != CommentType::None 
+            && line.starts_with(self.get_comment_char()) {
+                return Ok(String::new());
         }
 
         for ch in line.chars() {
@@ -786,6 +835,10 @@ impl Processor {
             let lex_result = lexor.lex(ch)?;
             // Either add character to remainder or fragments
             match lex_result {
+                LexResult::CommentExit => {
+                    self.lex_branch_comment_exit(frag, &mut remainder);
+                    return Ok(remainder);
+                }
                 LexResult::Discard => (),
                 LexResult::Ignore => frag.whole_string.push(ch),
                 // If given result is literal
@@ -799,7 +852,7 @@ impl Processor {
                     // This restart frags
                     remainder.push_str(&frag.whole_string);
                     frag.clear();
-                    frag.whole_string.push('$');
+                    frag.whole_string.push(self.get_macro_char());
                 },
                 LexResult::EmptyName => {
                     self.lex_branch_empty_name(ch, frag, &mut remainder, lexor);
@@ -976,6 +1029,11 @@ impl Processor {
     // <LEX>
     // Start of lex branch methods
     // These are parse's sub methods for eaiser reading
+    fn lex_branch_comment_exit(&mut self, frag: &mut MacroFragment, remainder: &mut String) {
+        remainder.push_str(&frag.whole_string);
+        remainder.push_str(&self.state.newline);
+        frag.clear();
+    }
     fn lex_branch_literal(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, cursor: Cursor) {
         match cursor {
             // Exit frag
@@ -1218,6 +1276,20 @@ impl Processor {
     // ----------
     // Start of miscellaenous methods
     // <MISC>
+    /// Get comment chararacter
+    ///
+    /// This will return custom character if existent
+    pub(crate) fn get_comment_char(&self) -> char {
+        comment_start(self.state.comment_char)
+    }
+
+    /// Get macro chararacter
+    ///
+    /// This will return custom character if existent
+    pub(crate) fn get_macro_char(&self) -> char {
+        macro_start(self.state.macro_char)
+    }
+
     /// Get mutable reference of macro map
     pub(crate) fn get_map(&mut self) -> &mut MacroMap {
         &mut self.map
