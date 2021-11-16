@@ -63,6 +63,8 @@ impl DefineParser {
         // This means pattern such as
         // $define(test,Test) 
         // -> This is not a valid pattern
+        // self.args.len() is 0, because 
+        // args are added only after equal(=) sign is detected
         if self.args.len() == 0 && !self.bind {
             return None;
         }
