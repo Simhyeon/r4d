@@ -5,6 +5,8 @@ use crate::AuthType;
 /// R4d's error type
 #[derive(Error, Debug)]
 pub enum RadError {
+    #[error("Unallowed character \n= {0}")]
+    UnallowedChar(String),
     #[error("Assert failed")]
     AssertFail,
     #[error("Invalid command option\n= {0}")]
