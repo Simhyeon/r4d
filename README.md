@@ -2,7 +2,7 @@
 
 R4d is a text oriented macro prosessor made with rust.
 
-### CVE relates issus
+### CVE related issue
 
 [Setvar data races
 vulnerability](https://nvd.nist.gov/vuln/detail/CVE-2020-26235) is known issue
