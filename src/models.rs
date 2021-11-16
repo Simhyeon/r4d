@@ -268,3 +268,41 @@ impl MacroFragment {
     }
 }
 
+/// Comment type 
+///
+/// NoComment is for no comment
+/// Start is when comment character should be positioned at start of the line
+/// Any is when any position is possible
+///
+/// * Example
+/// ```Text
+/// % Sample     -> This is ok for Any,Start
+/// Prior % Next -> This is only ok for Any
+///
+/// ```
+#[derive(PartialEq)]
+pub enum CommentType {
+    None,
+    Start,
+    Any,
+}
+
+impl CommentType {
+    pub(crate) fn from(text : &str) -> Result<Self, RadError> {
+        let comment_type = match text.to_lowercase().as_str() {
+            "none" => {
+                Self::None
+            }
+            "start" => {
+                Self::Start
+            }
+            "any" => {
+                Self::Any
+            }
+            _ => {
+                return Err(RadError::InvalidCommandOption(format!("Comment type : {} is not available", text)));
+            }
+        };
+        Ok(comment_type)
+    }
+}
