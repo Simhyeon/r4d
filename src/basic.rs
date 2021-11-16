@@ -76,13 +76,11 @@ impl BasicMacro {
             ("arr".to_owned(),     BasicMacro::array            as MacroType),
             ("assert".to_owned(),  BasicMacro::assert           as MacroType),
             ("nassert".to_owned(), BasicMacro::assert_ne        as MacroType),
-            ("bind".to_owned(),    BasicMacro::bind_to_local    as MacroType),
             ("chomp".to_owned(),   BasicMacro::chomp            as MacroType),
             ("comp".to_owned(),    BasicMacro::compress         as MacroType),
             ("env".to_owned(),     BasicMacro::get_env          as MacroType),
             ("envset".to_owned(),  BasicMacro::set_env          as MacroType),
             ("fileout".to_owned(), BasicMacro::file_out         as MacroType),
-            ("global".to_owned(),  BasicMacro::global           as MacroType),
             ("include".to_owned(), BasicMacro::include          as MacroType),
             ("len".to_owned(),     BasicMacro::len              as MacroType),
             ("name".to_owned(),    BasicMacro::get_name         as MacroType),
@@ -635,46 +633,6 @@ impl BasicMacro {
             processor.state.pipe_value = args[0].to_owned();
         }
         Ok(None)
-    }
-
-    /// Bind a global macro
-    ///
-    /// # Usage
-    ///
-    /// $global(name,value)
-    fn global(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let name = &args[0];
-            let value = &args[1];
-            if processor.get_map().contains(name) {
-                processor.log_warning(&format!("Creating a global with a name already existing : \"{}\"", name))?;
-            }
-            processor.add_custom_rules(vec![(name,"",value)]);
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument("Global requires two argument".to_owned()))
-        }
-    }
-
-    /// Bind a local macro
-    ///
-    /// Bound macro gets deleted after macro execution
-    ///
-    /// # Usage
-    ///
-    /// $bind(name,value)
-    fn bind_to_local(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let name = &args[0];
-            let value = &args[1];
-            processor.get_map().new_local(1, name, value);
-            if processor.get_map().contains(name) {
-                processor.log_warning(&format!("Creating a binding with a name already existing : \"{}\"", name))?;
-            }
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument("Bind requires two argument".to_owned()))
-        }
     }
 
     /// Get environment variable with given name
