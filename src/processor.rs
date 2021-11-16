@@ -13,11 +13,12 @@
 //! use rad::Processor;
 //! use rad::MacroType;
 //! use rad::AuthType;
+//! use rad::CommentType;
 //! use std::path::Path;
 //! 
 //! // Builder
 //! let mut processor = Processor::new()
-//!     .comment(true)                                       // Use comments
+//!     .comment(CommentType::Start)                         // Use comment
 //!     .purge(true)                                         // Purge undefined macro
 //!     .greedy(true)                                        // Makes all macro greedy
 //!     .silent(true)                                        // Silents all warnings

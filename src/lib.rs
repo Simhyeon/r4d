@@ -70,6 +70,7 @@ pub use error::RadError;
 pub use basic::MacroType;
 pub use processor::Processor;
 pub use auth::AuthType;
+pub use models::CommentType;
 
 // Optional
 
