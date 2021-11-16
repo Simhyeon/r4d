@@ -61,7 +61,10 @@ I'm out of idea and I need some texts, Lorem ipsum dolor sit amet, consectetur a
 
 You can download binaries in [release page](https://github.com/Simhyeon/r4d/releases)
 
-If your platform is not listed, mostly MacOS, directly install from cargo registry.
+However I recommend using ```cargo install``` until I prepare a proper CD
+pipeline.
+
+e.g.
 
 ```bash
 # Binary features is mandatory or else it is not an executable
