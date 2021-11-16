@@ -104,7 +104,7 @@ processor.print_result()?;
 
 ### Basic macros (or macro-like functions)
 
-[Macros](./docs/basic_macros.md)
+[Macros](./docs/macro_indices.md)
 
 ### Macro types
 
