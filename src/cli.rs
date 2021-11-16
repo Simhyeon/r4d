@@ -8,6 +8,7 @@ use crate::error::RadError;
 use crate::auth::AuthType;
 use crate::processor::Processor;
 use crate::utils::Utils;
+use crate::models::CommentType;
 use std::path::{Path, PathBuf};
 
 /// Struct to parse command line arguments and execute proper operations
@@ -46,7 +47,9 @@ impl Cli {
         self.parse_options(args);
         // Build processor
         let mut processor = Processor::new()
-            .comment(args.is_present("comment"))
+            .set_comment_type(
+                CommentType::from(args.value_of("comment").unwrap_or("none"))?
+            )
             .purge(args.is_present("purge"))
             .greedy(args.is_present("greedy"))
             .lenient(args.is_present("lenient"))
@@ -163,7 +166,7 @@ impl Cli {
     /// Creates argument template wich clap macro
     fn args_builder() -> clap::ArgMatches {
         clap_app!(rad =>
-            (version: "1.1.1")
+            (version: "1.2.0")
             (author: "Simon Creek <simoncreek@tutanota.com>")
             (about: "R4d is a modern macro processor made with rust")
             (@arg FILE: ... "Files to execute processing")
@@ -179,7 +182,7 @@ impl Cli {
             (@arg debug: -d --debug "Debug mode")
             (@arg log: --log "Debug log mode")
             (@arg diff: --diff "Show diff result")
-            (@arg comment: --comment "Use comment option")
+            (@arg comment: --comment +takes_value default_value["start"] "Use comment option")
             (@arg interactive: -i --interactive "Use interactive debug mode")
             (@arg combination: -c "Read from both stdin and file inputs")
             (@arg discard: -D --discard "Discard output")
