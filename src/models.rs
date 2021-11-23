@@ -6,6 +6,8 @@ use crate::utils::Utils;
 use serde::{Deserialize, Serialize};
 use bincode;
 
+pub type RadResult<T> = Result<T, RadError>;
+
 /// State enum value about direction of processed text 
 pub enum WriteOption {
     File(std::fs::File),
@@ -280,7 +282,7 @@ impl MacroFragment {
 /// Prior % Next -> This is only ok for Any
 ///
 /// ```
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum CommentType {
     None,
     Start,
@@ -288,21 +290,34 @@ pub enum CommentType {
 }
 
 impl CommentType {
-    pub(crate) fn from(text : &str) -> Result<Self, RadError> {
+    pub(crate) fn from_str(text : &str) -> Result<Self, RadError> {
         let comment_type = match text.to_lowercase().as_str() {
-            "none" => {
-                Self::None
-            }
-            "start" => {
-                Self::Start
-            }
-            "any" => {
-                Self::Any
-            }
+            "none"  => Self::None,
+            "start" => Self::Start,
+            "any"   => Self::Any,
             _ => {
-                return Err(RadError::InvalidCommandOption(format!("Comment type : {} is not available", text)));
+                return Err(RadError::InvalidCommandOption(format!("Comment type : \"{}\" is not available.", text)));
             }
         };
         Ok(comment_type)
+    }
+}
+
+#[derive(Debug)]
+pub enum DiffOption {
+    None,
+    All,
+    Change,
+}
+
+impl DiffOption {
+    pub fn from_str(text: &str) -> RadResult<Self> {
+        let var = match text.to_lowercase().as_str() {
+            "none" => Self::None,
+            "all" => Self::All,
+            "change" => Self::Change,
+            _ => return Err(RadError::InvalidConversion(format!("Diffoption, \"{}\" is not a vliad type", text))),
+        };
+        Ok(var)
     }
 }
