@@ -19,6 +19,8 @@
 //! // Builder
 //! let mut processor = Processor::new()
 //!     .comment(CommentType::Start)                         // Use comment
+//!     .custom_macro_char('~')                              // use custom macro character
+//!     .custom_comment_char('#')                            // use custom comment character
 //!     .purge(true)                                         // Purge undefined macro
 //!     .greedy(true)                                        // Makes all macro greedy
 //!     .silent(true)                                        // Silents all warnings
@@ -39,6 +41,9 @@
 //!     .interactive(true)                                   // Use interactive mode
 //!     // Create unreferenced instance
 //!     .build(); 
+//!
+//! // Comment char and macro char cannot be same 
+//! // Unallowed pattern for the characters are [a-zA-Z1-9\\_\*\^\|\+\(\)=,]
 //! 
 //! // Use Processor::empty() instead of Processor::new()
 //! // if you don't want any default macros
@@ -81,6 +86,8 @@
 
 use crate::auth::{AuthType, AuthFlags, AuthState};
 #[cfg(feature = "debug")]
+use crate::models::DiffOption;
+#[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
 use std::io::Read;
@@ -95,8 +102,10 @@ use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
 use crate::models::{CommentType, MacroFragment, MacroMap, MacroRule, RuleFile, UnbalancedChecker, WriteOption};
+#[cfg(feature = "hook")]
+use crate::hookmap::{HookMap, HookType};
 use crate::utils::Utils;
-use crate::consts::*;
+use crate::{RadResult, consts::*};
 use crate::lexor::*;
 use crate::define_parser::DefineParser;
 use crate::arg_parser::{ArgParser, GreedyState};
@@ -169,6 +178,8 @@ impl ProcessorState {
 pub struct Processor{
     map: MacroMap,
     closure_map: ClosureMap,
+    #[cfg(feature = "hook")]
+    pub(crate) hook_map: HookMap,
     defparser: DefineParser,
     write_option: WriteOption,
     logger: Logger,
@@ -222,6 +233,8 @@ impl Processor {
         Self {
             map,
             closure_map: ClosureMap::new(),
+            #[cfg(feature = "hook")]
+            hook_map: HookMap::new(),
             write_option: WriteOption::Terminal,
             defparser: DefineParser::new(),
             logger,
@@ -380,8 +393,8 @@ impl Processor {
 
     /// Add diff option
     #[cfg(feature = "debug")]
-    pub fn diff(&mut self, diff: bool) -> Result<&mut Self, RadError> {
-        if diff { self.debugger.enable_diff()?; }
+    pub fn diff(&mut self, diff: DiffOption) -> Result<&mut Self, RadError> {
+        self.debugger.enable_diff(diff)?; 
         Ok(self)
     }
 
@@ -527,7 +540,6 @@ impl Processor {
     pub fn add_custom_rules(&mut self, rules: Vec<(impl AsRef<str>,&str,&str)>) -> Result<(), RadError> {
         for (name,args,body) in rules {
             let name = name.as_ref();
-            // TODO Check name sanity
             if !MAC_NAME.is_match(name) {
                 return Err(RadError::InvalidMacroName(format!("Name : \"{}\" is not a valid macro name", name)));
             }
@@ -543,6 +555,62 @@ impl Processor {
         Ok(())
     }
 
+    /// Add static rules without builder pattern
+    ///
+    /// # Args
+    ///
+    /// The order of argument is "name, body"
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// processor.add_custom_rules(vec![("macro_name","Macro body without arguments")]);
+    /// ```
+    pub fn add_static_rules(&mut self, rules: Vec<(impl AsRef<str>,&str)>) -> RadResult<()> {
+        for (name,body) in rules {
+            let name = name.as_ref();
+            if !MAC_NAME.is_match(name) {
+                return Err(RadError::InvalidMacroName(format!("Name : \"{}\" is not a valid macro name", name)));
+            }
+            self.map.custom.insert(
+                name.to_owned(), 
+                MacroRule { 
+                    name: name.to_owned(),
+                    args: vec![],
+                    body: body.to_owned()
+            }
+            );
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "hook")]
+    /// Register a hook
+    pub fn register_hook(&mut self, hook_type: HookType, target_macro: &str, invoke_macro: &str, target_count: usize, resetable: bool) -> RadResult<()> {
+        // Check target macro is empty
+        if target_macro.len() == 0 {
+            return Err(RadError::InvalidMacroName(format!("Cannot register hook for macro \"{}\"",target_macro)));
+        }
+
+        // Check invoke macro is empty
+        if invoke_macro.len() == 0 {
+            return Err(RadError::InvalidMacroName(format!("Cannot register hook which invokes a macro \"{}\"",target_macro)));
+        }
+        self.hook_map.add_hook(hook_type, target_macro, invoke_macro, target_count, resetable)?;
+        Ok(())
+    }
+
+    #[cfg(feature = "hook")]
+    /// Deregister 
+    pub fn deregister_hook(&mut self, hook_type: HookType, target_macro: &str) -> RadResult<()> {
+        // Check target macro is empty
+        if target_macro.len() == 0 {
+            return Err(RadError::InvalidMacroName(format!("Cannot deregister hook for macro \"{}\"",target_macro)));
+        }
+
+        self.hook_map.del_hook(hook_type, target_macro)?;
+        Ok(())
+    }
 
     /// Read from string
     pub fn from_string(&mut self, content: &str) -> Result<(), RadError> {
@@ -665,7 +733,7 @@ impl Processor {
         } // Loop end
 
         // Recover
-        if let Some(backup) = backup { self.recover(backup); self.state.sandbox = false; }
+        if let Some(backup) = backup { self.recover(backup)?; self.state.sandbox = false; }
 
         if use_container {
             Ok(cont)
@@ -830,7 +898,6 @@ impl Processor {
         }
 
         for ch in line.chars() {
-
             self.logger.add_char_number();
 
             let lex_result = lexor.lex(ch)?;
@@ -872,6 +939,31 @@ impl Processor {
                     self.lex_branch_exit_frag(ch,frag,&mut remainder);
                 }
             }
+
+            // Character hook macro evaluation
+            // This only works on plain texts with level 0 
+            #[cfg(feature = "hook")]
+            if frag.is_empty() && level == 0 {
+                if let Some(mac_name) = self.hook_map.add_char_count(ch) {
+                    // If no fragment information is saved then
+                    let mut hook_frag = MacroFragment::new();
+                    hook_frag.name = mac_name;
+                    let mut hook_mainder = String::new();
+                    let mut hook_lexor = Lexor::new(self.get_macro_char(), self.get_comment_char(), &self.state.comment_type);
+                    self.lex_branch_end_invoke(
+                        &mut hook_lexor,
+                        &mut hook_frag,
+                        &mut hook_mainder,
+                        level,
+                        &frag.name
+                    )?;
+
+                    // If there is content to add
+                    if hook_mainder.len() != 0 {
+                        remainder.push_str(&hook_mainder);
+                    } 
+                } // End if let of macro name
+            }
         } // End Character iteration
         Ok(remainder)
     }
@@ -881,6 +973,7 @@ impl Processor {
     /// Evaluate detected macro usage
     ///
     /// Evaluation order is followed
+    /// - Keyword macro
     /// - Local bound macro
     /// - Custom macro
     /// - Basic macro
@@ -1137,6 +1230,9 @@ impl Processor {
         Ok(())
     }
 
+    // TODO
+    // This should be renamed because it is now, not only used by lex branches
+    // but also used by external logic functions such as hook macro executions.
     fn lex_branch_end_invoke(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize, caller: &str) -> Result<(), RadError> {
         // Name is empty
         if frag.name.len() == 0 {
@@ -1196,11 +1292,9 @@ impl Processor {
         }
     }
 
-    // Level is needed for feature debug codes
+    // Level is needed for feature debug & hook codes
     fn lex_branch_end_frag_eval_result_ok(&mut self, variant : EvalResult, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize) -> Result<(), RadError> {
         match variant {
-            // else it is ok to proceed.
-            // thus it is safe to unwrap it
             EvalResult::Eval(content) => {
 
                 // Debug
@@ -1217,6 +1311,8 @@ impl Processor {
                 if let None = content {
                     lexor.escape_next_newline();
                 } else {
+                    // else it is ok to proceed.
+                    // thus it is safe to unwrap it
                     let mut content = content.unwrap();
                     if frag.trimmed {
                         content = Utils::trim(&content);
@@ -1224,8 +1320,35 @@ impl Processor {
                     if frag.yield_literal {
                         content = format!("\\*{}*\\", content);
                     }
+
+                    // TODO
+                    // Check unpredicted duplicate hook
+                    // Macro hook check
+                    #[cfg(feature = "hook")]
+                    if let Some(mac_name) = self.hook_map.add_macro_count(&frag.name) {
+                        let mut hook_frag = MacroFragment::new();
+                        hook_frag.name = mac_name;
+                        let mut hook_mainder = String::new();
+                        let mut hook_lexor = Lexor::new(self.get_macro_char(), self.get_comment_char(), &self.state.comment_type);
+                        self.lex_branch_end_invoke(
+                            &mut hook_lexor,
+                            &mut hook_frag,
+                            &mut hook_mainder,
+                            level,
+                            &frag.name
+                        )?;
+
+                        // Add hook remainder into current content
+                        // which will be added to main remainder
+                        if hook_mainder.len() != 0 {
+                            content.push_str(&hook_mainder);
+                        }
+                    }
+
                     // NOTE
                     // This should come later!!
+                    // because pipe should respect all other macro attributes 
+                    // not the other way
                     if frag.pipe {
                         self.state.pipe_value = content;
                         lexor.escape_next_newline();
@@ -1237,6 +1360,8 @@ impl Processor {
             EvalResult::InvalidArg => {
                 if self.state.strict {
                     return Err(RadError::StrictPanic);
+                } else {
+                    remainder.push_str(&frag.whole_string);
                 }
             }
             EvalResult::InvalidName =>  { // Failed to invoke
@@ -1343,7 +1468,7 @@ impl Processor {
     }
 
     /// Recover backup information into the processor
-    fn recover(&mut self, backup: SandboxBackup) {
+    fn recover(&mut self, backup: SandboxBackup) -> Result<(), RadError> {
         // NOTE ::: Set file should come first becuase set_file override line number and character number
         self.logger.set_file(&backup.current_input);
         self.state.current_input = backup.current_input;
@@ -1351,7 +1476,8 @@ impl Processor {
         self.logger.recover_lines(backup.logger_lines);
 
         // Also recover env values
-        self.set_file_env(&self.state.current_input);
+        self.set_file_env(&self.state.current_input)?;
+        Ok(())
     }
 
     pub(crate) fn track_assertion(&mut self, success: bool) -> Result<(), RadError> {
@@ -1380,16 +1506,17 @@ impl Processor {
         } else {
             self.state.current_input = file.to_owned();
             self.logger.set_file(file);
-            self.set_file_env(file);
+            self.set_file_env(file)?;
             Ok(())
         }
     }
 
     /// Set some useful env values
-    fn set_file_env(&self, file: &str) {
+    fn set_file_env(&self, file: &str) -> Result<(), RadError> {
         let path = Path::new(file);
         std::env::set_var("RAD_FILE", file);
-        std::env::set_var("RAD_FILE_DIR", path.parent().unwrap().to_str().unwrap());
+        std::env::set_var("RAD_FILE_DIR", std::fs::canonicalize(path)?.parent().unwrap());
+        Ok(())
     }
 
     /// Set input as string not as &path
