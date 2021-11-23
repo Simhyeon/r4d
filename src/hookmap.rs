@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use crate::{RadResult, RadError};
 
 #[derive(Debug)]
+#[cfg(feature = "hook")]
 pub struct HookMap {
     macro_hook : HashMap<String,HookState>,
     char_hook : HashMap<char,HookState>
@@ -93,6 +94,7 @@ impl HookMap {
 }
 
 #[derive(Debug)]
+#[cfg(feature = "hook")]
 pub enum HookType {
     Macro,
     Char,
@@ -111,6 +113,7 @@ impl HookType {
 }
 
 #[derive(Debug)]
+#[cfg(feature = "hook")]
 pub struct HookState {
     enabled: bool,
     resetable: bool,
