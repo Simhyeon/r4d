@@ -584,6 +584,13 @@ impl BasicMacro {
             // Disable debugging for nested macro expansion
             #[cfg(feature = "debug")]
             let original = processor.is_debug();
+
+            // Now this might look strange, 
+            // "Why not just enclose two lines with curly brackets?"
+            // The answer is such appraoch somehow doesn't work.
+            // Compiler cannot deduce the variable original and will yield error on
+            // processor.debug(original)
+            #[cfg(feature = "debug")]
             processor.debug(false);
 
             // Parse macros
