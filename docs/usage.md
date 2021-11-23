@@ -90,6 +90,7 @@ use rad::Processor;
 use rad::MacroType;
 use rad::AuthType;
 use rad::CommentType;
+use rad::DiffOption;
 use std::path::Path;
 
 // Builder
@@ -115,7 +116,7 @@ let mut processor = Processor::new()
     .debug(true)                                         // Turn on debug mode
     .log(true)                                           // Use logging to terminal
     .interactive(true)                                   // Use interactive mode
-    .diff(true)                                          // Eanble diff variant
+    .diff(DiffOption::All)                               // Eanble diff
     // Create unreferenced instance
     .build(); 
 

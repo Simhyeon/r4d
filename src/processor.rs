@@ -14,6 +14,7 @@
 //! use rad::MacroType;
 //! use rad::AuthType;
 //! use rad::CommentType;
+//! use rad::DiffOption;
 //! use std::path::Path;
 //! 
 //! // Builder
@@ -38,6 +39,7 @@
 //!     // Debugging options
 //!     .debug(true)                                         // Turn on debug mode
 //!     .log(true)                                           // Use logging to terminal
+//!     .diff(DiffOption::All)                               // Print diff in final result
 //!     .interactive(true)                                   // Use interactive mode
 //!     // Create unreferenced instance
 //!     .build(); 
