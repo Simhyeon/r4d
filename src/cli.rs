@@ -182,7 +182,14 @@ impl Cli {
         clap_app!(rad =>
             (version: "1.2.0")
             (author: "Simon Creek <simoncreek@tutanota.com>")
-            (about: "R4d is a modern macro processor made with rust")
+            (about: "R4d(rad) is a modern macro processor made with rust. Refer https://github.com/simhyeon/r4d for detailed usage.")
+            (long_about: "R4d is a text oriented macro processor which aims to be an modern alternative to m4 macro processor. R4d procedurally follows texts and substitue macro calls with defined macro body. R4d comes with varoius useful built in macros so that user don't have to define from scratch. R4d also supports multiple debugging flags for easier error detection. Refer https://github.com/simhyeon/r4d for detailed usage.")
+            (after_long_help: include_str!("../docs/macro_help.md"))
+            (override_usage: "rad <FILE> -o <OUT_FILE> -e <ERR_FILE>
+    echo <STDIN_TEXT | rad 
+    echo <STDIN_TEXT> | rad --combination <FILE> --diff
+    rad <FILE> --debug --log --interactive
+    rad <FILE> -f <RULE_FILE> --discard -n --silent")
             (@arg FILE: ... "Files to execute processing")
             (@arg out: -o --out +takes_value conflicts_with[discard] value_name["FILE"] "Save processed output to the file")
             (@arg err: -e --err +takes_value value_name["FILE"] "Save error logs to the file")
