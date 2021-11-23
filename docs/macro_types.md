@@ -122,21 +122,21 @@ for example,
 
 ```rust
 let processor = Processor::new()
-	.build();
+    .build();
 
 processor.register_hook(
-	HookType::Macro,            // Macro type
-	trigger_macro,              // Macro that triggers
-	hook_div,                   // Macro to be executed
-	1,    						// target count
-	false 						// Resetable
+    HookType::Macro,            // Macro type
+    trigger_macro,              // Macro that triggers
+    hook_div,                   // Macro to be executed
+    1,                          // target count
+    false                       // Resetable
 )
 processor.register_hook(
-	HookType::Char,             // Macro type
-	#,                          // Char that triggers
-	icon,                       // Macro to be executed
-	2,    						// target count
-	true 						// Resetable
+    HookType::Char,             // Macro type
+    #,                          // Char that triggers
+    icon,                       // Macro to be executed
+    2,                          // target count
+    true                        // Resetable
 )
 ```
 

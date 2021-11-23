@@ -145,11 +145,11 @@ processor.add_closure_rule(
 // Register a hook macro
 // Trigger and execution macro should be defined otherwise
 processor.register_hook(
-	HookType::Macro,            // Macro type
-	trigger_macro,              // Macro that triggers
-	hook_div,                   // Macro to be executed
-	1,    						// target count
-	false 						// Resetable
+    HookType::Macro,            // Macro type
+    trigger_macro,              // Macro that triggers
+    hook_div,                   // Macro to be executed
+    1,                          // target count
+    false                       // Resetable
 )
 
 // Add custom rules(in order of "name, args, body") 
