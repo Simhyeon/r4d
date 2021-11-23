@@ -72,6 +72,7 @@ pub use error::RadError;
 pub use basic::MacroType;
 pub use processor::Processor;
 pub use auth::AuthType;
+pub use hookmap::HookType;
 pub use models::{CommentType, RadResult, DiffOption};
 
 // Optional
