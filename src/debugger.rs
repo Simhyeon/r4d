@@ -7,7 +7,7 @@ use std::fs::{File,OpenOptions};
 use std::collections::HashMap;
 use crate::consts::*;
 use similar::ChangeTag;
-use crate::models::MacroFragment;
+use crate::models::{DiffOption, MacroFragment};
 
 use crate::RadError;
 
@@ -20,7 +20,8 @@ pub(crate) struct Debugger {
     // This is a global line number storage for various deubbing usages
     // This is a bit bloaty, but debugging needs functionality over efficiency
     pub(crate) line_caches: HashMap<usize, String>,
-    pub(crate) yield_diff: bool,
+    pub(crate) do_yield_diff: bool,
+    pub(crate) diff_only_change: bool,
     pub(crate) diff_original : Option<File>,
     pub(crate) diff_processed : Option<File>,
     pub(crate) interactive: bool,
@@ -35,7 +36,8 @@ impl Debugger {
             debug_switch: DebugSwitch::NextLine,
             line_number: 1,
             line_caches: HashMap::new(),
-            yield_diff: false,
+            do_yield_diff: false,
+            diff_only_change : false,
             diff_original: None,
             diff_processed: None,
             interactive : false,
@@ -46,8 +48,14 @@ impl Debugger {
     /// Enable diff logic
     ///
     /// WIth diff enabled, diff information will be saved to two separate files
-    pub fn enable_diff(&mut self) -> Result<(), RadError> {
-        self.yield_diff = true;
+    pub fn enable_diff(&mut self, diff_option : DiffOption) -> Result<(), RadError> {
+        // DiffOption specific operation
+        match diff_option {
+            DiffOption::None => return Ok(()), // No diff, return
+            DiffOption::Change => self.diff_only_change = true ,
+            _ => ()
+        }
+        self.do_yield_diff = true;
         self.diff_original = Some(
             OpenOptions::new()
             .create(true)
@@ -130,7 +138,7 @@ impl Debugger {
 
     /// Print differences of original and processed
     pub fn yield_diff(&self, logger: &mut Logger) -> Result<(), RadError> {
-        if !self.yield_diff { return Ok(()); }
+        if !self.do_yield_diff { return Ok(()); }
 
         let source = std::fs::read_to_string(Path::new(DIFF_SOURCE_FILE))?;
         let processed = std::fs::read_to_string(Path::new(DIFF_OUT_FILE))?;
@@ -156,7 +164,16 @@ impl Debugger {
                     colorfunc.replace(Utils::green);
                 }
                 ChangeTag::Equal => {
-                    log = format!("  {}", change);
+                    if !self.diff_only_change {
+                        log = format!("  {}", change);
+                    } else {
+                        // Log should be assigned at least once
+                        // because later codes expectes log to be exsitent.
+                        // It is ok to create empty owned string, 
+                        // compiler is smart enough not to allocate
+                        // any memory for empty string.
+                        log = "".to_owned();
+                    }
                 }
             }
             if let Some(func) = colorfunc {
@@ -471,7 +488,7 @@ impl Debugger {
 
     // Save original content to a file for diff check 
     pub fn write_to_original(&mut self, content: &str) -> Result<(), RadError> {
-        if self.yield_diff {
+        if self.do_yield_diff {
             self.diff_original.as_ref().unwrap().write_all(content.as_bytes())?;
         }
         Ok(())
@@ -479,7 +496,7 @@ impl Debugger {
 
     // Save processed content to a file for diff check 
     pub fn write_to_processed(&mut self, content: &str) -> Result<(), RadError> {
-        if self.yield_diff {
+        if self.do_yield_diff {
             self.diff_processed.as_ref().unwrap().write_all(content.as_bytes())?;
         }
         Ok(())
