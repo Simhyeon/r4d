@@ -64,13 +64,15 @@ pub(crate) mod consts;
 pub(crate) mod lexor;
 pub(crate) mod logger;
 pub(crate) mod models;
+#[cfg(feature = "hook")]
+pub(crate) mod hookmap;
 pub(crate) mod utils;
 
 pub use error::RadError;
 pub use basic::MacroType;
 pub use processor::Processor;
 pub use auth::AuthType;
-pub use models::CommentType;
+pub use models::{CommentType, RadResult};
 
 // Optional
 
