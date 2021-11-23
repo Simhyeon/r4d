@@ -3,6 +3,7 @@
 //! Basic module includes struct and methods related to basic macros which are technically function
 //! pointers.
 
+use crate::hookmap::HookType;
 use std::array::IntoIter;
 use std::io::Write;
 use std::fs::OpenOptions;
@@ -70,57 +71,63 @@ impl BasicMacro {
         // Create hashmap of functions
         #[allow(unused_mut)]
         let mut map = HashMap::from_iter(IntoIter::new([
-            ("-".to_owned(),       BasicMacro::get_pipe         as MacroType),
-            ("abs".to_owned(),     BasicMacro::absolute_path    as MacroType),
-            ("append".to_owned(),  BasicMacro::append           as MacroType),
-            ("arr".to_owned(),     BasicMacro::array            as MacroType),
-            ("assert".to_owned(),  BasicMacro::assert           as MacroType),
-            ("nassert".to_owned(), BasicMacro::assert_ne        as MacroType),
-            ("chomp".to_owned(),   BasicMacro::chomp            as MacroType),
-            ("comp".to_owned(),    BasicMacro::compress         as MacroType),
-            ("env".to_owned(),     BasicMacro::get_env          as MacroType),
-            ("envset".to_owned(),  BasicMacro::set_env          as MacroType),
-            ("fileout".to_owned(), BasicMacro::file_out         as MacroType),
-            ("include".to_owned(), BasicMacro::include          as MacroType),
-            ("len".to_owned(),     BasicMacro::len              as MacroType),
-            ("name".to_owned(),    BasicMacro::get_name         as MacroType),
-            ("not".to_owned(),     BasicMacro::not              as MacroType),
-            ("nl".to_owned(),      BasicMacro::newline          as MacroType),
-            ("parent".to_owned(),  BasicMacro::get_parent       as MacroType),
-            ("path".to_owned(),    BasicMacro::merge_path       as MacroType),
-            ("pipe".to_owned(),    BasicMacro::pipe             as MacroType),
-            ("read".to_owned(),    BasicMacro::read             as MacroType),
-            ("redir".to_owned(),   BasicMacro::temp_redirect    as MacroType),
-            ("regex".to_owned(),   BasicMacro::regex_sub        as MacroType),
-            ("rename".to_owned(),  BasicMacro::rename_call      as MacroType),
-            ("repeat".to_owned(),  BasicMacro::repeat           as MacroType),
-            ("sub".to_owned(),     BasicMacro::substring        as MacroType),
-            ("syscmd".to_owned(),  BasicMacro::syscmd           as MacroType),
-            ("tempin".to_owned(),  BasicMacro::temp_include     as MacroType),
-            ("tempout".to_owned(), BasicMacro::temp_out         as MacroType),
-            ("tempto".to_owned(),  BasicMacro::set_temp_target  as MacroType),
-            ("tr".to_owned(),      BasicMacro::translate        as MacroType),
-            ("trim".to_owned(),    BasicMacro::trim             as MacroType),
-            ("undef".to_owned(),   BasicMacro::undefine_call    as MacroType),
+            ("-".to_owned(),       BasicMacro::get_pipe                 as MacroType),
+            ("abs".to_owned(),     BasicMacro::absolute_path            as MacroType),
+            ("append".to_owned(),  BasicMacro::append                   as MacroType),
+            ("arr".to_owned(),     BasicMacro::array                    as MacroType),
+            ("assert".to_owned(),  BasicMacro::assert                   as MacroType),
+            ("nassert".to_owned(), BasicMacro::assert_ne                as MacroType),
+            ("chomp".to_owned(),   BasicMacro::chomp                    as MacroType),
+            ("comp".to_owned(),    BasicMacro::compress                 as MacroType),
+            ("env".to_owned(),     BasicMacro::get_env                  as MacroType),
+            ("envset".to_owned(),  BasicMacro::set_env                  as MacroType),
+            ("fileout".to_owned(), BasicMacro::file_out                 as MacroType),
+            ("include".to_owned(), BasicMacro::include                  as MacroType),
+            ("len".to_owned(),     BasicMacro::len                      as MacroType),
+            ("name".to_owned(),    BasicMacro::get_name                 as MacroType),
+            ("not".to_owned(),     BasicMacro::not                      as MacroType),
+            ("nl".to_owned(),      BasicMacro::newline                  as MacroType),
+            ("parent".to_owned(),  BasicMacro::get_parent               as MacroType),
+            ("path".to_owned(),    BasicMacro::merge_path               as MacroType),
+            ("pipe".to_owned(),    BasicMacro::pipe                     as MacroType),
+            ("read".to_owned(),    BasicMacro::read                     as MacroType),
+            ("redir".to_owned(),   BasicMacro::temp_redirect            as MacroType),
+            ("regex".to_owned(),   BasicMacro::regex_sub                as MacroType),
+            ("rename".to_owned(),  BasicMacro::rename_call              as MacroType),
+            ("repeat".to_owned(),  BasicMacro::repeat                   as MacroType),
+            ("sub".to_owned(),     BasicMacro::substring                as MacroType),
+            ("syscmd".to_owned(),  BasicMacro::syscmd                   as MacroType),
+            ("tempin".to_owned(),  BasicMacro::temp_include             as MacroType),
+            ("tempout".to_owned(), BasicMacro::temp_out                 as MacroType),
+            ("tempto".to_owned(),  BasicMacro::set_temp_target          as MacroType),
+            ("tr".to_owned(),      BasicMacro::translate                as MacroType),
+            ("trim".to_owned(),    BasicMacro::trim                     as MacroType),
+            ("undef".to_owned(),   BasicMacro::undefine_call            as MacroType),
             // THis is simply a "phantomtype"
-            ("define".to_owned(),  BasicMacro::define_type      as MacroType),
+            ("define".to_owned(),  BasicMacro::define_type              as MacroType),
         ]));
         
         // Optional macros
         #[cfg(feature = "csv")]
         {
-            map.insert("from".to_owned(), BasicMacro::from_data as MacroType);
-            map.insert("table".to_owned(), BasicMacro::table    as MacroType);
+            map.insert("from".to_owned(), BasicMacro::from_data         as MacroType);
+            map.insert("table".to_owned(), BasicMacro::table            as MacroType);
         }
         #[cfg(feature = "chrono")]
         {
-            map.insert("time".to_owned(), BasicMacro::time      as MacroType);
-            map.insert("date".to_owned(), BasicMacro::date      as MacroType);
+            map.insert("time".to_owned(), BasicMacro::time              as MacroType);
+            map.insert("date".to_owned(), BasicMacro::date              as MacroType);
         }
         #[cfg(feature = "lipsum")]
-        map.insert("lipsum".to_owned(), BasicMacro::placeholder as MacroType);
+        map.insert("lipsum".to_owned(), BasicMacro::lipsum_words        as MacroType);
         #[cfg(feature = "evalexpr")]
-        map.insert("eval".to_owned(), BasicMacro::eval          as MacroType);
+        map.insert("eval".to_owned(), BasicMacro::eval                  as MacroType);
+
+        #[cfg(feature = "hook")]
+        {
+            map.insert("hookon".to_owned(), BasicMacro::hook_enable     as MacroType);
+            map.insert("hookoff".to_owned(), BasicMacro::hook_disable   as MacroType);
+        }
 
         // Return struct
         Self { macros : map }
@@ -301,7 +308,7 @@ impl BasicMacro {
     ///
     /// $lipsum(Number)
     #[cfg(feature = "lipsum")]
-    fn placeholder(args: &str, greedy: bool,_: &mut Processor) -> Result<Option<String>, RadError> {
+    fn lipsum_words(args: &str, greedy: bool,_: &mut Processor) -> Result<Option<String>, RadError> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let word_count = &args[0];
             if let Ok(count) = Utils::trim(word_count).parse::<usize>() {
@@ -310,7 +317,38 @@ impl BasicMacro {
                 Err(RadError::InvalidArgument(format!("Lipsum needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", word_count)))
             }
         } else {
-            Err(RadError::InvalidArgument("Placeholder requires an argument".to_owned()))
+            Err(RadError::InvalidArgument("Lipsum requires an argument".to_owned()))
+        }
+    }
+
+    // Source =
+    // https://users.rust-lang.org/t/solved-how-to-split-string-into-multiple-sub-strings-with-given-length/10542/12
+    // TODO Change name from lipsumw to lipsuml
+    // This is a start and should be improved because current implementation doesn't respect
+    // whitespace as separator
+    /// Creates placeholder with given length
+    ///
+    /// # Usage
+    ///
+    /// $lipsumw(Number)
+    #[cfg(feature = "lipsum")]
+    fn lipsum_width(args: &str, greedy: bool,_: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let word_count = &args[0];
+            if let Ok(count) = Utils::trim(word_count).parse::<usize>() {
+                let sub_len = &args[1].parse::<usize>()?;
+                let lipsum_temp = lipsum(count);
+                let mut chars = lipsum_temp.chars();
+                let sub_string = (0..)
+                    .map(|_| chars.by_ref().take(*sub_len).collect::<String>())
+                    .take_while(|s| !s.is_empty())
+                    .collect::<Vec<_>>();
+                Ok(None)
+            } else {
+                Err(RadError::InvalidArgument(format!("Lipsumw needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", word_count)))
+            }
+        } else {
+            Err(RadError::InvalidArgument("Lipsumw more than two arguments".to_owned()))
         }
     }
 
@@ -1027,4 +1065,39 @@ impl BasicMacro {
             Err(RadError::InvalidArgument("Temp requires an argument".to_owned()))
         }
     }
+
+    /// Enable hook
+    ///
+    /// * Usage
+    ///
+    /// $hookon(MacroType, macro_name)
+    #[cfg(feature = "hook")]
+    fn hook_enable(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let hook_type = HookType::from_str(&args[0])?;
+            let index = &args[1] ;
+            processor.hook_map.switch_hook(hook_type, index, true)?;
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("hookon requires two argument".to_owned()))
+        }
+    }
+
+    /// Disable hook
+    ///
+    /// * Usage
+    ///
+    /// $hookoff(MacroType, macro_name)
+    #[cfg(feature = "hook")]
+    fn hook_disable(args: &str, greedy: bool, processor: &mut Processor) -> Result<Option<String>, RadError> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let hook_type = HookType::from_str(&args[0])?;
+            let index = &args[1] ;
+            processor.hook_map.switch_hook(hook_type, index, false)?;
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("hookoff requires two argument".to_owned()))
+        }
+    }
+
 }
