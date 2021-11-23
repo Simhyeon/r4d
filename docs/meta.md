@@ -1,19 +1,6 @@
 ### Changed
 
-* [x] Deprecating global in favor keyword macro ```static```
-* [x] Deprecating bind in favor keyword macro ```let```
-* [x] Declare macros
-* [x] Custom special character 
-* [x] Comment type addition
-* [x] Fixed a bug where assert result was not printed when there was no error at all.
-
-* [x] Hook macro for macro and character
-* [x] Hook macro should be temporarily disabled for specific cases
-* [x] Static custom rules 
-
-* [x] Diff only changed option
-* [x] Bug: Fixed default comment behaviour
-* [x] Bug: Non sufficient macro invocation doesn't return whole string... wut..
+* [x] Fixed unexported DiffOption and HookType re-export
 
 ### TODOs
 
@@ -81,6 +68,22 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [x] Deprecating global in favor keyword macro ```static```
+* [x] Deprecating bind in favor keyword macro ```let```
+* [x] Declare macros
+* [x] Custom special character 
+* [x] Comment type addition
+* [x] Fixed a bug where assert result was not printed when there was no error at all.
+
+* [x] Hook macro for macro and character
+* [x] Hook macro should be temporarily disabled for specific cases
+* [x] Static custom rules 
+
+* [x] Diff only changed option
+* [x] Bug: Fixed default comment behaviour
+* [x] Bug: Non sufficient macro invocation doesn't return whole string... wut..
+
 
 * [x] Comment rule
 * [x] New basic macros
