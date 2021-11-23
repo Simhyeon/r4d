@@ -8,7 +8,7 @@ use crate::error::RadError;
 use crate::auth::AuthType;
 use crate::processor::Processor;
 use crate::utils::Utils;
-use crate::models::CommentType;
+use crate::models::{CommentType, DiffOption};
 use std::path::{Path, PathBuf};
 
 /// Struct to parse command line arguments and execute proper operations
@@ -48,7 +48,13 @@ impl Cli {
         // Build processor
         let mut processor = Processor::new()
             .set_comment_type(
-                CommentType::from(args.value_of("comment").unwrap_or("none"))?
+                CommentType::from_str(
+                    if args.occurrences_of("comment") == 0 {
+                        "none" // None when no runtime flag
+                    } else {
+                        args.value_of("comment").unwrap() // default is start
+                    }
+                )?
             )
             .purge(args.is_present("purge"))
             .greedy(args.is_present("greedy"))
@@ -65,7 +71,15 @@ impl Cli {
             .error_to_file(std::mem::replace(&mut self.error_to_file,None))?
             .debug(args.is_present("debug"))
             .log(args.is_present("log"))
-            .diff(args.is_present("diff"))?
+            .diff(
+                DiffOption::from_str(
+                    if args.occurrences_of("diff") == 0 {
+                        "none" // None when no runtime flag
+                    } else {
+                        args.value_of("diff").unwrap() // default is all
+                    }
+                )?
+            )?
             .interactive(args.is_present("interactive"))
             .build();
 
@@ -100,7 +114,7 @@ impl Cli {
         // Print result
         processor.print_result()?;
 
-        // Freeze to file if option was given
+        // Freeze to a rule file if such option was given
         if let Some(file) = args.value_of("freeze") {
             processor.freeze_to_file(Path::new(file))?;
         }
@@ -170,24 +184,24 @@ impl Cli {
             (author: "Simon Creek <simoncreek@tutanota.com>")
             (about: "R4d is a modern macro processor made with rust")
             (@arg FILE: ... "Files to execute processing")
-            (@arg out: -o --out +takes_value conflicts_with[discard] "File to print out macro")
-            (@arg err: -e --err +takes_value "File to save logs")
-            (@arg greedy: -g --greedy "Make all macro invocation greedy")
-            (@arg melt: ... -m --melt +takes_value "Frozen file to reads")
-            (@arg freeze: -f --freeze +takes_value "Freeze to file")
-            (@arg purge: -p --purge "Purge unused macros")
+            (@arg out: -o --out +takes_value conflicts_with[discard] value_name["FILE"] "Save processed output to the file")
+            (@arg err: -e --err +takes_value value_name["FILE"] "Save error logs to the file")
+            (@arg greedy: -g --greedy "Make all macro invocations greedy")
+            (@arg melt: ... -m --melt +takes_value value_name["FILE"] "Read macros from frozen file")
+            (@arg freeze: -f --freeze +takes_value value_name["FILE"] "Freeze macros into a single file")
+            (@arg purge: -p --purge "Purge unused macros without panicking. Doesn't work in strict mode")
             (@arg lenient: -l --lenient "Lenient mode, disables strict mode")
             (@arg nopanic: --nopanic "Don't panic in any circumstances, the most lenient mode")
             (@arg assert: --assert "Enable assert mode")
             (@arg debug: -d --debug "Debug mode")
-            (@arg log: --log "Debug log mode")
-            (@arg diff: --diff "Show diff result")
-            (@arg comment: --comment +takes_value default_value["start"] "Use comment option")
-            (@arg interactive: -i --interactive "Use interactive debug mode")
-            (@arg combination: -c "Read from both stdin and file inputs")
+            (@arg log: --log "Print log for every macro invocation. Only works on debug mode")
+            (@arg diff: --diff +takes_value default_value["all"] value_name["DIFF TYPE"] "Show diff result (none|change|all)")
+            (@arg comment: --comment +takes_value default_value["start"] value_name["COMMENT TYPE"] "Use comment option (none|start|any)")
+            (@arg interactive: -i --interactive "Use interactive debug mode. This enables line wrapping.")
+            (@arg combination: -c "Read from both stdin and file inputs. Stdin is evaluated first")
             (@arg discard: -D --discard "Discard output")
-            (@arg allow: -a +takes_value "Allow permission (fin|fout|cmd|env)")
-            (@arg allow_warn: -w +takes_value "Allow permission with warnings (fin|fout|cmd|env)")
+            (@arg allow: -a +takes_value value_name["AUTH TYPE"] "Allow permission (fin|fout|cmd|env)")
+            (@arg allow_warn: -w +takes_value value_name["AUTH TYPE"] "Allow permission with warnings (fin|fout|cmd|env)")
             (@arg allow_all: -A conflicts_with[allow_all_warn] "Allow all permission")
             (@arg allow_all_warn: -W "Allow all permission with warning")
             (@arg silent: -s --silent "Supress warnings")
