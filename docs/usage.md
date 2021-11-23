@@ -92,6 +92,8 @@ use std::path::Path;
 
 // Builder
 let mut processor = Processor::new()
+    .custom_macro_char('~')                              // use custom macro character
+    .custom_comment_char('#')                            // use custom comment character
     .comment(CommentType::Start)                         // Use comment
     .purge(true)                                         // Purge undefined macro
     .greedy(true)                                        // Makes all macro greedy
@@ -114,6 +116,9 @@ let mut processor = Processor::new()
     .diff(true)                                          // Eanble diff variant
     // Create unreferenced instance
     .build(); 
+
+// Comment char and macro char cannot be same 
+// Unallowed pattern for the characters are [a-zA-Z1-9\\_\*\^\|\+\(\)=,]
 
 // Use Processor::empty() instead of Processor::new()
 // if you don't want any default macros
