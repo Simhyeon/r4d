@@ -3,7 +3,6 @@
 //! Basic module includes struct and methods related to basic macros which are technically function
 //! pointers.
 
-use crate::hookmap::HookType;
 use std::array::IntoIter;
 use std::io::Write;
 use std::fs::OpenOptions;
@@ -17,6 +16,8 @@ use regex::Regex;
 use crate::utils::Utils;
 use crate::processor::Processor;
 use crate::auth::AuthType;
+#[cfg(feature = "hook")]
+use crate::hookmap::HookType;
 #[cfg(feature = "csv")]
 use crate::formatter::Formatter;
 #[cfg(feature = "lipsum")]
@@ -318,37 +319,6 @@ impl BasicMacro {
             }
         } else {
             Err(RadError::InvalidArgument("Lipsum requires an argument".to_owned()))
-        }
-    }
-
-    // Source =
-    // https://users.rust-lang.org/t/solved-how-to-split-string-into-multiple-sub-strings-with-given-length/10542/12
-    // TODO Change name from lipsumw to lipsuml
-    // This is a start and should be improved because current implementation doesn't respect
-    // whitespace as separator
-    /// Creates placeholder with given length
-    ///
-    /// # Usage
-    ///
-    /// $lipsumw(Number)
-    #[cfg(feature = "lipsum")]
-    fn lipsum_width(args: &str, greedy: bool,_: &mut Processor) -> Result<Option<String>, RadError> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let word_count = &args[0];
-            if let Ok(count) = Utils::trim(word_count).parse::<usize>() {
-                let sub_len = &args[1].parse::<usize>()?;
-                let lipsum_temp = lipsum(count);
-                let mut chars = lipsum_temp.chars();
-                let sub_string = (0..)
-                    .map(|_| chars.by_ref().take(*sub_len).collect::<String>())
-                    .take_while(|s| !s.is_empty())
-                    .collect::<Vec<_>>();
-                Ok(None)
-            } else {
-                Err(RadError::InvalidArgument(format!("Lipsumw needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", word_count)))
-            }
-        } else {
-            Err(RadError::InvalidArgument("Lipsumw more than two arguments".to_owned()))
         }
     }
 
