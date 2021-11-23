@@ -9,6 +9,7 @@
 
 * [x] Hook macro for macro and character
 * [x] Hook macro should be temporarily disabled for specific cases
+* [x] Static custom rules 
 
 * [x] Diff only changed option
 * [x] Bug: Fixed default comment behaviour

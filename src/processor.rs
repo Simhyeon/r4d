@@ -65,9 +65,21 @@
 //!     })
 //! );
 //!
+//! // Register a hook macro
+//! // Trigger and execution macro should be defined otherwise
+//! processor.register_hook(
+//! 	HookType::Macro,            // Macro type
+//! 	trigger_macro,              // Macro that triggers
+//! 	hook_div,                   // Macro to be executed
+//! 	1,    						// target count
+//! 	false 						// Resetable
+//! )
 //! 
 //! // Add custom rules(in order of "name, args, body") 
 //! processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
+//!
+//! // Add custom rules without any arguments
+//! processor.add_static_rules(vec![("test","TEST"),("lul","kekw")])
 //! 
 //! // Process with inputs
 //! // This prints to desginated write destinations

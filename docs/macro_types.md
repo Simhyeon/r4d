@@ -4,6 +4,7 @@
 - [Why the name basic](#why-the-name-basic)
 - [What is a keyword macro?](#what-is-a-keyword-macro)
 - [Local and global](#local-and-global)
+- [Hook macro](#hook-macro)
 
 ## Custom and basic
 
@@ -101,4 +102,59 @@ macros, basic or keyword macros are all global macros.
 % These are all global macros
 $define(name=NAME)
 $name(/home/path)
+```
+
+## Hook macro 
+
+**Libary usage only**
+
+Hook macro is a macro that is called automatically. There are two types of hook
+macro. One is ```macro hook``` and the other is ```char hook```.
+
+Macro hooks are called upon macro calls and char hooks are called upon char
+encounters. However char hook is applied for plain texts which are not enclosed
+by a macro call.
+
+Hook macro should be registered before processing and can be enabled with
+```hookon``` macro.
+
+for example,
+
+```rust
+let processor = Processor::new()
+	.build();
+
+processor.register_hook(
+	HookType::Macro,            // Macro type
+	trigger_macro,              // Macro that triggers
+	hook_div,                   // Macro to be executed
+	1,    						// target count
+	false 						// Resetable
+)
+processor.register_hook(
+	HookType::Char,             // Macro type
+	#,                          // Char that triggers
+	icon,                       // Macro to be executed
+	2,    						// target count
+	true 						// Resetable
+)
+```
+
+to enable this hook macro
+
+```r4d
+$define(trigger_macro=Trigger)
+$define(hook_div=
+<div>I'm created</div>)
+$define(icon= <i class="header-i"></i>)
+$hookon(macro,trigger_macro)
+$hookon(char,#)
+$trigger_macro()
+## I'm second header
+## I'm another second header
+===
+Trigger
+<div>I'm created</div>
+## <i class="header-i"></i> I'm second header
+## <i class="header-i"></i> I'm another second header
 ```
