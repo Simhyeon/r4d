@@ -70,7 +70,7 @@ Type ```-h``` or ```--help``` to see full options.
 rad = { version = "0.1.0", features = ["full"] }
 
 # Other available features are 
-# "evalexpr", "chrono", "lipsum", "csv", "debug", "color", "full"
+# "evalexpr", "chrono", "lipsum", "csv", "debug", "color", "full", "hook"
 
 # evalexpr - "eval" macro
 # chrono   - "date", "time" macro
@@ -80,6 +80,8 @@ rad = { version = "0.1.0", features = ["full"] }
 
 # debug    - Enable debug methods
 # color    - Enable color prompt
+
+# hook     - Enable hook macro
 ```
 **rust file**
 ```rust
