@@ -5,6 +5,10 @@ use crate::AuthType;
 /// R4d's error type
 #[derive(Error, Debug)]
 pub enum RadError {
+    #[error("Hook macro error \n= {0}")]
+    HookMacroFail(String),
+    #[error("Invalid conversion \n= {0}")]
+    InvalidConversion(String),
     #[error("Unallowed character \n= {0}")]
     UnallowedChar(String),
     #[error("Assert failed")]
