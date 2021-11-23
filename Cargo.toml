@@ -23,6 +23,7 @@ binary = [ "csv", "evalexpr", "lipsum", "chrono", "clap", "debug"]
 full = [ "csv", "evalexpr", "lipsum", "chrono" ]
 debug = [ "crossterm", "similar" ]
 color = [ "colored" ]
+hook = []
 
 [dependencies]
 bincode = "1.3.3"
