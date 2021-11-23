@@ -6,6 +6,7 @@
 - [Logging](#logging)
 - [Diff](#diff)
 - [Assertion](#assertion)
+- [Env variables](#env-variables)
 
 ### How to debug?
 
@@ -239,4 +240,13 @@ error: found 5 errors
 Assert
 SUCCESS : 2
 FAIL: 3
+```
+
+#### Env variables
+
+Some usefule environment variables are defined for debugging purpose.
+
+```
+$env(RAD_FILE) % prints current processing file's name
+$env(RAD_FILE_DIR) % prints current processing file's directory path
 ```
