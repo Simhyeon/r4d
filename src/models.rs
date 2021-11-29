@@ -1,10 +1,11 @@
 use std::collections::HashMap;
-use std::fmt::Display;
 use std::path::Path;
 use crate::{basic::BasicMacro, keyword_map::KeywordMacro};
 use crate::error::RadError;
 use crate::utils::Utils;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "signature")]
+use crate::sigmap::MacroSignature;
 use bincode;
 
 pub type RadResult<T> = Result<T, RadError>;
@@ -49,13 +50,14 @@ impl std::fmt::Display for MacroRule {
     }
 }
 
-impl From<&MacroRule> for MacroSignature {
-    fn from(bm: &MacroRule) -> Self {
+#[cfg(feature = "signature")]
+impl From<&MacroRule> for crate::sigmap::MacroSignature {
+    fn from(mac: &MacroRule) -> Self {
         Self {
-            variant: MacroVariant::Custom,
-            name: bm.name.to_owned(),
-            args: bm.args.to_owned(),
-            expr: bm.to_string(),
+            variant: crate::sigmap::MacroVariant::Custom,
+            name: mac.name.to_owned(),
+            args: mac.args.to_owned(),
+            expr: mac.to_string(),
         }
     }
 }
@@ -170,6 +172,7 @@ impl MacroMap {
     }
 
     /// Get macro signatures object
+    #[cfg(feature = "signature")]
     pub fn get_signatures(&self) -> Vec<MacroSignature> {
         let key_iter = self.keyword.macros
             .iter()
@@ -354,33 +357,5 @@ impl DiffOption {
             _ => return Err(RadError::InvalidConversion(format!("Diffoption, \"{}\" is not a vliad type", text))),
         };
         Ok(var)
-    }
-}
-
-/// Type(variant) of macro
-#[derive(Debug)]
-pub enum MacroVariant {
-    Keyword,
-    Basic,
-    Custom,
-}
-
-/// Macro signature
-pub struct MacroSignature {
-    pub variant: MacroVariant,
-    pub name: String,
-    pub args: Vec<String>,
-    pub expr: String,
-}
-
-impl Display for MacroSignature {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,
-            r#"{{"variant": "{:?}","name": "{}","args": {:?},"expr": "{}"}}"#,
-            self.variant,
-            self.name,
-            self.args,
-            self.expr,
-        )
     }
 }
