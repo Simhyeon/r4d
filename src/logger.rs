@@ -3,7 +3,7 @@
 //! Logger handles all kinds of logging logics. Such log can be warning, error or debug logs.
 
 use std::io::Write;
-use crate::models::WriteOption;
+use crate::models::{WriteOption, RadResult};
 use crate::consts::*;
 use crate::utils::Utils;
 
