@@ -114,9 +114,11 @@ use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::models::{CommentType, MacroFragment, MacroMap, MacroRule, MacroSignature, RuleFile, UnbalancedChecker, WriteOption};
+use crate::models::{CommentType, MacroFragment, MacroMap, MacroRule, RuleFile, UnbalancedChecker, WriteOption};
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};
+#[cfg(feature = "signature")]
+use crate::sigmap::SignatureMap;
 use crate::utils::Utils;
 use crate::{RadResult, consts::*};
 use crate::lexor::*;
@@ -475,9 +477,10 @@ impl Processor {
     // <PROCESS>
     //
     
-    /// Get macro signatrues
-    pub fn get_macro_signatures(&self) -> RadResult<Vec<MacroSignature>> {
-        Ok(self.map.get_signatures())
+    /// Get macro signatrues vector
+    #[cfg(feature = "signature")]
+    pub fn get_macro_signatures(&self) -> RadResult<SignatureMap> {
+        Ok(SignatureMap::new(self.map.get_signatures()))
     }
 
     /// Print current permission status
