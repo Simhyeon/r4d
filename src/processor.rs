@@ -109,13 +109,12 @@ use std::io::{self, BufReader, Write};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::{ Path , PathBuf};
-use crate::basic::MacroType;
 use crate::closure_map::ClosureMap;
 use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::models::{CommentType, MacroFragment, MacroMap, MacroRule, RuleFile, UnbalancedChecker, WriteOption};
+use crate::models::{CommentType, MacroFragment, MacroMap, MacroRule, MacroSignature, RuleFile, UnbalancedChecker, WriteOption};
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};
 use crate::utils::Utils;
@@ -123,6 +122,7 @@ use crate::{RadResult, consts::*};
 use crate::lexor::*;
 use crate::define_parser::DefineParser;
 use crate::arg_parser::{ArgParser, GreedyState};
+use crate::MacroType;
 use regex::Regex;
 use lazy_static::lazy_static;
 
@@ -475,14 +475,9 @@ impl Processor {
     // <PROCESS>
     //
     
-    /// Print all macro information
-    ///
-    /// This can be used to simpy check if currently installed r4d binary file has full set of
-    /// macros that is expected, or enable other extensions or programs to utilize macro
-    /// information for auto-complete intellisense and so on and so forth.
-    /// Also, this might be used in debug mode? TODO Maybe not,
-    pub fn print_macro_information(&self) -> RadResult<()> {
-        Ok(())
+    /// Get macro signatrues
+    pub fn get_macro_signatures(&self) -> RadResult<Vec<MacroSignature>> {
+        Ok(self.map.get_signatures())
     }
 
     /// Print current permission status
@@ -1020,7 +1015,7 @@ impl Processor {
 
         // Find keyword macro
         if self.map.is_keyword(name) {
-            let func = self.map.keyword.get(name).unwrap();
+            let func = self.map.keyword.get_func(name).unwrap();
             let final_result = func(&args, level,self)?;
             return Ok(EvalResult::Eval(final_result));
         }
@@ -1047,7 +1042,7 @@ impl Processor {
         // Find basic macro
         else if self.map.basic.contains(&name) {
             // Func always exists, because contains succeeded.
-            let func = self.map.basic.get(name).unwrap();
+            let func = self.map.basic.get_func(name).unwrap();
             let final_result = func(&args, greedy, self)?;
             return Ok(EvalResult::Eval(final_result));
         } 
