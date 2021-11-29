@@ -6,6 +6,9 @@
 Should I include the whole damn readme files inside help message? I personally
 doesn't think that is necessary nor desirable.
 
+* [x] Make signature method
+* [x] Use clap arg builder
+
 ### TODOs
 
 * [ ] Export to python binding
@@ -23,22 +26,9 @@ whole parsing process, meh I don't think I can... Focus on define parsing.
 * [-] Make parser separated
 This is hard to make it right... for current status
 
-* [ ] Print out all macro informations as readable format such as json or
-something else so that other IDE helpers can be really useful and intellisense
-would work not some hand-made snippets 
-- The problem is this is not so cheap pick, and needs some serious consideration. FM.
-
 * [ ] New basic macros
   * [ ] Possibly SQL,CSV macros
-    * [ ] Optional sqlite feature
-- The thing is, this really spoils my original intent of making r4d as
-cross-platform as possible. This(sqlite) depends on every compilation on each
-machine. Though sqlite is much more lightweight and easier to configure to be
-frankly speaking, it still itches me...
-- Gdmarp's way was to actually use simple wrapper around SQL querys and let
-user to handle all the other hassels of installation. Which means that it is
-not a responsibility of macro processor of installing database interface but of
-the user. 
+  - Sqlite is not ideal but basic indexing would be really helpful
 
 Following is such hard to do cleanly, deterred
 * [-] Lipsum variants

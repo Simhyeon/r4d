@@ -189,6 +189,8 @@ fetches file located in /home/radman/content.rs. On
 
 ### read
 
+AUTH : FIN
+
 "Read" include file's content but in a streamlined way. It include files
 without saving to any memory. Use this macro when you read from huge file which
 might affect memory usage but make sure macro is directly invoked or use some
@@ -300,7 +302,7 @@ $ifenv(HOME,$env(HOME))
 /home/username
 ```
 
-### ifenv (keyword macro)
+### ifenvel (keyword macro)
 
 AUTH: ENV
 
