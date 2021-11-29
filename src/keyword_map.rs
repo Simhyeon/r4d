@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 use std::collections::HashMap;
 use crate::{AuthType, RadError};
 use crate::utils::Utils;
-use crate::models::{RadResult, MacroSignature, MacroVariant};
+use crate::models::RadResult;
 use crate::arg_parser::ArgParser;
 use crate::Processor;
 
@@ -460,10 +460,11 @@ impl std::fmt::Display for KMacroSign {
     }
 }
 
-impl From<&KMacroSign> for MacroSignature {
+#[cfg(feature = "signature")]
+impl From<&KMacroSign> for crate::sigmap::MacroSignature {
     fn from(bm: &KMacroSign) -> Self {
         Self {
-            variant: MacroVariant::Keyword,
+            variant: crate::sigmap::MacroVariant::Keyword,
             name: bm.name.to_owned(),
             args: bm.args.to_owned(),
             expr: bm.to_string(),
