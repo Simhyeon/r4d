@@ -31,7 +31,7 @@
 //!
 //! **Library**
 //! ```rust
-//! use rad::Processor;
+//! use rad::{Processor, RadResult};
 //! use std::path::Path;
 //! 
 //! let mut processor = Processor::new()

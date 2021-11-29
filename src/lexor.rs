@@ -7,7 +7,7 @@
 //! Lexor carries lexor cursor(state) and validates if given character is valid and whether the
 //! character should be saved as a fragment of macro.
 
-use crate::error::RadError;
+use crate::models::RadResult;
 use crate::consts::*;
 use crate::models::CommentType;
 use crate::utils::Utils;
@@ -58,7 +58,7 @@ impl Lexor {
     }
 
     /// Validate the character
-    pub fn lex(&mut self, ch: char) -> Result<LexResult, RadError> {
+    pub fn lex(&mut self, ch: char) -> RadResult<LexResult> {
         let result: LexResult;
         // Literal related
         if self.start_literal(ch) {

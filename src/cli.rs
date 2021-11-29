@@ -4,7 +4,7 @@
 //! Cli module is only included in binary feature flag.
 
 use clap::clap_app;
-use crate::error::RadError;
+use crate::RadResult;
 use crate::auth::AuthType;
 use crate::processor::Processor;
 use crate::utils::Utils;
@@ -35,14 +35,14 @@ impl Cli {
     /// User method to call cli workflow
     ///
     /// This sequentially parse command line arguments and execute necessary operations
-    pub fn parse(&mut self) -> Result<(), RadError>{
+    pub fn parse(&mut self) -> RadResult<()> {
         let cli_args = Cli::args_builder();
         self.run_processor(&cli_args)?;
         Ok(())
     }
 
     /// Parse arguments and run processor
-    fn run_processor(&mut self, args: & clap::ArgMatches) -> Result<(), RadError> {
+    fn run_processor(&mut self, args: & clap::ArgMatches) -> RadResult<()> {
 
         self.parse_options(args);
         // Build processor

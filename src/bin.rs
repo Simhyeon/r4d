@@ -1,8 +1,8 @@
 #[cfg(feature = "clap")]
 use rad::Cli;
-use rad::RadError;
+use rad::RadResult;
 
-pub fn main() -> Result<(), RadError> {
+pub fn main() -> RadResult<()> {
 
     // Enable color on pager such as "less" 
     // by overloading color related environment

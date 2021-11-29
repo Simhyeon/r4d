@@ -6,7 +6,6 @@ use std::io::Write;
 use crate::models::WriteOption;
 use crate::consts::*;
 use crate::utils::Utils;
-use crate::error::RadError;
 
 /// Logger that controls logging
 pub(crate) struct Logger {
@@ -147,7 +146,7 @@ impl Logger{
     }
 
     /// Log error
-    pub fn elog(&mut self, log : &str) -> Result<(), RadError> {
+    pub fn elog(&mut self, log : &str) -> RadResult<()> {
         self.error_count = self.error_count + 1; 
 
         if self.assert { return Ok(()); }
@@ -185,7 +184,7 @@ impl Logger{
     }
 
     #[cfg(feature = "debug")]
-    pub fn elog_no_prompt(&mut self, log : impl std::fmt::Display) -> Result<(), RadError> {
+    pub fn elog_no_prompt(&mut self, log : impl std::fmt::Display) -> RadResult<()> {
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
@@ -201,7 +200,7 @@ impl Logger{
     }
 
     /// Log warning
-    pub fn wlog(&mut self, log : &str) -> Result<(), RadError> {
+    pub fn wlog(&mut self, log : &str) -> RadResult<()> {
         if self.suppress_warning { return Ok(()); }
         self.warning_count = self.warning_count + 1; 
 
@@ -240,7 +239,7 @@ impl Logger{
     }
 
     /// Assertion log
-    pub fn alog(&mut self, success: bool) -> Result<(), RadError> {
+    pub fn alog(&mut self, success: bool) -> RadResult<()> {
         if success { 
             self.assert_success = self.assert_success + 1; 
             return Ok(());
@@ -278,7 +277,7 @@ impl Logger{
     }
 
     /// Print result of logging of warnings and errors
-    pub fn print_result(&mut self) -> Result<(), RadError> {
+    pub fn print_result(&mut self) -> RadResult<()> {
         if let Some(option) = &mut self.write_option {
             // There is either error or warning
             let error_result = format!("{}: found {} errors",Utils::red("error"), self.error_count);
@@ -331,7 +330,7 @@ FAIL: {}",Utils::green("Assert"), self.assert_success, self.assert_fail
 
     /// Log debug information
     #[cfg(feature = "debug")]
-    pub fn dlog_print(&mut self, log : &str) -> Result<(), RadError> {
+    pub fn dlog_print(&mut self, log : &str) -> RadResult<()> {
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::Terminal => {

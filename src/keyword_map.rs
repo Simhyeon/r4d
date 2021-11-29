@@ -3,10 +3,11 @@ use std::iter::FromIterator;
 use std::collections::HashMap;
 use crate::{AuthType, RadError};
 use crate::utils::Utils;
+use crate::models::RadResult;
 use crate::arg_parser::ArgParser;
 use crate::Processor;
 
-type KeywordMacType = fn(&str, usize,&mut Processor) -> Result<Option<String>, RadError>;
+type KeywordMacType = fn(&str, usize,&mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
 pub struct KeywordMacro {
@@ -63,7 +64,7 @@ impl KeywordMacro {
     /// 
     /// $pause(true)
     /// $pause(false)
-    fn pause(args: &str, level: usize,processor : &mut Processor) -> Result<Option<String>, RadError> {
+    fn pause(args: &str, level: usize,processor : &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
             let arg = &processor.parse_chunk_args(level, "", &args[0])?;
 
@@ -89,7 +90,7 @@ impl KeywordMacro {
     /// # Usage 
     ///
     /// $foreach(\*a,b,c*\,$:)
-    fn foreach(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn foreach(args: &str, level: usize,processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let mut sums = String::new();
             let loopable = &processor.parse_chunk_args(level, "", &args[0])?;
@@ -109,7 +110,7 @@ impl KeywordMacro {
     /// # Usage
     ///
     /// $forloop(1,5,$:)
-    fn forloop(args: &str, level: usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn forloop(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
             let mut sums = String::new();
 
@@ -145,7 +146,7 @@ impl KeywordMacro {
     /// # Usage 
     ///
     /// $if(evaluation, ifstate)
-    fn if_cond(args: &str,level:usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn if_cond(args: &str,level:usize,processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let boolean = &processor.parse_chunk_args(level,"",&args[0])?;
 
@@ -171,7 +172,7 @@ impl KeywordMacro {
     /// # Usage 
     ///
     /// $ifelse(evaluation, \*ifstate*\, \*elsestate*\)
-    fn ifelse(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn ifelse(args: &str, level: usize,processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
             let boolean = &processor.parse_chunk_args(level,"",&args[0])?;
 
@@ -199,7 +200,7 @@ impl KeywordMacro {
     /// # Usage
     ///
     /// $ifdef(macro_name, expr)
-    fn ifdef(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn ifdef(args: &str, level: usize,processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
             let map = processor.get_map();
@@ -221,7 +222,7 @@ impl KeywordMacro {
     /// # Usage
     ///
     /// $ifdefelse(macro_name,expr,expr2)
-    fn ifdefel(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn ifdefel(args: &str, level: usize,processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
             let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
             let map = processor.get_map();
@@ -245,7 +246,7 @@ impl KeywordMacro {
     /// # Usage
     ///
     /// $ifenv(env_name, expr)
-    fn ifenv(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn ifenv(args: &str, level: usize,processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("ifenv", AuthType::ENV,processor)? {
             return Ok(None);
         }
@@ -274,7 +275,7 @@ impl KeywordMacro {
     /// # Usage
     ///
     /// $ifenvel(env_name,expr,expr2)
-    fn ifenvel(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn ifenvel(args: &str, level: usize,processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("ifenvel", AuthType::ENV,processor)? {
             return Ok(None);
         }
@@ -305,7 +306,7 @@ impl KeywordMacro {
     /// # Usage
     ///
     /// $repl(macro,value)
-    fn replace(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn replace(args: &str, level: usize,processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
             let target = args[1].as_str();
@@ -323,7 +324,7 @@ impl KeywordMacro {
     /// # Usage
     ///
     /// $fassert(abc,abc)
-    fn assert_fail(args: &str, level: usize,processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn assert_fail(args: &str, level: usize,processor: &mut Processor) -> RadResult<Option<String>> {
         let result = processor.parse_chunk_args(level, "", args);
         if let Err(_) = result {
             processor.track_assertion(true)?;
@@ -335,7 +336,7 @@ impl KeywordMacro {
     }
 
     #[deprecated(since = "1.2", note = "Bind is deprecated and will be removed in 2.0")]
-    fn bind_depre(args: &str, level:usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn bind_depre(args: &str, level:usize, processor: &mut Processor) -> RadResult<Option<String>> {
         processor.log_warning("Bind is deprecated and will be removed in 2.0 version. Use let instead.")?;
         Self::bind_to_local(args, level, processor)
     }
@@ -345,7 +346,7 @@ impl KeywordMacro {
     /// # Usage
     ///
     /// $declare(n1,n2,n3)
-    fn declare(args: &str, level:usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn declare(args: &str, level:usize, processor: &mut Processor) -> RadResult<Option<String>> {
         let names = processor.parse_chunk_args(level, "",&Utils::trim(args))?;
         // TODO Create empty macro rules
         let custom_rules = names
@@ -376,7 +377,7 @@ impl KeywordMacro {
     /// # Usage
     ///
     /// $let(name,value)
-    fn bind_to_local(args: &str, level:usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn bind_to_local(args: &str, level:usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
             let value = processor.parse_chunk_args(level, "",&Utils::trim(&args[1]))?;
@@ -395,7 +396,7 @@ impl KeywordMacro {
     /// This is technically same with static
     /// This macro will be completely removed in 2.0
     #[deprecated(since = "1.2", note = "Global is deprecated and will be removed in 2.0")]
-    fn global_depre(args: &str, level: usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn global_depre(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         processor.log_warning("Global is deprecated and will be removed in 2.0 version. Use static instead.")?;
         Self::define_static(args,level,processor)
     }
@@ -405,7 +406,7 @@ impl KeywordMacro {
     /// # Usage
     ///
     /// $static(name,value)
-    fn define_static(args: &str, level : usize, processor: &mut Processor) -> Result<Option<String>, RadError> {
+    fn define_static(args: &str, level : usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
             let value = processor.parse_chunk_args(level, "",&Utils::trim(&args[1]))?;

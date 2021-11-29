@@ -7,9 +7,7 @@ use std::fs::{File,OpenOptions};
 use std::collections::HashMap;
 use crate::consts::*;
 use similar::ChangeTag;
-use crate::models::{DiffOption, MacroFragment};
-
-use crate::RadError;
+use crate::models::{DiffOption, MacroFragment, RadResult};
 
 /// Debugger
 pub(crate) struct Debugger {
@@ -48,7 +46,7 @@ impl Debugger {
     /// Enable diff logic
     ///
     /// WIth diff enabled, diff information will be saved to two separate files
-    pub fn enable_diff(&mut self, diff_option : DiffOption) -> Result<(), RadError> {
+    pub fn enable_diff(&mut self, diff_option : DiffOption) -> RadResult<()> {
         // DiffOption specific operation
         match diff_option {
             DiffOption::None => return Ok(()), // No diff, return
@@ -86,7 +84,7 @@ impl Debugger {
     /// Get debug command
     ///
     /// Get user input and parsed the given command
-    pub fn get_command(&self, log : &str, prompt: Option<&str>) -> Result<String, RadError> {
+    pub fn get_command(&self, log : &str, prompt: Option<&str>) -> RadResult<String> {
         // Disable line wrap
         if self.interactive {
             std::io::stdout()
@@ -119,7 +117,7 @@ impl Debugger {
     }
 
     /// Remove terminal lines by given count
-    fn remove_terminal_lines(&self, count: usize) -> Result<(), RadError> {
+    fn remove_terminal_lines(&self, count: usize) -> RadResult<()> {
 
         // Clear current line
         std::io::stdout()
@@ -137,7 +135,7 @@ impl Debugger {
     }
 
     /// Print differences of original and processed
-    pub fn yield_diff(&self, logger: &mut Logger) -> Result<(), RadError> {
+    pub fn yield_diff(&self, logger: &mut Logger) -> RadResult<()> {
         if !self.do_yield_diff { return Ok(()); }
 
         let source = std::fs::read_to_string(Path::new(DIFF_SOURCE_FILE))?;
@@ -189,7 +187,7 @@ impl Debugger {
     }
 
     /// Process breakpoint
-    pub(crate) fn break_point(&mut self, frag: &mut MacroFragment, logger: &mut Logger) -> Result<(), RadError> {
+    pub(crate) fn break_point(&mut self, frag: &mut MacroFragment, logger: &mut Logger) -> RadResult<()> {
         if &frag.name == "BR" {
             if self.debug {
                 if let DebugSwitch::NextBreakPoint(name) = &self.debug_switch {
@@ -212,7 +210,7 @@ impl Debugger {
     }
 
     /// Print debug information log
-    pub(crate) fn print_log(&mut self, macro_name: &str, raw_args: &str, frag: &MacroFragment, logger: &mut Logger) -> Result<(), RadError> {
+    pub(crate) fn print_log(&mut self, macro_name: &str, raw_args: &str, frag: &MacroFragment, logger: &mut Logger) -> RadResult<()> {
         if !self.log { return Ok(());}
         let attributes = self.print_macro_attr(frag);
         logger.dlog_print(
@@ -239,7 +237,7 @@ impl Debugger {
     }
 
     /// Get user input command before processing starts
-    pub(crate) fn user_input_on_start(&mut self, current_input: &str,logger: &mut Logger) -> Result<(), RadError> {
+    pub(crate) fn user_input_on_start(&mut self, current_input: &str,logger: &mut Logger) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
             let mut log = if let Some(pl) = self.prompt_log.take() { pl }
@@ -252,7 +250,7 @@ impl Debugger {
 
 
     /// Prompt user input until break condition has been met
-    fn user_input_prompt(&mut self, frag: &MacroFragment, initial_prompt: &str, logger: &mut Logger) -> Result<(), RadError> {
+    fn user_input_prompt(&mut self, frag: &MacroFragment, initial_prompt: &str, logger: &mut Logger) -> RadResult<()> {
         // Respect custom prompt log if it exists
         let mut log = if let Some(pl) = self.prompt_log.take() { pl }
         else {
@@ -269,7 +267,7 @@ impl Debugger {
     }
 
     /// Continuously get user input until break situation
-    fn command_loop(&mut self, log: &mut String ,mut prompt: &str, frag: Option<&MacroFragment>, logger: &mut Logger) -> Result<(), RadError> {
+    fn command_loop(&mut self, log: &mut String ,mut prompt: &str, frag: Option<&MacroFragment>, logger: &mut Logger) -> RadResult<()> {
         let mut do_continue = true;
         while do_continue {
             // This technically strips newline feed regardless of platforms 
@@ -288,7 +286,7 @@ impl Debugger {
     /// Get user input on line 
     ///
     /// This method should be called before evaluation of a line
-    pub fn user_input_on_line(&mut self,frag: &MacroFragment, logger: &mut Logger) -> Result<(), RadError> {
+    pub fn user_input_on_line(&mut self,frag: &MacroFragment, logger: &mut Logger) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
             // Only when debugswitch is nextline
@@ -303,7 +301,7 @@ impl Debugger {
     }
 
     /// Get user input before macro execution
-    pub fn user_input_before_macro(&mut self, frag: &MacroFragment, logger: &mut Logger) -> Result<(), RadError> {
+    pub fn user_input_before_macro(&mut self, frag: &MacroFragment, logger: &mut Logger) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
             match &self.debug_switch {
@@ -316,7 +314,7 @@ impl Debugger {
     }
 
     /// Get user input after execution
-    pub fn user_input_on_macro(&mut self, frag: &MacroFragment, logger: &mut Logger) -> Result<(), RadError> {
+    pub fn user_input_on_macro(&mut self, frag: &MacroFragment, logger: &mut Logger) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
             match &self.debug_switch {
@@ -329,7 +327,7 @@ impl Debugger {
     }
 
     /// Get user input on execution but also nested macro can be targeted
-    pub fn user_input_on_step(&mut self, frag: &MacroFragment, logger: &mut Logger) -> Result<(), RadError> {
+    pub fn user_input_on_step(&mut self, frag: &MacroFragment, logger: &mut Logger) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
             if let &DebugSwitch::StepMacro = &self.debug_switch {
@@ -344,7 +342,7 @@ impl Debugger {
     }
 
     /// Get user input and evaluates whether loop of input prompt should be breaked or not
-    pub fn parse_debug_command_and_continue(&mut self, command_input: &str, frag: Option<&MacroFragment>, log: &mut String, logger: &mut Logger) -> Result<bool, RadError> {
+    pub fn parse_debug_command_and_continue(&mut self, command_input: &str, frag: Option<&MacroFragment>, log: &mut String, logger: &mut Logger) -> RadResult<bool> {
         let command_input: Vec<&str> = command_input.split(' ').collect();
         let command = command_input[0];
         // Default is empty &str ""
@@ -469,7 +467,7 @@ impl Debugger {
     }
 
     /// Bridge function that waits user's stdin input
-    pub fn debug_wait_input(&self, log: &str, prompt: Option<&str>) -> Result<String, RadError> {
+    pub fn debug_wait_input(&self, log: &str, prompt: Option<&str>) -> RadResult<String> {
         Ok(self.get_command(log, prompt)?)
     }
 
@@ -487,7 +485,7 @@ impl Debugger {
     }
 
     // Save original content to a file for diff check 
-    pub fn write_to_original(&mut self, content: &str) -> Result<(), RadError> {
+    pub fn write_to_original(&mut self, content: &str) -> RadResult<()> {
         if self.do_yield_diff {
             self.diff_original.as_ref().unwrap().write_all(content.as_bytes())?;
         }
@@ -495,7 +493,7 @@ impl Debugger {
     }
 
     // Save processed content to a file for diff check 
-    pub fn write_to_processed(&mut self, content: &str) -> Result<(), RadError> {
+    pub fn write_to_processed(&mut self, content: &str) -> RadResult<()> {
         if self.do_yield_diff {
             self.diff_processed.as_ref().unwrap().write_all(content.as_bytes())?;
         }

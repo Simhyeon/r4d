@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use crate::error::RadError;
+use crate::RadResult;
 use crate::arg_parser::ArgParser;
 
 pub(crate) struct ClosureMap {
-    map: HashMap<String, Box<dyn FnMut(&str,bool) -> Result<Option<String>, RadError>>>,
+    map: HashMap<String, Box<dyn FnMut(&str,bool) -> RadResult<Option<String>>>>,
 }
 
 impl ClosureMap {
@@ -23,7 +24,7 @@ impl ClosureMap {
     {
         self.map.insert(
             name.to_owned(), 
-            Box::new(move |args: &str, greedy:bool| -> Result<Option<String>, RadError> {  
+            Box::new(move |args: &str, greedy:bool| -> RadResult<Option<String>> {  
                 if let Some(args) = ArgParser::new().args_with_len(args, arg_count, greedy) {
                     Ok(closure(args))
                 } else {
@@ -34,7 +35,7 @@ impl ClosureMap {
     }
 
     /// Execute closure by name
-    pub fn call(&mut self, name: &str, args: &str, greedy: bool) -> Result<Option<String>, RadError> {
+    pub fn call(&mut self, name: &str, args: &str, greedy: bool) -> RadResult<Option<String>> {
         if let Some(closure) = self.map.get_mut(name) {
             Ok(closure(args,greedy)?)
         } else {

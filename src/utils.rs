@@ -1,4 +1,5 @@
 use crate::error::RadError;
+use crate::models::RadResult;
 use crate::auth::{AuthType, AuthState};
 use crate::Processor;
 use regex::Regex;
@@ -53,7 +54,7 @@ impl Utils {
     /// Check if a character is true
     ///
     /// In this contenxt, true and non zero number is 'true' while false and zero number is false
-    pub(crate) fn is_arg_true(arg: &str) -> Result<bool, RadError> {
+    pub(crate) fn is_arg_true(arg: &str) -> RadResult<bool> {
         let arg = Utils::trim(arg);
         if let Ok(value) = arg.parse::<usize>() {
             if value == 0 {
@@ -141,7 +142,7 @@ impl Utils {
 
     #[cfg(feature = "debug")]
     /// Clear terminal cells
-    pub fn clear_terminal() -> Result<(), RadError> {
+    pub fn clear_terminal() -> RadResult<()> {
         use crossterm::{ExecutableCommand, terminal::ClearType};
 
         std::io::stdout()
@@ -152,7 +153,7 @@ impl Utils {
     }
 
     /// Check if path is really in file system or not
-    pub fn is_real_path(path: &std::path::Path) -> Result<(), RadError> {
+    pub fn is_real_path(path: &std::path::Path) -> RadResult<()> {
         if !path.exists() { 
             return Err(RadError::InvalidFile(path.display().to_string()));
         }
@@ -169,7 +170,7 @@ impl Utils {
     }
 
     /// Check file authority
-    pub(crate) fn is_granted(name:&str, auth_type: AuthType, processor: &mut Processor) -> Result<bool, RadError> {
+    pub(crate) fn is_granted(name:&str, auth_type: AuthType, processor: &mut Processor) -> RadResult<bool> {
         match processor.get_auth_state(&auth_type) {
             AuthState::Restricted => {
                 Err(RadError::PermissionDenied(name.to_owned(), auth_type))

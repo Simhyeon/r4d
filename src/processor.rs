@@ -9,7 +9,7 @@
 //!
 //! # Detailed usage
 //! ```rust
-//! use rad::RadError;
+//! use rad::RadResult;
 //! use rad::Processor;
 //! use rad::MacroType;
 //! use rad::AuthType;
@@ -131,12 +131,12 @@ lazy_static! {
     static ref MAC_NAME : Regex = Regex::new(r#"^[_a-zA-Z]\w*$"#).expect("Failed to create regex expression");
 }
 
-// Methods of processor consists of multiple sections followed as
+// Methods of processor consists of multiple sections followed as <TAG>
 // <BUILDER>            -> Builder pattern related
 // <PROCESS>            -> User functions related
 // <DEBUG>              -> Debug related functions
 // <PARSE>              -> Parse rleated functions
-//     <LEX>            -> sub sectin of parse, this is technically not a lexing but it's named as
+//     <LEX>            -> sub section of parse, this is technically not a lexing but it's named as
 // <MISC>               -> Miscellaenous
 //
 // Find each section's start with <NAME> and find end of section with </NAME>
@@ -260,7 +260,7 @@ impl Processor {
     }
 
     /// Set write option to yield output to the file
-    pub fn write_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> Result<&mut Self, RadError> {
+    pub fn write_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> RadResult<&mut Self> {
         if let Some(target_file) = target_file {
             let file = OpenOptions::new()
                 .create(true)
@@ -278,7 +278,7 @@ impl Processor {
     }
 
     /// Yield error to the file
-    pub fn error_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> Result<&mut Self, RadError> {
+    pub fn error_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> RadResult<&mut Self> {
         if let Some(target_file) = target_file {
             let file = OpenOptions::new()
                 .create(true)
@@ -297,7 +297,7 @@ impl Processor {
     }
 
     /// Custom comment character
-    pub fn custom_comment_char(&mut self, character: char) -> Result<&mut Self, RadError> {
+    pub fn custom_comment_char(&mut self, character: char) -> RadResult<&mut Self> {
         // check if unallowed character
         if UNALLOWED_CHARS.is_match(&character.to_string()) {
             return Err(RadError::UnallowedChar(format!("\"{}\" is not allowed", character)));
@@ -310,7 +310,7 @@ impl Processor {
     }
 
     /// Custom macro character
-    pub fn custom_macro_char(&mut self, character: char) -> Result<&mut Self, RadError> {
+    pub fn custom_macro_char(&mut self, character: char) -> RadResult<&mut Self> {
         if UNALLOWED_CHARS.is_match(&character.to_string()) {
             return Err(RadError::UnallowedChar(format!("\"{}\" is not allowed", character)));
         } else if self.get_comment_char() == character {
@@ -407,7 +407,7 @@ impl Processor {
 
     /// Add diff option
     #[cfg(feature = "debug")]
-    pub fn diff(&mut self, diff: DiffOption) -> Result<&mut Self, RadError> {
+    pub fn diff(&mut self, diff: DiffOption) -> RadResult<&mut Self> {
         self.debugger.enable_diff(diff)?; 
         Ok(self)
     }
@@ -420,7 +420,7 @@ impl Processor {
     }
 
     /// Add custom rules
-    pub fn custom_rules(&mut self, paths: Option<Vec<impl AsRef<Path>>>) -> Result<&mut Self, RadError> {
+    pub fn custom_rules(&mut self, paths: Option<Vec<impl AsRef<Path>>>) -> RadResult<&mut Self> {
         if let Some(paths) = paths {
             let mut rule_file = RuleFile::new(None);
             for p in paths.iter() {
@@ -474,10 +474,20 @@ impl Processor {
     // Processing methods
     // <PROCESS>
     //
+    
+    /// Print all macro information
+    ///
+    /// This can be used to simpy check if currently installed r4d binary file has full set of
+    /// macros that is expected, or enable other extensions or programs to utilize macro
+    /// information for auto-complete intellisense and so on and so forth.
+    /// Also, this might be used in debug mode? TODO Maybe not,
+    pub fn print_macro_information(&self) -> RadResult<()> {
+        Ok(())
+    }
 
     /// Print current permission status
     #[allow(dead_code)]
-    pub fn print_permission(&mut self) -> Result<(), RadError> {
+    pub fn print_permission(&mut self) -> RadResult<()> {
         if let Some(status) = self.state.auth_flags.get_status_string() {
             let mut status_with_header = String::from("Permission granted");
             status_with_header.push_str(&status);
@@ -488,7 +498,7 @@ impl Processor {
 
     /// Print the result of a processing
     #[allow(dead_code)]
-    pub fn print_result(&mut self) -> Result<(), RadError> {
+    pub fn print_result(&mut self) -> RadResult<()> {
         self.logger.print_result()?;
 
         #[cfg(feature = "debug")]
@@ -500,7 +510,7 @@ impl Processor {
     /// Freeze to single file
     ///
     /// Frozen file is a bincode encoded binary format file.
-    pub fn freeze_to_file(&self, path: impl AsRef<Path>) -> Result<(), RadError> {
+    pub fn freeze_to_file(&self, path: impl AsRef<Path>) -> RadResult<()> {
         // File path validity is checked by freeze method
         RuleFile::new(Some(self.map.custom.clone())).freeze(path.as_ref())?;
         Ok(())
@@ -551,7 +561,7 @@ impl Processor {
     /// ```rust
     /// processor.add_custom_rules(vec![("macro_name","macro_arg1 macro_arg2","macro_body=$macro_arg1()")]);
     /// ```
-    pub fn add_custom_rules(&mut self, rules: Vec<(impl AsRef<str>,&str,&str)>) -> Result<(), RadError> {
+    pub fn add_custom_rules(&mut self, rules: Vec<(impl AsRef<str>,&str,&str)>) -> RadResult<()> {
         for (name,args,body) in rules {
             let name = name.as_ref();
             if !MAC_NAME.is_match(name) {
@@ -627,7 +637,7 @@ impl Processor {
     }
 
     /// Read from string
-    pub fn from_string(&mut self, content: &str) -> Result<(), RadError> {
+    pub fn from_string(&mut self, content: &str) -> RadResult<()> {
         // Set name as string
         self.set_input("String")?;
 
@@ -640,7 +650,7 @@ impl Processor {
     ///
     /// If debug mode is enabled this, doesn't read stdin line by line but by chunk because user
     /// input is also a standard input and processor cannot distinguish the two
-    pub fn from_stdin(&mut self) -> Result<(), RadError> {
+    pub fn from_stdin(&mut self) -> RadResult<()> {
         let stdin = io::stdin();
 
         // Early return if debug
@@ -660,7 +670,7 @@ impl Processor {
     }
 
     /// Process contents from a file
-    pub fn from_file(&mut self, path :impl AsRef<Path>) -> Result<(), RadError> {
+    pub fn from_file(&mut self, path :impl AsRef<Path>) -> RadResult<()> {
         // Sandboxed environment, backup
         let backup = if self.state.sandbox { Some(self.backup()) } else { None };
         // Set file as name of given path
@@ -672,7 +682,7 @@ impl Processor {
         Ok(())
     }
 
-    pub(crate) fn from_file_as_chunk(&mut self, path :impl AsRef<Path>) -> Result<Option<String>, RadError> {
+    pub(crate) fn from_file_as_chunk(&mut self, path :impl AsRef<Path>) -> RadResult<Option<String>> {
         // Sandboxed environment, backup
         let backup = if self.state.sandbox { Some(self.backup()) } else { None };
         // Set file as name of given path
@@ -685,7 +695,7 @@ impl Processor {
     }
 
     /// Internal method for processing buffers line by line
-    fn from_buffer(&mut self,buffer: &mut impl std::io::BufRead, backup: Option<SandboxBackup>, use_container: bool) -> Result<Option<String>, RadError> {
+    fn from_buffer(&mut self,buffer: &mut impl std::io::BufRead, backup: Option<SandboxBackup>, use_container: bool) -> RadResult<Option<String>> {
         let mut line_iter = Utils::full_lines(buffer).peekable();
         let mut lexor = Lexor::new(self.get_macro_char(), self.get_comment_char(), &self.state.comment_type);
         let mut frag = MacroFragment::new();
@@ -781,7 +791,7 @@ impl Processor {
 
     /// Check if debug macro should be executed
     #[cfg(feature = "debug")]
-    fn check_debug_macro(&mut self, frag: &mut MacroFragment, level: usize) -> Result<(), RadError> {
+    fn check_debug_macro(&mut self, frag: &mut MacroFragment, level: usize) -> RadResult<()> {
         // Early return if not in a debug mode
         if !self.is_debug() { return Ok(()); }
 
@@ -809,7 +819,7 @@ impl Processor {
     ///
     /// This parses given input as line by line with an iterator of lines including trailing new
     /// line chracter.
-    fn parse_line(&mut self, lines :&mut impl std::iter::Iterator<Item = std::io::Result<String>>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> Result<ParseResult, RadError> {
+    fn parse_line(&mut self, lines :&mut impl std::iter::Iterator<Item = std::io::Result<String>>, lexor : &mut Lexor ,frag : &mut MacroFragment) -> RadResult<ParseResult> {
         self.logger.add_line_number();
         if let Some(line) = lines.next() {
             let line = line?;
@@ -844,7 +854,7 @@ impl Processor {
     } // parse_line end
 
     /// Parse chunk args by separating it into lines which implements BufRead
-    pub(crate) fn parse_chunk_args(&mut self, level: usize, _caller: &str, chunk: &str) -> Result<String, RadError> {
+    pub(crate) fn parse_chunk_args(&mut self, level: usize, _caller: &str, chunk: &str) -> RadResult<String> {
         let mut lexor = Lexor::new(self.get_macro_char(), self.get_comment_char(), &self.state.comment_type);
         let mut frag = MacroFragment::new();
         let mut result = String::new();
@@ -878,7 +888,7 @@ impl Processor {
     /// 
     /// In contrast to parse_chunk_lines, parse_chunk doesn't create lines iterator but parses the
     /// chunk as a single entity or line.
-    fn parse_chunk_body(&mut self, level: usize, caller: &str, chunk: &str) -> Result<String, RadError> {
+    fn parse_chunk_body(&mut self, level: usize, caller: &str, chunk: &str) -> RadResult<String> {
         let mut lexor = Lexor::new(self.get_macro_char(), self.get_comment_char(), &self.state.comment_type);
         let mut frag = MacroFragment::new();
         let backup = self.logger.backup_lines();
@@ -894,7 +904,7 @@ impl Processor {
     /// Parse a given line
     ///
     /// This calles lexor.lex to validate characters and decides next behaviour
-    fn parse(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, line: &str, level: usize, caller: &str) -> Result<String, RadError> {
+    fn parse(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, line: &str, level: usize, caller: &str) -> RadResult<String> {
         // Initiate values
         // Reset character number
         self.logger.reset_char_number();
@@ -991,7 +1001,7 @@ impl Processor {
     /// - Local bound macro
     /// - Custom macro
     /// - Basic macro
-    fn evaluate(&mut self,level: usize, caller: &str, name: &str, raw_args: &str, greedy: bool) -> Result<EvalResult, RadError> {
+    fn evaluate(&mut self,level: usize, caller: &str, name: &str, raw_args: &str, greedy: bool) -> RadResult<EvalResult> {
         // Increase level to represent nestedness
         let level = level + 1;
 
@@ -1055,7 +1065,7 @@ impl Processor {
     /// Invoke a custom rule and get a result
     ///
     /// Invoke rule evaluates body of macro rule because body is not evaluated on register process
-    fn invoke_rule(&mut self,level: usize ,name: &str, arg_values: &str, greedy: bool) -> Result<Option<String>, RadError> {
+    fn invoke_rule(&mut self,level: usize ,name: &str, arg_values: &str, greedy: bool) -> RadResult<Option<String>> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
         let rule = self.map.custom.get(name).unwrap().clone();
@@ -1083,7 +1093,7 @@ impl Processor {
     /// Add custom rule to macro map
     ///
     /// This doesn't clear fragment
-    fn add_rule(&mut self, frag: &MacroFragment, remainder: &mut String) -> Result<(), RadError> {
+    fn add_rule(&mut self, frag: &MacroFragment, remainder: &mut String) -> RadResult<()> {
         if let Some((name,args,body)) = self.defparser.parse_define(&frag.args) {
 
             // Strict mode
@@ -1105,7 +1115,7 @@ impl Processor {
     }
 
     /// Write text to either file or standard output according to processor's write option
-    fn write_to(&mut self, content: &str, container: &mut Option<String>) -> Result<(), RadError> {
+    fn write_to(&mut self, content: &str, container: &mut Option<String>) -> RadResult<()> {
         // Don't try to write empty string, because it's a waste
         if content.len() == 0 { return Ok(()); }
 
@@ -1160,7 +1170,7 @@ impl Processor {
         }
     }
 
-    fn lex_branch_start_frag(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor) -> Result<(), RadError> {
+    fn lex_branch_start_frag(&mut self, ch: char,frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor) -> RadResult<()> {
         #[cfg(feature = "debug")]
         self.debugger.user_input_before_macro(&frag, &mut self.logger)?;
 
@@ -1189,7 +1199,7 @@ impl Processor {
         }
     }
 
-    fn lex_branch_add_to_remainder(&mut self, ch: char,remainder: &mut String) -> Result<(), RadError> {
+    fn lex_branch_add_to_remainder(&mut self, ch: char,remainder: &mut String) -> RadResult<()> {
         if !self.checker.check(ch) && !self.state.paused {
             self.logger.freeze_number();
             self.log_warning("Unbalanced parenthesis detected.")?;
@@ -1221,7 +1231,7 @@ impl Processor {
         frag.whole_string.push(ch);
     }
 
-    fn lex_branch_end_frag(&mut self, ch: char, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize, caller: &str) -> Result<(), RadError> {
+    fn lex_branch_end_frag(&mut self, ch: char, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize, caller: &str) -> RadResult<()> {
         // Push character to whole string anyway
         frag.whole_string.push(ch);
 
@@ -1234,7 +1244,7 @@ impl Processor {
     }
 
     // Level is necessary for debug feature
-    fn lex_branch_end_frag_define(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize) -> Result<(), RadError> {
+    fn lex_branch_end_frag_define(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize) -> RadResult<()> {
         self.add_rule(frag, remainder)?;
         lexor.escape_next_newline();
         #[cfg(feature = "debug")]
@@ -1247,7 +1257,7 @@ impl Processor {
     // TODO
     // This should be renamed because it is now, not only used by lex branches
     // but also used by external logic functions such as hook macro executions.
-    fn lex_branch_end_invoke(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize, caller: &str) -> Result<(), RadError> {
+    fn lex_branch_end_invoke(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize, caller: &str) -> RadResult<()> {
         // Name is empty
         if frag.name.len() == 0 {
             self.log_error("Name is empty")?;
@@ -1289,7 +1299,7 @@ impl Processor {
         Ok(())
     }
 
-    fn lex_branch_end_frag_eval_result_error(&mut self, error : RadError) -> Result<(), RadError> {
+    fn lex_branch_end_frag_eval_result_error(&mut self, error : RadError) -> RadResult<()> {
         // this is equlvalent to conceptual if let not pattern
         if let RadError::Panic = error{
             // Do nothing
@@ -1307,7 +1317,7 @@ impl Processor {
     }
 
     // Level is needed for feature debug & hook codes
-    fn lex_branch_end_frag_eval_result_ok(&mut self, variant : EvalResult, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize) -> Result<(), RadError> {
+    fn lex_branch_end_frag_eval_result_ok(&mut self, variant : EvalResult, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize) -> RadResult<()> {
         match variant {
             EvalResult::Eval(content) => {
 
@@ -1482,7 +1492,7 @@ impl Processor {
     }
 
     /// Recover backup information into the processor
-    fn recover(&mut self, backup: SandboxBackup) -> Result<(), RadError> {
+    fn recover(&mut self, backup: SandboxBackup) -> RadResult<()> {
         // NOTE ::: Set file should come first becuase set_file override line number and character number
         self.logger.set_file(&backup.current_input);
         self.state.current_input = backup.current_input;
@@ -1494,26 +1504,26 @@ impl Processor {
         Ok(())
     }
 
-    pub(crate) fn track_assertion(&mut self, success: bool) -> Result<(), RadError> {
+    pub(crate) fn track_assertion(&mut self, success: bool) -> RadResult<()> {
         self.logger.alog(success)?;
         Ok(())
     }
 
     /// Log error
-    pub(crate) fn log_error(&mut self, log : &str) -> Result<(), RadError> {
+    pub(crate) fn log_error(&mut self, log : &str) -> RadResult<()> {
         self.logger.elog(log)?;
         Ok(())
     }
 
     /// Log warning
-    pub(crate) fn log_warning(&mut self, log : &str) -> Result<(), RadError> {
+    pub(crate) fn log_warning(&mut self, log : &str) -> RadResult<()> {
         self.logger.wlog(log)?;
         Ok(())
     }
 
     // This is not a backup but fresh set of file information
     /// Set(update) current processing file information
-    fn set_file(&mut self, file: &str) -> Result<(), RadError> {
+    fn set_file(&mut self, file: &str) -> RadResult<()> {
         let path = Path::new(file);
         if !path.exists() {
             Err(RadError::InvalidCommandOption(format!("File, \"{}\" doesn't exist, therefore cannot be read by r4d.", path.display())))
@@ -1526,7 +1536,7 @@ impl Processor {
     }
 
     /// Set some useful env values
-    fn set_file_env(&self, file: &str) -> Result<(), RadError> {
+    fn set_file_env(&self, file: &str) -> RadResult<()> {
         let path = Path::new(file);
         std::env::set_var("RAD_FILE", file);
         std::env::set_var("RAD_FILE_DIR", std::fs::canonicalize(path)?.parent().unwrap());
@@ -1536,7 +1546,7 @@ impl Processor {
     /// Set input as string not as &path
     /// 
     /// This is conceptualy identical to set_file but doesn't validate if given input is existent
-    fn set_input(&mut self, input: &str) -> Result<(), RadError> {
+    fn set_input(&mut self, input: &str) -> RadResult<()> {
         self.state.current_input = input.to_owned();
         self.logger.set_file(input);
         Ok(())

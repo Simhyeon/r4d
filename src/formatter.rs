@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use crate::consts::ESCAPED_COMMA;
 use crate::error::RadError;
+use crate::RadResult;
 
 // Lazily constructed regex expression 
 lazy_static!{
@@ -19,7 +20,7 @@ impl Formatter {
     /// - github
     /// - wikitext
     /// - html
-    pub fn csv_to_table(table_format : &str, data: &str, newline: &str) -> Result<String, RadError> {
+    pub fn csv_to_table(table_format : &str, data: &str, newline: &str) -> RadResult<String> {
         let data = Self::escape_comma(data);
         let mut reader = 
             csv::ReaderBuilder::new()
@@ -39,7 +40,7 @@ impl Formatter {
     // Formatting methods start
     // <FORMAT>
     pub fn csv_to_macros(macro_name: &str, data: &str, newline: &str) 
-        -> Result<String, RadError> 
+        -> RadResult<String> 
     {
         let data = Self::escape_comma(data);
         let mut exec = String::new();
@@ -69,7 +70,7 @@ impl Formatter {
         Ok(exec)
     }
 
-    fn gfm_table(reader : &mut csv::Reader<&[u8]>, newline: &str) -> Result<String, RadError> {
+    fn gfm_table(reader : &mut csv::Reader<&[u8]>, newline: &str) -> RadResult<String> {
         let mut table = String::new();
         table.push('|');
         let header_iter = reader.headers()?;
@@ -96,7 +97,7 @@ impl Formatter {
         Ok(table)
     }
 
-    fn wikitext_table(reader : &mut csv::Reader<&[u8]>, newline: &str) -> Result<String, RadError> {
+    fn wikitext_table(reader : &mut csv::Reader<&[u8]>, newline: &str) -> RadResult<String> {
         let mut table = String::new();
         // Add header
         table.push_str("{| class=\"wikitable\"");
@@ -125,7 +126,7 @@ impl Formatter {
         Ok(table)
     }
 
-    fn html_table(reader : &mut csv::Reader<&[u8]>, _: &str) -> Result<String, RadError> {
+    fn html_table(reader : &mut csv::Reader<&[u8]>, _: &str) -> RadResult<String> {
         let mut table = String::new();
         table.push_str("<table>");
         // Add header

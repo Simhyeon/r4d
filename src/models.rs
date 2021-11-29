@@ -101,7 +101,7 @@ impl MacroMap {
         name: &str,
         args: &str,
         body: &str,
-    ) -> Result<(),RadError> {
+    ) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
         let mac = MacroRule::new(
             &Utils::trim(name), 
@@ -195,7 +195,7 @@ impl RuleFile {
     }
 
     /// Read from rule file and make it into hash map
-    pub fn melt(&mut self, path : &Path) -> Result<(), RadError> {
+    pub fn melt(&mut self, path : &Path) -> RadResult<()> {
         Utils::is_real_path(path)?;
         let result = bincode::deserialize::<Self>(&std::fs::read(path)?);
         if let Err(_) = result {
@@ -207,7 +207,7 @@ impl RuleFile {
     }
 
     /// Convert custom rules into a single binary file
-    pub(crate) fn freeze(&self, path: &std::path::Path) -> Result<(), RadError> {
+    pub(crate) fn freeze(&self, path: &std::path::Path) -> RadResult<()> {
         let result = bincode::serialize(self);
         if let Err(_) = result {
             Err(RadError::BincodeError(format!("Failed to freeze to the file : {}", path.display())))
@@ -290,7 +290,7 @@ pub enum CommentType {
 }
 
 impl CommentType {
-    pub(crate) fn from_str(text : &str) -> Result<Self, RadError> {
+    pub(crate) fn from_str(text : &str) -> RadResult<Self> {
         let comment_type = match text.to_lowercase().as_str() {
             "none"  => Self::None,
             "start" => Self::Start,
