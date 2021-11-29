@@ -3,36 +3,36 @@ use std::iter::FromIterator;
 use std::collections::HashMap;
 use crate::{AuthType, RadError};
 use crate::utils::Utils;
-use crate::models::RadResult;
+use crate::models::{RadResult, MacroSignature, MacroVariant};
 use crate::arg_parser::ArgParser;
 use crate::Processor;
 
-type KeywordMacType = fn(&str, usize,&mut Processor) -> RadResult<Option<String>>;
+type KMacroType = fn(&str, usize,&mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
 pub struct KeywordMacro {
-    macros : HashMap<String, KeywordMacType>,
+    pub(crate) macros : HashMap<String, KMacroSign>,
 }
 
 impl KeywordMacro {
     pub fn new() -> Self {
         let map = HashMap::from_iter(IntoIter::new([
-            ("bind".to_owned(),    KeywordMacro::bind_depre       as KeywordMacType),
-            ("declare".to_owned(), KeywordMacro::declare          as KeywordMacType),
-            ("fassert".to_owned(), KeywordMacro::assert_fail      as KeywordMacType),
-            ("foreach".to_owned(), KeywordMacro::foreach          as KeywordMacType),
-            ("forloop".to_owned(), KeywordMacro::forloop          as KeywordMacType),
-            ("global".to_owned(),  KeywordMacro::global_depre     as KeywordMacType),
-            ("if".to_owned(),      KeywordMacro::if_cond          as KeywordMacType),
-            ("ifdef".to_owned(),   KeywordMacro::ifdef            as KeywordMacType),
-            ("ifdefel".to_owned(), KeywordMacro::ifdefel          as KeywordMacType),
-            ("ifelse".to_owned(),  KeywordMacro::ifelse           as KeywordMacType),
-            ("ifenv".to_owned(),   KeywordMacro::ifenv            as KeywordMacType),
-            ("ifenvel".to_owned(), KeywordMacro::ifenvel          as KeywordMacType),
-            ("let".to_owned(),     KeywordMacro::bind_to_local    as KeywordMacType),
-            ("pause".to_owned(),   KeywordMacro::pause            as KeywordMacType),
-            ("repl".to_owned(),    KeywordMacro::replace          as KeywordMacType),
-            ("static".to_owned(),  KeywordMacro::define_static    as KeywordMacType),
+            ("bind".to_owned(),    KMacroSign::new("bind",    ["a_macro_name","a_value"],KeywordMacro::bind_depre)),
+            ("declare".to_owned(), KMacroSign::new("declare", ["a_macro_names"],KeywordMacro::declare)),
+            ("fassert".to_owned(), KMacroSign::new("fassert", ["a_lvalue","a_rvalue"],KeywordMacro::assert_fail)),
+            ("foreach".to_owned(), KMacroSign::new("foreach", ["a_array","a_body"],KeywordMacro::foreach)),
+            ("forloop".to_owned(), KMacroSign::new("forloop", ["a_min","a_max","a_body"],KeywordMacro::forloop)),
+            ("global".to_owned(),  KMacroSign::new("global",  ["a_macro_name","a_value"],KeywordMacro::global_depre)),
+            ("if".to_owned(),      KMacroSign::new("if",      ["a_boolean","a_if_expr"],KeywordMacro::if_cond)),
+            ("ifelse".to_owned(),  KMacroSign::new("ifelse",  ["a_boolean","a_if_expr","a_else_expr"],KeywordMacro::ifelse)),
+            ("ifdef".to_owned(),   KMacroSign::new("ifdef",   ["a_macro_name","a_if_expr"],KeywordMacro::ifdef)),
+            ("ifdefel".to_owned(), KMacroSign::new("ifdefel", ["a_macro_name","a_if_expr","a_else_expr"],KeywordMacro::ifdefel)),
+            ("ifenv".to_owned(),   KMacroSign::new("ifenv",   ["a_env_name","a_if_expr"],KeywordMacro::ifenv)),
+            ("ifenvel".to_owned(), KMacroSign::new("ifenvel", ["a_env_name","a_if_expr","a_else_expr"],KeywordMacro::ifenvel)),
+            ("let".to_owned(),     KMacroSign::new("let",     ["a_macro_name","a_value"],KeywordMacro::bind_to_local)),
+            ("pause".to_owned(),   KMacroSign::new("pause",   ["a_pause?"],KeywordMacro::pause)),
+            ("repl".to_owned(),    KMacroSign::new("repl",    ["a_macro_name","a_new_value"],KeywordMacro::replace)),
+            ("static".to_owned(),  KMacroSign::new("static",  ["a_macro_name","a_value"],KeywordMacro::define_static)),
         ]));
         Self {
             macros: map,
@@ -40,9 +40,9 @@ impl KeywordMacro {
     }
 
     /// Get Function pointer from map
-    pub fn get(&self, name: &str) -> Option<&KeywordMacType> {
+    pub fn get_func(&self, name: &str) -> Option<&KMacroType> {
         if let Some(mac) = self.macros.get(name) {
-            Some(mac)
+            Some(&mac.logic)
         } else {
             None
         }
@@ -430,4 +430,43 @@ impl KeywordMacro {
 
     // Keyword macros end
     // ----------
+}
+
+/// Keyword Macro signature
+#[derive(Clone)]
+pub(crate) struct KMacroSign {
+    name: String,
+    args: Vec<String>,
+    pub logic: KMacroType,
+}
+
+impl KMacroSign {
+    pub fn new(name: &str, args: impl IntoIterator<Item = impl AsRef<str>>, logic: KMacroType) -> Self {
+        let args = args.into_iter().map(|s| s.as_ref().to_owned()).collect::<Vec<String>>();
+        Self {
+            name : name.to_owned(),
+            args,
+            logic,
+        }
+    }
+}
+
+impl std::fmt::Display for KMacroSign {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut inner = self.args.iter().fold(String::new(),|acc, arg| acc + &arg + ",");
+        // This removes last "," character
+        inner.pop();
+        write!(f,"${}({})", self.name, inner)
+    }
+}
+
+impl From<&KMacroSign> for MacroSignature {
+    fn from(bm: &KMacroSign) -> Self {
+        Self {
+            variant: MacroVariant::Keyword,
+            name: bm.name.to_owned(),
+            args: bm.args.to_owned(),
+            expr: bm.to_string(),
+        }
+    }
 }

@@ -3,6 +3,7 @@
 //! Basic module includes struct and methods related to basic macros which are technically function
 //! pointers.
 
+use crate::consts::ESR;
 use std::array::IntoIter;
 use std::io::Write;
 use std::fs::OpenOptions;
@@ -11,7 +12,7 @@ use std::iter::FromIterator;
 use std::path::{PathBuf,Path};
 use std::process::Command;
 use crate::error::RadError;
-use crate::models::RadResult;
+use crate::models::{MacroSignature, RadResult, MacroVariant};
 use crate::arg_parser::{ArgParser, GreedyState};
 use regex::Regex;
 use crate::utils::Utils;
@@ -54,8 +55,8 @@ lazy_static! {
 pub type MacroType = fn(&str, bool ,&mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
-pub struct BasicMacro {
-    macros : HashMap<String, MacroType>,
+pub(crate) struct BasicMacro {
+    pub(crate) macros : HashMap<String, BMacroSign>,
 }
 
 impl BasicMacro {
@@ -73,62 +74,62 @@ impl BasicMacro {
         // Create hashmap of functions
         #[allow(unused_mut)]
         let mut map = HashMap::from_iter(IntoIter::new([
-            ("-".to_owned(),       BasicMacro::get_pipe                 as MacroType),
-            ("abs".to_owned(),     BasicMacro::absolute_path            as MacroType),
-            ("append".to_owned(),  BasicMacro::append                   as MacroType),
-            ("arr".to_owned(),     BasicMacro::array                    as MacroType),
-            ("assert".to_owned(),  BasicMacro::assert                   as MacroType),
-            ("nassert".to_owned(), BasicMacro::assert_ne                as MacroType),
-            ("chomp".to_owned(),   BasicMacro::chomp                    as MacroType),
-            ("comp".to_owned(),    BasicMacro::compress                 as MacroType),
-            ("env".to_owned(),     BasicMacro::get_env                  as MacroType),
-            ("envset".to_owned(),  BasicMacro::set_env                  as MacroType),
-            ("fileout".to_owned(), BasicMacro::file_out                 as MacroType),
-            ("include".to_owned(), BasicMacro::include                  as MacroType),
-            ("len".to_owned(),     BasicMacro::len                      as MacroType),
-            ("name".to_owned(),    BasicMacro::get_name                 as MacroType),
-            ("not".to_owned(),     BasicMacro::not                      as MacroType),
-            ("nl".to_owned(),      BasicMacro::newline                  as MacroType),
-            ("parent".to_owned(),  BasicMacro::get_parent               as MacroType),
-            ("path".to_owned(),    BasicMacro::merge_path               as MacroType),
-            ("pipe".to_owned(),    BasicMacro::pipe                     as MacroType),
-            ("read".to_owned(),    BasicMacro::read                     as MacroType),
-            ("redir".to_owned(),   BasicMacro::temp_redirect            as MacroType),
-            ("regex".to_owned(),   BasicMacro::regex_sub                as MacroType),
-            ("rename".to_owned(),  BasicMacro::rename_call              as MacroType),
-            ("repeat".to_owned(),  BasicMacro::repeat                   as MacroType),
-            ("sub".to_owned(),     BasicMacro::substring                as MacroType),
-            ("syscmd".to_owned(),  BasicMacro::syscmd                   as MacroType),
-            ("tempin".to_owned(),  BasicMacro::temp_include             as MacroType),
-            ("tempout".to_owned(), BasicMacro::temp_out                 as MacroType),
-            ("tempto".to_owned(),  BasicMacro::set_temp_target          as MacroType),
-            ("tr".to_owned(),      BasicMacro::translate                as MacroType),
-            ("trim".to_owned(),    BasicMacro::trim                     as MacroType),
-            ("undef".to_owned(),   BasicMacro::undefine_call            as MacroType),
+            ("-".to_owned(),       BMacroSign::new("-",       ESR,Self::get_pipe)),
+            ("abs".to_owned(),     BMacroSign::new("abs",     ["a_path"],Self::absolute_path)),
+            ("append".to_owned(),  BMacroSign::new("append",  ["a_macro_name","a_content"],Self::append)),
+            ("arr".to_owned(),     BMacroSign::new("arr",     ["a_values"],Self::array)),
+            ("assert".to_owned(),  BMacroSign::new("assert",  ["a_lvalue","a_rvalue"],Self::assert)),
+            ("nassert".to_owned(), BMacroSign::new("nassert", ["a_lvalue","a_rvalue"],Self::assert_ne)),
+            ("chomp".to_owned(),   BMacroSign::new("chomp",   ["a_content"],Self::chomp)),
+            ("comp".to_owned(),    BMacroSign::new("comp",    ["a_content"],Self::compress)),
+            ("env".to_owned(),     BMacroSign::new("env",     ["a_env_name"],Self::get_env)),
+            ("envset".to_owned(),  BMacroSign::new("envset",  ["a_env_name","a_env_value"],Self::set_env)),
+            ("fileout".to_owned(), BMacroSign::new("fileout", ["a_truncate?","a_filename","a_content"],Self::file_out)),
+            ("include".to_owned(), BMacroSign::new("include", ["a_filename"],Self::include)),
+            ("len".to_owned(),     BMacroSign::new("len",     ["a_string"],Self::len)),
+            ("name".to_owned(),    BMacroSign::new("name",    ["a_path"],Self::get_name)),
+            ("not".to_owned(),     BMacroSign::new("not",     ["a_boolean"],Self::not)),
+            ("nl".to_owned(),      BMacroSign::new("nl",      ESR,Self::newline)),
+            ("parent".to_owned(),  BMacroSign::new("parent",  ["a_path"],Self::get_parent)),
+            ("path".to_owned(),    BMacroSign::new("path",    ["a_paths"],Self::merge_path)),
+            ("pipe".to_owned(),    BMacroSign::new("pipe",    ["a_value"],Self::pipe)),
+            ("read".to_owned(),    BMacroSign::new("read",    ["a_filename"],Self::read)),
+            ("redir".to_owned(),   BMacroSign::new("redir",   ["a_redirect?"],Self::temp_redirect)),
+            ("regex".to_owned(),   BMacroSign::new("regex",   ["a_source","a_match","a_substitution"],Self::regex_sub)),
+            ("rename".to_owned(),  BMacroSign::new("rename",  ["a_macro_name","a_new_name"],Self::rename_call)),
+            ("repeat".to_owned(),  BMacroSign::new("repeat",  ["a_count","a_source"],Self::repeat)),
+            ("sub".to_owned(),     BMacroSign::new("sub",     ["a_start_index","a_end_index","a_source"],Self::substring)),
+            ("syscmd".to_owned(),  BMacroSign::new("syscmd",  ["a_command"],Self::syscmd)),
+            ("tempin".to_owned(),  BMacroSign::new("tempin",  ["a_tempin"],Self::temp_include)),
+            ("tempout".to_owned(), BMacroSign::new("tempout", ["a_tempout"],Self::temp_out)),
+            ("tempto".to_owned(),  BMacroSign::new("tempto",  ["a_filename"],Self::set_temp_target)),
+            ("tr".to_owned(),      BMacroSign::new("tr",      ["a_source","a_matches","a_substitutions"],Self::translate)),
+            ("trim".to_owned(),    BMacroSign::new("trim",    ["a_content"],Self::trim)),
+            ("undef".to_owned(),   BMacroSign::new("undef",   ["a_macro_name"],Self::undefine_call)),
             // THis is simply a placeholder
-            ("define".to_owned(),  BasicMacro::define_type              as MacroType),
+            ("define".to_owned(),  BMacroSign::new("define",  ESR,Self::define_type)),
         ]));
         
         // Optional macros
         #[cfg(feature = "csv")]
         {
-            map.insert("from".to_owned(), BasicMacro::from_data         as MacroType);
-            map.insert("table".to_owned(), BasicMacro::table            as MacroType);
+            map.insert("from".to_owned(),    BMacroSign::new("from",["a_macro_name","a_csv_value"],Self::from_data));
+            map.insert("table".to_owned(),   BMacroSign::new("table",["a_table_form","a_csv_value"],Self::table));
         }
         #[cfg(feature = "chrono")]
         {
-            map.insert("time".to_owned(), BasicMacro::time              as MacroType);
-            map.insert("date".to_owned(), BasicMacro::date              as MacroType);
+            map.insert("time".to_owned(),    BMacroSign::new("time",ESR,Self::time));
+            map.insert("date".to_owned(),    BMacroSign::new("date",ESR,Self::date));
         }
         #[cfg(feature = "lipsum")]
-        map.insert("lipsum".to_owned(), BasicMacro::lipsum_words        as MacroType);
+        map.insert("lipsum".to_owned(),      BMacroSign::new("lipsum",["a_word_count"],Self::lipsum_words));
         #[cfg(feature = "evalexpr")]
-        map.insert("eval".to_owned(), BasicMacro::eval                  as MacroType);
+        map.insert("eval".to_owned(),        BMacroSign::new("eval",["a_expression"],Self::eval));
 
         #[cfg(feature = "hook")]
         {
-            map.insert("hookon".to_owned(), BasicMacro::hook_enable     as MacroType);
-            map.insert("hookoff".to_owned(), BasicMacro::hook_disable   as MacroType);
+            map.insert("hookon".to_owned(),  BMacroSign::new("hookon",["a_macro_type","a_target_name"],Self::hook_enable));
+            map.insert("hookoff".to_owned(), BMacroSign::new("hookoff",["a_macro_type","a_target_name"],Self::hook_disable));
         }
 
         // Return struct
@@ -137,7 +138,8 @@ impl BasicMacro {
 
     /// Add new basic rule
     pub fn add_new_rule(&mut self, name: &str, macro_ref: MacroType) {
-        self.macros.insert(name.to_owned(), macro_ref);
+        let signature = BMacroSign::new(name,["unknown"],macro_ref);
+        self.macros.insert(name.to_owned(), signature);
     }
 
     /// Check if a given macro exists
@@ -150,9 +152,14 @@ impl BasicMacro {
     }
 
     /// Get function reference by name
-    pub fn get(&self, name: &str) -> Option<&MacroType> {
-        self.macros.get(name)
+    pub fn get_func(&self, name: &str) -> Option<&MacroType> {
+        if let Some(sig) = self.macros.get(name) {
+            Some(&sig.logic)
+        } else {
+            None
+        }
     }
+
 
     /// Undefine a macro
     ///
@@ -487,11 +494,7 @@ impl BasicMacro {
     }
 
     /// Placeholder for define
-    fn define_type(_: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
-        Ok(None)
-    }
-
-
+    fn define_type(_: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> { Ok(None) }
 
     /// Array
     ///
@@ -1078,4 +1081,49 @@ impl BasicMacro {
         }
     }
 
+}
+
+// TODO
+// Curently implementation declard logic and signatrue separately.
+// Is this ideal?
+// Or the whole process should be automated?
+// Though I dought the possibility of automation because each logic is so relaxed and hardly follow
+// any concrete rules
+/// Basic Macro signature
+#[derive(Clone)]
+pub(crate) struct BMacroSign {
+    name: String,
+    args: Vec<String>,
+    pub logic: MacroType,
+}
+
+impl BMacroSign {
+    pub fn new(name: &str, args: impl IntoIterator<Item = impl AsRef<str>>, logic: MacroType) -> Self {
+        let args = args.into_iter().map(|s| s.as_ref().to_owned()).collect::<Vec<String>>();
+        Self {
+            name : name.to_owned(),
+            args,
+            logic,
+        }
+    }
+}
+
+impl std::fmt::Display for BMacroSign {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut inner = self.args.iter().fold(String::new(),|acc, arg| acc + &arg + ",");
+        // This removes last "," character
+        inner.pop();
+        write!(f,"${}({})", self.name, inner)
+    }
+}
+
+impl From<&BMacroSign> for MacroSignature {
+    fn from(bm: &BMacroSign) -> Self {
+        Self {
+            variant: MacroVariant::Basic,
+            name: bm.name.to_owned(),
+            args: bm.args.to_owned(),
+            expr: bm.to_string(),
+        }
+    }
 }
