@@ -29,7 +29,7 @@ MACRO SYNTAX:
 
 MACRO USAGE:
 
-	This is an abbreivated version full usage. 
+	This is an abbreivated version of usage. 
 
 	Refer https://github.com/Simhyeon/r4d/blob/master/docs/macro_indices.md 
 	for full usage.
