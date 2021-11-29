@@ -66,6 +66,8 @@ pub(crate) mod logger;
 pub(crate) mod models;
 #[cfg(feature = "hook")]
 pub(crate) mod hookmap;
+#[cfg(feature = "signature")]
+pub(crate) mod sigmap;
 pub(crate) mod utils;
 
 pub use error::RadError;
