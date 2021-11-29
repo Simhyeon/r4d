@@ -118,16 +118,20 @@ impl Cli {
             processor.freeze_to_file(Path::new(file))?;
         }
 
+        #[cfg(feature = "signature")]
         if args.occurrences_of("signature") != 0 {
-            let mut sigs_inner = processor.get_macro_signatures()?.iter().fold(String::new(), |acc, sig| acc + &sig.to_string() + ",");
-            // This removes trailing "," character
-            sigs_inner.pop();
+            let sig_map = processor.get_macro_signatures()?;
+            // TODO
+            let sig_json = serde_json::to_string(&sig_map.object).expect("Failed to create sig map");
+
             // This is file name
             let file_name = args.value_of("signature").unwrap();
-            if file_name != "none" {
-                std::fs::write(Path::new(file_name), format!("[{}]",sigs_inner).as_bytes())?;
+
+            // This is default empty value should not be "" because it is ignored by clap
+            if file_name != " " {
+                std::fs::write(Path::new(file_name), sig_json.as_bytes())?;
             } else {
-                println!("[{}]",sigs_inner)
+                println!("{}", &sig_json);
             }
         }
         Ok(())
@@ -202,7 +206,7 @@ impl Cli {
     rad <FILE> --debug --log --interactive
     rad <FILE> -f <RULE_FILE> --discard -n --silent")
             (@arg FILE: ... "Files to execute processing")
-            (@arg signature: --signature +takes_value value_name["FILE"] default_value["none"] "Print signature.")
+            (@arg signature: --signature +takes_value value_name["FILE"] default_value[" "] "Print signature to file.")
             (@arg out: -o --out +takes_value conflicts_with[discard] value_name["FILE"] "Save processed output to the file")
             (@arg err: -e --err +takes_value value_name["FILE"] "Save error logs to the file")
             (@arg greedy: -g --greedy "Make all macro invocations greedy")
