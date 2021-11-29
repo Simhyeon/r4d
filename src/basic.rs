@@ -12,7 +12,7 @@ use std::iter::FromIterator;
 use std::path::{PathBuf,Path};
 use std::process::Command;
 use crate::error::RadError;
-use crate::models::{MacroSignature, RadResult, MacroVariant};
+use crate::models::RadResult;
 use crate::arg_parser::{ArgParser, GreedyState};
 use regex::Regex;
 use crate::utils::Utils;
@@ -1117,10 +1117,11 @@ impl std::fmt::Display for BMacroSign {
     }
 }
 
-impl From<&BMacroSign> for MacroSignature {
+#[cfg(feature = "signature")]
+impl From<&BMacroSign> for crate::sigmap::MacroSignature {
     fn from(bm: &BMacroSign) -> Self {
         Self {
-            variant: MacroVariant::Basic,
+            variant: crate::sigmap::MacroVariant::Basic,
             name: bm.name.to_owned(),
             args: bm.args.to_owned(),
             expr: bm.to_string(),
