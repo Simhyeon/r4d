@@ -39,7 +39,7 @@ rad --comment any
 -s, --silent          # Suppress warnings
 -l, --lenient         # Disable strict mode
     --nopanic         # Don't panic in any circumstances
-	--assert          # Enable assertion mode
+    --assert          # Enable assertion mode
 
 # Use following options to decide deubbing behaviours
 # default is not to debug
@@ -67,7 +67,7 @@ Type ```-h``` or ```--help``` to see full options.
 **Cargo.toml**
 ```toml
 [dependencies]
-rad = { version = "1.2.0", features = ["full"] }
+rad = { version = "1.2.1", features = ["full"] }
 
 # Other available features are 
 # "evalexpr", "chrono", "lipsum", "csv", "debug", "color", "full", "hook"
@@ -85,7 +85,7 @@ rad = { version = "1.2.0", features = ["full"] }
 ```
 **rust file**
 ```rust
-use rad::RadError;
+use rad::RadResult;
 use rad::Processor;
 use rad::MacroType;
 use rad::AuthType;

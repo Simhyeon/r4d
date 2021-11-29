@@ -1,14 +1,19 @@
 ### Changed
 
 * [x] Fixed unexported DiffOption and HookType re-export
+* [-] Add help message before and after original help message
+- Some might think this is not enough however it depends
+Should I include the whole damn readme files inside help message? I personally
+doesn't think that is necessary nor desirable.
 
 ### TODOs
 
-* [ ] Add help message before and after original help message
-- Other help message
-
 * [ ] Export to python binding
+- This also needs some extra workload to enable pyo3 and some nomangle-like
+configurations
 * [ ] Export to c binding
+- This includes changes in Cargo.toml file such as cdylib which was actually
+not included by default, like what?
 
 * [ ] Improve projects performance
 - Utilize regex engine for fast parsing especially, define parsing. Possibly
@@ -18,18 +23,31 @@ whole parsing process, meh I don't think I can... Focus on define parsing.
 * [-] Make parser separated
 This is hard to make it right... for current status
 
+* [ ] Print out all macro informations as readable format such as json or
+something else so that other IDE helpers can be really useful and intellisense
+would work not some hand-made snippets 
+- The problem is this is not so cheap pick, and needs some serious consideration. FM.
+
 * [ ] New basic macros
   * [ ] Possibly SQL,CSV macros
     * [ ] Optional sqlite feature
+- The thing is, this really spoils my original intent of making r4d as
+cross-platform as possible. This(sqlite) depends on every compilation on each
+machine. Though sqlite is much more lightweight and easier to configure to be
+frankly speaking, it still itches me...
+- Gdmarp's way was to actually use simple wrapper around SQL querys and let
+user to handle all the other hassels of installation. Which means that it is
+not a responsibility of macro processor of installing database interface but of
+the user. 
 
-  Following is such hard to do cleanly, deterred
-  * [-] Lipsum variants
-    - Lipsum width word limit (new lines after certain words)
-    - Lipsum width width
-    - Lipsum cache which utilizes cache files saved in tmp directory.
-    is useful because calculating length and word limit is much more expensive
-    simple random generation.
-    - Lipsum with custom separator
+Following is such hard to do cleanly, deterred
+* [-] Lipsum variants
+  - Lipsum width word limit (new lines after certain words)
+  - Lipsum width width
+  - Lipsum cache which utilizes cache files saved in tmp directory.
+  is useful because calculating length and word limit is much more expensive
+  simple random generation.
+  - Lipsum with custom separator
 
 ### How macro parsing works?
 
@@ -68,6 +86,11 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [-] Eable useful basic macro customization by exposing processor state to end
+user.
+- You know what? This doens't look useful. Most of them are quite vulnerable to
+undesired changes and not so desirable to end user usage.
 
 * [x] Deprecating global in favor keyword macro ```static```
 * [x] Deprecating bind in favor keyword macro ```let```
