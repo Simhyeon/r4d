@@ -49,3 +49,7 @@ pub const LINE_ENDING: &'static str = "\n";
 pub const ESCAPED_COMMA : &str = "@COMMA@";
 #[cfg(feature = "debug")]
 pub const RDB_HELP: &'static str = include_str!("debug_help_message.txt");
+
+/// Empty String aRray
+pub const ESR: [&str;0] = [];
+
