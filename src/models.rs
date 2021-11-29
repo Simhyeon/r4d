@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::path::Path;
 use crate::{basic::BasicMacro, keyword_map::KeywordMacro};
 use crate::error::RadError;
@@ -35,6 +36,26 @@ impl MacroRule {
             name : name.to_owned(),
             args,
             body : body.to_owned(),
+        }
+    }
+}
+
+impl std::fmt::Display for MacroRule {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut inner = self.args.iter().fold(String::new(),|acc, arg| acc + &arg + ",");
+        // This removes last "," character
+        inner.pop();
+        write!(f,"${}({})", self.name, inner)
+    }
+}
+
+impl From<&MacroRule> for MacroSignature {
+    fn from(bm: &MacroRule) -> Self {
+        Self {
+            variant: MacroVariant::Custom,
+            name: bm.name.to_owned(),
+            args: bm.args.to_owned(),
+            expr: bm.to_string(),
         }
     }
 }
@@ -146,6 +167,20 @@ impl MacroMap {
         } else {
             false
         }
+    }
+
+    /// Get macro signatures object
+    pub fn get_signatures(&self) -> Vec<MacroSignature> {
+        let key_iter = self.keyword.macros
+            .iter()
+            .map(|(_,sig)| MacroSignature::from(sig));
+        let basic_iter = self.basic.macros
+            .iter()
+            .map(|(_,sig)| MacroSignature::from(sig));
+        let custom_iter = self.custom
+            .iter()
+            .map(|(_,rule)| MacroSignature::from(rule));
+        key_iter.chain(basic_iter).chain(custom_iter).collect()
     }
 }
 
@@ -319,5 +354,33 @@ impl DiffOption {
             _ => return Err(RadError::InvalidConversion(format!("Diffoption, \"{}\" is not a vliad type", text))),
         };
         Ok(var)
+    }
+}
+
+/// Type(variant) of macro
+#[derive(Debug)]
+pub enum MacroVariant {
+    Keyword,
+    Basic,
+    Custom,
+}
+
+/// Macro signature
+pub struct MacroSignature {
+    pub variant: MacroVariant,
+    pub name: String,
+    pub args: Vec<String>,
+    pub expr: String,
+}
+
+impl Display for MacroSignature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,
+            r#"{{"variant": "{:?}","name": "{}","args": {:?},"expr": "{}"}}"#,
+            self.variant,
+            self.name,
+            self.args,
+            self.expr,
+        )
     }
 }
