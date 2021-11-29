@@ -120,7 +120,7 @@ impl Cli {
 
         #[cfg(feature = "signature")]
         if args.occurrences_of("signature") != 0 {
-            let sig_map = processor.get_macro_signatures()?;
+            let sig_map = processor.get_signature_map()?;
             // TODO
             let sig_json = serde_json::to_string(&sig_map.object).expect("Failed to create sig map");
 

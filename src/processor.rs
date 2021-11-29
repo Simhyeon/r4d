@@ -477,9 +477,9 @@ impl Processor {
     // <PROCESS>
     //
     
-    /// Get macro signatrues vector
+    /// Get macro signatrue map
     #[cfg(feature = "signature")]
-    pub fn get_macro_signatures(&self) -> RadResult<SignatureMap> {
+    pub fn get_signature_map(&self) -> RadResult<SignatureMap> {
         Ok(SignatureMap::new(self.map.get_signatures()))
     }
 
