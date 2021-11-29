@@ -43,7 +43,6 @@ impl Cli {
 
     /// Parse arguments and run processor
     fn run_processor(&mut self, args: & clap::ArgMatches) -> RadResult<()> {
-
         self.parse_options(args);
         // Build processor
         let mut processor = Processor::new()
@@ -119,6 +118,18 @@ impl Cli {
             processor.freeze_to_file(Path::new(file))?;
         }
 
+        if args.occurrences_of("signature") != 0 {
+            let mut sigs_inner = processor.get_macro_signatures()?.iter().fold(String::new(), |acc, sig| acc + &sig.to_string() + ",");
+            // This removes trailing "," character
+            sigs_inner.pop();
+            // This is file name
+            let file_name = args.value_of("signature").unwrap();
+            if file_name != "none" {
+                std::fs::write(Path::new(file_name), format!("[{}]",sigs_inner).as_bytes())?;
+            } else {
+                println!("[{}]",sigs_inner)
+            }
+        }
         Ok(())
     }
 
@@ -191,6 +202,7 @@ impl Cli {
     rad <FILE> --debug --log --interactive
     rad <FILE> -f <RULE_FILE> --discard -n --silent")
             (@arg FILE: ... "Files to execute processing")
+            (@arg signature: --signature +takes_value value_name["FILE"] default_value["none"] "Print signature.")
             (@arg out: -o --out +takes_value conflicts_with[discard] value_name["FILE"] "Save processed output to the file")
             (@arg err: -e --err +takes_value value_name["FILE"] "Save error logs to the file")
             (@arg greedy: -g --greedy "Make all macro invocations greedy")
