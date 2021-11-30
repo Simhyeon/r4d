@@ -55,11 +55,11 @@ lazy_static! {
 pub type MacroType = fn(&str, bool ,&mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
-pub(crate) struct BasicMacro {
+pub(crate) struct BasicMacroMap {
     pub(crate) macros : HashMap<String, BMacroSign>,
 }
 
-impl BasicMacro {
+impl BasicMacroMap {
     /// Creates empty map
     pub fn empty() -> Self {
         Self {
@@ -303,7 +303,7 @@ impl BasicMacro {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let source = &args[0];
             // Chomp and then compress
-            let result = Utils::trim(&BasicMacro::chomp(source,greedy, processor)?.unwrap());
+            let result = Utils::trim(&BasicMacroMap::chomp(source,greedy, processor)?.unwrap());
 
             Ok(Some(result))
         } else {
