@@ -10,29 +10,29 @@ use crate::Processor;
 type KMacroType = fn(&str, usize,&mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
-pub struct KeywordMacro {
-    pub(crate) macros : HashMap<String, KMacroSign>,
+pub struct KeywordMacroMap {
+    pub(crate) macros : HashMap<&'static str, KMacroSign>,
 }
 
-impl KeywordMacro {
+impl KeywordMacroMap {
     pub fn new() -> Self {
         let map = HashMap::from_iter(IntoIter::new([
-            ("bind".to_owned(),    KMacroSign::new("bind",    ["a_macro_name","a_value"],KeywordMacro::bind_depre)),
-            ("declare".to_owned(), KMacroSign::new("declare", ["a_macro_names"],KeywordMacro::declare)),
-            ("fassert".to_owned(), KMacroSign::new("fassert", ["a_lvalue","a_rvalue"],KeywordMacro::assert_fail)),
-            ("foreach".to_owned(), KMacroSign::new("foreach", ["a_array","a_body"],KeywordMacro::foreach)),
-            ("forloop".to_owned(), KMacroSign::new("forloop", ["a_min","a_max","a_body"],KeywordMacro::forloop)),
-            ("global".to_owned(),  KMacroSign::new("global",  ["a_macro_name","a_value"],KeywordMacro::global_depre)),
-            ("if".to_owned(),      KMacroSign::new("if",      ["a_boolean","a_if_expr"],KeywordMacro::if_cond)),
-            ("ifelse".to_owned(),  KMacroSign::new("ifelse",  ["a_boolean","a_if_expr","a_else_expr"],KeywordMacro::ifelse)),
-            ("ifdef".to_owned(),   KMacroSign::new("ifdef",   ["a_macro_name","a_if_expr"],KeywordMacro::ifdef)),
-            ("ifdefel".to_owned(), KMacroSign::new("ifdefel", ["a_macro_name","a_if_expr","a_else_expr"],KeywordMacro::ifdefel)),
-            ("ifenv".to_owned(),   KMacroSign::new("ifenv",   ["a_env_name","a_if_expr"],KeywordMacro::ifenv)),
-            ("ifenvel".to_owned(), KMacroSign::new("ifenvel", ["a_env_name","a_if_expr","a_else_expr"],KeywordMacro::ifenvel)),
-            ("let".to_owned(),     KMacroSign::new("let",     ["a_macro_name","a_value"],KeywordMacro::bind_to_local)),
-            ("pause".to_owned(),   KMacroSign::new("pause",   ["a_pause?"],KeywordMacro::pause)),
-            ("repl".to_owned(),    KMacroSign::new("repl",    ["a_macro_name","a_new_value"],KeywordMacro::replace)),
-            ("static".to_owned(),  KMacroSign::new("static",  ["a_macro_name","a_value"],KeywordMacro::define_static)),
+            ("bind",    KMacroSign::new("bind",    ["a_macro_name","a_value"],KeywordMacroMap::bind_depre)),
+            ("declare", KMacroSign::new("declare", ["a_macro_names"],KeywordMacroMap::declare)),
+            ("fassert", KMacroSign::new("fassert", ["a_lvalue","a_rvalue"],KeywordMacroMap::assert_fail)),
+            ("foreach", KMacroSign::new("foreach", ["a_array","a_body"],KeywordMacroMap::foreach)),
+            ("forloop", KMacroSign::new("forloop", ["a_min","a_max","a_body"],KeywordMacroMap::forloop)),
+            ("global",  KMacroSign::new("global",  ["a_macro_name","a_value"],KeywordMacroMap::global_depre)),
+            ("if",      KMacroSign::new("if",      ["a_boolean","a_if_expr"],KeywordMacroMap::if_cond)),
+            ("ifelse",  KMacroSign::new("ifelse",  ["a_boolean","a_if_expr","a_else_expr"],KeywordMacroMap::ifelse)),
+            ("ifdef",   KMacroSign::new("ifdef",   ["a_macro_name","a_if_expr"],KeywordMacroMap::ifdef)),
+            ("ifdefel", KMacroSign::new("ifdefel", ["a_macro_name","a_if_expr","a_else_expr"],KeywordMacroMap::ifdefel)),
+            ("ifenv",   KMacroSign::new("ifenv",   ["a_env_name","a_if_expr"],KeywordMacroMap::ifenv)),
+            ("ifenvel", KMacroSign::new("ifenvel", ["a_env_name","a_if_expr","a_else_expr"],KeywordMacroMap::ifenvel)),
+            ("let",     KMacroSign::new("let",     ["a_macro_name","a_value"],KeywordMacroMap::bind_to_local)),
+            ("pause",   KMacroSign::new("pause",   ["a_pause?"],KeywordMacroMap::pause)),
+            ("repl",    KMacroSign::new("repl",    ["a_macro_name","a_new_value"],KeywordMacroMap::replace)),
+            ("static",  KMacroSign::new("static",  ["a_macro_name","a_value"],KeywordMacroMap::define_static)),
         ]));
         Self {
             macros: map,
