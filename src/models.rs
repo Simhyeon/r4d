@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::path::Path;
-use crate::{basic::BasicMacro, keyword_map::KeywordMacro};
+use crate::{basic_map::BasicMacroMap, keyword_map::KeywordMacroMap};
 use crate::error::RadError;
 use crate::utils::Utils;
 use serde::{Deserialize, Serialize};
@@ -65,12 +65,13 @@ impl From<&MacroRule> for crate::sigmap::MacroSignature {
 /// Macro map that stores all kinds of macro informations 
 ///
 /// Included macro types are 
+/// - Keyword macro
 /// - Basic macro
 /// - Custom macro
 /// - Local bound macro
 pub(crate) struct MacroMap {
-    pub keyword: KeywordMacro,
-    pub basic : BasicMacro,
+    pub keyword: KeywordMacroMap,
+    pub basic : BasicMacroMap,
     pub custom : HashMap<String, MacroRule>,
     pub local : HashMap<String, String>,
 }
@@ -81,8 +82,8 @@ impl MacroMap {
     /// Keyword macro cannot be empty
     pub fn empty() -> Self {
         Self {
-            keyword: KeywordMacro::new(),
-            basic: BasicMacro::empty(),
+            keyword: KeywordMacroMap::new(),
+            basic: BasicMacroMap::empty(),
             custom: HashMap::new(),
             local: HashMap::new(),
         }
@@ -91,8 +92,8 @@ impl MacroMap {
     /// Creates default map with default basic macros
     pub fn new() -> Self {
         Self { 
-            keyword: KeywordMacro::new(),
-            basic: BasicMacro::new(),
+            keyword: KeywordMacroMap::new(),
+            basic: BasicMacroMap::new(),
             custom: HashMap::new(),
             local: HashMap::new(),
         }
