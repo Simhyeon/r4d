@@ -57,7 +57,7 @@ pub(crate) mod debugger;
 pub(crate) mod arg_parser;
 pub(crate) mod define_parser;
 pub(crate) mod auth;
-pub(crate) mod basic;
+pub(crate) mod basic_map;
 pub(crate) mod closure_map;
 pub(crate) mod keyword_map;
 pub(crate) mod consts;
@@ -71,7 +71,7 @@ pub(crate) mod sigmap;
 pub(crate) mod utils;
 
 pub use error::RadError;
-pub use basic::MacroType;
+pub use basic_map::MacroType;
 pub use processor::Processor;
 pub use auth::AuthType;
 #[cfg(feature = "hook")]
