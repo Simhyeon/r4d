@@ -38,7 +38,6 @@
 //!     .purge(true)
 //!     .greedy(true)
 //!     .write_to_file(Some(Path::new("cache.txt")))?
-//!     .build(); 
 //! 
 //! processor.from_file(Path::new("input.txt"))?;
 //! processor.print_result()?;
