@@ -90,8 +90,7 @@ use rad::Processor;
 
 let processor = Processor::new()
     .greedy(true)
-    .write_to_file(Some(PathBuf::from("cache.txt")))?
-    .build(); 
+    .write_to_file(Some(PathBuf::from("cache.txt")))?;
 
 processor.from_file(Path::new("input.txt"))?;
 processor.print_result()?;
