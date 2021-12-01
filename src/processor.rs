@@ -41,8 +41,6 @@
 //!     .log(true)                                           // Use logging to terminal
 //!     .diff(DiffOption::All)                               // Print diff in final result
 //!     .interactive(true)                                   // Use interactive mode
-//!     // Create unreferenced instance
-//!     .build(); 
 //!
 //! // Comment char and macro char cannot be same 
 //! // Unallowed pattern for the characters are [a-zA-Z1-9\\_\*\^\|\+\(\)=,]
@@ -262,7 +260,7 @@ impl Processor {
     }
 
     /// Set write option to yield output to the file
-    pub fn write_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> RadResult<&mut Self> {
+    pub fn write_to_file(mut self, target_file: Option<impl AsRef<Path>>) -> RadResult<Self> {
         if let Some(target_file) = target_file {
             let file = OpenOptions::new()
                 .create(true)
@@ -280,7 +278,7 @@ impl Processor {
     }
 
     /// Yield error to the file
-    pub fn error_to_file(&mut self, target_file: Option<impl AsRef<Path>>) -> RadResult<&mut Self> {
+    pub fn error_to_file(mut self, target_file: Option<impl AsRef<Path>>) -> RadResult<Self> {
         if let Some(target_file) = target_file {
             let file = OpenOptions::new()
                 .create(true)
@@ -299,7 +297,7 @@ impl Processor {
     }
 
     /// Custom comment character
-    pub fn custom_comment_char(&mut self, character: char) -> RadResult<&mut Self> {
+    pub fn custom_comment_char(mut self, character: char) -> RadResult<Self> {
         // check if unallowed character
         if UNALLOWED_CHARS.is_match(&character.to_string()) {
             return Err(RadError::UnallowedChar(format!("\"{}\" is not allowed", character)));
@@ -312,7 +310,7 @@ impl Processor {
     }
 
     /// Custom macro character
-    pub fn custom_macro_char(&mut self, character: char) -> RadResult<&mut Self> {
+    pub fn custom_macro_char(mut self, character: char) -> RadResult<Self> {
         if UNALLOWED_CHARS.is_match(&character.to_string()) {
             return Err(RadError::UnallowedChar(format!("\"{}\" is not allowed", character)));
         } else if self.get_comment_char() == character {
@@ -324,7 +322,7 @@ impl Processor {
     }
 
     /// Use unix line ending instead of operating system's default one
-    pub fn unix_new_line(&mut self, use_unix_new_line: bool) -> &mut Self {
+    pub fn unix_new_line(mut self, use_unix_new_line: bool) -> Self {
         if use_unix_new_line {
             self.state.newline = "\n".to_owned();
         }
@@ -332,19 +330,19 @@ impl Processor {
     }
 
     /// Set greedy option
-    pub fn greedy(&mut self, greedy: bool) -> &mut Self {
+    pub fn greedy(mut self, greedy: bool) -> Self {
         self.state.always_greedy = greedy;
         self
     }
 
     /// Set purge option
-    pub fn purge(&mut self, purge: bool) -> &mut Self {
+    pub fn purge(mut self, purge: bool) -> Self {
         self.state.purge = purge;
         self
     }
 
     /// Set lenient
-    pub fn lenient(&mut self, lenient: bool) -> &mut Self {
+    pub fn lenient(mut self, lenient: bool) -> Self {
         self.state.strict = !lenient;
         self
     }
@@ -354,19 +352,19 @@ impl Processor {
     /// This is deprecated and will be removed in 2.0 version.
     /// Use set_comment_type instead.
     #[deprecated(since = "1.2", note = "Comment is deprecated and will be removed in 2.0 version.")]
-    pub fn comment(&mut self, comment: bool) -> &mut Self {
+    pub fn comment(mut self, comment: bool) -> Self {
         if comment { self.state.comment_type = CommentType::Start; }
         self
     }
 
     /// Set comment type
-    pub fn set_comment_type(&mut self, comment_type: CommentType) -> &mut Self {
+    pub fn set_comment_type(mut self, comment_type: CommentType) -> Self {
         self.state.comment_type = comment_type;
         self
     }
 
     /// Set silent option
-    pub fn silent(&mut self, silent: bool) -> &mut Self {
+    pub fn silent(mut self, silent: bool) -> Self {
         if silent {
             self.logger.suppress_warning();
         }
@@ -374,7 +372,7 @@ impl Processor {
     }
 
     /// Set nopanic
-    pub fn nopanic(&mut self, nopanic: bool) -> &mut Self {
+    pub fn nopanic(mut self, nopanic: bool) -> Self {
         if nopanic {
             self.state.nopanic = nopanic;
             self.state.strict = false; 
@@ -383,7 +381,7 @@ impl Processor {
     }
 
     /// Set assertion mode
-    pub fn assert(&mut self, assert: bool) -> &mut Self {
+    pub fn assert(mut self, assert: bool) -> Self {
         if assert { 
             self.logger.assert(); 
             self.write_option = WriteOption::Discard;
@@ -395,34 +393,34 @@ impl Processor {
 
     /// Add debug options
     #[cfg(feature = "debug")]
-    pub fn debug(&mut self, debug: bool) -> &mut Self {
+    pub fn debug(mut self, debug: bool) -> Self {
         self.debugger.debug = debug;
         self
     }
 
     /// Add debug log options
     #[cfg(feature = "debug")]
-    pub fn log(&mut self, log: bool) -> &mut Self {
+    pub fn log(mut self, log: bool) -> Self {
         self.debugger.log = log;
         self
     }
 
     /// Add diff option
     #[cfg(feature = "debug")]
-    pub fn diff(&mut self, diff: DiffOption) -> RadResult<&mut Self> {
+    pub fn diff(mut self, diff: DiffOption) -> RadResult<Self> {
         self.debugger.enable_diff(diff)?; 
         Ok(self)
     }
 
     /// Add debug interactive options
     #[cfg(feature = "debug")]
-    pub fn interactive(&mut self, interactive: bool) -> &mut Self {
+    pub fn interactive(mut self, interactive: bool) -> Self {
         if interactive { self.debugger.set_interactive(); }
         self
     }
 
     /// Add custom rules
-    pub fn custom_rules(&mut self, paths: Option<Vec<impl AsRef<Path>>>) -> RadResult<&mut Self> {
+    pub fn custom_rules(mut self, paths: Option<Vec<impl AsRef<Path>>>) -> RadResult<Self> {
         if let Some(paths) = paths {
             let mut rule_file = RuleFile::new(None);
             for p in paths.iter() {
@@ -436,7 +434,7 @@ impl Processor {
     }
 
     /// Open authority of processor
-    pub fn allow(&mut self, auth_types : Option<Vec<AuthType>>) -> &mut Self {
+    pub fn allow(mut self, auth_types : Option<Vec<AuthType>>) -> Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
                 self.state.auth_flags.set_state(&auth, AuthState::Open)
@@ -446,7 +444,7 @@ impl Processor {
     }
 
     /// Open authority of processor but yield warning
-    pub fn allow_with_warning(&mut self, auth_types : Option<Vec<AuthType>>) -> &mut Self {
+    pub fn allow_with_warning(mut self, auth_types : Option<Vec<AuthType>>) -> Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
                 self.state.auth_flags.set_state(&auth, AuthState::Warn)
@@ -456,7 +454,7 @@ impl Processor {
     }
 
     /// Discard output
-    pub fn discard(&mut self, discard: bool) -> &mut Self {
+    pub fn discard(mut self, discard: bool) -> Self {
         if discard {
             self.write_option = WriteOption::Discard;
         }
@@ -464,8 +462,9 @@ impl Processor {
     }
 
     /// Creates an unreferenced instance of processor
-    pub fn build(&mut self) -> Self {
-        std::mem::replace(self, Processor::new())
+    #[deprecated(since = "1.3", note = "Build method is deprecated in favor of more ergonomic builder pattern. It will be removed in 2.0")]
+    pub fn build(self) -> Self {
+        self
     }
 
     // </BUILDER>
@@ -1458,6 +1457,12 @@ impl Processor {
             .truncate(true)
             .open(path)
             .unwrap());
+    }
+
+    /// Set debug flag
+    #[cfg(feature = "debug")]
+    pub(crate) fn set_debug(&mut self, debug: bool)  {
+        self.debugger.debug = debug;
     }
 
     /// Turn on sandbox
