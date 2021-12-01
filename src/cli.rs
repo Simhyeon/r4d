@@ -78,8 +78,7 @@ impl Cli {
                     }
                 )?
             )?
-            .interactive(args.is_present("interactive"))
-            .build();
+            .interactive(args.is_present("interactive"));
 
         // Debug
         // Clear terminal cells
