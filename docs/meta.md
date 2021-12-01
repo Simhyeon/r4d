@@ -1,10 +1,7 @@
 ### Changed
 
 * [x] Fixed unexported DiffOption and HookType re-export
-* [-] Add help message before and after original help message
-- Some might think this is not enough however it depends
-Should I include the whole damn readme files inside help message? I personally
-doesn't think that is necessary nor desirable.
+* [-] Added help message before and after original help message
 
 * [x] Make signature method
 * [x] Use clap arg builder
@@ -22,13 +19,16 @@ not included by default, like what?
 - Utilize regex engine for fast parsing especially, define parsing. Possibly
 whole parsing process, meh I don't think I can... Focus on define parsing.
 - Refactor codes into multiple chunks of functions for better readability
-
-* [-] Make parser separated
-This is hard to make it right... for current status
+- Use faster hashmap 
 
 * [ ] New basic macros
   * [ ] Possibly SQL,CSV macros
   - Sqlite is not ideal but basic indexing would be really helpful
+
+## Delayed or paused
+
+* [-] Make parser separated
+This is hard to make it right... for current status
 
 Following is such hard to do cleanly, deterred
 * [-] Lipsum variants

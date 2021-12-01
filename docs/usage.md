@@ -117,8 +117,6 @@ let mut processor = Processor::new()
     .log(true)                                           // Use logging to terminal
     .interactive(true)                                   // Use interactive mode
     .diff(DiffOption::All)                               // Eanble diff
-    // Create unreferenced instance
-    .build(); 
 
 // Comment char and macro char cannot be same 
 // Unallowed pattern for the characters are [a-zA-Z1-9\\_\*\^\|\+\(\)=,]

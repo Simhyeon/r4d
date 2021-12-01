@@ -121,8 +121,7 @@ Hook macro should be registered before processing and can be enabled with
 for example,
 
 ```rust
-let processor = Processor::new()
-    .build();
+let processor = Processor::new();
 
 processor.register_hook(
     HookType::Macro,            // Macro type
