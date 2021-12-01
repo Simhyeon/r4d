@@ -115,6 +115,14 @@ impl BasicMacroMap {
         {
             map.insert("from".to_owned(),    BMacroSign::new("from",["a_macro_name","a_csv_value"],Self::from_data));
             map.insert("table".to_owned(),   BMacroSign::new("table",["a_table_form","a_csv_value"],Self::table));
+
+            // TODO Create this methods
+            // 1. Map csv value to hashmap
+            // map.insert("map".to_owned(),   BMacroSign::new("map",["a_map_name","a_csv_value"], Self::csv_map));
+            // 2. Map csv file to hashamp without printing
+            // map.insert("mapread".to_owned(),   BMacroSign::new("map",["a_map_name","a_csv_path"], Self::csv_map_include));
+            // 3. Get css row, column, table with simple querying (SQL like simple syntax)
+            // map.insert("query".to_owned(),   BMacroSign::new("query",["a_table_form","a_csv_value"], Self::csv_query));
         }
         #[cfg(feature = "chrono")]
         {
@@ -595,7 +603,7 @@ impl BasicMacroMap {
             // Compiler cannot deduce the variable original and will yield error on
             // processor.debug(original)
             #[cfg(feature = "debug")]
-            processor.debug(false);
+            processor.set_debug(false);
 
             // Parse macros
             let result = processor.parse_chunk_args(0, "", &result)?;
@@ -605,7 +613,7 @@ impl BasicMacroMap {
             #[cfg(feature = "debug")]
             {
                 use crate::debugger::DebugSwitch;
-                processor.debug(original);
+                processor.set_debug(original);
                 match processor.get_debug_switch() {
                     DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
                         processor.set_prompt_log("\"From macro\"")
