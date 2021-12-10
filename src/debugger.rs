@@ -7,7 +7,7 @@ use std::fs::{File,OpenOptions};
 use std::collections::HashMap;
 use crate::consts::*;
 use similar::ChangeTag;
-use crate::models::{DiffOption, MacroFragment, RadResult};
+use crate::models::{DiffOption, MacroFragment, RadResult, MacroMap};
 
 /// Debugger
 pub(crate) struct Debugger {
@@ -23,7 +23,7 @@ pub(crate) struct Debugger {
     pub(crate) diff_original : Option<File>,
     pub(crate) diff_processed : Option<File>,
     pub(crate) interactive: bool,
-    prompt_log : Option<String>
+    prompt_log : Option<String>,
 }
 
 impl Debugger {
@@ -267,7 +267,7 @@ impl Debugger {
     }
 
     /// Continuously get user input until break situation
-    fn command_loop(&mut self, log: &mut String ,mut prompt: &str, frag: Option<&MacroFragment>, logger: &mut Logger) -> RadResult<()> {
+    fn command_loop(&mut self, log: &mut String ,prompt: &str, frag: Option<&MacroFragment>, logger: &mut Logger) -> RadResult<()> {
         let mut do_continue = true;
         while do_continue {
             // This technically strips newline feed regardless of platforms 
@@ -277,7 +277,6 @@ impl Debugger {
             let input = input.lines().next().unwrap();
 
             do_continue = self.parse_debug_command_and_continue(&input, frag,log, logger)?;
-            prompt = "output";
         }
 
         Ok(())
@@ -459,6 +458,10 @@ impl Debugger {
             }
             // Current argument
             "arg" | "a" => {
+                *log = frag.processed_args.to_owned();
+            }
+            // Original argument
+            "raw" | "r" => {
                 *log = frag.args.to_owned();
             }
             // Invalid argument
