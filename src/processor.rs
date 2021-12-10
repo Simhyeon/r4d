@@ -998,9 +998,11 @@ impl Processor {
     /// - Local bound macro
     /// - Custom macro
     /// - Basic macro
-    fn evaluate(&mut self,level: usize, caller: &str, name: &str, raw_args: &str, greedy: bool) -> RadResult<EvalResult> {
+    fn evaluate(&mut self,level: usize, caller: &str, frag : &mut MacroFragment) -> RadResult<EvalResult> {
         // Increase level to represent nestedness
         let level = level + 1;
+        let (name, raw_args) = (&frag.name, &frag.args);
+        let greedy = frag.greedy || self.state.always_greedy;
 
         let mut args : String = raw_args.to_owned();
         // Preprocess only when macro is not a keyword macro
@@ -1008,6 +1010,10 @@ impl Processor {
             // This parses and processes arguments
             // and macro should be evaluated after
             args = self.parse_chunk_args(level, name, raw_args)?;
+
+            // Also update original arguments for better debugging
+            #[cfg(feature = "debug")]
+            { frag.processed_args = args.clone(); }
         }
 
         // Possibly inifinite loop so warn user
@@ -1283,7 +1289,9 @@ impl Processor {
         }
 
         // Try to evaluate
-        let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.state.always_greedy);
+        // let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.state.always_greedy);
+
+        let evaluation_result = self.evaluate(level, caller, frag);
 
         match evaluation_result {
             // If panicked, this means unrecoverable error occured.
