@@ -288,6 +288,9 @@ pub(crate) struct MacroFragment {
     pub whole_string: String,
     pub name: String,
     pub args: String,
+    // This yield processed_args information which is not needed for normal operation.
+    #[cfg(feature = "debug")]
+    pub processed_args: String, 
 
     // Macro attributes
     pub pipe: bool,
@@ -302,6 +305,8 @@ impl MacroFragment {
             whole_string : String::new(),
             name : String::new(),
             args : String::new(),
+            #[cfg(feature = "debug")]
+            processed_args : String::new(),
             pipe: false,
             greedy: false,
             yield_literal : false,
@@ -314,6 +319,8 @@ impl MacroFragment {
         self.whole_string.clear();
         self.name.clear();
         self.args.clear();
+        #[cfg(feature = "debug")]
+        self.processed_args.clear();
         self.pipe = false; 
         self.greedy = false; 
         self.yield_literal = false;
