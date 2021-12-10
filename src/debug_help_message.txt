@@ -9,7 +9,8 @@ clear(cl)         : Clear terminal
 print(p) <ARG>    : Print variable
     <ARG TYPE>
     - name(n)     : Print current macro name
-    - arg(a)      : Print current macro's argument (not necessarily complete)
+    - arg(a)      : Print current macro's processed argument
+    - raw(r)      : Print current macro's raw, unprocessed argument
     - text(t)     : Print current line text
     - line(l)     : Print current line number
     - span(s)     : Print span of lines until the line
