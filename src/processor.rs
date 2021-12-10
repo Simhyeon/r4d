@@ -112,7 +112,7 @@ use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::models::{CommentType, MacroFragment, MacroMap, MacroRule, RuleFile, UnbalancedChecker, WriteOption};
+use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro};
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};
 #[cfg(feature = "signature")]
@@ -566,7 +566,7 @@ impl Processor {
             }
             self.map.custom.insert(
                 name.to_owned(), 
-                MacroRule { 
+                CustomMacro { 
                     name: name.to_owned(),
                     args: args.split(' ').map(|s| s.to_owned()).collect::<Vec<String>>(),
                     body: body.to_owned()
@@ -595,7 +595,7 @@ impl Processor {
             }
             self.map.custom.insert(
                 name.to_owned(), 
-                MacroRule { 
+                CustomMacro { 
                     name: name.to_owned(),
                     args: vec![],
                     body: body.to_owned()
@@ -1027,7 +1027,7 @@ impl Processor {
         let mut temp_level = level;
         while temp_level > 0 {
             if let Some(local) = self.map.local.get(&Utils::local_name(temp_level, &name)) {
-                return Ok(EvalResult::Eval(Some(local.to_owned())));
+                return Ok(EvalResult::Eval(Some(local.body.to_owned())));
             } 
             temp_level = temp_level - 1;
         }
@@ -1083,6 +1083,9 @@ impl Processor {
         }
         // Process the rule body
         let result = self.parse_chunk_body(level, &name, &rule.body)?;
+
+        // Clear lower locals to prevent local collisions
+        self.map.clear_lower_locals(level);
 
         Ok(Some(result))
     }
@@ -1591,7 +1594,7 @@ enum ParseResult {
 /// e.g. when include macro is called, outer file's information is not helpful at all.
 struct SandboxBackup {
     current_input: String,
-    local_macro_map: HashMap<String,String>,
+    local_macro_map: HashMap<String,LocalMacro>,
     logger_lines: LoggerLines,
 }
 
