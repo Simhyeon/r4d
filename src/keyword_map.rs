@@ -421,7 +421,7 @@ impl KeywordMacroMap {
                     processor.log_warning(&format!("Creating a static macro with a name already existing : \"{}\"", name))?;
                 }
             }
-            processor.add_custom_rules(vec![(&name,"",&value)])?;
+            processor.add_static_rules(vec![(&name,&value)])?;
             Ok(None)
         } else {
             Err(RadError::InvalidArgument("Static requires two argument".to_owned()))
