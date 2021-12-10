@@ -17,15 +17,15 @@ pub enum WriteOption {
     Discard,
 }
 
-/// Macro rule of custom macros
+/// Custom macro
 #[derive(Clone, Deserialize, Serialize)]
-pub struct MacroRule{
+pub struct CustomMacro{
     pub name: String,
     pub args: Vec<String>,
     pub body: String,
 }
 
-impl MacroRule {
+impl CustomMacro {
     pub fn new(name: &str, args: &str, body: &str) -> Self {
         // Empty args are no args
         let mut args : Vec<String> = args.split(' ').map(|item| item.to_owned()).collect();
@@ -33,7 +33,7 @@ impl MacroRule {
             args = vec![]
         }
 
-        MacroRule {  
+        CustomMacro {  
             name : name.to_owned(),
             args,
             body : body.to_owned(),
@@ -41,7 +41,7 @@ impl MacroRule {
     }
 }
 
-impl std::fmt::Display for MacroRule {
+impl std::fmt::Display for CustomMacro {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut inner = self.args.iter().fold(String::new(),|acc, arg| acc + &arg + ",");
         // This removes last "," character
@@ -51,14 +51,28 @@ impl std::fmt::Display for MacroRule {
 }
 
 #[cfg(feature = "signature")]
-impl From<&MacroRule> for crate::sigmap::MacroSignature {
-    fn from(mac: &MacroRule) -> Self {
+impl From<&CustomMacro> for crate::sigmap::MacroSignature {
+    fn from(mac: &CustomMacro) -> Self {
         Self {
             variant: crate::sigmap::MacroVariant::Custom,
             name: mac.name.to_owned(),
             args: mac.args.to_owned(),
             expr: mac.to_string(),
         }
+    }
+}
+
+/// Custom macro
+#[derive(Clone)]
+pub struct LocalMacro{
+    pub level: usize,
+    pub name: String,
+    pub body: String,
+}
+
+impl LocalMacro {
+    pub fn new(level: usize,name: String, body: String) -> Self {
+        Self {  level, name, body }
     }
 }
 
@@ -72,8 +86,8 @@ impl From<&MacroRule> for crate::sigmap::MacroSignature {
 pub(crate) struct MacroMap {
     pub keyword: KeywordMacroMap,
     pub basic : BasicMacroMap,
-    pub custom : HashMap<String, MacroRule>,
-    pub local : HashMap<String, String>,
+    pub custom : HashMap<String, CustomMacro>,
+    pub local : HashMap<String, LocalMacro>,
 }
 
 impl MacroMap {
@@ -101,12 +115,17 @@ impl MacroMap {
 
     /// Create a new local macro
     pub fn new_local(&mut self, level: usize,name: &str, value: &str) {
-        self.local.insert(Utils::local_name(level,name), value.to_owned());
+        self.local.insert(Utils::local_name(level,name), LocalMacro::new(level, name.to_owned(), value.to_owned()));
     }
 
     /// Clear all local macros
     pub fn clear_local(&mut self) {
         self.local.clear();
+    }
+    
+    /// Retain only local macros that is smaller or equal to current level 
+    pub fn clear_lower_locals(&mut self, current_level: usize) {
+        self.local.retain(|_,mac| mac.level <= current_level);
     }
 
     pub fn is_keyword(&self, name:&str) -> bool {
@@ -127,7 +146,7 @@ impl MacroMap {
         body: &str,
     ) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
-        let mac = MacroRule::new(
+        let mac = CustomMacro::new(
             &Utils::trim(name), 
             &Utils::trim(args), 
             body);
@@ -150,22 +169,22 @@ impl MacroMap {
             self.basic.rename(name, target);
         }
         if self.custom.contains_key(name) {
-            let rule = self.custom.remove(name).unwrap();
-            self.custom.insert(target.to_owned(), rule);
+            let custom = self.custom.remove(name).unwrap();
+            self.custom.insert(target.to_owned(), custom);
         }
     }
 
     pub fn append(&mut self, name: &str, target: &str) {
         if self.custom.contains_key(name) {
-            let rule = self.custom.get_mut(name).unwrap();
-            rule.body.push_str(target);
+            let custom = self.custom.get_mut(name).unwrap();
+            custom.body.push_str(target);
         }
     }
 
     pub fn replace(&mut self, name: &str, target: &str) -> bool {
         if self.custom.contains_key(name) {
-            let rule = self.custom.get_mut(name).unwrap();
-            rule.body = target.to_owned();
+            let custom = self.custom.get_mut(name).unwrap();
+            custom.body = target.to_owned();
             true
         } else {
             false
@@ -183,7 +202,7 @@ impl MacroMap {
             .map(|(_,sig)| MacroSignature::from(sig));
         let custom_iter = self.custom
             .iter()
-            .map(|(_,rule)| MacroSignature::from(rule));
+            .map(|(_,custom)| MacroSignature::from(custom));
         key_iter.chain(basic_iter).chain(custom_iter).collect()
     }
 }
@@ -217,11 +236,11 @@ impl UnbalancedChecker {
 /// Readable, writeable struct that holds information of custom macros
 #[derive(Serialize, Deserialize)]
 pub struct RuleFile {
-    pub rules : HashMap<String, MacroRule>,
+    pub rules : HashMap<String, CustomMacro>,
 }
 
 impl RuleFile {
-    pub fn new(rules : Option<HashMap<String, MacroRule>>) -> Self {
+    pub fn new(rules : Option<HashMap<String, CustomMacro>>) -> Self {
         if let Some(content) = rules {
             Self {
                 rules: content,
