@@ -950,7 +950,7 @@ impl Processor {
                     self.lex_branch_add_to_remainder(ch, &mut remainder)?;
                 }
                 LexResult::AddToFrag(cursor) => {
-                    self.lex_branch_add_to_frag(ch, frag, cursor);
+                    self.lex_branch_add_to_frag(ch, frag, cursor)?;
                 }
                 LexResult::EndFrag => {
                     self.lex_branch_end_frag(ch,frag,&mut remainder, lexor, level, caller)?;
@@ -1215,7 +1215,7 @@ impl Processor {
         Ok(())
     }
 
-    fn lex_branch_add_to_frag(&mut self, ch: char,frag: &mut MacroFragment, cursor: Cursor) {
+    fn lex_branch_add_to_frag(&mut self, ch: char,frag: &mut MacroFragment, cursor: Cursor) -> RadResult<()> {
         match cursor{
             Cursor::Name => {
                 if frag.name.len() == 0 {
@@ -1226,7 +1226,13 @@ impl Processor {
                     '+' => frag.greedy = true,
                     '*' => frag.yield_literal = true,
                     '^' => frag.trimmed = true,
-                    _ => frag.name.push(ch) 
+                    _ => {
+                        if frag.has_attribute() {
+                            self.log_error("Received non attribute character after macro attributes which is not allowed")?;
+                            return Err(RadError::InvalidMacroName("Invalid macro attribute".to_owned()));
+                        }
+                        frag.name.push(ch);
+                    }
                 }
             },
             Cursor::Arg => {
@@ -1235,6 +1241,7 @@ impl Processor {
             _ => unreachable!(),
         } 
         frag.whole_string.push(ch);
+        Ok(())
     }
 
     fn lex_branch_end_frag(&mut self, ch: char, frag: &mut MacroFragment, remainder: &mut String, lexor : &mut Lexor, level: usize, caller: &str) -> RadResult<()> {
