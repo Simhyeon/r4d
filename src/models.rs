@@ -333,6 +333,10 @@ impl MacroFragment {
     pub(crate) fn is_empty(&self) -> bool {
         self.whole_string.len() == 0
     }
+
+    pub(crate) fn has_attribute(&self) -> bool {
+        self.pipe || self.greedy || self.yield_literal || self.trimmed
+    }
 }
 
 /// Comment type 
