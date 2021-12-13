@@ -1,40 +1,5 @@
 ### Changed
 
-* [x] Fixed unexported DiffOption and HookType re-export
-* [-] Added help message before and after original help message
-
-* [x] Make signature method
-* [x] Use clap arg builder
-
-* [x] Changed builder pattern to use move semantics rather than mutable reference
-* [x] Debug sandboxing was not working
-
-* [x] Bug : Name collision
-- This was solved by clearing lower level local macros
-- This was caused because nested macro was using previously declared local macro
-- In a scenario apple
-1 declared local macro "alpha" and nested macro 2 delcared a macro called "bravo"
-This is totally fine and local macros will be all perished after 0th invocation.
-- In a scenario banana
-1 declared local macro "alpha" and nested macro 2 delcared a macro called "alpha"
-This is also totally fine because lower level local macros are called first.
-- However, in a scenario cacao
-1 declared local macro alpha and nested macro 2 declared a macro called alpha.
-But in this time 1 called another macro 2-1 which declard a macro called "alpha".
-2-1's local macro "alpha" is treated as 2's local macro alpha and this triggered some nasty bug.
-
-- The solution was quite straightforward. Remove all lower level macros after
-every custom macro invocation. This might not be the most performant solution
-but very cheap one.
-
-* [x] Not necessarily a bug but improved
-In debugging, argument was not processed in debug console. Which is somewhat
-useful and not so useful. I simply added debugging feature's varaible and added
-processed argument. Users can view both raw and processed arguments at the same time.
-
-* [x] Debugging : Removed output text from promt, because if felt unnecessary
-* [x] Macro attribute position fix
-
 ### TODOs
 
 * [ ] New basic macros
@@ -116,6 +81,41 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [x] Fixed unexported DiffOption and HookType re-export
+* [-] Added help message before and after original help message
+
+* [x] Make signature method
+* [x] Use clap arg builder
+
+* [x] Changed builder pattern to use move semantics rather than mutable reference
+* [x] Debug sandboxing was not working
+
+* [x] Bug : Name collision
+- This was solved by clearing lower level local macros
+- This was caused because nested macro was using previously declared local macro
+- In a scenario apple
+1 declared local macro "alpha" and nested macro 2 delcared a macro called "bravo"
+This is totally fine and local macros will be all perished after 0th invocation.
+- In a scenario banana
+1 declared local macro "alpha" and nested macro 2 delcared a macro called "alpha"
+This is also totally fine because lower level local macros are called first.
+- However, in a scenario cacao
+1 declared local macro alpha and nested macro 2 declared a macro called alpha.
+But in this time 1 called another macro 2-1 which declard a macro called "alpha".
+2-1's local macro "alpha" is treated as 2's local macro alpha and this triggered some nasty bug.
+
+- The solution was quite straightforward. Remove all lower level macros after
+every custom macro invocation. This might not be the most performant solution
+but very cheap one.
+
+* [x] Not necessarily a bug but improved
+In debugging, argument was not processed in debug console. Which is somewhat
+useful and not so useful. I simply added debugging feature's varaible and added
+processed argument. Users can view both raw and processed arguments at the same time.
+
+* [x] Debugging : Removed output text from promt, because if felt unnecessary
+* [x] Macro attribute position fix
 
 * [-] Eable useful basic macro customization by exposing processor state to end
 user.
