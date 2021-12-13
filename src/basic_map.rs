@@ -105,6 +105,7 @@ impl BasicMacroMap {
             ("tempto".to_owned(),  BMacroSign::new("tempto",  ["a_filename"],Self::set_temp_target)),
             ("tr".to_owned(),      BMacroSign::new("tr",      ["a_source","a_matches","a_substitutions"],Self::translate)),
             ("trim".to_owned(),    BMacroSign::new("trim",    ["a_content"],Self::trim)),
+            ("triml".to_owned(),   BMacroSign::new("triml",   ["a_content"],Self::triml)),
             ("undef".to_owned(),   BMacroSign::new("undef",   ["a_macro_name"],Self::undefine_call)),
             // THis is simply a placeholder
             ("define".to_owned(),  BMacroSign::new("define",  ESR,Self::define_type)),
@@ -279,6 +280,31 @@ impl BasicMacroMap {
     fn trim(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             Ok(Some(Utils::trim(&args[0])))
+        } else {
+            Err(RadError::InvalidArgument("Trim requires an argument".to_owned()))
+        }
+    }
+
+    /// Trim preceding and trailing whitespaces (' ', '\n', '\t', '\r') but for all lines
+    ///
+    /// # Usage
+    ///
+    /// $triml(\t multi
+    /// \t line
+    /// \t expression
+    /// )
+    fn triml(args: &str, greedy: bool, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
+            let mut lines = String::new();
+            let mut iter = args[0].lines().peekable();
+            while let Some(line) = iter.next() {
+                lines.push_str(&Utils::trim(line));
+                // Append newline because String.lines() method cuts off all newlines
+                if let Some(_) = iter.peek() {
+                    lines.push_str(&p.state.newline);
+                }
+            }
+            Ok(Some(lines))
         } else {
             Err(RadError::InvalidArgument("Trim requires an argument".to_owned()))
         }
