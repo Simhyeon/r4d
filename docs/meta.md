@@ -6,12 +6,51 @@
 * [x] Make signature method
 * [x] Use clap arg builder
 
+* [x] Changed builder pattern to use move semantics rather than mutable reference
+* [x] Debug sandboxing was not working
+
+* [x] Bug : Name collision
+- This was solved by clearing lower level local macros
+- This was caused because nested macro was using previously declared local macro
+- In a scenario apple
+1 declared local macro "alpha" and nested macro 2 delcared a macro called "bravo"
+This is totally fine and local macros will be all perished after 0th invocation.
+- In a scenario banana
+1 declared local macro "alpha" and nested macro 2 delcared a macro called "alpha"
+This is also totally fine because lower level local macros are called first.
+- However, in a scenario cacao
+1 declared local macro alpha and nested macro 2 declared a macro called alpha.
+But in this time 1 called another macro 2-1 which declard a macro called "alpha".
+2-1's local macro "alpha" is treated as 2's local macro alpha and this triggered some nasty bug.
+
+- The solution was quite straightforward. Remove all lower level macros after
+every custom macro invocation. This might not be the most performant solution
+but very cheap one.
+
+* [x] Not necessarily a bug but improved
+In debugging, argument was not processed in debug console. Which is somewhat
+useful and not so useful. I simply added debugging feature's varaible and added
+processed argument. Users can view both raw and processed arguments at the same time.
+
+* [x] Debugging : Removed output text from promt, because if felt unnecessary
+* [x] Macro attribute position fix
+
 ### TODOs
 
-* [ ] Export to python binding
+* [ ] New basic macros
+  * [ ] Possibly SQL,CSV macros with help of libsqlite (1.4)
+* [ ] Auto split macro as hook macro (HookMacro::Letter) (1.4)
+
+* [ ] Remove deprecated methods(2.0)
+
+* [ ] Better debugger (2.0)
+- Current implementation is dependent on processor.
+- However I want to make debugger also gets information from processor
+
+* [ ] Export to python binding (2.0)
 - This also needs some extra workload to enable pyo3 and some nomangle-like
 configurations
-* [ ] Export to c binding
+* [ ] Export to c binding (2.0)
 - This includes changes in Cargo.toml file such as cdylib which was actually
 not included by default, like what?
 
@@ -21,11 +60,12 @@ whole parsing process, meh I don't think I can... Focus on define parsing.
 - Refactor codes into multiple chunks of functions for better readability
 - Use faster hashmap 
 
-* [ ] New basic macros
-  * [ ] Possibly SQL,CSV macros
-  - Sqlite is not ideal but basic indexing would be really helpful
-
 ## Delayed or paused
+
+* [-] Print macro information might be also useful
+- However I think it needs a serious refactor of debugger logics.
+
+* [-] Eval command in debug mode maybe useful? -> Yes but, it doesn't meet the point of debugging
 
 * [-] Make parser separated
 This is hard to make it right... for current status
