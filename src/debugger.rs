@@ -7,7 +7,7 @@ use std::fs::{File,OpenOptions};
 use std::collections::HashMap;
 use crate::consts::*;
 use similar::ChangeTag;
-use crate::models::{DiffOption, MacroFragment, RadResult, MacroMap};
+use crate::models::{DiffOption, MacroFragment, RadResult};
 
 /// Debugger
 pub(crate) struct Debugger {
