@@ -77,7 +77,7 @@ Type ```-h``` or ```--help``` to see full options.
 **Cargo.toml**
 ```toml
 [dependencies]
-rad = { version = "1.2.1", features = ["full"] }
+rad = { version = "1.4.1", features = ["full"] }
 
 # Other available features are... 
 
