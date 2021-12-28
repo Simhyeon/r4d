@@ -7,7 +7,7 @@ use crate::RadResult;
 use crate::auth::AuthType;
 use crate::processor::Processor;
 use crate::utils::Utils;
-use crate::models::{CommentType, DiffOption};
+use crate::models::{CommentType, DiffOption, SignatureType};
 use std::path::{Path, PathBuf};
 
 /// Struct to parse command line arguments and execute proper operations
@@ -131,7 +131,8 @@ impl Cli {
     fn print_signature(&mut self, args: &clap::ArgMatches, processor: &mut Processor) -> RadResult<bool> {
         #[cfg(feature = "signature")]
         if args.occurrences_of("signature") != 0 {
-            let sig_map = processor.get_signature_map()?;
+            let sig_type = SignatureType::from_str(args.value_of("sigtype").unwrap_or("all"))?;
+            let sig_map = processor.get_signature_map(sig_type)?;
             // TODO
             let sig_json = serde_json::to_string(&sig_map.object).expect("Failed to create sig map");
 
@@ -326,7 +327,13 @@ impl Cli {
                 .takes_value(true)
                 .value_name("FILE")
                 .default_value(" ")
-                .about("Print signature to file."));
+                .about("Print signature to file."))
+            .arg(Arg::new("sigtype")
+                .long("sigtype")
+                .takes_value(true)
+                .value_name("SIG TYPE")
+                .default_value("all")
+                .about("Signature type to get"));
 
         app.get_matches()
     }
