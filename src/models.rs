@@ -166,6 +166,12 @@ impl MacroMap {
         }
     }
 
+    pub fn undefine_custom(&mut self, name: &str) {
+        if self.custom.contains_key(name) {
+            self.custom.remove(name);
+        }
+    }
+
     pub fn rename(&mut self, name: &str, target: &str) {
         if self.basic.contains(name) {
             self.basic.rename(name, target);
@@ -405,7 +411,7 @@ impl DiffOption {
             "none" => Self::None,
             "all" => Self::All,
             "change" => Self::Change,
-            _ => return Err(RadError::InvalidConversion(format!("Diffoption, \"{}\" is not a vliad type", text))),
+            _ => return Err(RadError::InvalidConversion(format!("Diffoption, \"{}\" is not a valid type", text))),
         };
         Ok(var)
     }
