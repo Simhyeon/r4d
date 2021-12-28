@@ -104,7 +104,14 @@ impl Cli {
             for file in files {
                 processor.from_file(Path::new(file))?;
             }
+            self.print_signature(args, &mut processor)?;
         } else { // -->> Read from stdin
+
+            // Print signature if such option is given
+            // Signature option doesn't go with stdin option
+            if self.print_signature(args, &mut processor)? {
+                return Ok(());
+            }
             processor.from_stdin()?;
         }
 
@@ -115,7 +122,13 @@ impl Cli {
         if let Some(file) = args.value_of("freeze") {
             processor.freeze_to_file(Path::new(file))?;
         }
+        Ok(())
+    }
 
+    /// Print signature
+    ///
+    /// Returns whether signature operation was executed or not
+    fn print_signature(&mut self, args: &clap::ArgMatches, processor: &mut Processor) -> RadResult<bool> {
         #[cfg(feature = "signature")]
         if args.occurrences_of("signature") != 0 {
             let sig_map = processor.get_signature_map()?;
@@ -131,12 +144,12 @@ impl Cli {
             } else {
                 println!("{}", &sig_json);
             }
-        }
-        Ok(())
+            Ok(true)
+        } else { Ok(false) }
     }
 
     /// Parse processor options
-    fn parse_options(&mut self, args: & clap::ArgMatches) {
+    fn parse_options(&mut self, args: &clap::ArgMatches) {
         // ========
         // Sub options
         // custom rules
