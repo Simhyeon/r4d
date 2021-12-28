@@ -79,7 +79,13 @@
 //! processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
 //!
 //! // Add custom rules without any arguments
-//! processor.add_static_rules(vec![("test","TEST"),("lul","kekw")])
+//! processor.add_static_rules(vec![("test","TEST"),("lul","kekw")]);
+//!
+//! // Undefine rules
+//! processor.undefine_rules(vec!["name1", "name2"]);
+//!
+//! // Undefine only custom rules
+//! processor.undefine_custom_rules(vec!["name1", "name2"]);
 //! 
 //! // Process with inputs
 //! // This prints to desginated write destinations
@@ -112,7 +118,9 @@ use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl, SignatureType};
+use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl};
+#[cfg(feature = "signature")]
+use crate::models::SignatureType;
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};
 #[cfg(feature = "signature")]
@@ -615,6 +623,20 @@ impl Processor {
             );
         }
         Ok(())
+    }
+
+    /// Remove rules from map
+    pub fn undefine_rules(&mut self, rules: Vec<impl AsRef<str>>) {
+        for name in rules {
+            self.map.undefine(name.as_ref());
+        }
+    }
+
+    /// Remove rules from map but only custom macro
+    pub fn undefine_custom_rules(&mut self, rules: Vec<impl AsRef<str>>) {
+        for name in rules {
+            self.map.undefine_custom(name.as_ref());
+        }
     }
 
     #[cfg(feature = "hook")]
