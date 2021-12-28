@@ -112,7 +112,7 @@ use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro};
+use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl};
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};
 #[cfg(feature = "signature")]
@@ -164,6 +164,7 @@ pub(crate) struct ProcessorState {
     pub temp_target: (PathBuf,File), 
     pub comment_char : Option<char>,
     pub macro_char : Option<char>,
+    pub flow_control : FlowControl,
 }
 
 impl ProcessorState {
@@ -184,6 +185,7 @@ impl ProcessorState {
             temp_target,
             comment_char: None,
             macro_char: None,
+            flow_control: FlowControl::None,
         }
     }
 }
@@ -215,6 +217,11 @@ impl Processor {
     /// Creates default processor without basic macros
     pub fn empty() -> Self {
         Self::new_processor(false)
+    }
+
+    /// Clear custom macros
+    pub fn clear_custom_macros(&mut self) {
+        self.map.clear_custom_macros();
     }
 
     /// Internal function to create Processor struct
@@ -821,6 +828,12 @@ impl Processor {
         if let Some(line) = lines.next() {
             let line = line?;
 
+            match self.state.flow_control {
+                FlowControl::Escape => return Ok(ParseResult::Printable(line)),
+                FlowControl::Exit => return Err(RadError::Exit),
+                FlowControl::None => (),
+            }
+
             // Save to original
             #[cfg(feature = "debug")]
             self.debugger.write_to_original(&line)?;
@@ -1316,7 +1329,8 @@ impl Processor {
 
     fn lex_branch_end_frag_eval_result_error(&mut self, error : RadError) -> RadResult<()> {
         // this is equlvalent to conceptual if let not pattern
-        if let RadError::Panic = error{
+        // Log error when panic occured
+        if let RadError::Panic = error {
             // Do nothing
             ();
         } else {
@@ -1324,6 +1338,7 @@ impl Processor {
         }
 
         // If nopanic don't panic
+        // If not, re-throw err to caller
         if self.state.nopanic {
             Ok(())
         } else {
