@@ -1,5 +1,4 @@
 use thiserror::Error;
-
 use crate::AuthType;
 
 /// R4d's error type
