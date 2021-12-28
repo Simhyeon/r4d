@@ -7,7 +7,9 @@ use crate::RadResult;
 use crate::auth::AuthType;
 use crate::processor::Processor;
 use crate::utils::Utils;
-use crate::models::{CommentType, DiffOption, SignatureType};
+use crate::models::{CommentType, DiffOption};
+#[cfg(feature = "signature")]
+use crate::models::SignatureType;
 use std::path::{Path, PathBuf};
 
 /// Struct to parse command line arguments and execute proper operations
@@ -104,11 +106,13 @@ impl Cli {
             for file in files {
                 processor.from_file(Path::new(file))?;
             }
+            #[cfg(feature = "signature")]
             self.print_signature(args, &mut processor)?;
         } else { // -->> Read from stdin
 
             // Print signature if such option is given
             // Signature option doesn't go with stdin option
+            #[cfg(feature = "signature")]
             if self.print_signature(args, &mut processor)? {
                 return Ok(());
             }
@@ -128,6 +132,7 @@ impl Cli {
     /// Print signature
     ///
     /// Returns whether signature operation was executed or not
+    #[cfg(feature = "signature")]
     fn print_signature(&mut self, args: &clap::ArgMatches, processor: &mut Processor) -> RadResult<bool> {
         #[cfg(feature = "signature")]
         if args.occurrences_of("signature") != 0 {
