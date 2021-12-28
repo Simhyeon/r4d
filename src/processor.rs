@@ -112,7 +112,7 @@ use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl};
+use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl, SignatureType};
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};
 #[cfg(feature = "signature")]
@@ -485,8 +485,13 @@ impl Processor {
     
     /// Get macro signatrue map
     #[cfg(feature = "signature")]
-    pub fn get_signature_map(&self) -> RadResult<SignatureMap> {
-        Ok(SignatureMap::new(self.map.get_signatures()))
+    pub fn get_signature_map(&self, sig_type : SignatureType) -> RadResult<SignatureMap> {
+        let signatures = match sig_type {
+            SignatureType::All => self.map.get_signatures(),
+            SignatureType::Default => self.map.get_default_signatures(),
+            SignatureType::Custom => self.map.get_custom_signatures(),
+        };
+        Ok(SignatureMap::new(signatures))
     }
 
     /// Print current permission status
