@@ -1,10 +1,29 @@
 ### Changed
 
+* [x] New basic macro
+    * [x] Triml -> Trim line by line
+	* [x] Wrap : But with additonal packages
+	- Though I beleve it worth
+    * [x] Panic macro
+	* [x] Flow control macros
+		* [x] Escape
+		* [x] Exit
+
+* [x] Improve signature ergonomics
+
 ### TODOs
 
-* [ ] New basic macros
-  * [ ] Possibly SQL,CSV macros with help of libsqlite (1.4)
-* [ ] Auto split macro as hook macro (HookMacro::Letter) (1.4)
+* [ ] Rad-wrapper
+	- Read as processed
+	- Edit ad raw
+
+#### 2.0
+
+* [ ] Export to wasm (Possibly later)
+	- Practice with gcalc first
+
+* [ ] Make distinction between basic macro and keyword macro intuitive and concrete
+- Move puase from keyword to basic
 
 * [ ] Remove deprecated methods(2.0)
 
@@ -69,7 +88,7 @@ chracter is valid character for macro invocation or not. Invalid characters
 will break the macro framgent and return original text.
 6. Execute macro invocation and substitute with final result.
     - If macro doesn't exist, original text is returned
-	- The order of macros are "local", "custom" and then "basic", this enables
+    - The order of macros are "local", "custom" and then "basic", this enables
 user to override basic macro with custom macro.
 
 ### How basic macros work

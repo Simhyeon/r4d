@@ -58,6 +58,16 @@ rad --comment any
 rad test -f frozen.r4f
 # Melt a file and use in processing
 rad test -m frozen.r4f
+
+# Print signature information into file
+rad --signature sig.json
+# Print signature to stdout but only custom macros
+rad --signature --sigtype custom
+
+# Available signature types
+# all (This is the default value)
+# default
+# custom
 ```
 
 Type ```-h``` or ```--help``` to see full options.
@@ -69,19 +79,19 @@ Type ```-h``` or ```--help``` to see full options.
 [dependencies]
 rad = { version = "1.2.1", features = ["full"] }
 
-# Other available features are 
-# "evalexpr", "chrono", "lipsum", "csv", "debug", "color", "full", "hook"
+# Other available features are... 
 
-# evalexpr - "eval" macro
-# chrono   - "date", "time" macro
-# lipsum   - "lipsum" macro
-# csv      - "from", "table" macro
-# full     - Enable evalexpr, chrono, lipsum and csv
+# evalexpr  - "eval" macro
+# chrono    - "date", "time" macro
+# lipsum    - "lipsum" macro
+# csv       - "from", "table" macro
+# textwrap  - Enable "wrap" macro
+# full      - Enable evalexpr, chrono, lipsum, csv, and textwrap
 
-# debug    - Enable debug methods
-# color    - Enable color prompt
-
-# hook     - Enable hook macro
+# debug     - Enable debug methods
+# color     - Enable color prompt
+# signature - Enable signature map
+# hook      - Enable hook macro
 ```
 **rust file**
 ```rust
@@ -144,18 +154,24 @@ processor.add_closure_rule(
 // Register a hook macro
 // Trigger and execution macro should be defined otherwise
 processor.register_hook(
-    HookType::Macro,            // Macro type
-    trigger_macro,              // Macro that triggers
-    hook_div,                   // Macro to be executed
-    1,                          // target count
-    false                       // Resetable
+	HookType::Macro,            // Macro type
+	trigger_macro,              // Macro that triggers
+	hook_div,                   // Macro to be executed
+	1,    						// target count
+	false 						// Resetable
 )
 
 // Add custom rules(in order of "name, args, body") 
 processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
 
 // Add custom rules without any arguments
-processor.add_static_rules(vec![("test","TEST"),("lul","kekw")])
+processor.add_static_rules(vec![("test","TEST"),("lul","kekw")]);
+
+// Undefine rules
+processor.undefine_rules(vec!["name1", "name2"]);
+
+// Undefine only custom rules
+processor.undefine_custom_rules(vec!["name1", "name2"]);
 
 // Process with inputs
 // This prints to desginated write destinations

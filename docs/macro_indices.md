@@ -60,12 +60,15 @@ For assertion macros refer [debug part](./debug.md)
 * [tr](#tr)
 * [len](#len)
 * [regex](#regex)
-* [trim, chomp, comp](#trim-chomp-comp)
+* [trim, chomp, comp, triml](#trim-chomp-comp-triml)
+* [wrap](#wrap)
 * [nl](#nl)
 * [lipsum](#lipsum)
 * [time, date](#time-date)
 * [from](#from)
 * [table](#table)
+* [flowcontrol](#flowcontrol)
+* [panic](#panic)
 
 ### define
 
@@ -632,7 +635,7 @@ Hello rust
 Hello World
 ```
 
-### trim, chomp, comp
+### trim, chomp, comp, triml
 
 ```Trim``` removes preceding and trailing new lines, tabs and whitespaces from
 given input. ```Chomp``` removes duplicate newlines from given input ( or say
@@ -678,6 +681,35 @@ UP
 
 DOWN
 --
+```
+
+**Triml** trims line by line.
+
+```
+$triml(
+	1 2 3
+  a b c 
+ 	 가 나 다 
+)
+===
+1 2 3
+a b c
+가 나 다
+```
+
+### wrap
+
+wrap sets given text's width. This uses amazing library of
+[textwrap](https://crates.io/crates/textwrap). Wrap supports UTF-8 characters.
+
+```
+$wrap(20,$lipsum(10))
+===
+Lorem ipsum
+dolor sit amet,
+consectetur
+adipiscing elit,
+sed do.
 ```
 
 ### nl
@@ -775,4 +807,54 @@ $table(html,\*a,b,c
 |-
 |}
 <table><thead><tr><td>a</td><td>b</td><td>c</td></tr></thead><tbody><tr><td>1</td><td>2</td><td>3</td></tr><tr><td>4</td><td>5</td><td>6</td></tr></tbody></table>
+```
+
+### Flowcontrol
+
+```exit``` and ```escape``` changes flow of the processor behaviour. However
+these flow control doesn't mean direct exit. Rather a signal to processor so
+that processor can stop the work gracefully. Thus, ```exit``` inside macro
+definition will stop a processor only after the processing is finished.
+
+**exit**
+
+```
+---Before---
+$exit()
+---After---
+===
+---Before---
+```
+
+Exit stops processing at the given point of macro invocation.
+
+**escape**
+
+```
+---Before---
+$escape()
+$exit()
+---After---
+===
+---Before---
+$exit()
+---After---
+```
+
+Escape simply escapes all texts after macro call. Which is similar to pause but
+you cannot revert the escape. Simply said, escape is one way around macro.
+
+### panic
+
+Triggers panic manually. This can be suppressed with ```--nopanic``` flag.
+
+```
+Before
+$panic(This was panicked because...)
+After
+===
+error: Panic triggered with message
+= This was panicked because...
+ --> stdin:2:2
+Processor panicked, exiting...
 ```

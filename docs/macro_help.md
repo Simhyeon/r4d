@@ -203,11 +203,16 @@ MACRO USAGE:
 
 	$regex(Hello world,w.*?d,rust)
 	
-	### trim, chomp, comp
+	### trim, chomp, comp, triml
 
 	$trim($value())
 	$chomp($value())
 	$comp($value())
+	$triml($value())
+
+	### wrap()
+
+	$wrap(20,$value())
 	
 	### nl
 	
@@ -241,3 +246,13 @@ MACRO USAGE:
 	$table(html,\*a,b,c
 	1,2,3
 	4,5,6*\)
+
+	### flowcontrol
+
+	$escape()
+
+	$exit()
+
+	### panic
+
+	$panic()
