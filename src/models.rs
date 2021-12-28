@@ -91,12 +91,10 @@ pub(crate) struct MacroMap {
 }
 
 impl MacroMap {
-    /// Creates empty map without default basic macros
-    ///
-    /// Keyword macro cannot be empty
+    /// Creates empty map without default macros
     pub fn empty() -> Self {
         Self {
-            keyword: KeywordMacroMap::new(),
+            keyword: KeywordMacroMap::empty(),
             basic: BasicMacroMap::empty(),
             custom: HashMap::new(),
             local: HashMap::new(),
@@ -111,6 +109,10 @@ impl MacroMap {
             custom: HashMap::new(),
             local: HashMap::new(),
         }
+    }
+
+    pub fn clear_custom_macros(&mut self) {
+        self.custom.clear();
     }
 
     /// Create a new local macro
@@ -389,4 +391,11 @@ impl DiffOption {
         };
         Ok(var)
     }
+}
+
+/// Enum that controls processing flow
+pub enum FlowControl {
+    None,
+    Escape,
+    Exit,
 }
