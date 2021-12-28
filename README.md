@@ -3,6 +3,12 @@
 R4d is a text oriented macro prosessor aims to be an alternative to m4 macro
 processor.
 
+### Note
+
+Because crates.io's readme is tied to version. There might be undocumented
+readme changes. Please use [github](https://github.com/simhyeon/r4d) for
+latest information.
+
 ### Demo
 
 **Raw texts**
