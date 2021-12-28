@@ -59,10 +59,10 @@ e.g.
 
 ```bash
 # Binary features is mandatory or else it is not an executable
-cargo install r4d --features binary
+cargo install r4d --features binary --locked
 
 # If you need color prompt, then use features "color"
-cargo install r4d --features binary,color
+cargo install r4d --features binary,color --locked
 
 # Refer lib.rs for detailed feature usage
 
