@@ -51,6 +51,8 @@ pub enum RadError {
     StrictPanic,
     #[error("Processor panicked, exiting...")]
     Panic,
+    #[error("Panic triggered with message\n= {0}")]
+    ManualPanic(String)
 }
 
 // ==========
