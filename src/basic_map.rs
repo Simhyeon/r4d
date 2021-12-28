@@ -128,7 +128,9 @@ impl BasicMacroMap {
         #[cfg(feature = "lipsum")]
         map.insert("lipsum".to_owned(),      BMacroSign::new("lipsum",["a_word_count"],Self::lipsum_words));
         #[cfg(feature = "evalexpr")]
-        map.insert("eval".to_owned(),        BMacroSign::new("eval",["a_expression"],Self::eval));
+        map.insert("eval".to_owned(),        BMacroSign::new("eval",  ["a_expression"],Self::eval));
+        #[cfg(feature = "textwrap")]
+        map.insert("wrap".to_owned(),        BMacroSign::new("wrap",  ["a_width","a_content"],Self::wrap));
 
         #[cfg(feature = "hook")]
         {
@@ -1106,7 +1108,7 @@ impl BasicMacroMap {
             processor.hook_map.switch_hook(hook_type, index, true)?;
             Ok(None)
         } else {
-            Err(RadError::InvalidArgument("hookon requires two argument".to_owned()))
+            Err(RadError::InvalidArgument("hookon requires two arguments".to_owned()))
         }
     }
 
@@ -1123,10 +1125,26 @@ impl BasicMacroMap {
             processor.hook_map.switch_hook(hook_type, index, false)?;
             Ok(None)
         } else {
-            Err(RadError::InvalidArgument("hookoff requires two argument".to_owned()))
+            Err(RadError::InvalidArgument("hookoff requires two arguments".to_owned()))
         }
     }
 
+    /// Wrap text
+    ///
+    /// * Usage
+    ///
+    /// $wrap(80, Content goes here)
+    #[cfg(feature = "textwrap")]
+    fn wrap(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let width = Utils::trim(&args[0]).parse::<usize>()?;
+            let content = &args[1];
+            let result = textwrap::fill(content, width);
+            Ok(Some(result))
+        } else {
+            Err(RadError::InvalidArgument("Wrap requires two arguments".to_owned()))
+        }
+    }
 }
 
 // TODO
