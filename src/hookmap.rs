@@ -49,22 +49,6 @@ impl HookMap {
         None
     }
 
-    pub fn add_letter_count(&mut self) -> Option<String> {
-        if let Some(hook_state) = &mut self.letter_hook {
-            if hook_state.enabled {
-                hook_state.current_count += 1; 
-                if hook_state.current_count == hook_state.target_count {
-                    hook_state.current_count = 0; // reset count
-                    if !hook_state.resetable { 
-                        hook_state.enabled = false;
-                    }
-                    return Some(hook_state.target_macro.clone());
-                } 
-            }
-        }
-        None
-    }
-
     pub fn switch_hook(&mut self, hook_type : HookType, index: &str, switch: bool) -> RadResult<()> {
         match hook_type {
             HookType::Macro => {
@@ -80,11 +64,6 @@ impl HookMap {
                     state.enabled = switch
                 } else { return Err(RadError::HookMacroFail(format!("Hook trigger \"{}\" is not registered as character hook", index))) }
             },
-            HookType::Letter => {
-                if let Some(hook_state) = &mut self.letter_hook { 
-                    hook_state.enabled = switch; 
-                }
-            }
         };
         Ok(())
     }
@@ -97,7 +76,6 @@ impl HookMap {
                 let index_char = if let Some(ch) = target.chars().next() { ch } else {  return Err(RadError::HookMacroFail("Index is empty".to_owned())) };
                 self.char_hook.insert(index_char,hook_state);
             },
-            HookType::Letter => { self.letter_hook.replace(hook_state); } 
         };
         Ok(())
     }
@@ -109,7 +87,6 @@ impl HookMap {
                 let index_char = if let Some(ch) = index.chars().next() { ch } else {  return Err(RadError::HookMacroFail("Index is empty".to_owned())) };
                 self.char_hook.remove(&index_char);
             },
-            HookType::Letter => { self.letter_hook = None; }
         };
         Ok(())
     }
@@ -119,7 +96,6 @@ impl HookMap {
 pub enum HookType {
     Macro,
     Char,
-    Letter,
 }
 
 impl HookType {
@@ -127,7 +103,6 @@ impl HookType {
         let var = match hook_type.to_lowercase().as_str() {
             "macro" => Self::Macro,
             "char" => Self::Char,
-            "letter" => Self::Letter,
             _ => return Err(RadError::InvalidConversion(format!("Invalid hook type \"{}\"", hook_type)))
         };
 
