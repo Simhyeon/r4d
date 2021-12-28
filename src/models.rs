@@ -207,6 +207,24 @@ impl MacroMap {
             .map(|(_,custom)| MacroSignature::from(custom));
         key_iter.chain(basic_iter).chain(custom_iter).collect()
     }
+
+    #[cfg(feature = "signature")]
+    pub fn get_default_signatures(&self) -> Vec<MacroSignature> {
+        let key_iter = self.keyword.macros
+            .iter()
+            .map(|(_,sig)| MacroSignature::from(sig));
+        let basic_iter = self.basic.macros
+            .iter()
+            .map(|(_,sig)| MacroSignature::from(sig));
+        key_iter.chain(basic_iter).collect()
+    }
+
+    #[cfg(feature = "signature")]
+    pub fn get_custom_signatures(&self) -> Vec<MacroSignature> {
+        self.custom
+            .iter()
+            .map(|(_,custom)| MacroSignature::from(custom)).collect()
+    }
 }
 
 /// Struct designed to check unbalanced parenthesis
@@ -398,4 +416,25 @@ pub enum FlowControl {
     None,
     Escape,
     Exit,
+}
+
+#[cfg(feature = "signature")]
+pub enum SignatureType {
+    All,
+    Default,
+    Custom,
+}
+
+#[cfg(feature = "signature")]
+impl SignatureType {
+    pub fn from_str(text : &str) -> RadResult<Self> {
+        let variant = match text.to_lowercase().as_str() {
+            "all" => Self::All,
+            "default" => Self::Default,
+            "custom" => Self::Custom,
+            _ => return Err(RadError::InvalidConversion(format!("\"{}\" is not supported signature type", text)))
+        };
+
+        Ok(variant)
+    }
 }
