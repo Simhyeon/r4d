@@ -8,15 +8,18 @@
 //! # Features
 //! 
 //! ```text
-//! - evalexpr : "eval" macro
-//! - chrono   : "date", "time" macro
-//! - lipsum   : "lipsum" macro
-//! - csv      : "from", "table" macro
+//! - evalexpr  : "eval" macro
+//! - chrono    : "date", "time" macro
+//! - lipsum    : "lipsum" macro
+//! - csv       : "from", "table" macro
+//! - textwrap  : "wrap" macro
 //! 
-//! - debug    : Enable debug method
-//! - color    : Enable color prompt
+//! - debug     : Enable debug method
+//! - color     : Enable color prompt
+//! - hook      : Enable hook macro
+//! - signature : Enble signature option
 //!
-//! - full     : evalexpr+chrono+lipsum+csv
+//! - full      : evalexpr+chrono+lipsum+csv
 //! ```
 //!
 //! # Simple usage
@@ -51,9 +54,9 @@ mod error;
 // This is necessary for docs.rs documentation
 pub mod processor;
 
+pub(crate) mod arg_parser;
 #[cfg(feature = "debug")]
 pub(crate) mod debugger;
-pub(crate) mod arg_parser;
 pub(crate) mod define_parser;
 pub(crate) mod auth;
 pub(crate) mod basic_map;
