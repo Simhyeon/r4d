@@ -2,12 +2,9 @@ use std::collections::HashMap;
 use crate::{RadResult, RadError};
 
 #[derive(Debug)]
-#[cfg(feature = "hook")]
 pub struct HookMap {
     macro_hook : HashMap<String,HookState>,
     char_hook : HashMap<char,HookState>,
-    // This is called upon every several letters
-    letter_hook : Option<HookState>,
 }
 
 impl HookMap {
@@ -15,7 +12,6 @@ impl HookMap {
         Self {
             macro_hook: HashMap::new(),
             char_hook: HashMap::new(),
-            letter_hook: None,
         }
     }
 
@@ -120,7 +116,6 @@ impl HookMap {
 }
 
 #[derive(Debug)]
-#[cfg(feature = "hook")]
 pub enum HookType {
     Macro,
     Char,
@@ -141,7 +136,6 @@ impl HookType {
 }
 
 #[derive(Debug)]
-#[cfg(feature = "hook")]
 pub struct HookState {
     enabled: bool,
     resetable: bool,
