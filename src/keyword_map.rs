@@ -15,6 +15,13 @@ pub struct KeywordMacroMap {
 }
 
 impl KeywordMacroMap {
+    /// Creates empty map
+    pub fn empty() -> Self {
+        Self {
+            macros: HashMap::new(),
+        }
+    }
+
     pub fn new() -> Self {
         let map = HashMap::from_iter(IntoIter::new([
             ("bind",    KMacroSign::new("bind",    ["a_macro_name","a_value"],KeywordMacroMap::bind_depre)),
