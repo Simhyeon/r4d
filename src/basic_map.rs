@@ -12,7 +12,7 @@ use std::iter::FromIterator;
 use std::path::{PathBuf,Path};
 use std::process::Command;
 use crate::error::RadError;
-use crate::models::RadResult;
+use crate::models::{RadResult, FlowControl};
 use crate::arg_parser::{ArgParser, GreedyState};
 use regex::Regex;
 use crate::utils::Utils;
@@ -84,6 +84,8 @@ impl BasicMacroMap {
             ("comp".to_owned(),    BMacroSign::new("comp",    ["a_content"],Self::compress)),
             ("env".to_owned(),     BMacroSign::new("env",     ["a_env_name"],Self::get_env)),
             ("envset".to_owned(),  BMacroSign::new("envset",  ["a_env_name","a_env_value"],Self::set_env)),
+            ("escape".to_owned(),  BMacroSign::new("escape",  ESR,Self::escape)),
+            ("exit".to_owned(),    BMacroSign::new("exit",    ESR,Self::exit)),
             ("fileout".to_owned(), BMacroSign::new("fileout", ["a_truncate?","a_filename","a_content"],Self::file_out)),
             ("include".to_owned(), BMacroSign::new("include", ["a_filename"],Self::include)),
             ("len".to_owned(),     BMacroSign::new("len",     ["a_string"],Self::len)),
@@ -91,6 +93,7 @@ impl BasicMacroMap {
             ("not".to_owned(),     BMacroSign::new("not",     ["a_boolean"],Self::not)),
             ("nl".to_owned(),      BMacroSign::new("nl",      ESR,Self::newline)),
             ("parent".to_owned(),  BMacroSign::new("parent",  ["a_path"],Self::get_parent)),
+            ("panic".to_owned(),   BMacroSign::new("panic",   ["a_msg"],Self::manual_panic)),
             ("path".to_owned(),    BMacroSign::new("path",    ["a_paths"],Self::merge_path)),
             ("pipe".to_owned(),    BMacroSign::new("pipe",    ["a_value"],Self::pipe)),
             ("read".to_owned(),    BMacroSign::new("read",    ["a_filename"],Self::read)),
@@ -114,16 +117,8 @@ impl BasicMacroMap {
         // Optional macros
         #[cfg(feature = "csv")]
         {
-            map.insert("from".to_owned(),    BMacroSign::new("from",["a_macro_name","a_csv_value"],Self::from_data));
+            map.insert("from".to_owned(),    BMacroSign::new("from", ["a_macro_name","a_csv_value"],Self::from_data));
             map.insert("table".to_owned(),   BMacroSign::new("table",["a_table_form","a_csv_value"],Self::table));
-
-            // TODO Create this methods
-            // 1. Map csv value to hashmap
-            // map.insert("map".to_owned(),   BMacroSign::new("map",["a_map_name","a_csv_value"], Self::csv_map));
-            // 2. Map csv file to hashamp without printing
-            // map.insert("mapread".to_owned(),   BMacroSign::new("map",["a_map_name","a_csv_path"], Self::csv_map_include));
-            // 3. Get css row, column, table with simple querying (SQL like simple syntax)
-            // map.insert("query".to_owned(),   BMacroSign::new("query",["a_table_form","a_csv_value"], Self::csv_query));
         }
         #[cfg(feature = "chrono")]
         {
@@ -137,7 +132,7 @@ impl BasicMacroMap {
 
         #[cfg(feature = "hook")]
         {
-            map.insert("hookon".to_owned(),  BMacroSign::new("hookon",["a_macro_type","a_target_name"],Self::hook_enable));
+            map.insert("hookon".to_owned(),  BMacroSign::new("hookon", ["a_macro_type","a_target_name"],Self::hook_enable));
             map.insert("hookoff".to_owned(), BMacroSign::new("hookoff",["a_macro_type","a_target_name"],Self::hook_disable));
         }
 
@@ -729,6 +724,23 @@ impl BasicMacroMap {
         } else {
             Err(RadError::InvalidArgument("Envset requires two arguments".to_owned()))
         }
+    }
+
+    /// Trigger panic
+    fn manual_panic(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        Err(RadError::ManualPanic(args.to_string()))
+    }
+
+    /// Escape processing
+    fn escape(_: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
+        processor.state.flow_control= FlowControl::Escape;
+        Ok(None)
+    }
+
+    /// Exit processing
+    fn exit(_: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
+        processor.state.flow_control= FlowControl::Exit;
+        Ok(None)
     }
 
     /// Merge multiple paths into a single path
