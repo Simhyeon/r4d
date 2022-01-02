@@ -1519,6 +1519,11 @@ impl Processor {
             .unwrap());
     }
 
+    /// Set pipe value manually
+    pub(crate) fn set_pipe(&mut self, value: &str) {
+        self.state.pipe_value = value.to_owned();
+    }
+
     /// Set debug flag
     #[cfg(feature = "debug")]
     pub(crate) fn set_debug(&mut self, debug: bool)  {
