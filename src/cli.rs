@@ -3,6 +3,7 @@
 //!
 //! Cli module is only included in binary feature flag.
 
+use std::io::Read;
 use crate::RadResult;
 use crate::auth::AuthType;
 use crate::processor::Processor;
@@ -95,16 +96,33 @@ impl Cli {
         processor.print_permission()?;
         
         // Process
+        // Redirect stdin as argument
+        if args.is_present("pipe") {
+            let stdin = std::io::stdin();
+            let mut input = String::new();
+            stdin.lock().read_to_string(&mut input)?;
+            processor.set_pipe(&input)
+        }
+        
         // -->> Read from files
-        if let Some(files) = args.values_of("FILE") {
+        if let Some(sources) = args.values_of("INPUT") {
             // Also read from stdin if given combiation option
             if args.is_present("combination") {
                 processor.from_stdin()?;
             }
 
-            // Read from files and write with given options
-            for file in files {
-                processor.from_file(Path::new(file))?;
+            // Interpret every input source as literal text
+            let literal = args.is_present("literal");
+
+            // Read from given sources and write with given options
+            for src in sources {
+                let src_as_file = Path::new(src);
+
+                if !literal && src_as_file.exists() {
+                    processor.from_file(src_as_file)?;
+                } else {
+                    processor.from_string(src)?;
+                }
             }
             #[cfg(feature = "signature")]
             self.print_signature(args, &mut processor)?;
@@ -222,9 +240,16 @@ impl Cli {
     echo <STDIN_TEXT> | rad --combination <FILE> --diff
     rad <FILE> --debug --log --interactive
     rad <FILE> -f <RULE_FILE> --discard -n --silent")
-            .arg(Arg::new("FILE")
+            .arg(Arg::new("INPUT")
                 .multiple(true)
-                .about("Files to execute processing"))
+                .about("INPUT source to execute processing"))
+            .arg(Arg::new("pipe")
+                .long("pipe")
+                .conflicts_with("combination")
+                .about("Send stdin as a pipe value"))
+            .arg(Arg::new("literal")
+                .long("literal")
+                .about("Don't interpret input source as file"))
             .arg(Arg::new("out")
                 .short('o')
                 .long("out")
@@ -260,7 +285,7 @@ impl Cli {
                 .about("Purge unused macros without panicking. Doesn't work in strict mode"))
             .arg(Arg::new("lenient")
                 .short('l')
-                .long("long")
+                .long("lenient")
                 .about("Lenient mode, disables strict mode"))
             .arg(Arg::new("nopanic")
                 .long("nopanic")
