@@ -543,6 +543,16 @@ impl Processor {
         self.storage.replace(storage);
     }
 
+    /// Extract from storage
+    #[cfg(feature = "storage")]
+    pub fn extract_storage(&mut self, truncate: bool) -> Option<String> {
+        if let Some(storage) = self.storage.as_mut() {
+            Some(storage.extract(truncate))
+        } else {
+            None
+        }
+    }
+
     /// Freeze to single file
     ///
     /// Frozen file is a bincode encoded binary format file.
