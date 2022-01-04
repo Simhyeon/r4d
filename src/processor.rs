@@ -452,7 +452,31 @@ impl<'processor> Processor<'processor> {
         self
     }
 
+    /// Melt rule file
+    pub fn rule_files(mut self, paths: Option<Vec<impl AsRef<Path>>>) -> RadResult<Self> {
+        if let Some(paths) = paths {
+            let mut rule_file = RuleFile::new(None);
+            for p in paths.iter() {
+                // File validity is checked by melt methods
+                rule_file.melt(p.as_ref())?;
+            }
+            self.map.custom.extend(rule_file.rules);
+        }
+
+        Ok(self)
+    }
+
+    /// Melt rule as literal input source
+    pub fn rule_literal(mut self, literal: &Vec<u8>) -> RadResult<Self> {
+        let mut rule_file = RuleFile::new(None);
+        rule_file.melt_literal(literal)?;
+        self.map.custom.extend(rule_file.rules);
+        Ok(self)
+    }
+
+    // NOTE : Renamed to rule_files
     /// Add custom rules
+    #[deprecated(since = "1.5", note = "Use \"rule_files\" instead.This method will be removed in 2.0")]
     pub fn custom_rules(mut self, paths: Option<Vec<impl AsRef<Path>>>) -> RadResult<Self> {
         if let Some(paths) = paths {
             let mut rule_file = RuleFile::new(None);
@@ -565,7 +589,7 @@ impl<'processor> Processor<'processor> {
         }
     }
 
-    /// Freeze to single file
+    /// Freeze to a single file
     ///
     /// Frozen file is a bincode encoded binary format file.
     pub fn freeze_to_file(&self, path: impl AsRef<Path>) -> RadResult<()> {

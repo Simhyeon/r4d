@@ -291,6 +291,16 @@ impl RuleFile {
         }
     }
 
+    pub fn melt_literal(&mut self, literal : &Vec<u8>) -> RadResult<()> {
+        let result = bincode::deserialize::<Self>(literal);
+        if let Err(_) = result {
+            Err(RadError::BincodeError(format!("Failed to melt the literal value")))
+        } else {
+            self.rules.extend(result.unwrap().rules.into_iter());
+            Ok(())
+        }
+    }
+
     /// Convert custom rules into a single binary file
     pub(crate) fn freeze(&self, path: &std::path::Path) -> RadResult<()> {
         let result = bincode::serialize(self);
