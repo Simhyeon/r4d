@@ -118,7 +118,9 @@ use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl, RadStorage};
+use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl};
+#[cfg(feature = "storage")]
+use crate::models::RadStorage;
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
 #[cfg(feature = "hook")]
