@@ -444,3 +444,9 @@ impl SignatureType {
         Ok(variant)
     }
 }
+
+#[cfg(feature = "storage")]
+pub trait RadStorage {
+    fn update(&mut self,args : &Vec<String>);
+    fn extract(&mut self, truncate: bool) -> String;
+}

@@ -118,7 +118,7 @@ use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl};
+use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl, RadStorage};
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
 #[cfg(feature = "hook")]
@@ -211,6 +211,8 @@ pub struct Processor{
     debugger: Debugger,
     checker: UnbalancedChecker,
     pub(crate) state: ProcessorState,
+    #[cfg(feature = "storage")]
+    pub(crate) storage : Option<Box<dyn RadStorage>>,
 }
 
 impl Processor {
@@ -271,6 +273,8 @@ impl Processor {
             debugger : Debugger::new(),
             checker : UnbalancedChecker::new(),
             state: ProcessorState::new(temp_target),
+            #[cfg(feature = "storage")]
+            storage : None,
         }
     }
 
@@ -476,6 +480,13 @@ impl Processor {
         self
     }
 
+    /// Build with storage
+    #[cfg(feature = "storage")]
+    pub fn storage(mut self, storage: Box<dyn RadStorage>) -> Self {
+        self.storage.replace(storage);
+        self
+    }
+
     /// Creates an unreferenced instance of processor
     #[deprecated(since = "1.3", note = "Build method is deprecated in favor of more ergonomic builder pattern. It will be removed in 2.0")]
     pub fn build(self) -> Self {
@@ -522,6 +533,12 @@ impl Processor {
         self.debugger.yield_diff(&mut self.logger)?;
 
         Ok(())
+    }
+
+    /// Set storage
+    #[cfg(feature = "storage")]
+    pub fn set_storage(&mut self, storage: Box<dyn RadStorage>) {
+        self.storage.replace(storage);
     }
 
     /// Freeze to single file

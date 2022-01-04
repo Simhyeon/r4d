@@ -138,6 +138,12 @@ impl BasicMacroMap {
             map.insert("hookoff".to_owned(), BMacroSign::new("hookoff",["a_macro_type","a_target_name"],Self::hook_disable));
         }
 
+        #[cfg(feature = "storage")]
+        {
+            map.insert("update".to_owned(),      BMacroSign::new("update",  ["a_text"],Self::update_storage));
+            map.insert("extract".to_owned(),     BMacroSign::new("extract", ["a_truncate"],Self::extract_storage));
+        }
+
         // Return struct
         Self { macros : map }
     }
@@ -1066,7 +1072,7 @@ impl BasicMacroMap {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1, false) {
-            let toggle = if let Ok(toggle) =Utils::is_arg_true(&args[0]) { 
+            let toggle = if let Ok(toggle) = Utils::is_arg_true(&args[0]) { 
                 toggle
             } else {
                 return Err(RadError::InvalidArgument(format!("Redir's agument should be valid boolean value but given \"{}\"", &args[0])));
@@ -1144,6 +1150,34 @@ impl BasicMacroMap {
         } else {
             Err(RadError::InvalidArgument("Wrap requires two arguments".to_owned()))
         }
+    }
+
+    #[cfg(feature = "storage")]
+    fn update_storage(args: &str, greedy: bool, processor: &mut Processor) -> RadResult<Option<String>> {
+        let greedy_state = if greedy { GreedyState::Greedy } else { GreedyState::Never };
+        let args = ArgParser::new().args_to_vec(args, ',', greedy_state);
+
+        // Execute update method for storage
+        if let Some(storage) = processor.storage.as_mut() {
+            storage.update(&args);
+        } else { 
+            processor.log_warning("Empty storage, update didn't triggerd")?;
+        }
+        Ok(None)
+    }
+
+    #[cfg(feature = "storage")]
+    fn extract_storage(args: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
+        let truncate = if let Ok(value) = Utils::is_arg_true(args) { 
+            value
+        } else {
+            return Err(RadError::InvalidArgument(format!("Extract's agument should be a valid boolean value but given \"{}\"", args)));
+        };
+
+        // Execute update method for storage
+        if let Some(storage) = processor.storage.as_mut() {
+            Ok(Some(storage.extract(truncate)))
+        } else { Err(RadError::EmptyStorage) }
     }
 }
 

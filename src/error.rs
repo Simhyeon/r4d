@@ -51,7 +51,10 @@ pub enum RadError {
     #[error("Processor panicked, exiting...")]
     Panic,
     #[error("Panic triggered with message\n= {0}")]
-    ManualPanic(String)
+    ManualPanic(String),
+    #[cfg(feature = "storage")]
+    #[error("Empty storage")]
+    EmptyStorage,
 }
 
 // ==========
