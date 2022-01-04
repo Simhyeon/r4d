@@ -11,8 +11,9 @@ use bincode;
 pub type RadResult<T> = Result<T, RadError>;
 
 /// State enum value about direction of processed text 
-pub enum WriteOption {
+pub enum WriteOption<'a> {
     File(std::fs::File),
+    Variable(&'a mut String),
     Terminal,
     Discard,
 }

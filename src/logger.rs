@@ -8,13 +8,13 @@ use crate::consts::*;
 use crate::utils::Utils;
 
 /// Logger that controls logging
-pub(crate) struct Logger {
+pub(crate) struct Logger<'logger> {
     line_number: usize,
     char_number: usize,
     last_line_number: usize,
     last_char_number: usize,
     current_file: String,
-    write_option: Option<WriteOption>,
+    write_option: Option<WriteOption<'logger>>,
     suppress_warning: bool,
     error_count: usize,
     warning_count: usize,
@@ -32,7 +32,7 @@ pub(crate) struct LoggerLines {
     last_char_number: usize,
 }
 
-impl Logger{
+impl<'logger> Logger<'logger>{
     pub fn new() -> Self {
         Self {
             line_number: 0,
@@ -73,7 +73,7 @@ impl Logger{
         }
     }
 
-    pub fn set_write_options(&mut self, write_option: Option<WriteOption>) {
+    pub fn set_write_options(&mut self, write_option: Option<WriteOption<'logger>>) {
         self.write_option = write_option; 
     }
 
@@ -177,6 +177,16 @@ impl Logger{
                         LINE_ENDING
                     );
                 }
+                WriteOption::Variable(var) => {
+                    var.push_str(&format!(
+                            "error : {} -> {}:{}:{}{}",
+                            log,
+                            self.current_file,
+                            self.last_line_number,
+                            last_char,
+                            LINE_ENDING
+                    )) 
+                }
                 WriteOption::Discard => ()
             } // Match end
         }
@@ -193,6 +203,7 @@ impl Logger{
                 WriteOption::Terminal => {
                     eprint!("{}",log);
                 }
+                WriteOption::Variable(var) => var.push_str(&log.to_string()),
                 WriteOption::Discard => ()
             } // match end
         } 
@@ -230,6 +241,16 @@ impl Logger{
                         last_char,
                         self.last_char_number
                     );
+                }
+                WriteOption::Variable(var) => {
+                    var.push_str(&format!(
+                            "error : {} -> {}:{}:{}{}",
+                            log,
+                            self.current_file,
+                            self.last_line_number,
+                            last_char,
+                            LINE_ENDING
+                    )) 
                 }
                 WriteOption::Discard => ()
             } // match end
@@ -269,6 +290,15 @@ impl Logger{
                         last_char
                     );
                 }
+                WriteOption::Variable(var) => {
+                    var.push_str(&format!(
+                            "assert fail -> {}:{}:{}{}",
+                            self.current_file,
+                            self.last_line_number,
+                            last_char,
+                            LINE_ENDING
+                    )) 
+                }
                 WriteOption::Discard => ()
             } // match end
         } 
@@ -298,7 +328,7 @@ FAIL: {}",Utils::green("Assert"), self.assert_success, self.assert_fail
                     if self.warning_count > 0 {eprintln!("{}",warning_result);}
                     if self.assert {eprintln!("{}",assert_result);}
                 }
-                WriteOption::Discard => ()
+                WriteOption::Discard | WriteOption::Variable(_) => ()
             }
         } else {
             // Silent option

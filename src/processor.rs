@@ -201,14 +201,14 @@ impl ProcessorState {
 }
 
 /// Processor that parses(lexes) given input and print out to desginated output
-pub struct Processor{
+pub struct Processor<'processor>{
     map: MacroMap,
     closure_map: ClosureMap,
     #[cfg(feature = "hook")]
     pub(crate) hook_map: HookMap,
     defparser: DefineParser,
-    write_option: WriteOption,
-    logger: Logger,
+    write_option: WriteOption<'processor>,
+    logger: Logger<'processor>,
     #[cfg(feature = "debug")]
     debugger: Debugger,
     checker: UnbalancedChecker,
@@ -217,7 +217,7 @@ pub struct Processor{
     pub(crate) storage : Option<Box<dyn RadStorage>>,
 }
 
-impl Processor {
+impl<'processor> Processor<'processor> {
     // ----------
     // Builder pattern methods
     // <BUILDER>
@@ -298,6 +298,12 @@ impl Processor {
         Ok(self)
     }
 
+    /// Write to variable
+    pub fn write_to_variable(mut self, value: &'processor mut String) -> Self {
+        self.write_option = WriteOption::Variable(value);
+        self
+    }
+
     /// Yield error to the file
     pub fn error_to_file(mut self, target_file: Option<impl AsRef<Path>>) -> RadResult<Self> {
         if let Some(target_file) = target_file {
@@ -315,6 +321,12 @@ impl Processor {
             }
         }
         Ok(self)
+    }
+
+    /// Yield error to the file
+    pub fn error_to_variable(mut self, value: &'processor mut String) -> Self {
+        self.logger.set_write_options(Some(WriteOption::Variable(value)));
+        self
     }
 
     /// Custom comment character
@@ -1211,6 +1223,7 @@ impl Processor {
             match &mut self.write_option {
                 WriteOption::File(f) => f.write_all(content.as_bytes())?,
                 WriteOption::Terminal => print!("{}", content),
+                WriteOption::Variable(var) => var.push_str(content),
                 WriteOption::Discard => () // Don't print anything
             }
         }
