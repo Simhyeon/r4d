@@ -15,8 +15,8 @@ pub(crate) struct ArgParser{
 /// State indicates whether argument should be parsed greedily or not
 #[derive(Debug)]
 pub(crate) enum GreedyState {
-    Reserve(usize),
-    None,
+    Deterred(usize),
+    Greedy,
     Never,
 }
 
@@ -37,9 +37,9 @@ impl ArgParser {
     pub(crate) fn args_with_len<'a>(&mut self, args: &'a str, length: usize, greedy: bool) -> Option<Vec<String>> {
         let greedy_state = if greedy { 
             if length > 1 {
-                GreedyState::Reserve(length - 1)
+                GreedyState::Deterred(length - 1)
             } else {
-                GreedyState::None
+                GreedyState::Greedy
             }
         } else { 
             GreedyState::Never
@@ -97,19 +97,19 @@ impl ArgParser {
             value.push(ch); 
         } else { // not literal
             match greedy_state {
-                GreedyState::Reserve(count) => {
+                GreedyState::Deterred(count) => {
                     // move to next value
                     self.values.push(std::mem::replace(value, String::new()));
                     let count = *count - 1;
                     if count > 0 {
-                        *greedy_state = GreedyState::Reserve(count);
+                        *greedy_state = GreedyState::Deterred(count);
                     } else {
-                        *greedy_state = GreedyState::None;
+                        *greedy_state = GreedyState::Greedy;
                     }
                     self.no_previous = true;
                 }
                 // Push everything to current item, index, value or you name it
-                GreedyState::None => {
+                GreedyState::Greedy => {
                     value.push(ch);
                     // TODO check this line if this is neceesary 
                     // continue; = self.no_previous = true;
