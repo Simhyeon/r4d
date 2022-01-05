@@ -1,3 +1,4 @@
+use csv::FromUtf8Error;
 use thiserror::Error;
 use crate::AuthType;
 
@@ -14,6 +15,8 @@ pub enum RadError {
     UnallowedChar(String),
     #[error("Assert failed")]
     AssertFail,
+    #[error("Invalid byte array conversion to string")]
+    InvalidString(FromUtf8Error),
     #[error("Invalid command option\n= {0}")]
     InvalidCommandOption(String),
     #[error("Invalid environment name\n= {0}")]
@@ -107,6 +110,12 @@ impl From <csv::Error> for RadError {
 impl From <std::env::VarError> for RadError {
     fn from(err : std::env::VarError) -> Self {
         Self::EnvError(err)
+    }
+}
+
+impl From <FromUtf8Error> for RadError {
+    fn from(err : FromUtf8Error) -> Self {
+        Self::InvalidString(err)
     }
 }
 // End of convert variations

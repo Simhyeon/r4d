@@ -1180,7 +1180,13 @@ impl BasicMacroMap {
         if let Some(storage) = processor.storage.as_mut() {
             match storage.extract(truncate) {
                 Err(err) => Err(RadError::StorageError(format!("Update error : {}", err))),
-                Ok(value) => Ok(value),
+                Ok(value) => {
+                    if let Some(bytes) = value {
+                        Ok(Some(String::from_utf8(bytes)?))
+                    } else {
+                        Ok(None)
+                    }
+                },
             }
         } else { Err(RadError::StorageError(String::from("Empty storage"))) }
     }
