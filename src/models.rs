@@ -457,7 +457,10 @@ impl SignatureType {
 }
 
 #[cfg(feature = "storage")]
+pub type StorageResult<T> = Result<T, Box<dyn std::error::Error>>;
+
+#[cfg(feature = "storage")]
 pub trait RadStorage {
-    fn update(&mut self,args : &Vec<String>);
-    fn extract(&mut self, truncate: bool) -> String;
+    fn update(&mut self,args : &Vec<String>) -> StorageResult<()>;
+    fn extract(&mut self, truncate: bool) -> StorageResult<Option<String>>;
 }

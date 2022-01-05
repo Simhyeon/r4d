@@ -1159,7 +1159,9 @@ impl BasicMacroMap {
 
         // Execute update method for storage
         if let Some(storage) = processor.storage.as_mut() {
-            storage.update(&args);
+            if let Err(err) = storage.update(&args) {
+                return Err(RadError::StorageError(format!("Update error : {}", err)));
+            }
         } else { 
             processor.log_warning("Empty storage, update didn't triggerd")?;
         }
@@ -1176,8 +1178,11 @@ impl BasicMacroMap {
 
         // Execute update method for storage
         if let Some(storage) = processor.storage.as_mut() {
-            Ok(Some(storage.extract(truncate)))
-        } else { Err(RadError::EmptyStorage) }
+            match storage.extract(truncate) {
+                Err(err) => Err(RadError::StorageError(format!("Update error : {}", err))),
+                Ok(value) => Ok(value),
+            }
+        } else { Err(RadError::StorageError(String::from("Empty storage"))) }
     }
 }
 

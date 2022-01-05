@@ -581,11 +581,14 @@ impl<'processor> Processor<'processor> {
 
     /// Extract from storage
     #[cfg(feature = "storage")]
-    pub fn extract_storage(&mut self, truncate: bool) -> Option<String> {
+    pub fn extract_storage(&mut self, truncate: bool) -> RadResult<Option<String>> {
         if let Some(storage) = self.storage.as_mut() {
-            Some(storage.extract(truncate))
+            match storage.extract(truncate) {
+                Err(err) => Err(RadError::StorageError(format!("Extract error : {}", err))),
+                Ok(value) => Ok(value),
+            }
         } else {
-            None
+            Ok(None)
         }
     }
 

@@ -53,8 +53,8 @@ pub enum RadError {
     #[error("Panic triggered with message\n= {0}")]
     ManualPanic(String),
     #[cfg(feature = "storage")]
-    #[error("Empty storage")]
-    EmptyStorage,
+    #[error("Storage error with message\n= {0}")]
+    StorageError(String),
 }
 
 // ==========
