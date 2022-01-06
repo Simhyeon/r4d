@@ -214,7 +214,7 @@ pub struct Processor<'processor>{
     checker: UnbalancedChecker,
     pub(crate) state: ProcessorState,
     #[cfg(feature = "storage")]
-    pub(crate) storage : Option<Box<dyn RadStorage>>,
+    pub storage : Option<Box<dyn RadStorage>>,
 }
 
 impl<'processor> Processor<'processor> {
