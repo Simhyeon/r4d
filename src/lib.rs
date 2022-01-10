@@ -80,7 +80,7 @@ pub use auth::AuthType;
 pub use hookmap::HookType;
 pub use models::{CommentType, RadResult, DiffOption};
 #[cfg(feature = "storage")]
-pub use models::{RadStorage, StorageResult};
+pub use models::{RadStorage, StorageResult, StorageOutput};
 
 // Optional
 
