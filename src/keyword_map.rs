@@ -40,6 +40,7 @@ impl KeywordMacroMap {
             ("pause",   KMacroSign::new("pause",   ["a_pause?"],KeywordMacroMap::pause)),
             ("repl",    KMacroSign::new("repl",    ["a_macro_name","a_new_value"],KeywordMacroMap::replace)),
             ("static",  KMacroSign::new("static",  ["a_macro_name","a_value"],KeywordMacroMap::define_static)),
+            ("sep",     KMacroSign::new("sep",   ["separator","a_array"],KeywordMacroMap::separate_array)),
         ]));
         Self {
             macros: map,
@@ -432,6 +433,32 @@ impl KeywordMacroMap {
             Ok(None)
         } else {
             Err(RadError::InvalidArgument("Static requires two argument".to_owned()))
+        }
+    }
+
+    /// Separate an array
+    ///
+    /// # Usage
+    ///
+    /// $sep( ,1,2,3,4,5)
+    fn separate_array(args: &str, level : usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let separator = processor.parse_chunk_args(level, "",&args[0])?;
+            let array = processor.parse_chunk_args(level, "",&Utils::trim(&args[1]))?;
+            let mut array = array.split(',').into_iter();
+            let mut splited = String::new();
+
+            if let Some(first) = array.next() {
+                splited.push_str(first);
+
+                for item in array {
+                    splited.push_str(&format!("{}{}",separator,item));
+                }
+            }
+
+            Ok(Some(splited))
+        } else {
+            Err(RadError::InvalidArgument("split requires two argument".to_owned()))
         }
     }
 

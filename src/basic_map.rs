@@ -1153,9 +1153,8 @@ impl BasicMacroMap {
     }
 
     #[cfg(feature = "storage")]
-    fn update_storage(args: &str, greedy: bool, processor: &mut Processor) -> RadResult<Option<String>> {
-        let greedy_state = if greedy { GreedyState::Greedy } else { GreedyState::Never };
-        let args = ArgParser::new().args_to_vec(args, ',', greedy_state);
+    fn update_storage(args: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
+        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
 
         // Execute update method for storage
         if let Some(storage) = processor.storage.as_mut() {
