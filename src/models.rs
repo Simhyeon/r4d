@@ -475,6 +475,9 @@ pub enum StorageOutput {
 #[cfg(feature = "storage")]
 impl StorageOutput {
     pub(crate) fn into_printable(&self) -> String {
-        format!("{:?}", self)
+        match self {
+            Self::Binary(bytes) => format!("{:?}", bytes),
+            Self::Text(text) => text.to_owned(),
+        }
     }
 }
