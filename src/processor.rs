@@ -120,7 +120,7 @@ use crate::logger::{Logger, LoggerLines};
 use crate::debugger::Debugger;
 use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl};
 #[cfg(feature = "storage")]
-use crate::models::RadStorage;
+use crate::models::{RadStorage, StorageOutput};
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
 #[cfg(feature = "hook")]
@@ -581,7 +581,7 @@ impl<'processor> Processor<'processor> {
 
     /// Extract from storage
     #[cfg(feature = "storage")]
-    pub fn extract_storage(&mut self, truncate: bool) -> RadResult<Option<Vec<u8>>> {
+    pub fn extract_storage(&mut self, truncate: bool) -> RadResult<Option<StorageOutput>> {
         if let Some(storage) = self.storage.as_mut() {
             match storage.extract(truncate) {
                 Err(err) => Err(RadError::StorageError(format!("Extract error : {}", err))),
