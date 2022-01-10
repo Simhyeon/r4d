@@ -141,7 +141,7 @@ impl BasicMacroMap {
         #[cfg(feature = "storage")]
         {
             map.insert("update".to_owned(),      BMacroSign::new("update",  ["a_text"],Self::update_storage));
-            map.insert("extract".to_owned(),     BMacroSign::new("extract", ["a_truncate"],Self::extract_storage));
+            map.insert("extract".to_owned(),     BMacroSign::new("extract", ESR,Self::extract_storage));
         }
 
         // Return struct
@@ -1169,23 +1169,15 @@ impl BasicMacroMap {
     }
 
     #[cfg(feature = "storage")]
-    fn extract_storage(args: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
-        let truncate = if let Ok(value) = Utils::is_arg_true(args) { 
-            value
-        } else {
-            return Err(RadError::InvalidArgument(format!("Extract's agument should be a valid boolean value but given \"{}\"", args)));
-        };
-
+    fn extract_storage(_: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
         // Execute update method for storage
         if let Some(storage) = processor.storage.as_mut() {
-            match storage.extract(truncate) {
+            match storage.extract(false) {
                 Err(err) => Err(RadError::StorageError(format!("Update error : {}", err))),
                 Ok(value) => {
-                    if let Some(bytes) = value {
-                        Ok(Some(String::from_utf8(bytes)?))
-                    } else {
-                        Ok(None)
-                    }
+                    if let Some(output) = value {
+                        Ok(Some(output.into_printable()))
+                    } else { Ok(None) }
                 },
             }
         } else { Err(RadError::StorageError(String::from("Empty storage"))) }
