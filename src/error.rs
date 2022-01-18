@@ -1,3 +1,5 @@
+#[cfg(feature = "cindex")]
+use cindex::CIndexError;
 #[cfg(feature = "csv")]
 use csv::FromUtf8Error;
 use thiserror::Error;
@@ -63,6 +65,9 @@ pub enum RadError {
     #[cfg(feature = "storage")]
     #[error("Storage error with message\n= {0}")]
     StorageError(String),
+    #[cfg(feature = "cindex")]
+    #[error("{0}")]
+    CIndexError(CIndexError),
 }
 
 // ==========
@@ -122,6 +127,13 @@ impl From <std::env::VarError> for RadError {
 impl From <FromUtf8Error> for RadError {
     fn from(err : FromUtf8Error) -> Self {
         Self::InvalidString(err)
+    }
+}
+
+#[cfg(feature = "cindex")]
+impl From <CIndexError> for RadError {
+    fn from(err : CIndexError) -> Self {
+        Self::CIndexError(err)
     }
 }
 // End of convert variations
