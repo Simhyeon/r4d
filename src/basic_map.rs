@@ -84,6 +84,7 @@ impl BasicMacroMap {
             ("nassert".to_owned(), BMacroSign::new("nassert", ["a_lvalue","a_rvalue"],Self::assert_ne)),
             ("chomp".to_owned(),   BMacroSign::new("chomp",   ["a_content"],Self::chomp)),
             ("comp".to_owned(),    BMacroSign::new("comp",    ["a_content"],Self::compress)),
+            ("dnl".to_owned(),     BMacroSign::new("dnl",     ESR,Self::deny_newline)),
             ("env".to_owned(),     BMacroSign::new("env",     ["a_env_name"],Self::get_env)),
             ("envset".to_owned(),  BMacroSign::new("envset",  ["a_env_name","a_env_value"],Self::set_env)),
             ("escape".to_owned(),  BMacroSign::new("escape",  ESR,Self::escape)),
@@ -806,6 +807,16 @@ impl BasicMacroMap {
     fn newline(_: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
         Ok(Some(p.state.newline.to_owned()))
     }
+    
+    /// deny new line
+    ///
+    /// # Usage
+    ///
+    /// $dnl()
+    fn deny_newline(_: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
+        p.state.deny_newline = true;
+        Ok(None)
+    }
 
     /// Get name from given path
     ///
@@ -1232,7 +1243,7 @@ impl BasicMacroMap {
     fn cindex_query(args: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
             let mut value = String::new();
-            processor.indexer.index_raw(&args[0], OutOption::Value(&mut value))?;
+            processor.indexer.index_raw(&Utils::trim(&args[0]), OutOption::Value(&mut value))?;
             Ok(Some(Utils::trim(&value)))
         } else {
             Err(RadError::InvalidArgument("query requires an argument".to_owned()))
