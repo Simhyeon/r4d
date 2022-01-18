@@ -46,7 +46,8 @@ For assertion macros refer [debug part](./debug.md)
 * [Static](#static-keyword-macro)
 * [pipe](#pipe)
 * [Repeat](#repeat)
-* [array](#array)
+* [arr](#arr)
+* [sep](#sep-keyword-macro)
 * [foreach](#foreach-keyword-macro)
 * [forloop](#forloop-keyword-macro)
 * [eval](#eval)
@@ -63,10 +64,15 @@ For assertion macros refer [debug part](./debug.md)
 * [trim, chomp, comp, triml](#trim-chomp-comp-triml)
 * [wrap](#wrap)
 * [nl](#nl)
+* [dnl](#dnl)
 * [lipsum](#lipsum)
 * [time, date](#time-date)
 * [from](#from)
 * [table](#table)
+* [update](#update)
+* [extract](#extract)
+* [regcsv](#regcsv)
+* [query](#query)
 * [flowcontrol](#flowcontrol)
 * [panic](#panic)
 
@@ -411,16 +417,23 @@ processing. Other operations might need consistent bound values.
 
 ### pipe
 
+**Currently pipe doesn't truncate value by default**
+
 Pipe macro simply saves value to pipe. $-() returns piped value 
 $-*() returns piped value in literal form.
 
+In addition to normal pipes. You can use named pipe with arguments.
+
 ```
 $pipe(Value)
+$pipeto(other,vallllue)
 $-()
-$*() 
+$-*() 
+$-(other)
 ===
 Value
 \*Value*\
+vallllue
 ```
 
 ### Repeat
@@ -435,7 +448,7 @@ Content to be repeated
 Content to be repeated
 
 ```
-### array
+### arr
 
 Create comma separated array from given value. You can set custom delimiter as
 second argument(default is single whitespace). You can also filter array with
@@ -448,6 +461,16 @@ $arr($-(),$nl(),\.sh$) // File that ends with .sh
 ===
 auto.sh,Cargo.lock,Cargo.toml,oush
 auto.sh
+```
+
+### sep (keyword macro)
+
+Separate an array with given separator.
+
+```
+$sep(|,1,2,3,4,5)
+=
+1|2|3|4|5
 ```
 
 ### foreach (keyword macro)
@@ -725,6 +748,21 @@ $nl()
 % This is useful when you want to construct an output in one-liner
 ```
 
+### dnl
+
+Deny newline after macro execution. This have no effect if next folloing line
+is not empty line.
+
+This newline is not the following newline character but a new empty line.
+
+```
+$ifdef(undefined,Print me)$dnl()
+
+Yatti yatta
+===
+Yatti yatta
+```
+
 ### lipsum
 
 Lipsum creates a placehoder with given word counts. This requires features
@@ -807,6 +845,56 @@ $table(html,\*a,b,c
 |-
 |}
 <table><thead><tr><td>a</td><td>b</td><td>c</td></tr></thead><tbody><tr><td>1</td><td>2</td><td>3</td></tr><tr><td>4</td><td>5</td><td>6</td></tr></tbody></table>
+```
+
+### update
+
+features : storage
+
+Update storage with given arguments
+
+```
+$update(arg1, arg2)
+===
+```
+
+### extract
+
+features : storage
+
+Extract storage content.
+
+```
+$extract()
+===
+```
+
+### regcsv
+
+feature: cindex
+
+Register a csv as a table. Registered table can be queries with query macro.
+
+```
+$regcsv+(table_name,a,b,c
+1,2,3)
+===
+```
+
+### query
+
+feature: cindex
+
+Qeury a registered csv table with a statment.
+
+Query implmentation uses [cindex](https://github.com/Simhyeon/cindex). Which
+supports sql-like queries that is kind of a subset of SQL.
+
+```
+$query(SELECT * FROM table_name WHERE a = 1)
+===
+a
+1
 ```
 
 ### Flowcontrol

@@ -1,15 +1,17 @@
 ### Changed
 
-* [x] New basic macro
-    * [x] Triml -> Trim line by line
-	* [x] Wrap : But with additonal packages
-	- Though I beleve it worth
-    * [x] Panic macro
-	* [x] Flow control macros
-		* [x] Escape
-		* [x] Exit
-
-* [x] Improve signature ergonomics
+* [x] Storage function
+	* [x] update
+	* [x] extract
+* [x] New default macros
+	* [x] Sep macro (keyword)
+* [x] Indexing macros with "cindex" crate
+* [x] Named pipe ( in a hashmap )
+* [x] Pipe truncate option as builder pattern
+- Default as none for compatibility
+- From 2.0, default is true
+* [x] Fix comment argument bug
+* [x] DNL Macro
 
 ### TODOs
 
@@ -18,6 +20,9 @@
 	- Edit ad raw
 
 #### 2.0
+
+* [ ] Keyword attribute
+* [ ] Syntax consistencies
 
 * [ ] Export to wasm (Possibly later)
 	- Practice with gcalc first
@@ -100,6 +105,17 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [x] New basic macro
+    * [x] Triml -> Trim line by line
+	* [x] Wrap : But with additonal packages
+	- Though I beleve it worth
+    * [x] Panic macro
+	* [x] Flow control macros
+		* [x] Escape
+		* [x] Exit
+
+* [x] Improve signature ergonomics
 
 * [x] Fixed unexported DiffOption and HookType re-export
 * [-] Added help message before and after original help message
