@@ -178,6 +178,7 @@ pub(crate) struct ProcessorState {
     pub comment_char : Option<char>,
     pub macro_char : Option<char>,
     pub flow_control : FlowControl,
+    pub deny_newline : bool,
 }
 
 impl ProcessorState {
@@ -200,6 +201,7 @@ impl ProcessorState {
             comment_char: None,
             macro_char: None,
             flow_control: FlowControl::None,
+            deny_newline: false,
         }
     }
 
@@ -952,6 +954,14 @@ impl<'processor> Processor<'processor> {
         self.logger.add_line_number();
         if let Some(line) = lines.next() {
             let line = line?;
+
+            // Deny newline
+            if self.state.deny_newline { 
+                self.state.deny_newline = false;
+                if line == "\n" || line == "\r\n" {
+                    return Ok(ParseResult::NoPrint);
+                }
+            }
 
             match self.state.flow_control {
                 FlowControl::Escape => return Ok(ParseResult::Printable(line)),
