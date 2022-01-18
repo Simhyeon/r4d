@@ -133,6 +133,8 @@ use crate::lexor::*;
 use crate::define_parser::DefineParser;
 use crate::arg_parser::{ArgParser, GreedyState};
 use crate::MacroType;
+#[cfg(feature = "cindex")]
+use cindex::Indexer;
 use regex::Regex;
 use lazy_static::lazy_static;
 
@@ -162,7 +164,8 @@ pub(crate) struct ProcessorState {
     pub newline: String,
     pub nopanic: bool,
     pub paused: bool,
-    pub pipe_value: String,
+    pub pipe_truncate: bool,
+    pipe_map: HashMap<String,String>,
     pub purge: bool,
     pub redirect: bool,
     pub sandbox: bool,
@@ -183,7 +186,8 @@ impl ProcessorState {
             current_input: String::from("stdin"),
             auth_flags: AuthFlags::new(),
             newline : LINE_ENDING.to_owned(),
-            pipe_value: String::new(),
+            pipe_truncate: false,
+            pipe_map: HashMap::new(),
             paused: false,
             redirect: false,
             purge: false,
@@ -196,6 +200,22 @@ impl ProcessorState {
             comment_char: None,
             macro_char: None,
             flow_control: FlowControl::None,
+        }
+    }
+
+    pub fn add_pipe(&mut self, name: Option<&str>, value: String) {
+        if let Some(name) = name {
+            self.pipe_map.insert(name.to_owned(), value);
+        } else {
+            self.pipe_map.insert("-".to_owned(), value);
+        }
+    }
+
+    pub fn get_pipe(&mut self, key: &str) -> Option<String> {
+        if self.pipe_truncate{
+            self.pipe_map.remove(key)
+        }  else {
+            self.pipe_map.get(key).map(|s| s.to_owned())
         }
     }
 }
@@ -215,6 +235,8 @@ pub struct Processor<'processor>{
     pub(crate) state: ProcessorState,
     #[cfg(feature = "storage")]
     pub storage : Option<Box<dyn RadStorage>>,
+    #[cfg(feature = "cindex")]
+    pub indexer : Indexer
 }
 
 impl<'processor> Processor<'processor> {
@@ -277,6 +299,8 @@ impl<'processor> Processor<'processor> {
             state: ProcessorState::new(temp_target),
             #[cfg(feature = "storage")]
             storage : None,
+            #[cfg(feature = "cindex")]
+            indexer: Indexer::new(),
         }
     }
 
@@ -377,6 +401,12 @@ impl<'processor> Processor<'processor> {
     /// Set lenient
     pub fn lenient(mut self, lenient: bool) -> Self {
         self.state.strict = !lenient;
+        self
+    }
+
+    /// Set truncate option
+    pub fn pipe_truncate(mut self, truncate: bool) -> Self {
+        self.state.pipe_truncate = truncate;
         self
     }
 
@@ -1500,7 +1530,7 @@ impl<'processor> Processor<'processor> {
                     // because pipe should respect all other macro attributes 
                     // not the other way
                     if frag.pipe {
-                        self.state.pipe_value = content;
+                        self.state.add_pipe(None, content);
                         lexor.escape_next_newline();
                     } else {
                         remainder.push_str(&content);
@@ -1590,7 +1620,7 @@ impl<'processor> Processor<'processor> {
 
     /// Set pipe value manually
     pub(crate) fn set_pipe(&mut self, value: &str) {
-        self.state.pipe_value = value.to_owned();
+        self.state.pipe_map.insert("-".to_owned(), value.to_string());
     }
 
     /// Set debug flag
