@@ -16,40 +16,42 @@ latest information.
 $define(author=Simon Creek)
 $define(title=R4d demo)
 ---
-title : $title()
+title  : $title()
 author : $author()
 ---
 My name is $author() and I made r4d to make macros can be used within various
 forms of texts. This article was written in $date() $time().
 
-$ifdef(test, This should be only printed when I'm testing not in release)
+$ifdef(test, This should be only printed when I'm testing not in release)$dnl()
 
 This is some important table automatically formatted according to environment
 variable.
 
-$table($env(TABLE_FORM),\*H1,H2,H3
-a,b,c
-d,e,f*\)
+$regcsv(addr,$include(addr.csv))$dnl()
+
+$static(queried,$query(SELECT id,first_name,address FROM addr where first_name = John))$dnl()
+
+% TABLE_FORM == github
+$table+($env(TABLE_FORM),$queried())
 
 $wrap(40,$lipsum(15))
 ```
 **Processed texts**
 ```
 ---
-title : R4d demo
+title  : R4d demo
 author : Simon Creek
 ---
 My name is Simon Creek and I made r4d to make macros can be used within various
-forms of texts. This article was written in 2021-12-29 03:03:41.
-
+forms of texts. This article was written in 2022-01-18 16:38:07.
 
 This is some important table automatically formatted according to environment
 variable.
 
-|H1|H2|H3|
+|id|first_name|address|
 |-|-|-|
-|a|b|c|
-|d|e|f|
+|1|John|111-2222|
+|2|John|222-3333|
 
 Lorem ipsum dolor sit amet, consectetur
 adipiscing elit, sed do eiusmod tempor
@@ -114,6 +116,10 @@ processor.print_result()?;
 ### Macro types
 
 [Types](./docs/macro_types.md)
+
+### Extend processor with storage feature
+
+[Storage](./docs/storage.md)
 
 ### How to debug
 
