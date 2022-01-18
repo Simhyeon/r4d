@@ -887,10 +887,16 @@ impl BasicMacroMap {
     /// $-(p1)
     fn get_pipe(args: &str, greedy: bool, processor: &mut Processor) -> RadResult<Option<String>> {
         let pipe = if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
-            if let Some(pipe) = processor.state.get_pipe(&args[0]) {
-                Some(pipe.clone())
+            let name = Utils::trim(&args[0]);
+            if name.is_empty() {
+                let out = processor.state.get_pipe("-").unwrap_or(String::new()).clone();
+                Some(out)
             } else {
-                None
+                if let Some(pipe) = processor.state.get_pipe(&args[0]) {
+                    Some(pipe.clone())
+                } else {
+                    None
+                }
             }
         } else {
             // "-" Always exsit, thus safe to unwrap
