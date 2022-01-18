@@ -25,6 +25,8 @@ use crate::formatter::Formatter;
 #[cfg(feature = "lipsum")]
 use lipsum::lipsum;
 use lazy_static::lazy_static;
+#[cfg(feature = "cindex")]
+use cindex::OutOption;
 
 lazy_static! {
     static ref CLRF_MATCH: Regex = Regex::new(r#"\r\n"#).unwrap();
@@ -96,6 +98,7 @@ impl BasicMacroMap {
             ("panic".to_owned(),   BMacroSign::new("panic",   ["a_msg"],Self::manual_panic)),
             ("path".to_owned(),    BMacroSign::new("path",    ["a_paths"],Self::merge_path)),
             ("pipe".to_owned(),    BMacroSign::new("pipe",    ["a_value"],Self::pipe)),
+            ("pipeto".to_owned(),  BMacroSign::new("pipe",    ["a_pipe_name","a_value"],Self::pipe_to)),
             ("read".to_owned(),    BMacroSign::new("read",    ["a_filename"],Self::read)),
             ("redir".to_owned(),   BMacroSign::new("redir",   ["a_redirect?"],Self::temp_redirect)),
             ("regex".to_owned(),   BMacroSign::new("regex",   ["a_source","a_match","a_substitution"],Self::regex_sub)),
@@ -120,6 +123,12 @@ impl BasicMacroMap {
             map.insert("from".to_owned(),    BMacroSign::new("from", ["a_macro_name","a_csv_value"],Self::from_data));
             map.insert("table".to_owned(),   BMacroSign::new("table",["a_table_form","a_csv_value"],Self::table));
         }
+        #[cfg(feature = "cindex")]
+        {
+            map.insert("regcsv".to_owned(),  BMacroSign::new("regcsv", ["a_table_name","a_table"], Self::cindex_register));
+            map.insert("query".to_owned(),   BMacroSign::new("query",  ["a_query"], Self::cindex_query));
+        }
+
         #[cfg(feature = "chrono")]
         {
             map.insert("time".to_owned(),    BMacroSign::new("time",ESR,Self::time));
@@ -686,7 +695,23 @@ impl BasicMacroMap {
     /// $pipe(Value)
     fn pipe(args: &str, greedy: bool, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
-            processor.state.pipe_value = args[0].to_owned();
+            processor.state.add_pipe(None, args[0].to_owned());
+        }
+        Ok(None)
+    }
+
+    /// Put value into a temporary stack called pipe
+    ///
+    /// Piped value can be popped with macro '-'
+    ///
+    /// # Usage
+    ///
+    /// $pipeto(Value)
+    fn pipe_to(args: &str, greedy: bool, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            processor.state.add_pipe(Some(&args[0]), args[1].to_owned());
+        } else {
+            return Err(RadError::InvalidArgument("pipeto requires two arguments".to_owned()));
         }
         Ok(None)
     }
@@ -848,9 +873,20 @@ impl BasicMacroMap {
     /// # Usage
     ///
     /// $-()
-    fn get_pipe(_: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
-        let out = processor.state.pipe_value.clone();
-        Ok(Some(out))
+    /// $-(p1)
+    fn get_pipe(args: &str, greedy: bool, processor: &mut Processor) -> RadResult<Option<String>> {
+        let pipe = if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
+            if let Some(pipe) = processor.state.get_pipe(&args[0]) {
+                Some(pipe.clone())
+            } else {
+                None
+            }
+        } else {
+            // "-" Always exsit, thus safe to unwrap
+            let out = processor.state.get_pipe("-").unwrap_or(String::new()).clone();
+            Some(out)
+        };
+        Ok(pipe)
     }
 
     /// Return a length of the string
@@ -1180,6 +1216,27 @@ impl BasicMacroMap {
                 },
             }
         } else { Err(RadError::StorageError(String::from("Empty storage"))) }
+    }
+
+    #[cfg(feature = "cindex")]
+    fn cindex_register(args: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            processor.indexer.add_table_fast(&args[0], args[1].as_bytes())?;
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("regcsv requires two arguments".to_owned()))
+        }
+    }
+
+    #[cfg(feature = "cindex")]
+    fn cindex_query(args: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+            let mut value = String::new();
+            processor.indexer.index_raw(&args[0], OutOption::Value(&mut value))?;
+            Ok(Some(Utils::trim(&value)))
+        } else {
+            Err(RadError::InvalidArgument("query requires an argument".to_owned()))
+        }
     }
 }
 
