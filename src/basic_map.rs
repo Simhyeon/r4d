@@ -134,7 +134,6 @@ impl BasicMacroMap {
         {
             map.insert("regcsv".to_owned(),  BMacroSign::new("regcsv", ["a_table_name","a_table"], Self::cindex_register));
             map.insert("query".to_owned(),   BMacroSign::new("query",  ["a_query"], Self::cindex_query));
-            map.insert("queryv".to_owned(),  BMacroSign::new("queryv", ["a_query"], Self::cindex_query_value));
         }
 
         #[cfg(feature = "chrono")]
@@ -1204,7 +1203,7 @@ impl BasicMacroMap {
     ///
     /// $stripl(2,Text To extract)
     fn strip_line(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
             let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
             let variant = &args[1];
             let lines = Utils::full_lines(args[2].as_bytes())
