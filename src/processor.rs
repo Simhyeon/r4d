@@ -707,7 +707,7 @@ impl<'processor> Processor<'processor> {
     /// ```rust
     /// processor.add_custom_rules(vec![("macro_name","Macro body without arguments")]);
     /// ```
-    pub fn add_static_rules(&mut self, rules: Vec<(impl AsRef<str>,&str)>) -> RadResult<()> {
+    pub fn add_static_rules(&mut self, rules: Vec<(impl AsRef<str>,impl AsRef<str>)>) -> RadResult<()> {
         for (name,body) in rules {
             let name = name.as_ref();
             if !MAC_NAME.is_match(name) {
@@ -718,7 +718,7 @@ impl<'processor> Processor<'processor> {
                 CustomMacro { 
                     name: name.to_owned(),
                     args: vec![],
-                    body: body.to_owned()
+                    body: body.as_ref().to_owned()
             }
             );
         }
