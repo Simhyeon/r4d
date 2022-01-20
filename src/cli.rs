@@ -66,7 +66,7 @@ impl Cli {
             .allow(std::mem::replace(&mut self.allow_auth,None))
             .allow_with_warning(std::mem::replace(&mut self.allow_auth_warn,None))
             .unix_new_line(args.is_present("newline"))
-            .custom_rules(std::mem::replace(&mut self.rules,None))?
+            .rule_files(std::mem::replace(&mut self.rules,None))?
             .write_to_file(std::mem::replace(&mut self.write_to_file,None))?
             .discard(args.is_present("discard"))
             .error_to_file(std::mem::replace(&mut self.error_to_file,None))?
