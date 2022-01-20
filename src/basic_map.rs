@@ -90,6 +90,8 @@ impl BasicMacroMap {
             ("escape".to_owned(),  BMacroSign::new("escape",  ESR,Self::escape)),
             ("exit".to_owned(),    BMacroSign::new("exit",    ESR,Self::exit)),
             ("fileout".to_owned(), BMacroSign::new("fileout", ["a_truncate?","a_filename","a_content"],Self::file_out)),
+            ("head".to_owned(),    BMacroSign::new("head",    ["a_count","a_content"],Self::head)),
+            ("headl".to_owned(),   BMacroSign::new("headl",   ["a_count","a_content"],Self::head_line)),
             ("include".to_owned(), BMacroSign::new("include", ["a_filename"],Self::include)),
             ("len".to_owned(),     BMacroSign::new("len",     ["a_string"],Self::len)),
             ("name".to_owned(),    BMacroSign::new("name",    ["a_path"],Self::get_name)),
@@ -105,8 +107,12 @@ impl BasicMacroMap {
             ("regex".to_owned(),   BMacroSign::new("regex",   ["a_source","a_match","a_substitution"],Self::regex_sub)),
             ("rename".to_owned(),  BMacroSign::new("rename",  ["a_macro_name","a_new_name"],Self::rename_call)),
             ("repeat".to_owned(),  BMacroSign::new("repeat",  ["a_count","a_source"],Self::repeat)),
+            ("strip".to_owned(),   BMacroSign::new("tail",    ["a_count","a_direction","a_content"],Self::strip)),
+            ("stripl".to_owned(),  BMacroSign::new("taill",   ["a_count","a_direction","a_content"],Self::strip_line)),
             ("sub".to_owned(),     BMacroSign::new("sub",     ["a_start_index","a_end_index","a_source"],Self::substring)),
             ("syscmd".to_owned(),  BMacroSign::new("syscmd",  ["a_command"],Self::syscmd)),
+            ("tail".to_owned(),    BMacroSign::new("tail",    ["a_count","a_content"],Self::tail)),
+            ("taill".to_owned(),   BMacroSign::new("taill",   ["a_count","a_content"],Self::tail_line)),
             ("tempin".to_owned(),  BMacroSign::new("tempin",  ["a_tempin"],Self::temp_include)),
             ("tempout".to_owned(), BMacroSign::new("tempout", ["a_tempout"],Self::temp_out)),
             ("tempto".to_owned(),  BMacroSign::new("tempto",  ["a_filename"],Self::set_temp_target)),
@@ -128,6 +134,7 @@ impl BasicMacroMap {
         {
             map.insert("regcsv".to_owned(),  BMacroSign::new("regcsv", ["a_table_name","a_table"], Self::cindex_register));
             map.insert("query".to_owned(),   BMacroSign::new("query",  ["a_query"], Self::cindex_query));
+            map.insert("queryv".to_owned(),  BMacroSign::new("queryv", ["a_query"], Self::cindex_query_value));
         }
 
         #[cfg(feature = "chrono")]
@@ -1092,6 +1099,126 @@ impl BasicMacroMap {
             }
         } else {
             Err(RadError::InvalidArgument("Fileout requires three argument".to_owned()))
+        }
+    }
+
+    /// Get head of given text
+    ///
+    /// # Usage
+    ///
+    /// $head(2,Text To extract)
+    fn head(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
+            let content = &args[1];
+            let length = *count.min(&content.len());
+
+            Ok(Some(content[0..length].to_string()))
+        } else {
+            Err(RadError::InvalidArgument("head requires two argument".to_owned()))
+        }
+    }
+
+    /// Get head of given text but for lines
+    ///
+    /// # Usage
+    ///
+    /// $headl(2,Text To extract)
+    fn head_line(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
+            let lines = Utils::full_lines(args[1].as_bytes())
+                .map(|line| line.unwrap())
+                .collect::<Vec<String>>();
+            let length = *count.min(&lines.len());
+
+            Ok(Some(lines[0..length].concat()))
+        } else {
+            Err(RadError::InvalidArgument("head requires two argument".to_owned()))
+        }
+    }
+
+    /// Get tail of given text
+    ///
+    /// # Usage
+    ///
+    /// $tail(2,Text To extract)
+    fn tail(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
+            let content = &args[1];
+            let length = *count.min(&content.len());
+
+            Ok(Some(content[content.len()-length..content.len()].to_string()))
+        } else {
+            Err(RadError::InvalidArgument("tail requires two argument".to_owned()))
+        }
+    }
+
+    /// Get tail of given text but for lines
+    ///
+    /// # Usage
+    ///
+    /// $taill(2,Text To extract)
+    fn tail_line(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
+            let lines = Utils::full_lines(args[1].as_bytes())
+                .map(|line| line.unwrap())
+                .collect::<Vec<String>>();
+            let length = *count.min(&lines.len());
+
+            Ok(Some(lines[lines.len()-length..lines.len()].concat()))
+        } else {
+            Err(RadError::InvalidArgument("taill requires two argument".to_owned()))
+        }
+    }
+
+    /// Strip from given text
+    ///
+    /// # Usage
+    ///
+    /// $strip(2,head,Text To extract)
+    /// $strip(2,tail,Text To extract)
+    fn strip(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
+            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
+            let variant = &args[1];
+            let content = &args[2];
+            let length = *count.min(&content.len());
+
+            match variant.to_lowercase().as_str() {
+                "head" => Ok(Some(content[length..].to_string())),
+                "tail" => Ok(Some(content[..content.len() - length].to_string())),
+                _ => return Err(RadError::InvalidArgument(format!("Strip reqruies either head or tail but given \"{}\"", variant))),
+            }
+
+        } else {
+            Err(RadError::InvalidArgument("strip requires three argument".to_owned()))
+        }
+    }
+
+    /// Strip lines from given text
+    ///
+    /// # Usage
+    ///
+    /// $stripl(2,Text To extract)
+    fn strip_line(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
+            let variant = &args[1];
+            let lines = Utils::full_lines(args[2].as_bytes())
+                .map(|line| line.unwrap())
+                .collect::<Vec<String>>();
+            let length = *count.min(&lines.len());
+
+            match variant.to_lowercase().as_str() {
+                "head" => Ok(Some(lines[length..].concat())),
+                "tail" => Ok(Some(lines[..lines.len() - length].concat())),
+                _ => return Err(RadError::InvalidArgument(format!("Stripl reqruies either head or tail but given \"{}\"", variant))),
+            }
+        } else {
+            Err(RadError::InvalidArgument("head requires two argument".to_owned()))
         }
     }
 
