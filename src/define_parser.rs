@@ -47,12 +47,12 @@ impl DefineParser {
                 DefineCursor::Name => {
                     if let ParseIgnore::Ignore = self.branch_name(ch) {continue;}
                     // If not valid name return None
-                    if !self.is_valid_name(ch) { return None; }
+                    if !self.is_valid_char(ch) { return None; }
                 }
                 DefineCursor::Args => {
                     if let ParseIgnore::Ignore = self.branch_args(ch) {continue;}
                     // If not valid name return None
-                    if !self.is_valid_name(ch) { return None; }
+                    if !self.is_valid_char(ch) { return None; }
                 }
                 // Add everything
                 DefineCursor::Body => ()
@@ -75,8 +75,8 @@ impl DefineParser {
         Some((self.name.clone(), self.args.clone(), self.body.clone()))
     }
 
-    /// Check if name complies with naming rule
-    fn is_valid_name(&mut self, ch : char) -> bool {
+    /// Check if char complies with naming rule
+    fn is_valid_char(&mut self, ch : char) -> bool {
         if self.container.len() == 0 { // Start of string
             // Not alphabetic 
             // $define( 1name ) -> Not valid
