@@ -228,7 +228,7 @@ pub struct Processor<'processor>{
     closure_map: ClosureMap,
     #[cfg(feature = "hook")]
     pub(crate) hook_map: HookMap,
-    defparser: DefineParser,
+    define_parser: DefineParser,
     write_option: WriteOption<'processor>,
     logger: Logger<'processor>,
     #[cfg(feature = "debug")]
@@ -293,7 +293,7 @@ impl<'processor> Processor<'processor> {
             #[cfg(feature = "hook")]
             hook_map: HookMap::new(),
             write_option: WriteOption::Terminal,
-            defparser: DefineParser::new(),
+            define_parser: DefineParser::new(),
             logger,
             #[cfg(feature = "debug")]
             debugger : Debugger::new(),
@@ -634,6 +634,7 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Add new basic rules
+    #[deprecated(since = "1.6", note = "add_basic_rules will yield raderror when name is invalid from 2.0. Though method api will not change.")]
     pub fn add_basic_rules(&mut self, basic_rules:Vec<(&str,MacroType)>) {
         for (name, macro_ref) in basic_rules {
             self.map.basic.add_new_rule(name, macro_ref);
@@ -1248,7 +1249,7 @@ impl<'processor> Processor<'processor> {
     ///
     /// This doesn't clear fragment
     fn add_rule(&mut self, frag: &MacroFragment, remainder: &mut String) -> RadResult<()> {
-        if let Some((name,args,body)) = self.defparser.parse_define(&frag.args) {
+        if let Some((name,args,body)) = self.define_parser.parse_define(&frag.args) {
 
             // Strict mode
             // Overriding is prohibited
