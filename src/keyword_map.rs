@@ -40,7 +40,7 @@ impl KeywordMacroMap {
             ("pause",   KMacroSign::new("pause",   ["a_pause?"],KeywordMacroMap::pause)),
             ("repl",    KMacroSign::new("repl",    ["a_macro_name","a_new_value"],KeywordMacroMap::replace)),
             ("static",  KMacroSign::new("static",  ["a_macro_name","a_value"],KeywordMacroMap::define_static)),
-            ("sep",     KMacroSign::new("sep",   ["separator","a_array"],KeywordMacroMap::separate_array)),
+            ("sep",     KMacroSign::new("sep",     ["separator","a_array"],KeywordMacroMap::separate_array)),
         ]));
         Self {
             macros: map,
@@ -130,12 +130,12 @@ impl KeywordMacroMap {
             if let Ok(num) = min_src.parse::<usize>() {
                 min = num;
             } else { 
-                return Err(RadError::InvalidArgument(format!("Forloop's min value should be non zero positive integer but given {}", &args[0]))); 
+                return Err(RadError::InvalidArgument(format!("Forloop's min value should be non zero positive integer but given {}", min_src))); 
             }
             if let Ok(num) = max_src.parse::<usize>() {
                 max = num
             } else { 
-                return Err(RadError::InvalidArgument(format!("Forloop's min value should be non zero positive integer gut given \"{}\"", &args[1]))); 
+                return Err(RadError::InvalidArgument(format!("Forloop's max value should be non zero positive integer but given \"{}\"", max_src))); 
             }
             
             for value in min..=max {
