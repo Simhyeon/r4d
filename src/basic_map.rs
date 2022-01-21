@@ -89,10 +89,14 @@ impl BasicMacroMap {
             ("envset".to_owned(),  BMacroSign::new("envset",  ["a_env_name","a_env_value"],Self::set_env)),
             ("escape".to_owned(),  BMacroSign::new("escape",  ESR,Self::escape)),
             ("exit".to_owned(),    BMacroSign::new("exit",    ESR,Self::exit)),
+            ("fold".to_owned(),    BMacroSign::new("fold",    ["a_content"],Self::fold)),
+            ("foldl".to_owned(),   BMacroSign::new("foldl",   ["a_content"],Self::fold_line)),
             ("fileout".to_owned(), BMacroSign::new("fileout", ["a_truncate?","a_filename","a_content"],Self::file_out)),
+            ("grep".to_owned(),    BMacroSign::new("grep",    ["a_regex","a_content"],Self::grep)),
             ("head".to_owned(),    BMacroSign::new("head",    ["a_count","a_content"],Self::head)),
             ("headl".to_owned(),   BMacroSign::new("headl",   ["a_count","a_content"],Self::head_line)),
             ("include".to_owned(), BMacroSign::new("include", ["a_filename"],Self::include)),
+            ("index".to_owned(),   BMacroSign::new("index",   ["a_index","a_array"],Self::index_array)),
             ("len".to_owned(),     BMacroSign::new("len",     ["a_string"],Self::len)),
             ("name".to_owned(),    BMacroSign::new("name",    ["a_path"],Self::get_name)),
             ("not".to_owned(),     BMacroSign::new("not",     ["a_boolean"],Self::not)),
@@ -107,6 +111,8 @@ impl BasicMacroMap {
             ("regex".to_owned(),   BMacroSign::new("regex",   ["a_source","a_match","a_substitution"],Self::regex_sub)),
             ("rename".to_owned(),  BMacroSign::new("rename",  ["a_macro_name","a_new_name"],Self::rename_call)),
             ("repeat".to_owned(),  BMacroSign::new("repeat",  ["a_count","a_source"],Self::repeat)),
+            ("sort".to_owned(),    BMacroSign::new("sort",    ["a_values"],Self::sort_array)),
+            ("sortl".to_owned(),   BMacroSign::new("sortl",   ["a_values"],Self::sort_lines)),
             ("strip".to_owned(),   BMacroSign::new("tail",    ["a_count","a_direction","a_content"],Self::strip)),
             ("stripl".to_owned(),  BMacroSign::new("taill",   ["a_count","a_direction","a_content"],Self::strip_line)),
             ("sub".to_owned(),     BMacroSign::new("sub",     ["a_start_index","a_end_index","a_source"],Self::substring)),
@@ -132,8 +138,9 @@ impl BasicMacroMap {
         }
         #[cfg(feature = "cindex")]
         {
-            map.insert("regcsv".to_owned(),  BMacroSign::new("regcsv", ["a_table_name","a_table"], Self::cindex_register));
-            map.insert("query".to_owned(),   BMacroSign::new("query",  ["a_query"], Self::cindex_query));
+            map.insert("regcsv".to_owned(),  BMacroSign::new("regcsv",   ["a_table_name","a_table"], Self::cindex_register));
+            map.insert("query".to_owned(),   BMacroSign::new("query",    ["a_query"], Self::cindex_query));
+            map.insert("queries".to_owned(), BMacroSign::new("queries",  ["a_query"], Self::cindex_query_list));
         }
 
         #[cfg(feature = "chrono")]
@@ -1133,7 +1140,7 @@ impl BasicMacroMap {
 
             Ok(Some(lines[0..length].concat()))
         } else {
-            Err(RadError::InvalidArgument("head requires two argument".to_owned()))
+            Err(RadError::InvalidArgument("headl requires two argument".to_owned()))
         }
     }
 
@@ -1217,7 +1224,113 @@ impl BasicMacroMap {
                 _ => return Err(RadError::InvalidArgument(format!("Stripl reqruies either head or tail but given \"{}\"", variant))),
             }
         } else {
-            Err(RadError::InvalidArgument("head requires two argument".to_owned()))
+            Err(RadError::InvalidArgument("stripl requires two argument".to_owned()))
+        }
+    }
+
+    /// Sort array
+    ///
+    /// # Usage
+    ///
+    /// $sort(asec,1,2,3,4,5)
+    fn sort_array(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let count = args[0].as_str();
+            let content = &mut args[1].split(',').collect::<Vec<&str>>();
+            match count.to_lowercase().as_str() {
+                "asec" => content.sort(),
+                "desc" => {content.sort(); content.reverse()},
+                _ => return Err(RadError::InvalidArgument(format!("Sort requires either asec or desc but given \"{}\"", count))),
+            }
+
+            Ok(Some(content.join(",")))
+        } else {
+            Err(RadError::InvalidArgument("sort requires two argument".to_owned()))
+        }
+    }
+
+    /// Sort lines
+    ///
+    /// # Usage
+    ///
+    /// $sortl(asec,Content)
+    fn sort_lines(args: &str, greedy: bool, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let count = args[0].as_str();
+            let content = &mut args[1].lines().collect::<Vec<&str>>();
+            match count.to_lowercase().as_str() {
+                "asec" => content.sort(),
+                "desc" => {content.sort(); content.reverse()},
+                _ => return Err(RadError::InvalidArgument(format!("Sort requires either asec or desc but given \"{}\"", count))),
+            }
+
+            Ok(Some(content.join(&p.state.newline)))
+        } else {
+            Err(RadError::InvalidArgument("sortl requires two argument".to_owned()))
+        }
+    }
+
+    /// Index array
+    ///
+    /// # Usage
+    ///
+    /// $index(1,1,2,3,4,5)
+    fn index_array(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let index = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("index requires positive integer number but got \"{}\"", &args[0])))?;
+            let content = &mut args[1].split(',').collect::<Vec<&str>>();
+
+            if &content.len() <= index {
+                return Err(RadError::InvalidArgument(format!("Index \"{}\" is bigger than content's length \"{}\"", index,content.len())));
+            }
+
+            Ok(Some(content[*index].to_owned()))
+        } else {
+            Err(RadError::InvalidArgument("index requires two argument".to_owned()))
+        }
+    }
+
+    /// Fold array
+    ///
+    /// # Usage
+    ///
+    /// $fold(1,2,3,4,5)
+    fn fold(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+            let content = &mut args[0].split(',').collect::<Vec<&str>>();
+            Ok(Some(content.join("")))
+        } else {
+            Err(RadError::InvalidArgument("fold requires an argument".to_owned()))
+        }
+    }
+
+    /// Fold lines
+    ///
+    /// # Usage
+    ///
+    /// $foldl(1,1,2,3,4,5)
+    fn fold_line(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
+            let content = &mut args[0].lines().collect::<Vec<&str>>();
+            Ok(Some(content.join("")))
+        } else {
+            Err(RadError::InvalidArgument("fold requires an argument".to_owned()))
+        }
+    }
+
+    /// Grep
+    ///
+    /// # Usage
+    ///
+    /// $grep(EXPR,CONTENT)
+    fn grep(args: &str, greedy: bool, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
+            let expr = Regex::new(args[0].as_str())?;
+            let content = args[1].lines().collect::<Vec<&str>>();
+            let grepped = content.into_iter().filter(|l| expr.is_match(l)).collect::<Vec<&str>>().join(&p.state.newline);
+            Ok(Some(grepped))
+        } else {
+            Err(RadError::InvalidArgument("grep requires two argument".to_owned()))
         }
     }
 
@@ -1361,6 +1474,9 @@ impl BasicMacroMap {
         } else { Err(RadError::StorageError(String::from("Empty storage"))) }
     }
 
+    /// Register a table
+    ///
+    /// $regcsv(table_name,table_content)
     #[cfg(feature = "cindex")]
     fn cindex_register(args: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
@@ -1371,6 +1487,9 @@ impl BasicMacroMap {
         }
     }
 
+    /// Execute query from indexer table
+    ///
+    /// $query(statment)
     #[cfg(feature = "cindex")]
     fn cindex_query(args: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
@@ -1379,6 +1498,25 @@ impl BasicMacroMap {
             Ok(Some(Utils::trim(&value)))
         } else {
             Err(RadError::InvalidArgument("query requires an argument".to_owned()))
+        }
+    }
+
+    /// Execute multiple query separated by colon(;)
+    ///
+    /// $queries(statment)
+    #[cfg(feature = "cindex")]
+    fn cindex_query_list(args: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+            let mut value = String::new();
+            processor.indexer.set_print_header(false);
+            for raw in args[0].split(';') {
+                if raw.is_empty() { continue; }
+                processor.indexer.index_raw(&Utils::trim(raw), OutOption::Value(&mut value))?;
+            }
+            processor.indexer.set_print_header(true);
+            Ok(Some(Utils::trim(&value)))
+        } else {
+            Err(RadError::InvalidArgument("queries requires an argument".to_owned()))
         }
     }
 }
