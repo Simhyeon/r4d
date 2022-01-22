@@ -84,6 +84,9 @@ impl BasicMacroMap {
             ("nassert".to_owned(), BMacroSign::new("nassert", ["a_lvalue","a_rvalue"],Self::assert_ne)),
             ("chomp".to_owned(),   BMacroSign::new("chomp",   ["a_content"],Self::chomp)),
             ("comp".to_owned(),    BMacroSign::new("comp",    ["a_content"],Self::compress)),
+            ("count".to_owned(),   BMacroSign::new("count",   ["a_array"],Self::count)),
+            ("countw".to_owned(),  BMacroSign::new("countw",  ["a_array"],Self::count_word)),
+            ("countl".to_owned(),  BMacroSign::new("countl",  ["a_content"],Self::count_lines)),
             ("dnl".to_owned(),     BMacroSign::new("dnl",     ESR,Self::deny_newline)),
             ("env".to_owned(),     BMacroSign::new("env",     ["a_env_name"],Self::get_env)),
             ("envset".to_owned(),  BMacroSign::new("envset",  ["a_env_name","a_env_value"],Self::set_env)),
@@ -506,7 +509,7 @@ impl BasicMacroMap {
         }
         if let Some(args_content) = ArgParser::new().args_with_len(args, 1, true) {
             let source = &args_content[0];
-            let arg_vec = source.split(' ').collect::<Vec<&str>>();
+            let arg_vec = source.split_whitespace().collect::<Vec<&str>>();
 
             let output = if cfg!(target_os = "windows") {
                 Command::new("cmd")
@@ -1331,6 +1334,48 @@ impl BasicMacroMap {
             Ok(Some(grepped))
         } else {
             Err(RadError::InvalidArgument("grep requires two argument".to_owned()))
+        }
+    }
+
+    /// Count
+    ///
+    /// # Usage
+    ///
+    /// $count(1,2,3,4,5)
+    fn count(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+            let array_count = &args[0].split(',').collect::<Vec<_>>().len();
+            Ok(Some(array_count.to_string()))
+        } else {
+            Err(RadError::InvalidArgument("count requires an argument".to_owned()))
+        }
+    }
+
+    /// Count words
+    ///
+    /// # Usage
+    ///
+    /// $countw(1 2 3 4 5)
+    fn count_word(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
+            let array_count = &args[0].split_whitespace().collect::<Vec<_>>().len();
+            Ok(Some(array_count.to_string()))
+        } else {
+            Err(RadError::InvalidArgument("countw requires an argument".to_owned()))
+        }
+    }
+
+    /// Count lines
+    ///
+    /// # Usage
+    ///
+    /// $countl(CONTENT goes here)
+    fn count_lines(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
+            let line_count = &args[0].lines().collect::<Vec<_>>().len();
+            Ok(Some(line_count.to_string()))
+        } else {
+            Err(RadError::InvalidArgument("countl requires an argument".to_owned()))
         }
     }
 
