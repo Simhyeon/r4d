@@ -29,7 +29,13 @@ variable.
 
 $regcsv(addr,$include(addr.csv))$dnl()
 
-$static(queried,$query(SELECT id,first_name,address FROM addr where first_name = John))$dnl()
+$static(
+	queried,
+	$query(
+		SELECT id,first_name,address 
+		FROM addr where first_name = John
+	)
+)$dnl()
 
 % TABLE_FORM == github
 $table+($env(TABLE_FORM),$queried())
@@ -74,9 +80,6 @@ cargo install r4d --features binary,color --locked
 
 # Refer lib.rs or usage section for detailed feature usage
 ```
-
-But you can download some binaries in [release
-page](https://github.com/Simhyeon/r4d/releases)
 
 ### Simple usage
 
@@ -143,5 +146,3 @@ vulnerability](https://nvd.nist.gov/vuln/detail/CVE-2020-26235) is known issue
 at the time but for current state, it doesn't affect r4d since r4d doesn't
 utillize multi threading in processing. Every time,date call and env_set calls
 are sequential and doensn't overlap.
-
-If you're using an operating system that doesn't utilize libc, then its fine.
