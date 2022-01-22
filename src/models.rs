@@ -29,7 +29,7 @@ pub struct CustomMacro{
 impl CustomMacro {
     pub fn new(name: &str, args: &str, body: &str) -> Self {
         // Empty args are no args
-        let mut args : Vec<String> = args.split(' ').map(|item| item.to_owned()).collect();
+        let mut args : Vec<String> = args.split_whitespace().map(|item| item.to_owned()).collect();
         if args.len() == 1 && args[0] == "" {
             args = vec![]
         }

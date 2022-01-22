@@ -689,7 +689,7 @@ impl<'processor> Processor<'processor> {
                 name.to_owned(), 
                 CustomMacro { 
                     name: name.to_owned(),
-                    args: args.split(' ').map(|s| s.to_owned()).collect::<Vec<String>>(),
+                    args: args.split_whitespace().map(|s| s.to_owned()).collect::<Vec<String>>(),
                     body: body.to_owned()
                 }
             );
