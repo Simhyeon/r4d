@@ -1135,7 +1135,7 @@ impl BasicMacroMap {
     /// $headl(2,Text To extract)
     fn head_line(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
+            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Headl requires positive integer number but got \"{}\"", &args[0])))?;
             let lines = Utils::full_lines(args[1].as_bytes())
                 .map(|line| line.unwrap())
                 .collect::<Vec<String>>();
@@ -1154,7 +1154,7 @@ impl BasicMacroMap {
     /// $tail(2,Text To extract)
     fn tail(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
+            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("tail requires positive integer number but got \"{}\"", &args[0])))?;
             let content = &args[1];
             let length = *count.min(&content.len());
 
@@ -1171,7 +1171,7 @@ impl BasicMacroMap {
     /// $taill(2,Text To extract)
     fn tail_line(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
-            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
+            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("taill requires positive integer number but got \"{}\"", &args[0])))?;
             let lines = Utils::full_lines(args[1].as_bytes())
                 .map(|line| line.unwrap())
                 .collect::<Vec<String>>();
@@ -1191,7 +1191,7 @@ impl BasicMacroMap {
     /// $strip(2,tail,Text To extract)
     fn strip(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
-            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
+            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("strip requires positive integer number but got \"{}\"", &args[0])))?;
             let variant = &args[1];
             let content = &args[2];
             let length = *count.min(&content.len());
@@ -1211,10 +1211,11 @@ impl BasicMacroMap {
     ///
     /// # Usage
     ///
-    /// $stripl(2,Text To extract)
+    /// $stripl(2,head,Text To extract)
+    /// $stripl(2,tail,Text To extract)
     fn strip_line(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
-            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
+            let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("stripl requires positive integer number but got \"{}\"", &args[0])))?;
             let variant = &args[1];
             let lines = Utils::full_lines(args[2].as_bytes())
                 .map(|line| line.unwrap())
@@ -1264,7 +1265,7 @@ impl BasicMacroMap {
             match count.to_lowercase().as_str() {
                 "asec" => content.sort(),
                 "desc" => {content.sort(); content.reverse()},
-                _ => return Err(RadError::InvalidArgument(format!("Sort requires either asec or desc but given \"{}\"", count))),
+                _ => return Err(RadError::InvalidArgument(format!("Sortl requires either asec or desc but given \"{}\"", count))),
             }
 
             Ok(Some(content.join(&p.state.newline)))
@@ -1317,7 +1318,7 @@ impl BasicMacroMap {
             let content = &mut args[0].lines().collect::<Vec<&str>>();
             Ok(Some(content.join("")))
         } else {
-            Err(RadError::InvalidArgument("fold requires an argument".to_owned()))
+            Err(RadError::InvalidArgument("foldl requires an argument".to_owned()))
         }
     }
 
