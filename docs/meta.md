@@ -1,17 +1,21 @@
 ### Changed
 
-* [x] Storage function
-	* [x] update
-	* [x] extract
-* [x] New default macros
-	* [x] Sep macro (keyword)
-* [x] Indexing macros with "cindex" crate
-* [x] Named pipe ( in a hashmap )
-* [x] Pipe truncate option as builder pattern
-- Default as none for compatibility
-- From 2.0, default is true
-* [x] Fix comment argument bug
-* [x] DNL Macro
+* [x] New basic macros
+	- head
+	- headl
+	- tail
+	- taill
+	- strip
+	- stripl
+	- Grep  ( Only print matched lines )
+	- Index ( Get indexed value from array )
+	- Sort  ( Sort array by values )
+	- Sortl ( Sort lines by values )
+	- Fold  ( Fold new lines to single line )
+	- Foldl
+	- Count ( Get count of array )
+	- Countw( Get count of array )
+	- Countl( Get count of lines )
 
 ### TODOs
 
@@ -105,7 +109,18 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
-
+* [x] Storage function
+	* [x] update
+	* [x] extract
+* [x] New default macros
+	* [x] Sep macro (keyword)
+* [x] Indexing macros with "cindex" crate
+* [x] Named pipe ( in a hashmap )
+* [x] Pipe truncate option as builder pattern
+- Default as none for compatibility
+- From 2.0, default is true
+* [x] Fix comment argument bug
+* [x] DNL Macro
 * [x] New basic macro
     * [x] Triml -> Trim line by line
 	* [x] Wrap : But with additonal packages

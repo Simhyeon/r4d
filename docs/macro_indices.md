@@ -58,6 +58,14 @@ For assertion macros refer [debug part](./debug.md)
 * [not](#not)
 * [syscmd](#syscmd)
 * [sub](#sub)
+* [head](#head)
+* [tail](#tail)
+* [strip](#strip)
+* [grep](#grep)
+* [index](#index)
+* [sort](#sort)
+* [fold](#fold)
+* [count](#count)
 * [tr](#tr)
 * [len](#len)
 * [regex](#regex)
@@ -609,6 +617,160 @@ $sub(,6,123456789)
 2345
 3456789
 123456
+```
+
+### head
+
+Get head parts of given value.
+
+- head
+- headl
+
+```
+$head(4,Text To extract)
+$headl(2,aaaaa
+bbbbb
+ccccc
+eeeee)
+===
+Text
+aaaaa
+bbbbb
+```
+
+### tail
+
+Get tail parts of given value.
+
+- tail
+- taill
+
+```
+$tail(7,Text To extract)
+$taill(2,aaaaa
+bbbbb
+ccccc
+eeeee)
+===
+extract
+ccccc
+eeeee
+```
+
+### strip
+
+Get stripped remainder from given value.
+
+- strip
+- stripl
+
+```
+$static(TEXT,aaaaa
+bbbbb
+ccccc
+eeeee)
+$strip(5,head,Text To extract)
+$strip(8,tail,Text To extract)
+$stripl(2,head,$TEXT())
+$stripl(2,tail,$TEXT())
+===
+To extract
+Text To
+ccccc
+eeeee
+aaaaa
+bbbbb
+```
+
+### grep
+
+Grab matching lines from given value.
+
+```
+$grep((?i)hello world,hello world
+AlOHa woRlD
+HELLO WORLD
+haLO WORld
+HelLo woRlD
+holo world
+heLLO WOrld)
+===
+hello world
+HELLO WORLD
+HelLo woRlD
+heLLO WOrld
+```
+
+### index
+
+Get indexed value from given array.
+
+```
+$static(idx,5)
+$index($idx(),long,array,with,texts,separated,with,columns)
+===
+with
+```
+
+### sort
+
+sort given value
+
+- sort
+- sortl
+
+```
+$sort(asec,5,4,3,2,1)
+$sortl(desc,abcde
+edcba
+bhcChicken)
+===
+1,2,3,4,5
+edcba
+bhcChicken
+abcde
+```
+
+### fold
+
+Fold separated value into non-separated single value.
+
+- fold
+- foldl
+
+```
+$fold(Hello,World,Without,Space)
+$foldl(Lines
+Separated
+By
+Newline characters)
+===
+HelloWorldWithoutSpace
+LinesSeparatedByNewline characters
+```
+
+### count
+
+Count given values.
+
+- count
+- countw
+- countl
+
+```
+$count(a,b,c,d,e)
+$countw(Hello world with many spaces)
+$countl(a
+b
+c
+d
+e
+f
+g)
+===
+5
+5
+7
 ```
 
 ### tr
