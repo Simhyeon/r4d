@@ -76,9 +76,9 @@ dependencies = [
 
 [[package]]
 name = "cindex"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "400e7f20236046b6acfaa225ec15dd7cd22c75ca4374921ac6018020cd08f423"
+checksum = "02b43c6d5cbd23332a57b47915fba96869482de2bff3262d53ce324b7cdade2f"
 dependencies = [
  "indexmap",
  "rayon",
@@ -438,7 +438,7 @@ dependencies = [
 
 [[package]]
 name = "r4d"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "bincode",
  "chrono",

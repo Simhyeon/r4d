@@ -1,6 +1,6 @@
 [package]
 name = "r4d"
-version = "1.5.0"
+version = "1.6.0"
 edition = "2018"
 license = "MIT OR Apache-2.0"
 keywords = ["macro", "cli", "text-processing"]
@@ -44,4 +44,4 @@ serde_json = { version = "1.0", optional = true}
 similar = { version = "2.0.0", optional = true}
 textwrap = { version = "0.14.2", optional = true}
 thiserror = "1.0.25"
-cindex = { version = "0.2.0", optional = true}
+cindex = { version = "0.3.0", optional = true}
