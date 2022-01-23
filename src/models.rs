@@ -135,14 +135,19 @@ impl MacroMap {
         self.keyword.contains(name)
     }
 
-    /// Check if macro exists
-    pub fn contains(&self, name: &str) -> bool {
+    /// Check if macro exists ( only basic and custom macro )
+    pub fn contains_basic_or_custom(&self, name: &str) -> bool {
         self.basic.contains(name) || self.custom.contains_key(name)
+    }
+
+    /// Check if macro exists
+    pub fn contains_any_macro(&self, name: &str) -> bool {
+        self.basic.contains(name) || self.custom.contains_key(name) || self.keyword.contains(name)
     }
 
     // Empty argument should be treated as no arg
     /// Register a new custom macro
-    pub fn register(
+    pub fn register_custom(
         &mut self, 
         name: &str,
         args: &str,
@@ -154,6 +159,23 @@ impl MacroMap {
             &Utils::trim(args), 
             body);
         self.custom.insert(name.to_owned(), mac);
+        Ok(())
+    }
+
+    // Empty argument should be treated as no arg
+    /// Register a new custom macro
+    pub fn register_custom_keyword(
+        &mut self, 
+        name: &str,
+        args: &str,
+        body: &str,
+    ) -> RadResult<()> {
+        // Trim all whitespaces and newlines from the string
+        let mac = CustomMacro::new(
+            &Utils::trim(name), 
+            &Utils::trim(args), 
+            body);
+        self.keyword.add_custom_keyword_macro(mac);
         Ok(())
     }
 

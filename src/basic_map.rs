@@ -535,8 +535,6 @@ impl BasicMacroMap {
 
     /// Undefine a macro 
     ///
-    /// 'Define' and 'BR' cannot be undefined because it is not actually a macro 
-    ///
     /// # Usage
     ///
     /// $undef(macro_name)
@@ -545,7 +543,8 @@ impl BasicMacroMap {
             let name = Utils::trim(&args[0]);
 
             let map = processor.get_map();
-            if map.contains(&name) { 
+            // Can only undefine custom or basic macros
+            if map.contains_basic_or_custom(&name) { 
                 map.undefine(&name);
             } else {
                 processor.log_error(&format!("Macro \"{}\" doesn't exist, therefore cannot undefine", name))?;
@@ -938,8 +937,6 @@ impl BasicMacroMap {
 
     /// Rename macro rule to other name
     ///
-    /// Define and BR can't be renamed.
-    ///
     /// # Usage
     ///
     /// $rename(name,target)
@@ -949,7 +946,7 @@ impl BasicMacroMap {
             let new = &args[1];
 
             let map = processor.get_map();
-            if map.contains(target) { 
+            if map.contains_basic_or_custom(target) { 
                 processor.get_map().rename(target, new);
             } else {
                 processor.log_error(&format!("Macro \"{}\" doesn't exist, therefore cannot rename", target))?;

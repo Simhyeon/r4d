@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 use std::collections::HashMap;
 use crate::{AuthType, RadError};
 use crate::utils::Utils;
-use crate::models::RadResult;
+use crate::models::{RadResult, CustomMacro};
 use crate::arg_parser::ArgParser;
 use crate::Processor;
 
@@ -11,7 +11,8 @@ type KMacroType = fn(&str, usize,&mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
 pub struct KeywordMacroMap {
-    pub(crate) macros : HashMap<&'static str, KMacroSign>,
+    pub(crate) macros : HashMap<String, KMacroSign>,
+    pub(crate) custom : HashMap<String, CustomMacro>,
 }
 
 impl KeywordMacroMap {
@@ -19,36 +20,38 @@ impl KeywordMacroMap {
     pub fn empty() -> Self {
         Self {
             macros: HashMap::new(),
+            custom: HashMap::new(),
         }
     }
 
     pub fn new() -> Self {
         let map = HashMap::from_iter(IntoIter::new([
-            ("bind",    KMacroSign::new("bind",    ["a_macro_name","a_value"],KeywordMacroMap::bind_depre)),
-            ("declare", KMacroSign::new("declare", ["a_macro_names"],KeywordMacroMap::declare)),
-            ("fassert", KMacroSign::new("fassert", ["a_lvalue","a_rvalue"],KeywordMacroMap::assert_fail)),
-            ("foreach", KMacroSign::new("foreach", ["a_array","a_body"],KeywordMacroMap::foreach)),
-            ("forloop", KMacroSign::new("forloop", ["a_min","a_max","a_body"],KeywordMacroMap::forloop)),
-            ("global",  KMacroSign::new("global",  ["a_macro_name","a_value"],KeywordMacroMap::global_depre)),
-            ("if",      KMacroSign::new("if",      ["a_boolean","a_if_expr"],KeywordMacroMap::if_cond)),
-            ("ifelse",  KMacroSign::new("ifelse",  ["a_boolean","a_if_expr","a_else_expr"],KeywordMacroMap::ifelse)),
-            ("ifdef",   KMacroSign::new("ifdef",   ["a_macro_name","a_if_expr"],KeywordMacroMap::ifdef)),
-            ("ifdefel", KMacroSign::new("ifdefel", ["a_macro_name","a_if_expr","a_else_expr"],KeywordMacroMap::ifdefel)),
-            ("ifenv",   KMacroSign::new("ifenv",   ["a_env_name","a_if_expr"],KeywordMacroMap::ifenv)),
-            ("ifenvel", KMacroSign::new("ifenvel", ["a_env_name","a_if_expr","a_else_expr"],KeywordMacroMap::ifenvel)),
-            ("let",     KMacroSign::new("let",     ["a_macro_name","a_value"],KeywordMacroMap::bind_to_local)),
-            ("pause",   KMacroSign::new("pause",   ["a_pause?"],KeywordMacroMap::pause)),
-            ("repl",    KMacroSign::new("repl",    ["a_macro_name","a_new_value"],KeywordMacroMap::replace)),
-            ("static",  KMacroSign::new("static",  ["a_macro_name","a_value"],KeywordMacroMap::define_static)),
-            ("sep",     KMacroSign::new("sep",     ["separator","a_array"],KeywordMacroMap::separate_array)),
+            ("bind".to_owned(),    KMacroSign::new("bind",    ["a_macro_name","a_value"],KeywordMacroMap::bind_depre)),
+            ("declare".to_owned(), KMacroSign::new("declare", ["a_macro_names"],KeywordMacroMap::declare)),
+            ("fassert".to_owned(), KMacroSign::new("fassert", ["a_lvalue","a_rvalue"],KeywordMacroMap::assert_fail)),
+            ("foreach".to_owned(), KMacroSign::new("foreach", ["a_array","a_body"],KeywordMacroMap::foreach)),
+            ("forloop".to_owned(), KMacroSign::new("forloop", ["a_min","a_max","a_body"],KeywordMacroMap::forloop)),
+            ("global".to_owned(),  KMacroSign::new("global",  ["a_macro_name","a_value"],KeywordMacroMap::global_depre)),
+            ("if".to_owned(),      KMacroSign::new("if",      ["a_boolean","a_if_expr"],KeywordMacroMap::if_cond)),
+            ("ifelse".to_owned(),  KMacroSign::new("ifelse",  ["a_boolean","a_if_expr","a_else_expr"],KeywordMacroMap::ifelse)),
+            ("ifdef".to_owned(),   KMacroSign::new("ifdef",   ["a_macro_name","a_if_expr"],KeywordMacroMap::ifdef)),
+            ("ifdefel".to_owned(), KMacroSign::new("ifdefel", ["a_macro_name","a_if_expr","a_else_expr"],KeywordMacroMap::ifdefel)),
+            ("ifenv".to_owned(),   KMacroSign::new("ifenv",   ["a_env_name","a_if_expr"],KeywordMacroMap::ifenv)),
+            ("ifenvel".to_owned(), KMacroSign::new("ifenvel", ["a_env_name","a_if_expr","a_else_expr"],KeywordMacroMap::ifenvel)),
+            ("let".to_owned(),     KMacroSign::new("let",     ["a_macro_name","a_value"],KeywordMacroMap::bind_to_local)),
+            ("pause".to_owned(),   KMacroSign::new("pause",   ["a_pause?"],KeywordMacroMap::pause)),
+            ("repl".to_owned(),    KMacroSign::new("repl",    ["a_macro_name","a_new_value"],KeywordMacroMap::replace)),
+            ("static".to_owned(),  KMacroSign::new("static",  ["a_macro_name","a_value"],KeywordMacroMap::define_static)),
+            ("sep".to_owned(),     KMacroSign::new("sep",     ["separator","a_array"],KeywordMacroMap::separate_array)),
         ]));
         Self {
             macros: map,
+            custom: HashMap::new(),
         }
     }
 
     /// Get Function pointer from map
-    pub fn get_func(&self, name: &str) -> Option<&KMacroType> {
+    pub fn get_keyword_macro(&self, name: &str) -> Option<&KMacroType> {
         if let Some(mac) = self.macros.get(name) {
             Some(&mac.logic)
         } else {
@@ -56,9 +59,22 @@ impl KeywordMacroMap {
         }
     }
 
+    // Get Custom keyword
+    pub fn get_custom_keyword_macro(&self, name: &str) -> Option<&CustomMacro> {
+        if let Some(mac) = self.custom.get(name) {
+            Some(&mac)
+        } else {
+            None
+        }
+    }
+
     /// Check if map contains the name
     pub fn contains(&self, name: &str) -> bool {
-        self.macros.contains_key(name)
+        self.macros.contains_key(name) || self.custom.contains_key(name)
+    }
+
+    pub fn add_custom_keyword_macro(&mut self, mac : CustomMacro) {
+        self.custom.insert(mac.name.clone(), mac);
     }
 
     // ----------
@@ -213,7 +229,7 @@ impl KeywordMacroMap {
             let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
             let map = processor.get_map();
 
-            let boolean = map.contains(&name);
+            let boolean = map.contains_any_macro(&name);
             // Return true or false by the definition
             if boolean { 
                 let if_expr = processor.parse_chunk_args(level,"",&args[1])?;
@@ -235,7 +251,7 @@ impl KeywordMacroMap {
             let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
             let map = processor.get_map();
 
-            let boolean = map.contains(&name);
+            let boolean = map.contains_any_macro(&name);
             // Return true or false by the definition
             if boolean { 
                 let if_expr = processor.parse_chunk_args(level,"",&args[1])?;
@@ -362,9 +378,9 @@ impl KeywordMacroMap {
             .map(|name| { (Utils::trim(name),"","") } )
             .collect::<Vec<(String,&str,&str)>>();
 
-        // Check overriding. Wanr or yield error
+        // Check overriding. Warn or yield error
         for (name,_,_) in custom_rules.iter() {
-            if processor.get_map().contains(&name) {
+            if processor.get_map().contains_any_macro(&name) {
                 if processor.state.strict {
                     return Err(RadError::InvalidMacroName(format!("Declaring a macro with a name already existing : \"{}\"", name)))
                 } else {
@@ -419,7 +435,7 @@ impl KeywordMacroMap {
             let name = processor.parse_chunk_args(level, "",&Utils::trim(&args[0]))?;
             let value = processor.parse_chunk_args(level, "",&Utils::trim(&args[1]))?;
             // Macro name already exists
-            if processor.get_map().contains(&name) {
+            if processor.get_map().contains_any_macro(&name) {
                 // Strict mode prevents overriding
                 // Return error
                 if processor.state.strict {

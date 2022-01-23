@@ -1172,9 +1172,16 @@ impl<'processor> Processor<'processor> {
 
         // Find keyword macro
         if self.map.is_keyword(name) {
-            let func = self.map.keyword.get_func(name).unwrap();
-            let final_result = func(&args, level,self)?;
-            return Ok(EvalResult::Eval(final_result));
+            if let Some(func) = self.map.keyword.get_keyword_macro(name) {
+                let final_result = func(&args, level,self)?;
+                return Ok(EvalResult::Eval(final_result));
+            } else { // keyword exists thus it should always work
+                if let Some(result) = self.invoke_rule(level, name, &args, greedy, true)? {
+                    return Ok(EvalResult::Eval(Some(result)));
+                } else {
+                    return Ok(EvalResult::InvalidArg);
+                }
+            }
         }
 
         // Find local macro
@@ -1190,7 +1197,7 @@ impl<'processor> Processor<'processor> {
         // custom macro comes before basic macro so that
         // user can override it
         if self.map.custom.contains_key(name) {
-            if let Some(result) = self.invoke_rule(level, name, &args, greedy)? {
+            if let Some(result) = self.invoke_rule(level, name, &args, greedy, false)? {
                 return Ok(EvalResult::Eval(Some(result)));
             } else {
                 return Ok(EvalResult::InvalidArg);
@@ -1217,15 +1224,27 @@ impl<'processor> Processor<'processor> {
     /// Invoke a custom rule and get a result
     ///
     /// Invoke rule evaluates body of macro rule because body is not evaluated on register process
-    fn invoke_rule(&mut self,level: usize ,name: &str, arg_values: &str, greedy: bool) -> RadResult<Option<String>> {
+    fn invoke_rule(&mut self,level: usize ,name: &str, arg_values: &str, greedy: bool, as_keyword: bool) -> RadResult<Option<String>> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
-        let rule = self.map.custom.get(name).unwrap().clone();
+        let rule = if !as_keyword {
+            self.map.custom.get(name).unwrap().clone()
+        } else {
+            self.map.keyword.get_custom_keyword_macro(name).unwrap().clone()
+        };
         let arg_types = &rule.args;
-        let args: Vec<String>;
+        let mut args: Vec<String>;
         // Set variable to local macros
         if let Some(content) = ArgParser::new().args_with_len(arg_values, arg_types.len(), greedy) {
             args = content;
+
+            // If keyword macro
+            // parse lazily
+            if as_keyword {
+                args = args.iter()
+                    .map(|arg| self.parse_chunk_args(level, name, arg))
+                    .collect::<RadResult<Vec<_>>>()?;
+            }
         } else {
             // Necessary arg count is bigger than given arguments
             self.log_error(&format!("{}'s arguments are not sufficient. Given {}, but needs {}", name, ArgParser::new().args_to_vec(arg_values, ',', GreedyState::Never).len(), arg_types.len()))?;
@@ -1248,17 +1267,21 @@ impl<'processor> Processor<'processor> {
     /// Add custom rule to macro map
     ///
     /// This doesn't clear fragment
-    fn add_rule(&mut self, frag: &MacroFragment, remainder: &mut String) -> RadResult<()> {
+    fn add_rule(&mut self, frag: &MacroFragment, remainder: &mut String, as_keyword: bool) -> RadResult<()> {
         if let Some((name,args,body)) = self.define_parser.parse_define(&frag.args) {
 
             // Strict mode
             // Overriding is prohibited
-            if self.state.strict && self.map.contains(&name) {
+            if self.state.strict && self.map.contains_any_macro(&name) {
                 self.log_error("Can't override exsiting macro on strict mode")?;
                 return Err(RadError::StrictPanic);
             }
 
-            self.map.register(&name, &args, &body)?;
+            if as_keyword {
+                self.map.register_custom_keyword(&name, &args, &body)?;
+            } else {
+                self.map.register_custom(&name, &args, &body)?;
+            }
         } else {
             self.log_error(&format!(
                     "Failed to register a macro : \"{}\"", 
@@ -1399,7 +1422,9 @@ impl<'processor> Processor<'processor> {
         frag.whole_string.push(ch);
 
         if frag.name == "define" { // define
-            self.lex_branch_end_frag_define(lexor, frag, remainder, level)?;
+            self.lex_branch_end_frag_define(lexor, frag, remainder, level, false)?;
+        } else if frag.name == "definek" { // define keyword
+            self.lex_branch_end_frag_define(lexor, frag, remainder, level, true)?;
         } else { // Invoke macro
             self.lex_branch_end_invoke(lexor,frag,remainder, level, caller)?;
         }
@@ -1407,8 +1432,8 @@ impl<'processor> Processor<'processor> {
     }
 
     // Level is necessary for debug feature
-    fn lex_branch_end_frag_define(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize) -> RadResult<()> {
-        self.add_rule(frag, remainder)?;
+    fn lex_branch_end_frag_define(&mut self,lexor: &mut Lexor, frag: &mut MacroFragment, remainder: &mut String, level: usize, as_keyword: bool) -> RadResult<()> {
+        self.add_rule(frag, remainder, as_keyword)?;
         lexor.escape_next_newline();
         #[cfg(feature = "debug")]
         self.check_debug_macro(frag, level)?;
