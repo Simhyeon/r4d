@@ -814,6 +814,12 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// Internal method that is executed by macro
+    ///
+    /// Target usages
+    /// - include
+    /// - temp_include
+    ///
     pub(crate) fn from_file_as_chunk(&mut self, path :impl AsRef<Path>) -> RadResult<Option<String>> {
         // Sandboxed environment, backup
         let backup = if self.state.sandbox { Some(self.backup()) } else { None };
