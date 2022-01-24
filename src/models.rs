@@ -114,6 +114,7 @@ impl MacroMap {
 
     pub fn clear_custom_macros(&mut self) {
         self.custom.clear();
+        self.keyword.custom.clear();
     }
 
     /// Create a new local macro
