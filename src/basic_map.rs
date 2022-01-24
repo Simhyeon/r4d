@@ -1116,10 +1116,10 @@ impl BasicMacroMap {
     fn head(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("Head requires positive integer number but got \"{}\"", &args[0])))?;
-            let content = &args[1];
+            let content = &args[1].chars().collect::<Vec<_>>();
             let length = *count.min(&content.len());
 
-            Ok(Some(content[0..length].to_string()))
+            Ok(Some(content[0..length].iter().collect()))
         } else {
             Err(RadError::InvalidArgument("head requires two argument".to_owned()))
         }
@@ -1152,10 +1152,10 @@ impl BasicMacroMap {
     fn tail(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("tail requires positive integer number but got \"{}\"", &args[0])))?;
-            let content = &args[1];
+            let content = &args[1].chars().collect::<Vec<_>>();
             let length = *count.min(&content.len());
 
-            Ok(Some(content[content.len()-length..content.len()].to_string()))
+            Ok(Some(content[content.len()-length..content.len()].iter().collect()))
         } else {
             Err(RadError::InvalidArgument("tail requires two argument".to_owned()))
         }
@@ -1190,12 +1190,12 @@ impl BasicMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, greedy) {
             let count = &args[0].parse::<usize>().map_err(|_| RadError::InvalidArgument(format!("strip requires positive integer number but got \"{}\"", &args[0])))?;
             let variant = &args[1];
-            let content = &args[2];
+            let content = &args[2].chars().collect::<Vec<_>>();
             let length = *count.min(&content.len());
 
             match variant.to_lowercase().as_str() {
-                "head" => Ok(Some(content[length..].to_string())),
-                "tail" => Ok(Some(content[..content.len() - length].to_string())),
+                "head" => Ok(Some(content[length..].iter().collect())),
+                "tail" => Ok(Some(content[..content.len() - length].iter().collect())),
                 _ => return Err(RadError::InvalidArgument(format!("Strip reqruies either head or tail but given \"{}\"", variant))),
             }
 
