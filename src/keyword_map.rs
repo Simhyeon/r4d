@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 use std::collections::HashMap;
 use crate::{AuthType, RadError};
 use crate::utils::Utils;
-use crate::models::{RadResult, CustomMacro};
+use crate::models::RadResult;
 use crate::arg_parser::ArgParser;
 use crate::Processor;
 

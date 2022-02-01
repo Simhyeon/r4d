@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fs::File;
 use std::path::Path;
 use crate::{basic_map::BasicMacroMap, keyword_map::KeywordMacroMap};
 use crate::error::RadError;
@@ -485,4 +486,11 @@ impl StorageOutput {
             Self::Text(text) => text.to_owned(),
         }
     }
+}
+
+pub enum RelayTarget {
+    None,
+    File(File),
+    Macro(String),
+    Temp,
 }

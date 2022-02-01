@@ -12,7 +12,7 @@ use std::iter::FromIterator;
 use std::path::{PathBuf,Path};
 use std::process::Command;
 use crate::error::RadError;
-use crate::models::{RadResult, FlowControl};
+use crate::models::{RadResult, FlowControl, RelayTarget};
 use crate::arg_parser::{ArgParser, GreedyState};
 use regex::Regex;
 use crate::utils::Utils;
@@ -100,6 +100,7 @@ impl BasicMacroMap {
             ("foldl".to_owned(),   BMacroSign::new("foldl",   ["a_content"],Self::fold_line)),
             ("grep".to_owned(),    BMacroSign::new("grep",    ["a_regex","a_content"],Self::grep)),
             ("head".to_owned(),    BMacroSign::new("head",    ["a_count","a_content"],Self::head)),
+            ("hold".to_owned(),    BMacroSign::new("hold",    ESR,Self::hold)),
             ("headl".to_owned(),   BMacroSign::new("headl",   ["a_count","a_content"],Self::head_line)),
             ("include".to_owned(), BMacroSign::new("include", ["a_filename"],Self::include)),
             ("index".to_owned(),   BMacroSign::new("index",   ["a_index","a_array"],Self::index_array)),
@@ -119,6 +120,7 @@ impl BasicMacroMap {
             ("pipeto".to_owned(),  BMacroSign::new("pipe",    ["a_pipe_name","a_value"],Self::pipe_to)),
             ("prec".to_owned(),    BMacroSign::new("prec",    ["a_value","a_precision"],Self::prec)),
             ("read".to_owned(),    BMacroSign::new("read",    ["a_filename"],Self::read)),
+            ("relay".to_owned(),   BMacroSign::new("relay",   ["a_type","a_target+"],Self::relay)),
             ("redir".to_owned(),   BMacroSign::new("redir",   ["a_redirect?"],Self::temp_redirect)),
             ("regex".to_owned(),   BMacroSign::new("regex",   ["a_source","a_match","a_substitution"],Self::regex_sub)),
             ("rename".to_owned(),  BMacroSign::new("rename",  ["a_macro_name","a_new_name"],Self::rename_call)),
@@ -1494,6 +1496,7 @@ impl BasicMacroMap {
     ///
     /// $redir(true) 
     /// $redir(false) 
+    #[deprecated(since = "1.6", note = "redir is deprecated and will be removed in 2.0. Use relay and hold instead")]
     fn temp_redirect(args: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("redir", AuthType::FOUT,p)? {
             return Ok(None);
@@ -1504,11 +1507,69 @@ impl BasicMacroMap {
             } else {
                 return Err(RadError::InvalidArgument(format!("Redir's agument should be valid boolean value but given \"{}\"", &args[0])));
             };
-            p.state.redirect = toggle;
+            if toggle {
+                p.state.relay = RelayTarget::Temp;
+            }  else {
+                p.state.relay = RelayTarget::None;
+            }
             Ok(None)
         } else {
             Err(RadError::InvalidArgument("Redir requires an argument".to_owned()))
         }
+    }
+
+    /// Relay all text into given target
+    ///
+    /// Every text including non macro calls are all sent to relay target
+    ///
+    /// # Usage
+    ///
+    /// $relay(type,argument) 
+    fn relay(args: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
+        let args: Vec<&str> = args.split(',').collect();
+        if args.len() == 0 {
+            return Err(RadError::InvalidArgument("relay at least requires an argument".to_owned()));
+        }
+        let raw_type = args[0];
+        let relay_type = match raw_type {
+            "temp" => {
+                if !Utils::is_granted("relay", AuthType::FOUT,p)? {
+                    return Ok(None);
+                }
+                RelayTarget::Temp 
+            }
+            "file" => {
+                if !Utils::is_granted("relay", AuthType::FOUT,p)? {
+                    return Ok(None);
+                }
+                if args.len() == 1 {
+                    return Err(RadError::InvalidArgument("relay requires second argument as file name for file relaying".to_owned()));
+                }
+                RelayTarget::File(std::fs::File::create(args[1])?)
+            }
+            "macro" => {
+                if args.len() == 1 {
+                    return Err(RadError::InvalidArgument("relay requires second argument as macro name for macro relaying".to_owned()));
+                }
+                if !p.get_map().contains_any_macro(args[1]) {
+                    return Err(RadError::InvalidMacroName(format!("Cannot relay to non-exsitent macro \"{}\"", args[1])));
+                }
+                RelayTarget::Macro(args[1].to_owned())
+            }
+            _ => return Err(RadError::InvalidArgument(format!("Given type \"{}\" is not a valid relay target", args[0]))),
+        };
+        p.state.relay = relay_type;
+        Ok(None)
+    }
+
+    /// Disable relaying
+    ///
+    /// # Usage
+    ///
+    /// $hold() 
+    fn hold(_: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
+        p.state.relay = RelayTarget::None;
+        Ok(None)
     }
 
     /// Set temporary file

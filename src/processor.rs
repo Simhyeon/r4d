@@ -118,7 +118,7 @@ use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl};
+use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl, RelayTarget};
 #[cfg(feature = "storage")]
 use crate::models::{RadStorage, StorageOutput};
 #[cfg(feature = "signature")]
@@ -167,7 +167,7 @@ pub(crate) struct ProcessorState {
     pub pipe_truncate: bool,
     pipe_map: HashMap<String,String>,
     pub purge: bool,
-    pub redirect: bool,
+    pub relay: RelayTarget,
     pub sandbox: bool,
     pub strict: bool,
     pub comment_type: CommentType,
@@ -191,7 +191,7 @@ impl ProcessorState {
             pipe_truncate: false,
             pipe_map: HashMap::new(),
             paused: false,
-            redirect: false,
+            relay: RelayTarget::None,
             purge: false,
             strict: true,
             comment_type: CommentType::None,
@@ -1304,15 +1304,26 @@ impl<'processor> Processor<'processor> {
         #[cfg(feature = "debug")]
         self.debugger.write_to_processed(content)?;
 
-        // Write out to file or stdout
-        if self.state.redirect {
-            self.state.temp_target.1.write(content.as_bytes())?;
-        } else {
-            match &mut self.write_option {
-                WriteOption::File(f) => f.write_all(content.as_bytes())?,
-                WriteOption::Terminal => print!("{}", content),
-                WriteOption::Variable(var) => var.push_str(content),
-                WriteOption::Discard => () // Don't print anything
+        match &mut self.state.relay {
+            RelayTarget::Macro(mac) => {
+                if !self.map.contains_any_macro(mac) {
+                    return Err(RadError::InvalidMacroName(format!("Cannot relay to non-exsitent macro \"{}\"", mac)));
+                }
+                self.map.append(&mac, content);
+            }
+            RelayTarget::File(file) => {
+                file.write_all(content.as_bytes())?;
+            }
+            RelayTarget::Temp => {
+                self.state.temp_target.1.write(content.as_bytes())?;
+            }
+            RelayTarget::None => {
+                match &mut self.write_option {
+                    WriteOption::File(f) => f.write_all(content.as_bytes())?,
+                    WriteOption::Terminal => print!("{}", content),
+                    WriteOption::Variable(var) => var.push_str(content),
+                    WriteOption::Discard => () // Don't print anything
+                }
             }
         }
 
