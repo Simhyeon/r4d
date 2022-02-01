@@ -179,6 +179,7 @@ pub(crate) struct ProcessorState {
     pub macro_char : Option<char>,
     pub flow_control : FlowControl,
     pub deny_newline : bool,
+    pub escape_newline : bool,
 }
 
 impl ProcessorState {
@@ -202,6 +203,7 @@ impl ProcessorState {
             macro_char: None,
             flow_control: FlowControl::None,
             deny_newline: false,
+            escape_newline: false,
         }
     }
 
@@ -894,7 +896,7 @@ impl<'processor> Processor<'processor> {
             self.debugger.inc_line_number();
         } // Loop end
 
-        // Recover
+        // Recover previous state from sandboxed processing
         if let Some(backup) = backup { self.recover(backup)?; self.state.sandbox = false; }
 
         if use_container {
@@ -1065,6 +1067,12 @@ impl<'processor> Processor<'processor> {
 
         // Reset lexor's escape_nl 
         lexor.reset_escape();
+
+        // If escape_nl is set as global attribute, set escape_newline
+        if self.state.escape_newline {
+            lexor.escape_next_newline();
+            self.state.escape_newline = false;
+        }
 
         // Check comment line
         // If it is a comment then return nothing and write nothing

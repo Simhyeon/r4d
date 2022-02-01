@@ -31,6 +31,7 @@ use cindex::OutOption;
 lazy_static! {
     static ref CLRF_MATCH: Regex = Regex::new(r#"\r\n"#).unwrap();
     static ref CHOMP_MATCH : Regex = Regex::new(r#"\n\s*\n"#).expect("Failed to crate chomp regex");
+    static ref NUM_MATCH : Regex = Regex::new(r#"\d.*?"#).expect("Failed to crate number regex");
 }
 
 /// Type signature of basic macros
@@ -81,7 +82,7 @@ impl BasicMacroMap {
             ("append".to_owned(),  BMacroSign::new("append",  ["a_macro_name","a_content"],Self::append)),
             ("arr".to_owned(),     BMacroSign::new("arr",     ["a_values"],Self::array)),
             ("assert".to_owned(),  BMacroSign::new("assert",  ["a_lvalue","a_rvalue"],Self::assert)),
-            ("nassert".to_owned(), BMacroSign::new("nassert", ["a_lvalue","a_rvalue"],Self::assert_ne)),
+            ("ceil".to_owned(),    BMacroSign::new("ceil",    ["a_number"],Self::get_ceiling)),
             ("chomp".to_owned(),   BMacroSign::new("chomp",   ["a_content"],Self::chomp)),
             ("comp".to_owned(),    BMacroSign::new("comp",    ["a_content"],Self::compress)),
             ("count".to_owned(),   BMacroSign::new("count",   ["a_array"],Self::count)),
@@ -89,26 +90,34 @@ impl BasicMacroMap {
             ("countl".to_owned(),  BMacroSign::new("countl",  ["a_content"],Self::count_lines)),
             ("dnl".to_owned(),     BMacroSign::new("dnl",     ESR,Self::deny_newline)),
             ("env".to_owned(),     BMacroSign::new("env",     ["a_env_name"],Self::get_env)),
+            ("enl".to_owned(),     BMacroSign::new("enl",     ESR,Self::escape_newline)),
             ("envset".to_owned(),  BMacroSign::new("envset",  ["a_env_name","a_env_value"],Self::set_env)),
             ("escape".to_owned(),  BMacroSign::new("escape",  ESR,Self::escape)),
             ("exit".to_owned(),    BMacroSign::new("exit",    ESR,Self::exit)),
+            ("fileout".to_owned(), BMacroSign::new("fileout", ["a_truncate?","a_filename","a_content"],Self::file_out)),
+            ("floor".to_owned(),   BMacroSign::new("floor",   ["a_number"],Self::get_floor)),
             ("fold".to_owned(),    BMacroSign::new("fold",    ["a_content"],Self::fold)),
             ("foldl".to_owned(),   BMacroSign::new("foldl",   ["a_content"],Self::fold_line)),
-            ("fileout".to_owned(), BMacroSign::new("fileout", ["a_truncate?","a_filename","a_content"],Self::file_out)),
             ("grep".to_owned(),    BMacroSign::new("grep",    ["a_regex","a_content"],Self::grep)),
             ("head".to_owned(),    BMacroSign::new("head",    ["a_count","a_content"],Self::head)),
             ("headl".to_owned(),   BMacroSign::new("headl",   ["a_count","a_content"],Self::head_line)),
             ("include".to_owned(), BMacroSign::new("include", ["a_filename"],Self::include)),
             ("index".to_owned(),   BMacroSign::new("index",   ["a_index","a_array"],Self::index_array)),
             ("len".to_owned(),     BMacroSign::new("len",     ["a_string"],Self::len)),
+            ("lower".to_owned(),   BMacroSign::new("lower",   ["a_text"],Self::lower)),
+            ("max".to_owned(),     BMacroSign::new("max",     ["a_array"],Self::get_max)),
+            ("min".to_owned(),     BMacroSign::new("min",     ["a_array"],Self::get_min)),
             ("name".to_owned(),    BMacroSign::new("name",    ["a_path"],Self::get_name)),
+            ("nassert".to_owned(), BMacroSign::new("nassert", ["a_lvalue","a_rvalue"],Self::assert_ne)),
             ("not".to_owned(),     BMacroSign::new("not",     ["a_boolean"],Self::not)),
+            ("num".to_owned(),     BMacroSign::new("num",     ["a_text"],Self::get_number)),
             ("nl".to_owned(),      BMacroSign::new("nl",      ESR,Self::newline)),
-            ("parent".to_owned(),  BMacroSign::new("parent",  ["a_path"],Self::get_parent)),
             ("panic".to_owned(),   BMacroSign::new("panic",   ["a_msg"],Self::manual_panic)),
+            ("parent".to_owned(),  BMacroSign::new("parent",  ["a_path"],Self::get_parent)),
             ("path".to_owned(),    BMacroSign::new("path",    ["a_paths"],Self::merge_path)),
             ("pipe".to_owned(),    BMacroSign::new("pipe",    ["a_value"],Self::pipe)),
             ("pipeto".to_owned(),  BMacroSign::new("pipe",    ["a_pipe_name","a_value"],Self::pipe_to)),
+            ("prec".to_owned(),    BMacroSign::new("prec",    ["a_value","a_precision"],Self::prec)),
             ("read".to_owned(),    BMacroSign::new("read",    ["a_filename"],Self::read)),
             ("redir".to_owned(),   BMacroSign::new("redir",   ["a_redirect?"],Self::temp_redirect)),
             ("regex".to_owned(),   BMacroSign::new("regex",   ["a_source","a_match","a_substitution"],Self::regex_sub)),
@@ -129,6 +138,7 @@ impl BasicMacroMap {
             ("trim".to_owned(),    BMacroSign::new("trim",    ["a_content"],Self::trim)),
             ("triml".to_owned(),   BMacroSign::new("triml",   ["a_content"],Self::triml)),
             ("undef".to_owned(),   BMacroSign::new("undef",   ["a_macro_name"],Self::undefine_call)),
+            ("upper".to_owned(),   BMacroSign::new("upper",   ["a_text"],Self::capitalize)),
             // THis is simply a placeholder
             ("define".to_owned(),  BMacroSign::new("define",  ESR,Self::define_type)),
         ]));
@@ -142,6 +152,7 @@ impl BasicMacroMap {
         #[cfg(feature = "cindex")]
         {
             map.insert("regcsv".to_owned(),  BMacroSign::new("regcsv",   ["a_table_name","a_table"], Self::cindex_register));
+            map.insert("dropcsv".to_owned(),  BMacroSign::new("dropcsv", ["a_table_name"], Self::cindex_drop));
             map.insert("query".to_owned(),   BMacroSign::new("query",    ["a_query"], Self::cindex_query));
             map.insert("queries".to_owned(), BMacroSign::new("queries",  ["a_query"], Self::cindex_query_list));
         }
@@ -150,11 +161,16 @@ impl BasicMacroMap {
         {
             map.insert("time".to_owned(),    BMacroSign::new("time",ESR,Self::time));
             map.insert("date".to_owned(),    BMacroSign::new("date",ESR,Self::date));
+            map.insert("tarray".to_owned(),  BMacroSign::new("tarray",["a_second"],Self::tarray));
+            map.insert("hms".to_owned(),     BMacroSign::new("hms",["a_second"],Self::hms));
         }
         #[cfg(feature = "lipsum")]
         map.insert("lipsum".to_owned(),      BMacroSign::new("lipsum",["a_word_count"],Self::lipsum_words));
         #[cfg(feature = "evalexpr")]
-        map.insert("eval".to_owned(),        BMacroSign::new("eval",  ["a_expression"],Self::eval));
+        {
+            map.insert("eval".to_owned(),        BMacroSign::new("eval",  ["a_expression"],Self::eval));
+            map.insert("evalk".to_owned(),       BMacroSign::new("evalk", ["a_expression"],Self::eval_keep));
+        }
         #[cfg(feature = "textwrap")]
         map.insert("wrap".to_owned(),        BMacroSign::new("wrap",  ["a_width","a_content"],Self::wrap));
 
@@ -232,6 +248,54 @@ impl BasicMacroMap {
         Ok(Some(format!("{}", chrono::offset::Local::now().format("%H:%M:%S"))))
     }
 
+    /// Get formattted time from given second
+    ///
+    /// # Usage
+    ///
+    /// $tarray(HH:MM:SS)
+    #[cfg(feature = "chrono")]
+    fn tarray(args: &str, _: bool, _ : &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+            let seconds = &args[0].parse::<usize>()
+                .map_err(|_| RadError::InvalidArgument(format!("Could not convert given value \"{}\" into a number", args[0])))?;
+            let hour = seconds / 3600;
+            let minute = seconds % 3600 / 60;
+            let second = seconds % 3600 % 60;
+            let mut arr = second.to_string();
+            if minute != 0 {
+                arr.push_str(",");
+                arr.push_str(&minute.to_string());
+            }
+            if hour != 0 {
+                arr.push_str(",");
+                arr.push_str(&hour.to_string());
+            }
+            Ok(Some(arr))
+        } else {
+            Err(RadError::InvalidArgument("tarray requires an argument".to_owned()))
+        }
+    }
+
+    /// Format time as hms
+    ///
+    /// # Usage
+    ///
+    /// $hms(2020)
+    #[cfg(feature = "chrono")]
+    fn hms(args: &str, _: bool, _ : &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+            let seconds = &args[0].parse::<usize>()
+                .map_err(|_| RadError::InvalidArgument(format!("Could not convert given value \"{}\" into a number", args[0])))?;
+            let hour = seconds / 3600;
+            let minute = seconds % 3600 / 60;
+            let second = seconds % 3600 % 60;
+            let time = format!("{:02}:{:02}:{:02}",hour,minute,second);
+            Ok(Some(time))
+        } else {
+            Err(RadError::InvalidArgument("hms sub requires an argument".to_owned()))
+        }
+    }
+
     /// Print out current date
     ///
     /// # Usage
@@ -274,8 +338,26 @@ impl BasicMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let formula = &args[0];
             let result = evalexpr::eval(formula)?;
-            // TODO Enable floating points length (or something similar)
             Ok(Some(result.to_string()))
+        } else {
+            Err(RadError::InvalidArgument("Eval requires an argument".to_owned()))
+        }
+    }
+
+    /// Evaluate given expression but keep original expression
+    ///
+    /// This returns true, false or evaluated number
+    ///
+    /// # Usage
+    ///
+    /// $eval(expression)
+    #[cfg(feature = "evalexpr")]
+    fn eval_keep(args: &str, greedy: bool,_: &mut Processor ) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
+            // This is the processed raw formula
+            let formula = Utils::trim(&args[0]); 
+            let result = format!("{} = {}",formula,evalexpr::eval(&formula)?);
+            Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument("Eval requires an argument".to_owned()))
         }
@@ -830,6 +912,16 @@ impl BasicMacroMap {
     /// $dnl()
     fn deny_newline(_: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
         p.state.deny_newline = true;
+        Ok(None)
+    }
+
+    /// escape new line
+    ///
+    /// # Usage
+    ///
+    /// $enl()
+    fn escape_newline(_: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
+        p.state.escape_newline = true;
         Ok(None)
     }
 
@@ -1436,6 +1528,144 @@ impl BasicMacroMap {
         }
     }
 
+    /// Get number
+    ///
+    /// # Usage
+    ///
+    /// $num(20%)
+    fn get_number(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
+            let src = Utils::trim(&args[0]);
+            let captured = NUM_MATCH.captures(&src).ok_or(RadError::InvalidArgument(format!("No digits to extract from \"{}\"", src)))?;
+            if let Some(num) = captured.get(0) { 
+                Ok(Some(num.as_str().to_owned()))
+            } else {
+                Err(RadError::InvalidArgument(format!("No digits to extract from \"{}\"", src)))
+            }
+        } else {
+            Err(RadError::InvalidArgument("num requires an argument".to_owned()))
+        }
+    }
+
+    /// Capitalize text
+    ///
+    /// # Usage
+    ///
+    /// $upper(hello world)
+    fn capitalize(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
+            let src = Utils::trim(&args[0]);
+            Ok(Some(src.to_uppercase()))
+        } else {
+            Err(RadError::InvalidArgument("cap requires an argument".to_owned()))
+        }
+    }
+
+    /// Lower text
+    ///
+    /// # Usage
+    ///
+    /// $lower(hello world)
+    fn lower(args: &str, greedy: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
+            let src = Utils::trim(&args[0]);
+            Ok(Some(src.to_lowercase()))
+        } else {
+            Err(RadError::InvalidArgument("cap requires an argument".to_owned()))
+        }
+    }
+
+    /// Get max value from array
+    ///
+    /// # Usage
+    ///
+    /// $max(1,2,3,4,5)
+    fn get_max(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+            let content = Utils::trim(&args[0]);
+            if content.is_empty() {
+                return Err(RadError::InvalidArgument("max requires an array to process but given empty value".to_owned()));
+            }
+            let max = content.split(',').max().unwrap();
+            Ok(Some(max.to_string()))
+        } else {
+            Err(RadError::InvalidArgument("cap requires an argument".to_owned()))
+        }
+    }
+
+    /// Get min value from array
+    ///
+    /// # Usage
+    ///
+    /// $min(1,2,3,4,5)
+    fn get_min(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+            let content = Utils::trim(&args[0]);
+            if content.is_empty() {
+                return Err(RadError::InvalidArgument("min requires an array to process but given empty value".to_owned()));
+            }
+            let max = content.split(',').min().unwrap();
+            Ok(Some(max.to_string()))
+        } else {
+            Err(RadError::InvalidArgument("cap requires an argument".to_owned()))
+        }
+    }
+
+    /// Get ceiling value
+    ///
+    /// # Usage
+    ///
+    /// $ceiling(1.56)
+    fn get_ceiling(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+            let number = Utils::trim(&args[0])
+                .parse::<f64>()
+                .map_err(|_| RadError::InvalidArgument(format!("Could not convert given value \"{}\" into a floating point number", args[0])))?;
+            Ok(Some(number.ceil().to_string()))
+        } else {
+            Err(RadError::InvalidArgument("ceil requires an argument".to_owned()))
+        }
+    }
+
+    /// Get floor value
+    ///
+    /// # Usage
+    ///
+    /// $floor(1.23)
+    fn get_floor(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+            let number = Utils::trim(&args[0])
+                .parse::<f64>()
+                .map_err(|_| RadError::InvalidArgument(format!("Could not convert given value \"{}\" into a floating point number", args[0])))?;
+            Ok(Some(number.floor().to_string()))
+        } else {
+            Err(RadError::InvalidArgument("floor requires an argument".to_owned()))
+        }
+    }
+
+    /// Precision
+    ///
+    /// # Usage
+    ///
+    /// $prec(1.56)
+    fn prec(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let number = Utils::trim(&args[0])
+                .parse::<f64>()
+                .map_err(|_| RadError::InvalidArgument(format!("Could not convert given value \"{}\" into a floating point number", args[0])))?;
+            let precision = Utils::trim(&args[1])
+                .parse::<usize>()
+                .map_err(|_| RadError::InvalidArgument(format!("Could not convert given value \"{}\" into a precision", args[1])))?;
+            let decimal_precision = 10.0f64.powi(precision as i32);
+            let converted = f64::trunc(number  * decimal_precision ) / decimal_precision ;
+            let formatted = format!("{:.1$}",converted,precision);
+
+            Ok(Some(formatted))
+        } else {
+            Err(RadError::InvalidArgument("ceil requires an argument".to_owned()))
+        }
+    }
+
     /// Enable hook
     ///
     /// * Usage
@@ -1523,7 +1753,23 @@ impl BasicMacroMap {
     #[cfg(feature = "cindex")]
     fn cindex_register(args: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            if !processor.indexer.contains_table(&args[0]) {
+                return Err(RadError::InvalidArgument(format!("Cannot register exsiting table :{}", args[0])));
+            }
             processor.indexer.add_table_fast(&args[0], args[1].as_bytes())?;
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("regcsv requires two arguments".to_owned()))
+        }
+    }
+
+    /// Drop a table
+    ///
+    /// $dropcsv(table_name)
+    #[cfg(feature = "cindex")]
+    fn cindex_drop(args: &str, _: bool, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+            processor.indexer.drop_table(&args[0]);
             Ok(None)
         } else {
             Err(RadError::InvalidArgument("regcsv requires two arguments".to_owned()))
