@@ -3,8 +3,8 @@
 //! Module about argument parsing
 
 use std::{iter::Peekable, str::Chars};
-
 use crate::consts::{ESCAPE_CHAR, LIT_CHAR};
+
 pub(crate) struct ArgParser{
     values :Vec<String>,
     previous : Option<char>,

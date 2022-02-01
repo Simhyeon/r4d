@@ -53,3 +53,4 @@ pub const RDB_HELP: &'static str = include_str!("debug_help_message.txt");
 /// Empty String aRray
 pub const ESR: [&str;0] = [];
 
+pub const DEFINE_KEYWORD: &'static str = "define";

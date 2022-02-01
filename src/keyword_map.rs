@@ -12,7 +12,6 @@ type KMacroType = fn(&str, usize,&mut Processor) -> RadResult<Option<String>>;
 #[derive(Clone)]
 pub struct KeywordMacroMap {
     pub(crate) macros : HashMap<String, KMacroSign>,
-    pub(crate) custom : HashMap<String, CustomMacro>,
 }
 
 impl KeywordMacroMap {
@@ -20,7 +19,6 @@ impl KeywordMacroMap {
     pub fn empty() -> Self {
         Self {
             macros: HashMap::new(),
-            custom: HashMap::new(),
         }
     }
 
@@ -46,7 +44,6 @@ impl KeywordMacroMap {
         ]));
         Self {
             macros: map,
-            custom: HashMap::new(),
         }
     }
 
@@ -59,22 +56,9 @@ impl KeywordMacroMap {
         }
     }
 
-    // Get Custom keyword
-    pub fn get_custom_keyword_macro(&self, name: &str) -> Option<&CustomMacro> {
-        if let Some(mac) = self.custom.get(name) {
-            Some(&mac)
-        } else {
-            None
-        }
-    }
-
     /// Check if map contains the name
     pub fn contains(&self, name: &str) -> bool {
-        self.macros.contains_key(name) || self.custom.contains_key(name)
-    }
-
-    pub fn add_custom_keyword_macro(&mut self, mac : CustomMacro) {
-        self.custom.insert(mac.name.clone(), mac);
+        self.macros.contains_key(name)
     }
 
     // ----------

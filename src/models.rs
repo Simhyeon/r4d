@@ -114,7 +114,6 @@ impl MacroMap {
 
     pub fn clear_custom_macros(&mut self) {
         self.custom.clear();
-        self.keyword.custom.clear();
     }
 
     /// Create a new local macro
@@ -160,23 +159,6 @@ impl MacroMap {
             &Utils::trim(args), 
             body);
         self.custom.insert(name.to_owned(), mac);
-        Ok(())
-    }
-
-    // Empty argument should be treated as no arg
-    /// Register a new custom macro
-    pub fn register_custom_keyword(
-        &mut self, 
-        name: &str,
-        args: &str,
-        body: &str,
-    ) -> RadResult<()> {
-        // Trim all whitespaces and newlines from the string
-        let mac = CustomMacro::new(
-            &Utils::trim(name), 
-            &Utils::trim(args), 
-            body);
-        self.keyword.add_custom_keyword_macro(mac);
         Ok(())
     }
 
@@ -395,7 +377,7 @@ impl MacroFragment {
     }
 
     pub(crate) fn has_attribute(&self) -> bool {
-        self.pipe || self.greedy || self.yield_literal || self.trimmed
+        self.pipe || self.greedy || self.yield_literal || self.trimmed 
     }
 }
 
