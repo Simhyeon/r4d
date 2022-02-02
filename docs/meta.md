@@ -1,21 +1,24 @@
 ### Changed
 
-* [x] New basic macros
-	- head
-	- headl
-	- tail
-	- taill
-	- strip
-	- stripl
-	- Grep  ( Only print matched lines )
-	- Index ( Get indexed value from array )
-	- Sort  ( Sort array by values )
-	- Sortl ( Sort lines by values )
-	- Fold  ( Fold new lines to single line )
-	- Foldl
-	- Count ( Get count of array )
-	- Countw( Get count of array )
-	- Countl( Get count of lines )
+* [x] BUG! : Fix unicode tail,head,strip: God damn it
+* [x] New macro : $enl() remove right next newline
+* [x] Error on duplicate table name
+* [x] Add droptable macro
+* [x] Redirect refactor with relay and hold macro
+
+* [x] Possibly some mathematics related macros
+	* [x] Min
+	* [x] Max
+	* [x] Ceil
+	* [x] Floor
+	* [x] Precision ( Floating number )
+* [x] Some more text processing
+	* [x] Cap -> captialize
+	* [x] Low -> lower
+	* [x] Num -> strip number part from given text
+	* [x] Rev -> Reverse an array
+	* [x] Eval with original formula support
+	* [x] tarray & hms
 
 ### TODOs
 
@@ -23,9 +26,14 @@
 	- Read as processed
 	- Edit ad raw
 
+* [ ] rcsv format
+- Radable csv 
+- Consists of two part
+- Data and Rows
+- User can easily define multiline content as data
+
 #### 2.0
 
-* [ ] Keyword attribute
 * [ ] Syntax consistencies
 
 * [ ] Export to wasm (Possibly later)
@@ -53,7 +61,25 @@ whole parsing process, meh I don't think I can... Focus on define parsing.
 - Refactor codes into multiple chunks of functions for better readability
 - Use faster hashmap 
 
-## Delayed or paused
+## Delayed, paused or stopped
+
+* [-] Error and warning types
+- Enable user to suppress specific types of warning
+- Personally, I deicded it is not improtant or demanded feature. Thus discarded.
+
+* [-] File feature with commands such as ls, pwd
+- R4d is not a m4 replacement rather, it is an alternative for text processing.
+R4d aims to be an booster of documentation not a build script. Thus extra
+complexity for ls, pwd support are outrageous.
+
+* [-] Custom keyword macro
+- Every macro can be used as basic macro
+- And I could not achieve what i wanted because I wanted optional parsing, which is hard to add as interface. 
+- However, to thin of combining if and function is actually impossible in plain programming languages. Of course there are no reasons why not for r4d? But I don't think it is very indeed a demand
+
+* [-] Define regional macro -> Is it necessary? Or is it desirable?
+- This maeks macro execution and debugging so much harder
+- And also makes structure too complicated for small gain
 
 * [-] Print macro information might be also useful
 - However I think it needs a serious refactor of debugger logics.
@@ -109,6 +135,24 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [x] New basic macros
+	- head
+	- headl
+	- tail
+	- taill
+	- strip
+	- stripl
+	- Grep  ( Only print matched lines )
+	- Index ( Get indexed value from array )
+	- Sort  ( Sort array by values )
+	- Sortl ( Sort lines by values )
+	- Fold  ( Fold new lines to single line )
+	- Foldl
+	- Count ( Get count of array )
+	- Countw( Get count of array )
+	- Countl( Get count of lines )
+
 * [x] Storage function
 	* [x] update
 	* [x] extract

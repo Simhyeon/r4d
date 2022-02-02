@@ -31,6 +31,7 @@ For assertion macros refer [debug part](./debug.md)
 * [read](#read)
 * [temp](#tempin-tempout-tempto)
 * [redir](#redir)
+* [relay,halt](#relay-halt)
 * [fileout](#fileout)
 * [env](#env)
 * [envset](#envset)
@@ -50,6 +51,15 @@ For assertion macros refer [debug part](./debug.md)
 * [sep](#sep-keyword-macro)
 * [foreach](#foreach-keyword-macro)
 * [forloop](#forloop-keyword-macro)
+* [min](#min)
+* [max](#max)
+* [ceil](#ceil)
+* [floor](#floor)
+* [prec](#prec)
+* [cap](#cap)
+* [low](#low)
+* [num](#num)
+* [rev](#rev)
 * [eval](#eval)
 * [if](#if--keyword-macro)
 * [ifelse](#ifelse--keyword-macro)
@@ -72,6 +82,7 @@ For assertion macros refer [debug part](./debug.md)
 * [trim, chomp, comp, triml](#trim-chomp-comp-triml)
 * [wrap](#wrap)
 * [nl](#nl)
+* [enl](#enl)
 * [dnl](#dnl)
 * [lipsum](#lipsum)
 * [time, date](#time-date)
@@ -244,21 +255,29 @@ Hello world
 {"name":"simon creek"}
 ```
 
-### redir
+### relay halt
 
-AUTH : FOUT
+Macro ```redir```  is deprecated and will be removed in 2.0 version. Use
+```relay``` and ```halt``` instead.
 
-Redirect all input into a temp file.
+Relay sends all text into relay target
 
 ```
-$redir(true)
-$foreach(\*1,2,3*\,Value: $:
-)
-1,2,3,4,5
-$redir(false)
+% Available relay targets are
+% - temp 
+% - file
+% - macro
+$relay(temp)
+$relay(file,out.txt)
+$declare(relayed)
+$relay(macro,relayed)
 ===
-% Yield nothing regardless of -o option
-% Content is saved to current temp file.
+```
+
+halt stops relaying
+
+```
+$halt()
 ```
 
 ### fileout
@@ -514,18 +533,115 @@ Number: 4
 Number: 5
 
 ```
+
+### max
+
+Get the biggest number from given array.
+
+```
+$max(1,2,3,4,5)
+===
+5
+```
+
+### min
+
+Get the smallest number from given array.
+
+```
+$min(1,2,3,4,5)
+===
+1
+```
+
+### ceil
+
+Get ceiling from given number
+
+```
+$ceil(1.56)
+===
+2
+```
+
+### floor
+
+Get floor from given number
+
+```
+$floor(1.56)
+===
+1
+```
+
+### prec
+
+Format number with precision
+
+```
+$prec($eval(0.1 + 0.2),2)
+===
+0.30
+```
+
+### cap
+
+Capitalize given text
+
+```
+$cap(abcde)
+===
+ABCDE
+```
+
+### low
+
+Lower given text
+
+```
+$low(ABCDE)
+===
+abcde
+```
+
+### num
+
+Extract number from given text
+
+```
+$num(1km/s)
+$eval($num(1km/s) + $num(3km/s))
+===
+1
+4
+```
+
+### rev
+
+Reverse an array
+
+```
+$rev(1,2,3,4,5)
+===
+5,4,3,2,1
+```
+
 ### eval
 
 Eval evaluates expression. This macro(function) uses rust's evalexpr crate
 [crate link](https://crates.io/crates/evalexpr). Therefore argument formula
 follows evalexpr's syntax.
 
+You can keep the origianl formaul with evalk variant.
+
 ```
 $eval(1+2)
 $eval(0.1+0.2)
+$evalk( 1 + 2 )
 ===
 3
 0.30000000000000004
+1 + 2 = 3
 ```
 
 ### if (keyword macro)
@@ -910,9 +1026,20 @@ $nl()
 % This is useful when you want to construct an output in one-liner
 ```
 
+### enl
+
+Escape following next new line
+
+```
+Before $enl()
+After
+===
+Before After
+```
+
 ### dnl
 
-Deny newline after macro execution. This have no effect if next folloing line
+Deny newline after macro execution. This have no effect if next following line
 is not empty line.
 
 This newline is not the following newline character but a new empty line.
@@ -947,6 +1074,16 @@ $date()
 ===
 03:17:11
 2021-08-20
+```
+
+### hms
+
+Format second into hh:mm:ss
+
+```
+$hms(10500)
+===
+02:55:00
 ```
 
 ### from
@@ -1040,6 +1177,17 @@ Register a csv as a table. Registered table can be queries with query macro.
 ```
 $regcsv+(table_name,a,b,c
 1,2,3)
+===
+```
+
+### dropcsv
+
+feature: cindex
+
+Drop a csv table
+
+```
+$dropcsv(table_name)
 ===
 ```
 
