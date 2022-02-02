@@ -100,7 +100,7 @@ impl BasicMacroMap {
             ("foldl".to_owned(),   BMacroSign::new("foldl",   ["a_content"],Self::fold_line)),
             ("grep".to_owned(),    BMacroSign::new("grep",    ["a_regex","a_content"],Self::grep)),
             ("head".to_owned(),    BMacroSign::new("head",    ["a_count","a_content"],Self::head)),
-            ("hold".to_owned(),    BMacroSign::new("hold",    ESR,Self::hold)),
+            ("halt".to_owned(),    BMacroSign::new("halt",    ESR,Self::halt_relay)),
             ("headl".to_owned(),   BMacroSign::new("headl",   ["a_count","a_content"],Self::head_line)),
             ("include".to_owned(), BMacroSign::new("include", ["a_filename"],Self::include)),
             ("index".to_owned(),   BMacroSign::new("index",   ["a_index","a_array"],Self::index_array)),
@@ -122,6 +122,7 @@ impl BasicMacroMap {
             ("read".to_owned(),    BMacroSign::new("read",    ["a_filename"],Self::read)),
             ("relay".to_owned(),   BMacroSign::new("relay",   ["a_type","a_target+"],Self::relay)),
             ("redir".to_owned(),   BMacroSign::new("redir",   ["a_redirect?"],Self::temp_redirect)),
+            ("rev".to_owned(),     BMacroSign::new("rev",     ["a_array?"],Self::reverse_array)),
             ("regex".to_owned(),   BMacroSign::new("regex",   ["a_source","a_match","a_substitution"],Self::regex_sub)),
             ("rename".to_owned(),  BMacroSign::new("rename",  ["a_macro_name","a_new_name"],Self::rename_call)),
             ("repeat".to_owned(),  BMacroSign::new("repeat",  ["a_count","a_source"],Self::repeat)),
@@ -1567,7 +1568,7 @@ impl BasicMacroMap {
     /// # Usage
     ///
     /// $hold() 
-    fn hold(_: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
+    fn halt_relay(_: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
         p.state.relay = RelayTarget::None;
         Ok(None)
     }
@@ -1708,7 +1709,7 @@ impl BasicMacroMap {
     ///
     /// # Usage
     ///
-    /// $prec(1.56)
+    /// $prec(1.56,2)
     fn prec(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let number = Utils::trim(&args[0])
@@ -1724,6 +1725,20 @@ impl BasicMacroMap {
             Ok(Some(formatted))
         } else {
             Err(RadError::InvalidArgument("ceil requires an argument".to_owned()))
+        }
+    }
+
+    /// Reverse array
+    ///
+    /// # Usage
+    ///
+    /// $rev(1,2,3,4,5)
+    fn reverse_array(args: &str, _: bool, _: &mut Processor) -> RadResult<Option<String>> {
+        if args.is_empty() {
+            Err(RadError::InvalidArgument("rev requires an argument".to_owned()))
+        } else {
+            let reversed = args.split(',').rev().collect::<Vec<&str>>().join(",");
+            Ok(Some(reversed))
         }
     }
 
