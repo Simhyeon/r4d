@@ -3,7 +3,7 @@
 //!
 //! Cli module is only included in binary feature flag.
 
-use std::io::Read;
+use std::io::{Read, Write};
 use crate::RadResult;
 use crate::auth::AuthType;
 use crate::processor::Processor;
@@ -166,7 +166,7 @@ impl Cli {
             if file_name != " " {
                 std::fs::write(Path::new(file_name), sig_json.as_bytes())?;
             } else {
-                println!("{}", &sig_json);
+                writeln!(std::io::stdout(),"{}", &sig_json)?;
             }
             Ok(true)
         } else { Ok(false) }

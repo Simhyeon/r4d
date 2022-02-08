@@ -93,6 +93,9 @@ impl Debugger {
 
         let mut input = String::new();
         let prompt = if let Some(content) = prompt { content } else { "" };
+        // TODO
+        // This utilizes eprint variant which can yield not handled error
+        // but it is generally ok because debugger is mostly self contained process
         eprintln!("{} : {}",Utils::green(&format!("({})", &prompt)), log);
         eprint!(">> ");
 

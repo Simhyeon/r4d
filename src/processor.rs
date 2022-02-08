@@ -108,8 +108,7 @@ use crate::models::DiffOption;
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
-use std::io::Read;
-use std::io::{self, BufReader, Write};
+use std::io::{self, BufReader, Write, Read};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::{ Path , PathBuf};
@@ -1320,7 +1319,7 @@ impl<'processor> Processor<'processor> {
             RelayTarget::None => {
                 match &mut self.write_option {
                     WriteOption::File(f) => f.write_all(content.as_bytes())?,
-                    WriteOption::Terminal => print!("{}", content),
+                    WriteOption::Terminal => std::io::stdout().write_all(content.as_bytes())?,
                     WriteOption::Variable(var) => var.push_str(content),
                     WriteOption::Discard => () // Don't print anything
                 }

@@ -166,7 +166,8 @@ impl<'logger> Logger<'logger>{
                     )?;
                 }
                 WriteOption::Terminal => {
-                    eprint!(
+                    write!(
+                        std::io::stderr(),
                         "{}: {} {} --> {}:{}:{}{}",
                         Utils::red("error"),
                         log,
@@ -175,7 +176,7 @@ impl<'logger> Logger<'logger>{
                         self.last_line_number,
                         last_char,
                         LINE_ENDING
-                    );
+                    )?;
                 }
                 WriteOption::Variable(var) => {
                     var.push_str(&format!(
@@ -201,7 +202,7 @@ impl<'logger> Logger<'logger>{
                     file.write_all(log.to_string().as_bytes())?;
                 }
                 WriteOption::Terminal => {
-                    eprint!("{}",log);
+                    write!(std::io::stderr(),"{}",log)?;
                 }
                 WriteOption::Variable(var) => var.push_str(&log.to_string()),
                 WriteOption::Discard => ()
@@ -232,7 +233,8 @@ impl<'logger> Logger<'logger>{
                     )?;
                 }
                 WriteOption::Terminal => {
-                    eprintln!(
+                    writeln!(
+                        std::io::stderr(),
                         "{}: {} {} --> {}:{}:{}",
                         Utils::yellow("warning"),
                         log,
@@ -240,7 +242,7 @@ impl<'logger> Logger<'logger>{
                         self.current_file,
                         last_char,
                         self.last_char_number
-                    );
+                    )?;
                 }
                 WriteOption::Variable(var) => {
                     var.push_str(&format!(
@@ -282,13 +284,14 @@ impl<'logger> Logger<'logger>{
                     )?;
                 }
                 WriteOption::Terminal => {
-                    eprintln!(
+                    writeln!(
+                        std::io::stderr(),
                         "{} -> {}:{}:{}", 
                         Utils::red("assert fail"),
                         self.current_file,
                         self.last_line_number,
                         last_char
-                    );
+                    )?;
                 }
                 WriteOption::Variable(var) => {
                     var.push_str(&format!(
@@ -324,9 +327,9 @@ FAIL: {}",Utils::green("Assert"), self.assert_success, self.assert_fail
                     if self.assert{ file.write_all(assert_result.as_bytes())?; }
                 }
                 WriteOption::Terminal => {
-                    if self.error_count > 0 { eprintln!("{}",error_result);}
-                    if self.warning_count > 0 {eprintln!("{}",warning_result);}
-                    if self.assert {eprintln!("{}",assert_result);}
+                    if self.error_count > 0 { writeln!(std::io::stderr(),"{}",error_result)?;}
+                    if self.warning_count > 0 {writeln!(std::io::stderr(),"{}",warning_result)?;}
+                    if self.assert {writeln!(std::io::stderr(),"{}",assert_result)?;}
                 }
                 WriteOption::Discard | WriteOption::Variable(_) => ()
             }
@@ -364,7 +367,7 @@ FAIL: {}",Utils::green("Assert"), self.assert_success, self.assert_fail
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::Terminal => {
-                    eprint!("{}{}{}", Utils::green(&format!("{}:log", self.last_line_number)),LINE_ENDING,log);
+                    write!(std::io::stderr(),"{}{}{}", Utils::green(&format!("{}:log", self.last_line_number)),LINE_ENDING,log)?;
                 }
                 WriteOption::File(file) => {
                     file.write_all(format!("{}:log{}{}", self.last_line_number,LINE_ENDING,log).as_bytes())?;

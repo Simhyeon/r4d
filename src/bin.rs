@@ -3,6 +3,7 @@ use rad::Cli;
 use rad::RadResult;
 
 pub fn main() -> RadResult<()> {
+    use std::io::Write;
 
     // Enable color on pager such as "less" 
     // by overloading color related environment
@@ -12,7 +13,7 @@ pub fn main() -> RadResult<()> {
     // Command line parse
     #[cfg(feature = "clap")]
     if let Err(content) = Cli::new().parse() {
-        eprintln!("{}", content);
+        writeln!(std::io::stderr(),"{}", content)?;
     }
 
     // End 
