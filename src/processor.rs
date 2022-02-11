@@ -107,7 +107,6 @@ use crate::auth::{AuthType, AuthFlags, AuthState};
 use crate::models::DiffOption;
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
-#[cfg(feature = "debug")]
 use std::io::{self, BufReader, Write, Read};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};

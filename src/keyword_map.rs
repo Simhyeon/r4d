@@ -28,6 +28,7 @@ impl KeywordMacroMap {
             ("declare".to_owned(), KMacroSign::new("declare", ["a_macro_names"],KeywordMacroMap::declare)),
             ("fassert".to_owned(), KMacroSign::new("fassert", ["a_lvalue","a_rvalue"],KeywordMacroMap::assert_fail)),
             ("foreach".to_owned(), KMacroSign::new("foreach", ["a_array","a_body"],KeywordMacroMap::foreach)),
+            ("forline".to_owned(), KMacroSign::new("forline", ["a_iterable","a_body"],KeywordMacroMap::forline)),
             ("forloop".to_owned(), KMacroSign::new("forloop", ["a_min","a_max","a_body"],KeywordMacroMap::forloop)),
             ("global".to_owned(),  KMacroSign::new("global",  ["a_macro_name","a_value"],KeywordMacroMap::global_depre)),
             ("if".to_owned(),      KMacroSign::new("if",      ["a_boolean","a_if_expr"],KeywordMacroMap::if_cond)),
@@ -110,6 +111,26 @@ impl KeywordMacroMap {
             Ok(Some(sums))
         } else {
             Err(RadError::InvalidArgument("Foreach requires two argument".to_owned()))
+        }
+    }
+
+    /// Loop around given values split by new line and substitute iterators  with the value
+    ///
+    /// # Usage 
+    ///
+    /// $forline(TTT,$:)
+    fn forline(args: &str, level: usize,processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let mut sums = String::new();
+            let loopable = &processor.parse_chunk_args(level, "", &args[0])?;
+
+            for value in loopable.lines() {
+                let result = processor.parse_chunk_args(level, "", &args[1].replace("$:", value))?;
+                sums.push_str(&result);
+            }
+            Ok(Some(sums))
+        } else {
+            Err(RadError::InvalidArgument("Forline requires two argument".to_owned()))
         }
     }
 
