@@ -78,7 +78,7 @@ pub use processor::Processor;
 pub use auth::AuthType;
 #[cfg(feature = "hook")]
 pub use hookmap::HookType;
-pub use models::{CommentType, RadResult, DiffOption};
+pub use models::{CommentType, RadResult, DiffOption, WriteOption};
 #[cfg(feature = "storage")]
 pub use models::{RadStorage, StorageResult, StorageOutput};
 

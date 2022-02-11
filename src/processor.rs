@@ -573,6 +573,11 @@ impl<'processor> Processor<'processor> {
     // <PROCESS>
     //
     
+    /// Set write option in the process
+    pub fn set_write_option(&mut self, write_option: WriteOption<'processor>) {
+        self.write_option = write_option;
+    }
+
     /// Get macro signatrue map
     #[cfg(feature = "signature")]
     pub fn get_signature_map(&self, sig_type : SignatureType) -> RadResult<SignatureMap> {

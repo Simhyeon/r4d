@@ -1497,7 +1497,7 @@ impl BasicMacroMap {
     ///
     /// $redir(true) 
     /// $redir(false) 
-    #[deprecated(since = "1.6", note = "redir is deprecated and will be removed in 2.0. Use relay and hold instead")]
+    #[deprecated(since = "1.6", note = "redir is deprecated and will be removed in 2.0. Use relay and halt instead")]
     fn temp_redirect(args: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("redir", AuthType::FOUT,p)? {
             return Ok(None);
@@ -1531,6 +1531,9 @@ impl BasicMacroMap {
         if args.len() == 0 {
             return Err(RadError::InvalidArgument("relay at least requires an argument".to_owned()));
         }
+
+        p.log_error(&format!("Relaying text content to \"{}\"", args[0]))?;
+
         let raw_type = args[0];
         let relay_type = match raw_type {
             "temp" => {
