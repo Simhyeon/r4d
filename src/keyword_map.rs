@@ -479,9 +479,10 @@ impl KeywordMacroMap {
 
             Ok(Some(splited))
         } else {
-            Err(RadError::InvalidArgument("split requires two argument".to_owned()))
+            Err(RadError::InvalidArgument("sep requires two argument".to_owned()))
         }
     }
+
 
     // Keyword macros end
     // ----------
