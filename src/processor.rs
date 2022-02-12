@@ -614,10 +614,14 @@ impl<'processor> Processor<'processor> {
     ///
     /// This will only truncate varaible and file
     ///
+    /// This is meant as edge cases and costs some performance for file sync case.
     #[allow(dead_code)]
     pub fn truncate_target(&mut self) -> RadResult<()> {
         match &mut self.write_option {
-            WriteOption::File(file) => file.write_all("".as_bytes())?,
+            WriteOption::File(file) => {
+                file.write_all("".as_bytes())?;
+                file.sync_data()?;
+            },
             WriteOption::Variable(var) => var.clear(),
             // Can't really retact what is printed ;)
             _ => (),
