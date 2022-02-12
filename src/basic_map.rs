@@ -1532,7 +1532,7 @@ impl BasicMacroMap {
             return Err(RadError::InvalidArgument("relay at least requires an argument".to_owned()));
         }
 
-        p.log_error(&format!("Relaying text content to \"{}\"", args[0]))?;
+        p.log_warning(&format!("Relaying text content to \"{}\"", args[0]))?;
 
         let raw_type = args[0];
         let relay_type = match raw_type {
