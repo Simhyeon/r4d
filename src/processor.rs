@@ -610,25 +610,6 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    /// Tries to truncate outupt target
-    ///
-    /// This will only truncate varaible and file
-    ///
-    /// This is meant as edge cases and costs some performance for file sync case.
-    #[allow(dead_code)]
-    pub fn truncate_target(&mut self) -> RadResult<()> {
-        match &mut self.write_option {
-            WriteOption::File(file) => {
-                file.write_all("".as_bytes())?;
-                file.sync_data()?;
-            },
-            WriteOption::Variable(var) => var.clear(),
-            // Can't really retact what is printed ;)
-            _ => (),
-        }
-        Ok(())
-    }
-
     /// Set storage
     #[cfg(feature = "storage")]
     pub fn set_storage(&mut self, storage: Box<dyn RadStorage>) {
