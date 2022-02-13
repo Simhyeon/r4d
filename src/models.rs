@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use crate::{basic_map::BasicMacroMap, keyword_map::KeywordMacroMap};
 use crate::error::RadError;
 use crate::utils::Utils;
@@ -136,6 +136,11 @@ impl MacroMap {
 
     pub fn is_keyword(&self, name:&str) -> bool {
         self.keyword.contains(name)
+    }
+
+    /// Check if macro exits in custom macro
+    pub fn contains_custom(&self, name: &str) -> bool {
+        self.custom.contains_key(name)
     }
 
     /// Check if macro exists ( only basic and custom macro )
@@ -492,7 +497,22 @@ impl StorageOutput {
 
 pub enum RelayTarget {
     None,
-    File(File),
+    File((PathBuf,File)),
     Macro(String),
     Temp,
+}
+
+#[derive(Clone,Debug, PartialEq)]
+pub enum ProcessInput {
+    Stdin,
+    File(PathBuf),
+}
+
+impl ToString for ProcessInput {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Stdin => "Stdin".to_owned(),
+            Self::File(file) => file.display().to_string(),
+        }
+    }
 }
