@@ -42,6 +42,8 @@ impl KeywordMacroMap {
             ("repl".to_owned(),    KMacroSign::new("repl",    ["a_macro_name","a_new_value"],KeywordMacroMap::replace)),
             ("static".to_owned(),  KMacroSign::new("static",  ["a_macro_name","a_value"],KeywordMacroMap::define_static)),
             ("sep".to_owned(),     KMacroSign::new("sep",     ["separator","a_array"],KeywordMacroMap::separate_array)),
+            ("que".to_owned(),     KMacroSign::new("que",     ["a_content"],KeywordMacroMap::queue_content)),
+            ("ifque".to_owned(),   KMacroSign::new("ifque",   ["a_bool","a_content"],KeywordMacroMap::if_queue_content)),
         ]));
         Self {
             macros: map,
@@ -486,6 +488,32 @@ impl KeywordMacroMap {
             Ok(Some(splited))
         } else {
             Err(RadError::InvalidArgument("sep requires two argument".to_owned()))
+        }
+    }
+
+    /// Queue processing
+    ///
+    /// # Usage
+    ///
+    /// $que(Sentence to process)
+    fn queue_content(args: &str, _ : usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        processor.insert_queue(args);
+        Ok(None)
+    }
+
+    /// Queue processing
+    ///
+    /// # Usage
+    ///
+    /// $ifque(true,Sentence to process)
+    fn if_queue_content(args: &str, level : usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+            let boolean = &processor.parse_chunk_args(level,"",&args[0])?;
+            let cond = Utils::is_arg_true(&boolean)?;
+            if cond { processor.insert_queue(&args[1]); }
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument("ifque requires two argument".to_owned()))
         }
     }
 
