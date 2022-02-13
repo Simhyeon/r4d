@@ -3,7 +3,7 @@
 //! Logger handles all kinds of logging logics. Such log can be warning, error or debug logs.
 
 use std::io::Write;
-use crate::models::{WriteOption, RadResult};
+use crate::models::{WriteOption, RadResult, ProcessInput};
 use crate::consts::*;
 use crate::utils::Utils;
 
@@ -13,7 +13,7 @@ pub(crate) struct Logger<'logger> {
     char_number: usize,
     last_line_number: usize,
     last_char_number: usize,
-    current_file: String,
+    current_input: ProcessInput,
     write_option: Option<WriteOption<'logger>>,
     suppress_warning: bool,
     error_count: usize,
@@ -39,7 +39,7 @@ impl<'logger> Logger<'logger>{
             char_number: 0,
             last_line_number: 0,
             last_char_number: 0,
-            current_file: String::from("stdin"),
+            current_input: ProcessInput::Stdin,
             write_option: None,
             suppress_warning: false,
             error_count:0,
@@ -91,8 +91,8 @@ impl<'logger> Logger<'logger>{
     }
 
     /// Set file's logging information and reset state
-    pub fn set_file(&mut self, file: &str) {
-        self.current_file = file.to_owned();
+    pub fn set_input(&mut self, input: &ProcessInput) {
+        self.current_input = input.clone();
         self.line_number = 0;
         self.char_number = 0;
         self.last_line_number = 0;
@@ -158,7 +158,7 @@ impl<'logger> Logger<'logger>{
                         format!(
                             "error : {} -> {}:{}:{}{}",
                             log,
-                            self.current_file,
+                            self.current_input.to_string(),
                             self.last_line_number,
                             last_char,
                             LINE_ENDING
@@ -172,7 +172,7 @@ impl<'logger> Logger<'logger>{
                         Utils::red("error"),
                         log,
                         LINE_ENDING,
-                        self.current_file,
+                        self.current_input.to_string(),
                         self.last_line_number,
                         last_char,
                         LINE_ENDING
@@ -182,7 +182,7 @@ impl<'logger> Logger<'logger>{
                     var.push_str(&format!(
                             "error : {} -> {}:{}:{}{}",
                             log,
-                            self.current_file,
+                            self.current_input.to_string(),
                             self.last_line_number,
                             last_char,
                             LINE_ENDING
@@ -225,7 +225,7 @@ impl<'logger> Logger<'logger>{
                         format!(
                             "warning : {} -> {}:{}:{}{}",
                             log,
-                            self.current_file,
+                            self.current_input.to_string(),
                             self.last_line_number,
                             last_char,
                             LINE_ENDING
@@ -239,7 +239,7 @@ impl<'logger> Logger<'logger>{
                         Utils::yellow("warning"),
                         log,
                         LINE_ENDING,
-                        self.current_file,
+                        self.current_input.to_string(),
                         last_char,
                         self.last_char_number
                     )?;
@@ -248,7 +248,7 @@ impl<'logger> Logger<'logger>{
                     var.push_str(&format!(
                             "error : {} -> {}:{}:{}{}",
                             log,
-                            self.current_file,
+                            self.current_input.to_string(),
                             self.last_line_number,
                             last_char,
                             LINE_ENDING
@@ -276,7 +276,7 @@ impl<'logger> Logger<'logger>{
                     file.write_all(
                         format!(
                             "assert fail -> {}:{}:{}{}",
-                            self.current_file,
+                            self.current_input.to_string(),
                             self.last_line_number,
                             last_char,
                             LINE_ENDING
@@ -288,7 +288,7 @@ impl<'logger> Logger<'logger>{
                         std::io::stderr(),
                         "{} -> {}:{}:{}", 
                         Utils::red("assert fail"),
-                        self.current_file,
+                        self.current_input.to_string(),
                         self.last_line_number,
                         last_char
                     )?;
@@ -296,7 +296,7 @@ impl<'logger> Logger<'logger>{
                 WriteOption::Variable(var) => {
                     var.push_str(&format!(
                             "assert fail -> {}:{}:{}{}",
-                            self.current_file,
+                            self.current_input.to_string(),
                             self.last_line_number,
                             last_char,
                             LINE_ENDING
