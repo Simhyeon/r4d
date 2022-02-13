@@ -116,7 +116,7 @@ use crate::error::RadError;
 use crate::logger::{Logger, LoggerLines};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl, RelayTarget};
+use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl, RelayTarget, ProcessInput};
 #[cfg(feature = "storage")]
 use crate::models::{RadStorage, StorageOutput};
 #[cfg(feature = "signature")]
@@ -158,7 +158,7 @@ pub(crate) struct ProcessorState {
     // path derivative
     pub always_greedy: bool,
     pub auth_flags: AuthFlags,
-    pub current_input : String, 
+    pub current_input : ProcessInput, 
     pub newline: String,
     pub nopanic: bool,
     pub paused: bool,
@@ -178,12 +178,13 @@ pub(crate) struct ProcessorState {
     pub flow_control : FlowControl,
     pub deny_newline : bool,
     pub escape_newline : bool,
+    pub queued: Vec<String>,
 }
 
 impl ProcessorState {
     pub fn new(temp_target : (PathBuf, File)) -> Self {
         Self {
-            current_input: String::from("stdin"),
+            current_input: ProcessInput::Stdin,
             auth_flags: AuthFlags::new(),
             newline : LINE_ENDING.to_owned(),
             pipe_truncate: false,
@@ -202,6 +203,7 @@ impl ProcessorState {
             flow_control: FlowControl::None,
             deny_newline: false,
             escape_newline: false,
+            queued : vec![],
         }
     }
 
@@ -572,6 +574,11 @@ impl<'processor> Processor<'processor> {
     // <PROCESS>
     //
     
+    /// Set queue object
+    pub fn insert_queue(&mut self, item: &str) {
+        self.state.queued.push(item.to_owned());
+    }
+
     /// Set write option in the process
     pub fn set_write_option(&mut self, write_option: WriteOption<'processor>) {
         self.write_option = write_option;
@@ -855,7 +862,7 @@ impl<'processor> Processor<'processor> {
         let mut cont = if use_container{ Some(container) } else { None };
 
         #[cfg(feature = "debug")]
-        self.debugger.user_input_on_start(&self.state.current_input,&mut self.logger)?;
+        self.debugger.user_input_on_start(&self.state.current_input.to_string(),&mut self.logger)?;
         loop {
             #[cfg(feature = "debug")]
             if let Some(line) = line_iter.peek() {
@@ -902,6 +909,15 @@ impl<'processor> Processor<'processor> {
             // Increase absolute line number
             #[cfg(feature = "debug")]
             self.debugger.inc_line_number();
+
+            // Execute queued object
+            let queued = std::mem::replace(&mut self.state.queued, vec![]); // Queue should be emptied after
+            for item in queued {
+                // This invokes parse method
+                let result = self.parse_chunk_args(0, MAIN_CALLER, &item)?;
+                self.write_to(&result,&mut cont)?;
+            }
+
         } // Loop end
 
         // Recover previous state from sandboxed processing
@@ -1216,6 +1232,14 @@ impl<'processor> Processor<'processor> {
         // custom macro comes before basic macro so that
         // user can override it
         if self.map.custom.contains_key(name) {
+
+            // Prevent invocation if relaying to
+            if let RelayTarget::Macro(mac) = &self.state.relay {
+                if mac == name {
+                    return Err(RadError::UnallowedMacroExecution(format!("Cannot execute macro \"{}\" when it is being relayed to", mac)));
+                }
+            }
+
             if let Some(result) = self.invoke_rule(level, name, &args, greedy)? {
                 return Ok(EvalResult::Eval(Some(result)));
             } else {
@@ -1317,10 +1341,9 @@ impl<'processor> Processor<'processor> {
                 if !self.map.contains_any_macro(mac) {
                     return Err(RadError::InvalidMacroName(format!("Cannot relay to non-exsitent macro \"{}\"", mac)));
                 }
-                println!("---\nRELAYING : {} to {}\n---", content, &mac);
                 self.map.append(&mac, content);
             }
-            RelayTarget::File(file) => {
+            RelayTarget::File((_,file)) => {
                 file.write_all(content.as_bytes())?;
             }
             RelayTarget::Temp => {
@@ -1513,6 +1536,7 @@ impl<'processor> Processor<'processor> {
         }
         // Clear fragment regardless of success
         frag.clear();
+
         Ok(())
     }
 
@@ -1724,13 +1748,13 @@ impl<'processor> Processor<'processor> {
     /// Recover backup information into the processor
     fn recover(&mut self, backup: SandboxBackup) -> RadResult<()> {
         // NOTE ::: Set file should come first becuase set_file override line number and character number
-        self.logger.set_file(&backup.current_input);
+        self.logger.set_input(&backup.current_input);
         self.state.current_input = backup.current_input;
         self.map.local= backup.local_macro_map; 
         self.logger.recover_lines(backup.logger_lines);
 
         // Also recover env values
-        self.set_file_env(&self.state.current_input)?;
+        self.set_file_env(&self.state.current_input.to_string())?;
         Ok(())
     }
 
@@ -1758,8 +1782,9 @@ impl<'processor> Processor<'processor> {
         if !path.exists() {
             Err(RadError::InvalidCommandOption(format!("File, \"{}\" doesn't exist, therefore cannot be read by r4d.", path.display())))
         } else {
-            self.state.current_input = file.to_owned();
-            self.logger.set_file(file);
+            let input = ProcessInput::File(PathBuf::from(file));
+            self.state.current_input = input.clone();
+            self.logger.set_input(&input);
             self.set_file_env(file)?;
             Ok(())
         }
@@ -1777,8 +1802,10 @@ impl<'processor> Processor<'processor> {
     /// 
     /// This is conceptualy identical to set_file but doesn't validate if given input is existent
     fn set_input(&mut self, input: &str) -> RadResult<()> {
-        self.state.current_input = input.to_owned();
-        self.logger.set_file(input);
+        let input = ProcessInput::File(PathBuf::from(input));
+        self.state.current_input = input.clone();
+        self.logger.set_input(&input);
+        // Why no set_file_env like set_file?
         Ok(())
     }
 
@@ -1817,7 +1844,7 @@ enum ParseResult {
 /// This is necessary because some macro processing should be executed in sandboxed environment.
 /// e.g. when include macro is called, outer file's information is not helpful at all.
 struct SandboxBackup {
-    current_input: String,
+    current_input: ProcessInput,
     local_macro_map: HashMap<String,LocalMacro>,
     logger_lines: LoggerLines,
 }
