@@ -103,10 +103,13 @@ impl KeywordMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let mut sums = String::new();
             let loopable = &processor.parse_chunk_args(level, "", &args[0])?;
-
+            let mut count = 0;
             for value in loopable.split(',') {
+                // This overrides value
+                processor.get_map().new_local(level, "a_LN", &count.to_string());
                 let result = processor.parse_chunk_args(level, "", &args[1].replace("$:", value))?;
                 sums.push_str(&result);
+                count += 1;
             }
             Ok(Some(sums))
         } else {
@@ -123,10 +126,13 @@ impl KeywordMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let mut sums = String::new();
             let loopable = &processor.parse_chunk_args(level, "", &args[0])?;
-
+            let mut count = 1;
             for value in loopable.lines() {
+                // This overrides value
+                processor.get_map().new_local(level, "a_LN", &count.to_string());
                 let result = processor.parse_chunk_args(level, "", &args[1].replace("$:", value))?;
                 sums.push_str(&result);
+                count += 1;
             }
             Ok(Some(sums))
         } else {

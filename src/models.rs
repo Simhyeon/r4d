@@ -118,6 +118,8 @@ impl MacroMap {
     }
 
     /// Create a new local macro
+    /// 
+    /// This will override local macro if save value was given.
     pub fn new_local(&mut self, level: usize,name: &str, value: &str) {
         self.local.insert(Utils::local_name(level,name), LocalMacro::new(level, name.to_owned(), value.to_owned()));
     }
