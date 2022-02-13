@@ -139,6 +139,21 @@ rule is not necessary
 - Enable combination of file stream and stdout
 - As expressive as current m4 macro processor
 
+### About versioning
+
+I wanted to publish the crate as fast as possible so I have made fast releases.
+Though I think "non-breaking changes in major versioning" is enough for sound
+versioning. I decided to express consistency in version number changes.
+Although it will not be completely compatible with ```semver```.
+
+From version 1.7.0, following rules will be applied
+
+- Middle number (minor number) would represents feature updates that can be
+configured through library.
+- Right most number or say petit number will add macro updates or new binary
+flag updates.
+- Left most number or major version is a breaking change.
+
 ### CVE related issue
 
 [Setvar data races
