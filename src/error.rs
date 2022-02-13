@@ -68,6 +68,8 @@ pub enum RadError {
     #[cfg(feature = "cindex")]
     #[error("{0}")]
     CIndexError(CIndexError),
+    #[error("Macro execution is not allowed\n={0}")]
+    UnallowedMacroExecution(String),
 }
 
 // ==========
