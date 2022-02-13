@@ -577,6 +577,11 @@ impl<'processor> Processor<'processor> {
         self.write_option = write_option;
     }
 
+    /// Set write option in the process
+    pub fn reset_flow_control(&mut self) {
+        self.state.flow_control = FlowControl::None;
+    }
+
     /// Get macro signatrue map
     #[cfg(feature = "signature")]
     pub fn get_signature_map(&self, sig_type : SignatureType) -> RadResult<SignatureMap> {
@@ -1312,6 +1317,7 @@ impl<'processor> Processor<'processor> {
                 if !self.map.contains_any_macro(mac) {
                     return Err(RadError::InvalidMacroName(format!("Cannot relay to non-exsitent macro \"{}\"", mac)));
                 }
+                println!("---\nRELAYING : {} to {}\n---", content, &mac);
                 self.map.append(&mac, content);
             }
             RelayTarget::File(file) => {
