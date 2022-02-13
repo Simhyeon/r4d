@@ -12,7 +12,7 @@ use std::iter::FromIterator;
 use std::path::{PathBuf,Path};
 use std::process::Command;
 use crate::error::RadError;
-use crate::models::{RadResult, FlowControl, RelayTarget};
+use crate::models::{RadResult, FlowControl, RelayTarget, ProcessInput};
 use crate::arg_parser::{ArgParser, GreedyState};
 use regex::Regex;
 use crate::utils::Utils;
@@ -499,13 +499,34 @@ impl BasicMacroMap {
 
             // if current input is not stdin and file path is relative
             // Create new file path that starts from current file path
-            if processor.state.current_input != "stdin" && file_path.is_relative() {
-                // It is ok get parent because any path that has a length can return parent
-                file_path = PathBuf::from(&processor.state.current_input).parent().unwrap().join(file_path);
+            if let ProcessInput::File(path) = &processor.state.current_input {
+                if file_path.is_relative() {
+                    // It is ok get parent because any path that has a length can return parent
+                    file_path = path.parent().unwrap().join(file_path);
+                }
             }
 
             if file_path.is_file() { 
+
+                // Rules 1
+                // You cannot include self 
+                if let ProcessInput::File(path) = &processor.state.current_input {
+                    if path.canonicalize()? == file_path.canonicalize()? {
+                        return Err(RadError::InvalidArgument(format!("You cannot include self while including a file : \"{}\"", &path.display())));
+                    }
+                }
+
+                // Rules 2
+                // You cannot include file that is being relayed 
+                if let RelayTarget::File((path,_)) = &processor.state.relay {
+                    if path.canonicalize()? == file_path.canonicalize()? {
+                        return Err(RadError::InvalidArgument(format!("You cannot include relay target while relaying to the file : \"{}\"", &path.display())));
+                    }
+                }
+
+                // Set sandbox after error checking or it will act starngely
                 processor.set_sandbox();
+
                 let chunk = processor.from_file_as_chunk(file_path)?;
                 Ok(chunk)
             } else {
@@ -537,9 +558,11 @@ impl BasicMacroMap {
 
             // if current input is not stdin and file path is relative
             // Create new file path that starts from current file path
-            if processor.state.current_input != "stdin" && file_path.is_relative() {
-                // It is ok get parent because any path that has a length can return parent
-                file_path = PathBuf::from(&processor.state.current_input).parent().unwrap().join(file_path);
+            if let ProcessInput::File(path) = &processor.state.current_input {
+                if file_path.is_relative() {
+                    // It is ok get parent because any path that has a length can return parent
+                    file_path = path.parent().unwrap().join(file_path);
+                }
             }
 
             if file_path.is_file() { 
@@ -1526,13 +1549,13 @@ impl BasicMacroMap {
     /// # Usage
     ///
     /// $relay(type,argument) 
-    fn relay(args: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
-        let args: Vec<&str> = args.split(',').collect();
+    fn relay(args_src: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
+        let args: Vec<&str> = args_src.split(',').collect();
         if args.len() == 0 {
             return Err(RadError::InvalidArgument("relay at least requires an argument".to_owned()));
         }
 
-        p.log_warning(&format!("Relaying text content to \"{}\"", args[0]))?;
+        p.log_warning(&format!("Relaying text content to \"{}\"", args_src))?;
 
         let raw_type = args[0];
         let relay_type = match raw_type {
@@ -1549,14 +1572,14 @@ impl BasicMacroMap {
                 if args.len() == 1 {
                     return Err(RadError::InvalidArgument("relay requires second argument as file name for file relaying".to_owned()));
                 }
-                RelayTarget::File(std::fs::File::create(args[1])?)
+                RelayTarget::File((PathBuf::from(args[1]),std::fs::File::create(args[1])?))
             }
             "macro" => {
                 if args.len() == 1 {
                     return Err(RadError::InvalidArgument("relay requires second argument as macro name for macro relaying".to_owned()));
                 }
-                if !p.get_map().contains_any_macro(args[1]) {
-                    return Err(RadError::InvalidMacroName(format!("Cannot relay to non-exsitent macro \"{}\"", args[1])));
+                if !p.get_map().contains_custom(args[1]) {
+                    return Err(RadError::InvalidMacroName(format!("Cannot relay to non-exsitent macro or non-custom macro \"{}\"", args[1])));
                 }
                 RelayTarget::Macro(args[1].to_owned())
             }
