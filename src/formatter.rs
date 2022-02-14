@@ -1,13 +1,13 @@
-use lazy_static::lazy_static;
-use regex::Regex;
 use crate::consts::ESCAPED_COMMA;
 use crate::error::RadError;
 use crate::RadResult;
+use lazy_static::lazy_static;
+use regex::Regex;
 
-// Lazily constructed regex expression 
-lazy_static!{
-   pub static ref ESCAPE: Regex = Regex::new(r"\\,").unwrap();
-   pub static ref RESTORE: Regex = Regex::new(r"@COMMA@").unwrap();
+// Lazily constructed regex expression
+lazy_static! {
+    pub static ref ESCAPE: Regex = Regex::new(r"\\,").unwrap();
+    pub static ref RESTORE: Regex = Regex::new(r"@COMMA@").unwrap();
 }
 
 /// Formatter that constructs multiple text formats
@@ -20,17 +20,21 @@ impl Formatter {
     /// - github
     /// - wikitext
     /// - html
-    pub fn csv_to_table(table_format : &str, data: &str, newline: &str) -> RadResult<String> {
+    pub fn csv_to_table(table_format: &str, data: &str, newline: &str) -> RadResult<String> {
         let data = Self::escape_comma(data);
-        let mut reader = 
-            csv::ReaderBuilder::new()
+        let mut reader = csv::ReaderBuilder::new()
             .has_headers(true)
             .from_reader(data.as_bytes());
         let table = match table_format {
             "github" => Formatter::gfm_table(&mut reader, newline)?,
             "wikitext" => Formatter::wikitext_table(&mut reader, newline)?,
             "html" => Formatter::html_table(&mut reader, newline)?,
-            _ => return Err(RadError::UnsupportedTableFormat(format!("Unsupported table format : {}", table_format)))
+            _ => {
+                return Err(RadError::UnsupportedTableFormat(format!(
+                    "Unsupported table format : {}",
+                    table_format
+                )))
+            }
         };
         let table = Self::restore_comma(&table);
         Ok(table)
@@ -39,13 +43,10 @@ impl Formatter {
     // ----------
     // Formatting methods start
     // <FORMAT>
-    pub fn csv_to_macros(macro_name: &str, data: &str, newline: &str) 
-        -> RadResult<String> 
-    {
+    pub fn csv_to_macros(macro_name: &str, data: &str, newline: &str) -> RadResult<String> {
         let data = Self::escape_comma(data);
         let mut exec = String::new();
-        let mut reader = 
-            csv::ReaderBuilder::new()
+        let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(data.as_bytes());
         let mut row_iter = reader.records().peekable();
@@ -70,7 +71,7 @@ impl Formatter {
         Ok(exec)
     }
 
-    fn gfm_table(reader : &mut csv::Reader<&[u8]>, newline: &str) -> RadResult<String> {
+    fn gfm_table(reader: &mut csv::Reader<&[u8]>, newline: &str) -> RadResult<String> {
         let mut table = String::new();
         table.push('|');
         let header_iter = reader.headers()?;
@@ -97,7 +98,7 @@ impl Formatter {
         Ok(table)
     }
 
-    fn wikitext_table(reader : &mut csv::Reader<&[u8]>, newline: &str) -> RadResult<String> {
+    fn wikitext_table(reader: &mut csv::Reader<&[u8]>, newline: &str) -> RadResult<String> {
         let mut table = String::new();
         // Add header
         table.push_str("{| class=\"wikitable\"");
@@ -111,22 +112,22 @@ impl Formatter {
             table.push_str(newline);
         }
         // Header separator
-        table.push_str("|-"); 
-        table.push_str(newline); 
+        table.push_str("|-");
+        table.push_str(newline);
         for record in reader.records() {
             for column in record?.iter() {
                 table.push('|');
                 table.push_str(column);
-                table.push_str(newline); 
+                table.push_str(newline);
             }
-            table.push_str("|-"); 
-            table.push_str(newline); 
+            table.push_str("|-");
+            table.push_str(newline);
         }
         table.push_str("|}");
         Ok(table)
     }
 
-    fn html_table(reader : &mut csv::Reader<&[u8]>, _: &str) -> RadResult<String> {
+    fn html_table(reader: &mut csv::Reader<&[u8]>, _: &str) -> RadResult<String> {
         let mut table = String::new();
         table.push_str("<table>");
         // Add header
@@ -155,12 +156,12 @@ impl Formatter {
     /// Escape comma inside csv table
     ///
     /// With this process, we can use literal comma inside csv table
-    fn escape_comma(source : &str) -> String {
-        ESCAPE.replace_all(source,ESCAPED_COMMA).to_string()
+    fn escape_comma(source: &str) -> String {
+        ESCAPE.replace_all(source, ESCAPED_COMMA).to_string()
     }
 
     /// Restore the escaped commas
-    fn restore_comma(source : &str) -> String {
-        RESTORE.replace_all(source,",").to_string()
+    fn restore_comma(source: &str) -> String {
+        RESTORE.replace_all(source, ",").to_string()
     }
 }

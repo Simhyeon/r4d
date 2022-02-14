@@ -1,18 +1,16 @@
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignatureMap {
-    pub object : HashMap<String, MacroSignature>,
+    pub object: HashMap<String, MacroSignature>,
 }
 
 impl SignatureMap {
     pub fn new(sigs: Vec<MacroSignature>) -> Self {
-        let sig = HashMap::from_iter(
-            sigs.into_iter().map(|sig| (sig.name.clone(), sig))
-        );
+        let sig = HashMap::from_iter(sigs.into_iter().map(|sig| (sig.name.clone(), sig)));
         Self { object: sig }
     }
 }

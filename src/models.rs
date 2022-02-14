@@ -1,17 +1,17 @@
+use crate::error::RadError;
+#[cfg(feature = "signature")]
+use crate::sigmap::MacroSignature;
+use crate::utils::Utils;
+use crate::{basic_map::BasicMacroMap, keyword_map::KeywordMacroMap};
+use bincode;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::{Path, PathBuf};
-use crate::{basic_map::BasicMacroMap, keyword_map::KeywordMacroMap};
-use crate::error::RadError;
-use crate::utils::Utils;
-use serde::{Deserialize, Serialize};
-#[cfg(feature = "signature")]
-use crate::sigmap::MacroSignature;
-use bincode;
 
 pub type RadResult<T> = Result<T, RadError>;
 
-/// State enum value about direction of processed text 
+/// State enum value about direction of processed text
 pub enum WriteOption<'a> {
     File(std::fs::File),
     Variable(&'a mut String),
@@ -21,7 +21,7 @@ pub enum WriteOption<'a> {
 
 /// Custom macro
 #[derive(Clone, Deserialize, Serialize)]
-pub struct CustomMacro{
+pub struct CustomMacro {
     pub name: String,
     pub args: Vec<String>,
     pub body: String,
@@ -30,25 +30,31 @@ pub struct CustomMacro{
 impl CustomMacro {
     pub fn new(name: &str, args: &str, body: &str) -> Self {
         // Empty args are no args
-        let mut args : Vec<String> = args.split_whitespace().map(|item| item.to_owned()).collect();
+        let mut args: Vec<String> = args
+            .split_whitespace()
+            .map(|item| item.to_owned())
+            .collect();
         if args.len() == 1 && args[0] == "" {
             args = vec![]
         }
 
-        CustomMacro {  
-            name : name.to_owned(),
+        CustomMacro {
+            name: name.to_owned(),
             args,
-            body : body.to_owned(),
+            body: body.to_owned(),
         }
     }
 }
 
 impl std::fmt::Display for CustomMacro {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut inner = self.args.iter().fold(String::new(),|acc, arg| acc + &arg + ",");
+        let mut inner = self
+            .args
+            .iter()
+            .fold(String::new(), |acc, arg| acc + &arg + ",");
         // This removes last "," character
         inner.pop();
-        write!(f,"${}({})", self.name, inner)
+        write!(f, "${}({})", self.name, inner)
     }
 }
 
@@ -66,30 +72,30 @@ impl From<&CustomMacro> for crate::sigmap::MacroSignature {
 
 /// Custom macro
 #[derive(Clone)]
-pub struct LocalMacro{
+pub struct LocalMacro {
     pub level: usize,
     pub name: String,
     pub body: String,
 }
 
 impl LocalMacro {
-    pub fn new(level: usize,name: String, body: String) -> Self {
-        Self {  level, name, body }
+    pub fn new(level: usize, name: String, body: String) -> Self {
+        Self { level, name, body }
     }
 }
 
-/// Macro map that stores all kinds of macro informations 
+/// Macro map that stores all kinds of macro informations
 ///
-/// Included macro types are 
+/// Included macro types are
 /// - Keyword macro
 /// - Basic macro
 /// - Custom macro
 /// - Local bound macro
 pub(crate) struct MacroMap {
     pub keyword: KeywordMacroMap,
-    pub basic : BasicMacroMap,
-    pub custom : HashMap<String, CustomMacro>,
-    pub local : HashMap<String, LocalMacro>,
+    pub basic: BasicMacroMap,
+    pub custom: HashMap<String, CustomMacro>,
+    pub local: HashMap<String, LocalMacro>,
 }
 
 impl MacroMap {
@@ -105,7 +111,7 @@ impl MacroMap {
 
     /// Creates default map with default basic macros
     pub fn new() -> Self {
-        Self { 
+        Self {
             keyword: KeywordMacroMap::new(),
             basic: BasicMacroMap::new(),
             custom: HashMap::new(),
@@ -118,23 +124,26 @@ impl MacroMap {
     }
 
     /// Create a new local macro
-    /// 
+    ///
     /// This will override local macro if save value was given.
-    pub fn new_local(&mut self, level: usize,name: &str, value: &str) {
-        self.local.insert(Utils::local_name(level,name), LocalMacro::new(level, name.to_owned(), value.to_owned()));
+    pub fn new_local(&mut self, level: usize, name: &str, value: &str) {
+        self.local.insert(
+            Utils::local_name(level, name),
+            LocalMacro::new(level, name.to_owned(), value.to_owned()),
+        );
     }
 
     /// Clear all local macros
     pub fn clear_local(&mut self) {
         self.local.clear();
     }
-    
-    /// Retain only local macros that is smaller or equal to current level 
+
+    /// Retain only local macros that is smaller or equal to current level
     pub fn clear_lower_locals(&mut self, current_level: usize) {
-        self.local.retain(|_,mac| mac.level <= current_level);
+        self.local.retain(|_, mac| mac.level <= current_level);
     }
 
-    pub fn is_keyword(&self, name:&str) -> bool {
+    pub fn is_keyword(&self, name: &str) -> bool {
         self.keyword.contains(name)
     }
 
@@ -155,17 +164,9 @@ impl MacroMap {
 
     // Empty argument should be treated as no arg
     /// Register a new custom macro
-    pub fn register_custom(
-        &mut self, 
-        name: &str,
-        args: &str,
-        body: &str,
-    ) -> RadResult<()> {
+    pub fn register_custom(&mut self, name: &str, args: &str, body: &str) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
-        let mac = CustomMacro::new(
-            &Utils::trim(name), 
-            &Utils::trim(args), 
-            body);
+        let mac = CustomMacro::new(&Utils::trim(name), &Utils::trim(args), body);
         self.custom.insert(name.to_owned(), mac);
         Ok(())
     }
@@ -216,26 +217,35 @@ impl MacroMap {
     /// Get macro signatures object
     #[cfg(feature = "signature")]
     pub fn get_signatures(&self) -> Vec<MacroSignature> {
-        let key_iter = self.keyword.macros
+        let key_iter = self
+            .keyword
+            .macros
             .iter()
-            .map(|(_,sig)| MacroSignature::from(sig));
-        let basic_iter = self.basic.macros
+            .map(|(_, sig)| MacroSignature::from(sig));
+        let basic_iter = self
+            .basic
+            .macros
             .iter()
-            .map(|(_,sig)| MacroSignature::from(sig));
-        let custom_iter = self.custom
+            .map(|(_, sig)| MacroSignature::from(sig));
+        let custom_iter = self
+            .custom
             .iter()
-            .map(|(_,custom)| MacroSignature::from(custom));
+            .map(|(_, custom)| MacroSignature::from(custom));
         key_iter.chain(basic_iter).chain(custom_iter).collect()
     }
 
     #[cfg(feature = "signature")]
     pub fn get_default_signatures(&self) -> Vec<MacroSignature> {
-        let key_iter = self.keyword.macros
+        let key_iter = self
+            .keyword
+            .macros
             .iter()
-            .map(|(_,sig)| MacroSignature::from(sig));
-        let basic_iter = self.basic.macros
+            .map(|(_, sig)| MacroSignature::from(sig));
+        let basic_iter = self
+            .basic
+            .macros
             .iter()
-            .map(|(_,sig)| MacroSignature::from(sig));
+            .map(|(_, sig)| MacroSignature::from(sig));
         key_iter.chain(basic_iter).collect()
     }
 
@@ -243,48 +253,48 @@ impl MacroMap {
     pub fn get_custom_signatures(&self) -> Vec<MacroSignature> {
         self.custom
             .iter()
-            .map(|(_,custom)| MacroSignature::from(custom)).collect()
+            .map(|(_, custom)| MacroSignature::from(custom))
+            .collect()
     }
 }
 
 /// Struct designed to check unbalanced parenthesis
-pub(crate) struct UnbalancedChecker{
+pub(crate) struct UnbalancedChecker {
     paren: usize,
 }
 
 impl UnbalancedChecker {
     pub fn new() -> Self {
-        Self {
-            paren: 0,
-        }
+        Self { paren: 0 }
     }
     pub fn check(&mut self, ch: char) -> bool {
         match ch {
-            '(' => {
-                self.paren = self.paren + 1
-            },
+            '(' => self.paren = self.paren + 1,
             ')' => {
-                if self.paren > 0 {self.paren = self.paren - 1; } 
-                else {return false; }
-            },
-            _ => {return true;}
+                if self.paren > 0 {
+                    self.paren = self.paren - 1;
+                } else {
+                    return false;
+                }
+            }
+            _ => {
+                return true;
+            }
         }
         true
     }
-} 
+}
 
 /// Readable, writeable struct that holds information of custom macros
 #[derive(Serialize, Deserialize)]
 pub struct RuleFile {
-    pub rules : HashMap<String, CustomMacro>,
+    pub rules: HashMap<String, CustomMacro>,
 }
 
 impl RuleFile {
-    pub fn new(rules : Option<HashMap<String, CustomMacro>>) -> Self {
+    pub fn new(rules: Option<HashMap<String, CustomMacro>>) -> Self {
         if let Some(content) = rules {
-            Self {
-                rules: content,
-            }
+            Self { rules: content }
         } else {
             Self {
                 rules: HashMap::new(),
@@ -293,21 +303,26 @@ impl RuleFile {
     }
 
     /// Read from rule file and make it into hash map
-    pub fn melt(&mut self, path : &Path) -> RadResult<()> {
+    pub fn melt(&mut self, path: &Path) -> RadResult<()> {
         Utils::is_real_path(path)?;
         let result = bincode::deserialize::<Self>(&std::fs::read(path)?);
         if let Err(_) = result {
-            Err(RadError::BincodeError(format!("Failed to melt the file : {}", path.display())))
+            Err(RadError::BincodeError(format!(
+                "Failed to melt the file : {}",
+                path.display()
+            )))
         } else {
             self.rules.extend(result.unwrap().rules.into_iter());
             Ok(())
         }
     }
 
-    pub fn melt_literal(&mut self, literal : &Vec<u8>) -> RadResult<()> {
+    pub fn melt_literal(&mut self, literal: &Vec<u8>) -> RadResult<()> {
         let result = bincode::deserialize::<Self>(literal);
         if let Err(_) = result {
-            Err(RadError::BincodeError(format!("Failed to melt the literal value")))
+            Err(RadError::BincodeError(format!(
+                "Failed to melt the literal value"
+            )))
         } else {
             self.rules.extend(result.unwrap().rules.into_iter());
             Ok(())
@@ -318,14 +333,16 @@ impl RuleFile {
     pub(crate) fn freeze(&self, path: &std::path::Path) -> RadResult<()> {
         let result = bincode::serialize(self);
         if let Err(_) = result {
-            Err(RadError::BincodeError(format!("Failed to freeze to the file : {}", path.display())))
+            Err(RadError::BincodeError(format!(
+                "Failed to freeze to the file : {}",
+                path.display()
+            )))
         } else {
             if let Err(_) = std::fs::write(path, result.unwrap()) {
-                return Err(
-                    RadError::InvalidArgument(
-                        format!("Failed to create file : {}", path.display())
-                    )
-                );
+                return Err(RadError::InvalidArgument(format!(
+                    "Failed to create file : {}",
+                    path.display()
+                )));
             }
             Ok(())
         }
@@ -340,26 +357,26 @@ pub(crate) struct MacroFragment {
     pub args: String,
     // This yield processed_args information which is not needed for normal operation.
     #[cfg(feature = "debug")]
-    pub processed_args: String, 
+    pub processed_args: String,
 
     // Macro attributes
     pub pipe: bool,
     pub greedy: bool,
-    pub yield_literal : bool,
-    pub trimmed : bool,
+    pub yield_literal: bool,
+    pub trimmed: bool,
 }
 
 impl MacroFragment {
     pub fn new() -> Self {
         MacroFragment {
-            whole_string : String::new(),
-            name : String::new(),
-            args : String::new(),
+            whole_string: String::new(),
+            name: String::new(),
+            args: String::new(),
             #[cfg(feature = "debug")]
-            processed_args : String::new(),
+            processed_args: String::new(),
             pipe: false,
             greedy: false,
-            yield_literal : false,
+            yield_literal: false,
             trimmed: false,
         }
     }
@@ -371,10 +388,10 @@ impl MacroFragment {
         self.args.clear();
         #[cfg(feature = "debug")]
         self.processed_args.clear();
-        self.pipe = false; 
-        self.greedy = false; 
+        self.pipe = false;
+        self.greedy = false;
         self.yield_literal = false;
-        self.trimmed = false; 
+        self.trimmed = false;
     }
 
     /// Check if fragment is empty or not
@@ -385,11 +402,11 @@ impl MacroFragment {
     }
 
     pub(crate) fn has_attribute(&self) -> bool {
-        self.pipe || self.greedy || self.yield_literal || self.trimmed 
+        self.pipe || self.greedy || self.yield_literal || self.trimmed
     }
 }
 
-/// Comment type 
+/// Comment type
 ///
 /// NoComment is for no comment
 /// Start is when comment character should be positioned at start of the line
@@ -409,13 +426,16 @@ pub enum CommentType {
 }
 
 impl CommentType {
-    pub(crate) fn from_str(text : &str) -> RadResult<Self> {
+    pub(crate) fn from_str(text: &str) -> RadResult<Self> {
         let comment_type = match text.to_lowercase().as_str() {
-            "none"  => Self::None,
+            "none" => Self::None,
             "start" => Self::Start,
-            "any"   => Self::Any,
+            "any" => Self::Any,
             _ => {
-                return Err(RadError::InvalidCommandOption(format!("Comment type : \"{}\" is not available.", text)));
+                return Err(RadError::InvalidCommandOption(format!(
+                    "Comment type : \"{}\" is not available.",
+                    text
+                )));
             }
         };
         Ok(comment_type)
@@ -435,7 +455,12 @@ impl DiffOption {
             "none" => Self::None,
             "all" => Self::All,
             "change" => Self::Change,
-            _ => return Err(RadError::InvalidConversion(format!("Diffoption, \"{}\" is not a valid type", text))),
+            _ => {
+                return Err(RadError::InvalidConversion(format!(
+                    "Diffoption, \"{}\" is not a valid type",
+                    text
+                )))
+            }
         };
         Ok(var)
     }
@@ -457,12 +482,17 @@ pub enum SignatureType {
 
 #[cfg(feature = "signature")]
 impl SignatureType {
-    pub fn from_str(text : &str) -> RadResult<Self> {
+    pub fn from_str(text: &str) -> RadResult<Self> {
         let variant = match text.to_lowercase().as_str() {
             "all" => Self::All,
             "default" => Self::Default,
             "custom" => Self::Custom,
-            _ => return Err(RadError::InvalidConversion(format!("\"{}\" is not supported signature type", text)))
+            _ => {
+                return Err(RadError::InvalidConversion(format!(
+                    "\"{}\" is not supported signature type",
+                    text
+                )))
+            }
         };
 
         Ok(variant)
@@ -474,7 +504,7 @@ pub type StorageResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 #[cfg(feature = "storage")]
 pub trait RadStorage {
-    fn update(&mut self,args : &Vec<String>) -> StorageResult<()>;
+    fn update(&mut self, args: &Vec<String>) -> StorageResult<()>;
     fn extract(&mut self, serialize: bool) -> StorageResult<Option<StorageOutput>>;
 }
 
@@ -497,12 +527,12 @@ impl StorageOutput {
 
 pub enum RelayTarget {
     None,
-    File((PathBuf,File)),
+    File((PathBuf, File)),
     Macro(String),
     Temp,
 }
 
-#[derive(Clone,Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ProcessInput {
     Stdin,
     File(PathBuf),
@@ -518,6 +548,7 @@ impl ToString for ProcessInput {
 }
 
 /// Standards of behaviour
+#[derive(PartialEq)]
 pub enum Behaviour {
     Strict,
     Leninet,

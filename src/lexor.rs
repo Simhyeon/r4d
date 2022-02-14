@@ -7,18 +7,18 @@
 //! Lexor carries lexor cursor(state) and validates if given character is valid and whether the
 //! character should be saved as a fragment of macro.
 
-use crate::models::RadResult;
 use crate::consts::*;
 use crate::models::CommentType;
+use crate::models::RadResult;
 use crate::utils::Utils;
 
 /// Struct that validated a given character
 pub struct Lexor {
-    previous_char : Option<char>,
+    previous_char: Option<char>,
     cursor: Cursor,
     lit_count: usize,
-    paren_count : usize,
-    escape_nl : bool,
+    paren_count: usize,
+    escape_nl: bool,
     macro_char: char,
     comment_char: Option<char>,
 }
@@ -31,19 +31,19 @@ impl Lexor {
             None
         };
         Lexor {
-            previous_char : None,
+            previous_char: None,
             cursor: Cursor::None,
-            escape_nl : false,
-            lit_count : 0,
-            paren_count : 0,
+            escape_nl: false,
+            lit_count: 0,
+            paren_count: 0,
             macro_char,
-            comment_char
+            comment_char,
         }
     }
     /// Reset lexor state
     pub fn reset(&mut self) {
         self.previous_char = None;
-        self.cursor= Cursor::None;
+        self.cursor = Cursor::None;
         self.escape_nl = false;
         self.paren_count = 0;
     }
@@ -63,13 +63,13 @@ impl Lexor {
         // Literal related
         if self.start_literal(ch) {
             self.previous_char.replace('0');
-            return Ok(LexResult::Literal(self.cursor)); 
-        } else if self.end_literal(ch){
+            return Ok(LexResult::Literal(self.cursor));
+        } else if self.end_literal(ch) {
             self.previous_char.replace('0');
-            return Ok(LexResult::Literal(self.cursor)); 
-        } else if self.lit_count >0 {
+            return Ok(LexResult::Literal(self.cursor));
+        } else if self.lit_count > 0 {
             self.previous_char.replace(ch);
-            return Ok(LexResult::Literal(self.cursor)); 
+            return Ok(LexResult::Literal(self.cursor));
         }
 
         // Exit if comment_type is configured
@@ -79,13 +79,13 @@ impl Lexor {
                 self.reset();
                 return Ok(LexResult::CommentExit);
             }
-        } 
+        }
 
         // Non literal related logics
         match self.cursor {
             Cursor::None => {
                 result = self.branch_none(ch);
-            },
+            }
             Cursor::Name => {
                 result = self.branch_name(ch);
             }
@@ -106,20 +106,18 @@ impl Lexor {
 
     fn branch_none(&mut self, ch: char) -> LexResult {
         let result: LexResult;
-        if ch == self.macro_char
-            && self.previous_char.unwrap_or('0') != ESCAPE_CHAR 
-        {
+        if ch == self.macro_char && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
             self.cursor = Cursor::Name;
             result = LexResult::Ignore;
             self.escape_nl = false;
-        } 
+        }
         // This applies to cases where new lines comes after invocation
         // e.g. $define(..) \n
         // in this case last \n is ignored and deleted
         // escape_nl is only set after define
         else if self.escape_nl && (ch as i32 == 13 || ch as i32 == 10) {
             result = LexResult::Discard;
-        } 
+        }
         // Characters other than newline means other characters has been introduced
         // after definition thus, escape_nl is now false
         else {
@@ -136,7 +134,7 @@ impl Lexor {
         if Utils::is_blank_char(ch) {
             self.cursor = Cursor::None;
             result = LexResult::ExitFrag;
-        } 
+        }
         // Left parenthesis trigger macro invocation
         else if ch == '(' {
             self.cursor = Cursor::Arg;
@@ -146,11 +144,9 @@ impl Lexor {
             if self.previous_char.unwrap_or('0') == self.macro_char {
                 result = LexResult::EmptyName;
             }
-        } 
-        else if ch == self.macro_char {
+        } else if ch == self.macro_char {
             result = LexResult::RestartName;
-        }
-        else {
+        } else {
             result = LexResult::AddToFrag(Cursor::Name);
         }
         result
@@ -159,16 +155,16 @@ impl Lexor {
     fn branch_arg(&mut self, ch: char) -> LexResult {
         let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
         // Right paren decreases paren_count
-        if ch == ')'{
-            self.paren_count = self.paren_count - 1; 
+        if ch == ')' {
+            self.paren_count = self.paren_count - 1;
             if self.paren_count == 0 {
                 self.cursor = Cursor::None;
                 result = LexResult::EndFrag;
             }
-        } 
+        }
         // Left paren increases paren_count
         else if ch == '(' {
-            self.paren_count = self.paren_count + 1; 
+            self.paren_count = self.paren_count + 1;
         }
         // Other characters are added normally
         result
@@ -182,7 +178,7 @@ impl Lexor {
     fn start_literal(&mut self, ch: char) -> bool {
         // if given value is literal character and preceding character is escape
         if ch == LIT_CHAR && self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
-            self.lit_count = self.lit_count + 1; 
+            self.lit_count = self.lit_count + 1;
             true
         } else {
             false
@@ -194,14 +190,14 @@ impl Lexor {
         // if given value is literal character and preceding character is escape
         if ch == ESCAPE_CHAR && self.previous_char.unwrap_or('0') == LIT_CHAR {
             if self.lit_count > 0 {
-                self.lit_count = self.lit_count - 1; 
+                self.lit_count = self.lit_count - 1;
             } // else it is simply a *\ without starting \*
             true
         } else {
             false
         }
     }
-} 
+}
 
 #[derive(Debug)]
 pub enum LexResult {

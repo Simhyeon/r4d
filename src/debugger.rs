@@ -1,13 +1,13 @@
-use crate::logger::{Logger, WarningType};
-use crossterm::{ExecutableCommand, terminal::ClearType};
-use std::io::{Write, BufRead};
-use crate::utils::Utils;
-use std::path::Path;
-use std::fs::{File,OpenOptions};
-use std::collections::HashMap;
 use crate::consts::*;
-use similar::ChangeTag;
+use crate::logger::{Logger, WarningType};
 use crate::models::{DiffOption, MacroFragment, RadResult};
+use crate::utils::Utils;
+use crossterm::{terminal::ClearType, ExecutableCommand};
+use similar::ChangeTag;
+use std::collections::HashMap;
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, Write};
+use std::path::Path;
 
 /// Debugger
 pub(crate) struct Debugger {
@@ -20,10 +20,10 @@ pub(crate) struct Debugger {
     pub(crate) line_caches: HashMap<usize, String>,
     pub(crate) do_yield_diff: bool,
     pub(crate) diff_only_change: bool,
-    pub(crate) diff_original : Option<File>,
-    pub(crate) diff_processed : Option<File>,
+    pub(crate) diff_original: Option<File>,
+    pub(crate) diff_processed: Option<File>,
     pub(crate) interactive: bool,
-    prompt_log : Option<String>,
+    prompt_log: Option<String>,
 }
 
 impl Debugger {
@@ -35,40 +35,40 @@ impl Debugger {
             line_number: 1,
             line_caches: HashMap::new(),
             do_yield_diff: false,
-            diff_only_change : false,
+            diff_only_change: false,
             diff_original: None,
             diff_processed: None,
-            interactive : false,
-            prompt_log : None,
+            interactive: false,
+            prompt_log: None,
         }
     }
 
     /// Enable diff logic
     ///
     /// WIth diff enabled, diff information will be saved to two separate files
-    pub fn enable_diff(&mut self, diff_option : DiffOption) -> RadResult<()> {
+    pub fn enable_diff(&mut self, diff_option: DiffOption) -> RadResult<()> {
         // DiffOption specific operation
         match diff_option {
             DiffOption::None => return Ok(()), // No diff, return
-            DiffOption::Change => self.diff_only_change = true ,
-            _ => ()
+            DiffOption::Change => self.diff_only_change = true,
+            _ => (),
         }
         self.do_yield_diff = true;
         self.diff_original = Some(
             OpenOptions::new()
-            .create(true)
-            .write(true)
-            .read(true)
-            .truncate(true)
-            .open(Path::new(DIFF_SOURCE_FILE))?
+                .create(true)
+                .write(true)
+                .read(true)
+                .truncate(true)
+                .open(Path::new(DIFF_SOURCE_FILE))?,
         );
         self.diff_processed = Some(
             OpenOptions::new()
-            .create(true)
-            .write(true)
-            .read(true)
-            .truncate(true)
-            .open(Path::new(DIFF_OUT_FILE))?
+                .create(true)
+                .write(true)
+                .read(true)
+                .truncate(true)
+                .open(Path::new(DIFF_OUT_FILE))?,
         );
 
         Ok(())
@@ -84,25 +84,27 @@ impl Debugger {
     /// Get debug command
     ///
     /// Get user input and parsed the given command
-    pub fn get_command(&self, log : &str, prompt: Option<&str>) -> RadResult<String> {
+    pub fn get_command(&self, log: &str, prompt: Option<&str>) -> RadResult<String> {
         // Disable line wrap
         if self.interactive {
-            std::io::stdout()
-                .execute(crossterm::terminal::DisableLineWrap)?;
+            std::io::stdout().execute(crossterm::terminal::DisableLineWrap)?;
         }
 
         let mut input = String::new();
-        let prompt = if let Some(content) = prompt { content } else { "" };
+        let prompt = if let Some(content) = prompt {
+            content
+        } else {
+            ""
+        };
         // TODO
         // This utilizes eprint variant which can yield not handled error
         // but it is generally ok because debugger is mostly self contained process
-        eprintln!("{} : {}",Utils::green(&format!("({})", &prompt)), log);
+        eprintln!("{} : {}", Utils::green(&format!("({})", &prompt)), log);
         eprint!(">> ");
 
         // Restore wrapping
         if self.interactive {
-            std::io::stdout()
-                .execute(crossterm::terminal::EnableLineWrap)?;
+            std::io::stdout().execute(crossterm::terminal::EnableLineWrap)?;
         }
         // Flush because eprint! is not "printed" yet
         std::io::stdout().flush()?;
@@ -121,10 +123,8 @@ impl Debugger {
 
     /// Remove terminal lines by given count
     fn remove_terminal_lines(&self, count: usize) -> RadResult<()> {
-
         // Clear current line
-        std::io::stdout()
-            .execute(crossterm::terminal::Clear(ClearType::CurrentLine))?;
+        std::io::stdout().execute(crossterm::terminal::Clear(ClearType::CurrentLine))?;
 
         // Range is max exclusive thus min should start from 0
         // e.g. 0..1 only tries once with index 0
@@ -139,18 +139,20 @@ impl Debugger {
 
     /// Print differences of original and processed
     pub fn yield_diff(&self, logger: &mut Logger) -> RadResult<()> {
-        if !self.do_yield_diff { return Ok(()); }
+        if !self.do_yield_diff {
+            return Ok(());
+        }
 
         let source = std::fs::read_to_string(Path::new(DIFF_SOURCE_FILE))?;
         let processed = std::fs::read_to_string(Path::new(DIFF_OUT_FILE))?;
-        let result = similar::TextDiff::from_lines(&source,&processed);
+        let result = similar::TextDiff::from_lines(&source, &processed);
 
         let mut log: String;
         // Color function reference
-        let mut colorfunc : Option<fn(string: &str) -> Box<dyn std::fmt::Display>>;
+        let mut colorfunc: Option<fn(string: &str) -> Box<dyn std::fmt::Display>>;
 
         // Print header
-        logger.elog_no_prompt(format!("{0}DIFF : {0}",LINE_ENDING))?;
+        logger.elog_no_prompt(format!("{0}DIFF : {0}", LINE_ENDING))?;
 
         // Print changes with color support
         for change in result.iter_all_changes() {
@@ -170,7 +172,7 @@ impl Debugger {
                     } else {
                         // Log should be assigned at least once
                         // because later codes expectes log to be exsitent.
-                        // It is ok to create empty owned string, 
+                        // It is ok to create empty owned string,
                         // compiler is smart enough not to allocate
                         // any memory for empty string.
                         log = "".to_owned();
@@ -190,7 +192,11 @@ impl Debugger {
     }
 
     /// Process breakpoint
-    pub(crate) fn break_point(&mut self, frag: &mut MacroFragment, logger: &mut Logger) -> RadResult<()> {
+    pub(crate) fn break_point(
+        &mut self,
+        frag: &mut MacroFragment,
+        logger: &mut Logger,
+    ) -> RadResult<()> {
         if &frag.name == "BR" {
             if self.debug {
                 if let DebugSwitch::NextBreakPoint(name) = &self.debug_switch {
@@ -202,9 +208,9 @@ impl Debugger {
                 // Clear fragment
                 frag.clear();
                 return Ok(());
-            } 
+            }
 
-            // Warning 
+            // Warning
             logger.wlog("Breakpoint in non debug mode", WarningType::Sanity)?;
             frag.clear();
         }
@@ -213,18 +219,21 @@ impl Debugger {
     }
 
     /// Print debug information log
-    pub(crate) fn print_log(&mut self, macro_name: &str, raw_args: &str, frag: &MacroFragment, logger: &mut Logger) -> RadResult<()> {
-        if !self.log { return Ok(());}
+    pub(crate) fn print_log(
+        &mut self,
+        macro_name: &str,
+        raw_args: &str,
+        frag: &MacroFragment,
+        logger: &mut Logger,
+    ) -> RadResult<()> {
+        if !self.log {
+            return Ok(());
+        }
         let attributes = self.print_macro_attr(frag);
-        logger.dlog_print(
-            &format!(
-                r#"Name    = "{}"{}Attr    ={}{}Args    = "{}"{}---{}"#,
-                macro_name, LINE_ENDING,
-                LINE_ENDING,attributes,
-                raw_args, LINE_ENDING,
-                LINE_ENDING
-            )
-        )?;
+        logger.dlog_print(&format!(
+            r#"Name    = "{}"{}Attr    ={}{}Args    = "{}"{}---{}"#,
+            macro_name, LINE_ENDING, LINE_ENDING, attributes, raw_args, LINE_ENDING, LINE_ENDING
+        ))?;
         Ok(())
     }
 
@@ -232,36 +241,54 @@ impl Debugger {
     fn print_macro_attr(&self, frag: &MacroFragment) -> String {
         format!(
             r#"Greedy  : {}{}Pipe    : {}{}Literal : {}{}Trimmed : {}{}"#,
-            frag.greedy, LINE_ENDING,
-            frag.pipe,LINE_ENDING,
-            frag.yield_literal,LINE_ENDING,
-            frag.trimmed,LINE_ENDING
+            frag.greedy,
+            LINE_ENDING,
+            frag.pipe,
+            LINE_ENDING,
+            frag.yield_literal,
+            LINE_ENDING,
+            frag.trimmed,
+            LINE_ENDING
         )
     }
 
     /// Get user input command before processing starts
-    pub(crate) fn user_input_on_start(&mut self, current_input: &str,logger: &mut Logger) -> RadResult<()> {
+    pub(crate) fn user_input_on_start(
+        &mut self,
+        current_input: &str,
+        logger: &mut Logger,
+    ) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
-            let mut log = if let Some(pl) = self.prompt_log.take() { pl }
-            else { "Default is next. Ctrl + c to exit.".to_owned() };
+            let mut log = if let Some(pl) = self.prompt_log.take() {
+                pl
+            } else {
+                "Default is next. Ctrl + c to exit.".to_owned()
+            };
 
             self.command_loop(&mut log, current_input, None, logger)?;
         }
         Ok(())
     }
 
-
     /// Prompt user input until break condition has been met
-    fn user_input_prompt(&mut self, frag: &MacroFragment, initial_prompt: &str, logger: &mut Logger) -> RadResult<()> {
+    fn user_input_prompt(
+        &mut self,
+        frag: &MacroFragment,
+        initial_prompt: &str,
+        logger: &mut Logger,
+    ) -> RadResult<()> {
         // Respect custom prompt log if it exists
-        let mut log = if let Some(pl) = self.prompt_log.take() { pl }
-        else {
+        let mut log = if let Some(pl) = self.prompt_log.take() {
+            pl
+        } else {
             match &self.debug_switch {
-                &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => {
-                    self.line_caches.get(&logger.get_abs_last_line()).unwrap().to_owned()
-                }
-                _ => { self.line_caches.get(&self.line_number).unwrap().to_owned() }
+                &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => self
+                    .line_caches
+                    .get(&logger.get_abs_last_line())
+                    .unwrap()
+                    .to_owned(),
+                _ => self.line_caches.get(&self.line_number).unwrap().to_owned(),
             }
         };
 
@@ -270,25 +297,35 @@ impl Debugger {
     }
 
     /// Continuously get user input until break situation
-    fn command_loop(&mut self, log: &mut String ,prompt: &str, frag: Option<&MacroFragment>, logger: &mut Logger) -> RadResult<()> {
+    fn command_loop(
+        &mut self,
+        log: &mut String,
+        prompt: &str,
+        frag: Option<&MacroFragment>,
+        logger: &mut Logger,
+    ) -> RadResult<()> {
         let mut do_continue = true;
         while do_continue {
-            // This technically strips newline feed regardless of platforms 
+            // This technically strips newline feed regardless of platforms
             // It is ok to simply convert to a single line because it is logically a single
             let input = self.debug_wait_input(&log, Some(prompt))?;
             // Strip newline
             let input = input.lines().next().unwrap();
 
-            do_continue = self.parse_debug_command_and_continue(&input, frag,log, logger)?;
+            do_continue = self.parse_debug_command_and_continue(&input, frag, log, logger)?;
         }
 
         Ok(())
     }
 
-    /// Get user input on line 
+    /// Get user input on line
     ///
     /// This method should be called before evaluation of a line
-    pub fn user_input_on_line(&mut self,frag: &MacroFragment, logger: &mut Logger) -> RadResult<()> {
+    pub fn user_input_on_line(
+        &mut self,
+        frag: &MacroFragment,
+        logger: &mut Logger,
+    ) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
             // Only when debugswitch is nextline
@@ -303,7 +340,11 @@ impl Debugger {
     }
 
     /// Get user input before macro execution
-    pub fn user_input_before_macro(&mut self, frag: &MacroFragment, logger: &mut Logger) -> RadResult<()> {
+    pub fn user_input_before_macro(
+        &mut self,
+        frag: &MacroFragment,
+        logger: &mut Logger,
+    ) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
             match &self.debug_switch {
@@ -316,7 +357,11 @@ impl Debugger {
     }
 
     /// Get user input after execution
-    pub fn user_input_on_macro(&mut self, frag: &MacroFragment, logger: &mut Logger) -> RadResult<()> {
+    pub fn user_input_on_macro(
+        &mut self,
+        frag: &MacroFragment,
+        logger: &mut Logger,
+    ) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
             match &self.debug_switch {
@@ -329,7 +374,11 @@ impl Debugger {
     }
 
     /// Get user input on execution but also nested macro can be targeted
-    pub fn user_input_on_step(&mut self, frag: &MacroFragment, logger: &mut Logger) -> RadResult<()> {
+    pub fn user_input_on_step(
+        &mut self,
+        frag: &MacroFragment,
+        logger: &mut Logger,
+    ) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
             if let &DebugSwitch::StepMacro = &self.debug_switch {
@@ -344,11 +393,21 @@ impl Debugger {
     }
 
     /// Get user input and evaluates whether loop of input prompt should be breaked or not
-    pub fn parse_debug_command_and_continue(&mut self, command_input: &str, frag: Option<&MacroFragment>, log: &mut String, logger: &mut Logger) -> RadResult<bool> {
+    pub fn parse_debug_command_and_continue(
+        &mut self,
+        command_input: &str,
+        frag: Option<&MacroFragment>,
+        log: &mut String,
+        logger: &mut Logger,
+    ) -> RadResult<bool> {
         let command_input: Vec<&str> = command_input.split(' ').collect();
         let command = command_input[0];
         // Default is empty &str ""
-        let command_args = if command_input.len() == 2 {command_input[1]} else { "" };
+        let command_args = if command_input.len() == 2 {
+            command_input[1]
+        } else {
+            ""
+        };
 
         match command.to_lowercase().as_str() {
             // Continues until next break point
@@ -383,19 +442,18 @@ impl Debugger {
             "p" | "print" => {
                 if let Some(frag) = frag {
                     self.check_command_print(log, command_args, frag, logger);
-                } else { 
+                } else {
                     // No fragment which means it is the start of file
                     return Ok(false);
                 }
                 // Get user input again
-                return Ok(true); 
-
+                return Ok(true);
             }
             // Invalid command
             _ => {
-                *log = format!("Invalid command : {} {}",command, &command_args);
+                *log = format!("Invalid command : {} {}", command, &command_args);
                 return Ok(true);
-            },
+            }
         } // End match
 
         // Unless specific cases,
@@ -404,61 +462,63 @@ impl Debugger {
     }
 
     /// Check command print's content
-    fn check_command_print(&self,log: &mut String, command_args: &str, frag: &MacroFragment, logger: &mut Logger) {
+    fn check_command_print(
+        &self,
+        log: &mut String,
+        command_args: &str,
+        frag: &MacroFragment,
+        logger: &mut Logger,
+    ) {
         match command_args.to_lowercase().as_str() {
             // Only name
             "name" | "n" => {
                 *log = frag.name.to_owned();
             }
             // Current line number
-            "line" | "l" => {
-                match &self.debug_switch{
-                    DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                        *log = logger.get_abs_last_line().to_string();
-                    }
-                    _ => { *log = self.line_number.to_string(); }
-                } 
-            }
+            "line" | "l" => match &self.debug_switch {
+                DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
+                    *log = logger.get_abs_last_line().to_string();
+                }
+                _ => {
+                    *log = self.line_number.to_string();
+                }
+            },
             // Span of codes,macro chunk
             "span" | "s" => {
                 let mut line_number = match &self.debug_switch {
-                    &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => {
-                        logger.get_abs_line()
-                    }
-                    _ => self.line_number
+                    &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => logger.get_abs_line(),
+                    _ => self.line_number,
                 };
 
                 let mut sums = String::new();
                 // This puts lines in invert order
                 while let Some(line) = self.line_caches.get(&line_number) {
-                    let mut this_line = format!("{}{}",LINE_ENDING,line);
+                    let mut this_line = format!("{}{}", LINE_ENDING, line);
                     this_line.push_str(&sums);
                     sums = this_line;
                     line_number = line_number - 1;
                 }
 
                 // Put prompt log "Span" on top
-                let mut this_line = format!("{}","\"Span\"");
+                let mut this_line = format!("{}", "\"Span\"");
                 this_line.push_str(&sums);
                 sums = this_line;
 
                 *log = sums;
             }
             // Current line text
-            "text" | "t" => {
-                match &self.debug_switch{
-                    DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                        *log = self.line_caches.get(&logger.get_abs_last_line()).unwrap().to_owned();
-                    }
-                    _ => {
-                        *log = self
-                            .line_caches
-                            .get(&self.line_number)
-                            .unwrap()
-                            .to_owned();
-                    }
-                } 
-            }
+            "text" | "t" => match &self.debug_switch {
+                DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
+                    *log = self
+                        .line_caches
+                        .get(&logger.get_abs_last_line())
+                        .unwrap()
+                        .to_owned();
+                }
+                _ => {
+                    *log = self.line_caches.get(&self.line_number).unwrap().to_owned();
+                }
+            },
             // Current argument
             "arg" | "a" => {
                 *log = frag.processed_args.to_owned();
@@ -468,7 +528,9 @@ impl Debugger {
                 *log = frag.args.to_owned();
             }
             // Invalid argument
-            _ => { *log = format!("Invalid argument \"{}\"",&command_args); } 
+            _ => {
+                *log = format!("Invalid argument \"{}\"", &command_args);
+            }
         } // End match
     }
 
@@ -477,31 +539,37 @@ impl Debugger {
         Ok(self.get_command(log, prompt)?)
     }
 
-
     pub fn inc_line_number(&mut self) {
-        self.line_number= self.line_number + 1;
+        self.line_number = self.line_number + 1;
     }
 
     pub fn add_line_cache(&mut self, line: &str) {
-        self.line_caches.insert(self.line_number, line.lines().next().unwrap().to_owned());
+        self.line_caches
+            .insert(self.line_number, line.lines().next().unwrap().to_owned());
     }
 
     pub fn clear_line_cache(&mut self) {
         self.line_caches.clear();
     }
 
-    // Save original content to a file for diff check 
+    // Save original content to a file for diff check
     pub fn write_to_original(&mut self, content: &str) -> RadResult<()> {
         if self.do_yield_diff {
-            self.diff_original.as_ref().unwrap().write_all(content.as_bytes())?;
+            self.diff_original
+                .as_ref()
+                .unwrap()
+                .write_all(content.as_bytes())?;
         }
         Ok(())
     }
 
-    // Save processed content to a file for diff check 
+    // Save processed content to a file for diff check
     pub fn write_to_processed(&mut self, content: &str) -> RadResult<()> {
         if self.do_yield_diff {
-            self.diff_processed.as_ref().unwrap().write_all(content.as_bytes())?;
+            self.diff_processed
+                .as_ref()
+                .unwrap()
+                .write_all(content.as_bytes())?;
         }
         Ok(())
     }

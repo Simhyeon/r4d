@@ -3,35 +3,34 @@
 //!
 //! Cli module is only included in binary feature flag.
 
-use std::io::{Read, Write};
-use crate::RadResult;
 use crate::auth::AuthType;
 use crate::logger::WarningType;
-use crate::processor::Processor;
-use crate::utils::Utils;
-use crate::models::{CommentType, DiffOption};
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
+use crate::models::{CommentType, DiffOption};
+use crate::processor::Processor;
+use crate::utils::Utils;
+use crate::RadResult;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 /// Struct to parse command line arguments and execute proper operations
-pub struct Cli{
+pub struct Cli {
     rules: Option<Vec<PathBuf>>,
-    write_to_file : Option<PathBuf>,
-    error_to_file : Option<PathBuf>,
+    write_to_file: Option<PathBuf>,
+    error_to_file: Option<PathBuf>,
     allow_auth: Option<Vec<AuthType>>,
     allow_auth_warn: Option<Vec<AuthType>>,
 }
 
 impl Cli {
-
     pub fn new() -> Self {
         Self {
             rules: None,
-            write_to_file : None,
-            error_to_file : None,
-            allow_auth : None,
-            allow_auth_warn : None,
+            write_to_file: None,
+            error_to_file: None,
+            allow_auth: None,
+            allow_auth_warn: None,
         }
     }
 
@@ -45,43 +44,39 @@ impl Cli {
     }
 
     /// Parse arguments and run processor
-    fn run_processor(&mut self, args: & clap::ArgMatches) -> RadResult<()> {
+    fn run_processor(&mut self, args: &clap::ArgMatches) -> RadResult<()> {
         self.parse_options(args);
         // Build processor
         let mut processor = Processor::new()
-            .set_comment_type(
-                CommentType::from_str(
-                    if args.occurrences_of("comment") == 0 {
-                        "none" // None when no runtime flag
-                    } else {
-                        args.value_of("comment").unwrap() // default is start
-                    }
-                )?
-            )
+            .set_comment_type(CommentType::from_str(
+                if args.occurrences_of("comment") == 0 {
+                    "none" // None when no runtime flag
+                } else {
+                    args.value_of("comment").unwrap() // default is start
+                },
+            )?)
             .purge(args.is_present("purge"))
             .greedy(args.is_present("greedy"))
             .lenient(args.is_present("lenient"))
-            .silent(WarningType::from_str(args.value_of("silent").unwrap_or("none")))
+            .silent(WarningType::from_str(
+                args.value_of("silent").unwrap_or("none"),
+            ))
             .nopanic(args.is_present("nopanic"))
             .assert(args.is_present("assert"))
-            .allow(std::mem::replace(&mut self.allow_auth,None))
-            .allow_with_warning(std::mem::replace(&mut self.allow_auth_warn,None))
+            .allow(std::mem::replace(&mut self.allow_auth, None))
+            .allow_with_warning(std::mem::replace(&mut self.allow_auth_warn, None))
             .unix_new_line(args.is_present("newline"))
-            .rule_files(std::mem::replace(&mut self.rules,None))?
-            .write_to_file(std::mem::replace(&mut self.write_to_file,None))?
+            .rule_files(std::mem::replace(&mut self.rules, None))?
+            .write_to_file(std::mem::replace(&mut self.write_to_file, None))?
             .discard(args.is_present("discard"))
-            .error_to_file(std::mem::replace(&mut self.error_to_file,None))?
+            .error_to_file(std::mem::replace(&mut self.error_to_file, None))?
             .debug(args.is_present("debug"))
             .log(args.is_present("log"))
-            .diff(
-                DiffOption::from_str(
-                    if args.occurrences_of("diff") == 0 {
-                        "none" // None when no runtime flag
-                    } else {
-                        args.value_of("diff").unwrap() // default is all
-                    }
-                )?
-            )?
+            .diff(DiffOption::from_str(if args.occurrences_of("diff") == 0 {
+                "none" // None when no runtime flag
+            } else {
+                args.value_of("diff").unwrap() // default is all
+            })?)?
             .interactive(args.is_present("interactive"));
 
         // Debug
@@ -95,7 +90,7 @@ impl Cli {
         // Main options
         // print permission
         processor.print_permission()?;
-        
+
         // Process
         // Redirect stdin as argument
         if args.is_present("pipe") {
@@ -104,7 +99,7 @@ impl Cli {
             stdin.lock().read_to_string(&mut input)?;
             processor.set_pipe(&input)
         }
-        
+
         // -->> Read from files
         if let Some(sources) = args.values_of("INPUT") {
             // Also read from stdin if given combiation option
@@ -127,7 +122,8 @@ impl Cli {
             }
             #[cfg(feature = "signature")]
             self.print_signature(args, &mut processor)?;
-        } else { // -->> Read from stdin
+        } else {
+            // -->> Read from stdin
 
             // Print signature if such option is given
             // Signature option doesn't go with stdin option
@@ -152,13 +148,18 @@ impl Cli {
     ///
     /// Returns whether signature operation was executed or not
     #[cfg(feature = "signature")]
-    fn print_signature(&mut self, args: &clap::ArgMatches, processor: &mut Processor) -> RadResult<bool> {
+    fn print_signature(
+        &mut self,
+        args: &clap::ArgMatches,
+        processor: &mut Processor,
+    ) -> RadResult<bool> {
         #[cfg(feature = "signature")]
         if args.occurrences_of("signature") != 0 {
             let sig_type = SignatureType::from_str(args.value_of("sigtype").unwrap_or("all"))?;
             let sig_map = processor.get_signature_map(sig_type)?;
             // TODO
-            let sig_json = serde_json::to_string(&sig_map.object).expect("Failed to create sig map");
+            let sig_json =
+                serde_json::to_string(&sig_map.object).expect("Failed to create sig map");
 
             // This is file name
             let file_name = args.value_of("signature").unwrap();
@@ -167,10 +168,12 @@ impl Cli {
             if file_name != " " {
                 std::fs::write(Path::new(file_name), sig_json.as_bytes())?;
             } else {
-                writeln!(std::io::stdout(),"{}", &sig_json)?;
+                writeln!(std::io::stdout(), "{}", &sig_json)?;
             }
             Ok(true)
-        } else { Ok(false) }
+        } else {
+            Ok(false)
+        }
     }
 
     /// Parse processor options
@@ -178,58 +181,67 @@ impl Cli {
         // ========
         // Sub options
         // custom rules
-        self.rules = if let Some(files) = args.values_of("melt")  {
-            let files = files.into_iter().map(|value| PathBuf::from(value)).collect::<Vec<PathBuf>>();
+        self.rules = if let Some(files) = args.values_of("melt") {
+            let files = files
+                .into_iter()
+                .map(|value| PathBuf::from(value))
+                .collect::<Vec<PathBuf>>();
             Some(files)
-        } else { None };
+        } else {
+            None
+        };
 
-        // Write to file 
+        // Write to file
         self.write_to_file = if let Some(output_file) = args.value_of("out") {
             Some(PathBuf::from(output_file))
-        } else { None };
+        } else {
+            None
+        };
 
-        // Error to file 
+        // Error to file
         self.error_to_file = if let Some(error_file) = args.value_of("err") {
             Some(PathBuf::from(error_file))
-        } else { None };
+        } else {
+            None
+        };
 
         // Permission
         self.allow_auth = if let Some(auths) = args.value_of("allow") {
             auths.split("+").map(|s| AuthType::from(s)).collect()
-        } else { None };
+        } else {
+            None
+        };
 
         // Permission with warning
         self.allow_auth_warn = if let Some(auths) = args.value_of("allow_warn") {
             auths.split("+").map(|s| AuthType::from(s)).collect()
-        } else { None };
+        } else {
+            None
+        };
 
         // Permission all
         if args.is_present("allow_all") {
-            self.allow_auth = Some(
-                vec![
-                    AuthType::FIN,
-                    AuthType::FOUT,
-                    AuthType::ENV,
-                    AuthType::CMD
-                ]
-            );
+            self.allow_auth = Some(vec![
+                AuthType::FIN,
+                AuthType::FOUT,
+                AuthType::ENV,
+                AuthType::CMD,
+            ]);
         }
 
         // Permission all with warning
         if args.is_present("allow_all_warn") {
-            self.allow_auth_warn = Some(
-                vec![
-                    AuthType::FIN,
-                    AuthType::FOUT,
-                    AuthType::ENV,
-                    AuthType::CMD
-                ]
-            );
+            self.allow_auth_warn = Some(vec![
+                AuthType::FIN,
+                AuthType::FOUT,
+                AuthType::ENV,
+                AuthType::CMD,
+            ]);
         }
     }
 
     fn args_builder() -> clap::ArgMatches {
-        use clap::{App,Arg};
+        use clap::{App, Arg};
         let app = App::new("rad")
             .version("1.7.0")
             .author("Simon creek <simoncreek@tutanota.com>")
@@ -356,18 +368,23 @@ impl Cli {
                 .help("Freeze macros into a single file"));
 
         #[cfg(feature = "signature")]
-        let app = app.arg(Arg::new("signature")
-                .long("signature")
-                .takes_value(true)
-                .value_name("FILE")
-                .default_missing_value(" ")
-                .help("Print signature to file."))
-            .arg(Arg::new("sigtype")
-                .long("sigtype")
-                .takes_value(true)
-                .value_name("SIG TYPE")
-                .default_value("all")
-                .help("Signature type to get"));
+        let app = app
+            .arg(
+                Arg::new("signature")
+                    .long("signature")
+                    .takes_value(true)
+                    .value_name("FILE")
+                    .default_missing_value(" ")
+                    .help("Print signature to file."),
+            )
+            .arg(
+                Arg::new("sigtype")
+                    .long("sigtype")
+                    .takes_value(true)
+                    .value_name("SIG TYPE")
+                    .default_value("all")
+                    .help("Signature type to get"),
+            );
 
         app.get_matches()
     }

@@ -4,7 +4,7 @@
 
 #[derive(Debug)]
 /// Struct that stores auth states
-pub(crate) struct AuthFlags{
+pub(crate) struct AuthFlags {
     auths: Vec<AuthState>,
 }
 
@@ -15,9 +15,7 @@ impl AuthFlags {
             auths.push(AuthState::Restricted);
         }
 
-        Self {
-            auths,
-        }
+        Self { auths }
     }
 
     pub fn set_state(&mut self, auth_type: &AuthType, auth_state: AuthState) {
@@ -33,13 +31,15 @@ impl AuthFlags {
         for index in 0..AuthType::LEN as usize {
             let auth_type = AuthType::from_usize(index).unwrap();
             match self.get_state(&auth_type) {
-                &AuthState::Warn | &AuthState::Open  => {
+                &AuthState::Warn | &AuthState::Open => {
                     // Add newline before
-                    format.push_str("
-");
+                    format.push_str(
+                        "
+",
+                    );
                     format.push_str(&format!("Auth : {:?} is open.", auth_type));
                 }
-                &AuthState::Restricted => ()
+                &AuthState::Restricted => (),
             }
         }
         if format.len() != 0 {
@@ -74,20 +74,20 @@ impl AuthType {
     pub fn from(string: &str) -> Option<Self> {
         match string.to_lowercase().as_str() {
             "env" => Some(Self::ENV),
-            "fin" =>  Some(Self::FIN),
-            "fout" =>  Some(Self::FOUT),
+            "fin" => Some(Self::FIN),
+            "fout" => Some(Self::FOUT),
             "cmd" => Some(Self::CMD),
-            _ => None
+            _ => None,
         }
     }
 
-    pub fn from_usize(number : usize) -> Option<Self> {
+    pub fn from_usize(number: usize) -> Option<Self> {
         match number {
             0 => Some(Self::ENV),
-            1 =>  Some(Self::FIN),
-            2 =>  Some(Self::FOUT),
+            1 => Some(Self::FIN),
+            2 => Some(Self::FOUT),
             3 => Some(Self::CMD),
-            _ => None
+            _ => None,
         }
     }
 }

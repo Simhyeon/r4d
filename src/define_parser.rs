@@ -1,8 +1,8 @@
 use crate::utils::Utils;
 
 /// Struct for deinition parsing
-pub(crate) struct DefineParser{
-    arg_cursor :DefineCursor,
+pub(crate) struct DefineParser {
+    arg_cursor: DefineCursor,
     name: String,
     args: String,
     body: String,
@@ -13,12 +13,12 @@ pub(crate) struct DefineParser{
 impl DefineParser {
     pub fn new() -> Self {
         Self {
-            arg_cursor : DefineCursor::Name,
-            name : String::new(),
-            args : String::new(),
-            body : String::new(),
-            bind : false,
-            container : String::new(),
+            arg_cursor: DefineCursor::Name,
+            name: String::new(),
+            args: String::new(),
+            body: String::new(),
+            bind: false,
+            container: String::new(),
         }
     }
 
@@ -45,25 +45,33 @@ impl DefineParser {
         while let Some(ch) = char_iter.next() {
             match self.arg_cursor {
                 DefineCursor::Name => {
-                    if let ParseIgnore::Ignore = self.branch_name(ch) {continue;}
+                    if let ParseIgnore::Ignore = self.branch_name(ch) {
+                        continue;
+                    }
                     // If not valid name return None
-                    if !self.is_valid_char(ch) { return None; }
+                    if !self.is_valid_char(ch) {
+                        return None;
+                    }
                 }
                 DefineCursor::Args => {
-                    if let ParseIgnore::Ignore = self.branch_args(ch) {continue;}
+                    if let ParseIgnore::Ignore = self.branch_args(ch) {
+                        continue;
+                    }
                     // If not valid name return None
-                    if !self.is_valid_char(ch) { return None; }
+                    if !self.is_valid_char(ch) {
+                        return None;
+                    }
                 }
                 // Add everything
-                DefineCursor::Body => ()
-            } 
+                DefineCursor::Body => (),
+            }
             self.container.push(ch);
         }
 
         // This means pattern such as
-        // $define(test,Test) 
+        // $define(test,Test)
         // -> This is not a valid pattern
-        // self.args.len() is 0, because 
+        // self.args.len() is 0, because
         // args are added only after equal(=) sign is detected
         if self.args.len() == 0 && !self.bind {
             return None;
@@ -76,14 +84,16 @@ impl DefineParser {
     }
 
     /// Check if char complies with naming rule
-    fn is_valid_char(&mut self, ch : char) -> bool {
-        if self.container.len() == 0 { // Start of string
-            // Not alphabetic 
+    fn is_valid_char(&mut self, ch: char) -> bool {
+        if self.container.len() == 0 {
+            // Start of string
+            // Not alphabetic
             // $define( 1name ) -> Not valid
             if !ch.is_alphabetic() {
                 return false;
             }
-        } else { // middle of string
+        } else {
+            // middle of string
             // Not alphanumeric and not underscore
             // $define( na*1me ) -> Not valid
             // $define( na_1me ) -> Valid
@@ -93,11 +103,11 @@ impl DefineParser {
         }
         true
     }
-    
+
     // ---------
     // Start of branche methods
     // <DEF_BRANCH>
-    
+
     fn branch_name(&mut self, ch: char) -> ParseIgnore {
         // $define(variable=something)
         // Don't set argument but directly bind variable to body
@@ -107,8 +117,7 @@ impl DefineParser {
             self.arg_cursor = DefineCursor::Body;
             self.bind = true;
             ParseIgnore::Ignore
-        } 
-        else if Utils::is_blank_char(ch) {
+        } else if Utils::is_blank_char(ch) {
             // This means pattern like this
             // $define( name ) -> name is registered
             // $define( na me ) -> na is ignored and take me instead
@@ -119,7 +128,7 @@ impl DefineParser {
                 // Ignore
                 ParseIgnore::Ignore
             }
-        } 
+        }
         // Comma go to args
         else if ch == ',' {
             self.name.push_str(&self.container);
@@ -132,7 +141,7 @@ impl DefineParser {
     }
 
     fn branch_args(&mut self, ch: char) -> ParseIgnore {
-        // Blank space separates arguments 
+        // Blank space separates arguments
         // TODO: Why check name's length? Is it necessary?
         if Utils::is_blank_char(ch) && self.name.len() != 0 {
             if self.container.len() != 0 {
@@ -141,14 +150,14 @@ impl DefineParser {
                 self.container.clear();
             }
             ParseIgnore::Ignore
-        } 
+        }
         // Go to body
         else if ch == '=' {
             self.args.push_str(&self.container);
             self.container.clear();
-            self.arg_cursor = DefineCursor::Body; 
+            self.arg_cursor = DefineCursor::Body;
             ParseIgnore::Ignore
-        } 
+        }
         // Others
         else {
             ParseIgnore::None
@@ -168,6 +177,5 @@ pub(crate) enum DefineCursor {
 
 enum ParseIgnore {
     Ignore,
-    None
+    None,
 }
-

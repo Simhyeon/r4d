@@ -1,9 +1,9 @@
+use crate::AuthType;
 #[cfg(feature = "cindex")]
 use cindex::CIndexError;
 #[cfg(feature = "csv")]
 use csv::FromUtf8Error;
 use thiserror::Error;
-use crate::AuthType;
 
 /// R4d's error type
 #[derive(Error, Debug)]
@@ -55,7 +55,7 @@ pub enum RadError {
     #[error("Failed frozen operation\n= {0}")]
     BincodeError(String),
     #[error("Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.")]
-    PermissionDenied(String,AuthType),
+    PermissionDenied(String, AuthType),
     #[error("Strict error, exiting...")]
     StrictPanic,
     #[error("Processor panicked, exiting...")]
@@ -76,65 +76,65 @@ pub enum RadError {
 // Start of Convert variations
 // <CONVERT>
 impl From<regex::Error> for RadError {
-    fn from(err : regex::Error) -> Self {
+    fn from(err: regex::Error) -> Self {
         Self::InvalidRegex(err)
     }
 }
 
 #[cfg(feature = "evalexpr")]
 impl From<evalexpr::EvalexprError> for RadError {
-    fn from(err : evalexpr::EvalexprError) -> Self {
+    fn from(err: evalexpr::EvalexprError) -> Self {
         Self::InvalidFormula(err)
     }
 }
 
 impl From<std::num::ParseIntError> for RadError {
-    fn from(err : std::num::ParseIntError) -> Self {
+    fn from(err: std::num::ParseIntError) -> Self {
         Self::InvalidArgInt(err)
     }
 }
 
 impl From<std::str::ParseBoolError> for RadError {
-    fn from(err : std::str::ParseBoolError) -> Self {
+    fn from(err: std::str::ParseBoolError) -> Self {
         Self::InvalidArgBoolean(err)
     }
 }
 
 impl From<std::io::Error> for RadError {
-    fn from(err : std::io::Error) -> Self {
+    fn from(err: std::io::Error) -> Self {
         Self::StdIo(err)
     }
 }
 
-impl From <std::string::FromUtf8Error> for RadError {
-    fn from(err : std::string::FromUtf8Error) -> Self {
+impl From<std::string::FromUtf8Error> for RadError {
+    fn from(err: std::string::FromUtf8Error) -> Self {
         Self::Utf8Err(err)
     }
 }
 
 #[cfg(feature = "csv")]
-impl From <csv::Error> for RadError {
-    fn from(err : csv::Error) -> Self {
+impl From<csv::Error> for RadError {
+    fn from(err: csv::Error) -> Self {
         Self::CsvError(err)
     }
 }
 
-impl From <std::env::VarError> for RadError {
-    fn from(err : std::env::VarError) -> Self {
+impl From<std::env::VarError> for RadError {
+    fn from(err: std::env::VarError) -> Self {
         Self::EnvError(err)
     }
 }
 
 #[cfg(feature = "csv")]
-impl From <FromUtf8Error> for RadError {
-    fn from(err : FromUtf8Error) -> Self {
+impl From<FromUtf8Error> for RadError {
+    fn from(err: FromUtf8Error) -> Self {
         Self::InvalidString(err)
     }
 }
 
 #[cfg(feature = "cindex")]
-impl From <CIndexError> for RadError {
-    fn from(err : CIndexError) -> Self {
+impl From<CIndexError> for RadError {
+    fn from(err: CIndexError) -> Self {
         Self::CIndexError(err)
     }
 }

@@ -6,14 +6,14 @@
 //! dependencies. Library doesn't provide any features by default so you can set them manually.
 //!
 //! # Features
-//! 
+//!
 //! ```text
 //! - evalexpr  : "eval" macro
 //! - chrono    : "date", "time" macro
 //! - lipsum    : "lipsum" macro
 //! - csv       : "from", "table" macro
 //! - textwrap  : "wrap" macro
-//! 
+//!
 //! - debug     : Enable debug method
 //! - color     : Enable color prompt
 //! - hook      : Enable hook macro
@@ -26,7 +26,7 @@
 //!
 //! **Binary**
 //! ```text
-//! # Read from file and print to stdout 
+//! # Read from file and print to stdout
 //! rad input_file.txt
 //! # Read from standard input and print to file
 //! printf '...text...' | rad -o out_file.txt
@@ -36,12 +36,12 @@
 //! ```rust
 //! use rad::{Processor, RadResult};
 //! use std::path::Path;
-//! 
+//!
 //! let mut processor = Processor::new()
 //!     .purge(true)
 //!     .greedy(true)
 //!     .write_to_file(Some(Path::new("cache.txt")))?
-//! 
+//!
 //! processor.from_file(Path::new("input.txt"))?;
 //! processor.print_result()?;
 //! ```
@@ -55,32 +55,32 @@ mod error;
 pub mod processor;
 
 pub(crate) mod arg_parser;
-#[cfg(feature = "debug")]
-pub(crate) mod debugger;
-pub(crate) mod define_parser;
 pub(crate) mod auth;
 pub(crate) mod basic_map;
 pub(crate) mod closure_map;
-pub(crate) mod keyword_map;
 pub(crate) mod consts;
+#[cfg(feature = "debug")]
+pub(crate) mod debugger;
+pub(crate) mod define_parser;
+#[cfg(feature = "hook")]
+pub(crate) mod hookmap;
+pub(crate) mod keyword_map;
 pub(crate) mod lexor;
 pub(crate) mod logger;
 pub(crate) mod models;
-#[cfg(feature = "hook")]
-pub(crate) mod hookmap;
 #[cfg(feature = "signature")]
 pub(crate) mod sigmap;
 pub(crate) mod utils;
 
-pub use error::RadError;
-pub use basic_map::MacroType;
-pub use processor::Processor;
 pub use auth::AuthType;
+pub use basic_map::MacroType;
+pub use error::RadError;
 #[cfg(feature = "hook")]
 pub use hookmap::HookType;
-pub use models::{CommentType, RadResult, DiffOption, WriteOption};
+pub use models::{CommentType, DiffOption, RadResult, WriteOption};
 #[cfg(feature = "storage")]
-pub use models::{RadStorage, StorageResult, StorageOutput};
+pub use models::{RadStorage, StorageOutput, StorageResult};
+pub use processor::Processor;
 
 // Optional
 

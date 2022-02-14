@@ -1,14 +1,14 @@
+use crate::auth::{AuthState, AuthType};
 use crate::error::RadError;
 use crate::logger::WarningType;
 use crate::models::RadResult;
-use crate::auth::{AuthType, AuthState};
 use crate::Processor;
+use lazy_static::lazy_static;
 use regex::Regex;
 use std::io::BufRead;
-use lazy_static::lazy_static;
 
-lazy_static!{
-   pub static ref TRIM: Regex = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap();
+lazy_static! {
+    pub static ref TRIM: Regex = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap();
 }
 
 #[cfg(feature = "color")]
@@ -18,7 +18,7 @@ pub(crate) struct Utils;
 
 impl Utils {
     /// Create local name
-    pub(crate) fn local_name(level: usize, name : &str) -> String {
+    pub(crate) fn local_name(level: usize, name: &str) -> String {
         format!("{}.{}", level, name)
     }
 
@@ -33,7 +33,7 @@ impl Utils {
         result.to_string()
     }
 
-    // Shamelessly copied from 
+    // Shamelessly copied from
     // https://stackoverflow.com/questions/64517785/read-full-lines-from-stdin-including-n-until-end-of-file
     /// Read full lines of bufread iterator which doesn't chop new lines
     pub fn full_lines(mut input: impl BufRead) -> impl Iterator<Item = std::io::Result<String>> {
@@ -70,41 +70,48 @@ impl Utils {
                 return Ok(false);
             }
         }
-        return Err(RadError::InvalidArgument("Neither true nor false".to_owned()));
+        return Err(RadError::InvalidArgument(
+            "Neither true nor false".to_owned(),
+        ));
     }
 
     /// Get a substring of utf8 encoded text.
     pub(crate) fn utf8_substring(source: &str, min: Option<usize>, max: Option<usize>) -> String {
         let mut result = String::new();
         if let Some(min) = min {
-            if let Some(max) = max { // Both
-                for (idx,ch) in source.chars().enumerate() {
+            if let Some(max) = max {
+                // Both
+                for (idx, ch) in source.chars().enumerate() {
                     if idx >= min && idx <= max {
                         result.push(ch);
                     }
                 }
-            } else { // no max
-                for (idx,ch) in source.chars().enumerate() {
+            } else {
+                // no max
+                for (idx, ch) in source.chars().enumerate() {
                     if idx >= min {
                         result.push(ch);
                     }
                 }
             }
-        } else { // No min
-            if let Some(max) = max { // at least max 
-                for (idx,ch) in source.chars().enumerate() {
+        } else {
+            // No min
+            if let Some(max) = max {
+                // at least max
+                for (idx, ch) in source.chars().enumerate() {
                     if idx <= max {
                         result.push(ch);
                     }
                 }
-            } else { // Nothing 
+            } else {
+                // Nothing
                 return source.to_owned();
             }
         }
         return result;
     }
-    
-    pub fn green(string : &str) -> Box<dyn std::fmt::Display> {
+
+    pub fn green(string: &str) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
             return Box::new(string.green().to_owned());
@@ -112,7 +119,7 @@ impl Utils {
         Box::new(string.to_owned())
     }
 
-    pub fn red(string : &str) -> Box<dyn std::fmt::Display> {
+    pub fn red(string: &str) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
             return Box::new(string.red().to_owned());
@@ -120,14 +127,14 @@ impl Utils {
         Box::new(string.to_owned())
     }
 
-    pub fn yellow(string : &str) -> Box<dyn std::fmt::Display> {
+    pub fn yellow(string: &str) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
             return Box::new(string.yellow().to_owned());
         }
         Box::new(string.to_owned())
     }
-    
+
     // Copied from
     // https://llogiq.github.io/2016/09/24/newline.html
     // Actually the source talks about how to make following function faster
@@ -144,18 +151,18 @@ impl Utils {
     #[cfg(feature = "debug")]
     /// Clear terminal cells
     pub fn clear_terminal() -> RadResult<()> {
-        use crossterm::{ExecutableCommand, terminal::ClearType};
+        use crossterm::{terminal::ClearType, ExecutableCommand};
 
         std::io::stdout()
             .execute(crossterm::terminal::Clear(ClearType::All))?
-            .execute(crossterm::cursor::MoveTo(0,0))?;
+            .execute(crossterm::cursor::MoveTo(0, 0))?;
 
         Ok(())
     }
 
     /// Check if path is really in file system or not
     pub fn is_real_path(path: &std::path::Path) -> RadResult<()> {
-        if !path.exists() { 
+        if !path.exists() {
             return Err(RadError::InvalidFile(path.display().to_string()));
         }
         Ok(())
@@ -171,13 +178,21 @@ impl Utils {
     }
 
     /// Check file authority
-    pub(crate) fn is_granted(name:&str, auth_type: AuthType, processor: &mut Processor) -> RadResult<bool> {
+    pub(crate) fn is_granted(
+        name: &str,
+        auth_type: AuthType,
+        processor: &mut Processor,
+    ) -> RadResult<bool> {
         match processor.get_auth_state(&auth_type) {
-            AuthState::Restricted => {
-                Err(RadError::PermissionDenied(name.to_owned(), auth_type))
-            }
+            AuthState::Restricted => Err(RadError::PermissionDenied(name.to_owned(), auth_type)),
             AuthState::Warn => {
-                processor.log_warning(&format!("\"{}\" was called with \"{:?}\" permission", name, auth_type),WarningType::Security)?;
+                processor.log_warning(
+                    &format!(
+                        "\"{}\" was called with \"{:?}\" permission",
+                        name, auth_type
+                    ),
+                    WarningType::Security,
+                )?;
                 Ok(true)
             }
             AuthState::Open => Ok(true),
