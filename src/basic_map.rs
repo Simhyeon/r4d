@@ -4,6 +4,7 @@
 //! pointers.
 
 use crate::consts::ESR;
+use crate::logger::WarningType;
 use std::array::IntoIter;
 use std::io::Write;
 use std::fs::OpenOptions;
@@ -853,7 +854,7 @@ impl BasicMacroMap {
             Ok(Some(out))
         } else { 
             if p.state.strict {
-                p.log_warning(&format!("Env : \"{}\" is not defined.", args))?;
+                p.log_warning(&format!("Env : \"{}\" is not defined.", args), WarningType::Sanity)?;
             }
             Ok(None) 
         }
@@ -1555,7 +1556,7 @@ impl BasicMacroMap {
             return Err(RadError::InvalidArgument("relay at least requires an argument".to_owned()));
         }
 
-        p.log_warning(&format!("Relaying text content to \"{}\"", args_src))?;
+        p.log_warning(&format!("Relaying text content to \"{}\"", args_src), WarningType::Security)?;
 
         let raw_type = args[0];
         let relay_type = match raw_type {
@@ -1829,7 +1830,7 @@ impl BasicMacroMap {
                 return Err(RadError::StorageError(format!("Update error : {}", err)));
             }
         } else { 
-            processor.log_warning("Empty storage, update didn't triggerd")?;
+            processor.log_warning("Empty storage, update didn't trigger",WarningType::Sanity)?;
         }
         Ok(None)
     }

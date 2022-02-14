@@ -516,3 +516,11 @@ impl ToString for ProcessInput {
         }
     }
 }
+
+/// Standards of behaviour
+pub enum Behaviour {
+    Strict,
+    Leninet,
+    Purge,
+    Nopanic,
+}

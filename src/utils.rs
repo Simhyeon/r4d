@@ -1,4 +1,5 @@
 use crate::error::RadError;
+use crate::logger::WarningType;
 use crate::models::RadResult;
 use crate::auth::{AuthType, AuthState};
 use crate::Processor;
@@ -176,7 +177,7 @@ impl Utils {
                 Err(RadError::PermissionDenied(name.to_owned(), auth_type))
             }
             AuthState::Warn => {
-                processor.log_warning(&format!("\"{}\" was called with \"{:?}\" permission", name, auth_type))?;
+                processor.log_warning(&format!("\"{}\" was called with \"{:?}\" permission", name, auth_type),WarningType::Security)?;
                 Ok(true)
             }
             AuthState::Open => Ok(true),

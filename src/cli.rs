@@ -6,6 +6,7 @@
 use std::io::{Read, Write};
 use crate::RadResult;
 use crate::auth::AuthType;
+use crate::logger::WarningType;
 use crate::processor::Processor;
 use crate::utils::Utils;
 use crate::models::{CommentType, DiffOption};
@@ -60,7 +61,7 @@ impl Cli {
             .purge(args.is_present("purge"))
             .greedy(args.is_present("greedy"))
             .lenient(args.is_present("lenient"))
-            .silent(args.is_present("silent"))
+            .silent(WarningType::from_str(args.value_of("silent").unwrap_or("none")))
             .nopanic(args.is_present("nopanic"))
             .assert(args.is_present("assert"))
             .allow(std::mem::replace(&mut self.allow_auth,None))
@@ -274,7 +275,10 @@ impl Cli {
             .arg(Arg::new("silent")
                 .short('s')
                 .long("silent")
-                .help("Supress warnings"))
+                .takes_value(true)
+                .default_missing_value("none")
+                .value_name("WARNING TYPE")
+                .help("Supress warnings (security|sanity|any)"))
             .arg(Arg::new("greedy")
                 .short('g')
                 .long("greedy")

@@ -113,7 +113,7 @@ use std::fs::{File, OpenOptions};
 use std::path::{ Path , PathBuf};
 use crate::closure_map::ClosureMap;
 use crate::error::RadError;
-use crate::logger::{Logger, LoggerLines};
+use crate::logger::{Logger, LoggerLines, WarningType};
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
 use crate::models::{CommentType, MacroFragment, MacroMap, CustomMacro, RuleFile, UnbalancedChecker, WriteOption, LocalMacro, FlowControl, RelayTarget, ProcessInput};
@@ -431,10 +431,8 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Set silent option
-    pub fn silent(mut self, silent: bool) -> Self {
-        if silent {
-            self.logger.suppress_warning();
-        }
+    pub fn silent(mut self, silent_type: WarningType) -> Self {
+        self.logger.suppress_warning(silent_type);
         self
     }
 
@@ -606,7 +604,7 @@ impl<'processor> Processor<'processor> {
         if let Some(status) = self.state.auth_flags.get_status_string() {
             let mut status_with_header = String::from("Permission granted");
             status_with_header.push_str(&status);
-            self.log_warning(&status_with_header)?;
+            self.log_warning(&status_with_header, WarningType::Security)?;
         }
         Ok(())
     }
@@ -1205,7 +1203,7 @@ impl<'processor> Processor<'processor> {
 
         // Possibly inifinite loop so warn user
         if caller == name {
-            self.log_warning(&format!("Calling self, which is \"{}\", can possibly trigger infinite loop", name))?;
+            self.log_warning(&format!("Calling self, which is \"{}\", can possibly trigger infinite loop", name,), WarningType::Sanity)?;
         }
 
         // Find keyword macro
@@ -1421,7 +1419,7 @@ impl<'processor> Processor<'processor> {
     fn lex_branch_add_to_remainder(&mut self, ch: char,remainder: &mut String) -> RadResult<()> {
         if !self.checker.check(ch) && !self.state.paused {
             self.logger.freeze_number();
-            self.log_warning("Unbalanced parenthesis detected.")?;
+            self.log_warning("Unbalanced parenthesis detected.", WarningType::Sanity)?;
         }
         remainder.push(ch);
 
@@ -1770,8 +1768,8 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Log warning
-    pub(crate) fn log_warning(&mut self, log : &str) -> RadResult<()> {
-        self.logger.wlog(log)?;
+    pub(crate) fn log_warning(&mut self, log : &str, warning_type: WarningType) -> RadResult<()> {
+        self.logger.wlog(log, warning_type)?;
         Ok(())
     }
 

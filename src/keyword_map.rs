@@ -1,6 +1,7 @@
 use std::array::IntoIter;
 use std::iter::FromIterator;
 use std::collections::HashMap;
+use crate::logger::WarningType;
 use crate::{AuthType, RadError};
 use crate::utils::Utils;
 use crate::models::RadResult;
@@ -374,7 +375,7 @@ impl KeywordMacroMap {
 
     #[deprecated(since = "1.2", note = "Bind is deprecated and will be removed in 2.0")]
     fn bind_depre(args: &str, level:usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        processor.log_warning("Bind is deprecated and will be removed in 2.0 version. Use let instead.")?;
+        processor.log_warning("Bind is deprecated and will be removed in 2.0 version. Use let instead.", WarningType::Sanity)?;
         Self::bind_to_local(args, level, processor)
     }
 
@@ -397,7 +398,7 @@ impl KeywordMacroMap {
                 if processor.state.strict {
                     return Err(RadError::InvalidMacroName(format!("Declaring a macro with a name already existing : \"{}\"", name)))
                 } else {
-                    processor.log_warning(&format!("Declaring a macro with a name already existing : \"{}\"", name))?;
+                    processor.log_warning(&format!("Declaring a macro with a name already existing : \"{}\"", name), WarningType::Sanity)?;
                 }
             }
         }
@@ -434,7 +435,7 @@ impl KeywordMacroMap {
     /// This macro will be completely removed in 2.0
     #[deprecated(since = "1.2", note = "Global is deprecated and will be removed in 2.0")]
     fn global_depre(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        processor.log_warning("Global is deprecated and will be removed in 2.0 version. Use static instead.")?;
+        processor.log_warning("Global is deprecated and will be removed in 2.0 version. Use static instead.", WarningType::Sanity)?;
         Self::define_static(args,level,processor)
     }
 
@@ -455,7 +456,7 @@ impl KeywordMacroMap {
                     return Err(RadError::InvalidMacroName(format!("Creating a static macro with a name already existing : \"{}\"", name)));
                 } else {
                     // Its warn-able anyway
-                    processor.log_warning(&format!("Creating a static macro with a name already existing : \"{}\"", name))?;
+                    processor.log_warning(&format!("Creating a static macro with a name already existing : \"{}\"", name), WarningType::Sanity)?;
                 }
             }
             processor.add_static_rules(vec![(&name,&value)])?;

@@ -7,22 +7,6 @@ use crate::models::{WriteOption, RadResult, ProcessInput};
 use crate::consts::*;
 use crate::utils::Utils;
 
-/// Logger that controls logging
-pub(crate) struct Logger<'logger> {
-    line_number: usize,
-    char_number: usize,
-    last_line_number: usize,
-    last_char_number: usize,
-    current_input: ProcessInput,
-    write_option: Option<WriteOption<'logger>>,
-    suppress_warning: bool,
-    error_count: usize,
-    warning_count: usize,
-    assert_success: usize,
-    assert_fail: usize,
-    chunked: usize,
-    pub(crate) assert: bool,
-}
 /// Struct specifically exists to backup information of logger
 #[derive(Debug)]
 pub(crate) struct LoggerLines {
@@ -32,16 +16,33 @@ pub(crate) struct LoggerLines {
     last_char_number: usize,
 }
 
+/// Logger that controls logging
+pub(crate) struct Logger<'logger> {
+    suppresion_type: WarningType,
+    line_number: usize,
+    char_number: usize,
+    last_line_number: usize,
+    last_char_number: usize,
+    current_input: ProcessInput,
+    write_option: Option<WriteOption<'logger>>,
+    error_count: usize,
+    warning_count: usize,
+    assert_success: usize,
+    assert_fail: usize,
+    chunked: usize,
+    pub(crate) assert: bool,
+}
+
 impl<'logger> Logger<'logger>{
     pub fn new() -> Self {
         Self {
+            suppresion_type: WarningType::None,
             line_number: 0,
             char_number: 0,
             last_line_number: 0,
             last_char_number: 0,
             current_input: ProcessInput::Stdin,
             write_option: None,
-            suppress_warning: false,
             error_count:0,
             warning_count:0,
             assert_success : 0,
@@ -55,8 +56,8 @@ impl<'logger> Logger<'logger>{
         self.assert = true;
     }
 
-    pub fn suppress_warning(&mut self) {
-        self.suppress_warning = true;
+    pub fn suppress_warning(&mut self, warning_type: WarningType) {
+        self.suppresion_type = warning_type;
     }
 
     /// Enables "chunk" mode whtin logger
@@ -212,8 +213,11 @@ impl<'logger> Logger<'logger>{
     }
 
     /// Log warning
-    pub fn wlog(&mut self, log : &str) -> RadResult<()> {
-        if self.suppress_warning { return Ok(()); }
+    pub fn wlog(&mut self, log : &str, warning_type: WarningType) -> RadResult<()> {
+        if self.suppresion_type == WarningType::Any || self.suppresion_type == warning_type { 
+            return Ok(());
+        }
+
         self.warning_count = self.warning_count + 1; 
 
         if self.assert { return Ok(()); }
@@ -381,3 +385,23 @@ FAIL: {}",Utils::green("Assert"), self.assert_success, self.assert_fail
     // </DEBUG>
     // ----------
 } 
+
+#[derive(PartialEq)]
+pub enum WarningType {
+    None,
+    Security,
+    Sanity,
+    Any,
+}
+
+impl WarningType {
+    pub fn from_str(text: &str) -> Self {
+        match text {
+            "none" => Self::None,
+            "security" => Self::Security,
+            "sanity" => Self::Sanity,
+            "any" => Self::Any,
+            _ => Self::None,
+        }
+    }
+}

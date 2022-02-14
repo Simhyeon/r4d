@@ -1,4 +1,4 @@
-use crate::logger::Logger;
+use crate::logger::{Logger, WarningType};
 use crossterm::{ExecutableCommand, terminal::ClearType};
 use std::io::{Write, BufRead};
 use crate::utils::Utils;
@@ -205,7 +205,7 @@ impl Debugger {
             } 
 
             // Warning 
-            logger.wlog("Breakpoint in non debug mode")?;
+            logger.wlog("Breakpoint in non debug mode", WarningType::Sanity)?;
             frag.clear();
         }
 
