@@ -19,6 +19,7 @@ name = "rad"
 path = "src/lib.rs"
 
 [features]
+basic = ["clap"]
 binary = ["clap","debug", "full"]
 full = [ "csv", "evalexpr", "lipsum", "chrono", "textwrap"]
 
