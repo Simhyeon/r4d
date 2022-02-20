@@ -69,15 +69,20 @@ impl Cli {
             .rule_files(std::mem::replace(&mut self.rules, None))?
             .write_to_file(std::mem::replace(&mut self.write_to_file, None))?
             .discard(args.is_present("discard"))
-            .error_to_file(std::mem::replace(&mut self.error_to_file, None))?
-            .debug(args.is_present("debug"))
-            .log(args.is_present("log"))
-            .diff(DiffOption::from_str(if args.occurrences_of("diff") == 0 {
-                "none" // None when no runtime flag
-            } else {
-                args.value_of("diff").unwrap() // default is all
-            })?)?
-            .interactive(args.is_present("interactive"));
+            .error_to_file(std::mem::replace(&mut self.error_to_file, None))?;
+
+        #[cfg(feature = "debug")]
+        {
+            processor = processor
+                .debug(args.is_present("debug"))
+                .log(args.is_present("log"))
+                .interactive(args.is_present("interactive"))
+                .diff(DiffOption::from_str(if args.occurrences_of("diff") == 0 {
+                    "none" // None when no runtime flag
+                } else {
+                    args.value_of("diff").unwrap() // default is all
+                })?)?;
+        }
 
         // Debug
         // Clear terminal cells
