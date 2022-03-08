@@ -104,6 +104,10 @@ impl FunctionMacroMap {
                 FMacroSign::new("dnl", ESR, Self::deny_newline),
             ),
             (
+                "declare".to_owned(),
+                FMacroSign::new("declare", ["a_macro_names"], Self::declare),
+            ),
+            (
                 "env".to_owned(),
                 FMacroSign::new("env", ["a_env_name"], Self::get_env),
             ),
@@ -169,6 +173,14 @@ impl FunctionMacroMap {
                 FMacroSign::new("len", ["a_string"], Self::len),
             ),
             (
+                "let".to_owned(),
+                FMacroSign::new(
+                    "let",
+                    ["a_macro_name", "a_value"],
+                    Self::bind_to_local,
+                ),
+            ),
+            (
                 "lower".to_owned(),
                 FMacroSign::new("lower", ["a_text"], Self::lower),
             ),
@@ -208,6 +220,10 @@ impl FunctionMacroMap {
             (
                 "path".to_owned(),
                 FMacroSign::new("path", ["a_paths"], Self::merge_path),
+            ),
+            (
+                "pause".to_owned(),
+                FMacroSign::new("pause", ["a_pause?"], Self::pause),
             ),
             (
                 "pipe".to_owned(),
@@ -250,12 +266,36 @@ impl FunctionMacroMap {
                 FMacroSign::new("repeat", ["a_count", "a_source"], Self::repeat),
             ),
             (
+                "repl".to_owned(),
+                FMacroSign::new(
+                    "repl",
+                    ["a_macro_name", "a_new_value"],
+                    Self::replace,
+                ),
+            ),
+            (
+                "sep".to_owned(),
+                FMacroSign::new(
+                    "sep",
+                    ["separator", "a_array"],
+                    Self::separate_array,
+                ),
+            ),
+            (
                 "sort".to_owned(),
                 FMacroSign::new("sort", ["a_values"], Self::sort_array),
             ),
             (
                 "sortl".to_owned(),
                 FMacroSign::new("sortl", ["a_values"], Self::sort_lines),
+            ),
+            (
+                "static".to_owned(),
+                FMacroSign::new(
+                    "static",
+                    ["a_macro_name", "a_value"],
+                    Self::define_static,
+                ),
             ),
             (
                 "strip".to_owned(),
@@ -2286,6 +2326,216 @@ impl FunctionMacroMap {
         } else {
             let reversed = args.split(',').rev().collect::<Vec<&str>>().join(",");
             Ok(Some(reversed))
+        }
+    }
+
+    /// Declare an empty macros
+    ///
+    /// # Usage
+    ///
+    /// $declare(n1,n2,n3)
+    fn declare(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        let names = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        // TODO Create empty macro rules
+        let runtime_rules = names
+            .iter()
+            .map(|name| (Utils::trim(name), "", ""))
+            .collect::<Vec<(String, &str, &str)>>();
+
+        // Check overriding. Warn or yield error
+        for (name, _, _) in runtime_rules.iter() {
+            if processor.contains_macro(&name, MacroType::Any) {
+                if processor.state.behaviour == Behaviour::Strict {
+                    return Err(RadError::InvalidMacroName(format!(
+                        "Declaring a macro with a name already existing : \"{}\"",
+                        name
+                    )));
+                } else {
+                    processor.log_warning(
+                        &format!(
+                            "Declaring a macro with a name already existing : \"{}\"",
+                            name
+                        ),
+                        WarningType::Sanity,
+                    )?;
+                }
+            }
+        }
+
+        // Add runtime rules
+        processor.add_runtime_rules(runtime_rules)?;
+        Ok(None)
+    }
+
+    /// Declare a local macro
+    ///
+    /// Local macro gets deleted after macro execution
+    ///
+    /// # Usage
+    ///
+    /// $let(name,value)
+    fn bind_to_local(
+        args: &str,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let name = Utils::trim(&args[0]);
+            let value = Utils::trim(&args[1]);
+            processor.add_new_local_macro(1, &name, &value);
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Let requires two argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Enable/disable runtime macros
+    ///
+    /// # Usage
+    ///
+    /// $runtime(true)
+    /// $runtime(false)
+    fn toggle_runtime(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            if let Ok(value) = Utils::is_arg_true(&args[0]) {
+                processor.state.no_runtime = !value;
+                Ok(None)
+            }
+            // Failed to evaluate
+            else {
+                Err(RadError::InvalidArgument(format!(
+                    "runtime requires either true/false or zero/nonzero integer, but given \"{}\"",
+                    args[0]
+                )))
+            }
+        } else {
+            Err(RadError::InvalidArgument(
+                "runtime requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Pause every macro expansion
+    ///
+    /// Only other pause call is evaluated
+    ///
+    /// # Usage
+    ///
+    /// $pause(true)
+    /// $pause(false)
+    fn pause(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            if let Ok(value) = Utils::is_arg_true(&args[0]) {
+                processor.state.paused = value; 
+                Ok(None)
+            }
+            // Failed to evaluate
+            else {
+                Err(RadError::InvalidArgument(format!(
+                    "Pause requires either true/false or zero/nonzero integer, but given \"{}\"",
+                    args[0]
+                )))
+            }
+        } else {
+            Err(RadError::InvalidArgument(
+                "Pause requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Define a static macro
+    ///
+    /// # Usage
+    ///
+    /// $static(name,value)
+    fn define_static(
+        args: &str,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let name = &args[0];
+            let value = &args[1];
+            // Macro name already exists
+            if processor.contains_macro(&name, MacroType::Any) {
+                // Strict mode prevents overriding
+                // Return error
+                if processor.state.behaviour == Behaviour::Strict {
+                    return Err(RadError::InvalidMacroName(format!(
+                        "Creating a static macro with a name already existing : \"{}\"",
+                        name
+                    )));
+                } else {
+                    // Its warn-able anyway
+                    processor.log_warning(
+                        &format!(
+                            "Creating a static macro with a name already existing : \"{}\"",
+                            name
+                        ),
+                        WarningType::Sanity,
+                    )?;
+                }
+            }
+            processor.add_static_rules(vec![(&name, &value)])?;
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Static requires two argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Separate an array
+    ///
+    /// # Usage
+    ///
+    /// $sep( ,1,2,3,4,5)
+    fn separate_array(
+        args: &str,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let separator = &args[0];
+            let array = &args[1];
+            let mut array = array.split(',').into_iter();
+            let mut splited = String::new();
+
+            if let Some(first) = array.next() {
+                splited.push_str(first);
+
+                for item in array {
+                    splited.push_str(&format!("{}{}", separator, item));
+                }
+            }
+
+            Ok(Some(splited))
+        } else {
+            Err(RadError::InvalidArgument(
+                "sep requires two argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Replace value
+    ///
+    /// # Usage
+    ///
+    /// $repl(macro,value)
+    fn replace(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let name = &args[0];
+            let target = &args[1];
+            if !processor.replace_macro(&name, target) {
+                return Err(RadError::InvalidArgument(format!(
+                    "{} doesn't exist, thus cannot replace it's content",
+                    name
+                )));
+            }
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Replace requires two arguments".to_owned(),
+            ))
         }
     }
 

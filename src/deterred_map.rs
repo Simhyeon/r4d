@@ -1,8 +1,7 @@
 use crate::arg_parser::ArgParser;
-use crate::logger::WarningType;
-use crate::models::{Behaviour, RadResult};
+use crate::models::RadResult;
 use crate::utils::Utils;
-use crate::{Processor};
+use crate::Processor;
 use crate::models::MacroType;
 use crate::{AuthType, RadError};
 use std::array::IntoIter;
@@ -27,10 +26,6 @@ impl DeterredMacroMap {
 
     pub fn new() -> Self {
         let map = HashMap::from_iter(IntoIter::new([
-            (
-                "declare".to_owned(),
-                KMacroSign::new("declare", ["a_macro_names"], DeterredMacroMap::declare),
-            ),
             (
                 "fassert".to_owned(),
                 KMacroSign::new(
@@ -100,42 +95,6 @@ impl DeterredMacroMap {
                 ),
             ),
             (
-                "let".to_owned(),
-                KMacroSign::new(
-                    "let",
-                    ["a_macro_name", "a_value"],
-                    DeterredMacroMap::bind_to_local,
-                ),
-            ),
-            (
-                "pause".to_owned(),
-                KMacroSign::new("pause", ["a_pause?"], DeterredMacroMap::pause),
-            ),
-            (
-                "repl".to_owned(),
-                KMacroSign::new(
-                    "repl",
-                    ["a_macro_name", "a_new_value"],
-                    DeterredMacroMap::replace,
-                ),
-            ),
-            (
-                "static".to_owned(),
-                KMacroSign::new(
-                    "static",
-                    ["a_macro_name", "a_value"],
-                    DeterredMacroMap::define_static,
-                ),
-            ),
-            (
-                "sep".to_owned(),
-                KMacroSign::new(
-                    "sep",
-                    ["separator", "a_array"],
-                    DeterredMacroMap::separate_array,
-                ),
-            ),
-            (
                 "que".to_owned(),
                 KMacroSign::new("que", ["a_content"], DeterredMacroMap::queue_content),
             ),
@@ -187,40 +146,6 @@ impl DeterredMacroMap {
 
     // ----------
     // Keyword Macros start
-
-    /// Pause every macro expansion
-    ///
-    /// Only other pause call is evaluated
-    ///
-    /// # Usage
-    ///
-    /// $pause(true)
-    /// $pause(false)
-    fn pause(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let arg = &processor.parse_chunk_args(level, "", &args[0])?;
-
-            if let Ok(value) = Utils::is_arg_true(arg) {
-                if value {
-                    processor.state.paused = true;
-                } else {
-                    processor.state.paused = false;
-                }
-                Ok(None)
-            }
-            // Failed to evaluate
-            else {
-                Err(RadError::InvalidArgument(format!(
-                    "Pause requires either true/false or zero/nonzero integer, but given \"{}\"",
-                    arg
-                )))
-            }
-        } else {
-            Err(RadError::InvalidArgument(
-                "Pause requires an argument".to_owned(),
-            ))
-        }
-    }
 
     /// Loop around given values and substitute iterators  with the value
     ///
@@ -498,30 +423,9 @@ impl DeterredMacroMap {
         }
     }
 
-    /// Replace value
-    ///
-    /// # Usage
-    ///
-    /// $repl(macro,value)
-    fn replace(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
-            let target = args[1].as_str();
-            if !processor.replace_macro(&name, target) {
-                return Err(RadError::InvalidArgument(format!(
-                    "{} doesn't exist, thus cannot replace it's content",
-                    name
-                )));
-            }
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "Replace requires two arguments".to_owned(),
-            ))
-        }
-    }
-
     /// Assert fail
+    ///
+    /// This has to be deterred macro because it's value should be evaluated later
     ///
     /// # Usage
     ///
@@ -541,144 +445,6 @@ impl DeterredMacroMap {
         }
     }
 
-    /// Declare an empty macros
-    ///
-    /// # Usage
-    ///
-    /// $declare(n1,n2,n3)
-    fn declare(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        let names = processor.parse_chunk_args(level, "", &Utils::trim(args))?;
-        // TODO Create empty macro rules
-        let runtime_rules = names
-            .split(',')
-            .map(|name| (Utils::trim(name), "", ""))
-            .collect::<Vec<(String, &str, &str)>>();
-
-        // Check overriding. Warn or yield error
-        for (name, _, _) in runtime_rules.iter() {
-            if processor.contains_macro(&name, MacroType::Any) {
-                if processor.state.behaviour == Behaviour::Strict {
-                    return Err(RadError::InvalidMacroName(format!(
-                        "Declaring a macro with a name already existing : \"{}\"",
-                        name
-                    )));
-                } else {
-                    processor.log_warning(
-                        &format!(
-                            "Declaring a macro with a name already existing : \"{}\"",
-                            name
-                        ),
-                        WarningType::Sanity,
-                    )?;
-                }
-            }
-        }
-
-        // Add runtime rules
-        processor.add_runtime_rules(runtime_rules)?;
-        Ok(None)
-    }
-
-    /// Declare a local macro
-    ///
-    /// Local macro gets deleted after macro execution
-    ///
-    /// # Usage
-    ///
-    /// $let(name,value)
-    fn bind_to_local(
-        args: &str,
-        level: usize,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
-            let value = processor.parse_chunk_args(level, "", &Utils::trim(&args[1]))?;
-            // Let shadows varaible so it is ok to have existing name
-            // TODO
-            // I'm not so sure if Level 1 is fine for all cases?
-            processor.add_new_local_macro(1, &name, &value);
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "Let requires two argument".to_owned(),
-            ))
-        }
-    }
-
-    /// Define a static macro
-    ///
-    /// # Usage
-    ///
-    /// $static(name,value)
-    fn define_static(
-        args: &str,
-        level: usize,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
-            let value = processor.parse_chunk_args(level, "", &Utils::trim(&args[1]))?;
-            // Macro name already exists
-            if processor.contains_macro(&name, MacroType::Any) {
-                // Strict mode prevents overriding
-                // Return error
-                if processor.state.behaviour == Behaviour::Strict {
-                    return Err(RadError::InvalidMacroName(format!(
-                        "Creating a static macro with a name already existing : \"{}\"",
-                        name
-                    )));
-                } else {
-                    // Its warn-able anyway
-                    processor.log_warning(
-                        &format!(
-                            "Creating a static macro with a name already existing : \"{}\"",
-                            name
-                        ),
-                        WarningType::Sanity,
-                    )?;
-                }
-            }
-            processor.add_static_rules(vec![(&name, &value)])?;
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "Static requires two argument".to_owned(),
-            ))
-        }
-    }
-
-    /// Separate an array
-    ///
-    /// # Usage
-    ///
-    /// $sep( ,1,2,3,4,5)
-    fn separate_array(
-        args: &str,
-        level: usize,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let separator = processor.parse_chunk_args(level, "", &args[0])?;
-            let array = processor.parse_chunk_args(level, "", &Utils::trim(&args[1]))?;
-            let mut array = array.split(',').into_iter();
-            let mut splited = String::new();
-
-            if let Some(first) = array.next() {
-                splited.push_str(first);
-
-                for item in array {
-                    splited.push_str(&format!("{}{}", separator, item));
-                }
-            }
-
-            Ok(Some(splited))
-        } else {
-            Err(RadError::InvalidArgument(
-                "sep requires two argument".to_owned(),
-            ))
-        }
-    }
 
     /// Queue processing
     ///
