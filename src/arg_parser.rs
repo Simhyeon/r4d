@@ -38,17 +38,13 @@ impl ArgParser {
         &mut self,
         args: &'a str,
         length: usize,
-        greedy: bool,
     ) -> Option<Vec<String>> {
-        let greedy_state = if greedy {
-            if length > 1 {
-                GreedyState::Deterred(length - 1)
-            } else {
-                GreedyState::Greedy
-            }
+        let greedy_state = if length > 1 {
+            GreedyState::Deterred(length - 1)
         } else {
-            GreedyState::Never
+            GreedyState::Greedy
         };
+
         let args: Vec<_> = self.args_to_vec(args, ',', greedy_state);
 
         if args.len() < length {

@@ -179,7 +179,7 @@ impl KeywordMacroMap {
             let sign = KMacroSign::new(
                 &ext.macro_name,
                 &ext.args,
-                *mac_ref
+                mac_ref
             );
             self.macros.insert(ext.macro_name, sign);
         }
@@ -197,7 +197,7 @@ impl KeywordMacroMap {
     /// $pause(true)
     /// $pause(false)
     fn pause(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 1, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let arg = &processor.parse_chunk_args(level, "", &args[0])?;
 
             if let Ok(value) = Utils::is_arg_true(arg) {
@@ -228,7 +228,7 @@ impl KeywordMacroMap {
     ///
     /// $foreach(\*a,b,c*\,$:)
     fn foreach(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let mut sums = String::new();
             let loopable = &processor.parse_chunk_args(level, "", &args[0])?;
             let mut count = 0;
@@ -254,7 +254,7 @@ impl KeywordMacroMap {
     ///
     /// $forline(TTT,$:)
     fn forline(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let mut sums = String::new();
             let loopable = &processor.parse_chunk_args(level, "", &args[0])?;
             let mut count = 1;
@@ -280,7 +280,7 @@ impl KeywordMacroMap {
     ///
     /// $forloop(1,5,$:)
     fn forloop(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let mut sums = String::new();
 
             let min_src = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
@@ -328,7 +328,7 @@ impl KeywordMacroMap {
     ///
     /// $if(evaluation, ifstate)
     fn if_cond(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let boolean = &processor.parse_chunk_args(level, "", &args[0])?;
 
             // Given condition is true
@@ -359,7 +359,7 @@ impl KeywordMacroMap {
     ///
     /// $ifelse(evaluation, \*ifstate*\, \*elsestate*\)
     fn ifelse(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let boolean = &processor.parse_chunk_args(level, "", &args[0])?;
 
             // Given condition is true
@@ -392,7 +392,7 @@ impl KeywordMacroMap {
     ///
     /// $ifdef(macro_name, expr)
     fn ifdef(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
 
             let boolean = processor.contains_macro(&name, MacroType::Any);
@@ -415,7 +415,7 @@ impl KeywordMacroMap {
     ///
     /// $ifdefelse(macro_name,expr,expr2)
     fn ifdefel(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
 
             let boolean = processor.contains_macro(&name, MacroType::Any);
@@ -443,7 +443,7 @@ impl KeywordMacroMap {
         if !Utils::is_granted("ifenv", AuthType::ENV, processor)? {
             return Ok(None);
         }
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
 
             let boolean = if let Ok(_) = std::env::var(name) {
@@ -474,7 +474,7 @@ impl KeywordMacroMap {
         if !Utils::is_granted("ifenvel", AuthType::ENV, processor)? {
             return Ok(None);
         }
-        if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
 
             let boolean = if let Ok(_) = std::env::var(name) {
@@ -504,7 +504,7 @@ impl KeywordMacroMap {
     ///
     /// $repl(macro,value)
     fn replace(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
             let target = args[1].as_str();
             if !processor.replace_macro(&name, target) {
@@ -591,7 +591,7 @@ impl KeywordMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
             let value = processor.parse_chunk_args(level, "", &Utils::trim(&args[1]))?;
             // Let shadows varaible so it is ok to have existing name
@@ -616,7 +616,7 @@ impl KeywordMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
             let value = processor.parse_chunk_args(level, "", &Utils::trim(&args[1]))?;
             // Macro name already exists
@@ -658,7 +658,7 @@ impl KeywordMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let separator = processor.parse_chunk_args(level, "", &args[0])?;
             let array = processor.parse_chunk_args(level, "", &Utils::trim(&args[1]))?;
             let mut array = array.split(',').into_iter();
@@ -700,7 +700,7 @@ impl KeywordMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let boolean = &processor.parse_chunk_args(level, "", &args[0])?;
             let cond = Utils::is_arg_true(&boolean)?;
             if cond {

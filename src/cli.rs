@@ -57,7 +57,6 @@ impl Cli {
                 },
             )?)
             .purge(args.is_present("purge"))
-            .greedy(args.is_present("greedy"))
             .lenient(args.is_present("lenient"))
             .silent(WarningType::from_str(
                 args.value_of("silent").unwrap_or("none"),
@@ -104,7 +103,16 @@ impl Cli {
                 crate::models::ExtMacroType::Function
             )
             .args(&vec!["a_first", "a_second"])
-            .body(ExtMacroBody::Function(&(test as FunctionMacroType)))
+            .body(ExtMacroBody::Function(test as FunctionMacroType))
+        );
+
+        // Adding function macro
+        processor.add_ext_macro(
+            ExtMacroBuilder::new("test", 
+                crate::models::ExtMacroType::Function
+            )
+            .args(&vec!["a_first", "a_second"])
+            .body(ExtMacroBody::Function(|args : &str, processor : &mut Processor| -> RadResult<Option<String>> { Ok(None) }))
         );
 
         // Adding keyword function macro
@@ -316,10 +324,6 @@ impl Cli {
                 .default_missing_value("none")
                 .value_name("WARNING TYPE")
                 .help("Supress warnings (security|sanity|any)"))
-            .arg(Arg::new("greedy")
-                .short('g')
-                .long("greedy")
-                .help("Make all macro invocations greedy"))
             .arg(Arg::new("purge")
                 .short('p')
                 .long("purge")
@@ -415,6 +419,6 @@ impl Cli {
     }
 }
 
-pub(crate) fn test(args : &str, greedy : bool, processor : &mut Processor) -> RadResult<Option<String>> {
+pub(crate) fn test(args : &str, processor : &mut Processor) -> RadResult<Option<String>> {
     Ok(Some(String::from("Hello world")))
 }
