@@ -10,14 +10,14 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use crate::models::{ExtMacroBody, ExtMacroBuilder};
 
-pub(crate) type KFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResult<Option<String>>;
+pub(crate) type DFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
-pub struct KeywordMacroMap {
+pub struct DeterredMacroMap {
     pub(crate) macros: HashMap<String, KMacroSign>,
 }
 
-impl KeywordMacroMap {
+impl DeterredMacroMap {
     /// Creates empty map
     pub fn empty() -> Self {
         Self {
@@ -29,26 +29,26 @@ impl KeywordMacroMap {
         let map = HashMap::from_iter(IntoIter::new([
             (
                 "declare".to_owned(),
-                KMacroSign::new("declare", ["a_macro_names"], KeywordMacroMap::declare),
+                KMacroSign::new("declare", ["a_macro_names"], DeterredMacroMap::declare),
             ),
             (
                 "fassert".to_owned(),
                 KMacroSign::new(
                     "fassert",
                     ["a_lvalue", "a_rvalue"],
-                    KeywordMacroMap::assert_fail,
+                    DeterredMacroMap::assert_fail,
                 ),
             ),
             (
                 "foreach".to_owned(),
-                KMacroSign::new("foreach", ["a_array", "a_body"], KeywordMacroMap::foreach),
+                KMacroSign::new("foreach", ["a_array", "a_body"], DeterredMacroMap::foreach),
             ),
             (
                 "forline".to_owned(),
                 KMacroSign::new(
                     "forline",
                     ["a_iterable", "a_body"],
-                    KeywordMacroMap::forline,
+                    DeterredMacroMap::forline,
                 ),
             ),
             (
@@ -56,19 +56,19 @@ impl KeywordMacroMap {
                 KMacroSign::new(
                     "forloop",
                     ["a_min", "a_max", "a_body"],
-                    KeywordMacroMap::forloop,
+                    DeterredMacroMap::forloop,
                 ),
             ),
             (
                 "if".to_owned(),
-                KMacroSign::new("if", ["a_boolean", "a_if_expr"], KeywordMacroMap::if_cond),
+                KMacroSign::new("if", ["a_boolean", "a_if_expr"], DeterredMacroMap::if_cond),
             ),
             (
                 "ifelse".to_owned(),
                 KMacroSign::new(
                     "ifelse",
                     ["a_boolean", "a_if_expr", "a_else_expr"],
-                    KeywordMacroMap::ifelse,
+                    DeterredMacroMap::ifelse,
                 ),
             ),
             (
@@ -76,7 +76,7 @@ impl KeywordMacroMap {
                 KMacroSign::new(
                     "ifdef",
                     ["a_macro_name", "a_if_expr"],
-                    KeywordMacroMap::ifdef,
+                    DeterredMacroMap::ifdef,
                 ),
             ),
             (
@@ -84,19 +84,19 @@ impl KeywordMacroMap {
                 KMacroSign::new(
                     "ifdefel",
                     ["a_macro_name", "a_if_expr", "a_else_expr"],
-                    KeywordMacroMap::ifdefel,
+                    DeterredMacroMap::ifdefel,
                 ),
             ),
             (
                 "ifenv".to_owned(),
-                KMacroSign::new("ifenv", ["a_env_name", "a_if_expr"], KeywordMacroMap::ifenv),
+                KMacroSign::new("ifenv", ["a_env_name", "a_if_expr"], DeterredMacroMap::ifenv),
             ),
             (
                 "ifenvel".to_owned(),
                 KMacroSign::new(
                     "ifenvel",
                     ["a_env_name", "a_if_expr", "a_else_expr"],
-                    KeywordMacroMap::ifenvel,
+                    DeterredMacroMap::ifenvel,
                 ),
             ),
             (
@@ -104,19 +104,19 @@ impl KeywordMacroMap {
                 KMacroSign::new(
                     "let",
                     ["a_macro_name", "a_value"],
-                    KeywordMacroMap::bind_to_local,
+                    DeterredMacroMap::bind_to_local,
                 ),
             ),
             (
                 "pause".to_owned(),
-                KMacroSign::new("pause", ["a_pause?"], KeywordMacroMap::pause),
+                KMacroSign::new("pause", ["a_pause?"], DeterredMacroMap::pause),
             ),
             (
                 "repl".to_owned(),
                 KMacroSign::new(
                     "repl",
                     ["a_macro_name", "a_new_value"],
-                    KeywordMacroMap::replace,
+                    DeterredMacroMap::replace,
                 ),
             ),
             (
@@ -124,7 +124,7 @@ impl KeywordMacroMap {
                 KMacroSign::new(
                     "static",
                     ["a_macro_name", "a_value"],
-                    KeywordMacroMap::define_static,
+                    DeterredMacroMap::define_static,
                 ),
             ),
             (
@@ -132,19 +132,19 @@ impl KeywordMacroMap {
                 KMacroSign::new(
                     "sep",
                     ["separator", "a_array"],
-                    KeywordMacroMap::separate_array,
+                    DeterredMacroMap::separate_array,
                 ),
             ),
             (
                 "que".to_owned(),
-                KMacroSign::new("que", ["a_content"], KeywordMacroMap::queue_content),
+                KMacroSign::new("que", ["a_content"], DeterredMacroMap::queue_content),
             ),
             (
                 "ifque".to_owned(),
                 KMacroSign::new(
                     "ifque",
                     ["a_bool", "a_content"],
-                    KeywordMacroMap::if_queue_content,
+                    DeterredMacroMap::if_queue_content,
                 ),
             ),
         ]));
@@ -152,7 +152,7 @@ impl KeywordMacroMap {
     }
 
     /// Get Function pointer from map
-    pub fn get_keyword_macro(&self, name: &str) -> Option<&KFunctionMacroType> {
+    pub fn get_deterred_macro(&self, name: &str) -> Option<&DFunctionMacroType> {
         if let Some(mac) = self.macros.get(name) {
             Some(&mac.logic)
         } else {
@@ -723,14 +723,14 @@ impl KeywordMacroMap {
 pub(crate) struct KMacroSign {
     name: String,
     args: Vec<String>,
-    pub logic: KFunctionMacroType,
+    pub logic: DFunctionMacroType,
 }
 
 impl KMacroSign {
     pub fn new(
         name: &str,
         args: impl IntoIterator<Item = impl AsRef<str>>,
-        logic: KFunctionMacroType,
+        logic: DFunctionMacroType,
     ) -> Self {
         let args = args
             .into_iter()

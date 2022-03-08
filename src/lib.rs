@@ -64,7 +64,7 @@ pub(crate) mod debugger;
 pub(crate) mod define_parser;
 #[cfg(feature = "hook")]
 pub(crate) mod hookmap;
-pub(crate) mod keyword_map;
+pub(crate) mod deterred_map;
 pub(crate) mod lexor;
 pub(crate) mod logger;
 pub(crate) mod models;

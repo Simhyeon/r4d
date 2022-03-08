@@ -3,14 +3,14 @@ use crate::error::RadError;
 #[cfg(feature = "signature")]
 use crate::sigmap::MacroSignature;
 use crate::utils::Utils;
-use crate::{function_map::FunctionMacroMap, keyword_map::KeywordMacroMap};
+use crate::{function_map::FunctionMacroMap, deterred_map::DeterredMacroMap};
 use bincode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use crate::function_map::FunctionMacroType;
-use crate::keyword_map::KFunctionMacroType;
+use crate::deterred_map::DFunctionMacroType;
 
 pub type RadResult<T> = Result<T, RadError>;
 
@@ -44,7 +44,7 @@ impl LocalMacro {
 /// - Runtime macro
 /// - Local bound macro
 pub(crate) struct MacroMap {
-    pub keyword: KeywordMacroMap,
+    pub deterred: DeterredMacroMap,
     pub function: FunctionMacroMap,
     pub runtime: RuntimeMacroMap,
     pub local: HashMap<String, LocalMacro>,
@@ -54,7 +54,7 @@ impl MacroMap {
     /// Creates empty map without default macros
     pub fn empty() -> Self {
         Self {
-            keyword: KeywordMacroMap::empty(),
+            deterred: DeterredMacroMap::empty(),
             function: FunctionMacroMap::empty(),
             runtime: RuntimeMacroMap::new(),
             local: HashMap::new(),
@@ -64,7 +64,7 @@ impl MacroMap {
     /// Creates default map with default function macros
     pub fn new() -> Self {
         Self {
-            keyword: KeywordMacroMap::new(),
+            deterred: DeterredMacroMap::new(),
             function: FunctionMacroMap::new(),
             runtime: RuntimeMacroMap::new(),
             local: HashMap::new(),
@@ -95,16 +95,16 @@ impl MacroMap {
         self.local.retain(|_, mac| mac.level <= current_level);
     }
 
-    pub fn is_keyword_macro(&self, name: &str) -> bool {
-        self.keyword.contains(name)
+    pub fn is_deterred_macro(&self, name: &str) -> bool {
+        self.deterred.contains(name)
     }
 
     pub fn contains_macro(&self, macro_name:&str, macro_type: MacroType) -> bool {
         match macro_type {
-            MacroType::Keyword => self.keyword.contains(macro_name),
+            MacroType::Keyword => self.deterred.contains(macro_name),
             MacroType::Function => self.function.contains(macro_name),
             MacroType::Runtime => self.runtime.contains(macro_name),
-            MacroType::Any => self.function.contains(macro_name) || self.runtime.contains(macro_name) || self.keyword.contains(macro_name),
+            MacroType::Any => self.function.contains(macro_name) || self.runtime.contains(macro_name) || self.deterred.contains(macro_name),
         }
     }
 
@@ -120,26 +120,26 @@ impl MacroMap {
     /// Undeifne macro
     pub fn undefine(&mut self, macro_name: &str, macro_type: MacroType) {
         match macro_type{
-            MacroType::Keyword => {self.keyword.undefine(macro_name);}
+            MacroType::Keyword => {self.deterred.undefine(macro_name);}
             MacroType::Function => {self.function.undefine(macro_name);}
             MacroType::Runtime => {self.runtime.undefine(macro_name);}
             MacroType::Any => {
                 self.function.undefine(macro_name);
                 self.runtime.undefine(macro_name);
-                self.keyword.undefine(macro_name);
+                self.deterred.undefine(macro_name);
             }
         }
     }
 
     pub fn rename(&mut self, macro_name: &str, target_name: &str, macro_type: MacroType) {
         match macro_type{
-            MacroType::Keyword => {self.keyword.rename(macro_name,target_name);}
+            MacroType::Keyword => {self.deterred.rename(macro_name,target_name);}
             MacroType::Function => {self.function.rename(macro_name,target_name);}
             MacroType::Runtime => {self.runtime.rename(macro_name,target_name);}
             MacroType::Any => {
                 self.function.rename(macro_name,target_name);
                 self.runtime.rename(macro_name,target_name);
-                self.keyword.rename(macro_name,target_name);
+                self.deterred.rename(macro_name,target_name);
             }
         }
     }
@@ -163,7 +163,7 @@ impl MacroMap {
     #[cfg(feature = "signature")]
     pub fn get_signatures(&self) -> Vec<MacroSignature> {
         let key_iter = self
-            .keyword
+            .deterred
             .macros
             .iter()
             .map(|(_, sig)| MacroSignature::from(sig));
@@ -183,7 +183,7 @@ impl MacroMap {
     #[cfg(feature = "signature")]
     pub fn get_default_signatures(&self) -> Vec<MacroSignature> {
         let key_iter = self
-            .keyword
+            .deterred
             .macros
             .iter()
             .map(|(_, sig)| MacroSignature::from(sig));
@@ -506,7 +506,7 @@ pub enum Behaviour {
 #[derive(Clone)]
 pub enum ExtMacroBody {
     Function(FunctionMacroType),
-    Keyword(KFunctionMacroType),
+    Keyword(DFunctionMacroType),
 }
 
 #[derive(Clone)]
