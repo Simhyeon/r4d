@@ -1,6 +1,6 @@
 //! Authorization(Permission)
 //!
-//! Permission should be given for some basic macro types
+//! Permission should be given for some function macro types
 
 #[derive(Debug)]
 /// Struct that stores auth states

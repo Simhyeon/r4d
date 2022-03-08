@@ -19,7 +19,7 @@ impl SignatureMap {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum MacroVariant {
     Keyword,
-    Basic,
+    Function,
     Custom,
 }
 

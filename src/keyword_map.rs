@@ -2,13 +2,15 @@ use crate::arg_parser::ArgParser;
 use crate::logger::WarningType;
 use crate::models::{Behaviour, RadResult};
 use crate::utils::Utils;
-use crate::Processor;
+use crate::{Processor};
+use crate::models::MacroType;
 use crate::{AuthType, RadError};
 use std::array::IntoIter;
 use std::collections::HashMap;
 use std::iter::FromIterator;
+use crate::models::{ExtMacroBody, ExtMacroBuilder};
 
-type KMacroType = fn(&str, usize, &mut Processor) -> RadResult<Option<String>>;
+pub(crate) type KFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
 pub struct KeywordMacroMap {
@@ -25,14 +27,6 @@ impl KeywordMacroMap {
 
     pub fn new() -> Self {
         let map = HashMap::from_iter(IntoIter::new([
-            (
-                "bind".to_owned(),
-                KMacroSign::new(
-                    "bind",
-                    ["a_macro_name", "a_value"],
-                    KeywordMacroMap::bind_depre,
-                ),
-            ),
             (
                 "declare".to_owned(),
                 KMacroSign::new("declare", ["a_macro_names"], KeywordMacroMap::declare),
@@ -63,14 +57,6 @@ impl KeywordMacroMap {
                     "forloop",
                     ["a_min", "a_max", "a_body"],
                     KeywordMacroMap::forloop,
-                ),
-            ),
-            (
-                "global".to_owned(),
-                KMacroSign::new(
-                    "global",
-                    ["a_macro_name", "a_value"],
-                    KeywordMacroMap::global_depre,
                 ),
             ),
             (
@@ -166,7 +152,7 @@ impl KeywordMacroMap {
     }
 
     /// Get Function pointer from map
-    pub fn get_keyword_macro(&self, name: &str) -> Option<&KMacroType> {
+    pub fn get_keyword_macro(&self, name: &str) -> Option<&KFunctionMacroType> {
         if let Some(mac) = self.macros.get(name) {
             Some(&mac.logic)
         } else {
@@ -177,6 +163,26 @@ impl KeywordMacroMap {
     /// Check if map contains the name
     pub fn contains(&self, name: &str) -> bool {
         self.macros.contains_key(name)
+    }
+
+    pub fn undefine(&mut self, name: &str) {
+        self.macros.remove(name);
+    }
+
+    pub fn rename(&mut self, name: &str, target: &str) {
+        let func = self.macros.remove(name).unwrap();
+        self.macros.insert(target.to_owned(), func);
+    }
+
+    pub fn new_ext_macro(&mut self, ext : ExtMacroBuilder) {
+        if let Some(ExtMacroBody::Keyword(mac_ref)) = ext.macro_body {
+            let sign = KMacroSign::new(
+                &ext.macro_name,
+                &ext.args,
+                *mac_ref
+            );
+            self.macros.insert(ext.macro_name, sign);
+        }
     }
 
     // ----------
@@ -228,9 +234,7 @@ impl KeywordMacroMap {
             let mut count = 0;
             for value in loopable.split(',') {
                 // This overrides value
-                processor
-                    .get_map()
-                    .new_local(level, "a_LN", &count.to_string());
+                processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 let result =
                     processor.parse_chunk_args(level, "", &args[1].replace("$:", value))?;
                 sums.push_str(&result);
@@ -256,9 +260,7 @@ impl KeywordMacroMap {
             let mut count = 1;
             for value in loopable.lines() {
                 // This overrides value
-                processor
-                    .get_map()
-                    .new_local(level, "a_LN", &count.to_string());
+                processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 let result =
                     processor.parse_chunk_args(level, "", &args[1].replace("$:", value))?;
                 sums.push_str(&result);
@@ -392,9 +394,8 @@ impl KeywordMacroMap {
     fn ifdef(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
-            let map = processor.get_map();
 
-            let boolean = map.contains_any_macro(&name);
+            let boolean = processor.contains_macro(&name, MacroType::Any);
             // Return true or false by the definition
             if boolean {
                 let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
@@ -416,9 +417,8 @@ impl KeywordMacroMap {
     fn ifdefel(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3, true) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
-            let map = processor.get_map();
 
-            let boolean = map.contains_any_macro(&name);
+            let boolean = processor.contains_macro(&name, MacroType::Any);
             // Return true or false by the definition
             if boolean {
                 let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
@@ -507,7 +507,7 @@ impl KeywordMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, true) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
             let target = args[1].as_str();
-            if !processor.get_map().replace(&name, target) {
+            if !processor.replace_macro(&name, target) {
                 return Err(RadError::InvalidArgument(format!(
                     "{} doesn't exist, thus cannot replace it's content",
                     name
@@ -541,19 +541,6 @@ impl KeywordMacroMap {
         }
     }
 
-    #[deprecated(since = "1.2", note = "Bind is deprecated and will be removed in 2.0")]
-    fn bind_depre(
-        args: &str,
-        level: usize,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        processor.log_warning(
-            "Bind is deprecated and will be removed in 2.0 version. Use let instead.",
-            WarningType::Sanity,
-        )?;
-        Self::bind_to_local(args, level, processor)
-    }
-
     /// Declare an empty macros
     ///
     /// # Usage
@@ -562,14 +549,14 @@ impl KeywordMacroMap {
     fn declare(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         let names = processor.parse_chunk_args(level, "", &Utils::trim(args))?;
         // TODO Create empty macro rules
-        let custom_rules = names
+        let runtime_rules = names
             .split(',')
             .map(|name| (Utils::trim(name), "", ""))
             .collect::<Vec<(String, &str, &str)>>();
 
         // Check overriding. Warn or yield error
-        for (name, _, _) in custom_rules.iter() {
-            if processor.get_map().contains_any_macro(&name) {
+        for (name, _, _) in runtime_rules.iter() {
+            if processor.contains_macro(&name, MacroType::Any) {
                 if processor.state.behaviour == Behaviour::Strict {
                     return Err(RadError::InvalidMacroName(format!(
                         "Declaring a macro with a name already existing : \"{}\"",
@@ -587,8 +574,8 @@ impl KeywordMacroMap {
             }
         }
 
-        // Add custom rules
-        processor.add_custom_rules(custom_rules)?;
+        // Add runtime rules
+        processor.add_runtime_rules(runtime_rules)?;
         Ok(None)
     }
 
@@ -610,33 +597,13 @@ impl KeywordMacroMap {
             // Let shadows varaible so it is ok to have existing name
             // TODO
             // I'm not so sure if Level 1 is fine for all cases?
-            processor.get_map().new_local(1, &name, &value);
+            processor.add_new_local_macro(1, &name, &value);
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
                 "Let requires two argument".to_owned(),
             ))
         }
-    }
-
-    /// Global macro (Deprecated)
-    ///
-    /// This is technically same with static
-    /// This macro will be completely removed in 2.0
-    #[deprecated(
-        since = "1.2",
-        note = "Global is deprecated and will be removed in 2.0"
-    )]
-    fn global_depre(
-        args: &str,
-        level: usize,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        processor.log_warning(
-            "Global is deprecated and will be removed in 2.0 version. Use static instead.",
-            WarningType::Sanity,
-        )?;
-        Self::define_static(args, level, processor)
     }
 
     /// Define a static macro
@@ -653,7 +620,7 @@ impl KeywordMacroMap {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
             let value = processor.parse_chunk_args(level, "", &Utils::trim(&args[1]))?;
             // Macro name already exists
-            if processor.get_map().contains_any_macro(&name) {
+            if processor.contains_macro(&name, MacroType::Any) {
                 // Strict mode prevents overriding
                 // Return error
                 if processor.state.behaviour == Behaviour::Strict {
@@ -756,14 +723,14 @@ impl KeywordMacroMap {
 pub(crate) struct KMacroSign {
     name: String,
     args: Vec<String>,
-    pub logic: KMacroType,
+    pub logic: KFunctionMacroType,
 }
 
 impl KMacroSign {
     pub fn new(
         name: &str,
         args: impl IntoIterator<Item = impl AsRef<str>>,
-        logic: KMacroType,
+        logic: KFunctionMacroType,
     ) -> Self {
         let args = args
             .into_iter()

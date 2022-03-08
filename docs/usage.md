@@ -138,10 +138,6 @@ let mut processor = Processor::new()
 // This is an warning and can be suppressed with silent option
 processor.print_permission()?;
 
-// Add basic rules(= register functions)
-// test function is not included in this demo
-processor.add_basic_rules(vec![("test", test as MacroType)]);
-
 // You can add basic rule in form of closure too
 processor.add_closure_rule(
     "test",                                                       // Name of macro

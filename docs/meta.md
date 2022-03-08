@@ -1,26 +1,69 @@
 ### Changed
 
-* [x] BUG! : Fix unicode tail,head,strip: God damn it
-* [x] New macro : $enl() remove right next newline
-* [x] Error on duplicate table name
-* [x] Add droptable macro
-* [x] Redirect refactor with relay and hold macro
+* [x] Decide concrete rule for versioning
+* [x] Possibly relay and halt warning
+* [x] Enable lib user to change write option on the way
+* [x] Queue
+* [x] Separte warning into two types
+	* [x] System + program warning ( About security )
+	* [x] Processing warning ( About execution sanity )
+* [x] Merge fragmented option into single enum
 
-* [x] Possibly some mathematics related macros
-	* [x] Min
-	* [x] Max
-	* [x] Ceil
-	* [x] Floor
-	* [x] Precision ( Floating number )
-* [x] Some more text processing
-	* [x] Cap -> captialize
-	* [x] Low -> lower
-	* [x] Num -> strip number part from given text
-	* [x] Rev -> Reverse an array
-	* [x] Eval with original formula support
-	* [x] tarray & hms
+### Imminent
+
+- Remove closure rule because it is rarely used.
+- Adding macro extension is somewhat... tedious because it needs explicit casting 
+- Enable ext macro
+	- Function macro -> Kinda works ootb
+	- Keyword macro
+- Make ext macro as powerful as default macro -> Yield error on insufficient arguments
+- Get parsed arguments.
+
+### Abbreviated todo
+
+**Before 2.0**
+
+* [ ] Better documentaion generation
+* [ ] Make basic and keyword separation distintive and intuitive
+* [ ] Macro builder for user extensibiliti
+* [ ] Error handling, execution security
+* [ ] Sandboxed processing
+* [ ] Rename macro names for better usability
 
 ### TODOs
+
+* [ ] Define with documentation of possibly 'docu' macro
+* [ ] Make much more smaller binary file available as basic feature
+	- Opt-lvel has huge effet (2.2M -> 1.8M)
+	- codegen-units = 1 has a 0.1M gain ( increase compile time but it's small anyway )
+	- upx is a holy banger (1.7M -> 500K ... Just wow...)
+* [ ] Better error + warnings
+	* [x] Self inclusion error
+	* [x] Self relaying error
+	* [ ] Possibly other relaying related errors
+	* [ ] Nested self include
+	For example, whie processing file one.md with '$include(next.md)' and
+	next.md with '$include(ond.md)'. Though this will yield error because
+	program cannot hold two separte file descriptor though user might want to 
+	catch such culprit while processing.
+
+	NO, I was wrong, because include only opens file with read access so, it
+	can be shared through multipel File interface. Oops
+	* [ ] Create stack variable for sanity checking
+		- Macro stack (Which is a container of currently queued macros)
+		- Input stack (Which is a container of currently queued processer input)
+	* [ ] ProcessorInput is bloaty because of clone calls. Can it be replaced
+	with path or some other efficient data type?
+
+* [ ] Sandboxed processing
+* [ ] Easily extend macros 
+	* [ ] Make a complete MacroBuilder struct
+	* [ ] MacroExt
+* [ ] Rename all operation macros to op\_yatti\_yatta for clarity
+
+* [ ] Warn about operational macros + document something
+* [ ] Rename all operational macros to op\_name variant
+* [ ] Heavy text processing -> Proper read macro support
 
 * [ ] Rad-wrapper
 	- Read as processed
@@ -37,7 +80,10 @@
 * [ ] Syntax consistencies
 
 * [ ] Export to wasm (Possibly later)
-	- Practice with gcalc first
+	- Make "radobject" object
+	- That has an interface of src\_text and out\_text
+	- And ability to add closure for live update
+	- object.add\_closure( (src\_text\_to\_be\_parsed) -> { Whatever code comes here } )
 
 * [ ] Make distinction between basic macro and keyword macro intuitive and concrete
 - Move puase from keyword to basic
@@ -51,6 +97,7 @@
 * [ ] Export to python binding (2.0)
 - This also needs some extra workload to enable pyo3 and some nomangle-like
 configurations
+
 * [ ] Export to c binding (2.0)
 - This includes changes in Cargo.toml file such as cdylib which was actually
 not included by default, like what?
@@ -135,6 +182,27 @@ basic macro name is found, macro call(function) is executed. Thus adding a
 basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
+
+* [x] BUG! : Fix unicode tail,head,strip: God damn it
+* [x] New macro : $enl() remove right next newline
+* [x] Error on duplicate table name
+* [x] Add droptable macro
+* [x] Redirect refactor with relay and hold macro
+
+* [x] Possibly some mathematics related macros
+	* [x] Min
+	* [x] Max
+	* [x] Ceil
+	* [x] Floor
+	* [x] Precision ( Floating number )
+* [x] Some more text processing
+	* [x] Cap -> captialize
+	* [x] Low -> lower
+	* [x] Num -> strip number part from given text
+	* [x] Rev -> Reverse an array
+	* [x] Eval with original formula support
+	* [x] tarray & hms
+
 
 * [x] New basic macros
 	- head

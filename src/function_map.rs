@@ -1,6 +1,6 @@
-//! # Basic module
+//! # Function macro module
 //!
-//! Basic module includes struct and methods related to basic macros which are technically function
+//! Function macro module includes struct and methods related to function macros which are technically function
 //! pointers.
 
 use crate::arg_parser::{ArgParser, GreedyState};
@@ -12,7 +12,7 @@ use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
-use crate::models::{Behaviour, FlowControl, ProcessInput, RadResult, RelayTarget};
+use crate::models::{Behaviour, FlowControl, ProcessInput, RadResult, RelayTarget, ExtMacroBuilder, ExtMacroBody};
 use crate::processor::Processor;
 use crate::utils::Utils;
 #[cfg(feature = "cindex")]
@@ -28,6 +28,7 @@ use std::io::Write;
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use crate::models::MacroType;
 
 lazy_static! {
     static ref CLRF_MATCH: Regex = Regex::new(r#"\r\n"#).unwrap();
@@ -35,35 +36,14 @@ lazy_static! {
     static ref NUM_MATCH: Regex = Regex::new(r#"\d.*?"#).expect("Failed to crate number regex");
 }
 
-/// Type signature of basic macros
-///
-/// This is in order of args, greediness, processor's mutable reference
-///
-/// # Example
-///
-/// ```rust
-/// fn demo(args: &str, greedy: bool, processor: &mut Processor) -> RadResult<Option<String>> {
-///     let mut medium = String::new();
-///     // Some logics go here
-///     if this_macro_prints_something {
-///         Ok(Some(medium))
-///     } else {
-///         // If return "None", then single newline will be removed
-///         Ok(None)
-///     }
-/// }
-///
-/// // ... While building a processor ...
-/// processor.add_basic_rules(vec![("test", test as MacroType)]);
-/// ```
-pub type MacroType = fn(&str, bool, &mut Processor) -> RadResult<Option<String>>;
+pub(crate) type FunctionMacroType = fn(&str, bool, &mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
-pub(crate) struct BasicMacroMap {
-    pub(crate) macros: HashMap<String, BMacroSign>,
+pub(crate) struct FunctionMacroMap {
+    pub(crate) macros: HashMap<String, FMacroSign>,
 }
 
-impl BasicMacroMap {
+impl FunctionMacroMap {
     /// Creates empty map
     pub fn empty() -> Self {
         Self {
@@ -71,78 +51,78 @@ impl BasicMacroMap {
         }
     }
 
-    /// Creates new basic macro hashmap
+    /// Creates new function macro hashmap
     ///
     /// Optional macros are included only when a feature is enabled
     pub fn new() -> Self {
         // Create hashmap of functions
         #[allow(unused_mut)]
         let mut map = HashMap::from_iter(IntoIter::new([
-            ("-".to_owned(), BMacroSign::new("-", ESR, Self::get_pipe)),
+            ("-".to_owned(), FMacroSign::new("-", ESR, Self::get_pipe)),
             (
                 "abs".to_owned(),
-                BMacroSign::new("abs", ["a_path"], Self::absolute_path),
+                FMacroSign::new("abs", ["a_path"], Self::absolute_path),
             ),
             (
                 "append".to_owned(),
-                BMacroSign::new("append", ["a_macro_name", "a_content"], Self::append),
+                FMacroSign::new("append", ["a_macro_name", "a_content"], Self::append),
             ),
             (
                 "arr".to_owned(),
-                BMacroSign::new("arr", ["a_values"], Self::array),
+                FMacroSign::new("arr", ["a_values"], Self::array),
             ),
             (
                 "assert".to_owned(),
-                BMacroSign::new("assert", ["a_lvalue", "a_rvalue"], Self::assert),
+                FMacroSign::new("assert", ["a_lvalue", "a_rvalue"], Self::assert),
             ),
             (
                 "ceil".to_owned(),
-                BMacroSign::new("ceil", ["a_number"], Self::get_ceiling),
+                FMacroSign::new("ceil", ["a_number"], Self::get_ceiling),
             ),
             (
                 "chomp".to_owned(),
-                BMacroSign::new("chomp", ["a_content"], Self::chomp),
+                FMacroSign::new("chomp", ["a_content"], Self::chomp),
             ),
             (
                 "comp".to_owned(),
-                BMacroSign::new("comp", ["a_content"], Self::compress),
+                FMacroSign::new("comp", ["a_content"], Self::compress),
             ),
             (
                 "count".to_owned(),
-                BMacroSign::new("count", ["a_array"], Self::count),
+                FMacroSign::new("count", ["a_array"], Self::count),
             ),
             (
                 "countw".to_owned(),
-                BMacroSign::new("countw", ["a_array"], Self::count_word),
+                FMacroSign::new("countw", ["a_array"], Self::count_word),
             ),
             (
                 "countl".to_owned(),
-                BMacroSign::new("countl", ["a_content"], Self::count_lines),
+                FMacroSign::new("countl", ["a_content"], Self::count_lines),
             ),
             (
                 "dnl".to_owned(),
-                BMacroSign::new("dnl", ESR, Self::deny_newline),
+                FMacroSign::new("dnl", ESR, Self::deny_newline),
             ),
             (
                 "env".to_owned(),
-                BMacroSign::new("env", ["a_env_name"], Self::get_env),
+                FMacroSign::new("env", ["a_env_name"], Self::get_env),
             ),
             (
                 "enl".to_owned(),
-                BMacroSign::new("enl", ESR, Self::escape_newline),
+                FMacroSign::new("enl", ESR, Self::escape_newline),
             ),
             (
                 "envset".to_owned(),
-                BMacroSign::new("envset", ["a_env_name", "a_env_value"], Self::set_env),
+                FMacroSign::new("envset", ["a_env_name", "a_env_value"], Self::set_env),
             ),
             (
                 "escape".to_owned(),
-                BMacroSign::new("escape", ESR, Self::escape),
+                FMacroSign::new("escape", ESR, Self::escape),
             ),
-            ("exit".to_owned(), BMacroSign::new("exit", ESR, Self::exit)),
+            ("exit".to_owned(), FMacroSign::new("exit", ESR, Self::exit)),
             (
                 "fileout".to_owned(),
-                BMacroSign::new(
+                FMacroSign::new(
                     "fileout",
                     ["a_truncate?", "a_filename", "a_content"],
                     Self::file_out,
@@ -150,116 +130,112 @@ impl BasicMacroMap {
             ),
             (
                 "floor".to_owned(),
-                BMacroSign::new("floor", ["a_number"], Self::get_floor),
+                FMacroSign::new("floor", ["a_number"], Self::get_floor),
             ),
             (
                 "fold".to_owned(),
-                BMacroSign::new("fold", ["a_content"], Self::fold),
+                FMacroSign::new("fold", ["a_content"], Self::fold),
             ),
             (
                 "foldl".to_owned(),
-                BMacroSign::new("foldl", ["a_content"], Self::fold_line),
+                FMacroSign::new("foldl", ["a_content"], Self::fold_line),
             ),
             (
                 "grep".to_owned(),
-                BMacroSign::new("grep", ["a_regex", "a_content"], Self::grep),
+                FMacroSign::new("grep", ["a_regex", "a_content"], Self::grep),
             ),
             (
                 "head".to_owned(),
-                BMacroSign::new("head", ["a_count", "a_content"], Self::head),
+                FMacroSign::new("head", ["a_count", "a_content"], Self::head),
             ),
             (
                 "halt".to_owned(),
-                BMacroSign::new("halt", ESR, Self::halt_relay),
+                FMacroSign::new("halt", ESR, Self::halt_relay),
             ),
             (
                 "headl".to_owned(),
-                BMacroSign::new("headl", ["a_count", "a_content"], Self::head_line),
+                FMacroSign::new("headl", ["a_count", "a_content"], Self::head_line),
             ),
             (
                 "include".to_owned(),
-                BMacroSign::new("include", ["a_filename"], Self::include),
+                FMacroSign::new("include", ["a_filename"], Self::include),
             ),
             (
                 "index".to_owned(),
-                BMacroSign::new("index", ["a_index", "a_array"], Self::index_array),
+                FMacroSign::new("index", ["a_index", "a_array"], Self::index_array),
             ),
             (
                 "len".to_owned(),
-                BMacroSign::new("len", ["a_string"], Self::len),
+                FMacroSign::new("len", ["a_string"], Self::len),
             ),
             (
                 "lower".to_owned(),
-                BMacroSign::new("lower", ["a_text"], Self::lower),
+                FMacroSign::new("lower", ["a_text"], Self::lower),
             ),
             (
                 "max".to_owned(),
-                BMacroSign::new("max", ["a_array"], Self::get_max),
+                FMacroSign::new("max", ["a_array"], Self::get_max),
             ),
             (
                 "min".to_owned(),
-                BMacroSign::new("min", ["a_array"], Self::get_min),
+                FMacroSign::new("min", ["a_array"], Self::get_min),
             ),
             (
                 "name".to_owned(),
-                BMacroSign::new("name", ["a_path"], Self::get_name),
+                FMacroSign::new("name", ["a_path"], Self::get_name),
             ),
             (
                 "nassert".to_owned(),
-                BMacroSign::new("nassert", ["a_lvalue", "a_rvalue"], Self::assert_ne),
+                FMacroSign::new("nassert", ["a_lvalue", "a_rvalue"], Self::assert_ne),
             ),
             (
                 "not".to_owned(),
-                BMacroSign::new("not", ["a_boolean"], Self::not),
+                FMacroSign::new("not", ["a_boolean"], Self::not),
             ),
             (
                 "num".to_owned(),
-                BMacroSign::new("num", ["a_text"], Self::get_number),
+                FMacroSign::new("num", ["a_text"], Self::get_number),
             ),
-            ("nl".to_owned(), BMacroSign::new("nl", ESR, Self::newline)),
+            ("nl".to_owned(), FMacroSign::new("nl", ESR, Self::newline)),
             (
                 "panic".to_owned(),
-                BMacroSign::new("panic", ["a_msg"], Self::manual_panic),
+                FMacroSign::new("panic", ["a_msg"], Self::manual_panic),
             ),
             (
                 "parent".to_owned(),
-                BMacroSign::new("parent", ["a_path"], Self::get_parent),
+                FMacroSign::new("parent", ["a_path"], Self::get_parent),
             ),
             (
                 "path".to_owned(),
-                BMacroSign::new("path", ["a_paths"], Self::merge_path),
+                FMacroSign::new("path", ["a_paths"], Self::merge_path),
             ),
             (
                 "pipe".to_owned(),
-                BMacroSign::new("pipe", ["a_value"], Self::pipe),
+                FMacroSign::new("pipe", ["a_value"], Self::pipe),
             ),
             (
                 "pipeto".to_owned(),
-                BMacroSign::new("pipe", ["a_pipe_name", "a_value"], Self::pipe_to),
+                FMacroSign::new("pipe", ["a_pipe_name", "a_value"], Self::pipe_to),
             ),
             (
                 "prec".to_owned(),
-                BMacroSign::new("prec", ["a_value", "a_precision"], Self::prec),
+                FMacroSign::new("prec", ["a_value", "a_precision"], Self::prec),
             ),
             (
                 "read".to_owned(),
-                BMacroSign::new("read", ["a_filename"], Self::read),
+                FMacroSign::new("read", ["a_filename"], Self::read),
             ),
             (
                 "relay".to_owned(),
-                BMacroSign::new("relay", ["a_type", "a_target+"], Self::relay),
-            ),
-            (
-                "redir".to_owned(),
-                BMacroSign::new("redir", ["a_redirect?"], Self::temp_redirect),
+                FMacroSign::new("relay", ["a_type", "a_target+"], Self::relay),
             ),
             (
                 "rev".to_owned(),
-                BMacroSign::new("rev", ["a_array?"], Self::reverse_array),
+                FMacroSign::new("rev", ["a_array?"], Self::reverse_array),
             ),
             (
                 "regex".to_owned(),
-                BMacroSign::new(
+                FMacroSign::new(
                     "regex",
                     ["a_source", "a_match", "a_substitution"],
                     Self::regex_sub,
@@ -267,27 +243,27 @@ impl BasicMacroMap {
             ),
             (
                 "rename".to_owned(),
-                BMacroSign::new("rename", ["a_macro_name", "a_new_name"], Self::rename_call),
+                FMacroSign::new("rename", ["a_macro_name", "a_new_name"], Self::rename_call),
             ),
             (
                 "repeat".to_owned(),
-                BMacroSign::new("repeat", ["a_count", "a_source"], Self::repeat),
+                FMacroSign::new("repeat", ["a_count", "a_source"], Self::repeat),
             ),
             (
                 "sort".to_owned(),
-                BMacroSign::new("sort", ["a_values"], Self::sort_array),
+                FMacroSign::new("sort", ["a_values"], Self::sort_array),
             ),
             (
                 "sortl".to_owned(),
-                BMacroSign::new("sortl", ["a_values"], Self::sort_lines),
+                FMacroSign::new("sortl", ["a_values"], Self::sort_lines),
             ),
             (
                 "strip".to_owned(),
-                BMacroSign::new("tail", ["a_count", "a_direction", "a_content"], Self::strip),
+                FMacroSign::new("tail", ["a_count", "a_direction", "a_content"], Self::strip),
             ),
             (
                 "stripl".to_owned(),
-                BMacroSign::new(
+                FMacroSign::new(
                     "taill",
                     ["a_count", "a_direction", "a_content"],
                     Self::strip_line,
@@ -295,7 +271,7 @@ impl BasicMacroMap {
             ),
             (
                 "sub".to_owned(),
-                BMacroSign::new(
+                FMacroSign::new(
                     "sub",
                     ["a_start_index", "a_end_index", "a_source"],
                     Self::substring,
@@ -303,31 +279,31 @@ impl BasicMacroMap {
             ),
             (
                 "syscmd".to_owned(),
-                BMacroSign::new("syscmd", ["a_command"], Self::syscmd),
+                FMacroSign::new("syscmd", ["a_command"], Self::syscmd),
             ),
             (
                 "tail".to_owned(),
-                BMacroSign::new("tail", ["a_count", "a_content"], Self::tail),
+                FMacroSign::new("tail", ["a_count", "a_content"], Self::tail),
             ),
             (
                 "taill".to_owned(),
-                BMacroSign::new("taill", ["a_count", "a_content"], Self::tail_line),
+                FMacroSign::new("taill", ["a_count", "a_content"], Self::tail_line),
             ),
             (
                 "tempin".to_owned(),
-                BMacroSign::new("tempin", ["a_tempin"], Self::temp_include),
+                FMacroSign::new("tempin", ["a_tempin"], Self::temp_include),
             ),
             (
                 "tempout".to_owned(),
-                BMacroSign::new("tempout", ["a_tempout"], Self::temp_out),
+                FMacroSign::new("tempout", ["a_tempout"], Self::temp_out),
             ),
             (
                 "tempto".to_owned(),
-                BMacroSign::new("tempto", ["a_filename"], Self::set_temp_target),
+                FMacroSign::new("tempto", ["a_filename"], Self::set_temp_target),
             ),
             (
                 "tr".to_owned(),
-                BMacroSign::new(
+                FMacroSign::new(
                     "tr",
                     ["a_source", "a_matches", "a_substitutions"],
                     Self::translate,
@@ -335,24 +311,24 @@ impl BasicMacroMap {
             ),
             (
                 "trim".to_owned(),
-                BMacroSign::new("trim", ["a_content"], Self::trim),
+                FMacroSign::new("trim", ["a_content"], Self::trim),
             ),
             (
                 "triml".to_owned(),
-                BMacroSign::new("triml", ["a_content"], Self::triml),
+                FMacroSign::new("triml", ["a_content"], Self::triml),
             ),
             (
                 "undef".to_owned(),
-                BMacroSign::new("undef", ["a_macro_name"], Self::undefine_call),
+                FMacroSign::new("undef", ["a_macro_name"], Self::undefine_call),
             ),
             (
                 "upper".to_owned(),
-                BMacroSign::new("upper", ["a_text"], Self::capitalize),
+                FMacroSign::new("upper", ["a_text"], Self::capitalize),
             ),
             // THis is simply a placeholder
             (
                 "define".to_owned(),
-                BMacroSign::new("define", ESR, Self::define_type),
+                FMacroSign::new("define", ESR, Self::define_type),
             ),
         ]));
 
@@ -361,73 +337,73 @@ impl BasicMacroMap {
         {
             map.insert(
                 "from".to_owned(),
-                BMacroSign::new("from", ["a_macro_name", "a_csv_value"], Self::from_data),
+                FMacroSign::new("from", ["a_macro_name", "a_csv_value"], Self::from_data),
             );
             map.insert(
                 "table".to_owned(),
-                BMacroSign::new("table", ["a_table_form", "a_csv_value"], Self::table),
+                FMacroSign::new("table", ["a_table_form", "a_csv_value"], Self::table),
             );
         }
         #[cfg(feature = "cindex")]
         {
             map.insert(
                 "regcsv".to_owned(),
-                BMacroSign::new("regcsv", ["a_table_name", "a_table"], Self::cindex_register),
+                FMacroSign::new("regcsv", ["a_table_name", "a_table"], Self::cindex_register),
             );
             map.insert(
                 "dropcsv".to_owned(),
-                BMacroSign::new("dropcsv", ["a_table_name"], Self::cindex_drop),
+                FMacroSign::new("dropcsv", ["a_table_name"], Self::cindex_drop),
             );
             map.insert(
                 "query".to_owned(),
-                BMacroSign::new("query", ["a_query"], Self::cindex_query),
+                FMacroSign::new("query", ["a_query"], Self::cindex_query),
             );
             map.insert(
                 "queries".to_owned(),
-                BMacroSign::new("queries", ["a_query"], Self::cindex_query_list),
+                FMacroSign::new("queries", ["a_query"], Self::cindex_query_list),
             );
         }
 
         #[cfg(feature = "chrono")]
         {
-            map.insert("time".to_owned(), BMacroSign::new("time", ESR, Self::time));
-            map.insert("date".to_owned(), BMacroSign::new("date", ESR, Self::date));
+            map.insert("time".to_owned(), FMacroSign::new("time", ESR, Self::time));
+            map.insert("date".to_owned(), FMacroSign::new("date", ESR, Self::date));
             map.insert(
                 "tarray".to_owned(),
-                BMacroSign::new("tarray", ["a_second"], Self::tarray),
+                FMacroSign::new("tarray", ["a_second"], Self::tarray),
             );
             map.insert(
                 "hms".to_owned(),
-                BMacroSign::new("hms", ["a_second"], Self::hms),
+                FMacroSign::new("hms", ["a_second"], Self::hms),
             );
         }
         #[cfg(feature = "lipsum")]
         map.insert(
             "lipsum".to_owned(),
-            BMacroSign::new("lipsum", ["a_word_count"], Self::lipsum_words),
+            FMacroSign::new("lipsum", ["a_word_count"], Self::lipsum_words),
         );
         #[cfg(feature = "evalexpr")]
         {
             map.insert(
                 "eval".to_owned(),
-                BMacroSign::new("eval", ["a_expression"], Self::eval),
+                FMacroSign::new("eval", ["a_expression"], Self::eval),
             );
             map.insert(
                 "evalk".to_owned(),
-                BMacroSign::new("evalk", ["a_expression"], Self::eval_keep),
+                FMacroSign::new("evalk", ["a_expression"], Self::eval_keep),
             );
         }
         #[cfg(feature = "textwrap")]
         map.insert(
             "wrap".to_owned(),
-            BMacroSign::new("wrap", ["a_width", "a_content"], Self::wrap),
+            FMacroSign::new("wrap", ["a_width", "a_content"], Self::wrap),
         );
 
         #[cfg(feature = "hook")]
         {
             map.insert(
                 "hookon".to_owned(),
-                BMacroSign::new(
+                FMacroSign::new(
                     "hookon",
                     ["a_macro_type", "a_target_name"],
                     Self::hook_enable,
@@ -435,7 +411,7 @@ impl BasicMacroMap {
             );
             map.insert(
                 "hookoff".to_owned(),
-                BMacroSign::new(
+                FMacroSign::new(
                     "hookoff",
                     ["a_macro_type", "a_target_name"],
                     Self::hook_disable,
@@ -447,11 +423,11 @@ impl BasicMacroMap {
         {
             map.insert(
                 "update".to_owned(),
-                BMacroSign::new("update", ["a_text"], Self::update_storage),
+                FMacroSign::new("update", ["a_text"], Self::update_storage),
             );
             map.insert(
                 "extract".to_owned(),
-                BMacroSign::new("extract", ESR, Self::extract_storage),
+                FMacroSign::new("extract", ESR, Self::extract_storage),
             );
         }
 
@@ -459,10 +435,15 @@ impl BasicMacroMap {
         Self { macros: map }
     }
 
-    /// Add new basic rule
-    pub fn add_new_rule(&mut self, name: &str, macro_ref: MacroType) {
-        let signature = BMacroSign::new(name, ["unknown"], macro_ref);
-        self.macros.insert(name.to_owned(), signature);
+    pub fn new_ext_macro(&mut self, ext : ExtMacroBuilder) {
+        if let Some(ExtMacroBody::Function(mac_ref)) = ext.macro_body {
+            let sign = FMacroSign::new(
+                &ext.macro_name,
+                &ext.args,
+                *mac_ref
+            );
+            self.macros.insert(ext.macro_name, sign);
+        }
     }
 
     /// Check if a given macro exists
@@ -475,7 +456,7 @@ impl BasicMacroMap {
     }
 
     /// Get function reference by name
-    pub fn get_func(&self, name: &str) -> Option<&MacroType> {
+    pub fn get_func(&self, name: &str) -> Option<&FunctionMacroType> {
         if let Some(sig) = self.macros.get(name) {
             Some(&sig.logic)
         } else {
@@ -504,7 +485,7 @@ impl BasicMacroMap {
     }
 
     // ==========
-    // Basic Macros
+    // Function Macros
     // ==========
     /// Print out current time
     ///
@@ -752,7 +733,7 @@ impl BasicMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let source = &args[0];
             // Chomp and then compress
-            let result = Utils::trim(&BasicMacroMap::chomp(source, greedy, processor)?.unwrap());
+            let result = Utils::trim(&FunctionMacroMap::chomp(source, greedy, processor)?.unwrap());
 
             Ok(Some(result))
         } else {
@@ -982,10 +963,8 @@ impl BasicMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 1, greedy) {
             let name = Utils::trim(&args[0]);
 
-            let map = processor.get_map();
-            // Can only undefine custom or basic macros
-            if map.contains_basic_or_custom(&name) {
-                map.undefine(&name);
+            if processor.contains_macro(&name, MacroType::Any) {
+                processor.undefine_macro(&name, MacroType::Any);
             } else {
                 processor.log_error(&format!(
                     "Macro \"{}\" doesn't exist, therefore cannot undefine",
@@ -1447,9 +1426,8 @@ impl BasicMacroMap {
             let target = &args[0];
             let new = &args[1];
 
-            let map = processor.get_map();
-            if map.contains_basic_or_custom(target) {
-                processor.get_map().rename(target, new);
+            if processor.contains_macro(target, MacroType::Any) {
+                processor.rename_macro(target, new, MacroType::Any);
             } else {
                 processor.log_error(&format!(
                     "Macro \"{}\" doesn't exist, therefore cannot rename",
@@ -1467,7 +1445,7 @@ impl BasicMacroMap {
 
     /// Append content to a macro
     ///
-    /// Only custom macros can be appended.
+    /// Only runtime macros can be appended.
     ///
     /// # Usage
     ///
@@ -1476,9 +1454,8 @@ impl BasicMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2, greedy) {
             let name = &args[0];
             let target = &args[1];
-            let map = processor.get_map();
-            if map.custom.contains_key(name) {
-                map.append(name, target);
+            if processor.contains_macro(name, MacroType::Runtime) {
+                processor.append_macro(name, target);
             } else {
                 processor.log_error(&format!("Macro \"{}\" doesn't exist", name))?;
             }
@@ -2011,44 +1988,6 @@ impl BasicMacroMap {
         Ok(chunk)
     }
 
-    /// Redirect all text into temporary file
-    ///
-    /// Every text including non macro calls are all sent to current temporary files.
-    ///
-    /// # Usage
-    ///
-    /// $redir(true)
-    /// $redir(false)
-    #[deprecated(
-        since = "1.6",
-        note = "redir is deprecated and will be removed in 2.0. Use relay and halt instead"
-    )]
-    fn temp_redirect(args: &str, _: bool, p: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("redir", AuthType::FOUT, p)? {
-            return Ok(None);
-        }
-        if let Some(args) = ArgParser::new().args_with_len(args, 1, false) {
-            let toggle = if let Ok(toggle) = Utils::is_arg_true(&args[0]) {
-                toggle
-            } else {
-                return Err(RadError::InvalidArgument(format!(
-                    "Redir's agument should be valid boolean value but given \"{}\"",
-                    &args[0]
-                )));
-            };
-            if toggle {
-                p.state.relay = RelayTarget::Temp;
-            } else {
-                p.state.relay = RelayTarget::None;
-            }
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "Redir requires an argument".to_owned(),
-            ))
-        }
-    }
-
     /// Relay all text into given target
     ///
     /// Every text including non macro calls are all sent to relay target
@@ -2095,9 +2034,9 @@ impl BasicMacroMap {
                             .to_owned(),
                     ));
                 }
-                if !p.get_map().contains_custom(args[1]) {
+                if !p.contains_macro(args[1], MacroType::Runtime) {
                     return Err(RadError::InvalidMacroName(format!(
-                        "Cannot relay to non-exsitent macro or non-custom macro \"{}\"",
+                        "Cannot relay to non-exsitent macro or non-runtime macro \"{}\"",
                         args[1]
                     )));
                 }
@@ -2536,19 +2475,19 @@ impl BasicMacroMap {
 // Or the whole process should be automated?
 // Though I dought the possibility of automation because each logic is so relaxed and hardly follow
 // any concrete rules
-/// Basic Macro signature
+/// Function Macro signature
 #[derive(Clone)]
-pub(crate) struct BMacroSign {
+pub(crate) struct FMacroSign {
     name: String,
     args: Vec<String>,
-    pub logic: MacroType,
+    pub logic: FunctionMacroType,
 }
 
-impl BMacroSign {
+impl FMacroSign {
     pub fn new(
         name: &str,
         args: impl IntoIterator<Item = impl AsRef<str>>,
-        logic: MacroType,
+        logic: FunctionMacroType,
     ) -> Self {
         let args = args
             .into_iter()
@@ -2562,7 +2501,7 @@ impl BMacroSign {
     }
 }
 
-impl std::fmt::Display for BMacroSign {
+impl std::fmt::Display for FMacroSign {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut inner = self
             .args
@@ -2575,10 +2514,10 @@ impl std::fmt::Display for BMacroSign {
 }
 
 #[cfg(feature = "signature")]
-impl From<&BMacroSign> for crate::sigmap::MacroSignature {
-    fn from(bm: &BMacroSign) -> Self {
+impl From<&FMacroSign> for crate::sigmap::MacroSignature {
+    fn from(bm: &FMacroSign) -> Self {
         Self {
-            variant: crate::sigmap::MacroVariant::Basic,
+            variant: crate::sigmap::MacroVariant::Function,
             name: bm.name.to_owned(),
             args: bm.args.to_owned(),
             expr: bm.to_string(),

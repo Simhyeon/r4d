@@ -56,9 +56,10 @@ pub mod processor;
 
 pub(crate) mod arg_parser;
 pub(crate) mod auth;
-pub(crate) mod basic_map;
+pub(crate) mod function_map;
 pub(crate) mod closure_map;
 pub(crate) mod consts;
+pub(crate) mod runtime_map;
 #[cfg(feature = "debug")]
 pub(crate) mod debugger;
 pub(crate) mod define_parser;
@@ -73,13 +74,12 @@ pub(crate) mod sigmap;
 pub(crate) mod utils;
 
 pub use auth::AuthType;
-pub use basic_map::MacroType;
 pub use error::RadError;
 #[cfg(feature = "hook")]
 pub use hookmap::HookType;
 pub use models::{CommentType, DiffOption, RadResult, WriteOption};
 #[cfg(feature = "storage")]
-pub use models::{RadStorage, StorageOutput, StorageResult};
+pub use models::{RadStorage, StorageOutput, StorageResult, MacroType};
 pub use processor::Processor;
 
 // Optional

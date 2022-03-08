@@ -11,7 +11,6 @@
 //! ```rust
 //! use rad::RadResult;
 //! use rad::Processor;
-//! use rad::MacroType;
 //! use rad::AuthType;
 //! use rad::CommentType;
 //! use rad::DiffOption;
@@ -52,11 +51,7 @@
 //! // This is an warning and can be suppressed with silent option
 //! processor.print_permission()?;
 //!
-//! // Add basic rules(= register functions)
-//! // test function is not included in this demo
-//! processor.add_basic_rules(vec![("test", test as MacroType)]);
-//!
-//! // You can add basic rule in form of closure too
+//! // You can add function macro in form of closure too
 //! processor.add_closure_rule(
 //!     "test",                                                       // Name of macro
 //!     2,                                                            // Count of arguments
@@ -105,6 +100,7 @@
 use crate::arg_parser::{ArgParser, GreedyState};
 use crate::auth::{AuthFlags, AuthState, AuthType};
 use crate::closure_map::ClosureMap;
+use crate::runtime_map::{RuntimeMacro};
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
@@ -120,15 +116,14 @@ use crate::models::DiffOption;
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
 use crate::models::{
-    Behaviour, CommentType, CustomMacro, FlowControl, LocalMacro, MacroFragment, MacroMap,
-    ProcessInput, RelayTarget, RuleFile, UnbalancedChecker, WriteOption,
+    Behaviour, CommentType, FlowControl, LocalMacro, MacroFragment, MacroMap, ProcessInput,
+    RelayTarget, RuleFile, UnbalancedChecker, WriteOption, ExtMacroBuilder, ExtMacroType, MacroType
 };
 #[cfg(feature = "storage")]
 use crate::models::{RadStorage, StorageOutput};
 #[cfg(feature = "signature")]
 use crate::sigmap::SignatureMap;
 use crate::utils::Utils;
-use crate::MacroType;
 use crate::{consts::*, RadResult};
 #[cfg(feature = "cindex")]
 use cindex::Indexer;
@@ -151,6 +146,7 @@ lazy_static! {
 // <PARSE>              -> Parse rleated functions
 //     <LEX>            -> sub section of parse, this is technically not a lexing but it's named as
 // <MISC>               -> Miscellaenous
+// <EXT>                -> Methods for extensions
 //
 // Find each section's start with <NAME> and find end of section with </NAME>
 //
@@ -246,28 +242,26 @@ impl<'processor> Processor<'processor> {
     // ----------
     // Builder pattern methods
     // <BUILDER>
-    /// Creates default processor with basic macros
+    /// Creates default processor with default macros
     pub fn new() -> Self {
         Self::new_processor(true)
     }
 
-    /// Creates default processor without basic macros
+    /// Creates default processor without default macros
     pub fn empty() -> Self {
         Self::new_processor(false)
     }
 
-    /// Clear custom macros
-    pub fn clear_custom_macros(&mut self) {
-        self.map.clear_custom_macros();
+    /// Clear runtime macros
+    pub fn clear_rumtime_macros(&mut self) {
+        self.map.clear_runtime_macros();
     }
 
     /// Internal function to create Processor struct
     ///
     /// This creates a complete processor that can parse and create output without any extra
     /// informations.
-    ///
-    /// Only basic macro usage should be given as an argument.
-    fn new_processor(use_basic: bool) -> Self {
+    fn new_processor(use_default: bool) -> Self {
         let temp_path = std::env::temp_dir().join("rad.txt");
         let temp_target = (
             temp_path.to_owned(),
@@ -282,7 +276,7 @@ impl<'processor> Processor<'processor> {
         let mut logger = Logger::new();
         logger.set_write_options(Some(WriteOption::Terminal));
 
-        let map = if use_basic {
+        let map = if use_default {
             MacroMap::new()
         } else {
             MacroMap::empty()
@@ -520,7 +514,7 @@ impl<'processor> Processor<'processor> {
                 // File validity is checked by melt methods
                 rule_file.melt(p.as_ref())?;
             }
-            self.map.custom.extend(rule_file.rules);
+            self.map.runtime.extend_map(rule_file.rules);
         }
 
         Ok(self)
@@ -530,26 +524,7 @@ impl<'processor> Processor<'processor> {
     pub fn rule_literal(mut self, literal: &Vec<u8>) -> RadResult<Self> {
         let mut rule_file = RuleFile::new(None);
         rule_file.melt_literal(literal)?;
-        self.map.custom.extend(rule_file.rules);
-        Ok(self)
-    }
-
-    // NOTE : Renamed to rule_files
-    /// Add custom rules
-    #[deprecated(
-        since = "1.5",
-        note = "Use \"rule_files\" instead.This method will be removed in 2.0"
-    )]
-    pub fn custom_rules(mut self, paths: Option<Vec<impl AsRef<Path>>>) -> RadResult<Self> {
-        if let Some(paths) = paths {
-            let mut rule_file = RuleFile::new(None);
-            for p in paths.iter() {
-                // File validity is checked by melt methods
-                rule_file.melt(p.as_ref())?;
-            }
-            self.map.custom.extend(rule_file.rules);
-        }
-
+        self.map.runtime.extend_map(rule_file.rules);
         Ok(self)
     }
 
@@ -627,7 +602,7 @@ impl<'processor> Processor<'processor> {
         let signatures = match sig_type {
             SignatureType::All => self.map.get_signatures(),
             SignatureType::Default => self.map.get_default_signatures(),
-            SignatureType::Custom => self.map.get_custom_signatures(),
+            SignatureType::Runtime => self.map.get_runtime_signatures(),
         };
         Ok(SignatureMap::new(signatures))
     }
@@ -678,18 +653,15 @@ impl<'processor> Processor<'processor> {
     /// Frozen file is a bincode encoded binary format file.
     pub fn freeze_to_file(&self, path: impl AsRef<Path>) -> RadResult<()> {
         // File path validity is checked by freeze method
-        RuleFile::new(Some(self.map.custom.clone())).freeze(path.as_ref())?;
+        RuleFile::new(Some(self.map.runtime.macros.clone())).freeze(path.as_ref())?;
         Ok(())
     }
 
-    /// Add new basic rules
-    #[deprecated(
-        since = "1.6",
-        note = "add_basic_rules will yield raderror when name is invalid from 2.0. Though method api will not change."
-    )]
-    pub fn add_basic_rules(&mut self, basic_rules: Vec<(&str, MacroType)>) {
-        for (name, macro_ref) in basic_rules {
-            self.map.basic.add_new_rule(name, macro_ref);
+    /// Add a new macro as an extension
+    pub fn add_ext_macro(&mut self, ext: ExtMacroBuilder<'processor>) {
+        match ext.macro_type {
+            ExtMacroType::Function => self.map.function.new_ext_macro(ext),
+            ExtMacroType::Keyword => self.map.keyword.new_ext_macro(ext),
         }
     }
 
@@ -725,7 +697,7 @@ impl<'processor> Processor<'processor> {
         self.closure_map.add_new(name, arg_count, closure);
     }
 
-    /// Add custom rules without builder pattern
+    /// Add runtime rules without builder pattern
     ///
     /// # Args
     ///
@@ -734,9 +706,12 @@ impl<'processor> Processor<'processor> {
     /// # Example
     ///
     /// ```rust
-    /// processor.add_custom_rules(vec![("macro_name","macro_arg1 macro_arg2","macro_body=$macro_arg1()")]);
+    /// processor.add_runtime_rules(vec![("macro_name","macro_arg1 macro_arg2","macro_body=$macro_arg1()")]);
     /// ```
-    pub fn add_custom_rules(&mut self, rules: Vec<(impl AsRef<str>, &str, &str)>) -> RadResult<()> {
+    pub fn add_runtime_rules(
+        &mut self,
+        rules: Vec<(impl AsRef<str>, &str, &str)>,
+    ) -> RadResult<()> {
         for (name, args, body) in rules {
             let name = name.as_ref();
             if !MAC_NAME.is_match(name) {
@@ -745,9 +720,9 @@ impl<'processor> Processor<'processor> {
                     name
                 )));
             }
-            self.map.custom.insert(
+            self.map.runtime.macros.insert(
                 name.to_owned(),
-                CustomMacro {
+                RuntimeMacro {
                     name: name.to_owned(),
                     args: args
                         .split_whitespace()
@@ -769,7 +744,7 @@ impl<'processor> Processor<'processor> {
     /// # Example
     ///
     /// ```rust
-    /// processor.add_custom_rules(vec![("macro_name","Macro body without arguments")]);
+    /// processor.add_static_rules(vec![("macro_name","Macro body without arguments")]);
     /// ```
     pub fn add_static_rules(
         &mut self,
@@ -783,9 +758,9 @@ impl<'processor> Processor<'processor> {
                     name
                 )));
             }
-            self.map.custom.insert(
+            self.map.runtime.macros.insert(
                 name.to_owned(),
-                CustomMacro {
+                RuntimeMacro {
                     name: name.to_owned(),
                     args: vec![],
                     body: body.as_ref().to_owned(),
@@ -793,20 +768,6 @@ impl<'processor> Processor<'processor> {
             );
         }
         Ok(())
-    }
-
-    /// Remove rules from map
-    pub fn undefine_rules(&mut self, rules: Vec<impl AsRef<str>>) {
-        for name in rules {
-            self.map.undefine(name.as_ref());
-        }
-    }
-
-    /// Remove rules from map but only custom macro
-    pub fn undefine_custom_rules(&mut self, rules: Vec<impl AsRef<str>>) {
-        for name in rules {
-            self.map.undefine_custom(name.as_ref());
-        }
     }
 
     #[cfg(feature = "hook")]
@@ -1333,7 +1294,7 @@ impl<'processor> Processor<'processor> {
 
         let mut args: String = raw_args.to_owned();
         // Preprocess only when macro is not a keyword macro
-        if !self.map.is_keyword(name) {
+        if !self.map.is_keyword_macro(name) {
             // This parses and processes arguments
             // and macro should be evaluated after
             args = self.parse_chunk_args(level, name, raw_args)?;
@@ -1357,7 +1318,7 @@ impl<'processor> Processor<'processor> {
         }
 
         // Find keyword macro
-        if self.map.is_keyword(name) {
+        if self.map.is_keyword_macro(name) {
             if let Some(func) = self.map.keyword.get_keyword_macro(name) {
                 let final_result = func(&args, level, self)?;
                 // TODO
@@ -1376,10 +1337,10 @@ impl<'processor> Processor<'processor> {
             }
             temp_level = temp_level - 1;
         }
-        // Find custom macro
-        // custom macro comes before basic macro so that
+        // Find runtime macro
+        // runtime macro comes before function macro so that
         // user can override it
-        if self.map.custom.contains_key(name) {
+        if self.map.runtime.contains(name) {
             // Prevent invocation if relaying to
             if let RelayTarget::Macro(mac) = &self.state.relay {
                 if mac == name {
@@ -1396,10 +1357,10 @@ impl<'processor> Processor<'processor> {
                 return Ok(EvalResult::InvalidArg);
             }
         }
-        // Find basic macro
-        else if self.map.basic.contains(&name) {
+        // Find function macro
+        else if self.map.function.contains(&name) {
             // Func always exists, because contains succeeded.
-            let func = self.map.basic.get_func(name).unwrap();
+            let func = self.map.function.get_func(name).unwrap();
             let final_result = func(&args, greedy, self)?;
             return Ok(EvalResult::Eval(final_result));
         }
@@ -1414,7 +1375,7 @@ impl<'processor> Processor<'processor> {
         }
     }
 
-    /// Invoke a custom rule and get a result
+    /// Invoke a runtime rule and get a result
     ///
     /// Invoke rule evaluates body of macro rule because body is not evaluated on register process
     fn invoke_rule(
@@ -1427,7 +1388,7 @@ impl<'processor> Processor<'processor> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
 
-        let rule = self.map.custom.get(name).unwrap().clone();
+        let rule = self.map.runtime.macros.get(name).unwrap().clone();
         let arg_types = &rule.args;
         let args: Vec<String>;
         // Set variable to local macros
@@ -1448,7 +1409,7 @@ impl<'processor> Processor<'processor> {
 
         for (idx, arg_type) in arg_types.iter().enumerate() {
             //Set arg to be substitued
-            self.map.new_local(level + 1, arg_type, &args[idx]);
+            self.map.add_local_macro(level + 1, arg_type, &args[idx]);
         }
         // Process the rule body
         let result = self.parse_chunk_body(level, &name, &rule.body)?;
@@ -1459,19 +1420,19 @@ impl<'processor> Processor<'processor> {
         Ok(Some(result))
     }
 
-    /// Add custom rule to macro map
+    /// Add runtime rule to macro map
     ///
     /// This doesn't clear fragment
     fn add_rule(&mut self, frag: &MacroFragment, remainder: &mut String) -> RadResult<()> {
         if let Some((name, args, body)) = self.define_parser.parse_define(&frag.args) {
             // Strict mode
             // Overriding is prohibited
-            if self.state.behaviour == Behaviour::Strict && self.map.contains_any_macro(&name) {
+            if self.state.behaviour == Behaviour::Strict && self.map.contains_macro(&name, MacroType::Any) {
                 self.log_error("Can't override exsiting macro on strict mode")?;
                 return Err(RadError::StrictPanic);
             }
 
-            self.map.register_custom(&name, &args, &body)?;
+            self.map.register_runtime(&name, &args, &body)?;
         } else {
             self.log_error(&format!(
                 "Failed to register a macro : \"{}\"",
@@ -1501,7 +1462,7 @@ impl<'processor> Processor<'processor> {
 
         match &mut self.state.relay {
             RelayTarget::Macro(mac) => {
-                if !self.map.contains_any_macro(mac) {
+                if !self.map.contains_macro(mac, MacroType::Runtime) {
                     return Err(RadError::InvalidMacroName(format!(
                         "Cannot relay to non-exsitent macro \"{}\"",
                         mac
@@ -1910,11 +1871,6 @@ impl<'processor> Processor<'processor> {
         macro_start(self.state.macro_char)
     }
 
-    /// Get mutable reference of macro map
-    pub(crate) fn get_map(&mut self) -> &mut MacroMap {
-        &mut self.map
-    }
-
     /// Bridge method to get auth state
     pub(crate) fn get_auth_state(&self, auth_type: &AuthType) -> AuthState {
         *self.state.auth_flags.get_state(auth_type)
@@ -2066,6 +2022,46 @@ impl<'processor> Processor<'processor> {
 
     // End of miscellaenous methods
     // </MISC>
+    // ----------
+
+    // ----------
+    // Function that is exposed for end users so that macro ext can utilize these
+    // <EXT>
+
+    pub fn get_parsed_array(&self, args: &str) -> Vec<String> {
+        unimplemented!()
+    }
+
+    pub fn expand(&mut self, content: &str) -> String {
+        unimplemented!();
+        String::new()
+    }
+
+    pub fn contains_macro(&self, macro_name: &str, macro_type : MacroType) -> bool {
+        self.map.contains_macro(macro_name, macro_type)
+    }
+
+    pub fn undefine_macro(&mut self, macro_name: &str, macro_type: MacroType) {
+        self.map.undefine(macro_name, macro_type);
+    }
+
+    pub fn rename_macro(&mut self, macro_name: &str, target_name: &str, macro_type: MacroType) {
+        self.map.rename(macro_name, target_name, macro_type);
+    }
+
+    pub fn append_macro(&mut self, macro_name: &str, target: &str) {
+        self.map.append(macro_name, target);
+    }
+
+    pub fn replace_macro(&mut self, macro_name: &str, target: &str) -> bool {
+        self.map.replace(macro_name, target)
+    }
+
+    pub fn add_new_local_macro(&mut self, level: usize, macro_name: &str, body: &str) {
+        self.map.add_local_macro(level, macro_name, body);
+    }
+
+    // </EXT>
     // ----------
 }
 

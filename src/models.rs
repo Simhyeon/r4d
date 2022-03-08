@@ -1,13 +1,16 @@
+use crate::runtime_map::{RuntimeMacroMap, RuntimeMacro};
 use crate::error::RadError;
 #[cfg(feature = "signature")]
 use crate::sigmap::MacroSignature;
 use crate::utils::Utils;
-use crate::{basic_map::BasicMacroMap, keyword_map::KeywordMacroMap};
+use crate::{function_map::FunctionMacroMap, keyword_map::KeywordMacroMap};
 use bincode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use crate::function_map::FunctionMacroType;
+use crate::keyword_map::KFunctionMacroType;
 
 pub type RadResult<T> = Result<T, RadError>;
 
@@ -19,58 +22,7 @@ pub enum WriteOption<'a> {
     Discard,
 }
 
-/// Custom macro
-#[derive(Clone, Deserialize, Serialize)]
-pub struct CustomMacro {
-    pub name: String,
-    pub args: Vec<String>,
-    pub body: String,
-}
-
-impl CustomMacro {
-    pub fn new(name: &str, args: &str, body: &str) -> Self {
-        // Empty args are no args
-        let mut args: Vec<String> = args
-            .split_whitespace()
-            .map(|item| item.to_owned())
-            .collect();
-        if args.len() == 1 && args[0] == "" {
-            args = vec![]
-        }
-
-        CustomMacro {
-            name: name.to_owned(),
-            args,
-            body: body.to_owned(),
-        }
-    }
-}
-
-impl std::fmt::Display for CustomMacro {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut inner = self
-            .args
-            .iter()
-            .fold(String::new(), |acc, arg| acc + &arg + ",");
-        // This removes last "," character
-        inner.pop();
-        write!(f, "${}({})", self.name, inner)
-    }
-}
-
-#[cfg(feature = "signature")]
-impl From<&CustomMacro> for crate::sigmap::MacroSignature {
-    fn from(mac: &CustomMacro) -> Self {
-        Self {
-            variant: crate::sigmap::MacroVariant::Custom,
-            name: mac.name.to_owned(),
-            args: mac.args.to_owned(),
-            expr: mac.to_string(),
-        }
-    }
-}
-
-/// Custom macro
+/// Local macro
 #[derive(Clone)]
 pub struct LocalMacro {
     pub level: usize,
@@ -89,12 +41,12 @@ impl LocalMacro {
 /// Included macro types are
 /// - Keyword macro
 /// - Basic macro
-/// - Custom macro
+/// - Runtime macro
 /// - Local bound macro
 pub(crate) struct MacroMap {
     pub keyword: KeywordMacroMap,
-    pub basic: BasicMacroMap,
-    pub custom: HashMap<String, CustomMacro>,
+    pub function: FunctionMacroMap,
+    pub runtime: RuntimeMacroMap,
     pub local: HashMap<String, LocalMacro>,
 }
 
@@ -103,30 +55,30 @@ impl MacroMap {
     pub fn empty() -> Self {
         Self {
             keyword: KeywordMacroMap::empty(),
-            basic: BasicMacroMap::empty(),
-            custom: HashMap::new(),
+            function: FunctionMacroMap::empty(),
+            runtime: RuntimeMacroMap::new(),
             local: HashMap::new(),
         }
     }
 
-    /// Creates default map with default basic macros
+    /// Creates default map with default function macros
     pub fn new() -> Self {
         Self {
             keyword: KeywordMacroMap::new(),
-            basic: BasicMacroMap::new(),
-            custom: HashMap::new(),
+            function: FunctionMacroMap::new(),
+            runtime: RuntimeMacroMap::new(),
             local: HashMap::new(),
         }
     }
 
-    pub fn clear_custom_macros(&mut self) {
-        self.custom.clear();
+    pub fn clear_runtime_macros(&mut self) {
+        self.runtime.clear_runtime_macros();
     }
 
     /// Create a new local macro
     ///
     /// This will override local macro if save value was given.
-    pub fn new_local(&mut self, level: usize, name: &str, value: &str) {
+    pub fn add_local_macro(&mut self, level: usize, name: &str, value: &str) {
         self.local.insert(
             Utils::local_name(level, name),
             LocalMacro::new(level, name.to_owned(), value.to_owned()),
@@ -143,71 +95,64 @@ impl MacroMap {
         self.local.retain(|_, mac| mac.level <= current_level);
     }
 
-    pub fn is_keyword(&self, name: &str) -> bool {
+    pub fn is_keyword_macro(&self, name: &str) -> bool {
         self.keyword.contains(name)
     }
 
-    /// Check if macro exits in custom macro
-    pub fn contains_custom(&self, name: &str) -> bool {
-        self.custom.contains_key(name)
-    }
-
-    /// Check if macro exists ( only basic and custom macro )
-    pub fn contains_basic_or_custom(&self, name: &str) -> bool {
-        self.basic.contains(name) || self.custom.contains_key(name)
-    }
-
-    /// Check if macro exists
-    pub fn contains_any_macro(&self, name: &str) -> bool {
-        self.basic.contains(name) || self.custom.contains_key(name) || self.keyword.contains(name)
+    pub fn contains_macro(&self, macro_name:&str, macro_type: MacroType) -> bool {
+        match macro_type {
+            MacroType::Keyword => self.keyword.contains(macro_name),
+            MacroType::Function => self.function.contains(macro_name),
+            MacroType::Runtime => self.runtime.contains(macro_name),
+            MacroType::Any => self.function.contains(macro_name) || self.runtime.contains(macro_name) || self.keyword.contains(macro_name),
+        }
     }
 
     // Empty argument should be treated as no arg
-    /// Register a new custom macro
-    pub fn register_custom(&mut self, name: &str, args: &str, body: &str) -> RadResult<()> {
+    /// Register a new runtime macro
+    pub fn register_runtime(&mut self, name: &str, args: &str, body: &str) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
-        let mac = CustomMacro::new(&Utils::trim(name), &Utils::trim(args), body);
-        self.custom.insert(name.to_owned(), mac);
+        let mac = RuntimeMacro::new(&Utils::trim(name), &Utils::trim(args), body);
+        self.runtime.new_macro(name, mac);
         Ok(())
     }
 
-    pub fn undefine(&mut self, name: &str) {
-        // Return true or false by the definition
-        if self.basic.contains(name) {
-            self.basic.undefine(name);
-        }
-        if self.custom.contains_key(name) {
-            self.custom.remove(name);
-        }
-    }
-
-    pub fn undefine_custom(&mut self, name: &str) {
-        if self.custom.contains_key(name) {
-            self.custom.remove(name);
+    /// Undeifne macro
+    pub fn undefine(&mut self, macro_name: &str, macro_type: MacroType) {
+        match macro_type{
+            MacroType::Keyword => {self.keyword.undefine(macro_name);}
+            MacroType::Function => {self.function.undefine(macro_name);}
+            MacroType::Runtime => {self.runtime.undefine(macro_name);}
+            MacroType::Any => {
+                self.function.undefine(macro_name);
+                self.runtime.undefine(macro_name);
+                self.keyword.undefine(macro_name);
+            }
         }
     }
 
-    pub fn rename(&mut self, name: &str, target: &str) {
-        if self.basic.contains(name) {
-            self.basic.rename(name, target);
-        }
-        if self.custom.contains_key(name) {
-            let custom = self.custom.remove(name).unwrap();
-            self.custom.insert(target.to_owned(), custom);
+    pub fn rename(&mut self, macro_name: &str, target_name: &str, macro_type: MacroType) {
+        match macro_type{
+            MacroType::Keyword => {self.keyword.rename(macro_name,target_name);}
+            MacroType::Function => {self.function.rename(macro_name,target_name);}
+            MacroType::Runtime => {self.runtime.rename(macro_name,target_name);}
+            MacroType::Any => {
+                self.function.rename(macro_name,target_name);
+                self.runtime.rename(macro_name,target_name);
+                self.keyword.rename(macro_name,target_name);
+            }
         }
     }
 
     pub fn append(&mut self, name: &str, target: &str) {
-        if self.custom.contains_key(name) {
-            let custom = self.custom.get_mut(name).unwrap();
-            custom.body.push_str(target);
+        if self.runtime.contains(name) {
+            self.runtime.append_macro(name, target);
         }
     }
 
     pub fn replace(&mut self, name: &str, target: &str) -> bool {
-        if self.custom.contains_key(name) {
-            let custom = self.custom.get_mut(name).unwrap();
-            custom.body = target.to_owned();
+        if self.runtime.contains(name) {
+            self.runtime.replace_macro(name, target);
             true
         } else {
             false
@@ -222,16 +167,17 @@ impl MacroMap {
             .macros
             .iter()
             .map(|(_, sig)| MacroSignature::from(sig));
-        let basic_iter = self
-            .basic
+        let funcm_iter = self
+            .function
             .macros
             .iter()
             .map(|(_, sig)| MacroSignature::from(sig));
-        let custom_iter = self
-            .custom
+        let runtime_iter = self
+            .runtime
+            .macros
             .iter()
-            .map(|(_, custom)| MacroSignature::from(custom));
-        key_iter.chain(basic_iter).chain(custom_iter).collect()
+            .map(|(_, mac)| MacroSignature::from(mac));
+        key_iter.chain(funcm_iter).chain(runtime_iter).collect()
     }
 
     #[cfg(feature = "signature")]
@@ -241,19 +187,20 @@ impl MacroMap {
             .macros
             .iter()
             .map(|(_, sig)| MacroSignature::from(sig));
-        let basic_iter = self
-            .basic
+        let funcm_iter = self
+            .function
             .macros
             .iter()
             .map(|(_, sig)| MacroSignature::from(sig));
-        key_iter.chain(basic_iter).collect()
+        key_iter.chain(funcm_iter).collect()
     }
 
     #[cfg(feature = "signature")]
-    pub fn get_custom_signatures(&self) -> Vec<MacroSignature> {
-        self.custom
+    pub fn get_runtime_signatures(&self) -> Vec<MacroSignature> {
+        self.runtime
+            .macros
             .iter()
-            .map(|(_, custom)| MacroSignature::from(custom))
+            .map(|(_, mac)| MacroSignature::from(mac))
             .collect()
     }
 }
@@ -285,14 +232,14 @@ impl UnbalancedChecker {
     }
 }
 
-/// Readable, writeable struct that holds information of custom macros
+/// Readable, writeable struct that holds information of runtime macros
 #[derive(Serialize, Deserialize)]
 pub struct RuleFile {
-    pub rules: HashMap<String, CustomMacro>,
+    pub rules: HashMap<String, RuntimeMacro>,
 }
 
 impl RuleFile {
-    pub fn new(rules: Option<HashMap<String, CustomMacro>>) -> Self {
+    pub fn new(rules: Option<HashMap<String, RuntimeMacro>>) -> Self {
         if let Some(content) = rules {
             Self { rules: content }
         } else {
@@ -329,7 +276,7 @@ impl RuleFile {
         }
     }
 
-    /// Convert custom rules into a single binary file
+    /// Convert runtime rules into a single binary file
     pub(crate) fn freeze(&self, path: &std::path::Path) -> RadResult<()> {
         let result = bincode::serialize(self);
         if let Err(_) = result {
@@ -477,7 +424,7 @@ pub enum FlowControl {
 pub enum SignatureType {
     All,
     Default,
-    Custom,
+    Runtime,
 }
 
 #[cfg(feature = "signature")]
@@ -486,7 +433,7 @@ impl SignatureType {
         let variant = match text.to_lowercase().as_str() {
             "all" => Self::All,
             "default" => Self::Default,
-            "custom" => Self::Custom,
+            "runtime" => Self::Runtime,
             _ => {
                 return Err(RadError::InvalidConversion(format!(
                     "\"{}\" is not supported signature type",
@@ -555,3 +502,55 @@ pub enum Behaviour {
     Purge,
     Nopanic,
 }
+
+#[derive(Clone)]
+pub enum ExtMacroBody<'body> {
+    Function(&'body FunctionMacroType),
+    Keyword(&'body KFunctionMacroType),
+}
+
+#[derive(Clone)]
+pub struct ExtMacroBuilder<'func> {
+    pub(crate) macro_name: String,
+    pub(crate) macro_type: ExtMacroType,
+    pub(crate) args: Vec<String>,
+    pub(crate) macro_body: Option<ExtMacroBody<'func>>,
+}
+
+impl<'func> ExtMacroBuilder<'func> {
+    pub fn new(macro_name: &str, macro_type: ExtMacroType) -> Self {
+        Self {
+            macro_name: macro_name.to_string(),
+            macro_type,
+            // Empty values
+            args: vec![],
+            macro_body: None,
+        }
+    }
+
+    pub fn args(mut self, args: &Vec<impl AsRef<str>>) -> Self {
+        self.args = args.iter().map(|a| a.as_ref().to_string()).collect();
+        self
+    }
+
+    pub fn body(mut self, body: ExtMacroBody<'func>) -> Self {
+        self.macro_body.replace(body);
+        self
+    }
+}
+
+#[derive(Clone)]
+pub enum ExtMacroType {
+    Function,
+    Keyword,
+}
+
+/// Intended for processor ext interface
+pub enum MacroType {
+    Function,
+    Keyword,
+    Runtime,
+    Any
+}
+
+

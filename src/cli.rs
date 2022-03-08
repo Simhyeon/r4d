@@ -4,10 +4,11 @@
 //! Cli module is only included in binary feature flag.
 
 use crate::auth::AuthType;
+use crate::function_map::FunctionMacroType;
 use crate::logger::WarningType;
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
-use crate::models::{CommentType, DiffOption};
+use crate::models::{CommentType, DiffOption, ExtMacroBuilder, ExtMacroBody};
 use crate::processor::Processor;
 use crate::utils::Utils;
 use crate::RadResult;
@@ -95,6 +96,25 @@ impl Cli {
         // Main options
         // print permission
         processor.print_permission()?;
+
+        // DEBUG TODO NOTE
+        // Adding function macro
+        processor.add_ext_macro(
+            ExtMacroBuilder::new("test", 
+                crate::models::ExtMacroType::Function
+            )
+            .args(&vec!["a_first", "a_second"])
+            .body(ExtMacroBody::Function(&(test as FunctionMacroType)))
+        );
+
+        // Adding keyword function macro
+        //processor.add_ext_macro(
+            //ExtMacroBuilder::new("test", 
+                //crate::models::ExtMacroType::Keyword
+            //)
+            //.args(&vec!["a_first", "a_second"])
+            //.body(ExtMacroBody::Function(&(test as FunctionMacroType)))
+        //);
 
         // Process
         // Redirect stdin as argument
@@ -248,7 +268,7 @@ impl Cli {
     fn args_builder() -> clap::ArgMatches {
         use clap::{App, Arg};
         let app = App::new("rad")
-            .version("1.8.0")
+            .version("2.0.0-rc.0.1")
             .author("Simon creek <simoncreek@tutanota.com>")
             .about( "R4d(rad) is a modern macro processor made with rust. Refer https://github.com/simhyeon/r4d for detailed usage.")
             .long_about("R4d is a text oriented macro processor which aims to be an modern alternative to m4 macro processor. R4d procedurally follows texts and substitue macro calls with defined macro body. R4d comes with varoius useful built in macros so that user don't have to define from scratch. R4d also supports multiple debugging flags for easier error detection. Refer https://github.com/simhyeon/r4d for detailed usage.")
@@ -393,4 +413,8 @@ impl Cli {
 
         app.get_matches()
     }
+}
+
+pub(crate) fn test(args : &str, greedy : bool, processor : &mut Processor) -> RadResult<Option<String>> {
+    Ok(Some(String::from("Hello world")))
 }
