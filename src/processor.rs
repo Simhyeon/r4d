@@ -22,7 +22,6 @@
 //!     .custom_macro_char('~')                              // use custom macro character
 //!     .custom_comment_char('#')                            // use custom comment character
 //!     .purge(true)                                         // Purge undefined macro
-//!     .greedy(true)                                        // Makes all macro greedy
 //!     .silent(true)                                        // Silents all warnings
 //!     .nopanic(true)                                       // No panic in any circumstances
 //!     .assert(true)                                        // Enable assertion mode
@@ -99,7 +98,6 @@
 
 use crate::arg_parser::{ArgParser, GreedyState};
 use crate::auth::{AuthFlags, AuthState, AuthType};
-use crate::closure_map::ClosureMap;
 use crate::runtime_map::{RuntimeMacro};
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
@@ -155,7 +153,6 @@ lazy_static! {
 pub(crate) struct ProcessorState {
     // Current_input is either "stdin" or currently being read file's name thus it should not be a
     // path derivative
-    pub always_greedy: bool,
     pub auth_flags: AuthFlags,
     pub current_input: ProcessInput,
     pub newline: String,
@@ -191,7 +188,6 @@ impl ProcessorState {
             behaviour: Behaviour::Strict,
             comment_type: CommentType::None,
             sandbox: false,
-            always_greedy: false,
             temp_target,
             comment_char: None,
             macro_char: None,
@@ -222,7 +218,6 @@ impl ProcessorState {
 /// Processor that parses(lexes) given input and print out to desginated output
 pub struct Processor<'processor> {
     map: MacroMap,
-    closure_map: ClosureMap,
     #[cfg(feature = "hook")]
     pub(crate) hook_map: HookMap,
     define_parser: DefineParser,
@@ -284,7 +279,6 @@ impl<'processor> Processor<'processor> {
 
         Self {
             map,
-            closure_map: ClosureMap::new(),
             #[cfg(feature = "hook")]
             hook_map: HookMap::new(),
             write_option: WriteOption::Terminal,
@@ -400,12 +394,6 @@ impl<'processor> Processor<'processor> {
         if use_unix_new_line {
             self.state.newline = "\n".to_owned();
         }
-        self
-    }
-
-    /// Set greedy option
-    pub fn greedy(mut self, greedy: bool) -> Self {
-        self.state.always_greedy = greedy;
         self
     }
 
@@ -658,43 +646,11 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Add a new macro as an extension
-    pub fn add_ext_macro(&mut self, ext: ExtMacroBuilder<'processor>) {
+    pub fn add_ext_macro(&mut self, ext: ExtMacroBuilder) {
         match ext.macro_type {
             ExtMacroType::Function => self.map.function.new_ext_macro(ext),
             ExtMacroType::Keyword => self.map.keyword.new_ext_macro(ext),
         }
-    }
-
-    /// Add new closure rule
-    ///
-    /// Accessing index bigger or equal to the length of argument vector is panicking error
-    /// while "insufficient arguments" will simply prints error without panicking and stop
-    /// evaluation.
-    ///
-    /// # Args
-    ///
-    /// * `name` - Name of the macro to add
-    /// * `arg_count` - Count of macro's argument
-    /// * `closure` - Vector of string is an parsed arguments with given length.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// processor.add_closure_rule(
-    ///     "test",                                                       
-    ///     2,                                                            
-    ///     Box::new(|args: Vec<String>| -> Option<String> {              
-    ///         Some(format!("First : {}\nSecond: {}", args[0], args[1]))
-    ///     })
-    /// );
-    /// ```
-    pub fn add_closure_rule(
-        &mut self,
-        name: &'static str,
-        arg_count: usize,
-        closure: Box<dyn FnMut(Vec<String>) -> Option<String>>,
-    ) {
-        self.closure_map.add_new(name, arg_count, closure);
     }
 
     /// Add runtime rules without builder pattern
@@ -1290,7 +1246,6 @@ impl<'processor> Processor<'processor> {
         // Increase level to represent nestedness
         let level = level + 1;
         let (name, raw_args) = (&frag.name, &frag.args);
-        let greedy = frag.greedy || self.state.always_greedy;
 
         let mut args: String = raw_args.to_owned();
         // Preprocess only when macro is not a keyword macro
@@ -1351,7 +1306,7 @@ impl<'processor> Processor<'processor> {
                 }
             }
 
-            if let Some(result) = self.invoke_rule(level, name, &args, greedy)? {
+            if let Some(result) = self.invoke_rule(level, name, &args)? {
                 return Ok(EvalResult::Eval(Some(result)));
             } else {
                 return Ok(EvalResult::InvalidArg);
@@ -1361,12 +1316,7 @@ impl<'processor> Processor<'processor> {
         else if self.map.function.contains(&name) {
             // Func always exists, because contains succeeded.
             let func = self.map.function.get_func(name).unwrap();
-            let final_result = func(&args, greedy, self)?;
-            return Ok(EvalResult::Eval(final_result));
-        }
-        // Find closure map
-        else if self.closure_map.contains(&name) {
-            let final_result = self.closure_map.call(name, &args, greedy)?;
+            let final_result = func(&args, self)?;
             return Ok(EvalResult::Eval(final_result));
         }
         // No macros found to evaluate
@@ -1383,7 +1333,6 @@ impl<'processor> Processor<'processor> {
         level: usize,
         name: &str,
         arg_values: &str,
-        greedy: bool,
     ) -> RadResult<Option<String>> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
@@ -1392,7 +1341,7 @@ impl<'processor> Processor<'processor> {
         let arg_types = &rule.args;
         let args: Vec<String>;
         // Set variable to local macros
-        if let Some(content) = ArgParser::new().args_with_len(arg_values, arg_types.len(), greedy) {
+        if let Some(content) = ArgParser::new().args_with_len(arg_values, arg_types.len()) {
             args = content;
         } else {
             // Necessary arg count is bigger than given arguments
@@ -1589,7 +1538,6 @@ impl<'processor> Processor<'processor> {
                 }
                 match ch {
                     '|' => frag.pipe = true,
-                    '+' => frag.greedy = true,
                     '*' => frag.yield_literal = true,
                     '^' => frag.trimmed = true,
                     _ => {
@@ -1689,9 +1637,6 @@ impl<'processor> Processor<'processor> {
                 return Ok(());
             }
         }
-
-        // Try to evaluate
-        // let evaluation_result = self.evaluate(level, caller, &frag.name, &frag.args, frag.greedy || self.state.always_greedy);
 
         let evaluation_result = self.evaluate(level, caller, frag);
 
@@ -2028,13 +1973,23 @@ impl<'processor> Processor<'processor> {
     // Function that is exposed for end users so that macro ext can utilize these
     // <EXT>
 
-    pub fn get_parsed_array(&self, args: &str) -> Vec<String> {
-        unimplemented!()
+    pub fn print_error(&mut self, error: &str) -> RadResult<()> {
+        self.log_error(error)?;
+        Ok(())
     }
 
-    pub fn expand(&mut self, content: &str) -> String {
-        unimplemented!();
-        String::new()
+    pub fn get_split_arguments(&self, target_length: usize, source: &str) -> RadResult<Vec<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(source, target_length) {
+            Ok(args)
+        } else {
+            Err(RadError::InvalidArgument(
+                format!("Insufficient arguments.")
+            ))
+        }
+    }
+
+    pub fn expand(&mut self, level: usize,source: &str) -> RadResult<String> {
+        self.parse_chunk_args(level,MAIN_CALLER,source)
     }
 
     pub fn contains_macro(&self, macro_name: &str, macro_type : MacroType) -> bool {
