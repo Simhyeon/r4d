@@ -127,7 +127,7 @@ use crate::{consts::*, RadResult};
 use cindex::Indexer;
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
@@ -154,7 +154,8 @@ pub(crate) struct ProcessorState {
     // Current_input is either "stdin" or currently being read file's name thus it should not be a
     // path derivative
     pub auth_flags: AuthFlags,
-    pub current_input: ProcessInput,
+    pub current_input : ProcessInput,
+    pub input_stack : HashSet<PathBuf>,
     pub newline: String,
     pub paused: bool,
     pub pipe_truncate: bool,
@@ -179,9 +180,10 @@ impl ProcessorState {
     pub fn new(temp_target: (PathBuf, File)) -> Self {
         Self {
             current_input: ProcessInput::Stdin,
+            input_stack : HashSet::new(),
             auth_flags: AuthFlags::new(),
             newline: LINE_ENDING.to_owned(),
-            pipe_truncate: false,
+            pipe_truncate: true,
             pipe_map: HashMap::new(),
             paused: false,
             relay: RelayTarget::None,
@@ -419,21 +421,6 @@ impl<'processor> Processor<'processor> {
         self
     }
 
-    /// Use comment
-    ///
-    /// This is deprecated and will be removed in 2.0 version.
-    /// Use set_comment_type instead.
-    #[deprecated(
-        since = "1.2",
-        note = "Comment is deprecated and will be removed in 2.0 version."
-    )]
-    pub fn comment(mut self, comment: bool) -> Self {
-        if comment {
-            self.state.comment_type = CommentType::Start;
-        }
-        self
-    }
-
     /// Set comment type
     pub fn set_comment_type(mut self, comment_type: CommentType) -> Self {
         self.state.comment_type = comment_type;
@@ -551,15 +538,6 @@ impl<'processor> Processor<'processor> {
         self
     }
 
-    /// Creates an unreferenced instance of processor
-    #[deprecated(
-        since = "1.3",
-        note = "Build method is deprecated in favor of more ergonomic builder pattern. It will be removed in 2.0"
-    )]
-    pub fn build(self) -> Self {
-        self
-    }
-
     // </BUILDER>
     // End builder methods
     // ----------
@@ -649,7 +627,7 @@ impl<'processor> Processor<'processor> {
     pub fn add_ext_macro(&mut self, ext: ExtMacroBuilder) {
         match ext.macro_type {
             ExtMacroType::Function => self.map.function.new_ext_macro(ext),
-            ExtMacroType::Keyword => self.map.keyword.new_ext_macro(ext),
+            ExtMacroType::Keyword => self.map.deterred.new_ext_macro(ext),
         }
     }
 
@@ -1248,8 +1226,8 @@ impl<'processor> Processor<'processor> {
         let (name, raw_args) = (&frag.name, &frag.args);
 
         let mut args: String = raw_args.to_owned();
-        // Preprocess only when macro is not a keyword macro
-        if !self.map.is_keyword_macro(name) {
+        // Preprocess only when macro is not a deterred macro
+        if !self.map.is_deterred_macro(name) {
             // This parses and processes arguments
             // and macro should be evaluated after
             args = self.parse_chunk_args(level, name, raw_args)?;
@@ -1272,9 +1250,9 @@ impl<'processor> Processor<'processor> {
             )?;
         }
 
-        // Find keyword macro
-        if self.map.is_keyword_macro(name) {
-            if let Some(func) = self.map.keyword.get_keyword_macro(name) {
+        // Find deterred macro
+        if self.map.is_deterred_macro(name) {
+            if let Some(func) = self.map.deterred.get_deterred_macro(name) {
                 let final_result = func(&args, level, self)?;
                 // TODO
                 // Make parse logic consistent, not defined by delarator
@@ -1918,7 +1896,9 @@ impl<'processor> Processor<'processor> {
                 path.display()
             )))
         } else {
-            let input = ProcessInput::File(PathBuf::from(file));
+            let path = PathBuf::from(file);
+            self.state.input_stack.insert(path.canonicalize()?);
+            let input = ProcessInput::File(path);
             self.state.current_input = input.clone();
             self.logger.set_input(&input);
             self.set_file_env(file)?;

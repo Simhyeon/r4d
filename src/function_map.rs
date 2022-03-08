@@ -793,15 +793,25 @@ impl FunctionMacroMap {
             }
 
             if file_path.is_file() {
+                let canonic = file_path.canonicalize()?;
                 // Rules 1
                 // You cannot include self
                 if let ProcessInput::File(path) = &processor.state.current_input {
-                    if path.canonicalize()? == file_path.canonicalize()? {
+                    if path.canonicalize()? == canonic {
                         return Err(RadError::InvalidArgument(format!(
                             "You cannot include self while including a file : \"{}\"",
                             &path.display()
                         )));
                     }
+                }
+
+                // Rules 1.5
+                // Field is in input stack
+                if processor.state.input_stack.contains(&canonic) {
+                    return Err(RadError::InvalidArgument(format!(
+                                "You cannot include self while including a file : \"{}\"",
+                                &file_path.display()
+                    )));
                 }
 
                 // Rules 2
@@ -819,6 +829,8 @@ impl FunctionMacroMap {
                 processor.set_sandbox();
 
                 let chunk = processor.from_file_as_chunk(file_path)?;
+                // Collect stack
+                processor.state.input_stack.remove(&canonic);
                 Ok(chunk)
             } else {
                 let formatted = format!(
@@ -1980,9 +1992,8 @@ impl FunctionMacroMap {
         if !Utils::is_granted("tempin", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        let file = processor.get_temp_path().to_owned();
-        processor.set_sandbox();
-        let chunk = processor.from_file_as_chunk(&file)?;
+        let file = processor.get_temp_path().display();
+        let chunk = Self::include(&file.to_string(),processor)?;
         Ok(chunk)
     }
 
