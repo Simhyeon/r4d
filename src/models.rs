@@ -504,20 +504,20 @@ pub enum Behaviour {
 }
 
 #[derive(Clone)]
-pub enum ExtMacroBody<'body> {
-    Function(&'body FunctionMacroType),
-    Keyword(&'body KFunctionMacroType),
+pub enum ExtMacroBody {
+    Function(FunctionMacroType),
+    Keyword(KFunctionMacroType),
 }
 
 #[derive(Clone)]
-pub struct ExtMacroBuilder<'func> {
+pub struct ExtMacroBuilder {
     pub(crate) macro_name: String,
     pub(crate) macro_type: ExtMacroType,
     pub(crate) args: Vec<String>,
-    pub(crate) macro_body: Option<ExtMacroBody<'func>>,
+    pub(crate) macro_body: Option<ExtMacroBody>,
 }
 
-impl<'func> ExtMacroBuilder<'func> {
+impl ExtMacroBuilder {
     pub fn new(macro_name: &str, macro_type: ExtMacroType) -> Self {
         Self {
             macro_name: macro_name.to_string(),
@@ -533,7 +533,7 @@ impl<'func> ExtMacroBuilder<'func> {
         self
     }
 
-    pub fn body(mut self, body: ExtMacroBody<'func>) -> Self {
+    pub fn body(mut self, body: ExtMacroBody) -> Self {
         self.macro_body.replace(body);
         self
     }

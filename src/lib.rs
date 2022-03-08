@@ -57,7 +57,6 @@ pub mod processor;
 pub(crate) mod arg_parser;
 pub(crate) mod auth;
 pub(crate) mod function_map;
-pub(crate) mod closure_map;
 pub(crate) mod consts;
 pub(crate) mod runtime_map;
 #[cfg(feature = "debug")]
