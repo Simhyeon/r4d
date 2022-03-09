@@ -74,7 +74,7 @@ impl<'logger> Logger<'logger> {
         }
     }
 
-    pub fn set_write_options(&mut self, write_option: Option<WriteOption<'logger>>) {
+    pub fn set_write_option(&mut self, write_option: Option<WriteOption<'logger>>) {
         self.write_option = write_option;
     }
 

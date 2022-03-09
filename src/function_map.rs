@@ -3,6 +3,7 @@
 //! Function macro module includes struct and methods related to function macros which are technically function
 //! pointers.
 
+use crate::WriteOption;
 use crate::arg_parser::{ArgParser, GreedyState};
 use crate::auth::AuthType;
 use crate::consts::ESR;
@@ -149,16 +150,20 @@ impl FunctionMacroMap {
                 FMacroSign::new("grep", ["a_regex", "a_content"], Self::grep),
             ),
             (
-                "head".to_owned(),
-                FMacroSign::new("head", ["a_count", "a_content"], Self::head),
-            ),
-            (
                 "halt".to_owned(),
                 FMacroSign::new("halt", ESR, Self::halt_relay),
             ),
             (
+                "head".to_owned(),
+                FMacroSign::new("head", ["a_count", "a_content"], Self::head),
+            ),
+            (
                 "headl".to_owned(),
                 FMacroSign::new("headl", ["a_count", "a_content"], Self::head_line),
+            ),
+            (
+                "hygiene".to_owned(),
+                FMacroSign::new("hygiene", ["a_hygiene?"], Self::toggle_hygiene),
             ),
             (
                 "include".to_owned(),
@@ -897,7 +902,7 @@ impl FunctionMacroMap {
     ///
     /// $read(path)
     fn read(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("read", AuthType::FIN, processor)? {
+        if !Utils::is_granted("read", AuthType::FIN, processor)? || !Utils::is_granted("read", AuthType::FOUT, processor)? {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
@@ -913,7 +918,7 @@ impl FunctionMacroMap {
                 }
             }
 
-            if file_path.is_file() {
+            if file_path.exists() {
                 processor.set_sandbox();
                 processor.from_file(file_path)?;
                 Ok(None)
@@ -2399,7 +2404,7 @@ impl FunctionMacroMap {
     fn toggle_hygiene(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             if let Ok(value) = Utils::is_arg_true(&args[0]) {
-                processor.state.hygiene = !value;
+                processor.state.hygiene = value;
                 Ok(None)
             }
             // Failed to evaluate
