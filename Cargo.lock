@@ -213,6 +213,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cafac0318488fdde43111f77bd1d82caafe7bafc544c5676ad051677d090cbb"
 
 [[package]]
+name = "ext_template"
+version = "0.1.0"
+
+[[package]]
 name = "getrandom"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -448,6 +452,7 @@ dependencies = [
  "crossterm",
  "csv",
  "evalexpr",
+ "ext_template",
  "lazy_static",
  "lipsum",
  "regex",
