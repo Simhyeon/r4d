@@ -552,5 +552,3 @@ pub enum MacroType {
     Runtime,
     Any
 }
-
-

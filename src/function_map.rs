@@ -2390,28 +2390,28 @@ impl FunctionMacroMap {
         }
     }
 
-    /// Enable/disable runtime macros
+    /// Enable/disable hygiene
     ///
     /// # Usage
     ///
-    /// $runtime(true)
-    /// $runtime(false)
-    fn toggle_runtime(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+    /// $hygiene(true)
+    /// $hygiene(false)
+    fn toggle_hygiene(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             if let Ok(value) = Utils::is_arg_true(&args[0]) {
-                processor.state.no_runtime = !value;
+                processor.state.hygiene = !value;
                 Ok(None)
             }
             // Failed to evaluate
             else {
                 Err(RadError::InvalidArgument(format!(
-                    "runtime requires either true/false or zero/nonzero integer, but given \"{}\"",
+                    "hygiene requires either true/false or zero/nonzero integer, but given \"{}\"",
                     args[0]
                 )))
             }
         } else {
             Err(RadError::InvalidArgument(
-                "runtime requires an argument".to_owned(),
+                "hygiene requires an argument".to_owned(),
             ))
         }
     }

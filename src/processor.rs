@@ -98,7 +98,7 @@
 
 use crate::arg_parser::{ArgParser, GreedyState};
 use crate::auth::{AuthFlags, AuthState, AuthType};
-use crate::runtime_map::{RuntimeMacro};
+use crate::runtime_map::RuntimeMacro;
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
@@ -158,6 +158,8 @@ pub(crate) struct ProcessorState {
     pub input_stack : HashSet<PathBuf>,
     pub newline: String,
     pub paused: bool,
+    // This is reserved for hygienic execution
+    pub hygiene: bool,
     pub pipe_truncate: bool,
     pipe_map: HashMap<String, String>,
     pub relay: RelayTarget,
@@ -186,6 +188,7 @@ impl ProcessorState {
             pipe_truncate: true,
             pipe_map: HashMap::new(),
             paused: false,
+            hygiene: false,
             relay: RelayTarget::None,
             behaviour: Behaviour::Strict,
             comment_type: CommentType::None,
@@ -1968,8 +1971,8 @@ impl<'processor> Processor<'processor> {
         }
     }
 
-    pub fn expand(&mut self, level: usize,source: &str) -> RadResult<String> {
-        self.parse_chunk_args(level,MAIN_CALLER,source)
+    pub fn expand(&mut self, level: usize, source: impl AsRef<str>) -> RadResult<String> {
+        self.parse_chunk_args(level,MAIN_CALLER, source.as_ref())
     }
 
     pub fn contains_macro(&self, macro_name: &str, macro_type : MacroType) -> bool {
