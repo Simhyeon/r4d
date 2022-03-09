@@ -8,7 +8,7 @@ pub fn function_template(item: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-pub fn keyword_template(item: TokenStream) -> TokenStream {
+pub fn deterred_template(item: TokenStream) -> TokenStream {
     format!("|args : &str, level: usize, processor : &mut Processor| -> RadResult<Option<String>> {{ 
         {}
 }}",item).parse().unwrap()
