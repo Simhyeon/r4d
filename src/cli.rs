@@ -4,11 +4,10 @@
 //! Cli module is only included in binary feature flag.
 
 use crate::auth::AuthType;
-use crate::function_map::FunctionMacroType;
 use crate::logger::WarningType;
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
-use crate::models::{CommentType, DiffOption, ExtMacroBuilder, ExtMacroBody};
+use crate::models::{CommentType, DiffOption};
 use crate::processor::Processor;
 use crate::utils::Utils;
 use crate::RadResult;
@@ -389,8 +388,4 @@ impl Cli {
 
         app.get_matches()
     }
-}
-
-pub(crate) fn test(args : &str, processor : &mut Processor) -> RadResult<Option<String>> {
-    Ok(Some(String::from("Hello world")))
 }
