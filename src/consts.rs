@@ -54,3 +54,4 @@ pub const RDB_HELP: &'static str = include_str!("debug_help_message.txt");
 pub const ESR: [&str; 0] = [];
 
 pub const DEFINE_KEYWORD: &'static str = "define";
+pub const RAD_READ_CACHE: &'static str = ".rad_read_cache";
