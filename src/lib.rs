@@ -92,3 +92,6 @@ pub use cli::Cli;
 // Only for csv
 #[cfg(feature = "csv")]
 pub(crate) mod formatter;
+
+// Re-export macro
+pub use ext_template;
