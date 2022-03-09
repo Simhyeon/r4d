@@ -134,7 +134,7 @@ impl DeterredMacroMap {
     }
 
     pub fn new_ext_macro(&mut self, ext : ExtMacroBuilder) {
-        if let Some(ExtMacroBody::Keyword(mac_ref)) = ext.macro_body {
+        if let Some(ExtMacroBody::Deterred(mac_ref)) = ext.macro_body {
             let sign = KMacroSign::new(
                 &ext.macro_name,
                 &ext.args,
@@ -526,7 +526,7 @@ impl std::fmt::Display for KMacroSign {
 impl From<&KMacroSign> for crate::sigmap::MacroSignature {
     fn from(bm: &KMacroSign) -> Self {
         Self {
-            variant: crate::sigmap::MacroVariant::Keyword,
+            variant: crate::sigmap::MacroVariant::Deterred,
             name: bm.name.to_owned(),
             args: bm.args.to_owned(),
             expr: bm.to_string(),

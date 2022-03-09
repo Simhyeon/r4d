@@ -636,7 +636,7 @@ impl<'processor> Processor<'processor> {
     pub fn add_ext_macro(&mut self, ext: ExtMacroBuilder) {
         match ext.macro_type {
             ExtMacroType::Function => self.map.function.new_ext_macro(ext),
-            ExtMacroType::Keyword => self.map.deterred.new_ext_macro(ext),
+            ExtMacroType::Deterred => self.map.deterred.new_ext_macro(ext),
         }
     }
 

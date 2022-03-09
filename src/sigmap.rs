@@ -18,7 +18,7 @@ impl SignatureMap {
 /// Type(variant) of macro
 #[derive(Debug, Serialize, Deserialize)]
 pub enum MacroVariant {
-    Keyword,
+    Deterred,
     Function,
     Custom,
 }

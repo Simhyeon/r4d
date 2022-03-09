@@ -101,7 +101,7 @@ impl MacroMap {
 
     pub fn contains_macro(&self, macro_name:&str, macro_type: MacroType, volatile: bool) -> bool {
         match macro_type {
-            MacroType::Keyword => self.deterred.contains(macro_name),
+            MacroType::Deterred => self.deterred.contains(macro_name),
             MacroType::Function => self.function.contains(macro_name),
             MacroType::Runtime => self.runtime.contains(macro_name, volatile),
             MacroType::Any => self.function.contains(macro_name) || self.runtime.contains(macro_name, volatile) || self.deterred.contains(macro_name),
@@ -127,7 +127,7 @@ impl MacroMap {
     /// Undeifne macro
     pub fn undefine(&mut self, macro_name: &str, macro_type: MacroType, volatile: bool) {
         match macro_type{
-            MacroType::Keyword => {self.deterred.undefine(macro_name);}
+            MacroType::Deterred => {self.deterred.undefine(macro_name);}
             MacroType::Function => {self.function.undefine(macro_name);}
             MacroType::Runtime => {self.runtime.undefine(macro_name, volatile);}
             MacroType::Any => {
@@ -140,7 +140,7 @@ impl MacroMap {
 
     pub fn rename(&mut self, macro_name: &str, target_name: &str, macro_type: MacroType, volatile: bool) {
         match macro_type{
-            MacroType::Keyword => {self.deterred.rename(macro_name,target_name);}
+            MacroType::Deterred => {self.deterred.rename(macro_name,target_name);}
             MacroType::Function => {self.function.rename(macro_name,target_name);}
             MacroType::Runtime => {self.runtime.rename(macro_name,target_name, volatile);}
             MacroType::Any => {
@@ -513,7 +513,7 @@ pub enum Behaviour {
 #[derive(Clone)]
 pub enum ExtMacroBody {
     Function(FunctionMacroType),
-    Keyword(DFunctionMacroType),
+    Deterred(DFunctionMacroType),
 }
 
 #[derive(Clone)]
@@ -549,13 +549,13 @@ impl ExtMacroBuilder {
 #[derive(Clone)]
 pub enum ExtMacroType {
     Function,
-    Keyword,
+    Deterred,
 }
 
 /// Intended for processor ext interface
 pub enum MacroType {
     Function,
-    Keyword,
+    Deterred,
     Runtime,
     Any
 }
