@@ -96,34 +96,6 @@ impl Cli {
         // print permission
         processor.print_permission()?;
 
-        // DEBUG TODO NOTE
-        // Adding function macro
-        processor.add_ext_macro(
-            ExtMacroBuilder::new("test", 
-                crate::models::ExtMacroType::Function
-            )
-            .args(&vec!["a_first", "a_second"])
-            .body(ExtMacroBody::Function(test as FunctionMacroType))
-        );
-
-        // Adding function macro
-        processor.add_ext_macro(
-            ExtMacroBuilder::new("test", 
-                crate::models::ExtMacroType::Function
-            )
-            .args(&vec!["a_first", "a_second"])
-            .body(ExtMacroBody::Function(|args : &str, processor : &mut Processor| -> RadResult<Option<String>> { Ok(None) }))
-        );
-
-        // Adding keyword function macro
-        //processor.add_ext_macro(
-            //ExtMacroBuilder::new("test", 
-                //crate::models::ExtMacroType::Keyword
-            //)
-            //.args(&vec!["a_first", "a_second"])
-            //.body(ExtMacroBody::Function(&(test as FunctionMacroType)))
-        //);
-
         // Process
         // Redirect stdin as argument
         if args.is_present("pipe") {
