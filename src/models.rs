@@ -71,8 +71,8 @@ impl MacroMap {
         }
     }
 
-    pub fn clear_runtime_macros(&mut self) {
-        self.runtime.clear_runtime_macros();
+    pub fn clear_runtime_macros(&mut self, volatile: bool) {
+        self.runtime.clear_runtime_macros(volatile);
     }
 
     /// Create a new local macro
@@ -99,60 +99,67 @@ impl MacroMap {
         self.deterred.contains(name)
     }
 
-    pub fn contains_macro(&self, macro_name:&str, macro_type: MacroType) -> bool {
+    pub fn contains_macro(&self, macro_name:&str, macro_type: MacroType, volatile: bool) -> bool {
         match macro_type {
             MacroType::Keyword => self.deterred.contains(macro_name),
             MacroType::Function => self.function.contains(macro_name),
-            MacroType::Runtime => self.runtime.contains(macro_name),
-            MacroType::Any => self.function.contains(macro_name) || self.runtime.contains(macro_name) || self.deterred.contains(macro_name),
+            MacroType::Runtime => self.runtime.contains(macro_name, volatile),
+            MacroType::Any => self.function.contains(macro_name) || self.runtime.contains(macro_name, volatile) || self.deterred.contains(macro_name),
         }
     }
 
     // Empty argument should be treated as no arg
     /// Register a new runtime macro
-    pub fn register_runtime(&mut self, name: &str, args: &str, body: &str) -> RadResult<()> {
+    pub fn register_runtime(&mut self, name: &str, args: &str, body: &str, volatile: bool) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
         let mac = RuntimeMacro::new(&Utils::trim(name), &Utils::trim(args), body);
-        self.runtime.new_macro(name, mac);
+        self.runtime.new_macro(name, mac, volatile);
+        Ok(())
+    }
+
+    pub fn register_runtime_as_volatile(&mut self, name: &str, args: &str, body: &str, volatile: bool) -> RadResult<()> {
+        // Trim all whitespaces and newlines from the string
+        let mac = RuntimeMacro::new(&Utils::trim(name), &Utils::trim(args), body);
+        self.runtime.new_macro(name, mac, volatile);
         Ok(())
     }
 
     /// Undeifne macro
-    pub fn undefine(&mut self, macro_name: &str, macro_type: MacroType) {
+    pub fn undefine(&mut self, macro_name: &str, macro_type: MacroType, volatile: bool) {
         match macro_type{
             MacroType::Keyword => {self.deterred.undefine(macro_name);}
             MacroType::Function => {self.function.undefine(macro_name);}
-            MacroType::Runtime => {self.runtime.undefine(macro_name);}
+            MacroType::Runtime => {self.runtime.undefine(macro_name, volatile);}
             MacroType::Any => {
                 self.function.undefine(macro_name);
-                self.runtime.undefine(macro_name);
+                self.runtime.undefine(macro_name, volatile);
                 self.deterred.undefine(macro_name);
             }
         }
     }
 
-    pub fn rename(&mut self, macro_name: &str, target_name: &str, macro_type: MacroType) {
+    pub fn rename(&mut self, macro_name: &str, target_name: &str, macro_type: MacroType, volatile: bool) {
         match macro_type{
             MacroType::Keyword => {self.deterred.rename(macro_name,target_name);}
             MacroType::Function => {self.function.rename(macro_name,target_name);}
-            MacroType::Runtime => {self.runtime.rename(macro_name,target_name);}
+            MacroType::Runtime => {self.runtime.rename(macro_name,target_name, volatile);}
             MacroType::Any => {
                 self.function.rename(macro_name,target_name);
-                self.runtime.rename(macro_name,target_name);
+                self.runtime.rename(macro_name,target_name, volatile);
                 self.deterred.rename(macro_name,target_name);
             }
         }
     }
 
-    pub fn append(&mut self, name: &str, target: &str) {
-        if self.runtime.contains(name) {
-            self.runtime.append_macro(name, target);
+    pub fn append(&mut self, name: &str, target: &str, volatile: bool) {
+        if self.runtime.contains(name, volatile) {
+            self.runtime.append_macro(name, target, volatile);
         }
     }
 
-    pub fn replace(&mut self, name: &str, target: &str) -> bool {
-        if self.runtime.contains(name) {
-            self.runtime.replace_macro(name, target);
+    pub fn replace(&mut self, name: &str, target: &str, volatile: bool) -> bool {
+        if self.runtime.contains(name, volatile) {
+            self.runtime.replace_macro(name, target, volatile);
             true
         } else {
             false

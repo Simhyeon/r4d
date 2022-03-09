@@ -55,50 +55,90 @@ impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
 #[derive(Clone)]
 pub(crate) struct RuntimeMacroMap {
     pub(crate) macros: HashMap<String, RuntimeMacro>,
+    pub(crate) volatile: HashMap<String, RuntimeMacro>,
 }
 
 impl RuntimeMacroMap {
     pub fn new() -> Self {
         Self {
             macros: HashMap::new(),
+            volatile: HashMap::new(),
         }
     }
 
-    pub fn clear_runtime_macros(&mut self) {
-        self.macros.clear();
-    }
-
-    pub fn contains(&self, key: &str) -> bool {
-        self.macros.contains_key(key)
-    }
-
-    pub fn new_macro(&mut self, name: &str, mac: RuntimeMacro) {
-        self.macros.insert(name.to_string(), mac);
-    }
-
-    pub fn undefine(&mut self, name: &str) -> Option<RuntimeMacro> {
-        self.macros.remove(name)
-    }
-
-    pub fn rename(&mut self, name: &str,new_name: &str) {
-        if let Some(mac) = self.macros.remove(name) {
-            self.macros.insert(new_name.to_string(), mac);
+    pub fn clear_runtime_macros(&mut self, volatile: bool) {
+        if volatile {
+            self.volatile.clear();
+        } else {
+            self.macros.clear();
         }
     }
 
-    pub fn append_macro(&mut self, name: &str, target: &str) {
-        if let Some(mac) = self.macros.get_mut(name) {
-            mac.body.push_str(target)
+    pub fn contains(&self, key: &str, volatile: bool) -> bool {
+        if volatile {
+            self.volatile.contains_key(key)
+        } else {
+            self.macros.contains_key(key)
         }
     }
 
-    pub fn replace_macro(&mut self, name: &str, target: &str) {
-        if let Some(mac) = self.macros.get_mut(name) {
-            mac.body = target.to_string();
+    pub fn new_macro(&mut self, name: &str, mac: RuntimeMacro, volatile: bool) {
+        if volatile {
+            self.volatile.insert(name.to_string(), mac);
+        } else {
+            self.macros.insert(name.to_string(), mac);
         }
     }
 
-    pub fn extend_map(&mut self, map: HashMap<String, RuntimeMacro>) {
-        self.macros.extend(map)
+    pub fn undefine(&mut self, name: &str, volatile: bool) -> Option<RuntimeMacro> {
+        if volatile {
+            self.volatile.remove(name)
+        } else {
+            self.macros.remove(name)
+        }
+    }
+
+    pub fn rename(&mut self, name: &str,new_name: &str, volatile: bool) {
+        if volatile{
+            if let Some(mac) = self.volatile.remove(name) {
+                self.volatile.insert(new_name.to_string(), mac);
+            }
+        } else {
+            if let Some(mac) = self.macros.remove(name) {
+                self.macros.insert(new_name.to_string(), mac);
+            }
+        }
+    }
+
+    pub fn append_macro(&mut self, name: &str, target: &str, volatile: bool) {
+        if volatile{
+            if let Some(mac) = self.volatile.get_mut(name) {
+                mac.body.push_str(target)
+            }
+        } else {
+            if let Some(mac) = self.macros.get_mut(name) {
+                mac.body.push_str(target)
+            }
+        }
+    }
+
+    pub fn replace_macro(&mut self, name: &str, target: &str, volatile: bool) {
+        if volatile{
+            if let Some(mac) = self.volatile.get_mut(name) {
+                mac.body.push_str(target)
+            }
+        } else {
+            if let Some(mac) = self.macros.get_mut(name) {
+                mac.body = target.to_string();
+            }
+        }
+    }
+
+    pub fn extend_map(&mut self, map: HashMap<String, RuntimeMacro>, volatile: bool) {
+        if volatile{
+            self.volatile.extend(map)
+        } else {
+            self.macros.extend(map)
+        }
     }
 }

@@ -252,11 +252,6 @@ impl<'processor> Processor<'processor> {
         Self::new_processor(false)
     }
 
-    /// Clear runtime macros
-    pub fn clear_rumtime_macros(&mut self) {
-        self.map.clear_runtime_macros();
-    }
-
     /// Internal function to create Processor struct
     ///
     /// This creates a complete processor that can parse and create output without any extra
@@ -274,7 +269,7 @@ impl<'processor> Processor<'processor> {
         );
 
         let mut logger = Logger::new();
-        logger.set_write_options(Some(WriteOption::Terminal));
+        logger.set_write_option(Some(WriteOption::Terminal));
 
         let map = if use_default {
             MacroMap::new()
@@ -344,7 +339,7 @@ impl<'processor> Processor<'processor> {
             } else {
                 self.logger = Logger::new();
                 self.logger
-                    .set_write_options(Some(WriteOption::File(file.unwrap())));
+                    .set_write_option(Some(WriteOption::File(file.unwrap())));
             }
         }
         Ok(self)
@@ -353,7 +348,7 @@ impl<'processor> Processor<'processor> {
     /// Yield error to the file
     pub fn error_to_variable(mut self, value: &'processor mut String) -> Self {
         self.logger
-            .set_write_options(Some(WriteOption::Variable(value)));
+            .set_write_option(Some(WriteOption::Variable(value)));
         self
     }
 
@@ -415,6 +410,12 @@ impl<'processor> Processor<'processor> {
         if lenient {
             self.state.behaviour = Behaviour::Leninet;
         }
+        self
+    }
+
+    /// Set hygiene
+    pub fn hygiene(mut self, hygiene: bool) -> Self {
+        self.state.hygiene = hygiene;
         self
     }
 
@@ -492,7 +493,7 @@ impl<'processor> Processor<'processor> {
                 // File validity is checked by melt methods
                 rule_file.melt(p.as_ref())?;
             }
-            self.map.runtime.extend_map(rule_file.rules);
+            self.map.runtime.extend_map(rule_file.rules, self.state.hygiene);
         }
 
         Ok(self)
@@ -502,7 +503,7 @@ impl<'processor> Processor<'processor> {
     pub fn rule_literal(mut self, literal: &Vec<u8>) -> RadResult<Self> {
         let mut rule_file = RuleFile::new(None);
         rule_file.melt_literal(literal)?;
-        self.map.runtime.extend_map(rule_file.rules);
+        self.map.runtime.extend_map(rule_file.rules, self.state.hygiene);
         Ok(self)
     }
 
@@ -558,6 +559,11 @@ impl<'processor> Processor<'processor> {
     /// Set write option in the process
     pub fn set_write_option(&mut self, write_option: WriteOption<'processor>) {
         self.write_option = write_option;
+    }
+
+    /// Swap write option
+    pub fn swap_write_option(&mut self, write_option: WriteOption<'processor>) -> WriteOption {
+        std::mem::replace(&mut self.write_option, write_option)
     }
 
     /// Set write option in the process
@@ -1019,6 +1025,10 @@ impl<'processor> Processor<'processor> {
 
             // Clear local variable macros
             self.map.clear_local();
+            // Clear volatile vaariables when hygienic is enabled
+            if self.state.hygiene {
+                self.map.clear_runtime_macros(true);
+            }
 
             // Non macro string is included
             if remainder.len() != 0 {
@@ -1246,7 +1256,7 @@ impl<'processor> Processor<'processor> {
         if caller == name {
             self.log_warning(
                 &format!(
-                    "Calling self, which is \"{}\", can possibly trigger infinite loop",
+                    "Calling self, which is \"{}\", can possibly trigger infinite loop. This is also occured when argument's name is equal to macro's name.",
                     name,
                 ),
                 WarningType::Sanity,
@@ -1276,7 +1286,7 @@ impl<'processor> Processor<'processor> {
         // Find runtime macro
         // runtime macro comes before function macro so that
         // user can override it
-        if self.map.runtime.contains(name) {
+        if self.map.runtime.contains(name, self.state.hygiene) {
             // Prevent invocation if relaying to
             if let RelayTarget::Macro(mac) = &self.state.relay {
                 if mac == name {
@@ -1357,12 +1367,16 @@ impl<'processor> Processor<'processor> {
         if let Some((name, args, body)) = self.define_parser.parse_define(&frag.args) {
             // Strict mode
             // Overriding is prohibited
-            if self.state.behaviour == Behaviour::Strict && self.map.contains_macro(&name, MacroType::Any) {
+            if self.state.behaviour == Behaviour::Strict && self.map.contains_macro(&name, MacroType::Any, self.state.hygiene) {
                 self.log_error("Can't override exsiting macro on strict mode")?;
                 return Err(RadError::StrictPanic);
             }
 
-            self.map.register_runtime(&name, &args, &body)?;
+            if self.state.hygiene {
+                self.map.register_runtime_as_volatile(&name, &args, &body, self.state.hygiene)?;
+            } else {
+                self.map.register_runtime(&name, &args, &body, self.state.hygiene)?;
+            }
         } else {
             self.log_error(&format!(
                 "Failed to register a macro : \"{}\"",
@@ -1392,13 +1406,13 @@ impl<'processor> Processor<'processor> {
 
         match &mut self.state.relay {
             RelayTarget::Macro(mac) => {
-                if !self.map.contains_macro(mac, MacroType::Runtime) {
+                if !self.map.contains_macro(mac, MacroType::Runtime, self.state.hygiene) {
                     return Err(RadError::InvalidMacroName(format!(
                         "Cannot relay to non-exsitent macro \"{}\"",
                         mac
                     )));
                 }
-                self.map.append(&mac, content);
+                self.map.append(&mac, content, self.state.hygiene);
             }
             RelayTarget::File((_, file)) => {
                 file.write_all(content.as_bytes())?;
@@ -1976,23 +1990,23 @@ impl<'processor> Processor<'processor> {
     }
 
     pub fn contains_macro(&self, macro_name: &str, macro_type : MacroType) -> bool {
-        self.map.contains_macro(macro_name, macro_type)
+        self.map.contains_macro(macro_name, macro_type, self.state.hygiene)
     }
 
     pub fn undefine_macro(&mut self, macro_name: &str, macro_type: MacroType) {
-        self.map.undefine(macro_name, macro_type);
+        self.map.undefine(macro_name, macro_type, self.state.hygiene);
     }
 
     pub fn rename_macro(&mut self, macro_name: &str, target_name: &str, macro_type: MacroType) {
-        self.map.rename(macro_name, target_name, macro_type);
+        self.map.rename(macro_name, target_name, macro_type, self.state.hygiene);
     }
 
     pub fn append_macro(&mut self, macro_name: &str, target: &str) {
-        self.map.append(macro_name, target);
+        self.map.append(macro_name, target, self.state.hygiene);
     }
 
     pub fn replace_macro(&mut self, macro_name: &str, target: &str) -> bool {
-        self.map.replace(macro_name, target)
+        self.map.replace(macro_name, target, self.state.hygiene)
     }
 
     pub fn add_new_local_macro(&mut self, level: usize, macro_name: &str, body: &str) {
