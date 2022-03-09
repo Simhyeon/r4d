@@ -511,12 +511,6 @@ pub enum Behaviour {
 }
 
 #[derive(Clone)]
-pub enum ExtMacroBody {
-    Function(FunctionMacroType),
-    Deterred(DFunctionMacroType),
-}
-
-#[derive(Clone)]
 pub struct ExtMacroBuilder {
     pub(crate) macro_name: String,
     pub(crate) macro_type: ExtMacroType,
@@ -525,31 +519,44 @@ pub struct ExtMacroBuilder {
 }
 
 impl ExtMacroBuilder {
-    pub fn new(macro_name: &str, macro_type: ExtMacroType) -> Self {
+    pub fn new(macro_name: &str) -> Self {
         Self {
             macro_name: macro_name.to_string(),
-            macro_type,
+            macro_type: ExtMacroType::Function,
             // Empty values
             args: vec![],
             macro_body: None,
         }
     }
 
-    pub fn args(mut self, args: &Vec<impl AsRef<str>>) -> Self {
-        self.args = args.iter().map(|a| a.as_ref().to_string()).collect();
+    pub fn function(mut self, func : FunctionMacroType) -> Self {
+        self.macro_type = ExtMacroType::Function;
+        self.macro_body = Some(ExtMacroBody::Function(func));
         self
     }
 
-    pub fn body(mut self, body: ExtMacroBody) -> Self {
-        self.macro_body.replace(body);
+    pub fn deterred(mut self, func : DFunctionMacroType) -> Self {
+        self.macro_type = ExtMacroType::Deterred;
+        self.macro_body = Some(ExtMacroBody::Deterred(func));
+        self
+    }
+
+    pub fn args(mut self, args: &Vec<impl AsRef<str>>) -> Self {
+        self.args = args.iter().map(|a| a.as_ref().to_string()).collect();
         self
     }
 }
 
 #[derive(Clone)]
-pub enum ExtMacroType {
+pub(crate) enum ExtMacroType {
     Function,
     Deterred,
+}
+
+#[derive(Clone)]
+pub(crate) enum ExtMacroBody {
+    Function(FunctionMacroType),
+    Deterred(DFunctionMacroType),
 }
 
 /// Intended for processor ext interface
