@@ -1404,7 +1404,7 @@ impl<'processor> Processor<'processor> {
         #[cfg(feature = "debug")]
         self.debugger.write_to_processed(content)?;
 
-        match &mut self.state.relay.last().unwrap_or(&RelayTarget::None) {
+        match self.state.relay.last_mut().unwrap_or(&mut RelayTarget::None) {
             RelayTarget::Macro(mac) => {
                 if !self.map.contains_macro(mac, MacroType::Runtime, self.state.hygiene) {
                     return Err(RadError::InvalidMacroName(format!(

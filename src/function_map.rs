@@ -3,7 +3,6 @@
 //! Function macro module includes struct and methods related to function macros which are technically function
 //! pointers.
 
-use crate::WriteOption;
 use crate::arg_parser::{ArgParser, GreedyState};
 use crate::auth::AuthType;
 use crate::consts::ESR;
