@@ -1970,6 +1970,15 @@ impl<'processor> Processor<'processor> {
     // Function that is exposed for end users so that macro ext can utilize these
     // <EXT>
 
+    pub fn toggle_hygiene(&mut self, toggle: bool) {
+        if toggle {
+            if !self.map.runtime.volatile.is_empty() {
+                self.map.clear_runtime_macros(true);
+            }
+        }
+        self.state.hygiene = toggle;
+    }
+
     pub fn print_error(&mut self, error: &str) -> RadResult<()> {
         self.log_error(error)?;
         Ok(())

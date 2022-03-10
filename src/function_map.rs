@@ -2404,7 +2404,7 @@ impl FunctionMacroMap {
     fn toggle_hygiene(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             if let Ok(value) = Utils::is_arg_true(&args[0]) {
-                processor.state.hygiene = value;
+                processor.toggle_hygiene(value);
                 Ok(None)
             }
             // Failed to evaluate
