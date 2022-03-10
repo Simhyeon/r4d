@@ -162,7 +162,7 @@ pub(crate) struct ProcessorState {
     pub hygiene: bool,
     pub pipe_truncate: bool,
     pipe_map: HashMap<String, String>,
-    pub relay: RelayTarget,
+    pub relay: Vec<RelayTarget>,
     pub sandbox: bool,
     pub behaviour: Behaviour,
     pub comment_type: CommentType,
@@ -189,7 +189,7 @@ impl ProcessorState {
             pipe_map: HashMap::new(),
             paused: false,
             hygiene: false,
-            relay: RelayTarget::None,
+            relay: vec![],
             behaviour: Behaviour::Strict,
             comment_type: CommentType::None,
             sandbox: false,
@@ -1288,7 +1288,7 @@ impl<'processor> Processor<'processor> {
         // user can override it
         if self.map.runtime.contains(name, self.state.hygiene) {
             // Prevent invocation if relaying to
-            if let RelayTarget::Macro(mac) = &self.state.relay {
+            if let Some(RelayTarget::Macro(mac)) = &self.state.relay.last() {
                 if mac == name {
                     return Err(RadError::UnallowedMacroExecution(format!(
                         "Cannot execute macro \"{}\" when it is being relayed to",
@@ -1404,7 +1404,7 @@ impl<'processor> Processor<'processor> {
         #[cfg(feature = "debug")]
         self.debugger.write_to_processed(content)?;
 
-        match &mut self.state.relay {
+        match &mut self.state.relay.last().unwrap_or(&RelayTarget::None) {
             RelayTarget::Macro(mac) => {
                 if !self.map.contains_macro(mac, MacroType::Runtime, self.state.hygiene) {
                     return Err(RadError::InvalidMacroName(format!(
@@ -2011,6 +2011,10 @@ impl<'processor> Processor<'processor> {
 
     pub fn add_new_local_macro(&mut self, level: usize, macro_name: &str, body: &str) {
         self.map.add_local_macro(level, macro_name, body);
+    }
+
+    pub fn is_true(&self, src: &str) -> RadResult<bool> {
+        Utils::is_arg_true(src)
     }
 
     // </EXT>

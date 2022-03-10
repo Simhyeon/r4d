@@ -861,7 +861,7 @@ impl FunctionMacroMap {
 
                 // Rules 2
                 // You cannot include file that is being relayed
-                if let RelayTarget::File((path, _)) = &processor.state.relay {
+                if let Some(RelayTarget::File((path, _))) = &processor.state.relay.last() {
                     if path.canonicalize()? == file_path.canonicalize()? {
                         return Err(RadError::InvalidArgument(format!(
                             "You cannot include relay target while relaying to the file : \"{}\"",
@@ -2103,7 +2103,7 @@ impl FunctionMacroMap {
                 )))
             }
         };
-        p.state.relay = relay_type;
+        p.state.relay.push(relay_type);
         Ok(None)
     }
 
@@ -2113,7 +2113,8 @@ impl FunctionMacroMap {
     ///
     /// $hold()
     fn halt_relay(_: &str,  p: &mut Processor) -> RadResult<Option<String>> {
-        p.state.relay = RelayTarget::None;
+        // This remove last element from stack
+        p.state.relay.pop();
         Ok(None)
     }
 
