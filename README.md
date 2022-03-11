@@ -3,6 +3,8 @@
 R4d is a text oriented macro prosessor aims to be an alternative to m4 macro
 processor.
 
+Rad has been changed drastically with 2.0 update, see [2.0 part](#2.0) below.
+
 ### Note
 
 Because crates.io's readme is tied to version. There might be undocumented
@@ -30,17 +32,21 @@ variable.
 $regcsv(addr,$include(addr.csv))$dnl()
 
 $static(
-	queried,
-	$query(
-		SELECT id,first_name,address 
-		FROM addr where first_name = John
-	)
+    queried,
+    $query(
+        SELECT id,first_name,address 
+        FROM addr where first_name = John
+    )
 )$dnl()
 
+% Comments are disabled by default for better compatibility
 % TABLE_FORM == github
-$table+($env(TABLE_FORM),$queried())
+$table($env(TABLE_FORM),$queried())
 
 $wrap(40,$lipsum(15))
+
+Evaluation : $prec($eval( $num(0.1second) + $num(0.2sekunde)),2)
+Evaluation : $evalk( 1 + 2 )
 ```
 **Processed texts**
 ```
@@ -62,6 +68,9 @@ variable.
 Lorem ipsum dolor sit amet, consectetur
 adipiscing elit, sed do eiusmod tempor
 incididunt ut labore.
+
+Evaluation : 0.30
+Evaluation : 1 + 2 = 3
 ```
 
 ### Install
@@ -97,7 +106,6 @@ use rad::RadError;
 use rad::Processor;
 
 let processor = Processor::new()
-    .greedy(true)
     .write_to_file(Some(PathBuf::from("cache.txt")))?;
 
 processor.from_file(Path::new("input.txt"))?;
@@ -120,6 +128,10 @@ processor.print_result()?;
 
 [Types](./docs/macro_types.md)
 
+### How to extend function macros
+
+[extension](./docs/ext.md)
+
 ### Extend processor with storage feature
 
 [Storage](./docs/storage.md)
@@ -128,31 +140,29 @@ processor.print_result()?;
 
 [Debug](./docs/debug.md)
 
+### 2.0 changes
+
+From 2.0, following changes have been updated including breaking ones.
+
+- Removed deprecated methods
+- Renamed concepts for better understanding
+- Relocated deterred macros into function macros
+- Added easier customizable macro extension
+- Removed closure macro
+- Now every macro is greedy
+- Pipe truncate as default
+- Hygienic processing toggle ( which is not the internal sandboxing logic but for end
+user )
+
 ### Goal
 
 R4d aims to be a modern alternative to m4 processor, which means
 
-- No trivial m4 quotes for macro definition
-- An explicit rule for macro definition and usage so that de facto underscore
-rule is not necessary
-- Easier binding with other programming languages(Rust's c binding)
+- No trivial m4 quotes
+- An explicit rule for macro definition and invocation
 - Enable combination of file stream and stdout
 - As expressive as current m4 macro processor
-
-### About versioning
-
-I wanted to publish the crate as fast as possible so I have made fast releases.
-Though I think "non-breaking changes in major versioning" is enough for sound
-versioning. I decided to express consistency in version number changes.
-Although it will not be completely compatible with ```semver```.
-
-From version 1.7.0, following rules will be applied
-
-- Middle number (minor number) would represents feature updates that can be
-configured through library.
-- Right most number or say petit number will add macro updates or new binary
-flag updates.
-- Left most number or major version is a breaking change.
+- Easier binding with other programming languages(Rust's c binding)
 
 ### CVE related issue
 
