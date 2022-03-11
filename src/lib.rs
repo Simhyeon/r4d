@@ -8,18 +8,18 @@
 //! # Features
 //!
 //! ```text
-//! - evalexpr  : "eval" macro
+//! - evalexpr  : "eval", "evalk" macro
 //! - chrono    : "date", "time" macro
 //! - lipsum    : "lipsum" macro
 //! - csv       : "from", "table" macro
 //! - textwrap  : "wrap" macro
+//! - full      : all features above
 //!
 //! - debug     : Enable debug method
 //! - color     : Enable color prompt
 //! - hook      : Enable hook macro
-//! - signature : Enble signature option
-//!
-//! - full      : evalexpr+chrono+lipsum+csv
+//! - signature : Enable signature option
+//! - storage   : Enable storage feature
 //! ```
 //!
 //! # Simple usage
@@ -39,7 +39,6 @@
 //!
 //! let mut processor = Processor::new()
 //!     .purge(true)
-//!     .greedy(true)
 //!     .write_to_file(Some(Path::new("cache.txt")))?
 //!
 //! processor.from_file(Path::new("input.txt"))?;

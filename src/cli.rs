@@ -10,13 +10,13 @@ use crate::models::SignatureType;
 use crate::models::{CommentType, DiffOption};
 use crate::processor::Processor;
 use crate::utils::Utils;
-use crate::RadResult;
+use crate::{RadResult};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 /// Struct to parse command line arguments and execute proper operations
 pub struct Cli {
-    rules: Option<Vec<PathBuf>>,
+    rules: Vec<PathBuf>,
     write_to_file: Option<PathBuf>,
     error_to_file: Option<PathBuf>,
     allow_auth: Option<Vec<AuthType>>,
@@ -26,7 +26,7 @@ pub struct Cli {
 impl Cli {
     pub fn new() -> Self {
         Self {
-            rules: None,
+            rules: vec![],
             write_to_file: None,
             error_to_file: None,
             allow_auth: None,
@@ -65,7 +65,7 @@ impl Cli {
             .allow(std::mem::replace(&mut self.allow_auth, None))
             .allow_with_warning(std::mem::replace(&mut self.allow_auth_warn, None))
             .unix_new_line(args.is_present("newline"))
-            .rule_files(std::mem::replace(&mut self.rules, None))?
+            .melt_files(std::mem::replace(&mut self.rules, vec![]))?
             .write_to_file(std::mem::replace(&mut self.write_to_file, None))?
             .discard(args.is_present("discard"))
             .error_to_file(std::mem::replace(&mut self.error_to_file, None))?;
@@ -190,9 +190,9 @@ impl Cli {
                 .into_iter()
                 .map(|value| PathBuf::from(value))
                 .collect::<Vec<PathBuf>>();
-            Some(files)
+            files
         } else {
-            None
+            vec![]
         };
 
         // Write to file

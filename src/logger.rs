@@ -421,6 +421,12 @@ FAIL: {}",
     // ----------
 }
 
+/// Type variant or warning
+///
+/// - None : Default value
+/// - Security : Security related warning
+/// - Sanity : Warning about possible errors
+/// - Any : Both warnings
 #[derive(PartialEq)]
 pub enum WarningType {
     None,

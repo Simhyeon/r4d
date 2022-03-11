@@ -14,34 +14,38 @@
 //! use rad::AuthType;
 //! use rad::CommentType;
 //! use rad::DiffOption;
+//! use rad::MacroType;
+//! use rad::HookType; // This is behind hook feature
 //! use std::path::Path;
 //!
 //! // Builder
 //! let mut processor = Processor::new()
-//!     .comment(CommentType::Start)                         // Use comment
-//!     .custom_macro_char('~')                              // use custom macro character
-//!     .custom_comment_char('#')                            // use custom comment character
+//!     .set_comment_type(CommentType::Start)                // Use comment
+//!     .custom_macro_char('~')?                             // use custom macro character
+//!     .custom_comment_char('#')?                           // use custom comment character
 //!     .purge(true)                                         // Purge undefined macro
-//!     .silent(true)                                        // Silents all warnings
+//!     .silent(WarningType::Security)                       // Silents all warnings
 //!     .nopanic(true)                                       // No panic in any circumstances
 //!     .assert(true)                                        // Enable assertion mode
 //!     .lenient(true)                                       // Disable strict mode
-//!     .custom_rules(Some(vec![Path::new("rule.r4f")]))?    // Read from frozen rule files
+//!     .hygiene(true)                                       // Enable hygiene mode
+//!     .pipe_truncate(false)                                // Disable pipe truncate
 //!     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
 //!     .error_to_file(Some(Path::new("err.txt")))?          // default is stderr
 //!     .unix_new_line(true)                                 // use unix new line for formatting
 //!     .discard(true)                                       // discard all output
+//!     .melt_files(vec![Path::new("source.r4d")])?          // Read runtime macros from frozen
 //!     // Permission
 //!     .allow(Some(vec![AuthType::ENV]))                    // Grant permission of authtypes
 //!     .allow_with_warning(Some(vec![AuthType::CMD]))       // Grant permission of authypes with warning enabled
 //!     // Debugging options
 //!     .debug(true)                                         // Turn on debug mode
 //!     .log(true)                                           // Use logging to terminal
-//!     .diff(DiffOption::All)                               // Print diff in final result
-//!     .interactive(true)                                   // Use interactive mode
+//!     .diff(DiffOption::All)?                              // Print diff in final result
+//!     .interactive(true);                                   // Use interactive mode
 //!
 //! // Comment char and macro char cannot be same
-//! // Unallowed pattern for the characters are [a-zA-Z1-9\\_\*\^\|\+\(\)=,]
+//! // Unallowed pattern for the characters are [a-zA-Z1-9\\_\*\^\|\(\)=,]
 //!
 //! // Use Processor::empty() instead of Processor::new()
 //! // if you don't want any default macros
@@ -50,36 +54,24 @@
 //! // This is an warning and can be suppressed with silent option
 //! processor.print_permission()?;
 //!
-//! // You can add function macro in form of closure too
-//! processor.add_closure_rule(
-//!     "test",                                                       // Name of macro
-//!     2,                                                            // Count of arguments
-//!     Box::new(|args: Vec<String>| -> Option<String> {              // Closure as an internal logic
-//!         Some(format!("First : {}\nSecond: {}", args[0], args[1]))
-//!     })
-//! );
-//!
 //! // Register a hook macro
-//! // Trigger and execution macro should be defined otherwise
+//! // Trigger and execution macro should be defined elsewhere
 //! processor.register_hook(
-//! 	HookType::Macro,            // Macro type
-//! 	trigger_macro,              // Macro that triggers
-//! 	hook_div,                   // Macro to be executed
-//! 	1,    						// target count
-//! 	false 						// Resetable
-//! )
+//!     HookType::Macro,            // Macro type
+//!     "trigger_macro",            // Macro that triggers
+//!     "hook_div",                 // Macro to be executed
+//!     1,                          // target count
+//!     false                       // Resetable
+//! )?;
 //!
-//! // Add custom rules(in order of "name, args, body")
-//! processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
+//! // Add runtime rules(in order of "name, args, body")
+//! processor.add_runtime_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")])?;
 //!
 //! // Add custom rules without any arguments
-//! processor.add_static_rules(vec![("test","TEST"),("lul","kekw")]);
+//! processor.add_static_rules(vec![("test","TEST"),("lul","kekw")])?;
 //!
-//! // Undefine rules
-//! processor.undefine_rules(vec!["name1", "name2"]);
-//!
-//! // Undefine only custom rules
-//! processor.undefine_custom_rules(vec!["name1", "name2"]);
+//! // Undefine only macro
+//! processor.undefine_macro("name1", MacroType::Any);
 //!
 //! // Process with inputs
 //! // This prints to desginated write destinations
@@ -486,20 +478,20 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Melt rule file
-    pub fn rule_files(mut self, paths: Option<Vec<impl AsRef<Path>>>) -> RadResult<Self> {
-        if let Some(paths) = paths {
-            let mut rule_file = RuleFile::new(None);
-            for p in paths.iter() {
-                // File validity is checked by melt methods
-                rule_file.melt(p.as_ref())?;
-            }
-            self.map.runtime.extend_map(rule_file.rules, self.state.hygiene);
+    pub fn melt_files(mut self, paths: Vec<impl AsRef<Path>>) -> RadResult<Self> {
+        let mut rule_file = RuleFile::new(None);
+        for p in paths.iter() {
+            // File validity is checked by melt methods
+            rule_file.melt(p.as_ref())?;
         }
+        self.map.runtime.extend_map(rule_file.rules, self.state.hygiene);
 
         Ok(self)
     }
 
-    /// Melt rule as literal input source
+    // This is not included in docs.rs documentation becuase... is it necessary?
+    // I don't really remember when this method was added at the first time.
+    /// Melt rule as literal input source, or say from byte array
     pub fn rule_literal(mut self, literal: &Vec<u8>) -> RadResult<Self> {
         let mut rule_file = RuleFile::new(None);
         rule_file.melt_literal(literal)?;

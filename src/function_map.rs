@@ -33,7 +33,8 @@ use crate::models::MacroType;
 lazy_static! {
     static ref CLRF_MATCH: Regex = Regex::new(r#"\r\n"#).unwrap();
     static ref CHOMP_MATCH: Regex = Regex::new(r#"\n\s*\n"#).expect("Failed to crate chomp regex");
-    static ref NUM_MATCH: Regex = Regex::new(r#"\d.*?"#).expect("Failed to crate number regex");
+    // Thanks stack overflow! SRC : https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers
+    static ref NUM_MATCH: Regex = Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to crate number regex");
 }
 
 pub(crate) type FunctionMacroType = fn(&str, &mut Processor) -> RadResult<Option<String>>;
