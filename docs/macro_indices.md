@@ -26,31 +26,28 @@ For assertion macros refer [debug part](./debug.md)
 * [rename](#rename)
 * [repl](#repl)
 * [append](#append)
-* [pause](#pause-keyword-macro)
+* [pause](#pause-macro)
 * [include](#include)
 * [read](#read)
 * [temp](#tempin-tempout-tempto)
-* [redir](#redir)
 * [relay,halt](#relay-halt)
 * [fileout](#fileout)
 * [env](#env)
 * [envset](#envset)
-* [ifenv](#ifenv-keyword-macro)
-* [ifenvel](#ifenvel-keyword-macro)
+* [ifenv](#ifenv-deterred-macro)
+* [ifenvel](#ifenvel-deterred-macro)
 * [path](#path)
 * [abs](#abs)
 * [name](#name)
 * [parent](#parent)
-* [bind](#let-keyword-macro)
-* [let](#let-keyword-macro)
-* [Global](#static-keyword-macro)
-* [Static](#static-keyword-macro)
+* [let](#let-macro)
+* [Static](#static-macro)
 * [pipe](#pipe)
 * [Repeat](#repeat)
 * [arr](#arr)
-* [sep](#sep-keyword-macro)
-* [foreach](#foreach-keyword-macro)
-* [forloop](#forloop-keyword-macro)
+* [sep](#sep-macro)
+* [foreach](#foreach-deterred-macro)
+* [forloop](#forloop-deterred-macro)
 * [min](#min)
 * [max](#max)
 * [ceil](#ceil)
@@ -61,10 +58,10 @@ For assertion macros refer [debug part](./debug.md)
 * [num](#num)
 * [rev](#rev)
 * [eval](#eval)
-* [if](#if--keyword-macro)
-* [ifelse](#ifelse--keyword-macro)
-* [ifdef](#ifdef--keyword-macro)
-* [ifdefel](#ifdefel--keyword-macro)
+* [if](#if--deterred-macro)
+* [ifelse](#ifelse--deterred-macro)
+* [ifdef](#ifdef--deterred-macro)
+* [ifdefel](#ifdefel--deterred-macro)
 * [not](#not)
 * [syscmd](#syscmd)
 * [sub](#sub)
@@ -94,10 +91,11 @@ For assertion macros refer [debug part](./debug.md)
 * [query](#query)
 * [flowcontrol](#flowcontrol)
 * [panic](#panic)
+* [Hygiene](#hygine)
 
 ### define
 
-Define creates an custom macro. This macro is actually not a macro but special
+Define creates a runtime macro. This macro is actually not a macro but special
 function. Define cannot be renamed or undefined. Define macro cannot be
 overriden too.
 
@@ -126,8 +124,7 @@ I'm also defined
 
 ### undef
 
-Undef can undefine every macros including basic(default) macros. However
-```define``` cannot be undefined.
+Undef can undefine every macros but ```define```.
 
 ```
 $undef(name)
@@ -137,8 +134,7 @@ $undef(name)
 
 ### rename
 
-Rename can change the name of the macro. This applies both to basic and custom
-macro. You cannot rename define.
+Rename can change the name of the macro but ```define```.
 
 ```
 $rename(len,length)
@@ -149,7 +145,7 @@ $length(I'm long)
 
 ### repl
 
-Replace contents of the custom macro.
+Replace contents of the runtime macro.
 
 ```
 $define(before=BEFORE)
@@ -159,8 +155,7 @@ $before()
 
 ### append
 
-Append append given string into the macro. Only
-custom macro can be appended.
+Append append given string into the macro. Only runtime macro can be appended.
 
 ```
 $define(test=TEST)
@@ -170,7 +165,7 @@ $test()
 TEST CASE
 ```
 
-### pause (keyword macro)
+### pause
 
 Pause literally pauses every macro execution except pause macro. Even define is
 not evaluated
@@ -257,10 +252,9 @@ Hello world
 
 ### relay halt
 
-Macro ```redir```  is deprecated and will be removed in 2.0 version. Use
-```relay``` and ```halt``` instead.
+Relay macro sends all following texts into relay target
 
-Relay sends all text into relay target
+Relay is implemented as stack. Thus nested relaying can be properly handled.
 
 ```
 % Available relay targets are
@@ -326,7 +320,7 @@ error: Invalid argument
 Processor panicked, exiting...
 ```
 
-### ifenv (keyword macro)
+### ifenv (deterred macro)
 
 AUTH: ENV
 
@@ -338,7 +332,7 @@ $ifenv(HOME,$env(HOME))
 /home/username
 ```
 
-### ifenvel (keyword macro)
+### ifenvel (deterred macro)
 
 AUTH: ENV
 
@@ -401,9 +395,7 @@ $parent(/home/test/Documents/info.txt)
 /home/test/Documents
 ```
 
-### let (keyword macro)
-
-Macro ```bind```  is deprecated and will be removed in 2.0 version. Use ```let```instead.
+### let
 
 Declares a new local macro. This macro is automatically clared after evalution
 of the macro.
@@ -419,10 +411,7 @@ $test+(temp,Hello World)
 % cannot reference "source" macro after macro execution
 ```
 
-### static (keyword macro)
-
-```global```is deprecated for intuitive naming. Global keyword will be removed
-in 2.0 version. Use ```static``` instead.
+### static
 
 Statically binds an expression that persists for the whole processing. Static
 is useful when you don't need dynamic evaluation but statically bound value.
@@ -444,8 +433,6 @@ processing. Other operations might need consistent bound values.
 
 ### pipe
 
-**Currently pipe doesn't truncate value by default**
-
 Pipe macro simply saves value to pipe. $-() returns piped value 
 $-*() returns piped value in literal form.
 
@@ -455,11 +442,9 @@ In addition to normal pipes. You can use named pipe with arguments.
 $pipe(Value)
 $pipeto(other,vallllue)
 $-()
-$-*() 
 $-(other)
 ===
 Value
-\*Value*\
 vallllue
 ```
 
@@ -482,6 +467,7 @@ second argument(default is single whitespace). You can also filter array with
 regex expression in third argument.
 
 ```
+% Pipe truncate is false
 $syscmd|^(ls)
 $arr($-(),$nl())
 $arr($-(),$nl(),\.sh$) // File that ends with .sh
@@ -490,7 +476,7 @@ auto.sh,Cargo.lock,Cargo.toml,oush
 auto.sh
 ```
 
-### sep (keyword macro)
+### sep
 
 Separate an array with given separator.
 
@@ -500,7 +486,7 @@ $sep(|,1,2,3,4,5)
 1|2|3|4|5
 ```
 
-### foreach (keyword macro)
+### foreach (deterred macro)
 
 Loop around given value. Value is separated with commas. Thus values should be
 always enclosed with double quotes. Iterated values are references with
@@ -516,7 +502,7 @@ Value: c
 
 ```
 
-### forloop (keyword macro)
+### forloop (deterred macro)
 
 Loop around given range. Value is separated with commas. Iterated values are
 references with ```$:```.
@@ -644,7 +630,7 @@ $evalk( 1 + 2 )
 1 + 2 = 3
 ```
 
-### if (keyword macro)
+### if (deterred macro)
 
 If gets a condition and prints if given value is true
 
@@ -659,7 +645,7 @@ $if(false,False)
 TRUE
 ```
 
-### ifelse (keyword macro)
+### ifelse (deterred macro)
 
 Ifelse gets two branches and print out one according to given condition.
 
@@ -675,7 +661,7 @@ I'm true
 I'm false
 ```
 
-### ifdef (keyword macro)
+### ifdef (deterred macro)
 
 If macro is defined then execute given expression.
 
@@ -1255,4 +1241,15 @@ error: Panic triggered with message
 = This was panicked because...
  --> stdin:2:2
 Processor panicked, exiting...
+```
+
+### Hygiene
+
+Toggles hygiene mode. Within hygiene mode runtime macros are volatile and
+predefined runtime macros doesn't affect upcoming texts to be processed.
+
+```r4d
+$hygiene(true)
+$hygiene(false)
+===
 ```

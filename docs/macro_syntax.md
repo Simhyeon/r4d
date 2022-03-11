@@ -46,7 +46,7 @@ $static(v_name,Simon creek)
 
 ##### Caveats
 
-**Define is not evalued on declaration**
+**Define is not evaluated on declaration**
 
 Definition's body can include any macro invocation in itself, but wrong macro
 use inside definition cannot be detected at the time of definition. To make
@@ -125,25 +125,8 @@ Name : Jane
 An unbalanced parenthesis changes the behaviour of macro invocation and a
 non-escaped comma will change the number or content of arguments. If desirable
 content includes unbalanced parentheses or commas, enclose the body with string
-literal with the syntax of ```\* TEXT GOES HERE *\```, by the way literal
+literal with the syntax of ```\* TEXT GOES HERE *\```, by the way literal syntax
 inside macro body will printed as is. 
-```
-$repeat(2,I'm,comma,separated
-)
-===
-I'mI'm
-```
-To include commas you need to enclose with string literal
-```
-$repeat(2,\*I'm,comma,separated*\
-)
-% Easier alternative is greddy attribute in this case
-$repeat+(2,I'm,comma,separated)
-===
-I'm,comma,separated
-I'm,comma,separated
-% Result is same
-```
 
 ### Comments
 
@@ -178,9 +161,9 @@ $define(
     test,
     a_expr a_path
     =                                        // This new line
-    $let+(cond,$eval($a_expr()))            // Whitespaces before "$let"
-    $let+(true_path,$path(cache,$a_path())) // Whitespaces before "$let"
-    $let+(false_path,$path(cache,index.md)) // Whitespaces before "$let"
+    $let(cond,$eval($a_expr()))              // Whitespaces before "$let"
+    $let(true_path,$path(cache,$a_path()))   // Whitespaces before "$let"
+    $let(false_path,$path(cache,index.md))   // Whitespaces before "$let"
     $ifelse(                                 // Whitespaces before "$ifelse"
         $cond(),
         $include($true_path()),
@@ -215,21 +198,6 @@ $test^(1==1,out.md)
 3
 4
 5
-```
-
-**Greedy**
-
-Greedy attribute ```+``` parses arguments as greedy as possible so that last
-argument will include or following characters in it. This is useful when
-argument is a big chunk of data and includes multiple commas.
-
-```
-$define(test,a b c=$a() $b() $c())
-$test(first, second, third, fourth, fifth, sixth)
-$test+(first, second, third, fourth, fifth, sixth)
-===
-first  second  third
-first  second  third, fourth, fifth, sixth
 ```
 
 **Piping**

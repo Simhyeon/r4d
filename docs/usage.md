@@ -36,13 +36,14 @@ rad --comment any
 # Use following options to decide error behaviours
 # default is stderr
 -e, --err <FILE>      # Log error to <FILE>
--s, --silent          # Suppress warnings
+-s, --silent <OPTION> # Suppress warnings default is all. All|Security|sanity|None
 -l, --lenient         # Disable strict mode
     --nopanic         # Don't panic in any circumstances
     --assert          # Enable assertion mode
 
 # Use following options to decide deubbing behaviours
 # default is not to debug
+# you need to enable debug mode first to use other debug flags
 -d, --debug           # Start debug mode
     --log             # Print all macro invocation logs
 -i                    # Start debug mode as interactive, this makes stdout unwrapped
@@ -50,11 +51,11 @@ rad --comment any
 
 # Other flags
 -n                    # Always use unix newline (default is '\r\n' in windows platform)
--p, --purge           # Purge mode, print nothing if a macro doesn't exist doesn't work in strict mode
--g, --greedy          # Always enable greedy for every macro invocation
+-p, --purge           # Purge mode, print nothing if a macro doesn't exist. Doesn't work in strict mode
 -D, --discard         # Discard all output
 
 # Freeze(zip to binary) rules to a single file
+# Frozen file is a bincode file thus, theoritically faster in reading
 rad test -f frozen.r4f
 # Melt a file and use in processing
 rad test -m frozen.r4f
@@ -77,59 +78,63 @@ Type ```-h``` or ```--help``` to see full options.
 **Cargo.toml**
 ```toml
 [dependencies]
-rad = { version = "1.4.1", features = ["full"] }
+rad = { version = "*", features = ["full"] }
 
 # Other available features are... 
 
-# evalexpr  - "eval" macro
+# evalexpr  - "eval", "evalk" macro
 # chrono    - "date", "time" macro
 # lipsum    - "lipsum" macro
 # csv       - "from", "table" macro
 # textwrap  - Enable "wrap" macro
-# full      - Enable evalexpr, chrono, lipsum, csv, and textwrap
+# full      - Enable all features above
 
 # debug     - Enable debug methods
 # color     - Enable color prompt
 # signature - Enable signature map
 # hook      - Enable hook macro
+# storage   - Enable storage feature
 ```
 **rust file**
 ```rust
 use rad::RadResult;
 use rad::Processor;
-use rad::MacroType;
 use rad::AuthType;
 use rad::CommentType;
 use rad::DiffOption;
+use rad::MacroType;
+use rad::HookType; // This is behind hook feature
 use std::path::Path;
 
+// Assume following codes return "Result" at the end
 // Builder
 let mut processor = Processor::new()
-    .custom_macro_char('~')                              // use custom macro character
-    .custom_comment_char('#')                            // use custom comment character
-    .comment(CommentType::Start)                         // Use comment
+    .set_comment_type(CommentType::Start)                // Use comment
+    .custom_macro_char('~')?                             // use custom macro character
+    .custom_comment_char('#')?                           // use custom comment character
     .purge(true)                                         // Purge undefined macro
-    .greedy(true)                                        // Makes all macro greedy
-    .silent(true)                                        // Silents all warnings
+    .silent(WarningType::Security)                       // Silents all warnings
     .nopanic(true)                                       // No panic in any circumstances
     .assert(true)                                        // Enable assertion mode
     .lenient(true)                                       // Disable strict mode
-    .custom_rules(Some(vec![Path::new("rule.r4f")]))?    // Read from frozen rule files
+    .hygiene(true)                                       // Enable hygiene mode
+    .pipe_truncate(false)                                // Disable pipe truncate
     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
     .error_to_file(Some(Path::new("err.txt")))?          // default is stderr
     .unix_new_line(true)                                 // use unix new line for formatting
     .discard(true)                                       // discard all output
+    .melt_files(vec![Path::new("source.r4d")])?          // Read runtime macros from frozen
     // Permission
     .allow(Some(vec![AuthType::ENV]))                    // Grant permission of authtypes
     .allow_with_warning(Some(vec![AuthType::CMD]))       // Grant permission of authypes with warning enabled
     // Debugging options
     .debug(true)                                         // Turn on debug mode
     .log(true)                                           // Use logging to terminal
-    .interactive(true)                                   // Use interactive mode
-    .diff(DiffOption::All)                               // Eanble diff
+    .diff(DiffOption::All)?                              // Print diff in final result
+    .interactive(true);                                   // Use interactive mode
 
-// Comment char and macro char cannot be same 
-// Unallowed pattern for the characters are [a-zA-Z1-9\\_\*\^\|\+\(\)=,]
+// Comment char and macro char cannot be same
+// Unallowed pattern for the characters are [a-zA-Z1-9\\_\*\^\|\(\)=,]
 
 // Use Processor::empty() instead of Processor::new()
 // if you don't want any default macros
@@ -138,36 +143,24 @@ let mut processor = Processor::new()
 // This is an warning and can be suppressed with silent option
 processor.print_permission()?;
 
-// You can add basic rule in form of closure too
-processor.add_closure_rule(
-    "test",                                                       // Name of macro
-    2,                                                            // Count of arguments
-    Box::new(|args: Vec<String>| -> Option<String> {              // Closure as an internal logic
-        Some(format!("First : {}\nSecond: {}", args[0], args[1]))
-    })
-);
-
 // Register a hook macro
-// Trigger and execution macro should be defined otherwise
+// Trigger and execution macro should be defined elsewhere
 processor.register_hook(
-	HookType::Macro,            // Macro type
-	trigger_macro,              // Macro that triggers
-	hook_div,                   // Macro to be executed
-	1,    						// target count
-	false 						// Resetable
-)
+    HookType::Macro,            // Macro type
+    "trigger_macro",            // Macro that triggers
+    "hook_div",                 // Macro to be executed
+    1,                          // target count
+    false                       // Resetable
+)?;
 
-// Add custom rules(in order of "name, args, body") 
-processor.add_custom_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")]);
+// Add runtime rules(in order of "name, args, body")
+processor.add_runtime_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")])?;
 
 // Add custom rules without any arguments
-processor.add_static_rules(vec![("test","TEST"),("lul","kekw")]);
+processor.add_static_rules(vec![("test","TEST"),("lul","kekw")])?;
 
-// Undefine rules
-processor.undefine_rules(vec!["name1", "name2"]);
-
-// Undefine only custom rules
-processor.undefine_custom_rules(vec!["name1", "name2"]);
+// Undefine only macro
+processor.undefine_macro("name1", MacroType::Any);
 
 // Process with inputs
 // This prints to desginated write destinations
@@ -181,5 +174,4 @@ processor.freeze_to_file(Path::new("out.r4f"))?; // Create frozen file
 // This will print counts of warning and errors.
 // It will also print diff between source and processed if diff option was
 // given as builder pattern.
-processor.print_result()?;                       
-```
+processor.print_result()?;

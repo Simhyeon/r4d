@@ -1,57 +1,23 @@
 # TOC
 
-- [Custom and basic](#custom-and-basic)
-- [Why the name basic](#why-the-name-basic)
-- [What is a keyword macro?](#what-is-a-keyword-macro)
+- [Types of macro](#types-of-macro)
 - [Local and global](#local-and-global)
+- [Text and operation](#text-and-operation)
 - [Hook macro](#hook-macro)
 
-## Custom and basic
+## Types of macro
 
-Basic macro is a macro like function pointer or closure. While custom macro is
-a macro that doesn't include complicate logics but only gets expanded according
-to given rules.
+There are basically two types of macros. Function macro and runtime macro.
+Function macros are macros that trigger rust functions. Runtime macros are
+macros that trigger text substitution that possibly include other function
+macros.
 
-## Why the name basic
+Function macros are mostly built-in macros provided by r4d itself. However you
+can also extend function macros with r4d's library interface.
 
-Well, it is because basic macro was not configurable at first and given as
-default macros. But r4d has evolved and even basic macro is configurable and
-can be disabled, so technically its name doesn't necessarily represents its
-characteristic properly. In terms of non-configurable defaults, keyword macros
-is a truely basic macros.
-
-## What is a keyword macro?
-
-Keyword macro is a subset of basic macros. The biggest difference is that
-keyword macro has a specific rules similar to define macro which requires late
-evaluation of arguments. So keyword macros cannot be constructed from a string
-but from a vector. Therefore other macros' argument can be constructed
-dynamically while keyword macro's argument should have comma separated forms.
-
-e.g.
-
-```r4d
-$define(args=true,Expression)
-$define(ifc,a_cond a_expr=$if($a_cond(),$a_expr()))
-$if($args())
-$ifc($args())
-===
-// With 'rad --nopanic'
-error: Invalid argument
-= if requires two arguments
- --> test:3:2
-$if($args())
-Expression
-error: found 1 errors
-```
-
-In this case, custom macro ifc can handle dynamically constructed arguments
-because its argument is expanded before macro's evaluation. While if's
-arguments are first split into array and then evaluated.
-
-One other important difference is that you **cannot undefine or override
-keyword macros**. Even with empty macro map, keyword macro is always evaluated
-if found any.
+There are special types of function macros that is called deterred macros.
+Deterred macros are not evaluted before invocation and conditionally expanded
+according to the macro's logic.
 
 ## Local and global
 
@@ -104,6 +70,21 @@ $define(name=NAME)
 $name(/home/path)
 ```
 
+## Text and operation
+
+Some macros are text macro which expands to text while some other operational
+macros that changes a behaviour of processor.
+
+For example; hygiene, pause or relay are operational macros. Keep in mind that
+operational macros might not work as **procedurally** because operation macro
+applies before text is retrieved from macro call.
+
+Generic order is followed
+
+- Parses text
+- Apply operational macro 
+- Possibly get expanded text from macro call
+
 ## Hook macro 
 
 **Libary usage only**
@@ -125,18 +106,18 @@ let processor = Processor::new();
 
 processor.register_hook(
     HookType::Macro,            // Macro type
-    trigger_macro,              // Macro that triggers
-    hook_div,                   // Macro to be executed
+    :trigger_macro,             // Macro that triggers
+    "hook_div",                 // Macro to be executed
     1,                          // target count
     false                       // Resetable
-)
+);
 processor.register_hook(
     HookType::Char,             // Macro type
-    #,                          // Char that triggers
-    icon,                       // Macro to be executed
+    '#',                        // Char that triggers
+    "icon",                     // Macro to be executed
     2,                          // target count
     true                        // Resetable
-)
+);
 ```
 
 to enable this hook macro

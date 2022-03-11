@@ -3,9 +3,12 @@
 Storage features provdies a single trait of ```RadStorage``` which implements
 ```update``` and ```extract```.
 
-You can call update and extract call with update and extract macro respectively.
+You can call update and extract method with update and extract macro respectively.
 
 #### Example
+
+You need to import [Serde](https://github.com/serde-rs/serde) in your proejct
+for stroage.
 
 Create storage struct
 

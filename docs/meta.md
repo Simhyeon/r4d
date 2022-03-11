@@ -9,61 +9,50 @@
 	* [x] Processing warning ( About execution sanity )
 * [x] Merge fragmented option into single enum
 
+From 2.0
+* [x] Renamed basic to function
+* [x] Renamed keyword to deterred
+* [x] Created disgnated runtime macro map
+* [x] Greedy as default behaviour and cannot be disabled becausew hy not
+* [x] Removed closure rule
+* [x] Pipe truncate as default
+* [x] Made distinction between function macro and deterred macro much more consistent 
+* [x] Procedural macro for extension macro
+* [x] Move deterred macros into function macros if possible
+* [x] Hygienic processing
+* [x] Relay halt as stack oriented not variable oriented
+* [x] Rule files will get vector, not an option of vector
+
 ### Imminent
 
-- Remove closure rule because it is rarely used.
-- Adding macro extension is somewhat... tedious because it needs explicit casting 
-- Enable ext macro
-	- Function macro -> Kinda works ootb
-	- Keyword macro
-- Make ext macro as powerful as default macro -> Yield error on insufficient arguments
-- Get parsed arguments.
+* [ ] Add ext related code in processor mod comment
 
 ### Abbreviated todo
 
 **Before 2.0**
 
 * [ ] Better documentaion generation
-* [ ] Make basic and keyword separation distintive and intuitive
-* [ ] Macro builder for user extensibiliti
 * [ ] Error handling, execution security
-* [ ] Sandboxed processing
-* [ ] Rename macro names for better usability
+* [x] Make function and deterred distintive and intuitive
+* [x] Macro builder for user extensibility + procedural macro
+* [x] Hygienic processing
 
 ### TODOs
 
 * [ ] Define with documentation of possibly 'docu' macro
-* [ ] Make much more smaller binary file available as basic feature
-	- Opt-lvel has huge effet (2.2M -> 1.8M)
-	- codegen-units = 1 has a 0.1M gain ( increase compile time but it's small anyway )
-	- upx is a holy banger (1.7M -> 500K ... Just wow...)
 * [ ] Better error + warnings
 	* [x] Self inclusion error
 	* [x] Self relaying error
-	* [ ] Possibly other relaying related errors
-	* [ ] Nested self include
-	For example, whie processing file one.md with '$include(next.md)' and
-	next.md with '$include(ond.md)'. Though this will yield error because
-	program cannot hold two separte file descriptor though user might want to 
-	catch such culprit while processing.
-
-	NO, I was wrong, because include only opens file with read access so, it
-	can be shared through multipel File interface. Oops
-	* [ ] Create stack variable for sanity checking
-		- Macro stack (Which is a container of currently queued macros)
+	* [x] Nested self include
+	* [x] Create stack variable for sanity checking
 		- Input stack (Which is a container of currently queued processer input)
-	* [ ] ProcessorInput is bloaty because of clone calls. Can it be replaced
-	with path or some other efficient data type?
-
-* [ ] Sandboxed processing
-* [ ] Easily extend macros 
-	* [ ] Make a complete MacroBuilder struct
-	* [ ] MacroExt
-* [ ] Rename all operation macros to op\_yatti\_yatta for clarity
+	* [ ] Possibly other relaying related errors
 
 * [ ] Warn about operational macros + document something
-* [ ] Rename all operational macros to op\_name variant
 * [ ] Heavy text processing -> Proper read macro support
+	* [ ] Change read to fout thing
+	- This is not tirival... you have to swap write source but read can be
+	nested thus tracking write sources are not quite trivial.
 
 * [ ] Rad-wrapper
 	- Read as processed
@@ -75,33 +64,32 @@
 - Data and Rows
 - User can easily define multiline content as data
 
+* [ ] Make much more smaller binary file available as basic feature
+	- Opt-lvel has huge effet (2.2M -> 1.8M)
+	- codegen-units = 1 has a 0.1M gain ( increase compile time but it's small anyway )
+	- upx is a holy banger (1.7M -> 500K ... Just wow...)
+
 #### 2.0
 
 * [ ] Syntax consistencies
-
 * [ ] Export to wasm (Possibly later)
 	- Make "radobject" object
 	- That has an interface of src\_text and out\_text
 	- And ability to add closure for live update
 	- object.add\_closure( (src\_text\_to\_be\_parsed) -> { Whatever code comes here } )
-
-* [ ] Make distinction between basic macro and keyword macro intuitive and concrete
-- Move puase from keyword to basic
-
-* [ ] Remove deprecated methods(2.0)
-
+* [x] Make distinction between basic macro and keyword macro intuitive and concrete
+* [x] Remove deprecated methods(2.0)
+	* [ ] Also from documents
 * [ ] Better debugger (2.0)
 - Current implementation is dependent on processor.
 - However I want to make debugger also gets information from processor
-
 * [ ] Export to python binding (2.0)
 - This also needs some extra workload to enable pyo3 and some nomangle-like
 configurations
-
+* [ ] Export to lua binding (2.0)
 * [ ] Export to c binding (2.0)
 - This includes changes in Cargo.toml file such as cdylib which was actually
 not included by default, like what?
-
 * [ ] Improve projects performance
 - Utilize regex engine for fast parsing especially, define parsing. Possibly
 whole parsing process, meh I don't think I can... Focus on define parsing.
