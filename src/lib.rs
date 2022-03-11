@@ -93,4 +93,4 @@ pub use cli::Cli;
 pub(crate) mod formatter;
 
 // Re-export macro
-pub use ext_template;
+pub use rad_ext_template;

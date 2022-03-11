@@ -213,10 +213,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cafac0318488fdde43111f77bd1d82caafe7bafc544c5676ad051677d090cbb"
 
 [[package]]
-name = "ext_template"
-version = "0.1.0"
-
-[[package]]
 name = "getrandom"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -452,9 +448,9 @@ dependencies = [
  "crossterm",
  "csv",
  "evalexpr",
- "ext_template",
  "lazy_static",
  "lipsum",
+ "rad_ext_template",
  "regex",
  "serde",
  "serde_json",
@@ -462,6 +458,12 @@ dependencies = [
  "textwrap",
  "thiserror",
 ]
+
+[[package]]
+name = "rad_ext_template"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "814bdc9a363e7ac1fab7e3cf7876afa273f8b21ad20137819104bbeaf8cc6432"
 
 [[package]]
 name = "rand"
