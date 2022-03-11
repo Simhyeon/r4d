@@ -83,13 +83,6 @@ From 2.0
 * [ ] Better debugger (2.0)
 - Current implementation is dependent on processor.
 - However I want to make debugger also gets information from processor
-* [ ] Export to python binding (2.0)
-- This also needs some extra workload to enable pyo3 and some nomangle-like
-configurations
-* [ ] Export to lua binding (2.0)
-* [ ] Export to c binding (2.0)
-- This includes changes in Cargo.toml file such as cdylib which was actually
-not included by default, like what?
 * [ ] Improve projects performance
 - Utilize regex engine for fast parsing especially, define parsing. Possibly
 whole parsing process, meh I don't think I can... Focus on define parsing.
