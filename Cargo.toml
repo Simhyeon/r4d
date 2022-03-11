@@ -1,6 +1,6 @@
 [package]
 name = "r4d"
-version = "2.0.0-rc.0.1"
+version = "2.0.0-rc.0.1.1"
 edition = "2018"
 license = "MIT OR Apache-2.0"
 keywords = ["macro", "cli", "text-processing"]
@@ -47,8 +47,3 @@ textwrap = { version = "0.14.2", optional = true}
 thiserror = "1.0.25"
 cindex = { version = "0.3.2", optional = true}
 rad_ext_template = { version="0.1.0"}
-
-[profile.release]
-lto = true
-opt-level = "z"  # Optimize for size.
-codegen-units = 1
