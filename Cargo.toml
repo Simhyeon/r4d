@@ -46,7 +46,7 @@ similar = { version = "2.0.0", optional = true}
 textwrap = { version = "0.14.2", optional = true}
 thiserror = "1.0.25"
 cindex = { version = "0.3.2", optional = true}
-ext_template = { path = "./ext_template" }
+ext_template = { version="0.0.1", path = "./ext_template" }
 
 [profile.release]
 lto = true
