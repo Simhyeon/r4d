@@ -22,10 +22,12 @@ From 2.0
 * [x] Hygienic processing
 * [x] Relay halt as stack oriented not variable oriented
 * [x] Rule files will get vector, not an option of vector
+* [x] Provide auth checking in ext interface
 
 ### Imminent
 
-* [ ] Add ext related code in processor mod comment
+* [ ] Purge is bugged? ( Gdengine )
+- It's about precedence mostly.
 
 ### Abbreviated todo
 
@@ -71,16 +73,12 @@ From 2.0
 
 #### 2.0
 
-* [ ] Syntax consistencies
 * [ ] Export to wasm (Possibly later)
 	- Make "radobject" object
 	- That has an interface of src\_text and out\_text
 	- And ability to add closure for live update
 	- object.add\_closure( (src\_text\_to\_be\_parsed) -> { Whatever code comes here } )
-* [x] Make distinction between basic macro and keyword macro intuitive and concrete
-* [x] Remove deprecated methods(2.0)
-	* [ ] Also from documents
-* [ ] Better debugger (2.0)
+* [ ] Better debugger 
 - Current implementation is dependent on processor.
 - However I want to make debugger also gets information from processor
 * [ ] Improve projects performance

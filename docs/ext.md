@@ -1,8 +1,14 @@
 ### Macro extension
 
-You can extend macros easily with processor interface.
+You can extend macros easily with processor interface which is enabled by
+**template** feature.
 
 **Basic demo**
+
+```toml
+[dependencies]
+r4d = {version="*", features = [ .. "template"]}
+```
 
 ```rust
 use rad::ExtMacroBuilder;
@@ -27,6 +33,12 @@ processor.add_ext_macro(ExtMacroBuilder::new("macro_name")
         } else { None };
         Ok(result)
 )));
+
+/// Optionally use check_auth for auth requirment.
+let ok_to_go = processor.check_auth(AuthType::ENV)?;
+if ok_to_go {
+	// Logics go here
+}
 ```
 
 **More about codes**
