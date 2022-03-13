@@ -195,7 +195,7 @@ impl<'logger> Logger<'logger> {
                     last_char,
                     LINE_ENDING
                 )),
-                WriteOption::Discard => (),
+                WriteOption::Discard | WriteOption::Return => (),
             } // Match end
         }
         Ok(())
@@ -212,7 +212,7 @@ impl<'logger> Logger<'logger> {
                     write!(std::io::stderr(), "{}", log)?;
                 }
                 WriteOption::Variable(var) => var.push_str(&log.to_string()),
-                WriteOption::Discard => (),
+                WriteOption::Discard | WriteOption::Return => (),
             } // match end
         }
         Ok(())
@@ -265,7 +265,7 @@ impl<'logger> Logger<'logger> {
                     last_char,
                     LINE_ENDING
                 )),
-                WriteOption::Discard => (),
+                WriteOption::Discard | WriteOption::Return => (),
             } // match end
         }
 
@@ -312,7 +312,7 @@ impl<'logger> Logger<'logger> {
                     last_char,
                     LINE_ENDING
                 )),
-                WriteOption::Discard => (),
+                WriteOption::Discard | WriteOption::Return => (),
             } // match end
         }
 
@@ -362,7 +362,7 @@ FAIL: {}",
                         writeln!(std::io::stderr(), "{}", assert_result)?;
                     }
                 }
-                WriteOption::Discard | WriteOption::Variable(_) => (),
+                WriteOption::Discard | WriteOption::Variable(_) | WriteOption::Return => (),
             }
         } else {
             // Silent option
