@@ -1,13 +1,13 @@
 use crate::arg_parser::ArgParser;
+use crate::models::MacroType;
 use crate::models::RadResult;
+use crate::models::{ExtMacroBody, ExtMacroBuilder};
 use crate::utils::Utils;
 use crate::Processor;
-use crate::models::MacroType;
 use crate::{AuthType, RadError};
 use std::array::IntoIter;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use crate::models::{ExtMacroBody, ExtMacroBuilder};
 
 pub(crate) type DFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResult<Option<String>>;
 
@@ -25,7 +25,7 @@ impl DeterredMacroMap {
     }
 
     pub fn new() -> Self {
-        let map = HashMap::from_iter(IntoIter::new([
+        let mut map = HashMap::from_iter(IntoIter::new([
             (
                 "fassert".to_owned(),
                 KMacroSign::new(
@@ -83,18 +83,6 @@ impl DeterredMacroMap {
                 ),
             ),
             (
-                "ifenv".to_owned(),
-                KMacroSign::new("ifenv", ["a_env_name", "a_if_expr"], DeterredMacroMap::ifenv),
-            ),
-            (
-                "ifenvel".to_owned(),
-                KMacroSign::new(
-                    "ifenvel",
-                    ["a_env_name", "a_if_expr", "a_else_expr"],
-                    DeterredMacroMap::ifenvel,
-                ),
-            ),
-            (
                 "que".to_owned(),
                 KMacroSign::new("que", ["a_content"], DeterredMacroMap::queue_content),
             ),
@@ -107,6 +95,26 @@ impl DeterredMacroMap {
                 ),
             ),
         ]));
+        // Auth realted macros should be segregated from wasm target
+        #[cfg(not(feature = "wasm"))]
+        {
+            map.insert(
+                "ifenv".to_owned(),
+                KMacroSign::new(
+                    "ifenv",
+                    ["a_env_name", "a_if_expr"],
+                    DeterredMacroMap::ifenv,
+                ),
+            );
+            map.insert(
+                "ifenvel".to_owned(),
+                KMacroSign::new(
+                    "ifenvel",
+                    ["a_env_name", "a_if_expr", "a_else_expr"],
+                    DeterredMacroMap::ifenvel,
+                ),
+            );
+        }
         Self { macros: map }
     }
 
@@ -133,13 +141,9 @@ impl DeterredMacroMap {
         self.macros.insert(target.to_owned(), func);
     }
 
-    pub fn new_ext_macro(&mut self, ext : ExtMacroBuilder) {
+    pub fn new_ext_macro(&mut self, ext: ExtMacroBuilder) {
         if let Some(ExtMacroBody::Deterred(mac_ref)) = ext.macro_body {
-            let sign = KMacroSign::new(
-                &ext.macro_name,
-                &ext.args,
-                mac_ref
-            );
+            let sign = KMacroSign::new(&ext.macro_name, &ext.args, mac_ref);
             self.macros.insert(ext.macro_name, sign);
         }
     }
@@ -444,7 +448,6 @@ impl DeterredMacroMap {
             Err(RadError::AssertFail)
         }
     }
-
 
     /// Queue processing
     ///

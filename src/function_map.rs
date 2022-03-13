@@ -12,7 +12,10 @@ use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
-use crate::models::{Behaviour, FlowControl, ProcessInput, RadResult, RelayTarget, ExtMacroBuilder, ExtMacroBody};
+use crate::models::{
+    Behaviour, ExtMacroBody, ExtMacroBuilder, FlowControl, ProcessInput, RadResult, RelayTarget,
+};
+use crate::models::{FileTarget, MacroType};
 use crate::processor::Processor;
 use crate::utils::Utils;
 #[cfg(feature = "cindex")]
@@ -28,7 +31,6 @@ use std::io::Write;
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use crate::models::MacroType;
 
 lazy_static! {
     static ref CLRF_MATCH: Regex = Regex::new(r#"\r\n"#).unwrap();
@@ -60,10 +62,6 @@ impl FunctionMacroMap {
         #[allow(unused_mut)]
         let mut map = HashMap::from_iter(IntoIter::new([
             ("-".to_owned(), FMacroSign::new("-", ESR, Self::get_pipe)),
-            (
-                "abs".to_owned(),
-                FMacroSign::new("abs", ["a_path"], Self::absolute_path),
-            ),
             (
                 "append".to_owned(),
                 FMacroSign::new("append", ["a_macro_name", "a_content"], Self::append),
@@ -109,30 +107,14 @@ impl FunctionMacroMap {
                 FMacroSign::new("declare", ["a_macro_names"], Self::declare),
             ),
             (
-                "env".to_owned(),
-                FMacroSign::new("env", ["a_env_name"], Self::get_env),
-            ),
-            (
                 "enl".to_owned(),
                 FMacroSign::new("enl", ESR, Self::escape_newline),
-            ),
-            (
-                "envset".to_owned(),
-                FMacroSign::new("envset", ["a_env_name", "a_env_value"], Self::set_env),
             ),
             (
                 "escape".to_owned(),
                 FMacroSign::new("escape", ESR, Self::escape),
             ),
             ("exit".to_owned(), FMacroSign::new("exit", ESR, Self::exit)),
-            (
-                "fileout".to_owned(),
-                FMacroSign::new(
-                    "fileout",
-                    ["a_truncate?", "a_filename", "a_content"],
-                    Self::file_out,
-                ),
-            ),
             (
                 "floor".to_owned(),
                 FMacroSign::new("floor", ["a_number"], Self::get_floor),
@@ -166,10 +148,6 @@ impl FunctionMacroMap {
                 FMacroSign::new("hygiene", ["a_hygiene?"], Self::toggle_hygiene),
             ),
             (
-                "include".to_owned(),
-                FMacroSign::new("include", ["a_filename"], Self::include),
-            ),
-            (
                 "index".to_owned(),
                 FMacroSign::new("index", ["a_index", "a_array"], Self::index_array),
             ),
@@ -179,11 +157,7 @@ impl FunctionMacroMap {
             ),
             (
                 "let".to_owned(),
-                FMacroSign::new(
-                    "let",
-                    ["a_macro_name", "a_value"],
-                    Self::bind_to_local,
-                ),
+                FMacroSign::new("let", ["a_macro_name", "a_value"], Self::bind_to_local),
             ),
             (
                 "lower".to_owned(),
@@ -243,10 +217,6 @@ impl FunctionMacroMap {
                 FMacroSign::new("prec", ["a_value", "a_precision"], Self::prec),
             ),
             (
-                "read".to_owned(),
-                FMacroSign::new("read", ["a_filename"], Self::read),
-            ),
-            (
                 "relay".to_owned(),
                 FMacroSign::new("relay", ["a_type", "a_target+"], Self::relay),
             ),
@@ -272,19 +242,11 @@ impl FunctionMacroMap {
             ),
             (
                 "repl".to_owned(),
-                FMacroSign::new(
-                    "repl",
-                    ["a_macro_name", "a_new_value"],
-                    Self::replace,
-                ),
+                FMacroSign::new("repl", ["a_macro_name", "a_new_value"], Self::replace),
             ),
             (
                 "sep".to_owned(),
-                FMacroSign::new(
-                    "sep",
-                    ["separator", "a_array"],
-                    Self::separate_array,
-                ),
+                FMacroSign::new("sep", ["separator", "a_array"], Self::separate_array),
             ),
             (
                 "sort".to_owned(),
@@ -296,11 +258,7 @@ impl FunctionMacroMap {
             ),
             (
                 "static".to_owned(),
-                FMacroSign::new(
-                    "static",
-                    ["a_macro_name", "a_value"],
-                    Self::define_static,
-                ),
+                FMacroSign::new("static", ["a_macro_name", "a_value"], Self::define_static),
             ),
             (
                 "strip".to_owned(),
@@ -323,28 +281,12 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "syscmd".to_owned(),
-                FMacroSign::new("syscmd", ["a_command"], Self::syscmd),
-            ),
-            (
                 "tail".to_owned(),
                 FMacroSign::new("tail", ["a_count", "a_content"], Self::tail),
             ),
             (
                 "taill".to_owned(),
                 FMacroSign::new("taill", ["a_count", "a_content"], Self::tail_line),
-            ),
-            (
-                "tempin".to_owned(),
-                FMacroSign::new("tempin", ["a_tempin"], Self::temp_include),
-            ),
-            (
-                "tempout".to_owned(),
-                FMacroSign::new("tempout", ["a_tempout"], Self::temp_out),
-            ),
-            (
-                "tempto".to_owned(),
-                FMacroSign::new("tempto", ["a_filename"], Self::set_temp_target),
             ),
             (
                 "tr".to_owned(),
@@ -376,6 +318,55 @@ impl FunctionMacroMap {
                 FMacroSign::new("define", ESR, Self::define_type),
             ),
         ]));
+
+        // Auth related macros are speical and has to be segregated from wasm target
+        #[cfg(not(feature = "wasm"))]
+        {
+            map.insert(
+                "env".to_owned(),
+                FMacroSign::new("env", ["a_env_name"], Self::get_env),
+            );
+            map.insert(
+                "envset".to_owned(),
+                FMacroSign::new("envset", ["a_env_name", "a_env_value"], Self::set_env),
+            );
+            map.insert(
+                "abs".to_owned(),
+                FMacroSign::new("abs", ["a_path"], Self::absolute_path),
+            );
+            map.insert(
+                "syscmd".to_owned(),
+                FMacroSign::new("syscmd", ["a_command"], Self::syscmd),
+            );
+            map.insert(
+                "read".to_owned(),
+                FMacroSign::new("read", ["a_filename"], Self::read),
+            );
+            map.insert(
+                "tempin".to_owned(),
+                FMacroSign::new("tempin", ["a_tempin"], Self::temp_include),
+            );
+            map.insert(
+                "tempout".to_owned(),
+                FMacroSign::new("tempout", ["a_tempout"], Self::temp_out),
+            );
+            map.insert(
+                "tempto".to_owned(),
+                FMacroSign::new("tempto", ["a_filename"], Self::set_temp_target),
+            );
+            map.insert(
+                "include".to_owned(),
+                FMacroSign::new("include", ["a_filename"], Self::include),
+            );
+            map.insert(
+                "fileout".to_owned(),
+                FMacroSign::new(
+                    "fileout",
+                    ["a_truncate?", "a_filename", "a_content"],
+                    Self::file_out,
+                ),
+            );
+        }
 
         // Optional macros
         #[cfg(feature = "csv")]
@@ -480,13 +471,10 @@ impl FunctionMacroMap {
         Self { macros: map }
     }
 
-    pub fn new_ext_macro(&mut self, ext : ExtMacroBuilder) {
+    /// Add new macro extension from macro builder
+    pub(crate) fn new_ext_macro(&mut self, ext: ExtMacroBuilder) {
         if let Some(ExtMacroBody::Function(mac_ref)) = ext.macro_body {
-            let sign = FMacroSign::new(
-                &ext.macro_name,
-                &ext.args,
-                mac_ref
-            );
+            let sign = FMacroSign::new(&ext.macro_name, &ext.args, mac_ref);
             self.macros.insert(ext.macro_name, sign);
         }
     }
@@ -623,7 +611,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $regex(source_text,regex_match,substitution)
-    fn regex_sub(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn regex_sub(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let source = &args[0];
             let match_expr = &args[1];
@@ -648,7 +636,7 @@ impl FunctionMacroMap {
     ///
     /// $eval(expression)
     #[cfg(feature = "evalexpr")]
-    fn eval(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn eval(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let formula = &args[0];
             let result = evalexpr::eval(formula)?;
@@ -668,7 +656,7 @@ impl FunctionMacroMap {
     ///
     /// $eval(expression)
     #[cfg(feature = "evalexpr")]
-    fn eval_keep(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn eval_keep(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             // This is the processed raw formula
             let formula = Utils::trim(&args[0]);
@@ -688,7 +676,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $not(expression)
-    fn not(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn not(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let args = &args[0];
             if let Ok(value) = Utils::is_arg_true(args) {
@@ -711,7 +699,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $trim(expression)
-    fn trim(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn trim(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             Ok(Some(Utils::trim(&args[0])))
         } else {
@@ -729,7 +717,7 @@ impl FunctionMacroMap {
     /// \t line
     /// \t expression
     /// )
-    fn triml(args: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn triml(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let mut lines = String::new();
             let mut iter = args[0].lines().peekable();
@@ -753,7 +741,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $chomp(expression)
-    fn chomp(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn chomp(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let source = &args[0];
             // First convert all '\r\n' into '\n' and reformat it into current newline characters
@@ -774,7 +762,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $comp(Expression)
-    fn compress(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn compress(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let source = &args[0];
             // Chomp and then compress
@@ -794,7 +782,7 @@ impl FunctionMacroMap {
     ///
     /// $lipsum(Number)
     #[cfg(feature = "lipsum")]
-    fn lipsum_words(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn lipsum_words(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let word_count = &args[0];
             if let Ok(count) = Utils::trim(word_count).parse::<usize>() {
@@ -820,7 +808,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $include(path)
-    fn include(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn include(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("include", AuthType::FIN, processor)? {
             return Ok(None);
         }
@@ -854,18 +842,18 @@ impl FunctionMacroMap {
                 // Field is in input stack
                 if processor.state.input_stack.contains(&canonic) {
                     return Err(RadError::InvalidArgument(format!(
-                                "You cannot include self while including a file : \"{}\"",
-                                &file_path.display()
+                        "You cannot include self while including a file : \"{}\"",
+                        &file_path.display()
                     )));
                 }
 
                 // Rules 2
                 // You cannot include file that is being relayed
-                if let Some(RelayTarget::File((path, _))) = &processor.state.relay.last() {
-                    if path.canonicalize()? == file_path.canonicalize()? {
+                if let Some(RelayTarget::File(target)) = &processor.state.relay.last() {
+                    if target.path.canonicalize()? == file_path.canonicalize()? {
                         return Err(RadError::InvalidArgument(format!(
                             "You cannot include relay target while relaying to the file : \"{}\"",
-                            &path.display()
+                            &target.path.display()
                         )));
                     }
                 }
@@ -901,8 +889,8 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $read(path)
-    fn read(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("read", AuthType::FIN, processor)? || !Utils::is_granted("read", AuthType::FOUT, processor)? {
+    fn read(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("read", AuthType::FIN, processor)? {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
@@ -941,7 +929,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $repeat(count,text)
-    fn repeat(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn repeat(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let repeat_count;
             if let Ok(count) = Utils::trim(&args[0]).parse::<usize>() {
@@ -1010,11 +998,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $undef(macro_name)
-    fn undefine_call(
-        args: &str,
-        
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    fn undefine_call(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let name = Utils::trim(&args[0]);
 
@@ -1076,7 +1060,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $assert(abc,abc)
-    fn assert(args: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn assert(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             if args[0] == args[1] {
                 p.track_assertion(true)?;
@@ -1097,7 +1081,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $nassert(abc,abc)
-    fn assert_ne(args: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn assert_ne(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             if args[0] != args[1] {
                 p.track_assertion(true)?;
@@ -1125,7 +1109,7 @@ impl FunctionMacroMap {
     /// 4,5,6
     /// )
     #[cfg(feature = "csv")]
-    fn from_data(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn from_data(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let macro_name = Utils::trim(&args[0]);
             // Trimming data might be very costly operation
@@ -1183,7 +1167,7 @@ impl FunctionMacroMap {
     /// $table(github,"1,2,3
     /// 4,5,6")
     #[cfg(feature = "csv")]
-    fn table(args: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn table(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let table_format = &args[0]; // Either gfm, wikitex, latex, none
             let csv_content = &args[1];
@@ -1203,7 +1187,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $pipe(Value)
-    fn pipe(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn pipe(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             processor.state.add_pipe(None, args[0].to_owned());
         }
@@ -1217,7 +1201,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $pipeto(Value)
-    fn pipe_to(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn pipe_to(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             processor.state.add_pipe(Some(&args[0]), args[1].to_owned());
         } else {
@@ -1233,7 +1217,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $env(SHELL)
-    fn get_env(args: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn get_env(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("env", AuthType::ENV, p)? {
             return Ok(None);
         }
@@ -1255,7 +1239,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $envset(SHELL,value)
-    fn set_env(args: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn set_env(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("envset", AuthType::ENV, p)? {
             return Ok(None);
         }
@@ -1352,7 +1336,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $name(path/file.exe)
-    fn get_name(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn get_name(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let path = Path::new(&args[0]);
 
@@ -1377,7 +1361,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $abs(../canonic_path.txt)
-    fn absolute_path(args: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn absolute_path(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("abs", AuthType::FIN, p)? {
             return Ok(None);
         }
@@ -1398,7 +1382,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $parent(path/file.exe)
-    fn get_parent(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn get_parent(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let path = Path::new(&args[0]);
 
@@ -1424,7 +1408,7 @@ impl FunctionMacroMap {
     ///
     /// $-()
     /// $-(p1)
-    fn get_pipe(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn get_pipe(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         let pipe = if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let name = Utils::trim(&args[0]);
             if name.is_empty() {
@@ -1463,7 +1447,7 @@ impl FunctionMacroMap {
     ///
     /// $len(안녕하세요)
     /// $len(Hello)
-    fn len(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn len(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         Ok(Some(args.chars().count().to_string()))
     }
 
@@ -1472,11 +1456,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $rename(name,target)
-    fn rename_call(
-        args: &str,
-        
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    fn rename_call(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let target = &args[0];
             let new = &args[1];
@@ -1505,7 +1485,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $append(macro_name,Content)
-    fn append(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn append(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = &args[0];
             let target = &args[1];
@@ -1528,7 +1508,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $tr(Source,abc,ABC)
-    fn translate(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn translate(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let mut source = args[0].clone();
             let target = &args[1].chars().collect::<Vec<char>>();
@@ -1555,7 +1535,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $sub(0,5,GivenString)
-    fn substring(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn substring(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let source = &args[2];
 
@@ -1594,14 +1574,22 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $tempout(Content)
-    fn temp_out(args: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    #[cfg(not(feature = "wasm"))]
+    fn temp_out(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("tempout", AuthType::FOUT, p)? {
             return Ok(None);
         }
 
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let content = &args[0];
-            p.get_temp_file().write_all(content.as_bytes())?;
+            if let Some(file) = p.get_temp_file() {
+                file.write_all(content.as_bytes())?;
+            } else {
+                return Err(RadError::InvalidExecution(
+                    "You cannot use temp related macros in environment where fin/fout is not supported".to_owned(),
+                ));
+            }
+
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -1615,7 +1603,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $fileout(true,file_name,Content)
-    fn file_out(args: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn file_out(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("fileout", AuthType::FOUT, p)? {
             return Ok(None);
         }
@@ -1660,7 +1648,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $head(2,Text To extract)
-    fn head(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn head(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let count = &args[0].parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
@@ -1684,7 +1672,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $headl(2,Text To extract)
-    fn head_line(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn head_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let count = &args[0].parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
@@ -1710,7 +1698,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $tail(2,Text To extract)
-    fn tail(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn tail(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let count = &args[0].parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
@@ -1738,7 +1726,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $taill(2,Text To extract)
-    fn tail_line(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn tail_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let count = &args[0].parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
@@ -1765,7 +1753,7 @@ impl FunctionMacroMap {
     ///
     /// $strip(2,head,Text To extract)
     /// $strip(2,tail,Text To extract)
-    fn strip(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn strip(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let count = &args[0].parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
@@ -1800,7 +1788,7 @@ impl FunctionMacroMap {
     ///
     /// $stripl(2,head,Text To extract)
     /// $stripl(2,tail,Text To extract)
-    fn strip_line(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn strip_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let count = &args[0].parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
@@ -1836,7 +1824,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $sort(asec,1,2,3,4,5)
-    fn sort_array(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn sort_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let count = args[0].as_str();
             let content = &mut args[1].split(',').collect::<Vec<&str>>();
@@ -1867,7 +1855,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $sortl(asec,Content)
-    fn sort_lines(args: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn sort_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let count = args[0].as_str();
             let content = &mut args[1].lines().collect::<Vec<&str>>();
@@ -1898,7 +1886,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $index(1,1,2,3,4,5)
-    fn index_array(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn index_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let index = &args[0].parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
@@ -1929,7 +1917,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $fold(1,2,3,4,5)
-    fn fold(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn fold(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let content = &mut args[0].split(',').collect::<Vec<&str>>();
             Ok(Some(content.join("")))
@@ -1945,7 +1933,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $foldl(1,1,2,3,4,5)
-    fn fold_line(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn fold_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let content = &mut args[0].lines().collect::<Vec<&str>>();
             Ok(Some(content.join("")))
@@ -1961,7 +1949,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $grep(EXPR,CONTENT)
-    fn grep(args: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn grep(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let expr = Regex::new(args[0].as_str())?;
             let content = args[1].lines().collect::<Vec<&str>>();
@@ -1983,7 +1971,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $count(1,2,3,4,5)
-    fn count(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn count(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let array_count = &args[0].split(',').collect::<Vec<_>>().len();
             Ok(Some(array_count.to_string()))
@@ -1999,7 +1987,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $countw(1 2 3 4 5)
-    fn count_word(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn count_word(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let array_count = &args[0].split_whitespace().collect::<Vec<_>>().len();
             Ok(Some(array_count.to_string()))
@@ -2015,7 +2003,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $countl(CONTENT goes here)
-    fn count_lines(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn count_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let line_count = &args[0].lines().collect::<Vec<_>>().len();
             Ok(Some(line_count.to_string()))
@@ -2033,12 +2021,13 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $tempin()
-    fn temp_include(_: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    #[cfg(not(feature = "wasm"))]
+    fn temp_include(_: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("tempin", AuthType::FIN, processor)? {
             return Ok(None);
         }
         let file = processor.get_temp_path().display();
-        let chunk = Self::include(&file.to_string(),processor)?;
+        let chunk = Self::include(&file.to_string(), processor)?;
         Ok(chunk)
     }
 
@@ -2049,7 +2038,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $relay(type,argument)
-    fn relay(args_src: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn relay(args_src: &str, p: &mut Processor) -> RadResult<Option<String>> {
         let args: Vec<&str> = args_src.split(',').collect();
         if args.len() == 0 {
             return Err(RadError::InvalidArgument(
@@ -2064,12 +2053,14 @@ impl FunctionMacroMap {
 
         let raw_type = args[0];
         let relay_type = match raw_type {
+            #[cfg(not(feature = "wasm"))]
             "temp" => {
                 if !Utils::is_granted("relay", AuthType::FOUT, p)? {
                     return Ok(None);
                 }
                 RelayTarget::Temp
             }
+            #[cfg(not(feature = "wasm"))]
             "file" => {
                 if !Utils::is_granted("relay", AuthType::FOUT, p)? {
                     return Ok(None);
@@ -2079,7 +2070,9 @@ impl FunctionMacroMap {
                         "relay requires second argument as file name for file relaying".to_owned(),
                     ));
                 }
-                RelayTarget::File((PathBuf::from(args[1]), std::fs::File::create(args[1])?))
+                let mut file_target = FileTarget::empty();
+                file_target.set_path(Path::new(args[1]));
+                RelayTarget::File(file_target)
             }
             "macro" => {
                 if args.len() == 1 {
@@ -2112,7 +2105,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $hold()
-    fn halt_relay(_: &str,  p: &mut Processor) -> RadResult<Option<String>> {
+    fn halt_relay(_: &str, p: &mut Processor) -> RadResult<Option<String>> {
         // This remove last element from stack
         p.state.relay.pop();
         Ok(None)
@@ -2123,11 +2116,8 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $tempto(file_name)
-    fn set_temp_target(
-        args: &str,
-        
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    #[cfg(not(feature = "wasm"))]
+    fn set_temp_target(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("tempto", AuthType::FOUT, processor)? {
             return Ok(None);
         }
@@ -2146,7 +2136,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $num(20%)
-    fn get_number(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn get_number(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let src = Utils::trim(&args[0]);
             let captured = NUM_MATCH
@@ -2175,7 +2165,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $upper(hello world)
-    fn capitalize(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn capitalize(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let src = Utils::trim(&args[0]);
             Ok(Some(src.to_uppercase()))
@@ -2191,7 +2181,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $lower(hello world)
-    fn lower(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn lower(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let src = Utils::trim(&args[0]);
             Ok(Some(src.to_lowercase()))
@@ -2207,7 +2197,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $max(1,2,3,4,5)
-    fn get_max(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn get_max(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let content = Utils::trim(&args[0]);
             if content.is_empty() {
@@ -2229,7 +2219,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $min(1,2,3,4,5)
-    fn get_min(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn get_min(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let content = Utils::trim(&args[0]);
             if content.is_empty() {
@@ -2251,7 +2241,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $ceiling(1.56)
-    fn get_ceiling(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn get_ceiling(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let number = Utils::trim(&args[0]).parse::<f64>().map_err(|_| {
                 RadError::InvalidArgument(format!(
@@ -2272,7 +2262,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $floor(1.23)
-    fn get_floor(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn get_floor(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let number = Utils::trim(&args[0]).parse::<f64>().map_err(|_| {
                 RadError::InvalidArgument(format!(
@@ -2293,7 +2283,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $prec(1.56,2)
-    fn prec(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn prec(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let number = Utils::trim(&args[0]).parse::<f64>().map_err(|_| {
                 RadError::InvalidArgument(format!(
@@ -2324,7 +2314,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $rev(1,2,3,4,5)
-    fn reverse_array(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn reverse_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if args.is_empty() {
             Err(RadError::InvalidArgument(
                 "rev requires an argument".to_owned(),
@@ -2380,10 +2370,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $let(name,value)
-    fn bind_to_local(
-        args: &str,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    fn bind_to_local(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = Utils::trim(&args[0]);
             let value = Utils::trim(&args[1]);
@@ -2433,7 +2420,7 @@ impl FunctionMacroMap {
     fn pause(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             if let Ok(value) = Utils::is_arg_true(&args[0]) {
-                processor.state.paused = value; 
+                processor.state.paused = value;
                 Ok(None)
             }
             // Failed to evaluate
@@ -2455,10 +2442,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $static(name,value)
-    fn define_static(
-        args: &str,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    fn define_static(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = &args[0];
             let value = &args[1];
@@ -2496,10 +2480,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $sep( ,1,2,3,4,5)
-    fn separate_array(
-        args: &str,
-        _: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    fn separate_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let separator = &args[0];
             let array = &args[1];
@@ -2551,11 +2532,7 @@ impl FunctionMacroMap {
     ///
     /// $hookon(MacroType, macro_name)
     #[cfg(feature = "hook")]
-    fn hook_enable(
-        args: &str,
-        
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    fn hook_enable(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let hook_type = HookType::from_str(&args[0])?;
             let index = &args[1];
@@ -2574,10 +2551,7 @@ impl FunctionMacroMap {
     ///
     /// $hookoff(MacroType, macro_name)
     #[cfg(feature = "hook")]
-    fn hook_disable(
-        args: &str,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    fn hook_disable(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let hook_type = HookType::from_str(&args[0])?;
             let index = &args[1];
@@ -2596,7 +2570,7 @@ impl FunctionMacroMap {
     ///
     /// $wrap(80, Content goes here)
     #[cfg(feature = "textwrap")]
-    fn wrap(args: &str,  _: &mut Processor) -> RadResult<Option<String>> {
+    fn wrap(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let width = Utils::trim(&args[0]).parse::<usize>()?;
             let content = &args[1];
@@ -2610,7 +2584,7 @@ impl FunctionMacroMap {
     }
 
     #[cfg(feature = "storage")]
-    fn update_storage(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn update_storage(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
 
         // Execute update method for storage
@@ -2625,7 +2599,7 @@ impl FunctionMacroMap {
     }
 
     #[cfg(feature = "storage")]
-    fn extract_storage(_: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn extract_storage(_: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         // Execute update method for storage
         if let Some(storage) = processor.storage.as_mut() {
             match storage.extract(false) {
@@ -2647,11 +2621,7 @@ impl FunctionMacroMap {
     ///
     /// $regcsv(table_name,table_content)
     #[cfg(feature = "cindex")]
-    fn cindex_register(
-        args: &str,
-        
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    fn cindex_register(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             if !processor.indexer.contains_table(&args[0]) {
                 return Err(RadError::InvalidArgument(format!(
@@ -2674,7 +2644,7 @@ impl FunctionMacroMap {
     ///
     /// $dropcsv(table_name)
     #[cfg(feature = "cindex")]
-    fn cindex_drop(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn cindex_drop(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             processor.indexer.drop_table(&args[0]);
             Ok(None)
@@ -2689,7 +2659,7 @@ impl FunctionMacroMap {
     ///
     /// $query(statment)
     #[cfg(feature = "cindex")]
-    fn cindex_query(args: &str,  processor: &mut Processor) -> RadResult<Option<String>> {
+    fn cindex_query(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let mut value = String::new();
             processor
@@ -2707,10 +2677,7 @@ impl FunctionMacroMap {
     ///
     /// $queries(statment)
     #[cfg(feature = "cindex")]
-    fn cindex_query_list(
-        args: &str,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    fn cindex_query_list(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let mut value = String::new();
             processor.indexer.set_print_header(false);
