@@ -23,6 +23,7 @@ crate-type = ["cdylib","rlib"]
 basic = ["clap"]
 binary = ["clap","debug", "full"]
 full = [ "csv", "evalexpr", "lipsum", "chrono", "textwrap"]
+# Cindex is not enabled by full feature because it is very niche requirement
 
 debug = [ "crossterm", "similar" ]
 color = [ "colored" ]
