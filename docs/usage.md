@@ -87,7 +87,8 @@ rad = { version = "*", features = ["full"] }
 # lipsum    - "lipsum" macro
 # csv       - "from", "table" macro
 # textwrap  - Enable "wrap" macro
-# full      - Enable all features above
+# cindex    - Query related macros
+# full      - Enable all features
 
 # debug     - Enable debug methods
 # color     - Enable color prompt
