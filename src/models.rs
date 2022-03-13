@@ -415,6 +415,7 @@ pub enum CommentType {
 }
 
 impl CommentType {
+    #[allow(dead_code)]
     pub(crate) fn from_str(text: &str) -> RadResult<Self> {
         let comment_type = match text.to_lowercase().as_str() {
             "none" => Self::None,

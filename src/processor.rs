@@ -122,7 +122,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
-use std::io::{self, BufReader, Read, Write};
+use std::io::{self, BufReader, Write};
 use std::path::{Path, PathBuf};
 
 lazy_static! {
@@ -802,6 +802,8 @@ impl<'processor> Processor<'processor> {
     /// If debug mode is enabled this, doesn't read stdin line by line but by chunk because user
     /// input is also a standard input and processor cannot distinguish the two
     pub fn from_stdin(&mut self) -> RadResult<Option<String>> {
+        #[allow(unused_imports)]
+        use std::io::Read;
         let stdin = io::stdin();
 
         // Early return if debug
@@ -1731,6 +1733,7 @@ impl<'processor> Processor<'processor> {
         frag: &mut MacroFragment,
         remainder: &mut String,
         lexor: &mut Lexor,
+        #[allow(unused_variables)]
         level: usize,
     ) -> RadResult<()> {
         match variant {
@@ -1874,6 +1877,7 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Set pipe value manually
+    #[allow(dead_code)]
     pub(crate) fn set_pipe(&mut self, value: &str) {
         self.state
             .pipe_map

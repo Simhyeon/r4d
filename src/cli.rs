@@ -5,14 +5,17 @@
 
 use crate::auth::AuthType;
 use crate::logger::WarningType;
-#[cfg(feature = "signature")]
-use crate::models::SignatureType;
 use crate::models::{CommentType, DiffOption};
 use crate::processor::Processor;
 use crate::utils::Utils;
 use crate::RadResult;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::path::{Path, PathBuf};
+
+#[cfg(feature = "signature")]
+use crate::models::SignatureType;
+#[cfg(feature = "signature")]
+use std::io::Write;
 
 /// Struct to parse command line arguments and execute proper operations
 pub struct Cli {
@@ -247,7 +250,7 @@ impl Cli {
     fn args_builder() -> clap::ArgMatches {
         use clap::{App, Arg};
         let app = App::new("rad")
-            .version("2.0.0-rc.0.1")
+            .version("2.0.0")
             .author("Simon creek <simoncreek@tutanota.com>")
             .about( "R4d(rad) is a modern macro processor made with rust. Refer https://github.com/simhyeon/r4d for detailed usage.")
             .long_about("R4d is a text oriented macro processor which aims to be an modern alternative to m4 macro processor. R4d procedurally follows texts and substitue macro calls with defined macro body. R4d comes with varoius useful built in macros so that user don't have to define from scratch. R4d also supports multiple debugging flags for easier error detection. Refer https://github.com/simhyeon/r4d for detailed usage.")
