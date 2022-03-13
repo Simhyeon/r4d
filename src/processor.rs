@@ -90,7 +90,6 @@
 
 use crate::arg_parser::{ArgParser, GreedyState};
 use crate::auth::{AuthFlags, AuthState, AuthType};
-use crate::runtime_map::RuntimeMacro;
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
@@ -106,11 +105,13 @@ use crate::models::DiffOption;
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
 use crate::models::{
-    Behaviour, CommentType, FlowControl, LocalMacro, MacroFragment, MacroMap, ProcessInput,
-    RelayTarget, RuleFile, UnbalancedChecker, WriteOption, ExtMacroBuilder, ExtMacroType, MacroType
+    Behaviour, CommentType, ExtMacroBuilder, ExtMacroType, FileTarget, FlowControl, LocalMacro,
+    MacroFragment, MacroMap, MacroType, ProcessInput, RelayTarget, RuleFile, UnbalancedChecker,
+    WriteOption,
 };
 #[cfg(feature = "storage")]
 use crate::models::{RadStorage, StorageOutput};
+use crate::runtime_map::RuntimeMacro;
 #[cfg(feature = "signature")]
 use crate::sigmap::SignatureMap;
 use crate::utils::Utils;
@@ -146,8 +147,8 @@ pub(crate) struct ProcessorState {
     // Current_input is either "stdin" or currently being read file's name thus it should not be a
     // path derivative
     pub auth_flags: AuthFlags,
-    pub current_input : ProcessInput,
-    pub input_stack : HashSet<PathBuf>,
+    pub current_input: ProcessInput,
+    pub input_stack: HashSet<PathBuf>,
     pub newline: String,
     pub paused: bool,
     // This is reserved for hygienic execution
@@ -161,7 +162,8 @@ pub(crate) struct ProcessorState {
     // Temp target needs to save both path and file
     // because file doesn't necessarily have path.
     // Especially in unix, this is not so an unique case
-    pub temp_target: (PathBuf, File),
+    #[cfg(not(feature = "wasm"))]
+    pub temp_target: FileTarget,
     pub comment_char: Option<char>,
     pub macro_char: Option<char>,
     pub flow_control: FlowControl,
@@ -171,10 +173,10 @@ pub(crate) struct ProcessorState {
 }
 
 impl ProcessorState {
-    pub fn new(temp_target: (PathBuf, File)) -> Self {
+    pub fn new() -> Self {
         Self {
             current_input: ProcessInput::Stdin,
-            input_stack : HashSet::new(),
+            input_stack: HashSet::new(),
             auth_flags: AuthFlags::new(),
             newline: LINE_ENDING.to_owned(),
             pipe_truncate: true,
@@ -185,7 +187,8 @@ impl ProcessorState {
             behaviour: Behaviour::Strict,
             comment_type: CommentType::None,
             sandbox: false,
-            temp_target,
+            #[cfg(not(feature = "wasm"))]
+            temp_target: FileTarget::empty(),
             comment_char: None,
             macro_char: None,
             flow_control: FlowControl::None,
@@ -193,6 +196,12 @@ impl ProcessorState {
             escape_newline: false,
             queued: vec![],
         }
+    }
+
+    #[cfg(not(feature = "wasm"))]
+    /// Internal method for setting temp target
+    pub(crate) fn set_temp_target(&mut self, path: &Path) {
+        self.temp_target.set_path(path);
     }
 
     pub fn add_pipe(&mut self, name: Option<&str>, value: String) {
@@ -215,11 +224,13 @@ impl ProcessorState {
 /// Processor that parses(lexes) given input and print out to desginated output
 pub struct Processor<'processor> {
     map: MacroMap,
-    #[cfg(feature = "hook")]
-    pub(crate) hook_map: HookMap,
     define_parser: DefineParser,
     write_option: WriteOption<'processor>,
     logger: Logger<'processor>,
+    cache: String,
+    // -- Features --
+    #[cfg(feature = "hook")]
+    pub(crate) hook_map: HookMap,
     #[cfg(feature = "debug")]
     debugger: Debugger,
     checker: UnbalancedChecker,
@@ -249,16 +260,13 @@ impl<'processor> Processor<'processor> {
     /// This creates a complete processor that can parse and create output without any extra
     /// informations.
     fn new_processor(use_default: bool) -> Self {
-        let temp_path = std::env::temp_dir().join("rad.txt");
-        let temp_target = (
-            temp_path.to_owned(),
-            OpenOptions::new()
-                .create(true)
-                .write(true)
-                .truncate(true)
-                .open(&temp_path)
-                .unwrap(),
-        );
+        let mut state = ProcessorState::new();
+
+        // You cannot use filesystem in wasm target
+        #[cfg(not(feature = "wasm"))]
+        {
+            state.set_temp_target(&std::env::temp_dir().join("rad.txt"));
+        }
 
         let mut logger = Logger::new();
         logger.set_write_option(Some(WriteOption::Terminal));
@@ -271,15 +279,16 @@ impl<'processor> Processor<'processor> {
 
         Self {
             map,
-            #[cfg(feature = "hook")]
-            hook_map: HookMap::new(),
+            cache: String::new(),
             write_option: WriteOption::Terminal,
             define_parser: DefineParser::new(),
             logger,
+            state,
+            #[cfg(feature = "hook")]
+            hook_map: HookMap::new(),
             #[cfg(feature = "debug")]
             debugger: Debugger::new(),
             checker: UnbalancedChecker::new(),
-            state: ProcessorState::new(temp_target),
             #[cfg(feature = "storage")]
             storage: None,
             #[cfg(feature = "cindex")]
@@ -484,7 +493,9 @@ impl<'processor> Processor<'processor> {
             // File validity is checked by melt methods
             rule_file.melt(p.as_ref())?;
         }
-        self.map.runtime.extend_map(rule_file.rules, self.state.hygiene);
+        self.map
+            .runtime
+            .extend_map(rule_file.rules, self.state.hygiene);
 
         Ok(self)
     }
@@ -495,7 +506,9 @@ impl<'processor> Processor<'processor> {
     pub fn rule_literal(mut self, literal: &Vec<u8>) -> RadResult<Self> {
         let mut rule_file = RuleFile::new(None);
         rule_file.melt_literal(literal)?;
-        self.map.runtime.extend_map(rule_file.rules, self.state.hygiene);
+        self.map
+            .runtime
+            .extend_map(rule_file.rules, self.state.hygiene);
         Ok(self)
     }
 
@@ -594,6 +607,15 @@ impl<'processor> Processor<'processor> {
         self.debugger.yield_diff(&mut self.logger)?;
 
         Ok(())
+    }
+
+    /// Clear empty and retur returned cache
+    pub fn clear_cache(&mut self) -> Option<String> {
+        if self.cache.len() == 0 {
+            None
+        } else {
+            Some(std::mem::replace(&mut self.cache, String::new()))
+        }
     }
 
     /// Set storage
@@ -756,20 +778,20 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Read from string
-    pub fn from_string(&mut self, content: &str) -> RadResult<()> {
+    pub fn from_string(&mut self, content: &str) -> RadResult<Option<String>> {
         // Set name as string
-        self.set_input("String")?;
+        self.set_input_stdin()?;
 
         let mut reader = content.as_bytes();
         self.from_buffer(&mut reader, None, false)?;
-        Ok(())
+        Ok(self.clear_cache())
     }
 
     /// Read from standard input
     ///
     /// If debug mode is enabled this, doesn't read stdin line by line but by chunk because user
     /// input is also a standard input and processor cannot distinguish the two
-    pub fn from_stdin(&mut self) -> RadResult<()> {
+    pub fn from_stdin(&mut self) -> RadResult<Option<String>> {
         let stdin = io::stdin();
 
         // Early return if debug
@@ -780,16 +802,16 @@ impl<'processor> Processor<'processor> {
             stdin.lock().read_to_string(&mut input)?;
             // This is necessary to prevent unexpected output from being captured.
             self.from_buffer(&mut input.as_bytes(), None, false)?;
-            return Ok(());
+            return Ok(self.clear_cache());
         }
 
         let mut reader = stdin.lock();
         self.from_buffer(&mut reader, None, false)?;
-        Ok(())
+        Ok(self.clear_cache())
     }
 
     /// Process contents from a file
-    pub fn from_file(&mut self, path: impl AsRef<Path>) -> RadResult<()> {
+    pub fn from_file(&mut self, path: impl AsRef<Path>) -> RadResult<Option<String>> {
         // Sandboxed environment, backup
         let backup = if self.state.sandbox {
             Some(self.backup())
@@ -802,7 +824,7 @@ impl<'processor> Processor<'processor> {
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
         self.from_buffer(&mut reader, backup, false)?;
-        Ok(())
+        Ok(self.clear_cache())
     }
 
     /// Internal method that is executed by macro
@@ -1359,15 +1381,21 @@ impl<'processor> Processor<'processor> {
         if let Some((name, args, body)) = self.define_parser.parse_define(&frag.args) {
             // Strict mode
             // Overriding is prohibited
-            if self.state.behaviour == Behaviour::Strict && self.map.contains_macro(&name, MacroType::Any, self.state.hygiene) {
+            if self.state.behaviour == Behaviour::Strict
+                && self
+                    .map
+                    .contains_macro(&name, MacroType::Any, self.state.hygiene)
+            {
                 self.log_error("Can't override exsiting macro on strict mode")?;
                 return Err(RadError::StrictPanic);
             }
 
             if self.state.hygiene {
-                self.map.register_runtime_as_volatile(&name, &args, &body, self.state.hygiene)?;
+                self.map
+                    .register_runtime_as_volatile(&name, &args, &body, self.state.hygiene)?;
             } else {
-                self.map.register_runtime(&name, &args, &body, self.state.hygiene)?;
+                self.map
+                    .register_runtime(&name, &args, &body, self.state.hygiene)?;
             }
         } else {
             self.log_error(&format!(
@@ -1396,9 +1424,17 @@ impl<'processor> Processor<'processor> {
         #[cfg(feature = "debug")]
         self.debugger.write_to_processed(content)?;
 
-        match self.state.relay.last_mut().unwrap_or(&mut RelayTarget::None) {
+        match self
+            .state
+            .relay
+            .last_mut()
+            .unwrap_or(&mut RelayTarget::None)
+        {
             RelayTarget::Macro(mac) => {
-                if !self.map.contains_macro(mac, MacroType::Runtime, self.state.hygiene) {
+                if !self
+                    .map
+                    .contains_macro(mac, MacroType::Runtime, self.state.hygiene)
+                {
                     return Err(RadError::InvalidMacroName(format!(
                         "Cannot relay to non-exsitent macro \"{}\"",
                         mac
@@ -1406,17 +1442,28 @@ impl<'processor> Processor<'processor> {
                 }
                 self.map.append(&mac, content, self.state.hygiene);
             }
-            RelayTarget::File((_, file)) => {
-                file.write_all(content.as_bytes())?;
+            RelayTarget::File(target) => {
+                // NOTE
+                // Pracically this cannot be set in wasm target because multiple code barriers
+                // yet panic can theorically happen.
+                target
+                    .file
+                    .as_mut()
+                    .unwrap()
+                    .write_all(content.as_bytes())?;
             }
+            #[cfg(not(feature = "wasm"))]
             RelayTarget::Temp => {
-                self.state.temp_target.1.write(content.as_bytes())?;
+                if let Some(file) = self.get_temp_file() {
+                    file.write(content.as_bytes())?;
+                }
             }
             RelayTarget::None => {
                 match &mut self.write_option {
                     WriteOption::File(f) => f.write_all(content.as_bytes())?,
                     WriteOption::Terminal => std::io::stdout().write_all(content.as_bytes())?,
                     WriteOption::Variable(var) => var.push_str(content),
+                    WriteOption::Return => self.cache.push_str(content),
                     WriteOption::Discard => (), // Don't print anything
                 }
             }
@@ -1811,16 +1858,9 @@ impl<'processor> Processor<'processor> {
     /// Change temp file target
     ///
     /// This will create a new temp file if not existent
+    #[cfg(not(feature = "wasm"))]
     pub(crate) fn set_temp_file(&mut self, path: &Path) {
-        self.state.temp_target = (
-            path.to_owned(),
-            OpenOptions::new()
-                .create(true)
-                .write(true)
-                .truncate(true)
-                .open(path)
-                .unwrap(),
-        );
+        self.state.set_temp_target(path);
     }
 
     /// Set pipe value manually
@@ -1846,14 +1886,16 @@ impl<'processor> Processor<'processor> {
         self.state.sandbox = true;
     }
 
+    #[cfg(not(feature = "wasm"))]
     /// Get temp file's path
     pub(crate) fn get_temp_path(&self) -> &Path {
-        self.state.temp_target.0.as_ref()
+        &self.state.temp_target.path
     }
 
+    #[cfg(not(feature = "wasm"))]
     /// Get temp file's "file" struct
-    pub(crate) fn get_temp_file(&self) -> &File {
-        &self.state.temp_target.1
+    pub(crate) fn get_temp_file(&mut self) -> Option<&mut File> {
+        self.state.temp_target.file.as_mut()
     }
 
     /// Backup information of current file before processing sandboxed input
@@ -1929,10 +1971,9 @@ impl<'processor> Processor<'processor> {
     /// Set input as string not as &path
     ///
     /// This is conceptualy identical to set_file but doesn't validate if given input is existent
-    fn set_input(&mut self, input: &str) -> RadResult<()> {
-        let input = ProcessInput::File(PathBuf::from(input));
-        self.state.current_input = input.clone();
-        self.logger.set_input(&input);
+    fn set_input_stdin(&mut self) -> RadResult<()> {
+        self.state.current_input = ProcessInput::Stdin;
+        self.logger.set_input(&ProcessInput::Stdin);
         // Why no set_file_env like set_file?
         Ok(())
     }
@@ -1976,30 +2017,37 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    pub fn get_split_arguments(&self, target_length: usize, source: &str) -> RadResult<Vec<String>> {
+    pub fn get_split_arguments(
+        &self,
+        target_length: usize,
+        source: &str,
+    ) -> RadResult<Vec<String>> {
         if let Some(args) = ArgParser::new().args_with_len(source, target_length) {
             Ok(args)
         } else {
-            Err(RadError::InvalidArgument(
-                format!("Insufficient arguments.")
-            ))
+            Err(RadError::InvalidArgument(format!(
+                "Insufficient arguments."
+            )))
         }
     }
 
     pub fn expand(&mut self, level: usize, source: impl AsRef<str>) -> RadResult<String> {
-        self.parse_chunk_args(level,MAIN_CALLER, source.as_ref())
+        self.parse_chunk_args(level, MAIN_CALLER, source.as_ref())
     }
 
-    pub fn contains_macro(&self, macro_name: &str, macro_type : MacroType) -> bool {
-        self.map.contains_macro(macro_name, macro_type, self.state.hygiene)
+    pub fn contains_macro(&self, macro_name: &str, macro_type: MacroType) -> bool {
+        self.map
+            .contains_macro(macro_name, macro_type, self.state.hygiene)
     }
 
     pub fn undefine_macro(&mut self, macro_name: &str, macro_type: MacroType) {
-        self.map.undefine(macro_name, macro_type, self.state.hygiene);
+        self.map
+            .undefine(macro_name, macro_type, self.state.hygiene);
     }
 
     pub fn rename_macro(&mut self, macro_name: &str, target_name: &str, macro_type: MacroType) {
-        self.map.rename(macro_name, target_name, macro_type, self.state.hygiene);
+        self.map
+            .rename(macro_name, target_name, macro_type, self.state.hygiene);
     }
 
     pub fn append_macro(&mut self, macro_name: &str, target: &str) {
