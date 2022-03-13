@@ -1,16 +1,16 @@
-use crate::runtime_map::{RuntimeMacroMap, RuntimeMacro};
+use crate::deterred_map::DFunctionMacroType;
 use crate::error::RadError;
+use crate::function_map::FunctionMacroType;
+use crate::runtime_map::{RuntimeMacro, RuntimeMacroMap};
 #[cfg(feature = "signature")]
 use crate::sigmap::MacroSignature;
 use crate::utils::Utils;
-use crate::{function_map::FunctionMacroMap, deterred_map::DeterredMacroMap};
+use crate::{deterred_map::DeterredMacroMap, function_map::FunctionMacroMap};
 use bincode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::{Path, PathBuf};
-use crate::function_map::FunctionMacroType;
-use crate::deterred_map::DFunctionMacroType;
 
 pub type RadResult<T> = Result<T, RadError>;
 
@@ -18,6 +18,7 @@ pub type RadResult<T> = Result<T, RadError>;
 pub enum WriteOption<'a> {
     File(std::fs::File),
     Variable(&'a mut String),
+    Return,
     Terminal,
     Discard,
 }
@@ -99,25 +100,41 @@ impl MacroMap {
         self.deterred.contains(name)
     }
 
-    pub fn contains_macro(&self, macro_name:&str, macro_type: MacroType, volatile: bool) -> bool {
+    pub fn contains_macro(&self, macro_name: &str, macro_type: MacroType, volatile: bool) -> bool {
         match macro_type {
             MacroType::Deterred => self.deterred.contains(macro_name),
             MacroType::Function => self.function.contains(macro_name),
             MacroType::Runtime => self.runtime.contains(macro_name, volatile),
-            MacroType::Any => self.function.contains(macro_name) || self.runtime.contains(macro_name, volatile) || self.deterred.contains(macro_name),
+            MacroType::Any => {
+                self.function.contains(macro_name)
+                    || self.runtime.contains(macro_name, volatile)
+                    || self.deterred.contains(macro_name)
+            }
         }
     }
 
     // Empty argument should be treated as no arg
     /// Register a new runtime macro
-    pub fn register_runtime(&mut self, name: &str, args: &str, body: &str, volatile: bool) -> RadResult<()> {
+    pub fn register_runtime(
+        &mut self,
+        name: &str,
+        args: &str,
+        body: &str,
+        volatile: bool,
+    ) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
         let mac = RuntimeMacro::new(&Utils::trim(name), &Utils::trim(args), body);
         self.runtime.new_macro(name, mac, volatile);
         Ok(())
     }
 
-    pub fn register_runtime_as_volatile(&mut self, name: &str, args: &str, body: &str, volatile: bool) -> RadResult<()> {
+    pub fn register_runtime_as_volatile(
+        &mut self,
+        name: &str,
+        args: &str,
+        body: &str,
+        volatile: bool,
+    ) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
         let mac = RuntimeMacro::new(&Utils::trim(name), &Utils::trim(args), body);
         self.runtime.new_macro(name, mac, volatile);
@@ -126,10 +143,16 @@ impl MacroMap {
 
     /// Undeifne macro
     pub fn undefine(&mut self, macro_name: &str, macro_type: MacroType, volatile: bool) {
-        match macro_type{
-            MacroType::Deterred => {self.deterred.undefine(macro_name);}
-            MacroType::Function => {self.function.undefine(macro_name);}
-            MacroType::Runtime => {self.runtime.undefine(macro_name, volatile);}
+        match macro_type {
+            MacroType::Deterred => {
+                self.deterred.undefine(macro_name);
+            }
+            MacroType::Function => {
+                self.function.undefine(macro_name);
+            }
+            MacroType::Runtime => {
+                self.runtime.undefine(macro_name, volatile);
+            }
             MacroType::Any => {
                 self.function.undefine(macro_name);
                 self.runtime.undefine(macro_name, volatile);
@@ -138,15 +161,27 @@ impl MacroMap {
         }
     }
 
-    pub fn rename(&mut self, macro_name: &str, target_name: &str, macro_type: MacroType, volatile: bool) {
-        match macro_type{
-            MacroType::Deterred => {self.deterred.rename(macro_name,target_name);}
-            MacroType::Function => {self.function.rename(macro_name,target_name);}
-            MacroType::Runtime => {self.runtime.rename(macro_name,target_name, volatile);}
+    pub fn rename(
+        &mut self,
+        macro_name: &str,
+        target_name: &str,
+        macro_type: MacroType,
+        volatile: bool,
+    ) {
+        match macro_type {
+            MacroType::Deterred => {
+                self.deterred.rename(macro_name, target_name);
+            }
+            MacroType::Function => {
+                self.function.rename(macro_name, target_name);
+            }
+            MacroType::Runtime => {
+                self.runtime.rename(macro_name, target_name, volatile);
+            }
             MacroType::Any => {
-                self.function.rename(macro_name,target_name);
-                self.runtime.rename(macro_name,target_name, volatile);
-                self.deterred.rename(macro_name,target_name);
+                self.function.rename(macro_name, target_name);
+                self.runtime.rename(macro_name, target_name, volatile);
+                self.deterred.rename(macro_name, target_name);
             }
         }
     }
@@ -481,8 +516,9 @@ impl StorageOutput {
 
 pub enum RelayTarget {
     None,
-    File((PathBuf, File)),
+    File(FileTarget),
     Macro(String),
+    #[cfg(not(feature = "wasm"))]
     Temp,
 }
 
@@ -529,13 +565,13 @@ impl ExtMacroBuilder {
         }
     }
 
-    pub fn function(mut self, func : FunctionMacroType) -> Self {
+    pub fn function(mut self, func: FunctionMacroType) -> Self {
         self.macro_type = ExtMacroType::Function;
         self.macro_body = Some(ExtMacroBody::Function(func));
         self
     }
 
-    pub fn deterred(mut self, func : DFunctionMacroType) -> Self {
+    pub fn deterred(mut self, func: DFunctionMacroType) -> Self {
         self.macro_type = ExtMacroType::Deterred;
         self.macro_body = Some(ExtMacroBody::Deterred(func));
         self
@@ -564,5 +600,31 @@ pub enum MacroType {
     Function,
     Deterred,
     Runtime,
-    Any
+    Any,
+}
+
+pub struct FileTarget {
+    pub(crate) path: PathBuf,
+    pub(crate) file: Option<File>,
+}
+
+impl FileTarget {
+    pub fn empty() -> Self {
+        Self {
+            path: PathBuf::new(),
+            file: None,
+        }
+    }
+
+    pub fn set_path(&mut self, path: &Path) {
+        self.path = path.to_owned();
+        self.file = Some(
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(path)
+                .unwrap(),
+        );
+    }
 }
