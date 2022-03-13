@@ -15,7 +15,7 @@ use crate::logger::WarningType;
 use crate::models::{
     Behaviour, ExtMacroBody, ExtMacroBuilder, FlowControl, ProcessInput, RadResult, RelayTarget,
 };
-use crate::models::{FileTarget, MacroType};
+use crate::models::MacroType;
 use crate::processor::Processor;
 use crate::utils::Utils;
 #[cfg(feature = "cindex")]
@@ -2062,6 +2062,7 @@ impl FunctionMacroMap {
             }
             #[cfg(not(feature = "wasm"))]
             "file" => {
+                use crate::models::FileTarget;
                 if !Utils::is_granted("relay", AuthType::FOUT, p)? {
                     return Ok(None);
                 }

@@ -13,7 +13,8 @@
 //! - lipsum    : "lipsum" macro
 //! - csv       : "from", "table" macro
 //! - textwrap  : "wrap" macro
-//! - full      : all features above
+//! - cindex    : Query related macros
+//! - full      : all features above except cindex
 //!
 //! - debug     : Enable debug method
 //! - color     : Enable color prompt
