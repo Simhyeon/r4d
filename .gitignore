@@ -4,3 +4,5 @@ auto.sh
 diff.src
 diff.out
 addr.csv
+wasm
+pkg
