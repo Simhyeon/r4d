@@ -55,18 +55,18 @@ pub mod processor;
 
 pub(crate) mod arg_parser;
 pub(crate) mod auth;
-pub(crate) mod function_map;
 pub(crate) mod consts;
-pub(crate) mod runtime_map;
 #[cfg(feature = "debug")]
 pub(crate) mod debugger;
 pub(crate) mod define_parser;
+pub(crate) mod deterred_map;
+pub(crate) mod function_map;
 #[cfg(feature = "hook")]
 pub(crate) mod hookmap;
-pub(crate) mod deterred_map;
 pub(crate) mod lexor;
 pub(crate) mod logger;
 pub(crate) mod models;
+pub(crate) mod runtime_map;
 #[cfg(feature = "signature")]
 pub(crate) mod sigmap;
 pub(crate) mod utils;
@@ -75,9 +75,10 @@ pub use auth::AuthType;
 pub use error::RadError;
 #[cfg(feature = "hook")]
 pub use hookmap::HookType;
+pub use logger::WarningType;
 pub use models::{CommentType, DiffOption, RadResult, WriteOption};
 #[cfg(feature = "storage")]
-pub use models::{RadStorage, StorageOutput, StorageResult, MacroType, ExtMacroBuilder};
+pub use models::{ExtMacroBuilder, MacroType, RadStorage, StorageOutput, StorageResult};
 pub use processor::Processor;
 
 // Optional
@@ -94,3 +95,6 @@ pub(crate) mod formatter;
 
 // Re-export macro
 pub use rad_ext_template;
+
+#[cfg(feature = "wasm")]
+pub mod wasm;

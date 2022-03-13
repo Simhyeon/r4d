@@ -1,32 +1,34 @@
+use crate::{Processor, RadError, WriteOption};
+use console_error_panic_hook;
 use wasm_bindgen::prelude::*;
-use crate::error::RadError;
-
-// JS methods
-#[wasm_bindgen]
-extern "C" {
-    //console.error
-    #[wasm_bindgen(js_namespace = console, js_name = log)]
-    fn log(l : &str);
-    //console.error
-    #[wasm_bindgen(js_namespace = console, js_name = error)]
-    fn log_error(e: &JsValue);
-}
-
 
 type WasmResult<T> = Result<T, JsValue>;
 
 impl From<RadError> for JsValue {
-    fn from(err : RadError) -> Self {
+    fn from(err: RadError) -> Self {
         JsValue::from_str(&err.to_string())
     }
 }
 
 #[wasm_bindgen]
-pub fn process(option: &ProcessOption) -> JsValue {
-    let processor: Processor = Processor::new();
+pub struct RadProcessor {
+    processor: Processor<'static>,
 }
 
 #[wasm_bindgen]
-pub struct ProcessOption {
+impl RadProcessor {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        console_error_panic_hook::set_once();
 
+        let mut processor = Processor::new();
+        processor.set_write_option(WriteOption::Return);
+
+        Self { processor }
+    }
+
+    pub fn process_string(&mut self, src: &str) -> WasmResult<String> {
+        let ret = self.processor.from_string(src)?.unwrap_or(String::new());
+        Ok(ret)
+    }
 }
