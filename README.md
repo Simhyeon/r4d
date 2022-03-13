@@ -3,7 +3,7 @@
 R4d is a text oriented macro prosessor aims to be an alternative to m4 macro
 processor.
 
-Rad has been changed drastically with 2.0 update, see [2.0 part](#2.0) below.
+R4d has been changed drastically with 2.0 update, see [2.0 part](#2.0) below.
 
 ### Note
 
@@ -142,17 +142,14 @@ processor.print_result()?;
 
 ### 2.0 changes
 
-From 2.0, following changes have been updated including breaking ones.
+From 2.0, following breaking changes have been applied. 
 
 - Removed deprecated methods
 - Renamed concepts for better understanding
 - Relocated deterred macros into function macros
-- Added easier customizable macro extension
 - Removed closure macro
 - Now every macro is greedy
 - Pipe truncate as default
-- Hygienic processing toggle ( which is not the internal sandboxing logic but for end
-user )
 
 ### Goal
 
