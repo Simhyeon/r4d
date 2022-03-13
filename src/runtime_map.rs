@@ -98,8 +98,8 @@ impl RuntimeMacroMap {
         }
     }
 
-    pub fn rename(&mut self, name: &str,new_name: &str, volatile: bool) {
-        if volatile{
+    pub fn rename(&mut self, name: &str, new_name: &str, volatile: bool) {
+        if volatile {
             if let Some(mac) = self.volatile.remove(name) {
                 self.volatile.insert(new_name.to_string(), mac);
             }
@@ -111,7 +111,7 @@ impl RuntimeMacroMap {
     }
 
     pub fn append_macro(&mut self, name: &str, target: &str, volatile: bool) {
-        if volatile{
+        if volatile {
             if let Some(mac) = self.volatile.get_mut(name) {
                 mac.body.push_str(target)
             }
@@ -123,7 +123,7 @@ impl RuntimeMacroMap {
     }
 
     pub fn replace_macro(&mut self, name: &str, target: &str, volatile: bool) {
-        if volatile{
+        if volatile {
             if let Some(mac) = self.volatile.get_mut(name) {
                 mac.body.push_str(target)
             }
@@ -135,7 +135,7 @@ impl RuntimeMacroMap {
     }
 
     pub fn extend_map(&mut self, map: HashMap<String, RuntimeMacro>, volatile: bool) {
-        if volatile{
+        if volatile {
             self.volatile.extend(map)
         } else {
             self.macros.extend(map)

@@ -10,7 +10,7 @@ use crate::models::SignatureType;
 use crate::models::{CommentType, DiffOption};
 use crate::processor::Processor;
 use crate::utils::Utils;
-use crate::{RadResult};
+use crate::RadResult;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
