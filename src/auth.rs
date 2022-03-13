@@ -69,6 +69,20 @@ pub enum AuthType {
     LEN = 4,
 }
 
+impl std::fmt::Display for AuthType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let string = match self {
+            Self::ENV => "ENV",
+            Self::FIN => "FIN",
+            Self::FOUT => "FOUT",
+            Self::CMD => "CMD",
+            Self::LEN => "LEN",
+        };
+
+        write!(f,"{}",string)
+    }
+}
+
 impl AuthType {
     /// Convert str slice into AuthType
     pub fn from(string: &str) -> Option<Self> {

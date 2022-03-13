@@ -561,6 +561,16 @@ impl<'processor> Processor<'processor> {
         self.state.queued.push(item.to_owned());
     }
 
+    /// Toggle hygiene
+    pub fn toggle_hygiene(&mut self, toggle: bool) {
+        if toggle {
+            if !self.map.runtime.volatile.is_empty() {
+                self.map.clear_runtime_macros(true);
+            }
+        }
+        self.state.hygiene = toggle;
+    }
+
     /// Set write option in the process
     pub fn set_write_option(&mut self, write_option: WriteOption<'processor>) {
         self.write_option = write_option;
@@ -2000,17 +2010,8 @@ impl<'processor> Processor<'processor> {
     // ----------
 
     // ----------
-    // Function that is exposed for end users so that macro ext can utilize these
+    // Function that is exposed for better end user's qualify of life
     // <EXT>
-
-    pub fn toggle_hygiene(&mut self, toggle: bool) {
-        if toggle {
-            if !self.map.runtime.volatile.is_empty() {
-                self.map.clear_runtime_macros(true);
-            }
-        }
-        self.state.hygiene = toggle;
-    }
 
     pub fn print_error(&mut self, error: &str) -> RadResult<()> {
         self.log_error(error)?;
@@ -2031,37 +2032,63 @@ impl<'processor> Processor<'processor> {
         }
     }
 
+    /// Check auth information
+    ///
+    /// This will print log_error if auth was enabled with warning
+    ///
+    /// @return If auth is enabled or not
+    pub fn check_auth(&mut self, auth_type: AuthType) -> RadResult<bool> {
+        let variant = match self.state.auth_flags.get_state(&auth_type) {
+            AuthState::Warn => {
+                self.log_warning(&format!("{} was enabled with warning", auth_type), WarningType::Security)?;
+                true
+            },
+            AuthState::Open => true,
+            AuthState::Restricted => false,
+        };
+
+        Ok(variant)
+    }
+
+    /// Expand given text
     pub fn expand(&mut self, level: usize, source: impl AsRef<str>) -> RadResult<String> {
         self.parse_chunk_args(level, MAIN_CALLER, source.as_ref())
     }
 
+    /// Check if given macro exists
     pub fn contains_macro(&self, macro_name: &str, macro_type: MacroType) -> bool {
         self.map
             .contains_macro(macro_name, macro_type, self.state.hygiene)
     }
 
+    /// Try undefine macro
     pub fn undefine_macro(&mut self, macro_name: &str, macro_type: MacroType) {
         self.map
             .undefine(macro_name, macro_type, self.state.hygiene);
     }
 
+    /// Rename macro
     pub fn rename_macro(&mut self, macro_name: &str, target_name: &str, macro_type: MacroType) {
         self.map
             .rename(macro_name, target_name, macro_type, self.state.hygiene);
     }
 
+    /// Append content into a macro
     pub fn append_macro(&mut self, macro_name: &str, target: &str) {
         self.map.append(macro_name, target, self.state.hygiene);
     }
 
+    /// Replace macro's content
     pub fn replace_macro(&mut self, macro_name: &str, target: &str) -> bool {
         self.map.replace(macro_name, target, self.state.hygiene)
     }
 
+    /// Add new local macro
     pub fn add_new_local_macro(&mut self, level: usize, macro_name: &str, body: &str) {
         self.map.add_local_macro(level, macro_name, body);
     }
 
+    /// Check if given text is boolean-able
     pub fn is_true(&self, src: &str) -> RadResult<bool> {
         Utils::is_arg_true(src)
     }
