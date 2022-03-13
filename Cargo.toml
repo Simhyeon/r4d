@@ -22,8 +22,7 @@ crate-type = ["cdylib","rlib"]
 [features]
 basic = ["clap"]
 binary = ["clap","debug", "full"]
-full = [ "csv", "evalexpr", "lipsum", "chrono", "textwrap"]
-# Cindex is not enabled by full feature because it is very niche requirement
+full = [ "csv", "evalexpr", "lipsum", "chrono", "textwrap", "cindex"]
 
 debug = [ "crossterm", "similar" ]
 color = [ "colored" ]
@@ -49,7 +48,7 @@ serde = { version = "1.0.126", features = ["derive"]}
 serde_json = { version = "1.0", optional = true}
 similar = { version = "2.0.0", optional = true}
 textwrap = { version = "0.14.2", optional = true}
-cindex = { version = "0.3.2", optional = true}
+cindex = { version = "0.3.2", optional = true, default-features = false}
 rad_ext_template = { version="0.1.0", optional = true}
 wasm-bindgen = { version = "0.2.74", optional = true}
 console_error_panic_hook = { version = "0.1.7", optional = true}

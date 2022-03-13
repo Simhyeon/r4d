@@ -14,7 +14,7 @@
 //! - csv       : "from", "table" macro
 //! - textwrap  : "wrap" macro
 //! - cindex    : Query related macros
-//! - full      : all features above except cindex
+//! - full      : all features above 
 //!
 //! - debug     : Enable debug method
 //! - color     : Enable color prompt
