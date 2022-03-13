@@ -87,7 +87,10 @@ cargo install r4d --features binary --locked
 # If you need color prompt, then use features "color"
 cargo install r4d --features binary,color --locked
 
-# Refer lib.rs or usage section for detailed feature usage
+# Only include macros that doesnt't require external crates
+cargo install r4d --features basic --locked
+
+# Refer docs.rs or usage section for detailed feature usage
 ```
 
 ### Simple usage
