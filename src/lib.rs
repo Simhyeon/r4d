@@ -94,6 +94,7 @@ pub use cli::Cli;
 pub(crate) mod formatter;
 
 // Re-export macro
+#[cfg(feature = "template")]
 pub use rad_ext_template;
 
 #[cfg(feature = "wasm")]
