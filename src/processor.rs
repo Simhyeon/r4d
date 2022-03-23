@@ -16,6 +16,7 @@
 //! use rad::DiffOption;
 //! use rad::MacroType;
 //! use rad::HookType; // This is behind hook feature
+//! use rad::Hygiene;
 //! use std::path::Path;
 //!
 //! // Builder
@@ -28,7 +29,7 @@
 //!     .nopanic(true)                                       // No panic in any circumstances
 //!     .assert(true)                                        // Enable assertion mode
 //!     .lenient(true)                                       // Disable strict mode
-//!     .hygiene(true)                                       // Enable hygiene mode
+//!     .hygiene(Hygiene::Default)                           // Enable hygiene mode
 //!     .pipe_truncate(false)                                // Disable pipe truncate
 //!     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
 //!     .error_to_file(Some(Path::new("err.txt")))?          // default is stderr
@@ -105,9 +106,9 @@ use crate::models::DiffOption;
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
 use crate::models::{
-    Behaviour, CommentType, ExtMacroBuilder, ExtMacroType, FileTarget, FlowControl, LocalMacro,
-    MacroFragment, MacroMap, MacroType, ProcessInput, RelayTarget, RuleFile, UnbalancedChecker,
-    WriteOption,
+    Behaviour, CommentType, ExtMacroBuilder, ExtMacroType, FileTarget, FlowControl, Hygiene,
+    LocalMacro, MacroFragment, MacroMap, MacroType, ProcessInput, RelayTarget, RuleFile,
+    UnbalancedChecker, WriteOption,
 };
 #[cfg(feature = "storage")]
 use crate::models::{RadStorage, StorageOutput};
@@ -152,8 +153,7 @@ pub(crate) struct ProcessorState {
     pub newline: String,
     pub paused: bool,
     // This is reserved for hygienic execution
-    pub hygiene: bool,
-    pub aseptic: bool,
+    pub hygiene: Hygiene,
     pub pipe_truncate: bool,
     pipe_map: HashMap<String, String>,
     pub relay: Vec<RelayTarget>,
@@ -183,8 +183,7 @@ impl ProcessorState {
             pipe_truncate: true,
             pipe_map: HashMap::new(),
             paused: false,
-            hygiene: false,
-            aseptic: false,
+            hygiene: Hygiene::None,
             relay: vec![],
             behaviour: Behaviour::Strict,
             comment_type: CommentType::None,
@@ -411,22 +410,13 @@ impl<'processor> Processor<'processor> {
     /// Set lenient
     pub fn lenient(mut self, lenient: bool) -> Self {
         if lenient {
-            self.state.behaviour = Behaviour::Leninet;
+            self.state.behaviour = Behaviour::Lenient;
         }
         self
     }
 
-    /// Set aseptic
-    pub fn aseptic(mut self, aseptic: bool) -> Self {
-        // Set hygiene true only if aseptic is true and hygiene was true
-        // else set false for every cases
-        self.state.hygiene = aseptic && self.state.hygiene;
-        self.state.aseptic = aseptic;
-        self
-    }
-
-    /// Set hygiene
-    pub fn hygiene(mut self, hygiene: bool) -> Self {
+    /// Set hygiene variant
+    pub fn hygiene(mut self, hygiene: Hygiene) -> Self {
         self.state.hygiene = hygiene;
         self
     }
@@ -572,21 +562,16 @@ impl<'processor> Processor<'processor> {
         self.state.queued.push(item.to_owned());
     }
 
-    /// Toggle aseptic
-    pub fn toggle_aseptic(&mut self, toggle: bool) {
-        // Refer builder method "aseptic" for logics of next line
-        self.state.hygiene = toggle && self.state.hygiene;
-        self.state.hygiene = toggle;
-    }
-
     /// Toggle hygiene
     pub fn toggle_hygiene(&mut self, toggle: bool) {
         if toggle {
             if !self.map.runtime.volatile.is_empty() {
                 self.map.clear_runtime_macros(true);
             }
+            self.state.hygiene = Hygiene::Default;
+        } else {
+            self.state.hygiene = Hygiene::None;
         }
-        self.state.hygiene = toggle;
     }
 
     /// Set write option in the process
@@ -697,7 +682,7 @@ impl<'processor> Processor<'processor> {
         &mut self,
         rules: Vec<(impl AsRef<str>, &str, &str)>,
     ) -> RadResult<()> {
-        if self.state.aseptic {
+        if self.state.hygiene == Hygiene::Aseptic {
             self.log_warning(
                 "Runtime macro declaration is disabled in aspectic mode",
                 WarningType::Security,
@@ -742,7 +727,7 @@ impl<'processor> Processor<'processor> {
         &mut self,
         rules: Vec<(impl AsRef<str>, impl AsRef<str>)>,
     ) -> RadResult<()> {
-        if self.state.aseptic {
+        if self.state.hygiene == Hygiene::Aseptic {
             self.log_warning(
                 "Runtime macro declaration is disabled in aspectic mode",
                 WarningType::Security,
@@ -1084,7 +1069,7 @@ impl<'processor> Processor<'processor> {
             // Clear local variable macros
             self.map.clear_local();
             // Clear volatile vaariables when hygienic is enabled
-            if self.state.hygiene {
+            if self.state.hygiene != Hygiene::None {
                 self.map.clear_runtime_macros(true);
             }
 
@@ -1386,7 +1371,12 @@ impl<'processor> Processor<'processor> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
 
-        let rule = self.map.runtime.macros.get(name).unwrap().clone();
+        let rule = self
+            .map
+            .runtime
+            .get(name, self.state.hygiene)
+            .unwrap()
+            .clone();
         let arg_types = &rule.args;
         let args: Vec<String>;
         // Set variable to local macros
@@ -1434,13 +1424,8 @@ impl<'processor> Processor<'processor> {
                 return Err(RadError::StrictPanic);
             }
 
-            if self.state.hygiene {
-                self.map
-                    .register_runtime_as_volatile(&name, &args, &body, self.state.hygiene)?;
-            } else {
-                self.map
-                    .register_runtime(&name, &args, &body, self.state.hygiene)?;
-            }
+            self.map
+                .register_runtime(&name, &args, &body, self.state.hygiene)?;
         } else {
             self.log_error(&format!(
                 "Failed to register a macro : \"{}\"",
@@ -1650,7 +1635,7 @@ impl<'processor> Processor<'processor> {
 
         // Within aseptic circumstances you cannot define runtime macros
         if frag.name == DEFINE_KEYWORD {
-            if self.state.aseptic {
+            if self.state.hygiene == Hygiene::Aseptic {
                 self.log_warning(
                     "Runtime macro declaration is disabled in aspectic mode",
                     WarningType::Security,
@@ -1861,7 +1846,7 @@ impl<'processor> Processor<'processor> {
                     }
                     // If purge mode is set, don't print anything
                     // and don't print error
-                    Behaviour::Purge => lexor.escape_next_newline(),
+                    Behaviour::Purge | Behaviour::Nopanic => lexor.escape_next_newline(),
                     _ => {
                         self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
                         remainder.push_str(&frag.whole_string);

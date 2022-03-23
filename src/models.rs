@@ -100,14 +100,19 @@ impl MacroMap {
         self.deterred.contains(name)
     }
 
-    pub fn contains_macro(&self, macro_name: &str, macro_type: MacroType, volatile: bool) -> bool {
+    pub fn contains_macro(
+        &self,
+        macro_name: &str,
+        macro_type: MacroType,
+        hygiene_type: Hygiene,
+    ) -> bool {
         match macro_type {
             MacroType::Deterred => self.deterred.contains(macro_name),
             MacroType::Function => self.function.contains(macro_name),
-            MacroType::Runtime => self.runtime.contains(macro_name, volatile),
+            MacroType::Runtime => self.runtime.contains(macro_name, hygiene_type),
             MacroType::Any => {
                 self.function.contains(macro_name)
-                    || self.runtime.contains(macro_name, volatile)
+                    || self.runtime.contains(macro_name, hygiene_type)
                     || self.deterred.contains(macro_name)
             }
         }
@@ -120,29 +125,16 @@ impl MacroMap {
         name: &str,
         args: &str,
         body: &str,
-        volatile: bool,
+        hygiene_type: Hygiene,
     ) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
         let mac = RuntimeMacro::new(&Utils::trim(name), &Utils::trim(args), body);
-        self.runtime.new_macro(name, mac, volatile);
-        Ok(())
-    }
-
-    pub fn register_runtime_as_volatile(
-        &mut self,
-        name: &str,
-        args: &str,
-        body: &str,
-        volatile: bool,
-    ) -> RadResult<()> {
-        // Trim all whitespaces and newlines from the string
-        let mac = RuntimeMacro::new(&Utils::trim(name), &Utils::trim(args), body);
-        self.runtime.new_macro(name, mac, volatile);
+        self.runtime.new_macro(name, mac, hygiene_type);
         Ok(())
     }
 
     /// Undeifne macro
-    pub fn undefine(&mut self, macro_name: &str, macro_type: MacroType, volatile: bool) {
+    pub fn undefine(&mut self, macro_name: &str, macro_type: MacroType, hygiene_type: Hygiene) {
         match macro_type {
             MacroType::Deterred => {
                 self.deterred.undefine(macro_name);
@@ -151,11 +143,11 @@ impl MacroMap {
                 self.function.undefine(macro_name);
             }
             MacroType::Runtime => {
-                self.runtime.undefine(macro_name, volatile);
+                self.runtime.undefine(macro_name, hygiene_type);
             }
             MacroType::Any => {
                 self.function.undefine(macro_name);
-                self.runtime.undefine(macro_name, volatile);
+                self.runtime.undefine(macro_name, hygiene_type);
                 self.deterred.undefine(macro_name);
             }
         }
@@ -166,7 +158,7 @@ impl MacroMap {
         macro_name: &str,
         target_name: &str,
         macro_type: MacroType,
-        volatile: bool,
+        hygiene_type: Hygiene,
     ) {
         match macro_type {
             MacroType::Deterred => {
@@ -176,25 +168,25 @@ impl MacroMap {
                 self.function.rename(macro_name, target_name);
             }
             MacroType::Runtime => {
-                self.runtime.rename(macro_name, target_name, volatile);
+                self.runtime.rename(macro_name, target_name, hygiene_type);
             }
             MacroType::Any => {
                 self.function.rename(macro_name, target_name);
-                self.runtime.rename(macro_name, target_name, volatile);
+                self.runtime.rename(macro_name, target_name, hygiene_type);
                 self.deterred.rename(macro_name, target_name);
             }
         }
     }
 
-    pub fn append(&mut self, name: &str, target: &str, volatile: bool) {
-        if self.runtime.contains(name, volatile) {
-            self.runtime.append_macro(name, target, volatile);
+    pub fn append(&mut self, name: &str, target: &str, hygiene_type: Hygiene) {
+        if self.runtime.contains(name, hygiene_type) {
+            self.runtime.append_macro(name, target, hygiene_type);
         }
     }
 
-    pub fn replace(&mut self, name: &str, target: &str, volatile: bool) -> bool {
-        if self.runtime.contains(name, volatile) {
-            self.runtime.replace_macro(name, target, volatile);
+    pub fn replace(&mut self, name: &str, target: &str, hygiene_type: Hygiene) -> bool {
+        if self.runtime.contains(name, hygiene_type) {
+            self.runtime.replace_macro(name, target, hygiene_type);
             true
         } else {
             false
@@ -542,7 +534,7 @@ impl ToString for ProcessInput {
 #[derive(PartialEq)]
 pub enum Behaviour {
     Strict,
-    Leninet,
+    Lenient,
     Purge,
     Nopanic,
 }
@@ -628,4 +620,12 @@ impl FileTarget {
                 .unwrap(),
         );
     }
+}
+
+#[derive(PartialEq, Clone, Copy)]
+/// Hygiene variant
+pub enum Hygiene {
+    None,
+    Default,
+    Aseptic,
 }

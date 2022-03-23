@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use crate::models::Hygiene;
+
 /// Runtime macro
 #[derive(Clone, Deserialize, Serialize)]
 pub struct RuntimeMacro {
@@ -74,71 +76,89 @@ impl RuntimeMacroMap {
         }
     }
 
-    pub fn contains(&self, key: &str, volatile: bool) -> bool {
-        if volatile {
-            self.volatile.contains_key(key)
-        } else {
-            self.macros.contains_key(key)
-        }
-    }
-
-    pub fn new_macro(&mut self, name: &str, mac: RuntimeMacro, volatile: bool) {
-        if volatile {
-            self.volatile.insert(name.to_string(), mac);
-        } else {
-            self.macros.insert(name.to_string(), mac);
-        }
-    }
-
-    pub fn undefine(&mut self, name: &str, volatile: bool) -> Option<RuntimeMacro> {
-        if volatile {
-            self.volatile.remove(name)
-        } else {
-            self.macros.remove(name)
-        }
-    }
-
-    pub fn rename(&mut self, name: &str, new_name: &str, volatile: bool) {
-        if volatile {
-            if let Some(mac) = self.volatile.remove(name) {
-                self.volatile.insert(new_name.to_string(), mac);
+    pub fn contains(&self, key: &str, hygiene_type: Hygiene) -> bool {
+        match hygiene_type {
+            Hygiene::None | Hygiene::Default => {
+                self.macros.contains_key(key) || self.volatile.contains_key(key)
             }
+            Hygiene::Aseptic => self.volatile.contains_key(key),
+        }
+    }
+
+    pub fn get(&self, key: &str, hygiene_type: Hygiene) -> Option<&RuntimeMacro> {
+        match hygiene_type {
+            Hygiene::None | Hygiene::Default => {
+                let vol_runtime = self.volatile.get(key);
+
+                if let None = vol_runtime {
+                    self.macros.get(key)
+                } else {
+                    vol_runtime
+                }
+            }
+            Hygiene::Aseptic => self.volatile.get(key),
+        }
+    }
+
+    pub fn new_macro(&mut self, name: &str, mac: RuntimeMacro, hygiene_type: Hygiene) {
+        if hygiene_type == Hygiene::None {
+            self.macros.insert(name.to_string(), mac);
         } else {
+            // If hygiene, insert into volatile
+            self.volatile.insert(name.to_string(), mac);
+        }
+    }
+
+    pub fn undefine(&mut self, name: &str, hygiene_type: Hygiene) -> Option<RuntimeMacro> {
+        if hygiene_type == Hygiene::None {
+            self.macros.remove(name)
+        } else {
+            // If hygiene, insert into volatile
+            self.volatile.remove(name)
+        }
+    }
+
+    pub fn rename(&mut self, name: &str, new_name: &str, hygiene_type: Hygiene) {
+        if hygiene_type == Hygiene::None {
             if let Some(mac) = self.macros.remove(name) {
                 self.macros.insert(new_name.to_string(), mac);
             }
+        } else {
+            if let Some(mac) = self.volatile.remove(name) {
+                self.volatile.insert(new_name.to_string(), mac);
+            }
         }
     }
 
-    pub fn append_macro(&mut self, name: &str, target: &str, volatile: bool) {
-        if volatile {
-            if let Some(mac) = self.volatile.get_mut(name) {
-                mac.body.push_str(target)
-            }
-        } else {
+    pub fn append_macro(&mut self, name: &str, target: &str, hygiene_type: Hygiene) {
+        if hygiene_type == Hygiene::None {
             if let Some(mac) = self.macros.get_mut(name) {
-                mac.body.push_str(target)
+                mac.body.push_str(target);
+            }
+        } else {
+            if let Some(mac) = self.volatile.get_mut(name) {
+                mac.body.push_str(target);
             }
         }
     }
 
-    pub fn replace_macro(&mut self, name: &str, target: &str, volatile: bool) {
-        if volatile {
-            if let Some(mac) = self.volatile.get_mut(name) {
-                mac.body.push_str(target)
-            }
-        } else {
+    pub fn replace_macro(&mut self, name: &str, target: &str, hygiene_type: Hygiene) {
+        if hygiene_type == Hygiene::None {
             if let Some(mac) = self.macros.get_mut(name) {
                 mac.body = target.to_string();
             }
+        } else {
+            if let Some(mac) = self.volatile.get_mut(name) {
+                mac.body.push_str(target)
+            }
         }
     }
 
-    pub fn extend_map(&mut self, map: HashMap<String, RuntimeMacro>, volatile: bool) {
-        if volatile {
-            self.volatile.extend(map)
-        } else {
+    pub fn extend_map(&mut self, map: HashMap<String, RuntimeMacro>, hygiene_type: Hygiene) {
+        if hygiene_type == Hygiene::None {
             self.macros.extend(map)
+        } else {
+            self.volatile.extend(map)
         }
     }
 }

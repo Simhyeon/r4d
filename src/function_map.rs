@@ -2384,7 +2384,9 @@ impl FunctionMacroMap {
         }
     }
 
-    /// Enable/disable hygiene
+    /// Enable/disable hygiene's default mode
+    ///
+    /// Aseptic mode is security related feature, thus not provided by default function macros.
     ///
     /// # Usage
     ///
