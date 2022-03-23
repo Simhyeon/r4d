@@ -1,6 +1,6 @@
 [package]
 name = "r4d"
-version = "2.0.0"
+version = "2.1.0"
 edition = "2018"
 license = "MIT OR Apache-2.0"
 keywords = ["macro", "cli", "text-processing"]
