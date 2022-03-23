@@ -29,26 +29,16 @@ From 2.0
 * [ ] Purge is bugged? ( Gdengine )
 - It's about precedence mostly.
 
-### Abbreviated todo
+### TODOs
 
-**Before 2.0**
+* [ ] Fix hygiene mode
+	- Hygiene modes should vary
+	- Aseptic mode is necessary
 
 * [ ] Better documentaion generation
 * [ ] Error handling, execution security
-* [x] Make function and deterred distintive and intuitive
-* [x] Macro builder for user extensibility + procedural macro
-* [x] Hygienic processing
-
-### TODOs
 
 * [ ] Define with documentation of possibly 'docu' macro
-* [ ] Better error + warnings
-	* [x] Self inclusion error
-	* [x] Self relaying error
-	* [x] Nested self include
-	* [x] Create stack variable for sanity checking
-		- Input stack (Which is a container of currently queued processer input)
-	* [ ] Possibly other relaying related errors
 
 * [ ] Warn about operational macros + document something
 * [ ] Heavy text processing -> Proper read macro support
@@ -73,11 +63,7 @@ From 2.0
 
 #### 2.0
 
-* [ ] Export to wasm (Possibly later)
-	- Make "radobject" object
-	- That has an interface of src\_text and out\_text
-	- And ability to add closure for live update
-	- object.add\_closure( (src\_text\_to\_be\_parsed) -> { Whatever code comes here } )
+* [x] Export to wasm
 * [ ] Better debugger 
 - Current implementation is dependent on processor.
 - However I want to make debugger also gets information from processor

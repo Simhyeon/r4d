@@ -127,6 +127,10 @@ processor.print_result()?;
 
 [Macros](./docs/macro_indices.md)
 
+### About various modes
+
+[Modes](./docs/modes.md)
+
 ### Macro types
 
 [Types](./docs/macro_types.md)

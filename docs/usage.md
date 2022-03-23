@@ -118,6 +118,7 @@ let mut processor = Processor::new()
     .nopanic(true)                                       // No panic in any circumstances
     .assert(true)                                        // Enable assertion mode
     .lenient(true)                                       // Disable strict mode
+    .aseptic(true)                                       // Enable aseptic mode
     .hygiene(true)                                       // Enable hygiene mode
     .pipe_truncate(false)                                // Disable pipe truncate
     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
