@@ -79,7 +79,7 @@ impl std::fmt::Display for AuthType {
             Self::LEN => "LEN",
         };
 
-        write!(f,"{}",string)
+        write!(f, "{}", string)
     }
 }
 

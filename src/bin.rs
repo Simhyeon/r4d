@@ -3,7 +3,6 @@ use rad::Cli;
 use rad::RadResult;
 
 pub fn main() -> RadResult<()> {
-
     // Enable color on pager such as "less"
     // by overloading color related environment
     #[cfg(feature = "color")]

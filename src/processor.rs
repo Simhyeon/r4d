@@ -153,6 +153,7 @@ pub(crate) struct ProcessorState {
     pub paused: bool,
     // This is reserved for hygienic execution
     pub hygiene: bool,
+    pub aseptic: bool,
     pub pipe_truncate: bool,
     pipe_map: HashMap<String, String>,
     pub relay: Vec<RelayTarget>,
@@ -183,6 +184,7 @@ impl ProcessorState {
             pipe_map: HashMap::new(),
             paused: false,
             hygiene: false,
+            aseptic: false,
             relay: vec![],
             behaviour: Behaviour::Strict,
             comment_type: CommentType::None,
@@ -414,6 +416,15 @@ impl<'processor> Processor<'processor> {
         self
     }
 
+    /// Set aseptic
+    pub fn aseptic(mut self, aseptic: bool) -> Self {
+        // Set hygiene true only if aseptic is true and hygiene was true
+        // else set false for every cases
+        self.state.hygiene = aseptic && self.state.hygiene;
+        self.state.aseptic = aseptic;
+        self
+    }
+
     /// Set hygiene
     pub fn hygiene(mut self, hygiene: bool) -> Self {
         self.state.hygiene = hygiene;
@@ -561,6 +572,13 @@ impl<'processor> Processor<'processor> {
         self.state.queued.push(item.to_owned());
     }
 
+    /// Toggle aseptic
+    pub fn toggle_aseptic(&mut self, toggle: bool) {
+        // Refer builder method "aseptic" for logics of next line
+        self.state.hygiene = toggle && self.state.hygiene;
+        self.state.hygiene = toggle;
+    }
+
     /// Toggle hygiene
     pub fn toggle_hygiene(&mut self, toggle: bool) {
         if toggle {
@@ -679,6 +697,13 @@ impl<'processor> Processor<'processor> {
         &mut self,
         rules: Vec<(impl AsRef<str>, &str, &str)>,
     ) -> RadResult<()> {
+        if self.state.aseptic {
+            self.log_warning(
+                "Runtime macro declaration is disabled in aspectic mode",
+                WarningType::Security,
+            )?;
+            return Ok(());
+        }
         for (name, args, body) in rules {
             let name = name.as_ref();
             if !MAC_NAME.is_match(name) {
@@ -717,6 +742,13 @@ impl<'processor> Processor<'processor> {
         &mut self,
         rules: Vec<(impl AsRef<str>, impl AsRef<str>)>,
     ) -> RadResult<()> {
+        if self.state.aseptic {
+            self.log_warning(
+                "Runtime macro declaration is disabled in aspectic mode",
+                WarningType::Security,
+            )?;
+            return Ok(());
+        }
         for (name, body) in rules {
             let name = name.as_ref();
             if !MAC_NAME.is_match(name) {
@@ -1616,14 +1648,22 @@ impl<'processor> Processor<'processor> {
         // Push character to whole string anyway
         frag.whole_string.push(ch);
 
+        // Within aseptic circumstances you cannot define runtime macros
         if frag.name == DEFINE_KEYWORD {
-            self.lex_branch_end_frag_define(
-                lexor,
-                frag,
-                remainder,
-                #[cfg(feature = "debug")]
-                level,
-            )?;
+            if self.state.aseptic {
+                self.log_warning(
+                    "Runtime macro declaration is disabled in aspectic mode",
+                    WarningType::Security,
+                )?;
+            } else {
+                self.lex_branch_end_frag_define(
+                    lexor,
+                    frag,
+                    remainder,
+                    #[cfg(feature = "debug")]
+                    level,
+                )?;
+            }
         } else {
             // Invoke macro
             self.lex_branch_end_invoke(lexor, frag, remainder, level, caller)?;
@@ -1733,8 +1773,7 @@ impl<'processor> Processor<'processor> {
         frag: &mut MacroFragment,
         remainder: &mut String,
         lexor: &mut Lexor,
-        #[allow(unused_variables)]
-        level: usize,
+        #[allow(unused_variables)] level: usize,
     ) -> RadResult<()> {
         match variant {
             EvalResult::Eval(content) => {
@@ -2044,9 +2083,12 @@ impl<'processor> Processor<'processor> {
     pub fn check_auth(&mut self, auth_type: AuthType) -> RadResult<bool> {
         let variant = match self.state.auth_flags.get_state(&auth_type) {
             AuthState::Warn => {
-                self.log_warning(&format!("{} was enabled with warning", auth_type), WarningType::Security)?;
+                self.log_warning(
+                    &format!("{} was enabled with warning", auth_type),
+                    WarningType::Security,
+                )?;
                 true
-            },
+            }
             AuthState::Open => true,
             AuthState::Restricted => false,
         };

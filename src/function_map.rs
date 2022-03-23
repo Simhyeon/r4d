@@ -12,10 +12,10 @@ use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
+use crate::models::MacroType;
 use crate::models::{
     Behaviour, ExtMacroBody, ExtMacroBuilder, FlowControl, ProcessInput, RadResult, RelayTarget,
 };
-use crate::models::MacroType;
 use crate::processor::Processor;
 use crate::utils::Utils;
 #[cfg(feature = "cindex")]
