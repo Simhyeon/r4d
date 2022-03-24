@@ -50,5 +50,8 @@ similar = { version = "2.0.0", optional = true}
 textwrap = { version = "0.14.2", optional = true}
 cindex = { version = "0.3.2", optional = true, default-features = false}
 rad_ext_template = { version="0.1.0", optional = true}
+
+# Wasm related dependencies
 wasm-bindgen = { version = "0.2.74", optional = true}
 console_error_panic_hook = { version = "0.1.7", optional = true}
+wee_alloc = { version = "0.4.5", optional = true }
