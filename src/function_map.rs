@@ -2634,9 +2634,9 @@ impl FunctionMacroMap {
     #[cfg(feature = "cindex")]
     fn cindex_register(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            if !processor.indexer.contains_table(&args[0]) {
+            if processor.indexer.contains_table(&args[0]) {
                 return Err(RadError::InvalidArgument(format!(
-                    "Cannot register exsiting table :{}",
+                    "Cannot register exsiting table : \"{}\"",
                     args[0]
                 )));
             }
@@ -2691,7 +2691,6 @@ impl FunctionMacroMap {
     fn cindex_query_list(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let mut value = String::new();
-            processor.indexer.set_print_header(false);
             for raw in args[0].split(';') {
                 if raw.is_empty() {
                     continue;
@@ -2700,7 +2699,6 @@ impl FunctionMacroMap {
                     .indexer
                     .index_raw(&Utils::trim(raw), OutOption::Value(&mut value))?;
             }
-            processor.indexer.set_print_header(true);
             Ok(Some(Utils::trim(&value)))
         } else {
             Err(RadError::InvalidArgument(
