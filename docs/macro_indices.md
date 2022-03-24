@@ -91,7 +91,8 @@ For assertion macros refer [debug part](./debug.md)
 * [query](#query)
 * [flowcontrol](#flowcontrol)
 * [panic](#panic)
-* [Hygiene](#hygine)
+* [Clear](#clear)
+* [Hygiene](#hygiene)
 
 ### define
 
@@ -1243,10 +1244,22 @@ error: Panic triggered with message
 Processor panicked, exiting...
 ```
 
+### Clear
+
+Clear volatile macros. Volatile macros are macros that defined in hygiene mode.
+
+```r4d
+$clear()
+===
+```
+
 ### Hygiene
 
-Toggles hygiene mode. Within hygiene mode runtime macros are volatile and
-predefined runtime macros doesn't affect upcoming texts to be processed.
+Toggles hygiene's macro mode. Within macro mode runtime macros are volatile and
+newly defined macros is removed when macro invocation ends.
+
+Refer [modes](./modes.md) for more hygiene modes which can be toggled in
+library.
 
 ```r4d
 $hygiene(true)

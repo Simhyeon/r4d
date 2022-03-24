@@ -120,7 +120,7 @@ let mut processor = Processor::new()
     .assert(true)                                        // Enable assertion mode
     .lenient(true)                                       // Disable strict mode
     .aseptic(true)                                       // Enable aseptic mode
-    .hygiene(Hygiene::Default)                           // Enable hygiene mode
+    .hygiene(Hygiene::Macro)                             // Enable hygiene mode
     .pipe_truncate(false)                                // Disable pipe truncate
     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
     .error_to_file(Some(Path::new("err.txt")))?          // default is stderr

@@ -24,16 +24,21 @@ From 2.0
 * [x] Rule files will get vector, not an option of vector
 * [x] Provide auth checking in ext interface
 
+### Note
+
+Let's rearragne before I forget every fucking things. Current implementation of
+hygiene is very strange.
+
+There are three types of hyg; None, Default, Aseptic.
+
+Aseptic prevents any runtime macro definition and usage. ( Which is very inefficient in my opinion )
+
 ### Imminent
 
 * [ ] Purge is bugged? ( Gdengine )
 - It's about precedence mostly.
 
 ### TODOs
-
-* [ ] Fix hygiene mode
-	- Hygiene modes should vary
-	- Aseptic mode is necessary
 
 * [ ] Better documentaion generation
 * [ ] Error handling, execution security

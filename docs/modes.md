@@ -48,10 +48,12 @@ $define(unsafe=$some_random_macro())
 % If some_random_macro exists if succeeds. If not, if fails.
 ```
 
-**Default hygiene** mode set every further runtime modification as
+**Macro hygiene** mode set every further runtime modification as
 volatile(temporary). Within hygiene mode, runtime macros gets automatically
-deleted after every macro call which resides in first level. However this mode
-does respect exsiting macros.
+deleted after every macro call which resides in first level
 
-**Aseptic** mode disables runtime macro. You cannot define any of runtime macro
-and cannot use existing runtime macros.
+**Input hygiene** mode clears every volatile macro after per input. This is
+mostly useful in a context of library.
+
+**Aseptic** mode disables runtime macro defintion at all. You cannot define any
+runtime macro and only able to use pre-defined runtime macros.
