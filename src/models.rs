@@ -15,6 +15,12 @@ use std::path::{Path, PathBuf};
 pub type RadResult<T> = Result<T, RadError>;
 
 /// State enum value about direction of processed text
+///
+/// - File     : Set file output
+/// - Variable : Set variable to save 
+/// - Return   : Return otuput directly ( logger ignores this variant )
+/// - Terminal : Print to terminal
+/// - Discard  : Do nothing
 pub enum WriteOption<'a> {
     File(std::fs::File),
     Variable(&'a mut String),

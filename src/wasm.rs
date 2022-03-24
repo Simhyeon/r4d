@@ -21,7 +21,9 @@ impl RadProcessor {
     pub fn new() -> Self {
         console_error_panic_hook::set_once();
 
-        let mut processor = Processor::new();
+        let mut processor = Processor::new()
+            .lenient(true)
+            .hygiene(crate::Hygiene::Input);
         processor.set_write_option(WriteOption::Return);
 
         Self { processor }
