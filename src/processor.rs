@@ -29,7 +29,7 @@
 //!     .nopanic(true)                                       // No panic in any circumstances
 //!     .assert(true)                                        // Enable assertion mode
 //!     .lenient(true)                                       // Disable strict mode
-//!     .hygiene(Hygiene::Default)                           // Enable hygiene mode
+//!     .hygiene(Hygiene::Macro)                             // Enable hygiene mode
 //!     .pipe_truncate(false)                                // Disable pipe truncate
 //!     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
 //!     .error_to_file(Some(Path::new("err.txt")))?          // default is stderr
@@ -488,15 +488,15 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Melt rule file
+    ///
+    /// This always melt file into non-volatile form
     pub fn melt_files(mut self, paths: Vec<impl AsRef<Path>>) -> RadResult<Self> {
         let mut rule_file = RuleFile::new(None);
         for p in paths.iter() {
             // File validity is checked by melt methods
             rule_file.melt(p.as_ref())?;
         }
-        self.map
-            .runtime
-            .extend_map(rule_file.rules, self.state.hygiene);
+        self.map.runtime.extend_map(rule_file.rules, Hygiene::None);
 
         Ok(self)
     }
@@ -507,13 +507,11 @@ impl<'processor> Processor<'processor> {
     pub fn rule_literal(mut self, literal: &Vec<u8>) -> RadResult<Self> {
         let mut rule_file = RuleFile::new(None);
         rule_file.melt_literal(literal)?;
-        self.map
-            .runtime
-            .extend_map(rule_file.rules, self.state.hygiene);
+        self.map.runtime.extend_map(rule_file.rules, Hygiene::None);
         Ok(self)
     }
 
-    /// Open authority of processor
+    /// Open authorization of processor
     pub fn allow(mut self, auth_types: Option<Vec<AuthType>>) -> Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
@@ -523,7 +521,7 @@ impl<'processor> Processor<'processor> {
         self
     }
 
-    /// Open authority of processor but yield warning
+    /// Open authorization of processor but yield warning
     pub fn allow_with_warning(mut self, auth_types: Option<Vec<AuthType>>) -> Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
@@ -562,13 +560,30 @@ impl<'processor> Processor<'processor> {
         self.state.queued.push(item.to_owned());
     }
 
-    /// Toggle hygiene
+    /// Set hygiene type
+    ///
+    /// This also clears volatile runtime macro at the same time.
+    pub fn set_hygiene(&mut self, hygiene: Hygiene) {
+        if !self.map.runtime.volatile.is_empty() {
+            self.map.clear_runtime_macros(true);
+        }
+        self.state.hygiene = hygiene;
+    }
+
+    /// Clear volatile macros
+    pub fn clear_volatile(&mut self) {
+        if !self.map.runtime.volatile.is_empty() {
+            self.map.clear_runtime_macros(true);
+        }
+    }
+
+    /// Toggle macro hygiene
     pub fn toggle_hygiene(&mut self, toggle: bool) {
         if toggle {
             if !self.map.runtime.volatile.is_empty() {
                 self.map.clear_runtime_macros(true);
             }
-            self.state.hygiene = Hygiene::Default;
+            self.state.hygiene = Hygiene::Macro;
         } else {
             self.state.hygiene = Hygiene::None;
         }
@@ -622,8 +637,14 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    /// Clear empty and retur returned cache
-    pub fn clear_cache(&mut self) -> Option<String> {
+    /// Clear cached and sterilize volatile macors
+    ///
+    /// Return cached string, if cache was not empty
+    pub fn clear_cache_and_sterilize(&mut self) -> Option<String> {
+        if self.state.hygiene == Hygiene::Input {
+            self.map.clear_runtime_macros(true);
+        }
+
         if self.cache.len() == 0 {
             None
         } else {
@@ -683,11 +704,13 @@ impl<'processor> Processor<'processor> {
         rules: Vec<(impl AsRef<str>, &str, &str)>,
     ) -> RadResult<()> {
         if self.state.hygiene == Hygiene::Aseptic {
-            self.log_warning(
-                "Runtime macro declaration is disabled in aspectic mode",
+            self.log_strict(
+                "Runtime macro declaration is disabled in aseptic mode",
                 WarningType::Security,
             )?;
-            return Ok(());
+            if self.state.behaviour == Behaviour::Strict {
+                return Err(RadError::StrictPanic);
+            }
         }
         for (name, args, body) in rules {
             let name = name.as_ref();
@@ -811,7 +834,7 @@ impl<'processor> Processor<'processor> {
 
         let mut reader = content.as_bytes();
         self.from_buffer(&mut reader, None, false)?;
-        Ok(self.clear_cache())
+        Ok(self.clear_cache_and_sterilize())
     }
 
     /// Read from standard input
@@ -831,12 +854,12 @@ impl<'processor> Processor<'processor> {
             stdin.lock().read_to_string(&mut input)?;
             // This is necessary to prevent unexpected output from being captured.
             self.from_buffer(&mut input.as_bytes(), None, false)?;
-            return Ok(self.clear_cache());
+            return Ok(self.clear_cache_and_sterilize());
         }
 
         let mut reader = stdin.lock();
         self.from_buffer(&mut reader, None, false)?;
-        Ok(self.clear_cache())
+        Ok(self.clear_cache_and_sterilize())
     }
 
     /// Process contents from a file
@@ -853,7 +876,7 @@ impl<'processor> Processor<'processor> {
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
         self.from_buffer(&mut reader, backup, false)?;
-        Ok(self.clear_cache())
+        Ok(self.clear_cache_and_sterilize())
     }
 
     /// Internal method that is executed by macro
@@ -1068,8 +1091,9 @@ impl<'processor> Processor<'processor> {
 
             // Clear local variable macros
             self.map.clear_local();
-            // Clear volatile vaariables when hygienic is enabled
-            if self.state.hygiene != Hygiene::None {
+
+            // Clear volatile variables when macro hygiene is enabled
+            if self.state.hygiene == Hygiene::Macro {
                 self.map.clear_runtime_macros(true);
             }
 
@@ -1370,13 +1394,13 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<Option<String>> {
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
-
         let rule = self
             .map
             .runtime
             .get(name, self.state.hygiene)
             .unwrap()
             .clone();
+
         let arg_types = &rule.args;
         let args: Vec<String>;
         // Set variable to local macros
@@ -1633,13 +1657,18 @@ impl<'processor> Processor<'processor> {
         // Push character to whole string anyway
         frag.whole_string.push(ch);
 
-        // Within aseptic circumstances you cannot define runtime macros
         if frag.name == DEFINE_KEYWORD {
+            // Within aseptic circumstances you cannot define runtime macros
             if self.state.hygiene == Hygiene::Aseptic {
-                self.log_warning(
-                    "Runtime macro declaration is disabled in aspectic mode",
+                self.log_strict(
+                    "Runtime macro declaration is disabled in aseptic mode",
                     WarningType::Security,
                 )?;
+                frag.clear();
+                lexor.escape_next_newline();
+                if self.state.behaviour == Behaviour::Strict {
+                    return Err(RadError::StrictPanic);
+                }
             } else {
                 self.lex_branch_end_frag_define(
                     lexor,
@@ -1653,6 +1682,8 @@ impl<'processor> Processor<'processor> {
             // Invoke macro
             self.lex_branch_end_invoke(lexor, frag, remainder, level, caller)?;
         }
+
+        // Last return
         Ok(())
     }
 
@@ -1839,10 +1870,8 @@ impl<'processor> Processor<'processor> {
 
                 match self.state.behaviour {
                     Behaviour::Strict => {
-                        return Err(RadError::InvalidMacroName(format!(
-                            "Failed to invoke a macro : \"{}\"",
-                            frag.name
-                        )))
+                        self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
+                        return Err(RadError::StrictPanic);
                     }
                     // If purge mode is set, don't print anything
                     // and don't print error
@@ -1960,6 +1989,16 @@ impl<'processor> Processor<'processor> {
 
     pub(crate) fn track_assertion(&mut self, success: bool) -> RadResult<()> {
         self.logger.alog(success)?;
+        Ok(())
+    }
+
+    /// This prints error if strict mode else warning
+    pub(crate) fn log_strict(&mut self, log: &str, warning_type: WarningType) -> RadResult<()> {
+        if self.state.behaviour == Behaviour::Strict {
+            self.logger.elog(log)?;
+        } else {
+            self.logger.wlog(log, warning_type)?;
+        }
         Ok(())
     }
 

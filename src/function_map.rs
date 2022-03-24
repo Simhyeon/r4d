@@ -83,6 +83,10 @@ impl FunctionMacroMap {
                 FMacroSign::new("chomp", ["a_content"], Self::chomp),
             ),
             (
+                "clear".to_owned(),
+                FMacroSign::new("clear", ["a_content"], Self::clear),
+            ),
+            (
                 "comp".to_owned(),
                 FMacroSign::new("comp", ["a_content"], Self::compress),
             ),
@@ -2384,9 +2388,13 @@ impl FunctionMacroMap {
         }
     }
 
-    /// Enable/disable hygiene's default mode
-    ///
-    /// Aseptic mode is security related feature, thus not provided by default function macros.
+    /// Clear volatile macros
+    fn clear(_: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        processor.clear_volatile();
+        Ok(None)
+    }
+
+    /// Enable/disable hygiene's macro mode
     ///
     /// # Usage
     ///

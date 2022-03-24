@@ -78,16 +78,15 @@ impl RuntimeMacroMap {
 
     pub fn contains(&self, key: &str, hygiene_type: Hygiene) -> bool {
         match hygiene_type {
-            Hygiene::None | Hygiene::Default => {
-                self.macros.contains_key(key) || self.volatile.contains_key(key)
-            }
-            Hygiene::Aseptic => self.volatile.contains_key(key),
+            Hygiene::Aseptic => self.macros.contains_key(key),
+            _ => self.macros.contains_key(key) || self.volatile.contains_key(key),
         }
     }
 
     pub fn get(&self, key: &str, hygiene_type: Hygiene) -> Option<&RuntimeMacro> {
         match hygiene_type {
-            Hygiene::None | Hygiene::Default => {
+            Hygiene::Aseptic => self.macros.get(key),
+            _ => {
                 let vol_runtime = self.volatile.get(key);
 
                 if let None = vol_runtime {
@@ -96,7 +95,6 @@ impl RuntimeMacroMap {
                     vol_runtime
                 }
             }
-            Hygiene::Aseptic => self.volatile.get(key),
         }
     }
 

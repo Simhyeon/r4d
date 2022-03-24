@@ -624,8 +624,14 @@ impl FileTarget {
 
 #[derive(PartialEq, Clone, Copy)]
 /// Hygiene variant
+///
+/// - None    : No hygiene applied
+/// - Macro : Hygine by per invocation
+/// - Input   : Hygiene by per input
+/// - Aseptic : No runtime definition or invocation at all.
 pub enum Hygiene {
     None,
-    Default,
+    Macro,
+    Input,
     Aseptic,
 }
