@@ -293,10 +293,10 @@ impl RuleFile {
     pub fn melt(&mut self, path: &Path) -> RadResult<()> {
         Utils::is_real_path(path)?;
         let result = bincode::deserialize::<Self>(&std::fs::read(path)?);
-        if let Err(_) = result {
+        if let Err(err) = result {
             Err(RadError::BincodeError(format!(
-                "Failed to melt the file : {}",
-                path.display()
+                "Failed to melt the file : {} \n {}",
+                path.display(),err
             )))
         } else {
             self.rules.extend(result.unwrap().rules.into_iter());
