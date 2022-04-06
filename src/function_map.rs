@@ -379,10 +379,12 @@ impl FunctionMacroMap {
                 "syscmd".to_owned(),
                 FMacroSign::new("syscmd", ["a_command"], Self::syscmd, None),
             );
-            map.insert(
-                "read".to_owned(),
-                FMacroSign::new("read", ["a_filename"], Self::read, None),
-            );
+            // TODO 
+            // Disabled because it was buggy and unintuitive
+            //map.insert(
+                //"read".to_owned(),
+                //FMacroSign::new("read", ["a_filename"], Self::read, None),
+            //);
             map.insert(
                 "tempin".to_owned(),
                 FMacroSign::new("tempin", ["a_tempin"], Self::temp_include, None),
@@ -924,6 +926,7 @@ impl FunctionMacroMap {
                 let chunk = processor.from_file_as_chunk(file_path)?;
                 // Collect stack
                 processor.state.input_stack.remove(&canonic);
+                println!("Removed input stack {}", processor.state.input_stack.len());
                 Ok(chunk)
             } else {
                 let formatted = format!(
@@ -939,50 +942,50 @@ impl FunctionMacroMap {
         }
     }
 
-    /// Paste given file's content as bufstream
-    ///
-    /// Every macros within the file is also expanded
-    ///
-    /// Read include given file's content as form of bufstream and doesn't
-    /// save to memory. Therefore cannot be used with macro definition.
-    ///
-    /// # Usage
-    ///
-    /// $read(path)
-    fn read(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("read", AuthType::FIN, processor)? {
-            return Ok(None);
-        }
-        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let raw = Utils::trim(&args[0]);
-            let mut file_path = PathBuf::from(&raw);
+    ///// Paste given file's content as bufstream
+    /////
+    ///// Every macros within the file is also expanded
+    /////
+    ///// Read include given file's content as form of bufstream and doesn't
+    ///// save to memory. Therefore cannot be used with macro definition.
+    /////
+    ///// # Usage
+    /////
+    ///// $read(path)
+    //fn read(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        //if !Utils::is_granted("read", AuthType::FIN, processor)? {
+            //return Ok(None);
+        //}
+        //if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            //let raw = Utils::trim(&args[0]);
+            //let mut file_path = PathBuf::from(&raw);
 
-            // if current input is not stdin and file path is relative
-            // Create new file path that starts from current file path
-            if let ProcessInput::File(path) = &processor.state.current_input {
-                if file_path.is_relative() {
-                    // It is ok get parent because any path that has a length can return parent
-                    file_path = path.parent().unwrap().join(file_path);
-                }
-            }
+            //// if current input is not stdin and file path is relative
+            //// Create new file path that starts from current file path
+            //if let ProcessInput::File(path) = &processor.state.current_input {
+                //if file_path.is_relative() {
+                    //// It is ok get parent because any path that has a length can return parent
+                    //file_path = path.parent().unwrap().join(file_path);
+                //}
+            //}
 
-            if file_path.exists() {
-                processor.set_sandbox();
-                processor.from_file(file_path)?;
-                Ok(None)
-            } else {
-                let formatted = format!(
-                    "File path : \"{}\" doesn't exist or not a file",
-                    file_path.display()
-                );
-                Err(RadError::InvalidArgument(formatted))
-            }
-        } else {
-            Err(RadError::InvalidArgument(
-                "Include requires an argument".to_owned(),
-            ))
-        }
-    }
+            //if file_path.exists() {
+                //processor.set_sandbox();
+                //processor.from_file(file_path)?;
+                //Ok(None)
+            //} else {
+                //let formatted = format!(
+                    //"File path : \"{}\" doesn't exist or not a file",
+                    //file_path.display()
+                //);
+                //Err(RadError::InvalidArgument(formatted))
+            //}
+        //} else {
+            //Err(RadError::InvalidArgument(
+                //"Include requires an argument".to_owned(),
+            //))
+        //}
+    //}
 
     /// Repeat given expression about given amount times
     ///
