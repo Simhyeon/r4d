@@ -729,6 +729,7 @@ impl<'processor> Processor<'processor> {
                         .map(|s| s.to_owned())
                         .collect::<Vec<String>>(),
                     body: body.to_owned(),
+                    desc: None,
                 },
             );
         }
@@ -771,6 +772,7 @@ impl<'processor> Processor<'processor> {
                     name: name.to_owned(),
                     args: vec![],
                     body: body.as_ref().to_owned(),
+                    desc: None,
                 },
             );
         }
@@ -2079,6 +2081,15 @@ impl<'processor> Processor<'processor> {
     // ----------
     // Function that is exposed for better end user's qualify of life
     // <EXT>
+
+    pub fn set_documentation(&mut self, macro_name: &str, content: &str) -> bool {
+        if let Some(mac) = self.map.runtime.get_mut(macro_name, Hygiene::None) {
+            mac.desc = Some(content.to_owned());
+            true
+        } else {
+            false
+        }
+    }
 
     pub fn get_current_dir(&self) -> RadResult<PathBuf> {
         let path = match &self.state.current_input {

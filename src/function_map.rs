@@ -111,6 +111,10 @@ impl FunctionMacroMap {
                 FMacroSign::new("declare", ["a_macro_names"], Self::declare,None),
             ),
             (
+                "docu".to_owned(),
+                FMacroSign::new("docu", ["a_macro_name","a_content"], Self::document,None),
+            ),
+            (
                 "enl".to_owned(),
                 FMacroSign::new("enl", ESR, Self::escape_newline,None),
             ),
@@ -2374,6 +2378,31 @@ impl FunctionMacroMap {
         // Add runtime rules
         processor.add_runtime_rules(runtime_rules)?;
         Ok(None)
+    }
+
+
+    /// Document a macro
+    ///
+    /// # Usage
+    ///
+    /// $document(macro,content)
+    fn document(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let macro_name = &args[0];
+            let content = &args[1];
+
+            // If operation failed
+            if !processor.set_documentation(macro_name, content)
+                && processor.state.behaviour == Behaviour::Strict {
+                    processor.log_error(&format!("No such macro \"{}\" to document",macro_name))?;
+            } 
+
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Docu requires two argument".to_owned(),
+            ))
+        }
     }
 
     /// Declare a local macro

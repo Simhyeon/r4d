@@ -9,6 +9,7 @@ pub struct RuntimeMacro {
     pub name: String,
     pub args: Vec<String>,
     pub body: String,
+    pub desc: Option<String>,
 }
 
 impl RuntimeMacro {
@@ -26,6 +27,7 @@ impl RuntimeMacro {
             name: name.to_owned(),
             args,
             body: body.to_owned(),
+            desc: None,
         }
     }
 }
@@ -50,7 +52,7 @@ impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
             name: mac.name.to_owned(),
             args: mac.args.to_owned(),
             expr: mac.to_string(),
-            desc: None,
+            desc: mac.desc.clone(),
         }
     }
 }
@@ -92,6 +94,21 @@ impl RuntimeMacroMap {
 
                 if let None = vol_runtime {
                     self.macros.get(key)
+                } else {
+                    vol_runtime
+                }
+            }
+        }
+    }
+
+    pub fn get_mut(&mut self, key: &str, hygiene_type: Hygiene) -> Option<&mut RuntimeMacro> {
+        match hygiene_type {
+            Hygiene::Aseptic => self.macros.get_mut(key),
+            _ => {
+                let vol_runtime = self.volatile.get_mut(key);
+
+                if let None = vol_runtime {
+                    self.macros.get_mut(key)
                 } else {
                     vol_runtime
                 }
