@@ -32,6 +32,7 @@ From 2.0
 * [x] Document for macro builder
 * [x] Warn user about unterminated input
 * [x] Disabled read macro
+* [x] Input stack bug
 
 ### Note
 
