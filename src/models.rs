@@ -513,6 +513,7 @@ impl StorageOutput {
     }
 }
 
+#[derive(Debug)]
 pub enum RelayTarget {
     None,
     File(FileTarget),
@@ -610,6 +611,7 @@ pub enum MacroType {
     Any,
 }
 
+#[derive(Debug)]
 pub struct FileTarget {
     pub(crate) path: PathBuf,
     pub(crate) file: Option<File>,
