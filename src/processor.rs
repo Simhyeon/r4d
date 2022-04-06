@@ -637,18 +637,33 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    /// Clear cached and sterilize volatile macors
+    /// Clear cached and organze multiple jobs
     ///
+    /// * - clear volatile macors
+    /// * - Check if there is any unterminated job
     /// Return cached string, if cache was not empty
-    pub fn clear_cache_and_sterilize(&mut self) -> Option<String> {
+    pub fn organize_and_clear_cache(&mut self) -> RadResult<Option<String>> {
         if self.state.hygiene == Hygiene::Input {
             self.map.clear_runtime_macros(true);
         }
 
+        // Warn unterminated relaying
+        if self.state.relay.len() != 0 {
+            let relay = format!("{:?}", self.state.relay.last().unwrap());
+            self.log_warning(&format!("There is unterminated relay target : \"{}\" which might not be an intended behaviour.", relay), WarningType::Sanity)?;
+        }
+        
+        // Warn flow control
+        match self.state.flow_control {
+            FlowControl::None => (),
+            FlowControl::Exit => self.log_warning("Process exited.", WarningType::Sanity)?,
+            FlowControl::Escape => self.log_warning("Process escaped.", WarningType::Sanity)?,
+        }
+
         if self.cache.len() == 0 {
-            None
+            Ok(None)
         } else {
-            Some(std::mem::replace(&mut self.cache, String::new()))
+            Ok(Some(std::mem::replace(&mut self.cache, String::new())))
         }
     }
 
@@ -836,7 +851,7 @@ impl<'processor> Processor<'processor> {
 
         let mut reader = content.as_bytes();
         self.from_buffer(&mut reader, None, false)?;
-        Ok(self.clear_cache_and_sterilize())
+        self.organize_and_clear_cache()
     }
 
     /// Read from standard input
@@ -856,12 +871,12 @@ impl<'processor> Processor<'processor> {
             stdin.lock().read_to_string(&mut input)?;
             // This is necessary to prevent unexpected output from being captured.
             self.from_buffer(&mut input.as_bytes(), None, false)?;
-            return Ok(self.clear_cache_and_sterilize());
+            return self.organize_and_clear_cache();
         }
 
         let mut reader = stdin.lock();
         self.from_buffer(&mut reader, None, false)?;
-        Ok(self.clear_cache_and_sterilize())
+        self.organize_and_clear_cache()
     }
 
     /// Process contents from a file
@@ -878,7 +893,7 @@ impl<'processor> Processor<'processor> {
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
         self.from_buffer(&mut reader, backup, false)?;
-        Ok(self.clear_cache_and_sterilize())
+        self.organize_and_clear_cache()
     }
 
     /// Internal method that is executed by macro
