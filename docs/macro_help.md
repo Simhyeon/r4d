@@ -67,10 +67,6 @@ MACRO USAGE:
 	
 	$include(src/content.rs)
 
-	### read
-
-	$read($a_src())
-	
 	### tempin, tempout, tempto
 	
 	$tempout(Hello world)

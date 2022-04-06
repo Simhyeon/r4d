@@ -28,7 +28,6 @@ For assertion macros refer [debug part](./debug.md)
 * [append](#append)
 * [pause](#pause-macro)
 * [include](#include)
-* [read](#read)
 * [temp](#tempin-tempout-tempto)
 * [relay,halt](#relay-halt)
 * [fileout](#fileout)
@@ -192,11 +191,9 @@ AUTH : FIN
 Include macro reads given file and paste into the position. Included file's
 contents are all expanded.
 
-Include macro read a whole file's contents into a single string. This is an
+Include macro reads a whole file's contents into a single string. This is an
 intended behaviour so that nested include macro inside definition can respect
-order of expressions. If you are using big chunk of data and you don't use
-macros inside other declared macro, try use read macro which read files and
-write on the way.
+order of expressions. 
 
 ```
 $include(src/content.rs)
@@ -210,26 +207,6 @@ e.g.
 If input script is /home/radman/input.sh, ```$include(src/content.rs)```
 fetches file located in /home/radman/content.rs. On
 ```$include(../dir/test.rs)```, /home/dir/test.rs is fetched.
-
-### read
-
-AUTH : FIN
-
-"Read" include file's content but in a streamlined way. It include files
-without saving to any memory. Use this macro when you read from huge file which
-might affect memory usage but make sure macro is directly invoked or use some
-detour.
-
-```
-$define(read_from,a_src=This go before
-$read($a_src())
-This go after)
-$read_from(source.txt)
-===
-{{Read contents comes here}}
-This go before
-This go after
-```
 
 ### tempin, tempout, tempto
 

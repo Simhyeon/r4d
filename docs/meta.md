@@ -24,6 +24,14 @@ From 2.0
 * [x] Rule files will get vector, not an option of vector
 * [x] Provide auth checking in ext interface
 
+---
+
+* [x] Missig error message
+* [x] Fixed wrong abs behaviour
+* [x] Document macro
+* [x] Document for macro builder
+* [ ] Warn user about unterminated input
+
 ### Note
 
 Let's rearragne before I forget every fucking things. Current implementation of
@@ -40,10 +48,7 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### TODOs
 
-* [ ] Better documentaion generation
 * [ ] Error handling, execution security
-
-* [ ] Define with documentation of possibly 'docu' macro
 
 * [ ] Warn about operational macros + document something
 * [ ] Heavy text processing -> Proper read macro support
