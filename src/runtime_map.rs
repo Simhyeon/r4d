@@ -50,6 +50,7 @@ impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
             name: mac.name.to_owned(),
             args: mac.args.to_owned(),
             expr: mac.to_string(),
+            desc: None,
         }
     }
 }

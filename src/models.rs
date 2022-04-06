@@ -551,6 +551,7 @@ pub struct ExtMacroBuilder {
     pub(crate) macro_type: ExtMacroType,
     pub(crate) args: Vec<String>,
     pub(crate) macro_body: Option<ExtMacroBody>,
+    pub(crate) macro_desc: Option<String>,
 }
 
 impl ExtMacroBuilder {
@@ -561,6 +562,7 @@ impl ExtMacroBuilder {
             // Empty values
             args: vec![],
             macro_body: None,
+            macro_desc: None,
         }
     }
 
@@ -578,6 +580,12 @@ impl ExtMacroBuilder {
 
     pub fn args(mut self, args: &Vec<impl AsRef<str>>) -> Self {
         self.args = args.iter().map(|a| a.as_ref().to_string()).collect();
+        self
+    }
+
+    /// Set description of the macro
+    pub fn desc(mut self, description: &str) -> Self {
+        self.macro_desc.replace(description.to_string());
         self
     }
 }

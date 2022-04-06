@@ -32,11 +32,12 @@ impl DeterredMacroMap {
                     "fassert",
                     ["a_lvalue", "a_rvalue"],
                     DeterredMacroMap::assert_fail,
+                    None
                 ),
             ),
             (
                 "foreach".to_owned(),
-                KMacroSign::new("foreach", ["a_array", "a_body"], DeterredMacroMap::foreach),
+                KMacroSign::new("foreach", ["a_array", "a_body"], DeterredMacroMap::foreach,None),
             ),
             (
                 "forline".to_owned(),
@@ -44,6 +45,7 @@ impl DeterredMacroMap {
                     "forline",
                     ["a_iterable", "a_body"],
                     DeterredMacroMap::forline,
+                    None
                 ),
             ),
             (
@@ -52,11 +54,12 @@ impl DeterredMacroMap {
                     "forloop",
                     ["a_min", "a_max", "a_body"],
                     DeterredMacroMap::forloop,
+                    None
                 ),
             ),
             (
                 "if".to_owned(),
-                KMacroSign::new("if", ["a_boolean", "a_if_expr"], DeterredMacroMap::if_cond),
+                KMacroSign::new("if", ["a_boolean", "a_if_expr"], DeterredMacroMap::if_cond,None),
             ),
             (
                 "ifelse".to_owned(),
@@ -64,6 +67,7 @@ impl DeterredMacroMap {
                     "ifelse",
                     ["a_boolean", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifelse,
+                    None
                 ),
             ),
             (
@@ -72,6 +76,7 @@ impl DeterredMacroMap {
                     "ifdef",
                     ["a_macro_name", "a_if_expr"],
                     DeterredMacroMap::ifdef,
+                    None
                 ),
             ),
             (
@@ -80,11 +85,12 @@ impl DeterredMacroMap {
                     "ifdefel",
                     ["a_macro_name", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifdefel,
+                    None
                 ),
             ),
             (
                 "que".to_owned(),
-                KMacroSign::new("que", ["a_content"], DeterredMacroMap::queue_content),
+                KMacroSign::new("que", ["a_content"], DeterredMacroMap::queue_content,None),
             ),
             (
                 "ifque".to_owned(),
@@ -92,6 +98,7 @@ impl DeterredMacroMap {
                     "ifque",
                     ["a_bool", "a_content"],
                     DeterredMacroMap::if_queue_content,
+                    None
                 ),
             ),
         ]));
@@ -104,6 +111,7 @@ impl DeterredMacroMap {
                     "ifenv",
                     ["a_env_name", "a_if_expr"],
                     DeterredMacroMap::ifenv,
+                    None
                 ),
             );
             map.insert(
@@ -112,6 +120,7 @@ impl DeterredMacroMap {
                     "ifenvel",
                     ["a_env_name", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifenvel,
+                    None
                 ),
             );
         }
@@ -143,7 +152,7 @@ impl DeterredMacroMap {
 
     pub fn new_ext_macro(&mut self, ext: ExtMacroBuilder) {
         if let Some(ExtMacroBody::Deterred(mac_ref)) = ext.macro_body {
-            let sign = KMacroSign::new(&ext.macro_name, &ext.args, mac_ref);
+            let sign = KMacroSign::new(&ext.macro_name, &ext.args, mac_ref, ext.macro_desc);
             self.macros.insert(ext.macro_name, sign);
         }
     }
@@ -493,6 +502,7 @@ pub(crate) struct KMacroSign {
     name: String,
     args: Vec<String>,
     pub logic: DFunctionMacroType,
+    desc: Option<String>,
 }
 
 impl KMacroSign {
@@ -500,6 +510,7 @@ impl KMacroSign {
         name: &str,
         args: impl IntoIterator<Item = impl AsRef<str>>,
         logic: DFunctionMacroType,
+        desc: Option<String>,
     ) -> Self {
         let args = args
             .into_iter()
@@ -509,6 +520,7 @@ impl KMacroSign {
             name: name.to_owned(),
             args,
             logic,
+            desc,
         }
     }
 }
@@ -527,12 +539,13 @@ impl std::fmt::Display for KMacroSign {
 
 #[cfg(feature = "signature")]
 impl From<&KMacroSign> for crate::sigmap::MacroSignature {
-    fn from(bm: &KMacroSign) -> Self {
+    fn from(ms: &KMacroSign) -> Self {
         Self {
             variant: crate::sigmap::MacroVariant::Deterred,
-            name: bm.name.to_owned(),
-            args: bm.args.to_owned(),
-            expr: bm.to_string(),
+            name: ms.name.to_owned(),
+            args: ms.args.to_owned(),
+            expr: ms.to_string(),
+            desc: ms.desc.clone(),
         }
     }
 }

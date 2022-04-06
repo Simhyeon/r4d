@@ -30,4 +30,5 @@ pub struct MacroSignature {
     pub name: String,
     pub args: Vec<String>,
     pub expr: String,
+    pub desc: Option<String>,
 }
