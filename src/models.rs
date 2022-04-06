@@ -17,7 +17,7 @@ pub type RadResult<T> = Result<T, RadError>;
 /// State enum value about direction of processed text
 ///
 /// - File     : Set file output
-/// - Variable : Set variable to save 
+/// - Variable : Set variable to save
 /// - Return   : Return otuput directly ( logger ignores this variant )
 /// - Terminal : Print to terminal
 /// - Discard  : Do nothing

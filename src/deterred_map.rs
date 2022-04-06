@@ -32,12 +32,17 @@ impl DeterredMacroMap {
                     "fassert",
                     ["a_lvalue", "a_rvalue"],
                     DeterredMacroMap::assert_fail,
-                    None
+                    None,
                 ),
             ),
             (
                 "foreach".to_owned(),
-                KMacroSign::new("foreach", ["a_array", "a_body"], DeterredMacroMap::foreach,None),
+                KMacroSign::new(
+                    "foreach",
+                    ["a_array", "a_body"],
+                    DeterredMacroMap::foreach,
+                    None,
+                ),
             ),
             (
                 "forline".to_owned(),
@@ -45,7 +50,7 @@ impl DeterredMacroMap {
                     "forline",
                     ["a_iterable", "a_body"],
                     DeterredMacroMap::forline,
-                    None
+                    None,
                 ),
             ),
             (
@@ -54,12 +59,17 @@ impl DeterredMacroMap {
                     "forloop",
                     ["a_min", "a_max", "a_body"],
                     DeterredMacroMap::forloop,
-                    None
+                    None,
                 ),
             ),
             (
                 "if".to_owned(),
-                KMacroSign::new("if", ["a_boolean", "a_if_expr"], DeterredMacroMap::if_cond,None),
+                KMacroSign::new(
+                    "if",
+                    ["a_boolean", "a_if_expr"],
+                    DeterredMacroMap::if_cond,
+                    None,
+                ),
             ),
             (
                 "ifelse".to_owned(),
@@ -67,7 +77,7 @@ impl DeterredMacroMap {
                     "ifelse",
                     ["a_boolean", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifelse,
-                    None
+                    None,
                 ),
             ),
             (
@@ -76,7 +86,7 @@ impl DeterredMacroMap {
                     "ifdef",
                     ["a_macro_name", "a_if_expr"],
                     DeterredMacroMap::ifdef,
-                    None
+                    None,
                 ),
             ),
             (
@@ -85,12 +95,12 @@ impl DeterredMacroMap {
                     "ifdefel",
                     ["a_macro_name", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifdefel,
-                    None
+                    None,
                 ),
             ),
             (
                 "que".to_owned(),
-                KMacroSign::new("que", ["a_content"], DeterredMacroMap::queue_content,None),
+                KMacroSign::new("que", ["a_content"], DeterredMacroMap::queue_content, None),
             ),
             (
                 "ifque".to_owned(),
@@ -98,7 +108,7 @@ impl DeterredMacroMap {
                     "ifque",
                     ["a_bool", "a_content"],
                     DeterredMacroMap::if_queue_content,
-                    None
+                    None,
                 ),
             ),
         ]));
@@ -111,7 +121,7 @@ impl DeterredMacroMap {
                     "ifenv",
                     ["a_env_name", "a_if_expr"],
                     DeterredMacroMap::ifenv,
-                    None
+                    None,
                 ),
             );
             map.insert(
@@ -120,7 +130,7 @@ impl DeterredMacroMap {
                     "ifenvel",
                     ["a_env_name", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifenvel,
-                    None
+                    None,
                 ),
             );
         }

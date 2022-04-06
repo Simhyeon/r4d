@@ -652,7 +652,7 @@ impl<'processor> Processor<'processor> {
             let relay = format!("{:?}", self.state.relay.last().unwrap());
             self.log_warning(&format!("There is unterminated relay target : \"{}\" which might not be an intended behaviour.", relay), WarningType::Sanity)?;
         }
-        
+
         // Warn flow control
         match self.state.flow_control {
             FlowControl::None => (),
@@ -2109,7 +2109,10 @@ impl<'processor> Processor<'processor> {
     pub fn get_current_dir(&self) -> RadResult<PathBuf> {
         let path = match &self.state.current_input {
             ProcessInput::Stdin => std::env::current_dir()?,
-            ProcessInput::File(path) => path.parent().unwrap_or(&std::env::current_dir()?).to_owned(),
+            ProcessInput::File(path) => path
+                .parent()
+                .unwrap_or(&std::env::current_dir()?)
+                .to_owned(),
         };
         Ok(path)
     }
