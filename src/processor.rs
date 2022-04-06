@@ -647,21 +647,21 @@ impl<'processor> Processor<'processor> {
             self.map.clear_runtime_macros(true);
         }
 
-        // If the last processing has ended
+        // Set logger's variable to fresh state to prevent confusion on line numbers
+        self.logger.reset_everything();
+
         if self.state.input_stack.len() == 1 {
             // Warn unterminated relaying
             if self.state.relay.len() != 0 {
                 let relay = format!("{:?}", self.state.relay.last().unwrap());
                 self.log_warning(&format!("There is unterminated relay target : \"{}\" which might not be an intended behaviour.", relay), WarningType::Sanity)?;
             }
-
             // Warn flow control
             match self.state.flow_control {
                 FlowControl::None => (),
                 FlowControl::Exit => self.log_warning("Process exited.", WarningType::Sanity)?,
                 FlowControl::Escape => self.log_warning("Process escaped.", WarningType::Sanity)?,
             }
-
         }
 
         if self.cache.len() == 0 {

@@ -114,6 +114,14 @@ impl<'logger> Logger<'logger> {
     pub fn add_char_number(&mut self) {
         self.char_number = self.char_number + 1;
     }
+
+    pub fn reset_everything(&mut self) {
+        self.line_number = 0;
+        self.char_number = 0;
+        self.last_line_number = 0;
+        self.last_char_number = 0;
+    }
+
     /// Reset char number
     pub fn reset_char_number(&mut self) {
         self.char_number = 0;
