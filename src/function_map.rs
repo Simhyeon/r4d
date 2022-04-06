@@ -2757,6 +2757,7 @@ pub(crate) struct FMacroSign {
     name: String,
     args: Vec<String>,
     pub logic: FunctionMacroType,
+    #[allow(dead_code)]
     pub desc: Option<String>,
 }
 

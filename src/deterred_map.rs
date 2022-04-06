@@ -502,6 +502,7 @@ pub(crate) struct KMacroSign {
     name: String,
     args: Vec<String>,
     pub logic: DFunctionMacroType,
+    #[allow(dead_code)]
     desc: Option<String>,
 }
 
