@@ -18,7 +18,7 @@ pub enum RadError {
     UnallowedChar(String),
     #[error("Assert failed")]
     AssertFail,
-    #[error("Invalid execution error")]
+    #[error("Invalid execution error \n= {0}")]
     InvalidExecution(String),
     #[cfg(feature = "csv")]
     #[error("Invalid byte array conversion to string")]
