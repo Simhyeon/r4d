@@ -664,6 +664,10 @@ impl<'processor> Processor<'processor> {
             }
         }
 
+        // Clear input stack
+        // This is necessary because operation can be contiguous
+        self.state.input_stack.clear();
+
         if self.cache.len() == 0 {
             Ok(None)
         } else {

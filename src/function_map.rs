@@ -923,10 +923,9 @@ impl FunctionMacroMap {
                 // Set sandbox after error checking or it will act starngely
                 processor.set_sandbox();
 
-                let chunk = processor.from_file_as_chunk(file_path)?;
+                let chunk = processor.from_file_as_chunk(&file_path)?;
                 // Collect stack
                 processor.state.input_stack.remove(&canonic);
-                println!("Removed input stack {}", processor.state.input_stack.len());
                 Ok(chunk)
             } else {
                 let formatted = format!(
@@ -1431,7 +1430,6 @@ impl FunctionMacroMap {
 
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let path = p.get_current_dir()?.join(&args[0]);
-            println!("{}", path.display());
             let canonic = std::fs::canonicalize(path)?.to_str().unwrap().to_owned();
             Ok(Some(canonic))
         } else {
