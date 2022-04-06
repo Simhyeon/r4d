@@ -1371,7 +1371,8 @@ impl FunctionMacroMap {
         }
 
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let path = Path::new(&args[0]);
+            let path = p.get_current_dir()?.join(&args[0]);
+            println!("{}",path.display());
             let canonic = std::fs::canonicalize(path)?.to_str().unwrap().to_owned();
             Ok(Some(canonic))
         } else {

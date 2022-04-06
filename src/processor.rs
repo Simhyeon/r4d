@@ -2080,6 +2080,14 @@ impl<'processor> Processor<'processor> {
     // Function that is exposed for better end user's qualify of life
     // <EXT>
 
+    pub fn get_current_dir(&self) -> RadResult<PathBuf> {
+        let path = match &self.state.current_input {
+            ProcessInput::Stdin => std::env::current_dir()?,
+            ProcessInput::File(path) => path.parent().unwrap_or(&std::env::current_dir()?).to_owned(),
+        };
+        Ok(path)
+    }
+
     pub fn print_error(&mut self, error: &str) -> RadResult<()> {
         self.log_error(error)?;
         Ok(())
