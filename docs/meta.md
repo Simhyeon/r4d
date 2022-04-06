@@ -30,7 +30,8 @@ From 2.0
 * [x] Fixed wrong abs behaviour
 * [x] Document macro
 * [x] Document for macro builder
-* [ ] Warn user about unterminated input
+* [x] Warn user about unterminated input
+* [x] Disabled read macro
 
 ### Note
 
