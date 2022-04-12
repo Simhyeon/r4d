@@ -944,10 +944,8 @@ impl<'processor> Processor<'processor> {
         );
         let mut frag = MacroFragment::new();
 
-        // Container can be used when file include is nested inside macro definition
-        // Without container, namely read macro, will not preserve the order
-        // of definition and simply print everything before evaluation
-        let container = String::new(); // Don't remove this!
+        // when processing has to return a value rather than modify in-place
+        let container = String::new();
         let mut cont = if use_container { Some(container) } else { None };
 
         #[cfg(feature = "debug")]
@@ -1991,6 +1989,8 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Backup information of current file before processing sandboxed input
+    ///
+    /// This backup current input source, declared local macros, logger lines information
     fn backup(&self) -> SandboxBackup {
         SandboxBackup {
             current_input: self.state.current_input.clone(),

@@ -25,7 +25,7 @@ From 2.0
 * [x] Provide auth checking in ext interface
 
 ---
-
+For 2.1.2
 * [x] Missig error message
 * [x] Fixed wrong abs behaviour
 * [x] Document macro
@@ -51,22 +51,12 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 ### TODOs
 
 * [ ] Error handling, execution security
-
 * [ ] Warn about operational macros + document something
-* [ ] Heavy text processing -> Proper read macro support
-	* [ ] Change read to fout thing
-	- This is not tirival... you have to swap write source but read can be
-	nested thus tracking write sources are not quite trivial.
+* [ ] Reimplement read macro ( Maybe not becuase not worth it )
 
-* [ ] Rad-wrapper
+* [ ] Rad-wrapper binary
 	- Read as processed
 	- Edit ad raw
-
-* [ ] rcsv format
-- Radable csv 
-- Consists of two part
-- Data and Rows
-- User can easily define multiline content as data
 
 * [ ] Make much more smaller binary file available as basic feature
 	- Opt-lvel has huge effet (2.2M -> 1.8M)
