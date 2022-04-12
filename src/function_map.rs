@@ -874,7 +874,8 @@ impl FunctionMacroMap {
         if !Utils::is_granted("include", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        if args.len() >= 1 {
             let raw = Utils::trim(&args[0]);
             let mut file_path = PathBuf::from(&raw);
 
@@ -923,7 +924,19 @@ impl FunctionMacroMap {
                 // Set sandbox after error checking or it will act starngely
                 processor.set_sandbox();
 
+                // Optionally enable raw mode
+                if args.len() >= 2 {
+                    let raw_include = Utils::is_arg_true(&args[1])?;
+
+                    // You don't have to backup pause state because include wouldn't be triggered
+                    // at the first place, if paused was true
+                    if raw_include {
+                        processor.state.paused = true;
+                    }
+                }
+
                 let chunk = processor.from_file_as_chunk(&file_path)?;
+                processor.state.paused = false;
                 // Collect stack
                 processor.state.input_stack.remove(&canonic);
                 Ok(chunk)
