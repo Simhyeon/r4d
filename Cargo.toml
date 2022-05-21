@@ -52,7 +52,7 @@ serde = { version = "1.0.126", features = ["derive"]}
 serde_json = { version = "1.0", optional = true}
 similar = { version = "2.0.0", optional = true}
 textwrap = { version = "0.14.2", optional = true}
-cindex = { git="https://github.com/simhyeon/cindex", version = "0.4.0", optional = true, default-features = false}
+cindex = { version = "0.4.0", optional = true, default-features = false}
 rad_ext_template = { version="0.1.0", optional = true}
 
 # Wasm related dependencies

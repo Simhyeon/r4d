@@ -89,7 +89,8 @@ dependencies = [
 [[package]]
 name = "cindex"
 version = "0.4.0"
-source = "git+https://github.com/simhyeon/cindex#a8ebaca2b658585428d0eec78d40dfb7e0e07b27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6440806fe3a03c5f2754cef371b04462fbebfe3c36a31bd1a064180b111ef7e0"
 dependencies = [
  "bitflags",
  "indexmap",
