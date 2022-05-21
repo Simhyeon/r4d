@@ -57,6 +57,7 @@ For assertion macros refer [debug part](./debug.md)
 * [num](#num)
 * [rev](#rev)
 * [eval](#eval)
+* [ieval](#eval--deterred-macro)
 * [if](#if--deterred-macro)
 * [ifelse](#ifelse--deterred-macro)
 * [ifdef](#ifdef--deterred-macro)
@@ -82,7 +83,7 @@ For assertion macros refer [debug part](./debug.md)
 * [dnl](#dnl)
 * [lipsum](#lipsum)
 * [time, date](#time-date)
-* [from](#from)
+* [from](#from--deterred-macro)
 * [table](#table)
 * [update](#update)
 * [extract](#extract)
@@ -468,10 +469,10 @@ $sep(|,1,2,3,4,5)
 
 Loop around given value. Value is separated with commas. Thus values should be
 always enclosed with double quotes. Iterated values are references with
-```$:```.
+```$:()```.
 
 ```
-$foreach(\*a,b,c*\,Value: $:
+$foreach(\*a,b,c*\,Value: $:()
 )
 ===
 Value: a
@@ -483,13 +484,13 @@ Value: c
 ### forloop (deterred macro)
 
 Loop around given range. Value is separated with commas. Iterated values are
-references with ```$:```.
+references with ```$:()```.
 
 
 Range is inclusive e.g. 1 and 3 means from 1 to 3.
 
 ```
-$forloop(3,5,Number: $:
+$forloop(3,5,Number: $:()
 )
 ===
 Number: 3
@@ -606,6 +607,19 @@ $evalk( 1 + 2 )
 3
 0.30000000000000004
 1 + 2 = 3
+```
+
+### ieval (deterred macro)
+
+Eval in place. This executes $eval( GIVEN EXPRESSION ) and substitute given
+macro with the result.
+
+```
+$define(counter=1)
+$ieval(count,+1)
+$counter()
+===
+2
 ```
 
 ### if (deterred macro)
@@ -1050,7 +1064,7 @@ $hms(10500)
 02:55:00
 ```
 
-### from
+### from (deterred macro)
 
 From creates formatted macro invocations with given csv values. The given macro
 name doesn't need dollar sign prefix. This requires features **"csv"**.

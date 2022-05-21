@@ -34,6 +34,19 @@ For 2.1.2
 * [x] Disabled read macro
 * [x] Input stack bug
 
+---
+For 2.1.3
+* [x] Include as raw option
+
+---
+For 2.1.4
+
+* [x] Exec command
+* [x] inplace eval
+* [x] For loop nested mechanics with $:() macro
+	* [x] This is breaking changes... Thus should be configured as feature until 3.0 release
+* [x] Relocated function macros to deterred macro
+
 ### Note
 
 Let's rearragne before I forget every fucking things. Current implementation of
@@ -45,11 +58,34 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### Imminent
 
+* [ ] Read macro support because you know version sustainability...
+	- The first problem is that read cannot be nested
+	- First approach is to check if READ macro is defined to determine whether
+	read is currently being invoked or not
+		- However, this approach is not trivial because there is a concept called volatile
+		- When volatile is enabled, there are cases that predefined macros are
+		not detected. which means that read invocation before volatile
+		declaration can occur unintended behaviour
+	- Second approach is to add new writeOption BufStream
+		- This looks ok but has a caveat. With this approach macro should be
+		able to change write option, however since write option has a lifetime
+		bound to processor, and compiler cannot deduce if lifetime matches or not...
+	- I need a third approach for this if I really want read macro
+
+* [ ] In-built documentation for function and deterred macro
+
+* [ ] Escape rule is somewhat bugged?
+- ```\* \* *\ Doesn't yield anything```
 * [ ] Purge is bugged? ( Gdengine )
 - It's about precedence mostly.
 
 ### TODOs
 
+* [ ] Performance improvements?
+	- Currently lexing copies all chars into a versatile vector which may not
+	be the best idea. A bettter idea is to iterate and add slice from source.
+	But it is true that such implementation is more trivial to maintain and
+	extend with arguable performance boost.
 * [ ] Error handling, execution security
 * [ ] Warn about operational macros + document something
 * [ ] Reimplement read macro ( Maybe not becuase not worth it )
