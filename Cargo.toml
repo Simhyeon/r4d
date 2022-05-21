@@ -20,6 +20,7 @@ path = "src/lib.rs"
 crate-type = ["cdylib","rlib"]
 
 [features]
+default = ["for_macro"]
 basic = ["clap"]
 binary = ["clap","debug", "full"]
 full = [ "csv", "evalexpr", "lipsum", "chrono", "textwrap", "cindex"]
@@ -31,6 +32,9 @@ storage = []
 signature = ["serde_json"]
 wasm = ["wasm-bindgen", "console_error_panic_hook"]
 template = ["rad_ext_template"]
+
+# Backword compatibility features
+for_macro = []
 
 [dependencies]
 bincode = "1.3.3"
