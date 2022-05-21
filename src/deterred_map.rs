@@ -653,7 +653,7 @@ impl DeterredMacroMap {
         }
     }
 
-    /// Evaluate given macro with given expression
+    /// Evaluate in place
     ///
     /// # Usage
     ///
