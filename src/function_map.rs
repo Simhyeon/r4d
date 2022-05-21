@@ -24,9 +24,8 @@ use lazy_static::lazy_static;
 #[cfg(feature = "lipsum")]
 use lipsum::lipsum;
 use regex::Regex;
-use std::array::IntoIter;
 use std::collections::HashMap;
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, canonicalize};
 use std::io::Write;
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
@@ -60,7 +59,7 @@ impl FunctionMacroMap {
     pub fn new() -> Self {
         // Create hashmap of functions
         #[allow(unused_mut)]
-        let mut map = HashMap::from_iter(IntoIter::new([
+        let mut map = HashMap::from_iter(IntoIterator::into_iter([
             (
                 "-".to_owned(),
                 FMacroSign::new("-", ESR, Self::get_pipe, None),
@@ -379,12 +378,10 @@ impl FunctionMacroMap {
                 "syscmd".to_owned(),
                 FMacroSign::new("syscmd", ["a_command"], Self::syscmd, None),
             );
-            // TODO 
-            // Disabled because it was buggy and unintuitive
-            //map.insert(
-                //"read".to_owned(),
-                //FMacroSign::new("read", ["a_filename"], Self::read, None),
-            //);
+            map.insert(
+                "read".to_owned(),
+                FMacroSign::new("read", ["a_filename"], Self::read_from_file, None),
+            );
             map.insert(
                 "tempin".to_owned(),
                 FMacroSign::new("tempin", ["a_tempin"], Self::temp_include, None),
@@ -415,15 +412,6 @@ impl FunctionMacroMap {
         // Optional macros
         #[cfg(feature = "csv")]
         {
-            map.insert(
-                "from".to_owned(),
-                FMacroSign::new(
-                    "from",
-                    ["a_macro_name", "a_csv_value"],
-                    Self::from_data,
-                    None,
-                ),
-            );
             map.insert(
                 "table".to_owned(),
                 FMacroSign::new("table", ["a_table_form", "a_csv_value"], Self::table, None),
@@ -890,39 +878,10 @@ impl FunctionMacroMap {
 
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
-                // Rules 1
-                // You cannot include self
-                if let ProcessInput::File(path) = &processor.state.current_input {
-                    if path.canonicalize()? == canonic {
-                        return Err(RadError::InvalidArgument(format!(
-                            "You cannot include self while including a file : \"{}\"",
-                            &path.display()
-                        )));
-                    }
-                }
 
-                // Rules 1.5
-                // Field is in input stack
-                if processor.state.input_stack.contains(&canonic) {
-                    return Err(RadError::InvalidArgument(format!(
-                        "You cannot include self while including a file : \"{}\"",
-                        &file_path.display()
-                    )));
-                }
-
-                // Rules 2
-                // You cannot include file that is being relayed
-                if let Some(RelayTarget::File(target)) = &processor.state.relay.last() {
-                    if target.path.canonicalize()? == file_path.canonicalize()? {
-                        return Err(RadError::InvalidArgument(format!(
-                            "You cannot include relay target while relaying to the file : \"{}\"",
-                            &target.path.display()
-                        )));
-                    }
-                }
-
+                Self::check_include_sanity(processor, &file_path, &canonic)?;
                 // Set sandbox after error checking or it will act starngely
-                processor.set_sandbox();
+                processor.set_sandbox(true);
 
                 // Optionally enable raw mode
                 if args.len() >= 2 {
@@ -935,10 +894,12 @@ impl FunctionMacroMap {
                     }
                 }
 
-                let chunk = processor.from_file_as_chunk(&file_path)?;
-                processor.state.paused = false;
-                // Collect stack
-                processor.state.input_stack.remove(&canonic);
+                // Create chunk
+                let chunk 
+                    = processor.from_file_as_chunk(&file_path)?;
+                processor.state.paused = false;               // Recover paused state
+                processor.set_sandbox(false);
+                processor.state.input_stack.remove(&canonic); // Collect stack
                 Ok(chunk)
             } else {
                 let formatted = format!(
@@ -954,50 +915,82 @@ impl FunctionMacroMap {
         }
     }
 
-    ///// Paste given file's content as bufstream
-    /////
-    ///// Every macros within the file is also expanded
-    /////
-    ///// Read include given file's content as form of bufstream and doesn't
-    ///// save to memory. Therefore cannot be used with macro definition.
-    /////
-    ///// # Usage
-    /////
-    ///// $read(path)
-    //fn read(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        //if !Utils::is_granted("read", AuthType::FIN, processor)? {
-            //return Ok(None);
-        //}
-        //if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            //let raw = Utils::trim(&args[0]);
-            //let mut file_path = PathBuf::from(&raw);
+    fn check_include_sanity(processor: &Processor,file_path: &Path, canonic: &Path) -> RadResult<()> {
 
-            //// if current input is not stdin and file path is relative
-            //// Create new file path that starts from current file path
-            //if let ProcessInput::File(path) = &processor.state.current_input {
-                //if file_path.is_relative() {
-                    //// It is ok get parent because any path that has a length can return parent
-                    //file_path = path.parent().unwrap().join(file_path);
-                //}
-            //}
+        // Rules 1
+        // You cannot include self
+        if let ProcessInput::File(path) = &processor.state.current_input {
+            if path.canonicalize()? == canonic {
+                return Err(RadError::InvalidArgument(format!(
+                            "You cannot include self while including a file : \"{}\"",
+                            &path.display()
+                )));
+            }
+        }
 
-            //if file_path.exists() {
-                //processor.set_sandbox();
-                //processor.from_file(file_path)?;
-                //Ok(None)
-            //} else {
-                //let formatted = format!(
-                    //"File path : \"{}\" doesn't exist or not a file",
-                    //file_path.display()
-                //);
-                //Err(RadError::InvalidArgument(formatted))
-            //}
-        //} else {
-            //Err(RadError::InvalidArgument(
-                //"Include requires an argument".to_owned(),
-            //))
-        //}
-    //}
+        // Rules 1.5
+        // Field is in input stack
+        if processor.state.input_stack.contains(canonic) {
+            return Err(RadError::InvalidArgument(format!(
+                        "You cannot include self while including a file : \"{}\"",
+                        &file_path.display()
+            )));
+        }
+
+        // Rules 2
+        // You cannot include file that is being relayed
+        if let Some(RelayTarget::File(target)) = &processor.state.relay.last() {
+            if target.path.canonicalize()? == file_path.canonicalize()? {
+                return Err(RadError::InvalidArgument(format!(
+                            "You cannot include relay target while relaying to the file : \"{}\"",
+                            &target.path.display()
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    /// Paste given file's content as bufstream using File I/O
+    ///
+    /// Every macros within the file is also expanded
+    ///
+    /// # Usage
+    ///
+    /// $read(path)
+    fn read_from_file(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("read", AuthType::FIN, processor)? {
+            return Ok(None);
+        }
+
+        if processor.on_cache() {
+            return Err(RadError::UnallowedMacroExecution(
+                "Nested read is not allowed".to_owned(),
+            ));
+        }
+
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let arg = &Utils::trim(&args[0]);
+            let file_path = Path::new(arg);
+            let canonic = canonicalize(file_path)?;
+            Self::check_include_sanity(processor, file_path, &canonic)?;
+            processor.enable_cache(true)?;
+
+            // Set sandbox after error checking or it will act starngely
+            processor.set_sandbox(true);
+
+            // This operation saves all input into CACHE
+            processor.from_file(file_path)?;
+            // Reads all cache file into original source
+            processor.flush_cache()?;
+
+            processor.set_sandbox(false);
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Read requires an argument".to_owned(),
+            ))
+        }
+    }
 
     /// Repeat given expression about given amount times
     ///
@@ -1168,67 +1161,6 @@ impl FunctionMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "Assert_ne requires two arguments".to_owned(),
-            ))
-        }
-    }
-
-    /// Create multiple macro executions from given csv value
-    ///
-    /// # Usage
-    ///
-    /// $from(macro_name,\*1,2,3
-    /// 4,5,6*\)
-    ///
-    /// $from+(macro_name,
-    /// 1,2,3
-    /// 4,5,6
-    /// )
-    #[cfg(feature = "csv")]
-    fn from_data(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let macro_name = Utils::trim(&args[0]);
-            // Trimming data might be very costly operation
-            // Plus, it is already trimmed by csv crate.
-            let macro_data = &args[1];
-
-            let result =
-                Formatter::csv_to_macros(&macro_name, macro_data, &processor.state.newline)?;
-
-            // TODO
-            // This behaviour might can be improved
-            // Disable debugging for nested macro expansion
-            #[cfg(feature = "debug")]
-            let original = processor.is_debug();
-
-            // Now this might look strange,
-            // "Why not just enclose two lines with curly brackets?"
-            // The answer is such appraoch somehow doesn't work.
-            // Compiler cannot deduce the variable original and will yield error on
-            // processor.debug(original)
-            #[cfg(feature = "debug")]
-            processor.set_debug(false);
-
-            // Parse macros
-            let result = processor.parse_chunk_args(0, "", &result)?;
-
-            // Set custom prompt log to indicate user thatn from macro doesn't support
-            // debugging inside macro expansion
-            #[cfg(feature = "debug")]
-            {
-                use crate::debugger::DebugSwitch;
-                processor.set_debug(original);
-                match processor.get_debug_switch() {
-                    DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                        processor.set_prompt_log("\"From macro\"")
-                    }
-                    _ => (),
-                }
-            }
-
-            Ok(Some(result))
-        } else {
-            Err(RadError::InvalidArgument(
-                "From requires two arguments".to_owned(),
             ))
         }
     }
