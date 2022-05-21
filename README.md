@@ -3,7 +3,8 @@
 R4d is a text oriented macro prosessor aims to be an alternative to m4 macro
 processor.
 
-R4d has been changed drastically with 2.0 update, see [2.0 part](#2.0) below.
+R4d's foreach behaviour has changes, you can use previous logic by disable
+default features.
 
 ### Note
 
