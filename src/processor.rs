@@ -227,6 +227,7 @@ pub struct Processor<'processor> {
     map: MacroMap,
     define_parser: DefineParser,
     write_option: WriteOption<'processor>,
+    cache_file: Option<File>,
     logger: Logger<'processor>,
     cache: String,
     // -- Features --
@@ -282,6 +283,7 @@ impl<'processor> Processor<'processor> {
             map,
             cache: String::new(),
             write_option: WriteOption::Terminal,
+            cache_file : None,
             define_parser: DefineParser::new(),
             logger,
             state,
@@ -594,9 +596,34 @@ impl<'processor> Processor<'processor> {
         self.write_option = write_option;
     }
 
-    /// Swap write option
-    pub fn swap_write_option(&mut self, write_option: WriteOption<'processor>) -> WriteOption {
-        std::mem::replace(&mut self.write_option, write_option)
+
+    /// Check if processing is on caching state
+    pub fn on_cache(&self) -> bool {
+        if let None = self.cache_file {
+            false
+        } else {
+            true
+        }
+    }
+
+    /// Toggle cache option
+    pub fn enable_cache(&mut self, truncate: bool) -> RadResult<()> {
+        self.cache_file = Some(std::fs::OpenOptions::new().create(true).write(true).truncate(truncate).open(READ_CACHE)?);
+        Ok(())
+    }
+
+    pub fn flush_cache(&mut self) -> RadResult<()> {
+        // No expansion in cache flush
+        self.state.paused = true;
+
+        // This should come first before read
+        self.cache_file = None;
+        self.from_file(READ_CACHE)?;
+
+        // Recover states
+        std::fs::remove_file(READ_CACHE)?;
+        self.state.paused = false;
+        Ok(())
     }
 
     /// Set write option in the process
@@ -1496,6 +1523,12 @@ impl<'processor> Processor<'processor> {
             return Ok(());
         }
 
+        // Redirect to cache if set
+        if let Some(cache) = &mut self.cache_file {
+            cache.write_all(content.as_bytes())?;
+            return Ok(());
+        }
+
         // Save to "source" file for debuggin
         #[cfg(feature = "debug")]
         self.debugger.write_to_processed(content)?;
@@ -1972,8 +2005,8 @@ impl<'processor> Processor<'processor> {
     ///
     /// Sandbox means that current state(cursor) of processor should not be applied for following
     /// independent processing
-    pub(crate) fn set_sandbox(&mut self) {
-        self.state.sandbox = true;
+    pub(crate) fn set_sandbox(&mut self, sandbox: bool) {
+        self.state.sandbox = sandbox;
     }
 
     #[cfg(not(feature = "wasm"))]
@@ -2201,6 +2234,11 @@ impl<'processor> Processor<'processor> {
     /// Add new local macro
     pub fn add_new_local_macro(&mut self, level: usize, macro_name: &str, body: &str) {
         self.map.add_local_macro(level, macro_name, body);
+    }
+
+    /// Remove local macro
+    pub fn remove_local_macro(&mut self, level: usize, macro_name: &str) {
+        self.map.remove_local_macro(level, macro_name);
     }
 
     /// Check if given text is boolean-able
