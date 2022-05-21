@@ -16,13 +16,13 @@ pub type RadResult<T> = Result<T, RadError>;
 
 /// State enum value about direction of processed text
 ///
-/// - File     : Set file output
-/// - Variable : Set variable to save
-/// - Return   : Return otuput directly ( logger ignores this variant )
-/// - Terminal : Print to terminal
-/// - Discard  : Do nothing
+/// - File       : Set file output
+/// - Variable   : Set variable to save
+/// - Return     : Return otuput directly ( logger ignores this variant )
+/// - Terminal   : Print to terminal
+/// - Discard    : Do nothing
 pub enum WriteOption<'a> {
-    File(std::fs::File),
+    File(File),
     Variable(&'a mut String),
     Return,
     Terminal,
@@ -89,6 +89,15 @@ impl MacroMap {
         self.local.insert(
             Utils::local_name(level, name),
             LocalMacro::new(level, name.to_owned(), value.to_owned()),
+        );
+    }
+
+    /// Removes a local macro
+    ///
+    /// This will try to remove but will do nothing if given macro doesn't exist.
+    pub fn remove_local_macro(&mut self, level: usize, name: &str) {
+        self.local.remove(
+            &Utils::local_name(level, name)
         );
     }
 
