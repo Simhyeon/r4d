@@ -5,9 +5,10 @@ use crate::models::{ExtMacroBody, ExtMacroBuilder};
 use crate::utils::Utils;
 use crate::Processor;
 use crate::{AuthType, RadError};
-use std::array::IntoIter;
 use std::collections::HashMap;
 use std::iter::FromIterator;
+#[cfg(feature = "csv")]
+use crate::formatter::Formatter;
 
 pub(crate) type DFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResult<Option<String>>;
 
@@ -25,7 +26,16 @@ impl DeterredMacroMap {
     }
 
     pub fn new() -> Self {
-        let mut map = HashMap::from_iter(IntoIter::new([
+        let mut map = HashMap::from_iter(IntoIterator::into_iter([
+            (
+                "exec".to_owned(),
+                KMacroSign::new(
+                    "exec",
+                    ["macro_name", "macro_args"],
+                    DeterredMacroMap::execute_macro,
+                    None,
+                ),
+            ),
             (
                 "fassert".to_owned(),
                 KMacroSign::new(
@@ -134,6 +144,28 @@ impl DeterredMacroMap {
                 ),
             );
         }
+        // Optional macros
+        #[cfg(feature = "csv")]
+        {
+            map.insert(
+                "from".to_owned(),
+                KMacroSign::new(
+                    "from",
+                    ["a_macro_name", "a_csv_value"],
+                    Self::from_data,
+                    None,
+                ),
+            );
+        }
+
+        #[cfg(feature = "evalexpr")]
+        {
+            map.insert(
+                "ieval".to_owned(),
+                KMacroSign::new("ieval", ["a_macro","a_expression"], Self::eval_inplace, None),
+            );
+        }
+
         Self { macros: map }
     }
 
@@ -183,11 +215,25 @@ impl DeterredMacroMap {
             for value in loopable.split(',') {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
-                let result =
-                    processor.parse_chunk_args(level, "", &args[1].replace("$:", value))?;
+
+                let result : String;
+                #[cfg(feature = "for_macro")]
+                {
+                    processor.add_new_local_macro(level, ":", value);
+                    result = processor.parse_chunk_args(level, "", &args[1])?;
+                }
+
+                #[cfg(not(feature = "for_macro"))]
+                { result = processor.parse_chunk_args(level, "", &args[1].replace("$:", &value.to_string()))?; }
+
                 sums.push_str(&result);
                 count += 1;
             }
+
+            // Clear local macro
+            #[cfg(feature = "for_macro")]
+            processor.remove_local_macro(level, ":");
+
             Ok(Some(sums))
         } else {
             Err(RadError::InvalidArgument(
@@ -252,15 +298,33 @@ impl DeterredMacroMap {
                     max_src
                 )));
             }
-
+            let mut result: String;
             for value in min..=max {
-                let result = processor.parse_chunk_args(
-                    level,
-                    "",
-                    &args[2].replace("$:", &value.to_string()),
-                )?;
+                #[cfg(feature = "for_macro")]
+                {
+                    processor.add_new_local_macro(level, ":", &value.to_string());
+                    result = processor.parse_chunk_args(
+                        level,
+                        "",
+                        &args[2],
+                    )?;
+                }
+                #[cfg(not(feature = "for_macro"))]
+                {
+                    result = processor.parse_chunk_args(
+                        level,
+                        "",
+                        &args[2].replace("$:", &value.to_string())
+                    )?;
+                }
+
                 sums.push_str(&result);
+                result.clear();
             }
+
+            // Clear local macro
+            #[cfg(feature = "for_macro")]
+            processor.remove_local_macro(level, ":");
 
             Ok(Some(sums))
         } else {
@@ -501,6 +565,121 @@ impl DeterredMacroMap {
             ))
         }
     }
+
+    /// Execute macro
+    ///
+    /// # Usage
+    ///
+    /// $exec(macro_name,macro_args)
+    fn execute_macro(
+        args: &str,
+        level: usize,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let macro_name = &processor.parse_chunk_args(level, "", &args[0])?;
+            if !processor.contains_macro(&macro_name, MacroType::Any) {
+                return Err(RadError::InvalidArgument(
+                        format!("Macro \"{}\" doesn't exist", macro_name)
+                ));
+            }
+            let args = &args[1];
+            let result = processor.parse_chunk_args(level, "", &format!("${}({})",macro_name, args))?;
+            Ok(Some(result))
+        } else {
+            Err(RadError::InvalidArgument(
+                "exec requires two argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Create multiple macro executions from given csv value
+    ///
+    /// # Usage
+    ///
+    /// $from(macro_name,\*1,2,3
+    /// 4,5,6*\)
+    ///
+    /// $from+(macro_name,
+    /// 1,2,3
+    /// 4,5,6
+    /// )
+    #[cfg(feature = "csv")]
+    fn from_data(args: &str,level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let macro_name = Utils::trim(&args[0]);
+            // Trimming data might be very costly operation
+            // Plus, it is already trimmed by csv crate.
+            let macro_data = &args[1];
+
+            let result = Formatter::csv_to_macros(&macro_name, macro_data, &processor.state.newline)?;
+
+            // TODO
+            // This behaviour might can be improved
+            // Disable debugging for nested macro expansion
+            #[cfg(feature = "debug")]
+            let original = processor.is_debug();
+
+            // Now this might look strange,
+            // "Why not just enclose two lines with curly brackets?"
+            // The answer is such appraoch somehow doesn't work.
+            // Compiler cannot deduce the variable original and will yield error on
+            // processor.debug(original)
+            #[cfg(feature = "debug")]
+            processor.set_debug(false);
+
+            // Parse macros
+            let result = processor.parse_chunk_args(level, "", &result)?;
+
+            // Set custom prompt log to indicate user thatn from macro doesn't support
+            // debugging inside macro expansion
+            #[cfg(feature = "debug")]
+            {
+                use crate::debugger::DebugSwitch;
+                processor.set_debug(original);
+                match processor.get_debug_switch() {
+                    DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
+                        processor.set_prompt_log("\"From macro\"")
+                    }
+                    _ => (),
+                }
+            }
+
+            Ok(Some(result))
+        } else {
+            Err(RadError::InvalidArgument(
+                "From requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Evaluate given macro with given expression
+    ///
+    /// # Usage
+    ///
+    /// $ieval(macro,expression)
+    #[cfg(feature = "evalexpr")]
+    fn eval_inplace(args: &str,level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            // This is the processed raw formula
+            let macro_name = Utils::trim(&args[0]);
+            if !processor.contains_macro(&macro_name, MacroType::Runtime) {
+                return Err(RadError::InvalidArgument(format!("Macro \"{}\" doesn't exist", macro_name)));
+            }
+
+            let expr = Utils::trim(&args[1]);
+            let chunk = format!("$eval( ${}() {} )",macro_name, expr);
+            let result = processor.parse_chunk_args(level, "", &chunk)?;
+
+            processor.replace_macro(&macro_name, &result);
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Ieval requires two arguments".to_owned(),
+            ))
+        }
+    }
+
 
     // Keyword macros end
     // ----------
