@@ -23,7 +23,7 @@ crate-type = ["cdylib","rlib"]
 default = ["for_macro"]
 basic = ["clap"]
 binary = ["clap","debug", "full"]
-full = [ "evalexpr", "lipsum", "chrono", "textwrap", "cindex"]
+full = [ "evalexpr", "chrono", "textwrap", "cindex"]
 
 debug = [ "crossterm", "similar" ]
 color = [ "colored" ]
@@ -46,7 +46,6 @@ clap = { version = "3.0.0", default-features = false, features = ["std"], option
 colored = {version = "2.0.0", optional = true}
 crossterm = {version = "0.20.0", optional = true}
 evalexpr = {version = "6.4.0", optional = true}
-lipsum = {version = "0.8.0", optional = true}
 serde = { version = "1.0.126", features = ["derive"]}
 serde_json = { version = "1.0", optional = true}
 similar = { version = "2.0.0", optional = true}
