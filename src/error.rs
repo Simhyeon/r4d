@@ -3,75 +3,88 @@ use crate::AuthType;
 use cindex::CIndexError;
 #[cfg(feature = "csv")]
 use csv::FromUtf8Error;
-use thiserror::Error;
 
 /// R4d's error type
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub enum RadError {
-    #[error("Exited manually")]
     Exit,
-    #[error("Hook macro error \n= {0}")]
     HookMacroFail(String),
-    #[error("Invalid conversion \n= {0}")]
     InvalidConversion(String),
-    #[error("Unallowed character \n= {0}")]
     UnallowedChar(String),
-    #[error("Assert failed")]
     AssertFail,
-    #[error("Invalid execution error \n= {0}")]
     InvalidExecution(String),
     #[cfg(feature = "csv")]
-    #[error("Invalid byte array conversion to string")]
     InvalidString(FromUtf8Error),
     #[cfg(not(feature = "csv"))]
-    #[error("Invalid conversion to string")]
     InvalidString(std::str::Utf8Error),
-    #[error("Invalid command option\n= {0}")]
     InvalidCommandOption(String),
-    #[error("Invalid environment name\n= {0}")]
     EnvError(std::env::VarError),
-    #[error("Invalid macro name\n= {0}")]
     InvalidMacroName(String),
-    #[error("Failed regex operation\n= {0}")]
     InvalidRegex(regex::Error),
     #[cfg(feature = "evalexpr")]
-    #[error("Invalid formula\n= {0}")]
     InvalidFormula(evalexpr::EvalexprError),
-    #[error("Invalid argument\n= {0}")]
     InvalidArgument(String),
-    #[error("Invalid argument type\n= {0}")]
     InvalidArgInt(std::num::ParseIntError),
-    #[error("Invalid argument type\n= {0}")]
     InvalidArgBoolean(std::str::ParseBoolError),
-    #[error("File,\"{0}\", does not exist")]
     InvalidFile(String),
-    #[error("Standard IO error\n= {0}")]
     StdIo(std::io::Error),
-    #[error("Failed to convert to utf8 string\n= {0}")]
     Utf8Err(std::string::FromUtf8Error),
-    #[error("Unsupported table format\n= {0}")]
     UnsupportedTableFormat(String),
     #[cfg(feature = "csv")]
-    #[error("Table error\n= {0}")]
     CsvError(csv::Error),
-    #[error("Failed frozen operation\n= {0}")]
     BincodeError(String),
-    #[error("Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.")]
     PermissionDenied(String, AuthType),
-    #[error("Strict error, exiting...")]
     StrictPanic,
-    #[error("Processor panicked, exiting...")]
     Panic,
-    #[error("Panic triggered with message\n= {0}")]
     ManualPanic(String),
     #[cfg(feature = "storage")]
-    #[error("Storage error with message\n= {0}")]
     StorageError(String),
     #[cfg(feature = "cindex")]
-    #[error("{0}")]
     CIndexError(CIndexError),
-    #[error("Macro execution is not allowed\n={0}")]
     UnallowedMacroExecution(String),
+}
+
+impl std::fmt::Display for RadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text = match self {
+            Self::Exit =>"Exited manually".to_string(),
+            Self::HookMacroFail(txt) => format!("Hook macro error \n= {}",txt),
+            Self::InvalidConversion(txt)=> format!("Invalid conversion \n= {}",txt),
+            Self::UnallowedChar(txt)=> format!("Unallowed character \n= {}",txt),
+            Self::AssertFail=> "Assert failed".to_string(),
+            Self::InvalidExecution(err)=> format!("Invalid execution error \n= {}",err),
+            #[cfg(feature = "csv")]
+            Self::InvalidString(err) => format!("Invalid byte array conversion to string \n={}",err),
+            #[cfg(not(feature = "csv"))]
+            Self::InvalidString(err) => format!("Invalid conversion to string \n={}",err),
+            Self::InvalidCommandOption(command) => format!("Invalid command option\n= {}",command),
+            Self::EnvError(env) => format!("Invalid environment name\n= {}",env),
+            Self::InvalidMacroName(name)=> format!("Invalid macro name\n= {}",name),
+            Self::InvalidRegex(err) => format!("Failed regex operation\n= {}",err),
+            #[cfg(feature = "evalexpr")]
+            Self::InvalidFormula(err)=> format!("Invalid formula\n= {}",err),
+            Self::InvalidArgument(arg) => format!("Invalid argument\n= {}",arg),
+            Self::InvalidArgInt(err)=>format!("Invalid argument type\n= {}",err) ,
+            Self::InvalidArgBoolean(err)=> format!("Invalid argument type\n= {}",err),
+            Self::InvalidFile(file)=> format!("File,\"{}\", does not exist",file),
+            Self::StdIo(err) => format!("Standard IO error\n= {}",err),
+            Self::Utf8Err(err) =>format!("Failed to convert to utf8 string\n= {}",err),
+            Self::UnsupportedTableFormat(txt)=> format!("Unsupported table format\n= {}",txt),
+            #[cfg(feature = "csv")]
+            Self::CsvError(err) => format!("Table error\n= {}",err),
+            Self::BincodeError(txt)=> format!("Failed frozen operation\n= {}",txt),
+            Self::PermissionDenied(txt, atype) => format!("Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.", txt,atype),
+            Self::StrictPanic => "Strict error, exiting...".to_string(),
+            Self::Panic => "Processor panicked, exiting...".to_string(),
+            Self::ManualPanic(txt) => format!("Panic triggered with message\n= {}",txt),
+            #[cfg(feature = "storage")]
+            Self::StorageError(txt)=> format!("Storage error with message\n= {0}",txt),
+            #[cfg(feature = "cindex")]
+            Self::CIndexError(err) => err.to_string(),
+            Self::UnallowedMacroExecution(txt) => format!("Macro execution is not allowed\n={0}",txt),
+        };
+        write!(f, "{}", text)
+    }
 }
 
 // ==========
