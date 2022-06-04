@@ -47,9 +47,6 @@ pub const LINE_ENDING: &'static str = "\r\n";
 #[cfg(not(windows))]
 pub const LINE_ENDING: &'static str = "\n";
 
-// Option specific consts
-#[cfg(feature = "evalexpr")]
-pub const ESCAPED_COMMA: &str = "@COMMA@";
 #[cfg(feature = "debug")]
 pub const RDB_HELP: &'static str = include_str!("debug_help_message.txt");
 

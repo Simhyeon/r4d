@@ -7,7 +7,6 @@ use crate::arg_parser::{ArgParser, GreedyState};
 use crate::auth::AuthType;
 use crate::consts::ESR;
 use crate::error::RadError;
-#[cfg(feature = "csv")]
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;
@@ -328,6 +327,10 @@ impl FunctionMacroMap {
                 FMacroSign::new("taill", ["a_count", "a_content"], Self::tail_line, None),
             ),
             (
+                "table".to_owned(),
+                FMacroSign::new("table", ["a_table_form", "a_csv_value"], Self::table, None),
+            ),
+            (
                 "tr".to_owned(),
                 FMacroSign::new(
                     "tr",
@@ -409,14 +412,6 @@ impl FunctionMacroMap {
             );
         }
 
-        // Optional macros
-        #[cfg(feature = "csv")]
-        {
-            map.insert(
-                "table".to_owned(),
-                FMacroSign::new("table", ["a_table_form", "a_csv_value"], Self::table, None),
-            );
-        }
         #[cfg(feature = "cindex")]
         {
             map.insert(
@@ -1173,7 +1168,6 @@ impl FunctionMacroMap {
     ///
     /// $table(github,"1,2,3
     /// 4,5,6")
-    #[cfg(feature = "csv")]
     fn table(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let table_format = &args[0]; // Either gfm, wikitex, latex, none
