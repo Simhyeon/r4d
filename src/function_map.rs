@@ -5,7 +5,7 @@
 
 use crate::arg_parser::{ArgParser, GreedyState};
 use crate::auth::AuthType;
-use crate::consts::ESR;
+use crate::consts::{ESR, LOREM_WIDTH, LOREM, LOREM_SOURCE};
 use crate::error::RadError;
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
@@ -20,8 +20,6 @@ use crate::utils::Utils;
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
 use lazy_static::lazy_static;
-#[cfg(feature = "lipsum")]
-use lipsum::lipsum;
 use regex::Regex;
 use std::collections::HashMap;
 use std::fs::{OpenOptions, canonicalize};
@@ -175,6 +173,10 @@ impl FunctionMacroMap {
                     Self::bind_to_local,
                     None,
                 ),
+            ),
+            (
+                "lipsum".to_owned(),
+                FMacroSign::new("lipsum", ["a_word_count"], Self::lipsum_words, None),
             ),
             (
                 "lower".to_owned(),
@@ -456,11 +458,6 @@ impl FunctionMacroMap {
                 FMacroSign::new("hms", ["a_second"], Self::hms, None),
             );
         }
-        #[cfg(feature = "lipsum")]
-        map.insert(
-            "lipsum".to_owned(),
-            FMacroSign::new("lipsum", ["a_word_count"], Self::lipsum_words, None),
-        );
         #[cfg(feature = "evalexpr")]
         {
             map.insert(
@@ -826,12 +823,22 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $lipsum(Number)
-    #[cfg(feature = "lipsum")]
     fn lipsum_words(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let word_count = &args[0];
             if let Ok(count) = Utils::trim(word_count).parse::<usize>() {
-                Ok(Some(lipsum(count)))
+                if count <= *LOREM_WIDTH {
+                    Ok(Some(LOREM[0..count].join(" ")))
+                } else {
+                    let mut lorem = String::new();
+                    let loop_amount = count / *LOREM_WIDTH;
+                    let remnant = count % *LOREM_WIDTH;
+                    for _ in 0..loop_amount  {
+                        lorem.push_str(LOREM_SOURCE);
+                    }
+                    lorem.push_str(&LOREM[0..remnant].join(" "));
+                    Ok(Some(lorem))
+                }
             } else {
                 Err(RadError::InvalidArgument(format!("Lipsum needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", word_count)))
             }
