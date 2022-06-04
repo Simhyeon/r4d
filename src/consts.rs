@@ -1,5 +1,12 @@
 use regex::Regex;
 
+pub const LOREM_SOURCE: &str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In rhoncus sapien iaculis sapien congue, a dictum urna malesuada. In hac habitasse platea dictumst. Quisque dapibus, justo a mollis condimentum, sapien ligula aliquam massa, in vehicula tellus magna vitae enim. Aliquam mattis ligula in enim congue auctor. Pellentesque at sollicitudin velit. Quisque blandit lobortis turpis at malesuada. Donec vitae luctus mauris. Aenean efficitur risus id tortor blandit laoreet. Vestibulum commodo aliquam sapien. Cras aliquam eget leo iaculis cursus. Morbi iaculis justo sed tellus ultrices aliquet. Nam bibendum ut erat quis. ";
+
+lazy_static::lazy_static! {
+    pub static ref LOREM: Vec<&'static str> = LOREM_SOURCE.split(' ').collect();
+    pub static ref LOREM_WIDTH: usize = LOREM.len();
+}
+
 // Get macro start character
 pub(crate) fn macro_start(custom: Option<char>) -> char {
     if let Some(start) = custom {
