@@ -1242,7 +1242,9 @@ impl<'processor> Processor<'processor> {
         // Reset lexor's escape_nl
         lexor.reset_escape();
 
+        // TODO
         // If escape_nl is set as global attribute, set escape_newline
+        // Currently this behaviour is not so different from dnl
         if self.state.escape_newline {
             lexor.escape_next_newline();
             self.state.escape_newline = false;

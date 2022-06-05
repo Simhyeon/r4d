@@ -59,59 +59,59 @@ impl FunctionMacroMap {
         let mut map = HashMap::from_iter(IntoIterator::into_iter([
             (
                 "-".to_owned(),
-                FMacroSign::new("-", ESR, Self::get_pipe, None),
+                FMacroSign::new("-", ESR, Self::get_pipe, Some("Get piped value".to_string())),
             ),
             (
                 "append".to_owned(),
-                FMacroSign::new("append", ["a_macro_name", "a_content"], Self::append, None),
+                FMacroSign::new("append", ["a_macro_name", "a_content"], Self::append, Some("Append content to a macro".to_string())),
             ),
             (
                 "arr".to_owned(),
-                FMacroSign::new("arr", ["a_values"], Self::array, None),
+                FMacroSign::new("arr", ["a_values"], Self::array, Some("Convert spaced array into comma array".to_string())),
             ),
             (
                 "assert".to_owned(),
-                FMacroSign::new("assert", ["a_lvalue", "a_rvalue"], Self::assert, None),
+                FMacroSign::new("assert", ["a_lvalue", "a_rvalue"], Self::assert, Some("Comopare two statements".to_string())),
             ),
             (
                 "ceil".to_owned(),
-                FMacroSign::new("ceil", ["a_number"], Self::get_ceiling, None),
+                FMacroSign::new("ceil", ["a_number"], Self::get_ceiling, Some("Get ceiling of the number".to_string())),
             ),
             (
                 "chomp".to_owned(),
-                FMacroSign::new("chomp", ["a_content"], Self::chomp, None),
+                FMacroSign::new("chomp", ["a_content"], Self::chomp, Some("Remove duplicate newlines from content".to_string())),
             ),
             (
                 "clear".to_owned(),
-                FMacroSign::new("clear", ["a_content"], Self::clear, None),
+                FMacroSign::new("clear", ["a_content"], Self::clear, Some("Clear volatile macros".to_string())),
             ),
             (
                 "comp".to_owned(),
-                FMacroSign::new("comp", ["a_content"], Self::compress, None),
+                FMacroSign::new("comp", ["a_content"], Self::compress, Some("Apply trim and chomp to content".to_string())),
             ),
             (
                 "count".to_owned(),
-                FMacroSign::new("count", ["a_array"], Self::count, None),
+                FMacroSign::new("count", ["a_array"], Self::count, Some("Get count of array".to_string())),
             ),
             (
                 "countw".to_owned(),
-                FMacroSign::new("countw", ["a_array"], Self::count_word, None),
+                FMacroSign::new("countw", ["a_array"], Self::count_word, Some("Get count of words".to_string())),
             ),
             (
                 "countl".to_owned(),
-                FMacroSign::new("countl", ["a_content"], Self::count_lines, None),
+                FMacroSign::new("countl", ["a_content"], Self::count_lines, Some("Get count of lines".to_string())),
             ),
             (
                 "dnl".to_owned(),
-                FMacroSign::new("dnl", ESR, Self::deny_newline, None),
+                FMacroSign::new("dnl", ESR, Self::deny_newline, Some("Deny next newline.".to_string())),
             ),
             (
                 "declare".to_owned(),
-                FMacroSign::new("declare", ["a_macro_names"], Self::declare, None),
+                FMacroSign::new("declare", ["a_macro_names"], Self::declare, Some("Declare multiple variables separated by comma".to_string())),
             ),
             (
                 "docu".to_owned(),
-                FMacroSign::new("docu", ["a_macro_name", "a_content"], Self::document, None),
+                FMacroSign::new("docu", ["a_macro_name", "a_content"], Self::document, Some("Append documents to a macro".to_string())),
             ),
             (
                 "enl".to_owned(),
