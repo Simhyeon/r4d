@@ -29,7 +29,6 @@ pub enum RadError {
     StrictPanic,
     Panic,
     ManualPanic(String),
-    #[cfg(feature = "storage")]
     StorageError(String),
     #[cfg(feature = "cindex")]
     CIndexError(CIndexError),
@@ -63,7 +62,6 @@ impl std::fmt::Display for RadError {
             Self::StrictPanic => "Strict error, exiting...".to_string(),
             Self::Panic => "Processor panicked, exiting...".to_string(),
             Self::ManualPanic(txt) => format!("Panic triggered with message\n= {}",txt),
-            #[cfg(feature = "storage")]
             Self::StorageError(txt)=> format!("Storage error with message\n= {0}",txt),
             #[cfg(feature = "cindex")]
             Self::CIndexError(err) => err.to_string(),

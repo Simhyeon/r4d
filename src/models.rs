@@ -496,23 +496,19 @@ impl SignatureType {
     }
 }
 
-#[cfg(feature = "storage")]
 pub type StorageResult<T> = Result<T, Box<dyn std::error::Error>>;
 
-#[cfg(feature = "storage")]
 pub trait RadStorage {
     fn update(&mut self, args: &Vec<String>) -> StorageResult<()>;
     fn extract(&mut self, serialize: bool) -> StorageResult<Option<StorageOutput>>;
 }
 
-#[cfg(feature = "storage")]
 #[derive(Debug)]
 pub enum StorageOutput {
     Binary(Vec<u8>),
     Text(String),
 }
 
-#[cfg(feature = "storage")]
 impl StorageOutput {
     pub(crate) fn into_printable(&self) -> String {
         match self {

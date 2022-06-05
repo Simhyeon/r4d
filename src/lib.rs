@@ -78,7 +78,6 @@ pub use error::RadError;
 pub use hookmap::HookType;
 pub use logger::WarningType;
 pub use models::{CommentType, DiffOption, Hygiene, RadResult, WriteOption};
-#[cfg(feature = "storage")]
 pub use models::{ExtMacroBuilder, MacroType, RadStorage, StorageOutput, StorageResult};
 pub use processor::Processor;
 
