@@ -11,6 +11,7 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### Imminent
 
+* [ ] Enl does same thing with dnl... what? This is strange
 * [ ] In-built documentation for function and deterred macro
 
 * [ ] Escape rule is somewhat bugged?
@@ -18,21 +19,24 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 * [ ] Purge is bugged? ( Gdengine )
 - It's about precedence mostly.
 
+### 3.0
+
+- Remove for macro feature
+- Remove unused compatibility feature
+
 ### TODOs
 
-* [x] Ditch avoidable dependencies
-	* [x] Thiserror
-	* [x] Csv
-* [ ] Ditch csv completely
-	- Port formmatter to dcsv form
+* [ ] Ditch avoidable dependencies
+	* [ ] Serde derive : Deserialize is hard... woah
 
 * [ ] Include as namespace
 	- Enabling macro usage such as std.include()
 	- This may not worth, but maybe useful.
 
-* [ ] Better debugger 
+* [ ] Better debugger + Ditch crossterm
 - Current implementation is dependent on processor.
 - However I want to make debugger also gets information from processor
+- Create separate program called rad-dbg ( dbg )
 
 #### Hard+misc ones
 
@@ -596,4 +600,16 @@ For 2.1.2
 * [x] For loop nested mechanics with $:() macro
 	* [x] This is breaking changes... Thus should be configured as feature until 3.0 release
 * [x] Relocated function macros to deterred macro
+
+---
+For 2.1.3
+* [x] Hid unnecessary extra features from users
+* [x] ExtMacroBuilder's export has been feature gated by storage. What?
+	- Now it's independently exported.
+* [x] Ditch avoidable dependencies
+	* [x] Thiserror
+	* [x] Csv
+	* [x] Lipsum
+* [x] Remove features for better maintainability
+	* [x] Storage
 
