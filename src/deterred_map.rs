@@ -7,7 +7,6 @@ use crate::Processor;
 use crate::{AuthType, RadError};
 use std::collections::HashMap;
 use std::iter::FromIterator;
-#[cfg(feature = "csv")]
 use crate::formatter::Formatter;
 
 pub(crate) type DFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResult<Option<String>>;
@@ -69,6 +68,15 @@ impl DeterredMacroMap {
                     "forloop",
                     ["a_min", "a_max", "a_body"],
                     DeterredMacroMap::forloop,
+                    None,
+                ),
+            ),
+            (
+                "from".to_owned(),
+                KMacroSign::new(
+                    "from",
+                    ["a_macro_name", "a_csv_value"],
+                    Self::from_data,
                     None,
                 ),
             ),
@@ -144,20 +152,6 @@ impl DeterredMacroMap {
                 ),
             );
         }
-        // Optional macros
-        #[cfg(feature = "csv")]
-        {
-            map.insert(
-                "from".to_owned(),
-                KMacroSign::new(
-                    "from",
-                    ["a_macro_name", "a_csv_value"],
-                    Self::from_data,
-                    None,
-                ),
-            );
-        }
-
         #[cfg(feature = "evalexpr")]
         {
             map.insert(
@@ -604,7 +598,6 @@ impl DeterredMacroMap {
     /// 1,2,3
     /// 4,5,6
     /// )
-    #[cfg(feature = "csv")]
     fn from_data(args: &str,level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let macro_name = Utils::trim(&args[0]);

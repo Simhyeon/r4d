@@ -110,7 +110,6 @@ use crate::models::{
     LocalMacro, MacroFragment, MacroMap, MacroType, ProcessInput, RelayTarget, RuleFile,
     UnbalancedChecker, WriteOption,
 };
-#[cfg(feature = "storage")]
 use crate::models::{RadStorage, StorageOutput};
 use crate::runtime_map::RuntimeMacro;
 #[cfg(feature = "signature")]
@@ -237,7 +236,6 @@ pub struct Processor<'processor> {
     debugger: Debugger,
     checker: UnbalancedChecker,
     pub(crate) state: ProcessorState,
-    #[cfg(feature = "storage")]
     pub storage: Option<Box<dyn RadStorage>>,
     #[cfg(feature = "cindex")]
     pub indexer: Indexer,
@@ -292,7 +290,6 @@ impl<'processor> Processor<'processor> {
             #[cfg(feature = "debug")]
             debugger: Debugger::new(),
             checker: UnbalancedChecker::new(),
-            #[cfg(feature = "storage")]
             storage: None,
             #[cfg(feature = "cindex")]
             indexer: Indexer::new(),
@@ -542,7 +539,6 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Build with storage
-    #[cfg(feature = "storage")]
     pub fn storage(mut self, storage: Box<dyn RadStorage>) -> Self {
         self.storage.replace(storage);
         self
@@ -703,13 +699,11 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Set storage
-    #[cfg(feature = "storage")]
     pub fn set_storage(&mut self, storage: Box<dyn RadStorage>) {
         self.storage.replace(storage);
     }
 
     /// Extract from storage
-    #[cfg(feature = "storage")]
     pub fn extract_storage(&mut self, serialize: bool) -> RadResult<Option<StorageOutput>> {
         if let Some(storage) = self.storage.as_mut() {
             match storage.extract(serialize) {
@@ -1248,7 +1242,9 @@ impl<'processor> Processor<'processor> {
         // Reset lexor's escape_nl
         lexor.reset_escape();
 
+        // TODO
         // If escape_nl is set as global attribute, set escape_newline
+        // Currently this behaviour is not so different from dnl
         if self.state.escape_newline {
             lexor.escape_next_newline();
             self.state.escape_newline = false;

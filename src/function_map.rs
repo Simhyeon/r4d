@@ -5,9 +5,8 @@
 
 use crate::arg_parser::{ArgParser, GreedyState};
 use crate::auth::AuthType;
-use crate::consts::ESR;
+use crate::consts::{ESR, LOREM_WIDTH, LOREM, LOREM_SOURCE};
 use crate::error::RadError;
-#[cfg(feature = "csv")]
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;
@@ -21,8 +20,6 @@ use crate::utils::Utils;
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
 use lazy_static::lazy_static;
-#[cfg(feature = "lipsum")]
-use lipsum::lipsum;
 use regex::Regex;
 use std::collections::HashMap;
 use std::fs::{OpenOptions, canonicalize};
@@ -62,59 +59,59 @@ impl FunctionMacroMap {
         let mut map = HashMap::from_iter(IntoIterator::into_iter([
             (
                 "-".to_owned(),
-                FMacroSign::new("-", ESR, Self::get_pipe, None),
+                FMacroSign::new("-", ESR, Self::get_pipe, Some("Get piped value".to_string())),
             ),
             (
                 "append".to_owned(),
-                FMacroSign::new("append", ["a_macro_name", "a_content"], Self::append, None),
+                FMacroSign::new("append", ["a_macro_name", "a_content"], Self::append, Some("Append content to a macro".to_string())),
             ),
             (
                 "arr".to_owned(),
-                FMacroSign::new("arr", ["a_values"], Self::array, None),
+                FMacroSign::new("arr", ["a_values"], Self::array, Some("Convert spaced array into comma array".to_string())),
             ),
             (
                 "assert".to_owned(),
-                FMacroSign::new("assert", ["a_lvalue", "a_rvalue"], Self::assert, None),
+                FMacroSign::new("assert", ["a_lvalue", "a_rvalue"], Self::assert, Some("Comopare two statements".to_string())),
             ),
             (
                 "ceil".to_owned(),
-                FMacroSign::new("ceil", ["a_number"], Self::get_ceiling, None),
+                FMacroSign::new("ceil", ["a_number"], Self::get_ceiling, Some("Get ceiling of the number".to_string())),
             ),
             (
                 "chomp".to_owned(),
-                FMacroSign::new("chomp", ["a_content"], Self::chomp, None),
+                FMacroSign::new("chomp", ["a_content"], Self::chomp, Some("Remove duplicate newlines from content".to_string())),
             ),
             (
                 "clear".to_owned(),
-                FMacroSign::new("clear", ["a_content"], Self::clear, None),
+                FMacroSign::new("clear", ["a_content"], Self::clear, Some("Clear volatile macros".to_string())),
             ),
             (
                 "comp".to_owned(),
-                FMacroSign::new("comp", ["a_content"], Self::compress, None),
+                FMacroSign::new("comp", ["a_content"], Self::compress, Some("Apply trim and chomp to content".to_string())),
             ),
             (
                 "count".to_owned(),
-                FMacroSign::new("count", ["a_array"], Self::count, None),
+                FMacroSign::new("count", ["a_array"], Self::count, Some("Get count of array".to_string())),
             ),
             (
                 "countw".to_owned(),
-                FMacroSign::new("countw", ["a_array"], Self::count_word, None),
+                FMacroSign::new("countw", ["a_array"], Self::count_word, Some("Get count of words".to_string())),
             ),
             (
                 "countl".to_owned(),
-                FMacroSign::new("countl", ["a_content"], Self::count_lines, None),
+                FMacroSign::new("countl", ["a_content"], Self::count_lines, Some("Get count of lines".to_string())),
             ),
             (
                 "dnl".to_owned(),
-                FMacroSign::new("dnl", ESR, Self::deny_newline, None),
+                FMacroSign::new("dnl", ESR, Self::deny_newline, Some("Deny next newline.".to_string())),
             ),
             (
                 "declare".to_owned(),
-                FMacroSign::new("declare", ["a_macro_names"], Self::declare, None),
+                FMacroSign::new("declare", ["a_macro_names"], Self::declare, Some("Declare multiple variables separated by comma".to_string())),
             ),
             (
                 "docu".to_owned(),
-                FMacroSign::new("docu", ["a_macro_name", "a_content"], Self::document, None),
+                FMacroSign::new("docu", ["a_macro_name", "a_content"], Self::document, Some("Append documents to a macro".to_string())),
             ),
             (
                 "enl".to_owned(),
@@ -176,6 +173,10 @@ impl FunctionMacroMap {
                     Self::bind_to_local,
                     None,
                 ),
+            ),
+            (
+                "lipsum".to_owned(),
+                FMacroSign::new("lipsum", ["a_word_count"], Self::lipsum_words, None),
             ),
             (
                 "lower".to_owned(),
@@ -328,6 +329,10 @@ impl FunctionMacroMap {
                 FMacroSign::new("taill", ["a_count", "a_content"], Self::tail_line, None),
             ),
             (
+                "table".to_owned(),
+                FMacroSign::new("table", ["a_table_form", "a_csv_value"], Self::table, None),
+            ),
+            (
                 "tr".to_owned(),
                 FMacroSign::new(
                     "tr",
@@ -409,14 +414,6 @@ impl FunctionMacroMap {
             );
         }
 
-        // Optional macros
-        #[cfg(feature = "csv")]
-        {
-            map.insert(
-                "table".to_owned(),
-                FMacroSign::new("table", ["a_table_form", "a_csv_value"], Self::table, None),
-            );
-        }
         #[cfg(feature = "cindex")]
         {
             map.insert(
@@ -461,11 +458,6 @@ impl FunctionMacroMap {
                 FMacroSign::new("hms", ["a_second"], Self::hms, None),
             );
         }
-        #[cfg(feature = "lipsum")]
-        map.insert(
-            "lipsum".to_owned(),
-            FMacroSign::new("lipsum", ["a_word_count"], Self::lipsum_words, None),
-        );
         #[cfg(feature = "evalexpr")]
         {
             map.insert(
@@ -505,7 +497,7 @@ impl FunctionMacroMap {
             );
         }
 
-        #[cfg(feature = "storage")]
+        // Storage
         {
             map.insert(
                 "update".to_owned(),
@@ -831,12 +823,22 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $lipsum(Number)
-    #[cfg(feature = "lipsum")]
     fn lipsum_words(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let word_count = &args[0];
             if let Ok(count) = Utils::trim(word_count).parse::<usize>() {
-                Ok(Some(lipsum(count)))
+                if count <= *LOREM_WIDTH {
+                    Ok(Some(LOREM[0..count].join(" ")))
+                } else {
+                    let mut lorem = String::new();
+                    let loop_amount = count / *LOREM_WIDTH;
+                    let remnant = count % *LOREM_WIDTH;
+                    for _ in 0..loop_amount  {
+                        lorem.push_str(LOREM_SOURCE);
+                    }
+                    lorem.push_str(&LOREM[0..remnant].join(" "));
+                    Ok(Some(lorem))
+                }
             } else {
                 Err(RadError::InvalidArgument(format!("Lipsum needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", word_count)))
             }
@@ -1173,7 +1175,6 @@ impl FunctionMacroMap {
     ///
     /// $table(github,"1,2,3
     /// 4,5,6")
-    #[cfg(feature = "csv")]
     fn table(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let table_format = &args[0]; // Either gfm, wikitex, latex, none
@@ -2622,7 +2623,6 @@ impl FunctionMacroMap {
         }
     }
 
-    #[cfg(feature = "storage")]
     fn update_storage(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
 
@@ -2637,7 +2637,6 @@ impl FunctionMacroMap {
         Ok(None)
     }
 
-    #[cfg(feature = "storage")]
     fn extract_storage(_: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         // Execute update method for storage
         if let Some(storage) = processor.storage.as_mut() {

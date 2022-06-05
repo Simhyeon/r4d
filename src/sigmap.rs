@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug,Serialize ,Deserialize)]
 pub struct SignatureMap {
     pub object: HashMap<String, MacroSignature>,
 }
@@ -14,6 +14,19 @@ impl SignatureMap {
         Self { object: sig }
     }
 }
+
+// TODO
+// use serde::ser::SerializeStruct;
+// Placeholder for manual implementation of Serialize
+//impl Serialize for SignatureMap {
+    //fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        //where
+            //S: serde::Serializer {
+                //let mut state = serializer.serialize_struct("SignatureMap", 1)?;
+                //state.serialize_field("object", &self.object)?;
+                //state.end()
+    //}
+//}
 
 /// Type(variant) of macro
 #[derive(Debug, Serialize, Deserialize)]

@@ -11,7 +11,6 @@
 //! - evalexpr  : "eval", "evalk" macro
 //! - chrono    : "date", "time" macro
 //! - lipsum    : "lipsum" macro
-//! - csv       : "from", "table" macro
 //! - textwrap  : "wrap" macro
 //! - cindex    : Query related macros
 //! - full      : all features above
@@ -64,6 +63,7 @@ pub(crate) mod deterred_map;
 pub(crate) mod function_map;
 #[cfg(feature = "hook")]
 pub(crate) mod hookmap;
+pub(crate) mod formatter;
 pub(crate) mod lexor;
 pub(crate) mod logger;
 pub(crate) mod models;
@@ -78,7 +78,6 @@ pub use error::RadError;
 pub use hookmap::HookType;
 pub use logger::WarningType;
 pub use models::{CommentType, DiffOption, Hygiene, RadResult, WriteOption};
-#[cfg(feature = "storage")]
 pub use models::{ExtMacroBuilder, MacroType, RadStorage, StorageOutput, StorageResult};
 pub use processor::Processor;
 
@@ -89,10 +88,6 @@ pub use processor::Processor;
 mod cli;
 #[cfg(feature = "clap")]
 pub use cli::Cli;
-
-// Only for csv
-#[cfg(feature = "csv")]
-pub(crate) mod formatter;
 
 // Re-export macro
 #[cfg(feature = "template")]

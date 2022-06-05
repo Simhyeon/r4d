@@ -1006,7 +1006,9 @@ $nl()
 
 ### enl
 
-Escape following next new line
+**Deprecated**
+
+Currently acts same as dnl. Preparing for refactoring.
 
 ```
 Before $enl()
@@ -1020,8 +1022,6 @@ Before After
 Deny newline after macro execution. This have no effect if next following line
 is not empty line.
 
-This newline is not the following newline character but a new empty line.
-
 ```
 $ifdef(undefined,Print me)$dnl()
 
@@ -1032,8 +1032,7 @@ Yatti yatta
 
 ### lipsum
 
-Lipsum creates a placehoder with given word counts. This requires features
-"lipsum".
+Lipsum creates a placehoder with given word counts.
 
 ```
 $lipsum(5)
@@ -1067,7 +1066,7 @@ $hms(10500)
 ### from (deterred macro)
 
 From creates formatted macro invocations with given csv values. The given macro
-name doesn't need dollar sign prefix. This requires features **"csv"**.
+name doesn't need dollar sign prefix.
 
 ```
 $define(three,a1 a2 a3=1-$a1(), 2-$a2(), 3-$a3())
@@ -1089,8 +1088,7 @@ always quote values, thus I found second value as csv was much more ergonomic.
 
 Table creates a formatted table from given csv values. Currently supported
 formats are ```github```, ```wikitext``` and ```html```. This macro doesn't
-pretty print but just make it readable from other programs. This requires
-features **"csv"**.
+pretty print but just make it readable from other programs.
 
 ```
 $table(github,\*a,b,c
@@ -1126,8 +1124,6 @@ $table(html,\*a,b,c
 
 ### update
 
-features : storage
-
 Update storage with given arguments
 
 ```
@@ -1136,8 +1132,6 @@ $update(arg1, arg2)
 ```
 
 ### extract
-
-features : storage
 
 Extract storage content.
 

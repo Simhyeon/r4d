@@ -1,14 +1,7 @@
-use crate::consts::ESCAPED_COMMA;
+use dcsv::ReadOnlyDataRef;
+
 use crate::error::RadError;
 use crate::RadResult;
-use lazy_static::lazy_static;
-use regex::Regex;
-
-// Lazily constructed regex expression
-lazy_static! {
-    pub static ref ESCAPE: Regex = Regex::new(r"\\,").unwrap();
-    pub static ref RESTORE: Regex = Regex::new(r"@COMMA@").unwrap();
-}
 
 /// Formatter that constructs multiple text formats
 pub(crate) struct Formatter;
@@ -21,14 +14,15 @@ impl Formatter {
     /// - wikitext
     /// - html
     pub fn csv_to_table(table_format: &str, data: &str, newline: &str) -> RadResult<String> {
-        let data = Self::escape_comma(data);
-        let mut reader = csv::ReaderBuilder::new()
-            .has_headers(true)
-            .from_reader(data.as_bytes());
+        let data = dcsv::Reader::new().has_header(false).read_from_stream(data.as_bytes())?;
+        let data_ref = data.read_only_ref();
+        if data_ref.rows.len() == 0 {
+            return Err(RadError::InvalidArgument("Table cannot be constructed from empty value".to_string()));
+        }
         let table = match table_format {
-            "github" => Formatter::gfm_table(&mut reader, newline)?,
-            "wikitext" => Formatter::wikitext_table(&mut reader, newline)?,
-            "html" => Formatter::html_table(&mut reader, newline)?,
+            "github" => Formatter::gfm_table(&data_ref, newline)?,
+            "wikitext" => Formatter::wikitext_table(&data_ref, newline)?,
+            "html" => Formatter::html_table(&data_ref)?,
             _ => {
                 return Err(RadError::UnsupportedTableFormat(format!(
                     "Unsupported table format : {}",
@@ -36,61 +30,55 @@ impl Formatter {
                 )))
             }
         };
-        let table = Self::restore_comma(&table);
         Ok(table)
     }
 
     // ----------
     // Formatting methods start
     // <FORMAT>
+    /// Execute sequence of macros from csv data
     pub fn csv_to_macros(macro_name: &str, data: &str, newline: &str) -> RadResult<String> {
-        let data = Self::escape_comma(data);
+        let data = dcsv::Reader::new().has_header(false).read_from_stream(data.as_bytes())?;
         let mut exec = String::new();
-        let mut reader = csv::ReaderBuilder::new()
-            .has_headers(false)
-            .from_reader(data.as_bytes());
-        let mut row_iter = reader.records().peekable();
-        while let Some(row) = row_iter.next() {
-            exec.push_str(&format!("${}(", macro_name));
-            let record = row?;
-            let mut col_iter = record.iter().peekable();
-            // Column iteration
-            while let Some(value) = col_iter.next() {
-                exec.push_str(value);
-                if let Some(_) = col_iter.peek() {
-                    exec.push(',');
-                }
-            }
-            exec.push(')');
-            if let Some(_) = row_iter.peek() {
+        let mut iter = data.rows.iter().peekable();
+        while let Some(row) = iter.next() {
+            let row_str = row.to_string(&data.columns)?;
+            exec.push_str(&format!("${}({})", macro_name,row_str));
+            if let Some(_) = iter.peek() {
                 exec.push_str(newline);
             }
         }
-
-        let exec = Self::restore_comma(&exec);
         Ok(exec)
     }
 
-    fn gfm_table(reader: &mut csv::Reader<&[u8]>, newline: &str) -> RadResult<String> {
+    // Format csv into github formatted table
+    fn gfm_table(data: &ReadOnlyDataRef, newline: &str) -> RadResult<String> {
         let mut table = String::new();
+        let mut data_iter = data.rows.iter();
+        let header = data_iter.next();
+        if let None = header {
+            return Err(RadError::InvalidArgument("Table cannot be constructed from empty value".to_string()));
+        }
+        let header = header.unwrap();
         table.push('|');
-        let header_iter = reader.headers()?;
-        let header_count = header_iter.len();
-        for header in header_iter {
-            table.push_str(header);
+        let header_count = header.len();
+        for h in header {
+            table.push_str(&h.to_string());
             table.push('|');
         }
+
         // Add separator
         table.push_str(newline);
         table.push('|');
         for _ in 0..header_count {
             table.push_str("-|");
         }
-        for record in reader.records() {
+
+        while let Some(row) = data_iter.next() {
             table.push_str(newline);
             table.push('|');
-            for column in record?.iter() {
-                table.push_str(column);
+            for value in row {
+                table.push_str(&value.to_string());
                 table.push('|');
             }
         }
@@ -98,26 +86,33 @@ impl Formatter {
         Ok(table)
     }
 
-    fn wikitext_table(reader: &mut csv::Reader<&[u8]>, newline: &str) -> RadResult<String> {
+    // Format csv into wikitext formatted table
+    fn wikitext_table(data: &ReadOnlyDataRef, newline: &str) -> RadResult<String> {
         let mut table = String::new();
+        let mut data_iter = data.rows.iter();
+        let header = data_iter.next();
+        if let None = header {
+            return Err(RadError::InvalidArgument("Table cannot be constructed from empty value".to_string()));
+        }
+        let header = header.unwrap();
+
         // Add header
         table.push_str("{| class=\"wikitable\"");
         table.push_str(newline);
         // ! Header text !! Header text !! Header text
         // |-
-        let header_iter = reader.headers()?;
-        for header in header_iter {
+        for h in header {
             table.push('!');
-            table.push_str(header);
+            table.push_str(&h.to_string());
             table.push_str(newline);
         }
         // Header separator
         table.push_str("|-");
         table.push_str(newline);
-        for record in reader.records() {
-            for column in record?.iter() {
+        while let Some(row) = data_iter.next() {
+            for value in row {
                 table.push('|');
-                table.push_str(column);
+                table.push_str(&value.to_string());
                 table.push_str(newline);
             }
             table.push_str("|-");
@@ -127,41 +122,31 @@ impl Formatter {
         Ok(table)
     }
 
-    fn html_table(reader: &mut csv::Reader<&[u8]>, _: &str) -> RadResult<String> {
+    // Format csv into html formatted table
+    fn html_table(data: &ReadOnlyDataRef) -> RadResult<String> {
         let mut table = String::new();
-        table.push_str("<table>");
+        let mut data_iter = data.rows.iter();
+        let header = data_iter.next();
+        if let None = header {
+            return Err(RadError::InvalidArgument("Table cannot be constructed from empty value".to_string()));
+        }
+        let header = header.unwrap();
+        table.push_str("<table>\n");
         // Add header
-        table.push_str("<thead><tr>");
-        let header_iter = reader.headers()?;
-        for header in header_iter {
-            table.push_str(&format!("<td>{}</td>", header));
+        table.push_str("\t<thead>\n\t\t<tr>\n");
+        for h in header {
+            table.push_str(&format!("\t\t\t<th>{}</th>\n", h));
         }
-        table.push_str("</tr></thead>");
-        table.push_str("<tbody>");
-        for record in reader.records() {
-            table.push_str("<tr>");
-            for column in record?.iter() {
-                table.push_str(&format!("<td>{}</td>", column));
+        table.push_str("\t\t</tr>\n\t</thead>\n");
+        table.push_str("\t<tbody>\n");
+        while let Some(row) = data_iter.next() {
+            table.push_str("\t\t<tr>\n");
+            for value in row {
+                table.push_str(&format!("\t\t\t<td>{}</td>\n", value));
             }
-            table.push_str("</tr>");
+            table.push_str("\t\t</tr>\n");
         }
-        table.push_str("</tbody></table>");
+        table.push_str("\t</tbody>\n</table>");
         Ok(table)
-    }
-
-    // Formatting methods end
-    // </FORMAT>
-    // ----------
-
-    /// Escape comma inside csv table
-    ///
-    /// With this process, we can use literal comma inside csv table
-    fn escape_comma(source: &str) -> String {
-        ESCAPE.replace_all(source, ESCAPED_COMMA).to_string()
-    }
-
-    /// Restore the escaped commas
-    fn restore_comma(source: &str) -> String {
-        RESTORE.replace_all(source, ",").to_string()
     }
 }

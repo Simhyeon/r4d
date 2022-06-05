@@ -84,8 +84,6 @@ rad = { version = "*", features = ["full"] }
 
 # evalexpr  - "eval", "evalk" macro
 # chrono    - "date", "time" macro
-# lipsum    - "lipsum" macro
-# csv       - "from", "table" macro
 # textwrap  - Enable "wrap" macro
 # cindex    - Query related macros
 # full      - Enable all features
@@ -94,7 +92,6 @@ rad = { version = "*", features = ["full"] }
 # color     - Enable color prompt
 # signature - Enable signature map
 # hook      - Enable hook macro
-# storage   - Enable storage feature
 ```
 **rust file**
 ```rust

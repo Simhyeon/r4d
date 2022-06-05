@@ -1,52 +1,5 @@
 ### Changed
 
-* [x] Decide concrete rule for versioning
-* [x] Possibly relay and halt warning
-* [x] Enable lib user to change write option on the way
-* [x] Queue
-* [x] Separte warning into two types
-	* [x] System + program warning ( About security )
-	* [x] Processing warning ( About execution sanity )
-* [x] Merge fragmented option into single enum
-
-From 2.0
-* [x] Renamed basic to function
-* [x] Renamed keyword to deterred
-* [x] Created disgnated runtime macro map
-* [x] Greedy as default behaviour and cannot be disabled becausew hy not
-* [x] Removed closure rule
-* [x] Pipe truncate as default
-* [x] Made distinction between function macro and deterred macro much more consistent 
-* [x] Procedural macro for extension macro
-* [x] Move deterred macros into function macros if possible
-* [x] Hygienic processing
-* [x] Relay halt as stack oriented not variable oriented
-* [x] Rule files will get vector, not an option of vector
-* [x] Provide auth checking in ext interface
-
----
-For 2.1.2
-* [x] Missig error message
-* [x] Fixed wrong abs behaviour
-* [x] Document macro
-* [x] Document for macro builder
-* [x] Warn user about unterminated input
-* [x] Disabled read macro
-* [x] Input stack bug
-
----
-For 2.1.3
-* [x] Include as raw option
-
----
-For 2.1.4
-
-* [x] Exec command
-* [x] inplace eval
-* [x] For loop nested mechanics with $:() macro
-	* [x] This is breaking changes... Thus should be configured as feature until 3.0 release
-* [x] Relocated function macros to deterred macro
-
 ### Note
 
 Let's rearragne before I forget every fucking things. Current implementation of
@@ -58,20 +11,7 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### Imminent
 
-* [ ] Read macro support because you know version sustainability...
-	- The first problem is that read cannot be nested
-	- First approach is to check if READ macro is defined to determine whether
-	read is currently being invoked or not
-		- However, this approach is not trivial because there is a concept called volatile
-		- When volatile is enabled, there are cases that predefined macros are
-		not detected. which means that read invocation before volatile
-		declaration can occur unintended behaviour
-	- Second approach is to add new writeOption BufStream
-		- This looks ok but has a caveat. With this approach macro should be
-		able to change write option, however since write option has a lifetime
-		bound to processor, and compiler cannot deduce if lifetime matches or not...
-	- I need a third approach for this if I really want read macro
-
+* [ ] Enl does same thing with dnl... what? This is strange
 * [ ] In-built documentation for function and deterred macro
 
 * [ ] Escape rule is somewhat bugged?
@@ -79,16 +19,41 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 * [ ] Purge is bugged? ( Gdengine )
 - It's about precedence mostly.
 
+### 3.0
+
+- Remove for macro feature
+- Remove unused compatibility feature
+
 ### TODOs
 
-* [ ] Performance improvements?
-	- Currently lexing copies all chars into a versatile vector which may not
-	be the best idea. A bettter idea is to iterate and add slice from source.
-	But it is true that such implementation is more trivial to maintain and
-	extend with arguable performance boost.
+* [ ] Ditch avoidable dependencies
+	* [ ] Serde derive : Deserialize is hard... woah
+
+* [ ] Include as namespace
+	- Enabling macro usage such as std.include()
+	- This may not worth, but maybe useful.
+
+* [ ] Better debugger + Ditch crossterm
+- Current implementation is dependent on processor.
+- However I want to make debugger also gets information from processor
+- Create separate program called rad-dbg ( dbg )
+
+#### Hard+misc ones
+
+* [ ] Complete wasm
+
+* [ ] Projects performance
+- Utilize regex engine for fast parsing especially, define parsing. Possibly
+whole parsing process, meh I don't think I can... Focus on define parsing.
+- Refactor codes into multiple chunks of functions for better readability
+- Use faster hashmap 
+- Currently lexing copies all chars into a versatile vector which may not
+be the best idea. A bettter idea is to iterate and add slice from source.
+But it is true that such implementation is more trivial to maintain and
+extend with arguable performance boost.
+
 * [ ] Error handling, execution security
 * [ ] Warn about operational macros + document something
-* [ ] Reimplement read macro ( Maybe not becuase not worth it )
 
 * [ ] Rad-wrapper binary
 	- Read as processed
@@ -98,18 +63,6 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 	- Opt-lvel has huge effet (2.2M -> 1.8M)
 	- codegen-units = 1 has a 0.1M gain ( increase compile time but it's small anyway )
 	- upx is a holy banger (1.7M -> 500K ... Just wow...)
-
-#### 2.0
-
-* [x] Export to wasm
-* [ ] Better debugger 
-- Current implementation is dependent on processor.
-- However I want to make debugger also gets information from processor
-* [ ] Improve projects performance
-- Utilize regex engine for fast parsing especially, define parsing. Possibly
-whole parsing process, meh I don't think I can... Focus on define parsing.
-- Refactor codes into multiple chunks of functions for better readability
-- Use faster hashmap 
 
 ## Delayed, paused or stopped
 
@@ -607,3 +560,56 @@ choice
 * [x] Substring doesn't work with utf8
 * [x] Foreach is broken
 * [x] Changed define syntax
+
+* [x] Decide concrete rule for versioning
+* [x] Possibly relay and halt warning
+* [x] Enable lib user to change write option on the way
+* [x] Queue
+* [x] Separte warning into two types
+	* [x] System + program warning ( About security )
+	* [x] Processing warning ( About execution sanity )
+* [x] Merge fragmented option into single enum
+
+From 2.0
+* [x] Renamed basic to function
+* [x] Renamed keyword to deterred
+* [x] Created disgnated runtime macro map
+* [x] Greedy as default behaviour and cannot be disabled becausew hy not
+* [x] Removed closure rule
+* [x] Pipe truncate as default
+* [x] Made distinction between function macro and deterred macro much more consistent 
+* [x] Procedural macro for extension macro
+* [x] Move deterred macros into function macros if possible
+* [x] Hygienic processing
+* [x] Relay halt as stack oriented not variable oriented
+* [x] Rule files will get vector, not an option of vector
+* [x] Provide auth checking in ext interface
+
+---
+For 2.1.2
+* [x] Missig error message
+* [x] Fixed wrong abs behaviour
+* [x] Document macro
+* [x] Document for macro builder
+* [x] Warn user about unterminated input
+* [x] Disabled read macro
+* [x] Input stack bug
+* [x] Include as raw option
+* [x] Exec command
+* [x] inplace eval
+* [x] For loop nested mechanics with $:() macro
+	* [x] This is breaking changes... Thus should be configured as feature until 3.0 release
+* [x] Relocated function macros to deterred macro
+
+---
+For 2.1.3
+* [x] Hid unnecessary extra features from users
+* [x] ExtMacroBuilder's export has been feature gated by storage. What?
+	- Now it's independently exported.
+* [x] Ditch avoidable dependencies
+	* [x] Thiserror
+	* [x] Csv
+	* [x] Lipsum
+* [x] Remove features for better maintainability
+	* [x] Storage
+
