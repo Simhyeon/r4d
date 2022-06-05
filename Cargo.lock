@@ -77,7 +77,8 @@ dependencies = [
 [[package]]
 name = "cindex"
 version = "0.4.1"
-source = "git+https://github.com/simhyeon/cindex?branch=dev#cdfcf0293f5bfae40429190350f2bfd32ce7c7d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85327b77b45b9e995f2613c1c4abe67421ff3fc66e3da0bb064b84791846c1f9"
 dependencies = [
  "bitflags",
  "dcsv",
