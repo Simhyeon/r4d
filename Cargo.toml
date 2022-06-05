@@ -21,17 +21,17 @@ crate-type = ["cdylib","rlib"]
 
 [features]
 default = ["for_macro"]
+# For some reaons that I dont' know, clap cannot be enabled with dep: prefix
 basic = ["clap"]
 binary = ["clap","debug", "full"]
 full = [ "evalexpr", "chrono", "textwrap", "cindex"]
 
-debug = [ "crossterm", "similar" ]
-color = [ "colored" ]
+debug = [ "dep:crossterm", "dep:similar" ]
+color = [ "dep:colored" ]
 hook = []
-storage = []
-signature = ["serde_json"]
-wasm = ["wasm-bindgen", "console_error_panic_hook"]
-template = ["rad_ext_template"]
+signature = ["dep:serde_json"]
+wasm = ["dep:wasm-bindgen", "dep:console_error_panic_hook", "dep:wee_alloc"]
+template = ["dep:rad_ext_template"]
 
 # Backword compatibility features
 for_macro = []
