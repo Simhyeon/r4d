@@ -6,6 +6,8 @@ processor.
 R4d's foreach behaviour has changes, you can use previous logic by disable
 default features.
 
+[Changes](./docs/change.md)
+
 ### Note
 
 Because crates.io's readme is tied to version. There might be undocumented
@@ -82,7 +84,7 @@ pipeline.
 e.g.
 
 ```bash
-# Binary features is mandatory or else it is not an executable
+# Binary with full macros support
 cargo install r4d --features binary --locked
 
 # If you need color prompt, then use features "color"
