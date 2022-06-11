@@ -103,12 +103,14 @@ use crate::lexor::*;
 use crate::logger::{Logger, LoggerLines, WarningType};
 #[cfg(feature = "debug")]
 use crate::models::DiffOption;
+#[cfg(not(feature = "wasm"))]
+use crate::models::FileTarget;
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
 use crate::models::{
-    Behaviour, CommentType, ExtMacroBuilder, ExtMacroType, FileTarget, FlowControl, Hygiene,
-    LocalMacro, MacroFragment, MacroMap, MacroType, ProcessInput, RelayTarget, RuleFile,
-    UnbalancedChecker, WriteOption,
+    Behaviour, CommentType, ExtMacroBuilder, ExtMacroType, FlowControl, Hygiene, LocalMacro,
+    MacroFragment, MacroMap, MacroType, ProcessInput, RelayTarget, RuleFile, UnbalancedChecker,
+    WriteOption,
 };
 use crate::models::{RadStorage, StorageOutput};
 use crate::runtime_map::RuntimeMacro;
@@ -167,8 +169,9 @@ pub(crate) struct ProcessorState {
     pub comment_char: Option<char>,
     pub macro_char: Option<char>,
     pub flow_control: FlowControl,
-    pub deny_newline: bool,
-    pub escape_newline: bool,
+    pub deny_newline: bool,    // This deny next-next newline
+    pub consume_newline: bool, // This consumes newline if the line was only empty
+    pub escape_newline: bool,  // This escapes right next newline
     pub queued: Vec<String>,
 }
 
@@ -193,6 +196,7 @@ impl ProcessorState {
             macro_char: None,
             flow_control: FlowControl::None,
             deny_newline: false,
+            consume_newline: false,
             escape_newline: false,
             queued: vec![],
         }
@@ -1114,6 +1118,7 @@ impl<'processor> Processor<'processor> {
         lexor: &mut Lexor,
         frag: &mut MacroFragment,
     ) -> RadResult<ParseResult> {
+        let frag_on_going = !frag.is_empty();
         self.logger.add_line_number();
         if let Some(line) = lines.next() {
             let line = line?;
@@ -1150,11 +1155,45 @@ impl<'processor> Processor<'processor> {
             if remainder.len() != 0 {
                 // Fragment is not empty
                 if !frag.is_empty() {
+                    // Consume new line shold not work on fragment extension
+                    if self.state.consume_newline {
+                        self.state.consume_newline = false;
+                    }
                     Ok(ParseResult::FoundMacro(remainder))
                 }
                 // Print everything
                 else {
-                    Ok(ParseResult::Printable(remainder))
+                    let mut remainder = remainder.as_str();
+
+                    // Consume a newline only when Macro execution was not "multiline".
+                    // e.g )
+                    // 1 define(test=a
+                    // b)
+                    // 2
+                    // !==
+                    // 1 2
+                    // ===
+                    // 1
+                    // 2
+                    if self.state.consume_newline {
+                        if !frag_on_going {
+                            if remainder == "\n" || remainder == "\r\n" {
+                                remainder = "";
+                            }
+                        }
+                        self.state.consume_newline = false;
+                    }
+
+                    if self.state.escape_newline {
+                        if remainder.ends_with("\r\n") {
+                            remainder = remainder.strip_suffix("\r\n").unwrap();
+                        } else if remainder.ends_with("\n") {
+                            remainder = remainder.strip_suffix("\n").unwrap();
+                        }
+                        self.state.escape_newline = false;
+                    }
+
+                    Ok(ParseResult::Printable(remainder.to_string()))
                 }
             }
             // Nothing to print
@@ -1244,16 +1283,6 @@ impl<'processor> Processor<'processor> {
         // Local values
         let mut remainder = String::new();
 
-        // Reset lexor's escape_nl
-        lexor.reset_escape();
-
-        // TODO
-        // If escape_nl is set as global attribute, set escape_newline
-        if self.state.escape_newline {
-            lexor.escape_next_newline();
-            self.state.escape_newline = false;
-        }
-
         // Check comment line
         // If it is a comment then return nothing and write nothing
         if self.state.comment_type != CommentType::None && line.starts_with(self.get_comment_char())
@@ -1271,7 +1300,6 @@ impl<'processor> Processor<'processor> {
                     self.lex_branch_comment_exit(frag, &mut remainder);
                     return Ok(remainder);
                 }
-                LexResult::Discard => (),
                 LexResult::Ignore => frag.whole_string.push(ch),
                 // If given result is literal
                 LexResult::Literal(cursor) => {
@@ -1721,7 +1749,7 @@ impl<'processor> Processor<'processor> {
                     WarningType::Security,
                 )?;
                 frag.clear();
-                lexor.escape_next_newline();
+                self.state.consume_newline = true;
                 if self.state.behaviour == Behaviour::Strict {
                     return Err(RadError::StrictPanic);
                 }
@@ -1746,13 +1774,13 @@ impl<'processor> Processor<'processor> {
     // Level is necessary for debug feature
     fn lex_branch_end_frag_define(
         &mut self,
-        lexor: &mut Lexor,
+        _lexor: &mut Lexor,
         frag: &mut MacroFragment,
         remainder: &mut String,
         #[cfg(feature = "debug")] level: usize,
     ) -> RadResult<()> {
         self.add_rule(frag, remainder)?;
-        lexor.escape_next_newline();
+        self.state.consume_newline = true;
         #[cfg(feature = "debug")]
         self.check_debug_macro(frag, level)?;
 
@@ -1791,7 +1819,7 @@ impl<'processor> Processor<'processor> {
             self.debugger.break_point(frag, &mut self.logger)?;
             // Break point is true , continue
             if frag.name.len() == 0 {
-                lexor.escape_next_newline();
+                self.state.consume_newline = true;
                 return Ok(());
             }
         }
@@ -1844,7 +1872,7 @@ impl<'processor> Processor<'processor> {
         variant: EvalResult,
         frag: &mut MacroFragment,
         remainder: &mut String,
-        lexor: &mut Lexor,
+        _lexor: &mut Lexor,
         #[allow(unused_variables)] level: usize,
     ) -> RadResult<()> {
         match variant {
@@ -1861,7 +1889,7 @@ impl<'processor> Processor<'processor> {
                 // If content is none
                 // Ignore new line after macro evaluation until any character
                 if let None = content {
-                    lexor.escape_next_newline();
+                    self.state.consume_newline = true;
                 } else {
                     // else it is ok to proceed.
                     // thus it is safe to unwrap it
@@ -1907,7 +1935,7 @@ impl<'processor> Processor<'processor> {
                     // not the other way
                     if frag.pipe {
                         self.state.add_pipe(None, content);
-                        lexor.escape_next_newline();
+                        self.state.consume_newline = true;
                     } else {
                         remainder.push_str(&content);
                     }
@@ -1931,7 +1959,7 @@ impl<'processor> Processor<'processor> {
                     }
                     // If purge mode is set, don't print anything
                     // and don't print error
-                    Behaviour::Purge | Behaviour::Nopanic => lexor.escape_next_newline(),
+                    Behaviour::Purge | Behaviour::Nopanic => self.state.consume_newline = true,
                     _ => {
                         self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
                         remainder.push_str(&frag.whole_string);
