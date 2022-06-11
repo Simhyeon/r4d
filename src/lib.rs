@@ -87,7 +87,7 @@ pub use processor::Processor;
 #[cfg(feature = "clap")]
 mod cli;
 #[cfg(feature = "clap")]
-pub use cli::Cli;
+pub use cli::RadCli;
 #[cfg(feature = "clap")]
 pub use cli::RadoCli;
 
