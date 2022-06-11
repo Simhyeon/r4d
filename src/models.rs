@@ -96,9 +96,7 @@ impl MacroMap {
     ///
     /// This will try to remove but will do nothing if given macro doesn't exist.
     pub fn remove_local_macro(&mut self, level: usize, name: &str) {
-        self.local.remove(
-            &Utils::local_name(level, name)
-        );
+        self.local.remove(&Utils::local_name(level, name));
     }
 
     /// Clear all local macros
@@ -305,7 +303,8 @@ impl RuleFile {
         if let Err(err) = result {
             Err(RadError::BincodeError(format!(
                 "Failed to melt the file : {} \n {}",
-                path.display(),err
+                path.display(),
+                err
             )))
         } else {
             self.rules.extend(result.unwrap().rules.into_iter());

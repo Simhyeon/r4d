@@ -6,6 +6,8 @@ use crate::Processor;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::io::BufRead;
+use std::io::Write;
+use std::process::Stdio;
 
 lazy_static! {
     pub static ref TRIM: Regex = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap();
@@ -197,5 +199,42 @@ impl Utils {
             }
             AuthState::Open => Ok(true),
         }
+    }
+
+    pub(crate) fn subprocess(args: &Vec<&str>) -> RadResult<()> {
+        #[cfg(target_os = "windows")]
+        let process = std::process::Command::new("cmd")
+            .arg("/C")
+            .args(&args[0..])
+            .stdin(Stdio::piped())
+            .spawn()
+            .map_err(|_| {
+                CedError::CommandError(format!(
+                    "Failed to execute command : \"{:?}\"",
+                    &args[0].as_ref()
+                ))
+            })?;
+
+        #[cfg(not(target_os = "windows"))]
+        let process = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(&args[0..].join(" ")) // TODO, is this correct?
+            .stdin(Stdio::piped())
+            .spawn()
+            .map_err(|_| {
+                RadError::InvalidArgument(format!("Failed to execute command : \"{:?}\"", &args[0]))
+            })?;
+
+        let output = process.wait_with_output()?;
+        let out_content = String::from_utf8_lossy(&output.stdout);
+        let err_content = String::from_utf8_lossy(&output.stderr);
+
+        if out_content.len() != 0 {
+            write!(std::io::stdout(), "{}", &out_content)?;
+        }
+        if err_content.len() != 0 {
+            write!(std::io::stderr(), "{}", &err_content)?;
+        }
+        Ok(())
     }
 }

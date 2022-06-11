@@ -281,7 +281,7 @@ impl<'processor> Processor<'processor> {
             map,
             cache: String::new(),
             write_option: WriteOption::Terminal,
-            cache_file : None,
+            cache_file: None,
             define_parser: DefineParser::new(),
             logger,
             state,
@@ -592,7 +592,6 @@ impl<'processor> Processor<'processor> {
         self.write_option = write_option;
     }
 
-
     /// Check if processing is on caching state
     pub fn on_cache(&self) -> bool {
         if let None = self.cache_file {
@@ -604,7 +603,13 @@ impl<'processor> Processor<'processor> {
 
     /// Toggle cache option
     pub fn enable_cache(&mut self, truncate: bool) -> RadResult<()> {
-        self.cache_file = Some(std::fs::OpenOptions::new().create(true).write(true).truncate(truncate).open(READ_CACHE)?);
+        self.cache_file = Some(
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(truncate)
+                .open(READ_CACHE)?,
+        );
         Ok(())
     }
 

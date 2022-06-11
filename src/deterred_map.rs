@@ -1,4 +1,5 @@
 use crate::arg_parser::ArgParser;
+use crate::formatter::Formatter;
 use crate::models::MacroType;
 use crate::models::RadResult;
 use crate::models::{ExtMacroBody, ExtMacroBuilder};
@@ -7,7 +8,6 @@ use crate::Processor;
 use crate::{AuthType, RadError};
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use crate::formatter::Formatter;
 
 pub(crate) type DFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResult<Option<String>>;
 
@@ -156,7 +156,12 @@ impl DeterredMacroMap {
         {
             map.insert(
                 "ieval".to_owned(),
-                KMacroSign::new("ieval", ["a_macro","a_expression"], Self::eval_inplace, None),
+                KMacroSign::new(
+                    "ieval",
+                    ["a_macro", "a_expression"],
+                    Self::eval_inplace,
+                    None,
+                ),
             );
         }
 
@@ -210,7 +215,7 @@ impl DeterredMacroMap {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
 
-                let result : String;
+                let result: String;
                 #[cfg(feature = "for_macro")]
                 {
                     processor.add_new_local_macro(level, ":", value);
@@ -218,7 +223,13 @@ impl DeterredMacroMap {
                 }
 
                 #[cfg(not(feature = "for_macro"))]
-                { result = processor.parse_chunk_args(level, "", &args[1].replace("$:", &value.to_string()))?; }
+                {
+                    result = processor.parse_chunk_args(
+                        level,
+                        "",
+                        &args[1].replace("$:", &value.to_string()),
+                    )?;
+                }
 
                 sums.push_str(&result);
                 count += 1;
@@ -297,18 +308,14 @@ impl DeterredMacroMap {
                 #[cfg(feature = "for_macro")]
                 {
                     processor.add_new_local_macro(level, ":", &value.to_string());
-                    result = processor.parse_chunk_args(
-                        level,
-                        "",
-                        &args[2],
-                    )?;
+                    result = processor.parse_chunk_args(level, "", &args[2])?;
                 }
                 #[cfg(not(feature = "for_macro"))]
                 {
                     result = processor.parse_chunk_args(
                         level,
                         "",
-                        &args[2].replace("$:", &value.to_string())
+                        &args[2].replace("$:", &value.to_string()),
                     )?;
                 }
 
@@ -573,12 +580,14 @@ impl DeterredMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let macro_name = &processor.parse_chunk_args(level, "", &args[0])?;
             if !processor.contains_macro(&macro_name, MacroType::Any) {
-                return Err(RadError::InvalidArgument(
-                        format!("Macro \"{}\" doesn't exist", macro_name)
-                ));
+                return Err(RadError::InvalidArgument(format!(
+                    "Macro \"{}\" doesn't exist",
+                    macro_name
+                )));
             }
             let args = &args[1];
-            let result = processor.parse_chunk_args(level, "", &format!("${}({})",macro_name, args))?;
+            let result =
+                processor.parse_chunk_args(level, "", &format!("${}({})", macro_name, args))?;
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
@@ -598,14 +607,15 @@ impl DeterredMacroMap {
     /// 1,2,3
     /// 4,5,6
     /// )
-    fn from_data(args: &str,level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+    fn from_data(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let macro_name = Utils::trim(&args[0]);
             // Trimming data might be very costly operation
             // Plus, it is already trimmed by csv crate.
             let macro_data = &args[1];
 
-            let result = Formatter::csv_to_macros(&macro_name, macro_data, &processor.state.newline)?;
+            let result =
+                Formatter::csv_to_macros(&macro_name, macro_data, &processor.state.newline)?;
 
             // TODO
             // This behaviour might can be improved
@@ -652,16 +662,23 @@ impl DeterredMacroMap {
     ///
     /// $ieval(macro,expression)
     #[cfg(feature = "evalexpr")]
-    fn eval_inplace(args: &str,level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+    fn eval_inplace(
+        args: &str,
+        level: usize,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             // This is the processed raw formula
             let macro_name = Utils::trim(&args[0]);
             if !processor.contains_macro(&macro_name, MacroType::Runtime) {
-                return Err(RadError::InvalidArgument(format!("Macro \"{}\" doesn't exist", macro_name)));
+                return Err(RadError::InvalidArgument(format!(
+                    "Macro \"{}\" doesn't exist",
+                    macro_name
+                )));
             }
 
             let expr = Utils::trim(&args[1]);
-            let chunk = format!("$eval( ${}() {} )",macro_name, expr);
+            let chunk = format!("$eval( ${}() {} )", macro_name, expr);
             let result = processor.parse_chunk_args(level, "", &chunk)?;
 
             processor.replace_macro(&macro_name, &result);
@@ -672,7 +689,6 @@ impl DeterredMacroMap {
             ))
         }
     }
-
 
     // Keyword macros end
     // ----------

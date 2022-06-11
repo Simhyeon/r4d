@@ -14,10 +14,14 @@ impl Formatter {
     /// - wikitext
     /// - html
     pub fn csv_to_table(table_format: &str, data: &str, newline: &str) -> RadResult<String> {
-        let data = dcsv::Reader::new().has_header(false).read_from_stream(data.as_bytes())?;
+        let data = dcsv::Reader::new()
+            .has_header(false)
+            .read_from_stream(data.as_bytes())?;
         let data_ref = data.read_only_ref();
         if data_ref.rows.len() == 0 {
-            return Err(RadError::InvalidArgument("Table cannot be constructed from empty value".to_string()));
+            return Err(RadError::InvalidArgument(
+                "Table cannot be constructed from empty value".to_string(),
+            ));
         }
         let table = match table_format {
             "github" => Formatter::gfm_table(&data_ref, newline)?,
@@ -38,12 +42,14 @@ impl Formatter {
     // <FORMAT>
     /// Execute sequence of macros from csv data
     pub fn csv_to_macros(macro_name: &str, data: &str, newline: &str) -> RadResult<String> {
-        let data = dcsv::Reader::new().has_header(false).read_from_stream(data.as_bytes())?;
+        let data = dcsv::Reader::new()
+            .has_header(false)
+            .read_from_stream(data.as_bytes())?;
         let mut exec = String::new();
         let mut iter = data.rows.iter().peekable();
         while let Some(row) = iter.next() {
             let row_str = row.to_string(&data.columns)?;
-            exec.push_str(&format!("${}({})", macro_name,row_str));
+            exec.push_str(&format!("${}({})", macro_name, row_str));
             if let Some(_) = iter.peek() {
                 exec.push_str(newline);
             }
@@ -57,7 +63,9 @@ impl Formatter {
         let mut data_iter = data.rows.iter();
         let header = data_iter.next();
         if let None = header {
-            return Err(RadError::InvalidArgument("Table cannot be constructed from empty value".to_string()));
+            return Err(RadError::InvalidArgument(
+                "Table cannot be constructed from empty value".to_string(),
+            ));
         }
         let header = header.unwrap();
         table.push('|');
@@ -92,7 +100,9 @@ impl Formatter {
         let mut data_iter = data.rows.iter();
         let header = data_iter.next();
         if let None = header {
-            return Err(RadError::InvalidArgument("Table cannot be constructed from empty value".to_string()));
+            return Err(RadError::InvalidArgument(
+                "Table cannot be constructed from empty value".to_string(),
+            ));
         }
         let header = header.unwrap();
 
@@ -128,7 +138,9 @@ impl Formatter {
         let mut data_iter = data.rows.iter();
         let header = data_iter.next();
         if let None = header {
-            return Err(RadError::InvalidArgument("Table cannot be constructed from empty value".to_string()));
+            return Err(RadError::InvalidArgument(
+                "Table cannot be constructed from empty value".to_string(),
+            ));
         }
         let header = header.unwrap();
         table.push_str("<table>\n");

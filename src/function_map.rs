@@ -5,7 +5,7 @@
 
 use crate::arg_parser::{ArgParser, GreedyState};
 use crate::auth::AuthType;
-use crate::consts::{ESR, LOREM_WIDTH, LOREM, LOREM_SOURCE};
+use crate::consts::{ESR, LOREM, LOREM_SOURCE, LOREM_WIDTH};
 use crate::error::RadError;
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
@@ -22,7 +22,7 @@ use cindex::OutOption;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
-use std::fs::{OpenOptions, canonicalize};
+use std::fs::{canonicalize, OpenOptions};
 use std::io::Write;
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
@@ -59,59 +59,129 @@ impl FunctionMacroMap {
         let mut map = HashMap::from_iter(IntoIterator::into_iter([
             (
                 "-".to_owned(),
-                FMacroSign::new("-", ESR, Self::get_pipe, Some("Get piped value".to_string())),
+                FMacroSign::new(
+                    "-",
+                    ESR,
+                    Self::get_pipe,
+                    Some("Get piped value".to_string()),
+                ),
             ),
             (
                 "append".to_owned(),
-                FMacroSign::new("append", ["a_macro_name", "a_content"], Self::append, Some("Append content to a macro".to_string())),
+                FMacroSign::new(
+                    "append",
+                    ["a_macro_name", "a_content"],
+                    Self::append,
+                    Some("Append content to a macro".to_string()),
+                ),
             ),
             (
                 "arr".to_owned(),
-                FMacroSign::new("arr", ["a_values"], Self::array, Some("Convert spaced array into comma array".to_string())),
+                FMacroSign::new(
+                    "arr",
+                    ["a_values"],
+                    Self::array,
+                    Some("Convert spaced array into comma array".to_string()),
+                ),
             ),
             (
                 "assert".to_owned(),
-                FMacroSign::new("assert", ["a_lvalue", "a_rvalue"], Self::assert, Some("Comopare two statements".to_string())),
+                FMacroSign::new(
+                    "assert",
+                    ["a_lvalue", "a_rvalue"],
+                    Self::assert,
+                    Some("Comopare two statements".to_string()),
+                ),
             ),
             (
                 "ceil".to_owned(),
-                FMacroSign::new("ceil", ["a_number"], Self::get_ceiling, Some("Get ceiling of the number".to_string())),
+                FMacroSign::new(
+                    "ceil",
+                    ["a_number"],
+                    Self::get_ceiling,
+                    Some("Get ceiling of the number".to_string()),
+                ),
             ),
             (
                 "chomp".to_owned(),
-                FMacroSign::new("chomp", ["a_content"], Self::chomp, Some("Remove duplicate newlines from content".to_string())),
+                FMacroSign::new(
+                    "chomp",
+                    ["a_content"],
+                    Self::chomp,
+                    Some("Remove duplicate newlines from content".to_string()),
+                ),
             ),
             (
                 "clear".to_owned(),
-                FMacroSign::new("clear", ["a_content"], Self::clear, Some("Clear volatile macros".to_string())),
+                FMacroSign::new(
+                    "clear",
+                    ["a_content"],
+                    Self::clear,
+                    Some("Clear volatile macros".to_string()),
+                ),
             ),
             (
                 "comp".to_owned(),
-                FMacroSign::new("comp", ["a_content"], Self::compress, Some("Apply trim and chomp to content".to_string())),
+                FMacroSign::new(
+                    "comp",
+                    ["a_content"],
+                    Self::compress,
+                    Some("Apply trim and chomp to content".to_string()),
+                ),
             ),
             (
                 "count".to_owned(),
-                FMacroSign::new("count", ["a_array"], Self::count, Some("Get count of array".to_string())),
+                FMacroSign::new(
+                    "count",
+                    ["a_array"],
+                    Self::count,
+                    Some("Get count of array".to_string()),
+                ),
             ),
             (
                 "countw".to_owned(),
-                FMacroSign::new("countw", ["a_array"], Self::count_word, Some("Get count of words".to_string())),
+                FMacroSign::new(
+                    "countw",
+                    ["a_array"],
+                    Self::count_word,
+                    Some("Get count of words".to_string()),
+                ),
             ),
             (
                 "countl".to_owned(),
-                FMacroSign::new("countl", ["a_content"], Self::count_lines, Some("Get count of lines".to_string())),
+                FMacroSign::new(
+                    "countl",
+                    ["a_content"],
+                    Self::count_lines,
+                    Some("Get count of lines".to_string()),
+                ),
             ),
             (
                 "dnl".to_owned(),
-                FMacroSign::new("dnl", ESR, Self::deny_newline, Some("Deny next newline.".to_string())),
+                FMacroSign::new(
+                    "dnl",
+                    ESR,
+                    Self::deny_newline,
+                    Some("Deny next newline.".to_string()),
+                ),
             ),
             (
                 "declare".to_owned(),
-                FMacroSign::new("declare", ["a_macro_names"], Self::declare, Some("Declare multiple variables separated by comma".to_string())),
+                FMacroSign::new(
+                    "declare",
+                    ["a_macro_names"],
+                    Self::declare,
+                    Some("Declare multiple variables separated by comma".to_string()),
+                ),
             ),
             (
                 "docu".to_owned(),
-                FMacroSign::new("docu", ["a_macro_name", "a_content"], Self::document, Some("Append documents to a macro".to_string())),
+                FMacroSign::new(
+                    "docu",
+                    ["a_macro_name", "a_content"],
+                    Self::document,
+                    Some("Append documents to a macro".to_string()),
+                ),
             ),
             (
                 "enl".to_owned(),
@@ -833,7 +903,7 @@ impl FunctionMacroMap {
                     let mut lorem = String::new();
                     let loop_amount = count / *LOREM_WIDTH;
                     let remnant = count % *LOREM_WIDTH;
-                    for _ in 0..loop_amount  {
+                    for _ in 0..loop_amount {
                         lorem.push_str(LOREM_SOURCE);
                     }
                     lorem.push_str(&LOREM[0..remnant].join(" "));
@@ -897,9 +967,8 @@ impl FunctionMacroMap {
                 }
 
                 // Create chunk
-                let chunk 
-                    = processor.from_file_as_chunk(&file_path)?;
-                processor.state.paused = false;               // Recover paused state
+                let chunk = processor.from_file_as_chunk(&file_path)?;
+                processor.state.paused = false; // Recover paused state
                 processor.set_sandbox(false);
                 processor.state.input_stack.remove(&canonic); // Collect stack
                 Ok(chunk)
@@ -917,15 +986,18 @@ impl FunctionMacroMap {
         }
     }
 
-    fn check_include_sanity(processor: &Processor,file_path: &Path, canonic: &Path) -> RadResult<()> {
-
+    fn check_include_sanity(
+        processor: &Processor,
+        file_path: &Path,
+        canonic: &Path,
+    ) -> RadResult<()> {
         // Rules 1
         // You cannot include self
         if let ProcessInput::File(path) = &processor.state.current_input {
             if path.canonicalize()? == canonic {
                 return Err(RadError::InvalidArgument(format!(
-                            "You cannot include self while including a file : \"{}\"",
-                            &path.display()
+                    "You cannot include self while including a file : \"{}\"",
+                    &path.display()
                 )));
             }
         }
@@ -934,8 +1006,8 @@ impl FunctionMacroMap {
         // Field is in input stack
         if processor.state.input_stack.contains(canonic) {
             return Err(RadError::InvalidArgument(format!(
-                        "You cannot include self while including a file : \"{}\"",
-                        &file_path.display()
+                "You cannot include self while including a file : \"{}\"",
+                &file_path.display()
             )));
         }
 
@@ -944,8 +1016,8 @@ impl FunctionMacroMap {
         if let Some(RelayTarget::File(target)) = &processor.state.relay.last() {
             if target.path.canonicalize()? == file_path.canonicalize()? {
                 return Err(RadError::InvalidArgument(format!(
-                            "You cannot include relay target while relaying to the file : \"{}\"",
-                            &target.path.display()
+                    "You cannot include relay target while relaying to the file : \"{}\"",
+                    &target.path.display()
                 )));
             }
         }
