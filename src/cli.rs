@@ -432,9 +432,8 @@ impl RadoCli {
                     self.flag_out.replace(PathBuf::from(path));
                 }
 
-                if let Some(values) = args.value_of("argument") {
-                    self.flag_arguments =
-                        values.split(' ').map(|s| s.to_string()).collect::<Vec<_>>();
+                if let Some(values) = args.values_of("argument") {
+                    self.flag_arguments = values.map(|s| s.to_owned()).collect::<Vec<_>>();
                 }
             }
             _ => (),
@@ -496,12 +495,15 @@ impl RadoCli {
             .about( "Rado is a high level wrapper around rad binary")
             .long_about("Rado is a high level wrapper around rad binary. You can either edit a source macro file or read final compiled file with rado wrapper. Rado only compiles when the final product has different timestamp with source file.")
             .override_usage("rado <FILE>
-    rado read <FILE>
-    rado -s <FILE>
-    rado -f <FILE>")
+    rado read <FILE> -- arguments
+    rado edit <FILE>
+    rado force <FILE>
+    rado diff <FILE>
+    rado sync <FILE>")
             .arg(Arg::new("argument")
                 .last(true)
                 .takes_value(true)
+                .multiple_values(true)
                 .global(true)
                 .help("Send arguments to rad binary"))
             .arg(Arg::new("out")
