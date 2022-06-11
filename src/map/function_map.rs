@@ -3,7 +3,7 @@
 //! Function macro module includes struct and methods related to function macros which are technically function
 //! pointers.
 
-use crate::arg_parser::{ArgParser, GreedyState};
+use crate::{ArgParser, GreedyState};
 use crate::auth::AuthType;
 use crate::consts::{ESR, LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER};
 use crate::error::RadError;
@@ -2746,41 +2746,41 @@ impl FunctionMacroMap {
         if !Utils::is_granted("listdir", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let path = if args[0].is_empty() {
-                processor.get_current_dir()?.clone()
-            } else {
-                PathBuf::from(&args[0])
-            };
-            if !path.exists() {
-                return Err(RadError::InvalidArgument(format!(
-                    "Cannot list non-existent directory \"{}\"",
-                    path.display()
-                )));
-            }
-
-            let delim = if let Some(delim) = args.get(1) {
-                delim
-            } else {
-                ","
-            };
-
-            let mut vec = vec![];
-            for entry in std::fs::read_dir(path)? {
-                let entry = entry?;
-                vec.push(std::fs::canonicalize(entry.path())?);
-            }
-
-            let result: Vec<_> = vec
-                .iter()
-                .map(|p| p.display().to_string())
-                .collect::<Vec<_>>();
-            Ok(Some(result.join(delim)))
-        } else {
-            Err(RadError::InvalidArgument(
-                "listdir requires an argument".to_owned(),
-            ))
+        let args = ArgParser::new().args_to_vec(&args, ',', GreedyState::Never);
+        if args.len() == 0 {
+            return Err(RadError::InvalidArgument(
+                "listdir at least requires an argument".to_owned(),
+            ));
         }
+        let path = if args[0].is_empty() {
+            processor.get_current_dir()?.clone()
+        } else {
+            PathBuf::from(&args[0])
+        };
+        if !path.exists() {
+            return Err(RadError::InvalidArgument(format!(
+                        "Cannot list non-existent directory \"{}\"",
+                        path.display()
+            )));
+        }
+
+        let delim = if let Some(delim) = args.get(1) {
+            delim
+        } else {
+            ","
+        };
+
+        let mut vec = vec![];
+        for entry in std::fs::read_dir(path)? {
+            let entry = entry?;
+            vec.push(std::fs::canonicalize(entry.path())?);
+        }
+
+        let result: Vec<_> = vec
+            .iter()
+            .map(|p| p.display().to_string())
+            .collect::<Vec<_>>();
+        Ok(Some(result.join(delim)))
     }
 
     // END Default macros

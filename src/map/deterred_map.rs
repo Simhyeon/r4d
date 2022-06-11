@@ -1,4 +1,4 @@
-use crate::arg_parser::ArgParser;
+use crate::ArgParser;
 use crate::formatter::Formatter;
 use crate::models::MacroType;
 use crate::models::RadResult;
