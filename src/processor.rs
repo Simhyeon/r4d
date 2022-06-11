@@ -1249,7 +1249,6 @@ impl<'processor> Processor<'processor> {
 
         // TODO
         // If escape_nl is set as global attribute, set escape_newline
-        // Currently this behaviour is not so different from dnl
         if self.state.escape_newline {
             lexor.escape_next_newline();
             self.state.escape_newline = false;
@@ -1342,10 +1341,10 @@ impl<'processor> Processor<'processor> {
     /// Evaluate detected macro usage
     ///
     /// Evaluation order is followed
-    /// - Keyword macro
+    /// - Deterred macro
     /// - Local bound macro
-    /// - Custom macro
-    /// - Basic macro
+    /// - Runtime macro
+    /// - Function macro
     fn evaluate(
         &mut self,
         level: usize,
@@ -1409,7 +1408,7 @@ impl<'processor> Processor<'processor> {
             if let Some(RelayTarget::Macro(mac)) = &self.state.relay.last() {
                 if mac == name {
                     return Err(RadError::UnallowedMacroExecution(format!(
-                        "Cannot execute macro \"{}\" when it is being relayed to",
+                        "Cannot execute a macro \"{}\" when it is being relayed to",
                         mac
                     )));
                 }
@@ -1436,7 +1435,7 @@ impl<'processor> Processor<'processor> {
 
     /// Invoke a runtime rule and get a result
     ///
-    /// Invoke rule evaluates body of macro rule because body is not evaluated on register process
+    /// Invoke rule evaluates body of macro rule because the body is not evaluated on register process
     fn invoke_rule(
         &mut self,
         level: usize,
