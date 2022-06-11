@@ -1961,7 +1961,7 @@ impl<'processor> Processor<'processor> {
                 ))?;
                 if self.state.behaviour == Behaviour::Strict {
                     return Err(RadError::StrictPanic("Failed to invoke a macro".to_owned()));
-                } else {
+                } else if self.state.behaviour == Behaviour::Lenient {
                     remainder.push_str(&frag.whole_string);
                 }
             }
@@ -1976,7 +1976,7 @@ impl<'processor> Processor<'processor> {
                     }
                     // If purge mode is set, don't print anything
                     // and don't print error
-                    Behaviour::Purge | Behaviour::Nopanic => self.state.consume_newline = true,
+                    Behaviour::Purge => self.state.consume_newline = true,
                     _ => {
                         remainder.push_str(&frag.whole_string);
                     }
