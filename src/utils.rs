@@ -209,9 +209,9 @@ impl Utils {
             .stdin(Stdio::piped())
             .spawn()
             .map_err(|_| {
-                CedError::CommandError(format!(
+                RadError::InvalidArgument(format!(
                     "Failed to execute command : \"{:?}\"",
-                    &args[0].as_ref()
+                    &args[0]
                 ))
             })?;
 
