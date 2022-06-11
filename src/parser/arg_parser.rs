@@ -5,7 +5,7 @@
 use crate::consts::{ESCAPE_CHAR, LIT_CHAR};
 use std::{iter::Peekable, str::Chars};
 
-pub(crate) struct ArgParser {
+pub struct ArgParser {
     values: Vec<String>,
     previous: Option<char>,
     lit_count: usize,
@@ -14,7 +14,7 @@ pub(crate) struct ArgParser {
 
 /// State indicates whether argument should be parsed greedily or not
 #[derive(Debug)]
-pub(crate) enum GreedyState {
+pub enum GreedyState {
     Deterred(usize),
     Greedy,
     Never,

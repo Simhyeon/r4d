@@ -1,7 +1,7 @@
 use crate::utils::Utils;
 
 /// Struct for deinition parsing
-pub(crate) struct DefineParser {
+pub struct DefineParser {
     arg_cursor: DefineCursor,
     name: String,
     args: String,
