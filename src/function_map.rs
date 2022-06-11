@@ -121,6 +121,10 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "cnl".to_owned(),
+                FMacroSign::new("cnl", ESR, Self::consume_newline, None),
+            ),
+            (
                 "comp".to_owned(),
                 FMacroSign::new(
                     "comp",
@@ -1408,6 +1412,16 @@ impl FunctionMacroMap {
     /// $enl()
     fn escape_newline(_: &str, p: &mut Processor) -> RadResult<Option<String>> {
         p.state.escape_newline = true;
+        Ok(None)
+    }
+
+    /// consume new line
+    ///
+    /// # Usage
+    ///
+    /// $cnl()
+    fn consume_newline(_: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        p.state.consume_newline = true;
         Ok(None)
     }
 
