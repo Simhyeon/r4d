@@ -15,8 +15,6 @@ use std::path::{Path, PathBuf};
 
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
-#[cfg(feature = "signature")]
-use std::io::Write;
 
 /// Struct to parse command line arguments and execute proper operations
 pub struct Cli {
