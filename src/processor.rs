@@ -89,13 +89,13 @@
 //! processor.print_result()?;                       
 //! ```
 
-use crate::arg_parser::{ArgParser, GreedyState};
+use crate::{ArgParser, GreedyState};
 use crate::auth::{AuthFlags, AuthState, AuthType};
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::define_parser::DefineParser;
+use crate::DefineParser;
 use crate::error::RadError;
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};

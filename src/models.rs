@@ -5,7 +5,8 @@ use crate::runtime_map::{RuntimeMacro, RuntimeMacroMap};
 #[cfg(feature = "signature")]
 use crate::sigmap::MacroSignature;
 use crate::utils::Utils;
-use crate::{deterred_map::DeterredMacroMap, function_map::FunctionMacroMap};
+use crate::deterred_map::DeterredMacroMap;
+use crate::function_map::FunctionMacroMap;
 use bincode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

@@ -13,11 +13,11 @@ default-run = "rad"
 
 [[bin]]
 name = "rad"
-path = "src/bin-rad.rs"
+path = "src/in/rad.rs"
 
 [[bin]]
 name = "rado"
-path = "src/bin-rado.rs"
+path = "src/bin/rado.rs"
 
 [lib]
 name = "rad"

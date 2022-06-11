@@ -53,23 +53,27 @@ mod error;
 // This is necessary for docs.rs documentation
 pub mod processor;
 
-pub(crate) mod arg_parser;
+mod parser;
+pub(crate) use parser::{ ArgParser , GreedyState};
+pub(crate) use parser::DefineParser;
+
+mod map;
+#[cfg(feature = "signature")]
+pub(crate) use map::sigmap;
+pub(crate) use map::function_map;
+pub(crate) use map::deterred_map;
+pub(crate) use map::runtime_map;
+#[cfg(feature = "hook")]
+pub(crate) use map::hookmap;
+
 pub(crate) mod auth;
 pub(crate) mod consts;
 #[cfg(feature = "debug")]
 pub(crate) mod debugger;
-pub(crate) mod define_parser;
-pub(crate) mod deterred_map;
 pub(crate) mod formatter;
-pub(crate) mod function_map;
-#[cfg(feature = "hook")]
-pub(crate) mod hookmap;
 pub(crate) mod lexor;
 pub(crate) mod logger;
 pub(crate) mod models;
-pub(crate) mod runtime_map;
-#[cfg(feature = "signature")]
-pub(crate) mod sigmap;
 pub(crate) mod utils;
 
 pub use auth::AuthType;
