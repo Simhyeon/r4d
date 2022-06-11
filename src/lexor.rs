@@ -9,7 +9,6 @@
 
 use crate::consts::*;
 use crate::models::CommentType;
-use crate::models::RadResult;
 use crate::utils::Utils;
 
 /// Struct that validated a given character
@@ -46,18 +45,18 @@ impl Lexor {
     }
 
     /// Validate the character
-    pub fn lex(&mut self, ch: char) -> RadResult<LexResult> {
+    pub fn lex(&mut self, ch: char) -> LexResult {
         let result: LexResult;
         // Literal related
         if self.start_literal(ch) {
             self.previous_char.replace('0');
-            return Ok(LexResult::Literal(self.cursor));
+            return LexResult::Literal(self.cursor);
         } else if self.end_literal(ch) {
             self.previous_char.replace('0');
-            return Ok(LexResult::Literal(self.cursor));
+            return LexResult::Literal(self.cursor);
         } else if self.literal_count > 0 {
             self.previous_char.replace(ch);
-            return Ok(LexResult::Literal(self.cursor));
+            return LexResult::Literal(self.cursor);
         }
 
         // Exit if comment_type is configured
@@ -65,7 +64,7 @@ impl Lexor {
         if let Some(cch) = self.comment_char {
             if cch == ch {
                 self.reset();
-                return Ok(LexResult::CommentExit);
+                return LexResult::CommentExit;
             }
         }
 
@@ -85,7 +84,7 @@ impl Lexor {
         let replace = ch;
 
         self.previous_char.replace(replace);
-        Ok(result)
+        result
     }
 
     // ----------
