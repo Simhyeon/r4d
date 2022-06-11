@@ -557,6 +557,17 @@ impl<'processor> Processor<'processor> {
     // <PROCESS>
     //
 
+    /// Import rule file
+    ///
+    /// This always melt file into non-volatile form
+    pub fn import_frozen_file(&mut self, path: &Path) -> RadResult<()> {
+        let mut rule_file = RuleFile::new(None);
+        rule_file.melt(path)?;
+        self.map.runtime.extend_map(rule_file.rules, Hygiene::None);
+
+        Ok(())
+    }
+
     /// Set queue object
     pub fn insert_queue(&mut self, item: &str) {
         self.state.queued.push(item.to_owned());
@@ -762,7 +773,9 @@ impl<'processor> Processor<'processor> {
                 WarningType::Security,
             )?;
             if self.state.behaviour == Behaviour::Strict {
-                return Err(RadError::StrictPanic);
+                return Err(RadError::StrictPanic(
+                    "Failed to register a macro".to_owned(),
+                ));
             }
         }
         for (name, args, body) in rules {
@@ -790,6 +803,8 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Add static rules without builder pattern
+    ///
+    /// **NOTE** that this method doesn't expand body, but needs to be handled before invoking this method
     ///
     /// # Args
     ///
@@ -1522,15 +1537,20 @@ impl<'processor> Processor<'processor> {
                     .map
                     .contains_macro(&name, MacroType::Any, self.state.hygiene)
             {
-                self.log_error("Can't override exsiting macro on strict mode")?;
-                return Err(RadError::StrictPanic);
+                self.log_error(&format!(
+                    "Can't override exsiting macro : \"{}\"",
+                    frag.args.split(',').collect::<Vec<&str>>()[0]
+                ))?;
+                return Err(RadError::StrictPanic(
+                    "Failed to register a macro".to_owned(),
+                ));
             }
 
             self.map
                 .register_runtime(&name, &args, &body, self.state.hygiene)?;
         } else {
             self.log_error(&format!(
-                "Failed to register a macro : \"{}\"",
+                "Invalid macro definition format for a macro : \"{}\"",
                 frag.args.split(',').collect::<Vec<&str>>()[0]
             ))?;
             remainder.push_str(&frag.whole_string);
@@ -1744,14 +1764,16 @@ impl<'processor> Processor<'processor> {
         if frag.name == DEFINE_KEYWORD {
             // Within aseptic circumstances you cannot define runtime macros
             if self.state.hygiene == Hygiene::Aseptic {
+                frag.clear();
+                self.state.consume_newline = true;
                 self.log_strict(
                     "Runtime macro declaration is disabled in aseptic mode",
                     WarningType::Security,
                 )?;
-                frag.clear();
-                self.state.consume_newline = true;
                 if self.state.behaviour == Behaviour::Strict {
-                    return Err(RadError::StrictPanic);
+                    return Err(RadError::StrictPanic(
+                        "Failed to register a macro".to_owned(),
+                    ));
                 }
             } else {
                 self.lex_branch_end_frag_define(
@@ -1847,23 +1869,14 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// When evaluation failed for various reasons.
     fn lex_branch_end_frag_eval_result_error(&mut self, error: RadError) -> RadResult<()> {
-        // this is equlvalent to conceptual if let not pattern
-        // Log error when panic occured
-        if let RadError::Panic = error {
-            // Do nothing
-            ();
-        } else {
-            self.log_error(&format!("{}", error))?;
-        }
+        self.log_error(&format!("{}", error))?;
 
-        // If nopanic don't panic
-        // If not, re-throw err to caller
-        if self.state.behaviour == Behaviour::Nopanic {
-            Ok(())
-        } else {
-            Err(RadError::Panic)
+        if self.state.behaviour == Behaviour::Strict {
+            return Err(RadError::StrictPanic("Failed to invoke a macro".to_owned()));
         }
+        Ok(())
     }
 
     // Level is needed for feature debug & hook codes
@@ -1942,8 +1955,12 @@ impl<'processor> Processor<'processor> {
                 }
             }
             EvalResult::InvalidArg => {
+                self.log_error(&format!(
+                    "Invalid argument(s) for a macro \"{}\"",
+                    frag.name
+                ))?;
                 if self.state.behaviour == Behaviour::Strict {
-                    return Err(RadError::StrictPanic);
+                    return Err(RadError::StrictPanic("Failed to invoke a macro".to_owned()));
                 } else {
                     remainder.push_str(&frag.whole_string);
                 }
@@ -1952,16 +1969,15 @@ impl<'processor> Processor<'processor> {
                 // Failed to invoke
                 // because macro doesn't exist
 
+                self.log_error(&format!("Invalid macro name : \"{}\"", frag.name))?;
                 match self.state.behaviour {
                     Behaviour::Strict => {
-                        self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
-                        return Err(RadError::StrictPanic);
+                        return Err(RadError::StrictPanic("Failed to invoke a macro".to_owned()));
                     }
                     // If purge mode is set, don't print anything
                     // and don't print error
                     Behaviour::Purge | Behaviour::Nopanic => self.state.consume_newline = true,
                     _ => {
-                        self.log_error(&format!("Failed to invoke a macro : \"{}\"", frag.name))?;
                         remainder.push_str(&frag.whole_string);
                     }
                 }
@@ -2031,8 +2047,8 @@ impl<'processor> Processor<'processor> {
     ///
     /// This is an explicit state change method for non-processor module's usage
     ///
-    /// Sandbox means that current state(cursor) of processor should not be applied for following
-    /// independent processing
+    /// Sandbox means that current state(cursor) of processor should not be applied for following independent processing
+    /// This mostly means loggers lines information is separate from sandboxed input and main input.
     pub(crate) fn set_sandbox(&mut self, sandbox: bool) {
         self.state.sandbox = sandbox;
     }
@@ -2078,7 +2094,7 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    /// This prints error if strict mode else warning
+    /// This prints error if strict mode else print warning
     pub(crate) fn log_strict(&mut self, log: &str, warning_type: WarningType) -> RadResult<()> {
         if self.state.behaviour == Behaviour::Strict {
             self.logger.elog(log)?;
@@ -2175,13 +2191,20 @@ impl<'processor> Processor<'processor> {
         }
     }
 
+    /// This returns canonicalized absolute path
+    ///
+    /// It fails when the parent path cannot be canonicalized
     pub fn get_current_dir(&self) -> RadResult<PathBuf> {
         let path = match &self.state.current_input {
             ProcessInput::Stdin => std::env::current_dir()?,
-            ProcessInput::File(path) => path
-                .parent()
-                .unwrap_or(&std::env::current_dir()?)
-                .to_owned(),
+            ProcessInput::File(path) => {
+                let path = match path.parent() {
+                    Some(empty) if empty == Path::new("") => PathBuf::from("./"),
+                    Some(other) => other.to_owned(),
+                    None => std::env::current_dir()?,
+                };
+                path.to_owned()
+            }
         };
         Ok(path)
     }
