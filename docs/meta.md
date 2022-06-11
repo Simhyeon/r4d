@@ -11,7 +11,10 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### Imminent
 
-* [ ] Enl does same thing with dnl... what? This is strange
+* [x] I found a huge bug... How come I did not know this?
+	* [x] Non-printing macro removed newline while there are texts to print
+* [x] Enl does same thing with dnl... what? This is strange
+* [x] New macro cnl
 * [ ] In-built documentation for function and deterred macro
 
 * [ ] Escape rule is somewhat bugged?
@@ -21,13 +24,48 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### 3.0
 
-- Remove for macro feature
+- Remove 'for_macro' feature
 - Remove unused compatibility feature
+- Change library name
+- Rado binary
+- Consider macro execution order
+- Current behaviour interprets input as string if given input doesn't exist. I was not aware... but this looks very strange.
+	- Maybe this was because, sending stdin is somewhat clunky?
+	- This is breaing changes and has to handled properly
 
 ### TODOs
 
-* [ ] Ditch avoidable dependencies
-	* [ ] Serde derive : Deserialize is hard... woah
+* [ ] Strict level set should be single entry... I don't understand why this
+was not handled yet.. wow.
+- Arragnment
+	- Strict : Very hard level
+	- Purge | Lenient: Same level but acts differently on specific case
+	- NoPanic: Lowest level
+	The thing is there is nothing as nopanic purge. Therefore nopnaic should be
+	a different flag than purge or leneint.
+* [ ] Make error message consistent
+* [ ] Changed error behaviours a little bit
+	* [x] Removed panic error because it was confusing and not helpful
+	* [x] Made strict error much more simple and combined log_error with helpful error debuggings
+* [x] Rearranged project structure because cli has two binaries
+* [x] Import macro : Read .r4f file
+* [x] Source macro : Read sh like macros as runtime macro
+* [ ] listdir macro : List directory contents
+	* [ ] Is listdir ergonomics ok? It seems... weird + why not just option to rint only file_names
+* [x] Rado env subcommand
+
+* [ ] New macro in indices.md
+	* [ ] Listdir
+	* [ ] import
+	* [ ] source
+* [ ] Rado documentation : Not at all
+
+* Current order of execution is followed. Should this change?
+    - Deterred macro
+    - Local bound macro
+    - Runtime macro
+    - Function macro
+	* For example, Local should come first?
 
 * [ ] Include as namespace
 	- Enabling macro usage such as std.include()
@@ -100,6 +138,13 @@ Following is such hard to do cleanly, deterred
   is useful because calculating length and word limit is much more expensive
   simple random generation.
   - Lipsum with custom separator
+
+### NOTE
+
+1. About dnl and enl inside body
+	- ENL or DNL doesn't work inside macro body because dnl is evaluated on every "line".
+	- ENL is evaluated on "NONE" Cursor which menas enl is not evalued properly
+	inside body. where lexor's cursor never goes to NONE state.
 
 ### How macro parsing works?
 
@@ -612,4 +657,22 @@ For 2.1.3
 	* [x] Lipsum
 * [x] Remove features for better maintainability
 	* [x] Storage
+
+---
+After 2.1.4
+
+* [x] Rado
+	* [x] Clap template
+	* [x] Clap options
+		* [x] Diff subcommand
+		* [x] Edit subcommand
+			* [x] Basics
+			* [x] Make default rad_editor variant.
+		* [x] Read subcommand rad,execute option
+		* [x] Sync subcommand
+			- Possibly rename later
+		* [x] force subcommand
+			* [x] read flag
+		* [x] -o out option
+		* [x] arguments option
 

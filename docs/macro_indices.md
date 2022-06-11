@@ -209,6 +209,18 @@ If input script is /home/radman/input.sh, ```$include(src/content.rs)```
 fetches file located in /home/radman/content.rs. On
 ```$include(../dir/test.rs)```, /home/dir/test.rs is fetched.
 
+You can also include file without expansion with optional parameter.
+
+```
+% Second argument is whether to include as raw format.
+$include(file_name.txt,true)
+===
+% Content is copy pasted without expansion
+```
+
+This internally invokes $escape(true) before include and $escape(false) after
+invocation.
+
 ### tempin, tempout, tempto
 
 AUTH : FIN or FOUT
@@ -372,6 +384,18 @@ Get parent path from input
 $parent(/home/test/Documents/info.txt)
 ===
 /home/test/Documents
+```
+
+### listdir
+
+AUTH : FIN
+
+This lists file in directory as abolsute form. Empty value means current
+directory.
+
+```
+$listdir()
+===
 ```
 
 ### let
