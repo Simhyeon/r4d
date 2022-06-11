@@ -1308,7 +1308,7 @@ impl<'processor> Processor<'processor> {
         for ch in line.chars() {
             self.logger.add_char_number();
 
-            let lex_result = lexor.lex(ch)?;
+            let lex_result = lexor.lex(ch);
             // Either add character to remainder or fragments
             match lex_result {
                 LexResult::CommentExit => {
@@ -1460,7 +1460,7 @@ impl<'processor> Processor<'processor> {
             if let Some(result) = self.invoke_rule(level, name, &args)? {
                 return Ok(EvalResult::Eval(Some(result)));
             } else {
-                return Ok(EvalResult::InvalidArg);
+                return Ok(EvalResult::InvalidRumtimeArgs);
             }
         }
         // Find function macro
@@ -1472,7 +1472,7 @@ impl<'processor> Processor<'processor> {
         }
         // No macros found to evaluate
         else {
-            return Ok(EvalResult::InvalidName);
+            return Ok(EvalResult::NoSuchName);
         }
     }
 
@@ -1954,7 +1954,7 @@ impl<'processor> Processor<'processor> {
                     }
                 }
             }
-            EvalResult::InvalidArg => {
+            EvalResult::InvalidRumtimeArgs => {
                 self.log_error(&format!(
                     "Invalid argument(s) for a macro \"{}\"",
                     frag.name
@@ -1965,7 +1965,7 @@ impl<'processor> Processor<'processor> {
                     remainder.push_str(&frag.whole_string);
                 }
             }
-            EvalResult::InvalidName => {
+            EvalResult::NoSuchName => {
                 // Failed to invoke
                 // because macro doesn't exist
 
@@ -2321,6 +2321,6 @@ struct SandboxBackup {
 
 enum EvalResult {
     Eval(Option<String>),
-    InvalidName,
-    InvalidArg,
+    NoSuchName,
+    InvalidRumtimeArgs,
 }
