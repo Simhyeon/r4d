@@ -5,7 +5,7 @@
 
 use crate::arg_parser::{ArgParser, GreedyState};
 use crate::auth::AuthType;
-use crate::consts::{ESR, LOREM, LOREM_SOURCE, LOREM_WIDTH};
+use crate::consts::{ESR, LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER};
 use crate::error::RadError;
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
@@ -23,7 +23,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
 use std::fs::{canonicalize, OpenOptions};
-use std::io::Write;
+use std::io::{BufRead, Write};
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -236,6 +236,10 @@ impl FunctionMacroMap {
                 FMacroSign::new("index", ["a_index", "a_array"], Self::index_array, None),
             ),
             (
+                "import".to_owned(),
+                FMacroSign::new("import", ["a_file"], Self::import_frozen_file, None),
+            ),
+            (
                 "len".to_owned(),
                 FMacroSign::new("len", ["a_string"], Self::len, None),
             ),
@@ -251,6 +255,10 @@ impl FunctionMacroMap {
             (
                 "lipsum".to_owned(),
                 FMacroSign::new("lipsum", ["a_word_count"], Self::lipsum_words, None),
+            ),
+            (
+                "listdir".to_owned(),
+                FMacroSign::new("listdir", ["a_path"], Self::list_directory_files, None),
             ),
             (
                 "lower".to_owned(),
@@ -349,6 +357,10 @@ impl FunctionMacroMap {
             (
                 "sep".to_owned(),
                 FMacroSign::new("sep", ["separator", "a_array"], Self::separate_array, None),
+            ),
+            (
+                "source".to_owned(),
+                FMacroSign::new("source", ["a_file"], Self::source_static_file, None),
             ),
             (
                 "sort".to_owned(),
@@ -1461,9 +1473,11 @@ impl FunctionMacroMap {
         }
 
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let path = p.get_current_dir()?.join(&args[0]);
-            let canonic = std::fs::canonicalize(path)?.to_str().unwrap().to_owned();
-            Ok(Some(canonic))
+            let path = std::fs::canonicalize(p.get_current_dir()?.join(&args[0]))?
+                .to_str()
+                .unwrap()
+                .to_owned();
+            Ok(Some(path))
         } else {
             Err(RadError::InvalidArgument(
                 "Abs requires an argument".to_owned(),
@@ -2651,6 +2665,127 @@ impl FunctionMacroMap {
             ))
         }
     }
+
+    /// Source static file
+    ///
+    /// Source file's format is mostly equivalent with env.
+    /// $source(file_name.renv)
+    fn source_static_file(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("source", AuthType::FIN, processor)? {
+            return Ok(None);
+        }
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let path = Path::new(&args[0]);
+            if !path.exists() {
+                return Err(RadError::InvalidArgument(format!(
+                    "Cannot source non-existent file \"{}\"",
+                    path.display()
+                )));
+            }
+
+            processor.set_sandbox(true);
+
+            let source_lines = std::io::BufReader::new(std::fs::File::open(path)?).lines();
+            for (idx, line) in source_lines.enumerate() {
+                let line = line?;
+                let idx = idx + 1; // 1 starting index is more human friendly
+                if let Some((name, body)) = line.split_once('=') {
+                    match processor.parse_chunk_args(0, MAIN_CALLER, body) {
+                        Ok(body) => processor.add_static_rules(vec![(name, body)])?,
+                        Err(err) => {
+                            processor.log_error(&format!(
+                                "Failed to source a file \"{}\" in line \"{}\"",
+                                path.display(),
+                                idx
+                            ))?;
+                            return Err(err);
+                        }
+                    }
+                } else {
+                    return Err(RadError::InvalidArgument(format!(
+                        "Invalid line in source file, line \"{}\" \n = \"{}\"",
+                        idx, line
+                    )));
+                }
+            }
+            processor.set_sandbox(false);
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "source requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Import a frozen file
+    ///
+    /// $import(file.r4f)
+    fn import_frozen_file(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("import", AuthType::FIN, processor)? {
+            return Ok(None);
+        }
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let path = Path::new(&args[0]);
+            if !path.exists() {
+                return Err(RadError::InvalidArgument(format!(
+                    "Cannot import from non-existent file \"{}\"",
+                    path.display()
+                )));
+            }
+            processor.import_frozen_file(path)?;
+
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "import requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    fn list_directory_files(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("listdir", AuthType::FIN, processor)? {
+            return Ok(None);
+        }
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let path = if args[0].is_empty() {
+                processor.get_current_dir()?.clone()
+            } else {
+                PathBuf::from(&args[0])
+            };
+            if !path.exists() {
+                return Err(RadError::InvalidArgument(format!(
+                    "Cannot list non-existent directory \"{}\"",
+                    path.display()
+                )));
+            }
+
+            let delim = if let Some(delim) = args.get(1) {
+                delim
+            } else {
+                ","
+            };
+
+            let mut vec = vec![];
+            for entry in std::fs::read_dir(path)? {
+                let entry = entry?;
+                vec.push(std::fs::canonicalize(entry.path())?);
+            }
+
+            let result: Vec<_> = vec
+                .iter()
+                .map(|p| p.display().to_string())
+                .collect::<Vec<_>>();
+            Ok(Some(result.join(delim)))
+        } else {
+            Err(RadError::InvalidArgument(
+                "listdir requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    // END Default macros
+    // ----------
+    // START Feature macros
 
     /// Enable hook
     ///
