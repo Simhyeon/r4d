@@ -16,9 +16,8 @@ use crate::utils::Utils;
 pub struct Lexor {
     previous_char: Option<char>,
     cursor: Cursor,
-    lit_count: usize,
-    paren_count: usize,
-    escape_nl: bool,
+    literal_count: usize,     // Literal nest level
+    parenthesis_count: usize, // Parenthesis nest level
     macro_char: char,
     comment_char: Option<char>,
 }
@@ -33,9 +32,8 @@ impl Lexor {
         Lexor {
             previous_char: None,
             cursor: Cursor::None,
-            escape_nl: false,
-            lit_count: 0,
-            paren_count: 0,
+            literal_count: 0,
+            parenthesis_count: 0,
             macro_char,
             comment_char,
         }
@@ -44,17 +42,7 @@ impl Lexor {
     pub fn reset(&mut self) {
         self.previous_char = None;
         self.cursor = Cursor::None;
-        self.escape_nl = false;
-        self.paren_count = 0;
-    }
-
-    /// Escape comming new line
-    pub fn escape_next_newline(&mut self) {
-        self.escape_nl = true;
-    }
-
-    pub fn reset_escape(&mut self) {
-        self.escape_nl = false;
+        self.parenthesis_count = 0;
     }
 
     /// Validate the character
@@ -67,7 +55,7 @@ impl Lexor {
         } else if self.end_literal(ch) {
             self.previous_char.replace('0');
             return Ok(LexResult::Literal(self.cursor));
-        } else if self.lit_count > 0 {
+        } else if self.literal_count > 0 {
             self.previous_char.replace(ch);
             return Ok(LexResult::Literal(self.cursor));
         }
@@ -109,19 +97,9 @@ impl Lexor {
         if ch == self.macro_char && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
             self.cursor = Cursor::Name;
             result = LexResult::Ignore;
-            self.escape_nl = false;
-        }
-        // This applies to cases where new lines comes after invocation
-        // e.g. $define(..) \n
-        // in this case last \n is ignored and deleted
-        // escape_nl is only set after define
-        else if self.escape_nl && (ch as i32 == 13 || ch as i32 == 10) {
-            result = LexResult::Discard;
         }
         // Characters other than newline means other characters has been introduced
-        // after definition thus, escape_nl is now false
         else {
-            self.escape_nl = false;
             result = LexResult::AddToRemainder;
         }
         result
@@ -138,7 +116,7 @@ impl Lexor {
         // Left parenthesis trigger macro invocation
         else if ch == '(' {
             self.cursor = Cursor::Arg;
-            self.paren_count = 1;
+            self.parenthesis_count = 1;
             result = LexResult::StartFrag;
             // Empty name
             if self.previous_char.unwrap_or('0') == self.macro_char {
@@ -156,15 +134,15 @@ impl Lexor {
         let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
         // Right paren decreases paren_count
         if ch == ')' {
-            self.paren_count = self.paren_count - 1;
-            if self.paren_count == 0 {
+            self.parenthesis_count = self.parenthesis_count - 1;
+            if self.parenthesis_count == 0 {
                 self.cursor = Cursor::None;
                 result = LexResult::EndFrag;
             }
         }
         // Left paren increases paren_count
         else if ch == '(' {
-            self.paren_count = self.paren_count + 1;
+            self.parenthesis_count = self.parenthesis_count + 1;
         }
         // Other characters are added normally
         result
@@ -178,7 +156,7 @@ impl Lexor {
     fn start_literal(&mut self, ch: char) -> bool {
         // if given value is literal character and preceding character is escape
         if ch == LIT_CHAR && self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
-            self.lit_count = self.lit_count + 1;
+            self.literal_count = self.literal_count + 1;
             true
         } else {
             false
@@ -189,8 +167,8 @@ impl Lexor {
     fn end_literal(&mut self, ch: char) -> bool {
         // if given value is literal character and preceding character is escape
         if ch == ESCAPE_CHAR && self.previous_char.unwrap_or('0') == LIT_CHAR {
-            if self.lit_count > 0 {
-                self.lit_count = self.lit_count - 1;
+            if self.literal_count > 0 {
+                self.literal_count = self.literal_count - 1;
             } // else it is simply a *\ without starting \*
             true
         } else {
@@ -201,7 +179,6 @@ impl Lexor {
 
 #[derive(Debug)]
 pub enum LexResult {
-    Discard,
     Ignore,
     AddToRemainder,
     StartFrag,
