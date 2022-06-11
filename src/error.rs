@@ -34,39 +34,48 @@ pub enum RadError {
     CIndexError(CIndexError),
     UnallowedMacroExecution(String),
     DcsvError(dcsv::DcsvError),
+    #[cfg(feature = "clap")]
+    RadoError(String),
 }
 impl std::fmt::Display for RadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
-            Self::Exit =>"Exited manually".to_string(),
-            Self::HookMacroFail(txt) => format!("Hook macro error \n= {}",txt),
-            Self::InvalidConversion(txt)=> format!("Invalid conversion \n= {}",txt),
-            Self::UnallowedChar(txt)=> format!("Unallowed character \n= {}",txt),
-            Self::AssertFail=> "Assert failed".to_string(),
-            Self::InvalidExecution(err)=> format!("Invalid execution error \n= {}",err),
-            Self::InvalidCommandOption(command) => format!("Invalid command option\n= {}",command),
-            Self::EnvError(env) => format!("Invalid environment name\n= {}",env),
-            Self::InvalidMacroName(name)=> format!("Invalid macro name\n= {}",name),
-            Self::InvalidRegex(err) => format!("Failed regex operation\n= {}",err),
+            Self::Exit => "Exited manually".to_string(),
+            Self::HookMacroFail(txt) => format!("Hook macro error \n= {}", txt),
+            Self::InvalidConversion(txt) => format!("Invalid conversion \n= {}", txt),
+            Self::UnallowedChar(txt) => format!("Unallowed character \n= {}", txt),
+            Self::AssertFail => "Assert failed".to_string(),
+            Self::InvalidExecution(err) => format!("Invalid execution error \n= {}", err),
+            Self::InvalidCommandOption(command) => format!("Invalid command option\n= {}", command),
+            Self::EnvError(env) => format!("Invalid environment name\n= {}", env),
+            Self::InvalidMacroName(name) => format!("Invalid macro name\n= {}", name),
+            Self::InvalidRegex(err) => format!("Failed regex operation\n= {}", err),
             #[cfg(feature = "evalexpr")]
-            Self::InvalidFormula(err)=> format!("Invalid formula\n= {}",err),
-            Self::InvalidArgument(arg) => format!("Invalid argument\n= {}",arg),
-            Self::InvalidArgInt(err)=>format!("Invalid argument type\n= {}",err) ,
-            Self::InvalidArgBoolean(err)=> format!("Invalid argument type\n= {}",err),
-            Self::InvalidFile(file)=> format!("File,\"{}\", does not exist",file),
-            Self::StdIo(err) => format!("Standard IO error\n= {}",err),
-            Self::Utf8Err(err) =>format!("Failed to convert to utf8 string\n= {}",err),
-            Self::UnsupportedTableFormat(txt)=> format!("Unsupported table format\n= {}",txt),
-            Self::BincodeError(txt)=> format!("Failed frozen operation\n= {}",txt),
-            Self::PermissionDenied(txt, atype) => format!("Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.", txt,atype),
+            Self::InvalidFormula(err) => format!("Invalid formula\n= {}", err),
+            Self::InvalidArgument(arg) => format!("Invalid argument\n= {}", arg),
+            Self::InvalidArgInt(err) => format!("Invalid argument type\n= {}", err),
+            Self::InvalidArgBoolean(err) => format!("Invalid argument type\n= {}", err),
+            Self::InvalidFile(file) => format!("File,\"{}\", does not exist", file),
+            Self::StdIo(err) => format!("Standard IO error\n= {}", err),
+            Self::Utf8Err(err) => format!("Failed to convert to utf8 string\n= {}", err),
+            Self::UnsupportedTableFormat(txt) => format!("Unsupported table format\n= {}", txt),
+            Self::BincodeError(txt) => format!("Failed frozen operation\n= {}", txt),
+            Self::PermissionDenied(txt, atype) => format!(
+                "Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.",
+                txt, atype
+            ),
             Self::StrictPanic => "Strict error, exiting...".to_string(),
             Self::Panic => "Processor panicked, exiting...".to_string(),
-            Self::ManualPanic(txt) => format!("Panic triggered with message\n= {}",txt),
-            Self::StorageError(txt)=> format!("Storage error with message\n= {0}",txt),
+            Self::ManualPanic(txt) => format!("Panic triggered with message\n= {}", txt),
+            Self::StorageError(txt) => format!("Storage error with message\n= {0}", txt),
             #[cfg(feature = "cindex")]
             Self::CIndexError(err) => err.to_string(),
-            Self::UnallowedMacroExecution(txt) => format!("Macro execution is not allowed\n={0}",txt),
-            Self::DcsvError(err) => format!("{}",err),
+            Self::UnallowedMacroExecution(txt) => {
+                format!("Macro execution is not allowed\n={0}", txt)
+            }
+            Self::DcsvError(err) => format!("{}", err),
+            #[cfg(feature = "clap")]
+            Self::RadoError(err) => format!("Rado error \n= {}", err),
         };
         write!(f, "{}", text)
     }

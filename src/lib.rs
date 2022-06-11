@@ -60,10 +60,10 @@ pub(crate) mod consts;
 pub(crate) mod debugger;
 pub(crate) mod define_parser;
 pub(crate) mod deterred_map;
+pub(crate) mod formatter;
 pub(crate) mod function_map;
 #[cfg(feature = "hook")]
 pub(crate) mod hookmap;
-pub(crate) mod formatter;
 pub(crate) mod lexor;
 pub(crate) mod logger;
 pub(crate) mod models;
@@ -88,6 +88,8 @@ pub use processor::Processor;
 mod cli;
 #[cfg(feature = "clap")]
 pub use cli::Cli;
+#[cfg(feature = "clap")]
+pub use cli::RadoCli;
 
 // Re-export macro
 #[cfg(feature = "template")]
