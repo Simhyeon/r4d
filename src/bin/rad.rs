@@ -12,12 +12,10 @@ pub fn main() -> RadResult<()> {
     #[cfg(feature = "clap")]
     {
         use std::io::Write;
-        if let Err(content) = RadCli::new().parse() {
-            writeln!(
-                std::io::stderr(),
-                "Rad execution panicked with error => {}",
-                content
-            )?;
+        let mut cli = RadCli::new();
+        if let Err(err) = cli.parse() {
+            cli.print_error(&err.to_string())?;
+            writeln!(std::io::stderr(), "=== Processor panicked ===",)?;
         }
     }
 
