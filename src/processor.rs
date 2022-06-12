@@ -105,7 +105,7 @@ use crate::models::FileTarget;
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
 use crate::models::{
-    Behaviour, CommentType, ExtMacroBuilder, ExtMacroType, FlowControl, Hygiene, LocalMacro,
+    ErrorBehaviour, CommentType, ExtMacroBuilder, ExtMacroType, FlowControl, Hygiene, LocalMacro,
     MacroFragment, MacroMap, MacroType, ProcessInput, RelayTarget, RuleFile, UnbalancedChecker,
     WriteOption,
 };
@@ -158,7 +158,7 @@ pub(crate) struct ProcessorState {
     pipe_map: HashMap<String, String>,
     pub relay: Vec<RelayTarget>,
     pub sandbox: bool,
-    pub behaviour: Behaviour,
+    pub behaviour: ErrorBehaviour,
     pub comment_type: CommentType,
     // Temp target needs to save both path and file
     // because file doesn't necessarily have path.
@@ -186,7 +186,7 @@ impl ProcessorState {
             paused: false,
             hygiene: Hygiene::None,
             relay: vec![],
-            behaviour: Behaviour::Strict,
+            behaviour: ErrorBehaviour::Strict,
             comment_type: CommentType::None,
             sandbox: false,
             #[cfg(not(feature = "wasm"))]
@@ -404,7 +404,7 @@ impl<'processor> Processor<'processor> {
     /// Set purge option
     pub fn purge(mut self, purge: bool) -> Self {
         if purge {
-            self.state.behaviour = Behaviour::Purge;
+            self.state.behaviour = ErrorBehaviour::Purge;
         }
         self
     }
@@ -412,7 +412,7 @@ impl<'processor> Processor<'processor> {
     /// Set lenient
     pub fn lenient(mut self, lenient: bool) -> Self {
         if lenient {
-            self.state.behaviour = Behaviour::Lenient;
+            self.state.behaviour = ErrorBehaviour::Lenient;
         }
         self
     }
@@ -762,7 +762,7 @@ impl<'processor> Processor<'processor> {
                 "Cannot register macros : \"{:?}\" in aseptic mode",
                 rules.iter().map(|(s, _, _)| s.as_ref()).collect::<Vec<_>>()
             ));
-            if self.state.behaviour == Behaviour::Strict {
+            if self.state.behaviour == ErrorBehaviour::Strict {
                 return Err(err);
             } else {
                 self.log_warning(&err.to_string(), WarningType::Security)?;
@@ -816,7 +816,7 @@ impl<'processor> Processor<'processor> {
                 rules.iter().map(|(s, _)| s.as_ref()).collect::<Vec<_>>()
             ));
             self.log_strict(&err.to_string(), WarningType::Security)?;
-            if self.state.behaviour == Behaviour::Strict {
+            if self.state.behaviour == ErrorBehaviour::Strict {
                 return Err(err);
             }
         }
@@ -1536,7 +1536,7 @@ impl<'processor> Processor<'processor> {
             }
             // Strict mode
             // Overriding is prohibited
-            if self.state.behaviour == Behaviour::Strict
+            if self.state.behaviour == ErrorBehaviour::Strict
                 && self
                     .map
                     .contains_macro(&name, MacroType::Any, self.state.hygiene)
@@ -1780,7 +1780,7 @@ impl<'processor> Processor<'processor> {
                     "Cannot register a macro : \"{}\" in aseptic mode",
                     frag.name
                 ));
-                if self.state.behaviour == Behaviour::Strict {
+                if self.state.behaviour == ErrorBehaviour::Strict {
                     return Err(err);
                 } else {
                     self.log_warning(&err.to_string(), WarningType::Security)?;
@@ -1814,15 +1814,15 @@ impl<'processor> Processor<'processor> {
             match self.state.behaviour {
                 // Re-throw error
                 // It is not captured in cli but it can be handled by library user.
-                Behaviour::Strict => {
+                ErrorBehaviour::Strict => {
                     return Err(RadError::StrictPanic(
                         "Every error is panicking in strict mode".to_string(),
                     ));
                 }
                 // If purge mode is set, don't print anything
                 // and don't print error
-                Behaviour::Purge => self.state.consume_newline = true,
-                Behaviour::Lenient => remainder.push_str(&frag.whole_string),
+                ErrorBehaviour::Purge => self.state.consume_newline = true,
+                ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
             }
         }
         self.state.consume_newline = true;
@@ -1907,15 +1907,15 @@ impl<'processor> Processor<'processor> {
         match self.state.behaviour {
             // Re-throw error
             // It is not captured in cli but it can be handled by library user.
-            Behaviour::Strict => {
+            ErrorBehaviour::Strict => {
                 return Err(RadError::StrictPanic(
                     "Every error is panicking in strict mode".to_string(),
                 ));
             }
             // If purge mode is set, don't print anything
             // and don't print error
-            Behaviour::Purge => self.state.consume_newline = true,
-            Behaviour::Lenient => remainder.push_str(&frag.whole_string),
+            ErrorBehaviour::Purge => self.state.consume_newline = true,
+            ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
         }
         Ok(())
     }
@@ -2105,7 +2105,7 @@ impl<'processor> Processor<'processor> {
 
     /// This prints error if strict mode else print warning
     pub(crate) fn log_strict(&mut self, log: &str, warning_type: WarningType) -> RadResult<()> {
-        if self.state.behaviour == Behaviour::Strict {
+        if self.state.behaviour == ErrorBehaviour::Strict {
             self.logger.elog(log)?;
         } else {
             self.logger.wlog(log, warning_type)?;

@@ -12,7 +12,7 @@ use crate::hookmap::HookType;
 use crate::logger::WarningType;
 use crate::models::MacroType;
 use crate::models::{
-    Behaviour, ExtMacroBody, ExtMacroBuilder, FlowControl, ProcessInput, RadResult, RelayTarget,
+    ErrorBehaviour, ExtMacroBody, ExtMacroBuilder, FlowControl, ProcessInput, RadResult, RelayTarget,
 };
 use crate::processor::Processor;
 use crate::utils::Utils;
@@ -1320,7 +1320,7 @@ impl FunctionMacroMap {
         if let Ok(out) = std::env::var(args) {
             Ok(Some(out))
         } else {
-            if p.state.behaviour == Behaviour::Strict {
+            if p.state.behaviour == ErrorBehaviour::Strict {
                 p.log_warning(
                     &format!("Env : \"{}\" is not defined.", args),
                     WarningType::Sanity,
@@ -1343,7 +1343,7 @@ impl FunctionMacroMap {
             let name = &args[0];
             let value = &args[1];
 
-            if p.state.behaviour == Behaviour::Strict && std::env::var(name).is_ok() {
+            if p.state.behaviour == ErrorBehaviour::Strict && std::env::var(name).is_ok() {
                 return Err(RadError::InvalidArgument(format!(
                     "You cannot override environment variable in strict mode. Failed to set \"{}\"",
                     name
@@ -2455,7 +2455,7 @@ impl FunctionMacroMap {
         // Check overriding. Warn or yield error
         for (name, _, _) in runtime_rules.iter() {
             if processor.contains_macro(&name, MacroType::Any) {
-                if processor.state.behaviour == Behaviour::Strict {
+                if processor.state.behaviour == ErrorBehaviour::Strict {
                     return Err(RadError::InvalidMacroName(format!(
                         "Declaring a macro with a name already existing : \"{}\"",
                         name
@@ -2489,7 +2489,7 @@ impl FunctionMacroMap {
 
             // If operation failed
             if !processor.set_documentation(macro_name, content)
-                && processor.state.behaviour == Behaviour::Strict
+                && processor.state.behaviour == ErrorBehaviour::Strict
             {
                 processor.log_error(&format!("No such macro \"{}\" to document", macro_name))?;
             }
@@ -2595,7 +2595,7 @@ impl FunctionMacroMap {
             if processor.contains_macro(&name, MacroType::Any) {
                 // Strict mode prevents overriding
                 // Return error
-                if processor.state.behaviour == Behaviour::Strict {
+                if processor.state.behaviour == ErrorBehaviour::Strict {
                     return Err(RadError::InvalidMacroName(format!(
                         "Creating a static macro with a name already existing : \"{}\"",
                         name

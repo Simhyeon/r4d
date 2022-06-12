@@ -544,7 +544,7 @@ impl ToString for ProcessInput {
 
 /// Standards of behaviour
 #[derive(PartialEq)]
-pub enum Behaviour {
+pub enum ErrorBehaviour {
     Strict,
     Lenient,
     Purge,
