@@ -79,7 +79,6 @@ impl DefineParser {
 
         // End of body
         self.body.push_str(&self.container);
-
         Some((self.name.clone(), self.args.clone(), self.body.clone()))
     }
 
