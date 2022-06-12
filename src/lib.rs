@@ -54,17 +54,17 @@ mod error;
 pub mod processor;
 
 mod parser;
-pub(crate) use parser::{ ArgParser , GreedyState};
 pub(crate) use parser::DefineParser;
+pub(crate) use parser::{ArgParser, GreedyState};
 
 mod map;
-#[cfg(feature = "signature")]
-pub(crate) use map::sigmap;
-pub(crate) use map::function_map;
 pub(crate) use map::deterred_map;
-pub(crate) use map::runtime_map;
+pub(crate) use map::function_map;
 #[cfg(feature = "hook")]
 pub(crate) use map::hookmap;
+pub(crate) use map::runtime_map;
+#[cfg(feature = "signature")]
+pub(crate) use map::sigmap;
 
 pub(crate) mod auth;
 pub(crate) mod consts;

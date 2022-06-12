@@ -209,10 +209,7 @@ impl Utils {
             .stdin(Stdio::piped())
             .spawn()
             .map_err(|_| {
-                RadError::InvalidArgument(format!(
-                    "Failed to execute command : \"{:?}\"",
-                    &args[0]
-                ))
+                RadError::InvalidArgument(format!("Failed to execute command : \"{:?}\"", &args[0]))
             })?;
 
         #[cfg(not(target_os = "windows"))]
