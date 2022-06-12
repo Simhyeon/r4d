@@ -258,7 +258,7 @@ impl FunctionMacroMap {
             ),
             (
                 "listdir".to_owned(),
-                FMacroSign::new("listdir", ["a_path"], Self::list_directory_files, None),
+                FMacroSign::new("listdir", ["a_isabsolute","a_path?", "a_delim?"], Self::list_directory_files, None),
             ),
             (
                 "lower".to_owned(),
@@ -2747,6 +2747,9 @@ impl FunctionMacroMap {
         }
     }
 
+    /// List directory files
+    ///
+    /// $listdir(path, is_abs, delimiter)
     fn list_directory_files(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("listdir", AuthType::FIN, processor)? {
             return Ok(None);
@@ -2757,28 +2760,51 @@ impl FunctionMacroMap {
                 "listdir at least requires an argument".to_owned(),
             ));
         }
-        let path = if args[0].is_empty() {
-            processor.get_current_dir()?.clone()
-        } else {
-            PathBuf::from(&args[0])
-        };
-        if !path.exists() {
-            return Err(RadError::InvalidArgument(format!(
-                "Cannot list non-existent directory \"{}\"",
-                path.display()
-            )));
+
+        let absolute;
+        match Utils::is_arg_true(&args[0]) {
+            Ok(value) => absolute = value,
+            Err(_) => {
+                return Err(RadError::InvalidArgument(format!(
+                            "listdir's first argument should be a boolean value but given : \"{}\"",
+                            args[0]
+                )));
+            },
         }
 
-        let delim = if let Some(delim) = args.get(1) {
-            delim
+        let path;
+        if let Some(val) = args.get(1) {
+            path = if val.is_empty() {
+                processor.get_current_dir()?.clone()
+            } else {
+                PathBuf::from(val)
+            };
+            if !path.exists() {
+                return Err(RadError::InvalidArgument(format!(
+                            "Cannot list non-existent directory \"{}\"",
+                            path.display()
+                )));
+            }
         } else {
-            ","
+            path = processor.get_current_dir()?.clone()
         };
+
+        let delim: &str;
+        if let Some(val) = args.get(2) {
+            delim = val;
+        } else {
+            delim = ",";
+        };
+
 
         let mut vec = vec![];
         for entry in std::fs::read_dir(path)? {
             let entry = entry?;
-            vec.push(std::fs::canonicalize(entry.path())?);
+            if absolute { 
+                vec.push(std::fs::canonicalize(entry.path().as_os_str())?);
+            } else {
+                vec.push(entry.file_name().into());
+            }
         }
 
         let result: Vec<_> = vec
