@@ -5,6 +5,7 @@ use cindex::CIndexError;
 /// R4d's error type
 #[derive(Debug)]
 pub enum RadError {
+    /// Special variant of error, this is not an error by definition
     Exit,
     HookMacroFail(String),
     InvalidConversion(String),
@@ -69,7 +70,7 @@ impl std::fmt::Display for RadError {
             #[cfg(feature = "cindex")]
             Self::CIndexError(err) => err.to_string(),
             Self::UnallowedMacroExecution(txt) => {
-                format!("Macro execution is not allowed\n={0}", txt)
+                format!("Macro execution is not allowed\n= {0}", txt)
             }
             Self::DcsvError(err) => format!("{}", err),
             #[cfg(feature = "clap")]
