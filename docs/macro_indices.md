@@ -28,6 +28,8 @@ For assertion macros refer [debug part](./debug.md)
 * [append](#append)
 * [pause](#pause-macro)
 * [include](#include)
+* [import](#import)
+* [source](#source)
 * [temp](#tempin-tempout-tempto)
 * [relay,halt](#relay-halt)
 * [fileout](#fileout)
@@ -39,6 +41,7 @@ For assertion macros refer [debug part](./debug.md)
 * [abs](#abs)
 * [name](#name)
 * [parent](#parent)
+* [listdir](#listdir)
 * [let](#let-macro)
 * [Static](#static-macro)
 * [pipe](#pipe)
@@ -221,6 +224,31 @@ $include(file_name.txt,true)
 This internally invokes $escape(true) before include and $escape(false) after
 invocation.
 
+### import
+
+Import frozen file with given path.
+
+```
+$import(ext_lib.r4f)
+===
+```
+
+### source
+
+Source env styled static definitions. Source files are expanded on read.
+
+```
+$source(dec.renv)
+===
+```
+
+Demo of a source file
+
+```
+ctime=$time()
+name=Simon Creek
+```
+
 ### tempin, tempout, tempto
 
 AUTH : FIN or FOUT
@@ -308,7 +336,7 @@ I'm new
 error: Invalid argument
 = You cannot override environment variable in strict mode. Failed to set "HOME"
  --> InnocentScript.sh:3:2
-Processor panicked, exiting...
+=== Processor panicked ===
 ```
 
 ### ifenv (deterred macro)
@@ -363,7 +391,7 @@ $abs(../../no_such_file.txt)
 error: Standard IO error
 = No such file or directory (os error 2)
  --> clumsy_script.sh:1:2
-Processor panicked, exiting...
+=== Processor panicked ===
 ```
 
 ### name
@@ -390,12 +418,16 @@ $parent(/home/test/Documents/info.txt)
 
 AUTH : FIN
 
-This lists file in directory as abolsute form. Empty value means current
-directory.
+This lists file in directory directory.
+
+- Firt argument is whether to print absolute path or not.
+- Second optional argument is target path.
+- Third optional argument is custom delimter other than comma
 
 ```
-$listdir()
+$listdir(false)
 ===
+src,diff.out,.git,.gitignore,Cargo.lock,README.md,docs,test,auto.sh,wasm,diff.src,Cargo.toml,target,pkg
 ```
 
 ### let
@@ -1240,8 +1272,6 @@ you cannot revert the escape. Simply said, escape is one way around macro.
 
 ### panic
 
-Triggers panic manually. This can be suppressed with ```--nopanic``` flag.
-
 ```
 Before
 $panic(This was panicked because...)
@@ -1250,7 +1280,7 @@ After
 error: Panic triggered with message
 = This was panicked because...
  --> stdin:2:2
-Processor panicked, exiting...
+=== Processor panicked ===
 ```
 
 ### Clear

@@ -35,29 +35,24 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### TODOs
 
-* [ ] Strict level set should be single entry... I don't understand why this
-was not handled yet.. wow.
-- Arragnment
-	- Strict : Very hard level
-	- Purge | Lenient: Same level but acts differently on specific case
-	- NoPanic: Lowest level
-	The thing is there is nothing as nopanic purge. Therefore nopnaic should be
-	a different flag than purge or leneint.
-* [ ] Make error message consistent
-* [ ] Changed error behaviours a little bit
+* [ ] CIndex uses wrap a lot... this is bad.
+* [x] Strict level set should be single entry...
+* [x] KMacroSign should be renamed to DMacroSign
+* [x] Consider ditching evalresult at all
+* [x] Make error message consistent
+* [x] Changed error behaviours a little bit
 	* [x] Removed panic error because it was confusing and not helpful
 	* [x] Made strict error much more simple and combined log_error with helpful error debuggings
 * [x] Rearranged project structure because cli has two binaries
 * [x] Import macro : Read .r4f file
 * [x] Source macro : Read sh like macros as runtime macro
-* [ ] listdir macro : List directory contents
-	* [ ] Is listdir ergonomics ok? It seems... weird + why not just option to rint only file_names
+* [x] listdir macro : List directory contents
 * [x] Rado env subcommand
 
-* [ ] New macro in indices.md
-	* [ ] Listdir
-	* [ ] import
-	* [ ] source
+* [x] New macro in indices.md
+	* [x] Listdir
+	* [x] import
+	* [x] source
 * [ ] Rado documentation : Not at all
 
 * Current order of execution is followed. Should this change?

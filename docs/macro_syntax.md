@@ -267,14 +267,7 @@ matching "(" character.
 
 Every error is panicking by default(strict mode), to make programs more stable
 and expectable or because I'm too rusty person. You can disable strict mode
-with lenient option ```-l or --lenient```. However invalid argument error still
-panicks on lenient mode. If you want the most generous mode give ```--nopanic```
-option.
-
-There are two types of errors. One is failed invocation error and second is
-invalid argument error. Failed invocation means that macro definition was not
-present at the time. On the other hand, invalid argument error is panic error
-since ignoring such error is very undesirable for end user experience..
+with lenient option ```-l or --lenient``` or puge option ```-p or --purge```.
 
 ```
 $define(test=Test)

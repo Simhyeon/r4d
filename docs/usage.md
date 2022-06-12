@@ -38,7 +38,6 @@ rad --comment any
 -e, --err <FILE>      # Log error to <FILE>
 -s, --silent <OPTION> # Suppress warnings default is all. All|Security|sanity|None
 -l, --lenient         # Disable strict mode
-    --nopanic         # Don't panic in any circumstances
     --assert          # Enable assertion mode
 
 # Use following options to decide deubbing behaviours
@@ -113,7 +112,6 @@ let mut processor = Processor::new()
     .custom_comment_char('#')?                           // use custom comment character
     .purge(true)                                         // Purge undefined macro
     .silent(WarningType::Security)                       // Silents all warnings
-    .nopanic(true)                                       // No panic in any circumstances
     .assert(true)                                        // Enable assertion mode
     .lenient(true)                                       // Disable strict mode
     .aseptic(true)                                       // Enable aseptic mode
