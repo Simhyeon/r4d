@@ -1,12 +1,12 @@
 use crate::deterred_map::DFunctionMacroType;
+use crate::deterred_map::DeterredMacroMap;
 use crate::error::RadError;
+use crate::function_map::FunctionMacroMap;
 use crate::function_map::FunctionMacroType;
 use crate::runtime_map::{RuntimeMacro, RuntimeMacroMap};
 #[cfg(feature = "signature")]
 use crate::sigmap::MacroSignature;
 use crate::utils::Utils;
-use crate::deterred_map::DeterredMacroMap;
-use crate::function_map::FunctionMacroMap;
 use bincode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -330,13 +330,13 @@ impl RuleFile {
         let result = bincode::serialize(self);
         if let Err(_) = result {
             Err(RadError::BincodeError(format!(
-                "Failed to freeze to the file : {}",
+                "Failed to freeze to a file : {}",
                 path.display()
             )))
         } else {
             if let Err(_) = std::fs::write(path, result.unwrap()) {
                 return Err(RadError::InvalidArgument(format!(
-                    "Failed to create file : {}",
+                    "Failed to create a file : {}",
                     path.display()
                 )));
             }
@@ -548,7 +548,6 @@ pub enum Behaviour {
     Strict,
     Lenient,
     Purge,
-    Nopanic,
 }
 
 #[derive(Clone)]
