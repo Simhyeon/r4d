@@ -26,7 +26,6 @@
 //!     .custom_comment_char('#')?                           // use custom comment character
 //!     .purge(true)                                         // Purge undefined macro
 //!     .silent(WarningType::Security)                       // Silents all warnings
-//!     .nopanic(true)                                       // No panic in any circumstances
 //!     .assert(true)                                        // Enable assertion mode
 //!     .lenient(true)                                       // Disable strict mode
 //!     .hygiene(Hygiene::Macro)                             // Enable hygiene mode
@@ -89,13 +88,11 @@
 //! processor.print_result()?;                       
 //! ```
 
-use crate::{ArgParser, GreedyState};
 use crate::auth::{AuthFlags, AuthState, AuthType};
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::DefineParser;
 use crate::error::RadError;
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};
@@ -117,7 +114,9 @@ use crate::runtime_map::RuntimeMacro;
 #[cfg(feature = "signature")]
 use crate::sigmap::SignatureMap;
 use crate::utils::Utils;
+use crate::DefineParser;
 use crate::{consts::*, RadResult};
+use crate::{ArgParser, GreedyState};
 #[cfg(feature = "cindex")]
 use cindex::Indexer;
 use lazy_static::lazy_static;
@@ -442,20 +441,11 @@ impl<'processor> Processor<'processor> {
         self
     }
 
-    /// Set nopanic
-    pub fn nopanic(mut self, nopanic: bool) -> Self {
-        if nopanic {
-            self.state.behaviour = Behaviour::Nopanic;
-        }
-        self
-    }
-
     /// Set assertion mode
     pub fn assert(mut self, assert: bool) -> Self {
         if assert {
             self.logger.assert();
             self.write_option = WriteOption::Discard;
-            self.state.behaviour = Behaviour::Nopanic;
         }
         self
     }
@@ -738,7 +728,7 @@ impl<'processor> Processor<'processor> {
     /// Freeze to a single file
     ///
     /// Frozen file is a bincode encoded binary format file.
-    pub fn freeze_to_file(&self, path: impl AsRef<Path>) -> RadResult<()> {
+    pub fn freeze_to_file(&mut self, path: impl AsRef<Path>) -> RadResult<()> {
         // File path validity is checked by freeze method
         RuleFile::new(Some(self.map.runtime.macros.clone())).freeze(path.as_ref())?;
         Ok(())
@@ -768,23 +758,24 @@ impl<'processor> Processor<'processor> {
         rules: Vec<(impl AsRef<str>, &str, &str)>,
     ) -> RadResult<()> {
         if self.state.hygiene == Hygiene::Aseptic {
-            self.log_strict(
-                "Runtime macro declaration is disabled in aseptic mode",
-                WarningType::Security,
-            )?;
+            let err = RadError::StrictPanic(format!(
+                "Cannot register macros : \"{:?}\" in aseptic mode",
+                rules.iter().map(|(s, _, _)| s.as_ref()).collect::<Vec<_>>()
+            ));
             if self.state.behaviour == Behaviour::Strict {
-                return Err(RadError::StrictPanic(
-                    "Failed to register a macro".to_owned(),
-                ));
+                return Err(err);
+            } else {
+                self.log_warning(&err.to_string(), WarningType::Security)?;
             }
         }
         for (name, args, body) in rules {
             let name = name.as_ref();
             if !MAC_NAME.is_match(name) {
-                return Err(RadError::InvalidMacroName(format!(
+                let err = RadError::InvalidMacroName(format!(
                     "Name : \"{}\" is not a valid macro name",
                     name
-                )));
+                ));
+                return Err(err);
             }
             self.map.runtime.macros.insert(
                 name.to_owned(),
@@ -820,19 +811,23 @@ impl<'processor> Processor<'processor> {
         rules: Vec<(impl AsRef<str>, impl AsRef<str>)>,
     ) -> RadResult<()> {
         if self.state.hygiene == Hygiene::Aseptic {
-            self.log_warning(
-                "Runtime macro declaration is disabled in aspectic mode",
-                WarningType::Security,
-            )?;
-            return Ok(());
+            let err = RadError::StrictPanic(format!(
+                "Cannot register macros : \"{:?}\" in aseptic mode",
+                rules.iter().map(|(s, _)| s.as_ref()).collect::<Vec<_>>()
+            ));
+            self.log_strict(&err.to_string(), WarningType::Security)?;
+            if self.state.behaviour == Behaviour::Strict {
+                return Err(err);
+            }
         }
         for (name, body) in rules {
             let name = name.as_ref();
             if !MAC_NAME.is_match(name) {
-                return Err(RadError::InvalidMacroName(format!(
+                let err = RadError::InvalidMacroName(format!(
                     "Name : \"{}\" is not a valid macro name",
                     name
-                )));
+                ));
+                return Err(err);
             }
             self.map.runtime.macros.insert(
                 name.to_owned(),
@@ -859,18 +854,20 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<()> {
         // Check target macro is empty
         if target_macro.len() == 0 {
-            return Err(RadError::InvalidMacroName(format!(
+            let err = RadError::InvalidMacroName(format!(
                 "Cannot register hook for macro \"{}\"",
                 target_macro
-            )));
+            ));
+            return Err(err);
         }
 
         // Check invoke macro is empty
         if invoke_macro.len() == 0 {
-            return Err(RadError::InvalidMacroName(format!(
+            let err = RadError::InvalidMacroName(format!(
                 "Cannot register hook which invokes a macro \"{}\"",
                 target_macro
-            )));
+            ));
+            return Err(err);
         }
         self.hook_map.add_hook(
             hook_type,
@@ -887,10 +884,11 @@ impl<'processor> Processor<'processor> {
     pub fn deregister_hook(&mut self, hook_type: HookType, target_macro: &str) -> RadResult<()> {
         // Check target macro is empty
         if target_macro.len() == 0 {
-            return Err(RadError::InvalidMacroName(format!(
+            let err = RadError::InvalidMacroName(format!(
                 "Cannot deregister hook for macro \"{}\"",
                 target_macro
-            )));
+            ));
+            return Err(err);
         }
 
         self.hook_map.del_hook(hook_type, target_macro)?;
@@ -1393,7 +1391,7 @@ impl<'processor> Processor<'processor> {
         level: usize,
         caller: &str,
         frag: &mut MacroFragment,
-    ) -> RadResult<EvalResult> {
+    ) -> RadResult<Option<String>> {
         // Increase level to represent nestedness
         let level = level + 1;
         let (name, raw_args) = (&frag.name, &frag.args);
@@ -1430,7 +1428,7 @@ impl<'processor> Processor<'processor> {
                 // TODO
                 // Make parse logic consistent, not defined by delarator
                 // result = self.parse_chunk_args(level, caller, &result)?;
-                return Ok(EvalResult::Eval(final_result));
+                return Ok(final_result);
             }
         }
 
@@ -1439,7 +1437,7 @@ impl<'processor> Processor<'processor> {
         let mut temp_level = level;
         while temp_level > 0 {
             if let Some(local) = self.map.local.get(&Utils::local_name(temp_level, &name)) {
-                return Ok(EvalResult::Eval(Some(local.body.to_owned())));
+                return Ok(Some(local.body.to_owned()));
             }
             temp_level = temp_level - 1;
         }
@@ -1450,29 +1448,31 @@ impl<'processor> Processor<'processor> {
             // Prevent invocation if relaying to
             if let Some(RelayTarget::Macro(mac)) = &self.state.relay.last() {
                 if mac == name {
-                    return Err(RadError::UnallowedMacroExecution(format!(
+                    let err = RadError::UnallowedMacroExecution(format!(
                         "Cannot execute a macro \"{}\" when it is being relayed to",
                         mac
-                    )));
+                    ));
+                    // You have clear whole string because whole string is append to final output
+                    // when leneient mode
+                    frag.whole_string.clear();
+                    return Err(err);
                 }
             }
 
-            if let Some(result) = self.invoke_rule(level, name, &args)? {
-                return Ok(EvalResult::Eval(Some(result)));
-            } else {
-                return Ok(EvalResult::InvalidRumtimeArgs);
-            }
+            let result = self.invoke_rule(level, name, &args)?;
+            return Ok(result);
         }
         // Find function macro
         else if self.map.function.contains(&name) {
             // Func always exists, because contains succeeded.
             let func = self.map.function.get_func(name).unwrap();
             let final_result = func(&args, self)?;
-            return Ok(EvalResult::Eval(final_result));
+            return Ok(final_result);
         }
         // No macros found to evaluate
         else {
-            return Ok(EvalResult::NoSuchName);
+            let err = RadError::InvalidMacroName(format!("No such macro name : \"{}\"", &name));
+            return Err(err);
         }
     }
 
@@ -1501,15 +1501,15 @@ impl<'processor> Processor<'processor> {
             args = content;
         } else {
             // Necessary arg count is bigger than given arguments
-            self.log_error(&format!(
+            let err = RadError::InvalidArgument(format!(
                 "{}'s arguments are not sufficient. Given {}, but needs {}",
                 name,
                 ArgParser::new()
                     .args_to_vec(arg_values, ',', GreedyState::Never)
                     .len(),
                 arg_types.len()
-            ))?;
-            return Ok(None);
+            ));
+            return Err(err);
         }
 
         for (idx, arg_type) in arg_types.iter().enumerate() {
@@ -1528,8 +1528,12 @@ impl<'processor> Processor<'processor> {
     /// Add runtime rule to macro map
     ///
     /// This doesn't clear fragment
-    fn add_rule(&mut self, frag: &MacroFragment, remainder: &mut String) -> RadResult<()> {
+    fn add_rule(&mut self, frag: &MacroFragment) -> RadResult<()> {
         if let Some((name, args, body)) = self.define_parser.parse_define(&frag.args) {
+            if name.is_empty() {
+                let err = RadError::InvalidMacroName("Cannot define a empty macro".to_string());
+                return Err(err);
+            }
             // Strict mode
             // Overriding is prohibited
             if self.state.behaviour == Behaviour::Strict
@@ -1537,23 +1541,26 @@ impl<'processor> Processor<'processor> {
                     .map
                     .contains_macro(&name, MacroType::Any, self.state.hygiene)
             {
-                self.log_error(&format!(
+                let err = RadError::StrictPanic(format!(
                     "Can't override exsiting macro : \"{}\"",
                     frag.args.split(',').collect::<Vec<&str>>()[0]
-                ))?;
-                return Err(RadError::StrictPanic(
-                    "Failed to register a macro".to_owned(),
                 ));
+                return Err(err);
             }
 
             self.map
                 .register_runtime(&name, &args, &body, self.state.hygiene)?;
         } else {
-            self.log_error(&format!(
-                "Invalid macro definition format for a macro : \"{}\"",
+            let name = if frag.args.contains(",") {
                 frag.args.split(',').collect::<Vec<&str>>()[0]
-            ))?;
-            remainder.push_str(&frag.whole_string);
+            } else {
+                frag.args.split('=').collect::<Vec<&str>>()[0]
+            };
+            let err = RadError::InvalidMacroName(format!(
+                "Invalid macro definition format for a macro : \"{}\"",
+                name
+            ));
+            return Err(err);
         }
         Ok(())
     }
@@ -1592,10 +1599,11 @@ impl<'processor> Processor<'processor> {
                     .map
                     .contains_macro(mac, MacroType::Runtime, self.state.hygiene)
                 {
-                    return Err(RadError::InvalidMacroName(format!(
+                    let err = RadError::InvalidMacroName(format!(
                         "Cannot relay to non-exsitent macro \"{}\"",
                         mac
-                    )));
+                    ));
+                    return Err(err);
                 }
                 self.map.append(&mac, content, self.state.hygiene);
             }
@@ -1732,11 +1740,13 @@ impl<'processor> Processor<'processor> {
                     '*' => frag.yield_literal = true,
                     '^' => frag.trimmed = true,
                     _ => {
+                        // This is mostly not reached because it is captured as non-exsitent name
                         if frag.has_attribute() {
-                            self.log_error("Received non attribute character after macro attributes which is not allowed")?;
-                            return Err(RadError::InvalidMacroName(
-                                "Invalid macro attribute".to_owned(),
+                            let err = RadError::InvalidMacroName(format!(
+                                "Invalid macro attribute : \"{}\"",
+                                ch
                             ));
+                            return Err(err);
                         }
                         frag.name.push(ch);
                     }
@@ -1766,18 +1776,17 @@ impl<'processor> Processor<'processor> {
             if self.state.hygiene == Hygiene::Aseptic {
                 frag.clear();
                 self.state.consume_newline = true;
-                self.log_strict(
-                    "Runtime macro declaration is disabled in aseptic mode",
-                    WarningType::Security,
-                )?;
+                let err = RadError::StrictPanic(format!(
+                    "Cannot register a macro : \"{}\" in aseptic mode",
+                    frag.name
+                ));
                 if self.state.behaviour == Behaviour::Strict {
-                    return Err(RadError::StrictPanic(
-                        "Failed to register a macro".to_owned(),
-                    ));
+                    return Err(err);
+                } else {
+                    self.log_warning(&err.to_string(), WarningType::Security)?;
                 }
             } else {
                 self.lex_branch_end_frag_define(
-                    lexor,
                     frag,
                     remainder,
                     #[cfg(feature = "debug")]
@@ -1796,12 +1805,26 @@ impl<'processor> Processor<'processor> {
     // Level is necessary for debug feature
     fn lex_branch_end_frag_define(
         &mut self,
-        _lexor: &mut Lexor,
         frag: &mut MacroFragment,
         remainder: &mut String,
         #[cfg(feature = "debug")] level: usize,
     ) -> RadResult<()> {
-        self.add_rule(frag, remainder)?;
+        if let Err(err) = self.add_rule(frag) {
+            self.log_error(&err.to_string())?;
+            match self.state.behaviour {
+                // Re-throw error
+                // It is not captured in cli but it can be handled by library user.
+                Behaviour::Strict => {
+                    return Err(RadError::StrictPanic(
+                        "Every error is panicking in strict mode".to_string(),
+                    ));
+                }
+                // If purge mode is set, don't print anything
+                // and don't print error
+                Behaviour::Purge => self.state.consume_newline = true,
+                Behaviour::Lenient => remainder.push_str(&frag.whole_string),
+            }
+        }
         self.state.consume_newline = true;
         #[cfg(feature = "debug")]
         self.check_debug_macro(frag, level)?;
@@ -1823,10 +1846,14 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<()> {
         // Name is empty
         if frag.name.len() == 0 {
-            self.log_error("Name is empty")?;
+            let err =
+                RadError::InvalidMacroName("Cannot invoke a macro with empty name".to_string());
+
+            // Gracefully pickup because it can be handled
             remainder.push_str(&frag.whole_string);
             frag.clear();
-            return Ok(());
+
+            return Err(err);
         }
 
         // Debug
@@ -1851,7 +1878,7 @@ impl<'processor> Processor<'processor> {
         match evaluation_result {
             // If panicked, this means unrecoverable error occured.
             Err(error) => {
-                self.lex_branch_end_frag_eval_result_error(error)?;
+                self.lex_branch_end_frag_eval_result_error(error, frag, remainder)?;
             }
             Ok(eval_variant) => {
                 self.lex_branch_end_frag_eval_result_ok(
@@ -1870,11 +1897,25 @@ impl<'processor> Processor<'processor> {
     }
 
     /// When evaluation failed for various reasons.
-    fn lex_branch_end_frag_eval_result_error(&mut self, error: RadError) -> RadResult<()> {
-        self.log_error(&format!("{}", error))?;
-
-        if self.state.behaviour == Behaviour::Strict {
-            return Err(RadError::StrictPanic("Failed to invoke a macro".to_owned()));
+    fn lex_branch_end_frag_eval_result_error(
+        &mut self,
+        error: RadError,
+        frag: &MacroFragment,
+        remainder: &mut String,
+    ) -> RadResult<()> {
+        self.log_error(&error.to_string())?;
+        match self.state.behaviour {
+            // Re-throw error
+            // It is not captured in cli but it can be handled by library user.
+            Behaviour::Strict => {
+                return Err(RadError::StrictPanic(
+                    "Every error is panicking in strict mode".to_string(),
+                ));
+            }
+            // If purge mode is set, don't print anything
+            // and don't print error
+            Behaviour::Purge => self.state.consume_newline = true,
+            Behaviour::Lenient => remainder.push_str(&frag.whole_string),
         }
         Ok(())
     }
@@ -1882,107 +1923,75 @@ impl<'processor> Processor<'processor> {
     // Level is needed for feature debug & hook codes
     fn lex_branch_end_frag_eval_result_ok(
         &mut self,
-        variant: EvalResult,
+        content: Option<String>,
         frag: &mut MacroFragment,
         remainder: &mut String,
         _lexor: &mut Lexor,
         #[allow(unused_variables)] level: usize,
     ) -> RadResult<()> {
-        match variant {
-            EvalResult::Eval(content) => {
-                // Debug
-                // Debug command after macro evaluation
-                // This goes to last line and print last line
-                #[cfg(feature = "debug")]
-                if !self.is_local(level + 1, &frag.name) {
-                    // Only when macro is not a local macro
-                    self.check_debug_macro(frag, level)?;
-                }
+        // Debug
+        // Debug command after macro evaluation
+        // This goes to last line and print last line
+        #[cfg(feature = "debug")]
+        if !self.is_local(level + 1, &frag.name) {
+            // Only when macro is not a local macro
+            self.check_debug_macro(frag, level)?;
+        }
 
-                // If content is none
-                // Ignore new line after macro evaluation until any character
-                if let None = content {
-                    self.state.consume_newline = true;
-                } else {
-                    // else it is ok to proceed.
-                    // thus it is safe to unwrap it
-                    let mut content = content.unwrap();
-                    if frag.trimmed {
-                        content = Utils::trim(&content);
-                    }
-                    if frag.yield_literal {
-                        content = format!("\\*{}*\\", content);
-                    }
+        // If content is none
+        // Ignore new line after macro evaluation until any character
+        if let None = content {
+            self.state.consume_newline = true;
+        } else {
+            // else it is ok to proceed.
+            // thus it is safe to unwrap it
+            let mut content = content.unwrap();
+            if frag.trimmed {
+                content = Utils::trim(&content);
+            }
+            if frag.yield_literal {
+                content = format!("\\*{}*\\", content);
+            }
 
-                    // TODO
-                    // Check unpredicted duplicate hook
-                    // Macro hook check
-                    #[cfg(feature = "hook")]
-                    if let Some(mac_name) = self.hook_map.add_macro_count(&frag.name) {
-                        let mut hook_frag = MacroFragment::new();
-                        hook_frag.name = mac_name;
-                        let mut hook_mainder = String::new();
-                        let mut hook_lexor = Lexor::new(
-                            self.get_macro_char(),
-                            self.get_comment_char(),
-                            &self.state.comment_type,
-                        );
-                        self.lex_branch_end_invoke(
-                            &mut hook_lexor,
-                            &mut hook_frag,
-                            &mut hook_mainder,
-                            level,
-                            &frag.name,
-                        )?;
+            // TODO
+            // Check unpredicted duplicate hook
+            // Macro hook check
+            #[cfg(feature = "hook")]
+            if let Some(mac_name) = self.hook_map.add_macro_count(&frag.name) {
+                let mut hook_frag = MacroFragment::new();
+                hook_frag.name = mac_name;
+                let mut hook_mainder = String::new();
+                let mut hook_lexor = Lexor::new(
+                    self.get_macro_char(),
+                    self.get_comment_char(),
+                    &self.state.comment_type,
+                );
+                self.lex_branch_end_invoke(
+                    &mut hook_lexor,
+                    &mut hook_frag,
+                    &mut hook_mainder,
+                    level,
+                    &frag.name,
+                )?;
 
-                        // Add hook remainder into current content
-                        // which will be added to main remainder
-                        if hook_mainder.len() != 0 {
-                            content.push_str(&hook_mainder);
-                        }
-                    }
-
-                    // NOTE
-                    // This should come later!!
-                    // because pipe should respect all other macro attributes
-                    // not the other way
-                    if frag.pipe {
-                        self.state.add_pipe(None, content);
-                        self.state.consume_newline = true;
-                    } else {
-                        remainder.push_str(&content);
-                    }
+                // Add hook remainder into current content
+                // which will be added to main remainder
+                if hook_mainder.len() != 0 {
+                    content.push_str(&hook_mainder);
                 }
             }
-            EvalResult::InvalidRumtimeArgs => {
-                self.log_error(&format!(
-                    "Invalid argument(s) for a macro \"{}\"",
-                    frag.name
-                ))?;
-                if self.state.behaviour == Behaviour::Strict {
-                    return Err(RadError::StrictPanic("Failed to invoke a macro".to_owned()));
-                } else if self.state.behaviour == Behaviour::Lenient {
-                    remainder.push_str(&frag.whole_string);
-                }
-            }
-            EvalResult::NoSuchName => {
-                // Failed to invoke
-                // because macro doesn't exist
 
-                self.log_error(&format!("Invalid macro name : \"{}\"", frag.name))?;
-                match self.state.behaviour {
-                    Behaviour::Strict => {
-                        return Err(RadError::StrictPanic("Failed to invoke a macro".to_owned()));
-                    }
-                    // If purge mode is set, don't print anything
-                    // and don't print error
-                    Behaviour::Purge => self.state.consume_newline = true,
-                    _ => {
-                        remainder.push_str(&frag.whole_string);
-                    }
-                }
+            // NOTE
+            // This should come later!!
+            // because pipe should respect all other macro attributes
+            // not the other way
+            if frag.pipe {
+                self.state.add_pipe(None, content);
+                self.state.consume_newline = true;
+            } else {
+                remainder.push_str(&content);
             }
-        } // End match
+        }
         Ok(())
     }
 
@@ -2317,10 +2326,4 @@ struct SandboxBackup {
     current_input: ProcessInput,
     local_macro_map: HashMap<String, LocalMacro>,
     logger_lines: LoggerLines,
-}
-
-enum EvalResult {
-    Eval(Option<String>),
-    NoSuchName,
-    InvalidRumtimeArgs,
 }
