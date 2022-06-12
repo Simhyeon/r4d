@@ -13,15 +13,21 @@ use crate::models::SignatureType;
 use std::io::Write;
 
 /// Struct to parse command line arguments and execute proper operations
-pub struct RadCli {
+pub struct RadCli<'cli> {
     rules: Vec<PathBuf>,
     write_to_file: Option<PathBuf>,
     error_to_file: Option<PathBuf>,
     allow_auth: Option<Vec<AuthType>>,
     allow_auth_warn: Option<Vec<AuthType>>,
+    processor: Processor<'cli>,
 }
 
-impl RadCli {
+impl<'cli> RadCli<'cli> {
+    pub fn print_error(&mut self, error: &str) -> RadResult<()> {
+        self.processor.print_error(error)?;
+        Ok(())
+    }
+
     pub fn new() -> Self {
         Self {
             rules: vec![],
@@ -29,6 +35,7 @@ impl RadCli {
             error_to_file: None,
             allow_auth: None,
             allow_auth_warn: None,
+            processor: Processor::new(),
         }
     }
 
@@ -64,7 +71,6 @@ impl RadCli {
             .silent(WarningType::from_str(
                 args.value_of("silent").unwrap_or("none"),
             ))
-            .nopanic(args.is_present("nopanic"))
             .assert(args.is_present("assert"))
             .allow(std::mem::replace(&mut self.allow_auth, None))
             .allow_with_warning(std::mem::replace(&mut self.allow_auth_warn, None))
@@ -87,6 +93,9 @@ impl RadCli {
                 })?)?;
         }
 
+        // Update processor
+        self.processor = processor;
+
         // Debug
         // Clear terminal cells
         #[cfg(feature = "debug")]
@@ -97,7 +106,7 @@ impl RadCli {
         // ========
         // Main options
         // print permission
-        processor.print_permission()?;
+        self.processor.print_permission()?;
 
         // Process
         // Redirect stdin as argument
@@ -105,14 +114,14 @@ impl RadCli {
             let stdin = std::io::stdin();
             let mut input = String::new();
             stdin.lock().read_to_string(&mut input)?;
-            processor.set_pipe(&input)
+            self.processor.set_pipe(&input)
         }
 
         // -->> Read from files
         if let Some(sources) = args.values_of("INPUT") {
             // Also read from stdin if given combiation option
             if args.is_present("combination") {
-                processor.from_stdin()?;
+                self.processor.from_stdin()?;
             }
 
             // Interpret every input source as literal text
@@ -123,33 +132,33 @@ impl RadCli {
                 let src_as_file = Path::new(src);
 
                 if !literal && src_as_file.exists() {
-                    processor.from_file(src_as_file)?;
+                    self.processor.from_file(src_as_file)?;
                 } else {
                     // TODO
                     // This doesn't feel good...
-                    processor.from_string(src)?;
+                    self.processor.from_string(src)?;
                 }
             }
             #[cfg(feature = "signature")]
-            self.print_signature(args, &mut processor)?;
+            self.print_signature(args)?;
         } else {
             // -->> Read from stdin
 
             // Print signature if such option is given
             // Signature option doesn't go with stdin option
             #[cfg(feature = "signature")]
-            if self.print_signature(args, &mut processor)? {
+            if self.print_signature(args)? {
                 return Ok(());
             }
-            processor.from_stdin()?;
+            self.processor.from_stdin()?;
         }
 
         // Print result
-        processor.print_result()?;
+        self.processor.print_result()?;
 
         // Freeze to a rule file if such option was given
         if let Some(file) = args.value_of("freeze") {
-            processor.freeze_to_file(Path::new(file))?;
+            self.processor.freeze_to_file(Path::new(file))?;
         }
         Ok(())
     }
@@ -158,15 +167,11 @@ impl RadCli {
     ///
     /// Returns whether signature operation was executed or not
     #[cfg(feature = "signature")]
-    fn print_signature(
-        &mut self,
-        args: &clap::ArgMatches,
-        processor: &mut Processor,
-    ) -> RadResult<bool> {
+    fn print_signature(&mut self, args: &clap::ArgMatches) -> RadResult<bool> {
         #[cfg(feature = "signature")]
         if args.occurrences_of("signature") != 0 {
             let sig_type = SignatureType::from_str(args.value_of("sigtype").unwrap_or("all"))?;
-            let sig_map = processor.get_signature_map(sig_type)?;
+            let sig_map = self.processor.get_signature_map(sig_type)?;
             // TODO
             let sig_json =
                 serde_json::to_string(&sig_map.object).expect("Failed to create sig map");
@@ -309,9 +314,6 @@ impl RadCli {
                 .short('l')
                 .long("lenient")
                 .help("Lenient mode, disables strict mode"))
-            .arg(Arg::new("nopanic")
-                .long("nopanic")
-                .help("Don't panic in any circumstances, the most lenient mode"))
             .arg(Arg::new("debug")
                 .short('d')
                 .long("debug")

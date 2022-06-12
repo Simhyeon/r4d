@@ -1,7 +1,7 @@
 use crate::consts::{RADO_DIR, RADO_EDITOR};
 use crate::utils::Utils;
-use crate::RadCli;
 use crate::RadResult;
+use crate::{RadCli, RadError};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
@@ -282,6 +282,13 @@ impl RadoCli {
                 RadCli::new().parse_from(&rad_args)?;
             }
         } else {
+            if !Path::new(source_file).exists() {
+                return Err(RadError::InvalidCommandOption(format!(
+                    "Cannot read from non-existent file : \"{}\"",
+                    source_file
+                )));
+            }
+
             // File doesn't exist, run it anyway
             let mut rad_args = vec!["rad", source_file];
             if self.flag_arguments.len() != 0 {

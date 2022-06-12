@@ -3,7 +3,6 @@
 //! Function macro module includes struct and methods related to function macros which are technically function
 //! pointers.
 
-use crate::{ArgParser, GreedyState};
 use crate::auth::AuthType;
 use crate::consts::{ESR, LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER};
 use crate::error::RadError;
@@ -17,6 +16,7 @@ use crate::models::{
 };
 use crate::processor::Processor;
 use crate::utils::Utils;
+use crate::{ArgParser, GreedyState};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
 use lazy_static::lazy_static;
@@ -1520,16 +1520,21 @@ impl FunctionMacroMap {
         let pipe = if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let name = Utils::trim(&args[0]);
             if name.is_empty() {
-                let out = processor
-                    .state
-                    .get_pipe("-")
-                    .unwrap_or(String::new())
-                    .clone();
-                Some(out)
+                let out = processor.state.get_pipe("-");
+
+                if let None = out {
+                    processor.log_warning("Empty pipe", WarningType::Sanity)?;
+                }
+
+                out
             } else {
                 if let Some(pipe) = processor.state.get_pipe(&args[0]) {
                     Some(pipe.clone())
                 } else {
+                    processor.log_warning(
+                        &format!("Empty named pipe : \"{}\"", args[0]),
+                        WarningType::Sanity,
+                    )?;
                     None
                 }
             }
@@ -2759,8 +2764,8 @@ impl FunctionMacroMap {
         };
         if !path.exists() {
             return Err(RadError::InvalidArgument(format!(
-                        "Cannot list non-existent directory \"{}\"",
-                        path.display()
+                "Cannot list non-existent directory \"{}\"",
+                path.display()
             )));
         }
 
