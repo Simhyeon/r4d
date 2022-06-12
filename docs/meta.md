@@ -53,7 +53,7 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 	* [x] Listdir
 	* [x] import
 	* [x] source
-* [ ] Rado documentation : Not at all
+* [x] Rado documentation
 
 * Current order of execution is followed. Should this change?
     - Deterred macro

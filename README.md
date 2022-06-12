@@ -3,9 +3,6 @@
 R4d is a text oriented macro prosessor aims to be an alternative to m4 macro
 processor.
 
-R4d's foreach behaviour has changes, you can use previous logic by disable
-default features.
-
 [Changes](./docs/change.md)
 
 ### Note
@@ -99,11 +96,20 @@ cargo install r4d --features basic --locked
 ### Simple usage
 
 **Binary**
+
+There are two binaries each **rad** and **rado**. Rad is a main processor and
+rado is a rad-open binary.
+
 ```
 # Read from file and print to stdout 
 rad input_file.txt
 # Read from standard input and print to file
 printf '...text...' | rad -o out_file.txt
+
+# Edit source file
+rado edit file_name.txt
+# Read processed file
+rado read file_name.txt
 ```
 
 **Library**

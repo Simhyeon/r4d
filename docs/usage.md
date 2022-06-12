@@ -1,6 +1,6 @@
 ### Usage
 
-**As a binary**
+**Rad binary**
 
 ```bash
 # Usage : rad [OPTIONS] [FILE]...
@@ -71,6 +71,37 @@ rad --signature --sigtype custom
 ```
 
 Type ```-h``` or ```--help``` to see full options.
+
+**Rado binary**
+
+```bash
+# Edit source file
+# It invokes default editor "RADO_EDITOR"
+rado edit file_name.txt
+
+# Read processed file.
+# Processed file is saved in temporary directory "RADO_DIR".
+# This command processes source file only when source file's timestamp is newer
+# than processed file's timestamp.
+# You can set processed file ith "out" flag.
+# You can send rad arguments with last arguments in "--" forms
+rado read file_name.txt
+rado read file_name.txt -o other.txt
+rado read file_name.txt -o other.txt -- -a fin+env
+
+# Clear temporary files
+rado clear
+
+# Sync file's timestamp
+rado sync file_name.txt
+
+# Force process regardless of file's timestamep with optional read after flag
+rado force file_name.txt
+rado force file_name.txt --read
+
+# Print out all environment variables
+rado env
+```
 
 **As a library**
 
