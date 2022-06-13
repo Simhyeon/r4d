@@ -24,25 +24,27 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### 3.0
 
-- Remove 'for_macro' feature
-- Remove unused compatibility feature
-- Change library name
-- Rado binary
+- Remove 'for_macro' feature : Check
+- Remove unused compatibility feature : Check
+- Change library name : Check
+- Rado binary : Check
 - Consider macro execution order
 - Current behaviour interprets input as string if given input doesn't exist. I was not aware... but this looks very strange.
 	- Maybe this was because, sending stdin is somewhat clunky?
 	- This is breaing changes and has to handled properly
+- Clippy compatible
 
 ### TODOs
 
-* [ ] CIndex uses wrap a lot... this is bad.
+* [x] Fixed cindex bugs
 * [x] Strict level set should be single entry...
 * [x] KMacroSign should be renamed to DMacroSign
 * [x] Consider ditching evalresult at all
 * [x] Make error message consistent
 * [x] Changed error behaviours a little bit
 	* [x] Removed panic error because it was confusing and not helpful
-	* [x] Made strict error much more simple and combined log_error with helpful error debuggings
+	* [x] Made strict error much more simple and combined log_error with
+	helpful error debuggings
 * [x] Rearranged project structure because cli has two binaries
 * [x] Import macro : Read .r4f file
 * [x] Source macro : Read sh like macros as runtime macro
@@ -53,6 +55,7 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 	* [x] Listdir
 	* [x] import
 	* [x] source
+	* [x] cnl
 * [x] Rado documentation
 
 * Current order of execution is followed. Should this change?
@@ -88,7 +91,7 @@ extend with arguable performance boost.
 * [ ] Error handling, execution security
 * [ ] Warn about operational macros + document something
 
-* [ ] Rad-wrapper binary
+* [x] Rad-wrapper binary
 	- Read as processed
 	- Edit ad raw
 

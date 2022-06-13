@@ -193,9 +193,9 @@ processor.undefine_macro("name1", MacroType::Any);
 
 // Process with inputs
 // This prints to desginated write destinations
-processor.from_string(r#"$define(test=Test)"#)?;
-processor.from_stdin()?;
-processor.from_file(Path::new("from.txt"))?;
+processor.process_string(r#"$define(test=Test)"#)?;
+processor.process_stdin()?;
+processor.process_file(Path::new("from.txt"))?;
 
 processor.freeze_to_file(Path::new("out.r4f"))?; // Create frozen file
 
