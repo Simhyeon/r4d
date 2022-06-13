@@ -84,6 +84,7 @@ For assertion macros refer [debug part](./debug.md)
 * [nl](#nl)
 * [enl](#enl)
 * [dnl](#dnl)
+* [cnl](#cnl)
 * [lipsum](#lipsum)
 * [time, date](#time-date)
 * [from](#from--deterred-macro)
@@ -1062,9 +1063,7 @@ $nl()
 
 ### enl
 
-**Deprecated**
-
-Currently acts same as dnl. Preparing for refactoring.
+Escapes right next newline
 
 ```
 Before $enl()
@@ -1084,6 +1083,21 @@ $ifdef(undefined,Print me)$dnl()
 Yatti yatta
 ===
 Yatti yatta
+```
+
+### cnl
+
+Consume new line. This mimics a function macro's behaviour when the macro yield
+nothing. Macro will consume a newline if the execution context has no texts.
+
+```
+$define(first=)
+$define(second=$cnl())
+$first()
+$second()
+===
+
+% Newline was created by first macro
 ```
 
 ### lipsum
