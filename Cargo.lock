@@ -76,11 +76,9 @@ dependencies = [
 
 [[package]]
 name = "cindex"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85327b77b45b9e995f2613c1c4abe67421ff3fc66e3da0bb064b84791846c1f9"
+version = "0.5.0"
+source = "git+https://github.com/simhyeon/cindex?branch=dev#9d68ec9681fa1f4710eefe4aacd39d2d7eb46682"
 dependencies = [
- "bitflags",
  "dcsv",
  "regex",
 ]
@@ -145,9 +143,8 @@ dependencies = [
 
 [[package]]
 name = "dcsv"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3732530e76b9fd3665746f199a9e8b1179d830ef2b97fd7e7fd0265865a5f99"
+version = "0.2.0"
+source = "git+https://github.com/simhyeon/dcsv?branch=dev#93bb7d620ecec51e8c84163b70985686eaa04400"
 dependencies = [
  "regex",
 ]
@@ -356,7 +353,7 @@ dependencies = [
 
 [[package]]
 name = "r4d"
-version = "2.2.0"
+version = "3.0.0-rc.0"
 dependencies = [
  "bincode",
  "chrono",
