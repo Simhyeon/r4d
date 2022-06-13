@@ -210,33 +210,17 @@ impl DeterredMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let mut sums = String::new();
             let loopable = &processor.parse_chunk_args(level, "", &args[0])?;
-            let mut count = 0;
-            for value in loopable.split(',') {
+            for (count, value) in loopable.split(',').enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
 
-                let result: String;
-                #[cfg(feature = "for_macro")]
-                {
-                    processor.add_new_local_macro(level, ":", value);
-                    result = processor.parse_chunk_args(level, "", &args[1])?;
-                }
-
-                #[cfg(not(feature = "for_macro"))]
-                {
-                    result = processor.parse_chunk_args(
-                        level,
-                        "",
-                        &args[1].replace("$:", &value.to_string()),
-                    )?;
-                }
+                processor.add_new_local_macro(level, ":", value);
+                let result = processor.parse_chunk_args(level, "", &args[1])?;
 
                 sums.push_str(&result);
-                count += 1;
             }
 
             // Clear local macro
-            #[cfg(feature = "for_macro")]
             processor.remove_local_macro(level, ":");
 
             Ok(Some(sums))
@@ -285,46 +269,32 @@ impl DeterredMacroMap {
             let min_src = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
             let max_src = processor.parse_chunk_args(level, "", &Utils::trim(&args[1]))?;
 
-            let min: usize;
-            let max: usize;
-            if let Ok(num) = min_src.parse::<usize>() {
-                min = num;
+            let min = if let Ok(num) = min_src.parse::<usize>() {
+                num
             } else {
                 return Err(RadError::InvalidArgument(format!(
                     "Forloop's min value should be non zero positive integer but given {}",
                     min_src
                 )));
-            }
-            if let Ok(num) = max_src.parse::<usize>() {
-                max = num
+            };
+            let max = if let Ok(num) = max_src.parse::<usize>() {
+                num
             } else {
                 return Err(RadError::InvalidArgument(format!(
                     "Forloop's max value should be non zero positive integer but given \"{}\"",
                     max_src
                 )));
-            }
+            };
             let mut result: String;
             for value in min..=max {
-                #[cfg(feature = "for_macro")]
-                {
-                    processor.add_new_local_macro(level, ":", &value.to_string());
-                    result = processor.parse_chunk_args(level, "", &args[2])?;
-                }
-                #[cfg(not(feature = "for_macro"))]
-                {
-                    result = processor.parse_chunk_args(
-                        level,
-                        "",
-                        &args[2].replace("$:", &value.to_string()),
-                    )?;
-                }
+                processor.add_new_local_macro(level, ":", &value.to_string());
+                result = processor.parse_chunk_args(level, "", &args[2])?;
 
                 sums.push_str(&result);
                 result.clear();
             }
 
             // Clear local macro
-            #[cfg(feature = "for_macro")]
             processor.remove_local_macro(level, ":");
 
             Ok(Some(sums))
@@ -391,7 +361,7 @@ impl DeterredMacroMap {
 
             // Else state
             let else_expr = processor.parse_chunk_args(level, "", &args[2])?;
-            return Ok(Some(else_expr));
+            Ok(Some(else_expr))
         } else {
             Err(RadError::InvalidArgument(
                 "ifelse requires three argument".to_owned(),
@@ -435,10 +405,10 @@ impl DeterredMacroMap {
             // Return true or false by the definition
             if boolean {
                 let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
-                return Ok(Some(if_expr));
+                Ok(Some(if_expr))
             } else {
                 let else_expr = processor.parse_chunk_args(level, "", &args[2])?;
-                return Ok(Some(else_expr));
+                Ok(Some(else_expr))
             }
         } else {
             Err(RadError::InvalidArgument(
@@ -459,11 +429,7 @@ impl DeterredMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
 
-            let boolean = if let Ok(_) = std::env::var(name) {
-                true
-            } else {
-                false
-            };
+            let boolean = std::env::var(name).is_ok();
 
             // Return true or false by the definition
             if boolean {
@@ -490,19 +456,15 @@ impl DeterredMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
 
-            let boolean = if let Ok(_) = std::env::var(name) {
-                true
-            } else {
-                false
-            };
+            let boolean = std::env::var(name).is_ok();
 
             // Return true or false by the definition
             if boolean {
                 let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
-                return Ok(Some(if_expr));
+                Ok(Some(if_expr))
             } else {
                 let else_expr = processor.parse_chunk_args(level, "", &args[2])?;
-                return Ok(Some(else_expr));
+                Ok(Some(else_expr))
             }
         } else {
             Err(RadError::InvalidArgument(
@@ -524,7 +486,7 @@ impl DeterredMacroMap {
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let result = processor.parse_chunk_args(level, "", args);
-        if let Err(_) = result {
+        if result.is_err() {
             processor.track_assertion(true)?;
             Ok(None)
         } else {
@@ -555,7 +517,7 @@ impl DeterredMacroMap {
     ) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let boolean = &processor.parse_chunk_args(level, "", &args[0])?;
-            let cond = Utils::is_arg_true(&boolean)?;
+            let cond = Utils::is_arg_true(boolean)?;
             if cond {
                 processor.insert_queue(&args[1]);
             }
@@ -579,7 +541,7 @@ impl DeterredMacroMap {
     ) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let macro_name = &processor.parse_chunk_args(level, "", &args[0])?;
-            if !processor.contains_macro(&macro_name, MacroType::Any) {
+            if !processor.contains_macro(macro_name, MacroType::Any) {
                 return Err(RadError::InvalidArgument(format!(
                     "Macro \"{}\" doesn't exist",
                     macro_name
@@ -729,7 +691,7 @@ impl std::fmt::Display for DMacroSign {
         let mut inner = self
             .args
             .iter()
-            .fold(String::new(), |acc, arg| acc + &arg + ",");
+            .fold(String::new(), |acc, arg| acc + arg + ",");
         // This removes last "," character
         inner.pop();
         write!(f, "${}({})", self.name, inner)

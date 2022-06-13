@@ -1,5 +1,7 @@
 use regex::Regex;
 
+pub type ColorDisplayFunc = Option<fn(string: &str) -> Box<dyn std::fmt::Display>>;
+
 #[cfg(windows)]
 pub(crate) const RADO_EDITOR: &str = "notepad.exe";
 #[cfg(not(windows))]
@@ -59,15 +61,15 @@ pub const READ_CACHE: &str = ".R4D_READ_CACHE";
 
 // Platform specific consts
 #[cfg(windows)]
-pub const LINE_ENDING: &'static str = "\r\n";
+pub const LINE_ENDING: &str = "\r\n";
 #[cfg(not(windows))]
-pub const LINE_ENDING: &'static str = "\n";
+pub const LINE_ENDING: &str = "\n";
 
 #[cfg(feature = "debug")]
-pub const RDB_HELP: &'static str = include_str!("debug_help_message.txt");
+pub const RDB_HELP: &str = include_str!("debug_help_message.txt");
 
 /// Empty String aRray
 pub const ESR: [&str; 0] = [];
 
-pub const DEFINE_KEYWORD: &'static str = "define";
-// pub const RAD_READ_CACHE: &'static str = ".rad_read_cache";
+pub const DEFINE_KEYWORD: &str = "define";
+// pub const RAD_READ_CACHE: &str = ".rad_read_cache";

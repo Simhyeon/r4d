@@ -149,7 +149,7 @@ impl Debugger {
 
         let mut log: String;
         // Color function reference
-        let mut colorfunc: Option<fn(string: &str) -> Box<dyn std::fmt::Display>>;
+        let mut colorfunc: ColorDisplayFunc;
 
         // Print header
         logger.elog_no_prompt(format!("{0}DIFF : {0}", LINE_ENDING))?;
@@ -201,7 +201,7 @@ impl Debugger {
             if self.debug {
                 if let DebugSwitch::NextBreakPoint(name) = &self.debug_switch {
                     // Name is empty or same with frag.args
-                    if name == &frag.args || name == "" {
+                    if name == &frag.args || name.is_empty() {
                         self.debug_switch = DebugSwitch::NextLine;
                     }
                 }
@@ -308,11 +308,11 @@ impl Debugger {
         while do_continue {
             // This technically strips newline feed regardless of platforms
             // It is ok to simply convert to a single line because it is logically a single
-            let input = self.debug_wait_input(&log, Some(prompt))?;
+            let input = self.debug_wait_input(log, Some(prompt))?;
             // Strip newline
             let input = input.lines().next().unwrap();
 
-            do_continue = self.parse_debug_command_and_continue(&input, frag, log, logger)?;
+            do_continue = self.parse_debug_command_and_continue(input, frag, log, logger)?;
         }
 
         Ok(())
@@ -496,11 +496,11 @@ impl Debugger {
                     let mut this_line = format!("{}{}", LINE_ENDING, line);
                     this_line.push_str(&sums);
                     sums = this_line;
-                    line_number = line_number - 1;
+                    line_number -= 1;
                 }
 
                 // Put prompt log "Span" on top
-                let mut this_line = format!("{}", "\"Span\"");
+                let mut this_line = "\"Span\"".to_string();
                 this_line.push_str(&sums);
                 sums = this_line;
 
@@ -536,11 +536,11 @@ impl Debugger {
 
     /// Bridge function that waits user's stdin input
     pub fn debug_wait_input(&self, log: &str, prompt: Option<&str>) -> RadResult<String> {
-        Ok(self.get_command(log, prompt)?)
+        self.get_command(log, prompt)
     }
 
     pub fn inc_line_number(&mut self) {
-        self.line_number = self.line_number + 1;
+        self.line_number += 1;
     }
 
     pub fn add_line_cache(&mut self, line: &str) {

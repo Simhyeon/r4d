@@ -34,11 +34,7 @@ impl ArgParser {
     ///
     /// If length is qualified it returns vector of arguments
     /// if not, "None" is returned instead.
-    pub(crate) fn args_with_len<'a>(
-        &mut self,
-        args: &'a str,
-        length: usize,
-    ) -> Option<Vec<String>> {
+    pub(crate) fn args_with_len(&mut self, args: &str, length: usize) -> Option<Vec<String>> {
         let greedy_state = if length > 1 {
             GreedyState::Deterred(length - 1)
         } else {
@@ -90,7 +86,7 @@ impl ArgParser {
           // Add last arg
         self.values.push(value);
 
-        std::mem::replace(&mut self.values, vec![])
+        std::mem::take(&mut self.values)
     }
 
     // ----------
@@ -106,7 +102,7 @@ impl ArgParser {
             match greedy_state {
                 GreedyState::Deterred(count) => {
                     // move to next value
-                    self.values.push(std::mem::replace(value, String::new()));
+                    self.values.push(std::mem::take(value));
                     let count = *count - 1;
                     if count > 0 {
                         *greedy_state = GreedyState::Deterred(count);
@@ -123,7 +119,7 @@ impl ArgParser {
                 }
                 GreedyState::Never => {
                     // move to next value
-                    self.values.push(std::mem::replace(value, String::new()));
+                    self.values.push(std::mem::take(value));
                 }
             } // Match end
         } // else end
@@ -149,7 +145,7 @@ impl ArgParser {
         arg_iter: &mut Peekable<Chars>,
     ) {
         if self.previous.unwrap_or('0') == ESCAPE_CHAR {
-            self.lit_count = self.lit_count + 1;
+            self.lit_count += 1;
             // If lit character was given inside literal
             // e.g. \* '\*' *\ -> the one inside quotes
             if self.lit_count > 1 {
@@ -164,7 +160,7 @@ impl ArgParser {
             // Next is escape char and not inside lit_count
             // *\
             if ch_next == ESCAPE_CHAR && self.lit_count >= 1 {
-                self.lit_count = self.lit_count - 1;
+                self.lit_count -= 1;
                 arg_iter.next(); // Conume next escape_char
                                  // Lit end was outter most one
                 if self.lit_count == 0 {

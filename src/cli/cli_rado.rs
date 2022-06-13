@@ -11,6 +11,12 @@ pub struct RadoCli {
     flag_out: Option<PathBuf>,
 }
 
+impl Default for RadoCli {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RadoCli {
     pub fn new() -> Self {
         Self {
@@ -27,17 +33,14 @@ impl RadoCli {
     }
 
     fn parse_flags(&mut self, args: &clap::ArgMatches) {
-        match args.subcommand() {
-            Some((_, args)) => {
-                if let Some(path) = args.value_of("out") {
-                    self.flag_out.replace(PathBuf::from(path));
-                }
-
-                if let Some(values) = args.values_of("argument") {
-                    self.flag_arguments = values.map(|s| s.to_owned()).collect::<Vec<_>>();
-                }
+        if let Some((_, args)) = args.subcommand() {
+            if let Some(path) = args.value_of("out") {
+                self.flag_out.replace(PathBuf::from(path));
             }
-            _ => (),
+
+            if let Some(values) = args.values_of("argument") {
+                self.flag_arguments = values.map(|s| s.to_owned()).collect::<Vec<_>>();
+            }
         }
     }
 
@@ -199,12 +202,14 @@ impl RadoCli {
     fn show_diff(&self, file: &str, force: bool) -> RadResult<()> {
         use similar::ChangeTag;
 
+        use crate::consts::ColorDisplayFunc;
+
         let temp_file = self.get_temp_path(file)?;
 
         // Prevent panicking
         if force | !temp_file.exists() {
             let mut out = std::io::stdout();
-            write!(&out,"Try expanding source file without any arguments because diff target is not present.\n")?;
+            writeln!(&out,"Try expanding source file without any arguments because diff target is not present.")?;
             out.flush()?;
             self.update_file(file, true)?;
         }
@@ -215,7 +220,7 @@ impl RadoCli {
         let result = similar::TextDiff::from_lines(&source_content, &target_content);
         let mut log: String;
         // Color function reference
-        let mut colorfunc: Option<fn(string: &str) -> Box<dyn std::fmt::Display>>;
+        let mut colorfunc: ColorDisplayFunc;
 
         // Print changes with color support
         for change in result.iter_all_changes() {
@@ -269,7 +274,7 @@ impl RadoCli {
             // Source is freshier or force
             if force | (source_modified > temp_modified) {
                 let mut rad_args = vec!["rad", source_file];
-                if self.flag_arguments.len() != 0 {
+                if !self.flag_arguments.is_empty() {
                     rad_args.extend(self.flag_arguments.iter().map(|s| s.as_str()));
                 }
 
@@ -291,7 +296,7 @@ impl RadoCli {
 
             // File doesn't exist, run it anyway
             let mut rad_args = vec!["rad", source_file];
-            if self.flag_arguments.len() != 0 {
+            if !self.flag_arguments.is_empty() {
                 rad_args.extend(self.flag_arguments.iter().map(|s| s.as_str()));
             }
             rad_args.extend(vec!["-o", target_file.to_str().as_ref().unwrap()].iter());

@@ -41,7 +41,7 @@
 //!     .purge(true)
 //!     .write_to_file(Some(Path::new("cache.txt")))?
 //!
-//! processor.from_file(Path::new("input.txt"))?;
+//! processor.process_file(Path::new("input.txt"))?;
 //! processor.print_result()?;
 //! ```
 //!

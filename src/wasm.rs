@@ -30,7 +30,7 @@ impl RadProcessor {
     }
 
     pub fn process_string(&mut self, src: &str) -> WasmResult<String> {
-        let ret = self.processor.from_string(src)?.unwrap_or(String::new());
+        let ret = self.processor.process_string(src)?.unwrap_or(String::new());
         Ok(ret)
     }
 }

@@ -2,9 +2,9 @@
 //!
 //! Logger handles all kinds of logging logics. Such log can be warning, error or debug logs.
 
-use crate::consts::*;
 use crate::models::{ProcessInput, RadResult, WriteOption};
 use crate::utils::Utils;
+use crate::{consts::*, RadError};
 use std::io::Write;
 
 /// Struct specifically exists to backup information of logger
@@ -66,11 +66,11 @@ impl<'logger> Logger<'logger> {
     /// rather it means how much lines has passed since last_line_number.
     pub fn set_chunk(&mut self, switch: bool) {
         if switch {
-            self.chunked = self.chunked + 1;
+            self.chunked += 1;
             self.line_number = 0;
             self.char_number = 0;
         } else {
-            self.chunked = self.chunked - 1;
+            self.chunked -= 1;
         }
     }
 
@@ -107,12 +107,12 @@ impl<'logger> Logger<'logger> {
 
     /// Increase line number
     pub fn add_line_number(&mut self) {
-        self.line_number = self.line_number + 1;
+        self.line_number += 1;
         self.char_number = 0;
     }
     /// Increase char number
     pub fn add_char_number(&mut self) {
-        self.char_number = self.char_number + 1;
+        self.char_number += 1;
     }
 
     pub fn reset_everything(&mut self) {
@@ -130,7 +130,7 @@ impl<'logger> Logger<'logger> {
     /// Freeze line and char number for logging
     pub fn freeze_number(&mut self) {
         if self.chunked > 0 {
-            self.last_line_number = self.line_number + self.last_line_number;
+            self.last_line_number += self.line_number;
             // In the same line
             if self.line_number != 0 {
                 self.last_char_number = self.char_number;
@@ -161,7 +161,7 @@ impl<'logger> Logger<'logger> {
 
     /// Log error
     pub fn elog(&mut self, log: &str) -> RadResult<()> {
-        self.error_count = self.error_count + 1;
+        self.error_count += 1;
 
         if self.assert {
             return Ok(());
@@ -232,7 +232,7 @@ impl<'logger> Logger<'logger> {
             return Ok(());
         }
 
-        self.warning_count = self.warning_count + 1;
+        self.warning_count += 1;
 
         if self.assert {
             return Ok(());
@@ -283,10 +283,10 @@ impl<'logger> Logger<'logger> {
     /// Assertion log
     pub fn alog(&mut self, success: bool) -> RadResult<()> {
         if success {
-            self.assert_success = self.assert_success + 1;
+            self.assert_success += 1;
             return Ok(());
         }
-        self.assert_fail = self.assert_fail + 1;
+        self.assert_fail += 1;
         let last_char = self.try_get_last_char();
 
         if let Some(option) = &mut self.write_option {
@@ -443,14 +443,20 @@ pub enum WarningType {
     Any,
 }
 
-impl WarningType {
-    pub fn from_str(text: &str) -> Self {
-        match text {
+impl std::str::FromStr for WarningType {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
             "none" => Self::None,
             "security" => Self::Security,
             "sanity" => Self::Sanity,
             "any" => Self::Any,
-            _ => Self::None,
-        }
+            _ => {
+                return Err(RadError::InvalidConversion(format!(
+                    "Cannot convert \"{}\" into WarningType",
+                    s
+                )))
+            }
+        })
     }
 }

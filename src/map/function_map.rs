@@ -12,7 +12,8 @@ use crate::hookmap::HookType;
 use crate::logger::WarningType;
 use crate::models::MacroType;
 use crate::models::{
-    ErrorBehaviour, ExtMacroBody, ExtMacroBuilder, FlowControl, ProcessInput, RadResult, RelayTarget,
+    ErrorBehaviour, ExtMacroBody, ExtMacroBuilder, FlowControl, ProcessInput, RadResult,
+    RelayTarget,
 };
 use crate::processor::Processor;
 use crate::utils::Utils;
@@ -27,6 +28,8 @@ use std::io::{BufRead, Write};
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+#[cfg(feature = "hook")]
+use std::str::FromStr;
 
 lazy_static! {
     static ref CLRF_MATCH: Regex = Regex::new(r#"\r\n"#).unwrap();
@@ -258,7 +261,12 @@ impl FunctionMacroMap {
             ),
             (
                 "listdir".to_owned(),
-                FMacroSign::new("listdir", ["a_isabsolute","a_path?", "a_delim?"], Self::list_directory_files, None),
+                FMacroSign::new(
+                    "listdir",
+                    ["a_isabsolute", "a_path?", "a_delim?"],
+                    Self::list_directory_files,
+                    None,
+                ),
             ),
             (
                 "lower".to_owned(),
@@ -680,11 +688,11 @@ impl FunctionMacroMap {
             let second = seconds % 3600 % 60;
             let mut arr = second.to_string();
             if minute != 0 {
-                arr.push_str(",");
+                arr.push(',');
                 arr.push_str(&minute.to_string());
             }
             if hour != 0 {
-                arr.push_str(",");
+                arr.push(',');
                 arr.push_str(&hour.to_string());
             }
             Ok(Some(arr))
@@ -746,7 +754,7 @@ impl FunctionMacroMap {
             let substitution = &args[2];
 
             // This is regex expression without any preceding and trailing commands
-            let reg = Regex::new(&format!(r"{}", match_expr))?;
+            let reg = Regex::new(match_expr)?;
             let result = reg.replace_all(source, substitution); // This is a cow, moo~
             Ok(Some(result.to_string()))
         } else {
@@ -852,7 +860,7 @@ impl FunctionMacroMap {
             while let Some(line) = iter.next() {
                 lines.push_str(&Utils::trim(line));
                 // Append newline because String.lines() method cuts off all newlines
-                if let Some(_) = iter.peek() {
+                if iter.peek().is_some() {
                     lines.push_str(&p.state.newline);
                 }
             }
@@ -951,7 +959,7 @@ impl FunctionMacroMap {
             return Ok(None);
         }
         let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
-        if args.len() >= 1 {
+        if !args.is_empty() {
             let raw = Utils::trim(&args[0]);
             let mut file_path = PathBuf::from(&raw);
 
@@ -983,7 +991,7 @@ impl FunctionMacroMap {
                 }
 
                 // Create chunk
-                let chunk = processor.from_file_as_chunk(&file_path)?;
+                let chunk = processor.process_file_as_chunk(&file_path)?;
                 processor.state.paused = false; // Recover paused state
                 processor.set_sandbox(false);
                 processor.state.input_stack.remove(&canonic); // Collect stack
@@ -1069,7 +1077,7 @@ impl FunctionMacroMap {
             processor.set_sandbox(true);
 
             // This operation saves all input into CACHE
-            processor.from_file(file_path)?;
+            processor.process_file(file_path)?;
             // Reads all cache file into original source
             processor.flush_cache()?;
 
@@ -1089,16 +1097,15 @@ impl FunctionMacroMap {
     /// $repeat(count,text)
     fn repeat(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let repeat_count;
-            if let Ok(count) = Utils::trim(&args[0]).parse::<usize>() {
-                repeat_count = count;
+            let repeat_count = if let Ok(count) = Utils::trim(&args[0]).parse::<usize>() {
+                count
             } else {
                 return Err(RadError::InvalidArgument(format!("Repeat needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", &args[0])));
-            }
+            };
             let repeat_object = &args[1];
             let mut repeated = String::new();
             for _ in 0..repeat_count {
-                repeated.push_str(&repeat_object);
+                repeated.push_str(repeat_object);
             }
             Ok(Some(repeated))
         } else {
@@ -1188,7 +1195,7 @@ impl FunctionMacroMap {
     /// $arr(1 2 3)
     fn array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         let parsed = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
-        if parsed.len() == 0 {
+        if parsed.is_empty() {
             Err(RadError::InvalidArgument(
                 "Array requires an argument".to_owned(),
             ))
@@ -1261,12 +1268,13 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $table(github,"1,2,3
-    /// 4,5,6")
+    /// $table(github,1,2,3
+    /// 4,5,6)
     fn table(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let table_format = &args[0]; // Either gfm, wikitex, latex, none
             let csv_content = &args[1];
+            println!("--{}--", csv_content);
             let result = Formatter::csv_to_table(table_format, csv_content, &p.state.newline)?;
             Ok(Some(result))
         } else {
@@ -1522,29 +1530,23 @@ impl FunctionMacroMap {
             if name.is_empty() {
                 let out = processor.state.get_pipe("-");
 
-                if let None = out {
+                if out.is_none() {
                     processor.log_warning("Empty pipe", WarningType::Sanity)?;
                 }
 
                 out
+            } else if let Some(pipe) = processor.state.get_pipe(&args[0]) {
+                Some(pipe)
             } else {
-                if let Some(pipe) = processor.state.get_pipe(&args[0]) {
-                    Some(pipe.clone())
-                } else {
-                    processor.log_warning(
-                        &format!("Empty named pipe : \"{}\"", args[0]),
-                        WarningType::Sanity,
-                    )?;
-                    None
-                }
+                processor.log_warning(
+                    &format!("Empty named pipe : \"{}\"", args[0]),
+                    WarningType::Sanity,
+                )?;
+                None
             }
         } else {
             // "-" Always exsit, thus safe to unwrap
-            let out = processor
-                .state
-                .get_pipe("-")
-                .unwrap_or(String::new())
-                .clone();
+            let out = processor.state.get_pipe("-").unwrap_or_default();
             Some(out)
         };
         Ok(pipe)
@@ -1660,18 +1662,14 @@ impl FunctionMacroMap {
 
             if let Ok(num) = start.parse::<usize>() {
                 min.replace(num);
-            } else {
-                if start.len() != 0 {
-                    return Err(RadError::InvalidArgument(format!("Sub's min value should be non zero positive integer or empty value but given \"{}\"", start)));
-                }
+            } else if !start.is_empty() {
+                return Err(RadError::InvalidArgument(format!("Sub's min value should be non zero positive integer or empty value but given \"{}\"", start)));
             }
 
             if let Ok(num) = end.parse::<usize>() {
                 max.replace(num);
-            } else {
-                if end.len() != 0 {
-                    return Err(RadError::InvalidArgument(format!("Sub's max value should be non zero positive integer or empty value but given \"{}\"", end)));
-                }
+            } else if !end.is_empty() {
+                return Err(RadError::InvalidArgument(format!("Sub's max value should be non zero positive integer or empty value but given \"{}\"", end)));
             }
 
             Ok(Some(Utils::utf8_substring(source, min, max)))
@@ -1726,21 +1724,19 @@ impl FunctionMacroMap {
             let content = &args[2];
             if let Ok(truncate) = Utils::is_arg_true(truncate) {
                 let file = std::env::current_dir()?.join(file_name);
-                let mut target_file;
-                if truncate {
-                    target_file = OpenOptions::new()
+                let mut target_file = if truncate {
+                    OpenOptions::new()
                         .create(true)
                         .write(true)
                         .truncate(true)
-                        .open(file)
-                        .unwrap();
+                        .open(file)?
                 } else {
                     if !file.is_file() {
                         return Err(RadError::InvalidArgument(format!("Failed to read \"{}\". Fileout without truncate option needs exsiting file",file.display())));
                     }
 
-                    target_file = OpenOptions::new().append(true).open(file).unwrap();
-                }
+                    OpenOptions::new().append(true).open(file)?
+                };
                 target_file.write_all(content.as_bytes())?;
                 Ok(None)
             } else {
@@ -1942,9 +1938,9 @@ impl FunctionMacroMap {
             let count = args[0].as_str();
             let content = &mut args[1].split(',').collect::<Vec<&str>>();
             match count.to_lowercase().as_str() {
-                "asec" => content.sort(),
+                "asec" => content.sort_unstable(),
                 "desc" => {
-                    content.sort();
+                    content.sort_unstable();
                     content.reverse()
                 }
                 _ => {
@@ -1973,9 +1969,9 @@ impl FunctionMacroMap {
             let count = args[0].as_str();
             let content = &mut args[1].lines().collect::<Vec<&str>>();
             match count.to_lowercase().as_str() {
-                "asec" => content.sort(),
+                "asec" => content.sort_unstable(),
                 "desc" => {
-                    content.sort();
+                    content.sort_unstable();
                     content.reverse()
                 }
                 _ => {
@@ -2065,9 +2061,8 @@ impl FunctionMacroMap {
     fn grep(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let expr = Regex::new(args[0].as_str())?;
-            let content = args[1].lines().collect::<Vec<&str>>();
+            let content = args[1].lines();
             let grepped = content
-                .into_iter()
                 .filter(|l| expr.is_match(l))
                 .collect::<Vec<&str>>()
                 .join(&p.state.newline);
@@ -2086,7 +2081,7 @@ impl FunctionMacroMap {
     /// $count(1,2,3,4,5)
     fn count(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let array_count = &args[0].split(',').collect::<Vec<_>>().len();
+            let array_count = &args[0].split(',').count();
             Ok(Some(array_count.to_string()))
         } else {
             Err(RadError::InvalidArgument(
@@ -2102,7 +2097,7 @@ impl FunctionMacroMap {
     /// $countw(1 2 3 4 5)
     fn count_word(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let array_count = &args[0].split_whitespace().collect::<Vec<_>>().len();
+            let array_count = &args[0].split_whitespace().count();
             Ok(Some(array_count.to_string()))
         } else {
             Err(RadError::InvalidArgument(
@@ -2118,7 +2113,7 @@ impl FunctionMacroMap {
     /// $countl(CONTENT goes here)
     fn count_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let line_count = &args[0].lines().collect::<Vec<_>>().len();
+            let line_count = &args[0].lines().count();
             Ok(Some(line_count.to_string()))
         } else {
             Err(RadError::InvalidArgument(
@@ -2153,7 +2148,7 @@ impl FunctionMacroMap {
     /// $relay(type,argument)
     fn relay(args_src: &str, p: &mut Processor) -> RadResult<Option<String>> {
         let args: Vec<&str> = args_src.split(',').collect();
-        if args.len() == 0 {
+        if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "relay at least requires an argument".to_owned(),
             ));
@@ -2236,7 +2231,7 @@ impl FunctionMacroMap {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            processor.set_temp_file(&PathBuf::from(std::env::temp_dir()).join(&args[0]));
+            processor.set_temp_file(&std::env::temp_dir().join(&args[0]));
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -2253,12 +2248,9 @@ impl FunctionMacroMap {
     fn get_number(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let src = Utils::trim(&args[0]);
-            let captured = NUM_MATCH
-                .captures(&src)
-                .ok_or(RadError::InvalidArgument(format!(
-                    "No digits to extract from \"{}\"",
-                    src
-                )))?;
+            let captured = NUM_MATCH.captures(&src).ok_or_else(|| {
+                RadError::InvalidArgument(format!("No digits to extract from \"{}\"", src))
+            })?;
             if let Some(num) = captured.get(0) {
                 Ok(Some(num.as_str().to_owned()))
             } else {
@@ -2454,7 +2446,7 @@ impl FunctionMacroMap {
 
         // Check overriding. Warn or yield error
         for (name, _, _) in runtime_rules.iter() {
-            if processor.contains_macro(&name, MacroType::Any) {
+            if processor.contains_macro(name, MacroType::Any) {
                 if processor.state.behaviour == ErrorBehaviour::Strict {
                     return Err(RadError::InvalidMacroName(format!(
                         "Declaring a macro with a name already existing : \"{}\"",
@@ -2592,7 +2584,7 @@ impl FunctionMacroMap {
             let name = &args[0];
             let value = &args[1];
             // Macro name already exists
-            if processor.contains_macro(&name, MacroType::Any) {
+            if processor.contains_macro(name, MacroType::Any) {
                 // Strict mode prevents overriding
                 // Return error
                 if processor.state.behaviour == ErrorBehaviour::Strict {
@@ -2629,7 +2621,7 @@ impl FunctionMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let separator = &args[0];
             let array = &args[1];
-            let mut array = array.split(',').into_iter();
+            let mut array = array.split(',');
             let mut splited = String::new();
 
             if let Some(first) = array.next() {
@@ -2657,7 +2649,7 @@ impl FunctionMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = &args[0];
             let target = &args[1];
-            if !processor.replace_macro(&name, target) {
+            if !processor.replace_macro(name, target) {
                 return Err(RadError::InvalidArgument(format!(
                     "{} doesn't exist, thus cannot replace it's content",
                     name
@@ -2754,53 +2746,50 @@ impl FunctionMacroMap {
         if !Utils::is_granted("listdir", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        let args = ArgParser::new().args_to_vec(&args, ',', GreedyState::Never);
-        if args.len() == 0 {
+        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "listdir at least requires an argument".to_owned(),
             ));
         }
 
-        let absolute;
-        match Utils::is_arg_true(&args[0]) {
-            Ok(value) => absolute = value,
+        let absolute = match Utils::is_arg_true(&args[0]) {
+            Ok(value) => value,
             Err(_) => {
                 return Err(RadError::InvalidArgument(format!(
-                            "listdir's first argument should be a boolean value but given : \"{}\"",
-                            args[0]
+                    "listdir's first argument should be a boolean value but given : \"{}\"",
+                    args[0]
                 )));
-            },
-        }
+            }
+        };
 
         let path;
         if let Some(val) = args.get(1) {
             path = if val.is_empty() {
-                processor.get_current_dir()?.clone()
+                processor.get_current_dir()?
             } else {
                 PathBuf::from(val)
             };
             if !path.exists() {
                 return Err(RadError::InvalidArgument(format!(
-                            "Cannot list non-existent directory \"{}\"",
-                            path.display()
+                    "Cannot list non-existent directory \"{}\"",
+                    path.display()
                 )));
             }
         } else {
-            path = processor.get_current_dir()?.clone()
+            path = processor.get_current_dir()?
         };
 
-        let delim: &str;
-        if let Some(val) = args.get(2) {
-            delim = val;
+        let delim = if let Some(val) = args.get(2) {
+            val
         } else {
-            delim = ",";
+            ","
         };
-
 
         let mut vec = vec![];
         for entry in std::fs::read_dir(path)? {
             let entry = entry?;
-            if absolute { 
+            if absolute {
                 vec.push(std::fs::canonicalize(entry.path().as_os_str())?);
             } else {
                 vec.push(entry.file_name().into());
@@ -2912,6 +2901,8 @@ impl FunctionMacroMap {
     /// $regcsv(table_name,table_content)
     #[cfg(feature = "cindex")]
     fn cindex_register(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        use cindex::ReaderOption;
+
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             if processor.indexer.contains_table(&args[0]) {
                 return Err(RadError::InvalidArgument(format!(
@@ -2919,9 +2910,11 @@ impl FunctionMacroMap {
                     args[0]
                 )));
             }
+            let mut option = ReaderOption::new();
+            option.ignore_empty_row = true;
             processor
                 .indexer
-                .add_table_fast(&args[0], args[1].as_bytes())?;
+                .add_table_with_option(&args[0], args[1].as_bytes(), option)?;
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -3028,7 +3021,7 @@ impl std::fmt::Display for FMacroSign {
         let mut inner = self
             .args
             .iter()
-            .fold(String::new(), |acc, arg| acc + &arg + ",");
+            .fold(String::new(), |acc, arg| acc + arg + ",");
         // This removes last "," character
         inner.pop();
         write!(f, "${}({})", self.name, inner)

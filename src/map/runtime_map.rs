@@ -19,7 +19,7 @@ impl RuntimeMacro {
             .split_whitespace()
             .map(|item| item.to_owned())
             .collect();
-        if args.len() == 1 && args[0] == "" {
+        if args.len() == 1 && args[0].is_empty() {
             args = vec![]
         }
 
@@ -37,7 +37,7 @@ impl std::fmt::Display for RuntimeMacro {
         let mut inner = self
             .args
             .iter()
-            .fold(String::new(), |acc, arg| acc + &arg + ",");
+            .fold(String::new(), |acc, arg| acc + arg + ",");
         // This removes last "," character
         inner.pop();
         write!(f, "${}({})", self.name, inner)
@@ -92,7 +92,7 @@ impl RuntimeMacroMap {
             _ => {
                 let vol_runtime = self.volatile.get(key);
 
-                if let None = vol_runtime {
+                if vol_runtime.is_none() {
                     self.macros.get(key)
                 } else {
                     vol_runtime
@@ -107,7 +107,7 @@ impl RuntimeMacroMap {
             _ => {
                 let vol_runtime = self.volatile.get_mut(key);
 
-                if let None = vol_runtime {
+                if vol_runtime.is_none() {
                     self.macros.get_mut(key)
                 } else {
                     vol_runtime
@@ -139,10 +139,8 @@ impl RuntimeMacroMap {
             if let Some(mac) = self.macros.remove(name) {
                 self.macros.insert(new_name.to_string(), mac);
             }
-        } else {
-            if let Some(mac) = self.volatile.remove(name) {
-                self.volatile.insert(new_name.to_string(), mac);
-            }
+        } else if let Some(mac) = self.volatile.remove(name) {
+            self.volatile.insert(new_name.to_string(), mac);
         }
     }
 
@@ -151,10 +149,8 @@ impl RuntimeMacroMap {
             if let Some(mac) = self.macros.get_mut(name) {
                 mac.body.push_str(target);
             }
-        } else {
-            if let Some(mac) = self.volatile.get_mut(name) {
-                mac.body.push_str(target);
-            }
+        } else if let Some(mac) = self.volatile.get_mut(name) {
+            mac.body.push_str(target);
         }
     }
 
@@ -163,10 +159,8 @@ impl RuntimeMacroMap {
             if let Some(mac) = self.macros.get_mut(name) {
                 mac.body = target.to_string();
             }
-        } else {
-            if let Some(mac) = self.volatile.get_mut(name) {
-                mac.body.push_str(target)
-            }
+        } else if let Some(mac) = self.volatile.get_mut(name) {
+            mac.body.push_str(target)
         }
     }
 

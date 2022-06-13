@@ -75,9 +75,9 @@
 //!
 //! // Process with inputs
 //! // This prints to desginated write destinations
-//! processor.from_string(r#"$define(test=Test)"#)?;
-//! processor.from_stdin()?;
-//! processor.from_file(Path::new("from.txt"))?;
+//! processor.process_string(r#"$define(test=Test)"#)?;
+//! processor.process_stdin()?;
+//! processor.process_file(Path::new("from.txt"))?;
 //!
 //! processor.freeze_to_file(Path::new("out.r4f"))?; // Create frozen file
 //!
@@ -105,7 +105,7 @@ use crate::models::FileTarget;
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
 use crate::models::{
-    ErrorBehaviour, CommentType, ExtMacroBuilder, ExtMacroType, FlowControl, Hygiene, LocalMacro,
+    CommentType, ErrorBehaviour, ExtMacroBuilder, ExtMacroType, FlowControl, Hygiene, LocalMacro,
     MacroFragment, MacroMap, MacroType, ProcessInput, RelayTarget, RuleFile, UnbalancedChecker,
     WriteOption,
 };
@@ -244,6 +244,12 @@ pub struct Processor<'processor> {
     pub indexer: Indexer,
 }
 
+impl<'processor> Default for Processor<'processor> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'processor> Processor<'processor> {
     // ----------
     // Builder pattern methods
@@ -308,13 +314,13 @@ impl<'processor> Processor<'processor> {
                 .truncate(true)
                 .open(&target_file);
 
-            if let Err(_) = file {
+            if let Ok(file) = file {
+                self.write_option = WriteOption::File(file);
+            } else {
                 return Err(RadError::InvalidCommandOption(format!(
                     "Could not create file \"{}\"",
                     target_file.as_ref().display()
                 )));
-            } else {
-                self.write_option = WriteOption::File(file.unwrap());
             }
         }
         Ok(self)
@@ -335,15 +341,14 @@ impl<'processor> Processor<'processor> {
                 .truncate(true)
                 .open(&target_file);
 
-            if let Err(_) = file {
+            if let Ok(file) = file {
+                self.logger = Logger::new();
+                self.logger.set_write_option(Some(WriteOption::File(file)));
+            } else {
                 return Err(RadError::InvalidCommandOption(format!(
                     "Could not create file \"{}\"",
                     target_file.as_ref().display()
                 )));
-            } else {
-                self.logger = Logger::new();
-                self.logger
-                    .set_write_option(Some(WriteOption::File(file.unwrap())));
             }
         }
         Ok(self)
@@ -497,7 +502,7 @@ impl<'processor> Processor<'processor> {
     // This is not included in docs.rs documentation becuase... is it necessary?
     // I don't really remember when this method was added at the first time.
     /// Melt rule as literal input source, or say from byte array
-    pub fn rule_literal(mut self, literal: &Vec<u8>) -> RadResult<Self> {
+    pub fn rule_literal(mut self, literal: &[u8]) -> RadResult<Self> {
         let mut rule_file = RuleFile::new(None);
         rule_file.melt_literal(literal)?;
         self.map.runtime.extend_map(rule_file.rules, Hygiene::None);
@@ -599,11 +604,7 @@ impl<'processor> Processor<'processor> {
 
     /// Check if processing is on caching state
     pub fn on_cache(&self) -> bool {
-        if let None = self.cache_file {
-            false
-        } else {
-            true
-        }
+        self.cache_file.is_some()
     }
 
     /// Toggle cache option
@@ -624,7 +625,7 @@ impl<'processor> Processor<'processor> {
 
         // This should come first before read
         self.cache_file = None;
-        self.from_file(READ_CACHE)?;
+        self.process_file(READ_CACHE)?;
 
         // Recover states
         std::fs::remove_file(READ_CACHE)?;
@@ -685,7 +686,7 @@ impl<'processor> Processor<'processor> {
 
         if self.state.input_stack.len() == 1 {
             // Warn unterminated relaying
-            if self.state.relay.len() != 0 {
+            if !self.state.relay.is_empty() {
                 let relay = format!("{:?}", self.state.relay.last().unwrap());
                 self.log_warning(&format!("There is unterminated relay target : \"{}\" which might not be an intended behaviour.", relay), WarningType::Sanity)?;
             }
@@ -701,10 +702,10 @@ impl<'processor> Processor<'processor> {
         // This is necessary because operation can be contiguous
         self.state.input_stack.clear();
 
-        if self.cache.len() == 0 {
+        if self.cache.is_empty() {
             Ok(None)
         } else {
-            Ok(Some(std::mem::replace(&mut self.cache, String::new())))
+            Ok(Some(std::mem::take(&mut self.cache)))
         }
     }
 
@@ -853,7 +854,7 @@ impl<'processor> Processor<'processor> {
         resetable: bool,
     ) -> RadResult<()> {
         // Check target macro is empty
-        if target_macro.len() == 0 {
+        if target_macro.is_empty() {
             let err = RadError::InvalidMacroName(format!(
                 "Cannot register hook for macro \"{}\"",
                 target_macro
@@ -862,7 +863,7 @@ impl<'processor> Processor<'processor> {
         }
 
         // Check invoke macro is empty
-        if invoke_macro.len() == 0 {
+        if invoke_macro.is_empty() {
             let err = RadError::InvalidMacroName(format!(
                 "Cannot register hook which invokes a macro \"{}\"",
                 target_macro
@@ -883,7 +884,7 @@ impl<'processor> Processor<'processor> {
     /// Deregister
     pub fn deregister_hook(&mut self, hook_type: HookType, target_macro: &str) -> RadResult<()> {
         // Check target macro is empty
-        if target_macro.len() == 0 {
+        if target_macro.is_empty() {
             let err = RadError::InvalidMacroName(format!(
                 "Cannot deregister hook for macro \"{}\"",
                 target_macro
@@ -896,12 +897,12 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Read from string
-    pub fn from_string(&mut self, content: &str) -> RadResult<Option<String>> {
+    pub fn process_string(&mut self, content: &str) -> RadResult<Option<String>> {
         // Set name as string
         self.set_input_stdin()?;
 
         let mut reader = content.as_bytes();
-        self.from_buffer(&mut reader, None, false)?;
+        self.process_buffer(&mut reader, None, false)?;
         self.organize_and_clear_cache()
     }
 
@@ -909,7 +910,7 @@ impl<'processor> Processor<'processor> {
     ///
     /// If debug mode is enabled this, doesn't read stdin line by line but by chunk because user
     /// input is also a standard input and processor cannot distinguish the two
-    pub fn from_stdin(&mut self) -> RadResult<Option<String>> {
+    pub fn process_stdin(&mut self) -> RadResult<Option<String>> {
         #[allow(unused_imports)]
         use std::io::Read;
         let stdin = io::stdin();
@@ -921,17 +922,17 @@ impl<'processor> Processor<'processor> {
             let mut input = String::new();
             stdin.lock().read_to_string(&mut input)?;
             // This is necessary to prevent unexpected output from being captured.
-            self.from_buffer(&mut input.as_bytes(), None, false)?;
+            self.process_buffer(&mut input.as_bytes(), None, false)?;
             return self.organize_and_clear_cache();
         }
 
         let mut reader = stdin.lock();
-        self.from_buffer(&mut reader, None, false)?;
+        self.process_buffer(&mut reader, None, false)?;
         self.organize_and_clear_cache()
     }
 
     /// Process contents from a file
-    pub fn from_file(&mut self, path: impl AsRef<Path>) -> RadResult<Option<String>> {
+    pub fn process_file(&mut self, path: impl AsRef<Path>) -> RadResult<Option<String>> {
         // Sandboxed environment, backup
         let backup = if self.state.sandbox {
             Some(self.backup())
@@ -943,7 +944,7 @@ impl<'processor> Processor<'processor> {
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
-        self.from_buffer(&mut reader, backup, false)?;
+        self.process_buffer(&mut reader, backup, false)?;
         self.organize_and_clear_cache()
     }
 
@@ -953,7 +954,7 @@ impl<'processor> Processor<'processor> {
     /// - include
     /// - temp_include
     ///
-    pub(crate) fn from_file_as_chunk(
+    pub(crate) fn process_file_as_chunk(
         &mut self,
         path: impl AsRef<Path>,
     ) -> RadResult<Option<String>> {
@@ -968,12 +969,11 @@ impl<'processor> Processor<'processor> {
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
-        let chunk = self.from_buffer(&mut reader, backup, true);
-        chunk
+        self.process_buffer(&mut reader, backup, true)
     }
 
     /// Internal method for processing buffers line by line
-    fn from_buffer(
+    fn process_buffer(
         &mut self,
         buffer: &mut impl std::io::BufRead,
         backup: Option<SandboxBackup>,
@@ -1015,7 +1015,7 @@ impl<'processor> Processor<'processor> {
                     self.debugger.clear_line_cache();
 
                     // Reset fragment
-                    if &frag.whole_string != "" {
+                    if !frag.whole_string.is_empty() {
                         frag = MacroFragment::new();
                     }
                 }
@@ -1025,7 +1025,7 @@ impl<'processor> Processor<'processor> {
                 // This happens only when given macro involved text should not be printed
                 ParseResult::NoPrint => {}
                 // End of input, end loop
-                ParseResult::EOI => {
+                ParseResult::Eoi => {
                     // THis is necessary somehow, its kinda hard to explain
                     // but chunk read makes trailing new line and it should be deleted
                     if use_container {
@@ -1042,7 +1042,7 @@ impl<'processor> Processor<'processor> {
             self.debugger.inc_line_number();
 
             // Execute queued object
-            let queued = std::mem::replace(&mut self.state.queued, vec![]); // Queue should be emptied after
+            let queued = std::mem::take(&mut self.state.queued); // Queue should be emptied after
             for item in queued {
                 // This invokes parse method
                 let result = self.parse_chunk_args(0, MAIN_CALLER, &item)?;
@@ -1078,14 +1078,10 @@ impl<'processor> Processor<'processor> {
     #[cfg(feature = "debug")]
     fn is_local(&self, mut level: usize, name: &str) -> bool {
         while level > 0 {
-            if self
-                .map
-                .local
-                .contains_key(&Utils::local_name(level, &name))
-            {
+            if self.map.local.contains_key(&Utils::local_name(level, name)) {
                 return true;
             }
-            level = level - 1;
+            level -= 1;
         }
         false
     }
@@ -1102,9 +1098,9 @@ impl<'processor> Processor<'processor> {
         // Stop and wait for input
         // Only on main level macro
         if level == 0 {
-            self.debugger.user_input_on_macro(&frag, &mut self.logger)?;
+            self.debugger.user_input_on_macro(frag, &mut self.logger)?;
         } else {
-            self.debugger.user_input_on_step(&frag, &mut self.logger)?;
+            self.debugger.user_input_on_step(frag, &mut self.logger)?;
         }
 
         // Clear line_caches
@@ -1165,7 +1161,7 @@ impl<'processor> Processor<'processor> {
             }
 
             // Non macro string is included
-            if remainder.len() != 0 {
+            if !remainder.is_empty() {
                 // Fragment is not empty
                 if !frag.is_empty() {
                     // Consume new line shold not work on fragment extension
@@ -1189,10 +1185,8 @@ impl<'processor> Processor<'processor> {
                     // 1
                     // 2
                     if self.state.consume_newline {
-                        if !frag_on_going {
-                            if remainder == "\n" || remainder == "\r\n" {
-                                remainder = "";
-                            }
+                        if !frag_on_going && (remainder == "\n" || remainder == "\r\n") {
+                            remainder = "";
                         }
                         self.state.consume_newline = false;
                     }
@@ -1200,8 +1194,8 @@ impl<'processor> Processor<'processor> {
                     if self.state.escape_newline {
                         if remainder.ends_with("\r\n") {
                             remainder = remainder.strip_suffix("\r\n").unwrap();
-                        } else if remainder.ends_with("\n") {
-                            remainder = remainder.strip_suffix("\n").unwrap();
+                        } else if remainder.ends_with('\n') {
+                            remainder = remainder.strip_suffix('\n').unwrap();
                         }
                         self.state.escape_newline = false;
                     }
@@ -1214,7 +1208,7 @@ impl<'processor> Processor<'processor> {
                 Ok(ParseResult::NoPrint)
             }
         } else {
-            Ok(ParseResult::EOI)
+            Ok(ParseResult::Eoi)
         }
     } // parse_line end
 
@@ -1255,7 +1249,7 @@ impl<'processor> Processor<'processor> {
 
         self.logger.set_chunk(false);
         self.logger.recover_lines(backup);
-        return Ok(result);
+        Ok(result)
     } // parse_chunk_lines end
 
     /// Parse chunk body without separating lines
@@ -1274,9 +1268,9 @@ impl<'processor> Processor<'processor> {
         // NOTE
         // Parse's final argument is some kind of legacy of previous logics
         // However it can detect self calling macros in some cases
-        let result = self.parse(&mut lexor, &mut frag, &chunk, level, caller)?;
+        let result = self.parse(&mut lexor, &mut frag, chunk, level, caller)?;
         self.logger.recover_lines(backup);
-        return Ok(result);
+        Ok(result)
     } // parse_chunk end
 
     /// Parse a given line
@@ -1368,7 +1362,7 @@ impl<'processor> Processor<'processor> {
                     )?;
 
                     // If there is content to add
-                    if hook_mainder.len() != 0 {
+                    if !hook_mainder.is_empty() {
                         remainder.push_str(&hook_mainder);
                     }
                 } // End if let of macro name
@@ -1436,10 +1430,10 @@ impl<'processor> Processor<'processor> {
         // The macro can be  the one defined in parent macro
         let mut temp_level = level;
         while temp_level > 0 {
-            if let Some(local) = self.map.local.get(&Utils::local_name(temp_level, &name)) {
+            if let Some(local) = self.map.local.get(&Utils::local_name(temp_level, name)) {
                 return Ok(Some(local.body.to_owned()));
             }
-            temp_level = temp_level - 1;
+            temp_level -= 1;
         }
         // Find runtime macro
         // runtime macro comes before function macro so that
@@ -1460,19 +1454,19 @@ impl<'processor> Processor<'processor> {
             }
 
             let result = self.invoke_rule(level, name, &args)?;
-            return Ok(result);
+            Ok(result)
         }
         // Find function macro
-        else if self.map.function.contains(&name) {
+        else if self.map.function.contains(name) {
             // Func always exists, because contains succeeded.
             let func = self.map.function.get_func(name).unwrap();
             let final_result = func(&args, self)?;
-            return Ok(final_result);
+            Ok(final_result)
         }
         // No macros found to evaluate
         else {
             let err = RadError::InvalidMacroName(format!("No such macro name : \"{}\"", &name));
-            return Err(err);
+            Err(err)
         }
     }
 
@@ -1495,29 +1489,29 @@ impl<'processor> Processor<'processor> {
             .clone();
 
         let arg_types = &rule.args;
-        let args: Vec<String>;
         // Set variable to local macros
-        if let Some(content) = ArgParser::new().args_with_len(arg_values, arg_types.len()) {
-            args = content;
-        } else {
-            // Necessary arg count is bigger than given arguments
-            let err = RadError::InvalidArgument(format!(
-                "{}'s arguments are not sufficient. Given {}, but needs {}",
-                name,
-                ArgParser::new()
-                    .args_to_vec(arg_values, ',', GreedyState::Never)
-                    .len(),
-                arg_types.len()
-            ));
-            return Err(err);
-        }
+        let args =
+            if let Some(content) = ArgParser::new().args_with_len(arg_values, arg_types.len()) {
+                content
+            } else {
+                // Necessary arg count is bigger than given arguments
+                let err = RadError::InvalidArgument(format!(
+                    "{}'s arguments are not sufficient. Given {}, but needs {}",
+                    name,
+                    ArgParser::new()
+                        .args_to_vec(arg_values, ',', GreedyState::Never)
+                        .len(),
+                    arg_types.len()
+                ));
+                return Err(err);
+            };
 
         for (idx, arg_type) in arg_types.iter().enumerate() {
             //Set arg to be substitued
             self.map.add_local_macro(level + 1, arg_type, &args[idx]);
         }
         // Process the rule body
-        let result = self.parse_chunk_body(level, &name, &rule.body)?;
+        let result = self.parse_chunk_body(level, name, &rule.body)?;
 
         // Clear lower locals to prevent local collisions
         self.map.clear_lower_locals(level);
@@ -1551,7 +1545,7 @@ impl<'processor> Processor<'processor> {
             self.map
                 .register_runtime(&name, &args, &body, self.state.hygiene)?;
         } else {
-            let name = if frag.args.contains(",") {
+            let name = if frag.args.contains(',') {
                 frag.args.split(',').collect::<Vec<&str>>()[0]
             } else {
                 frag.args.split('=').collect::<Vec<&str>>()[0]
@@ -1568,7 +1562,7 @@ impl<'processor> Processor<'processor> {
     /// Write text to either file or standard output according to processor's write option
     fn write_to(&mut self, content: &str, container: &mut Option<String>) -> RadResult<()> {
         // Don't try to write empty string, because it's a waste
-        if content.len() == 0 {
+        if content.is_empty() {
             return Ok(());
         }
 
@@ -1605,7 +1599,7 @@ impl<'processor> Processor<'processor> {
                     ));
                     return Err(err);
                 }
-                self.map.append(&mac, content, self.state.hygiene);
+                self.map.append(mac, content, self.state.hygiene);
             }
             RelayTarget::File(target) => {
                 // NOTE
@@ -1620,7 +1614,7 @@ impl<'processor> Processor<'processor> {
             #[cfg(not(feature = "wasm"))]
             RelayTarget::Temp => {
                 if let Some(file) = self.get_temp_file() {
-                    file.write(content.as_bytes())?;
+                    file.write_all(content.as_bytes())?;
                 }
             }
             RelayTarget::None => {
@@ -1681,7 +1675,7 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<()> {
         #[cfg(feature = "debug")]
         self.debugger
-            .user_input_before_macro(&frag, &mut self.logger)?;
+            .user_input_before_macro(frag, &mut self.logger)?;
 
         frag.whole_string.push(ch);
 
@@ -1732,7 +1726,7 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<()> {
         match cursor {
             Cursor::Name => {
-                if frag.name.len() == 0 {
+                if frag.name.is_empty() {
                     self.logger.freeze_number();
                 }
                 match ch {
@@ -1845,7 +1839,7 @@ impl<'processor> Processor<'processor> {
         caller: &str,
     ) -> RadResult<()> {
         // Name is empty
-        if frag.name.len() == 0 {
+        if frag.name.is_empty() {
             let err =
                 RadError::InvalidMacroName("Cannot invoke a macro with empty name".to_string());
 
@@ -1867,7 +1861,7 @@ impl<'processor> Processor<'processor> {
             // Set switch to next line.
             self.debugger.break_point(frag, &mut self.logger)?;
             // Break point is true , continue
-            if frag.name.len() == 0 {
+            if frag.name.is_empty() {
                 self.state.consume_newline = true;
                 return Ok(());
             }
@@ -1940,12 +1934,9 @@ impl<'processor> Processor<'processor> {
 
         // If content is none
         // Ignore new line after macro evaluation until any character
-        if let None = content {
-            self.state.consume_newline = true;
-        } else {
+        if let Some(mut content) = content {
             // else it is ok to proceed.
             // thus it is safe to unwrap it
-            let mut content = content.unwrap();
             if frag.trimmed {
                 content = Utils::trim(&content);
             }
@@ -1976,7 +1967,7 @@ impl<'processor> Processor<'processor> {
 
                 // Add hook remainder into current content
                 // which will be added to main remainder
-                if hook_mainder.len() != 0 {
+                if !hook_mainder.is_empty() {
                     content.push_str(&hook_mainder);
                 }
             }
@@ -1991,6 +1982,8 @@ impl<'processor> Processor<'processor> {
             } else {
                 remainder.push_str(&content);
             }
+        } else {
+            self.state.consume_newline = true;
         }
         Ok(())
     }
@@ -2212,7 +2205,7 @@ impl<'processor> Processor<'processor> {
                     Some(other) => other.to_owned(),
                     None => std::env::current_dir()?,
                 };
-                path.to_owned()
+                path
             }
         };
         Ok(path)
@@ -2231,9 +2224,9 @@ impl<'processor> Processor<'processor> {
         if let Some(args) = ArgParser::new().args_with_len(source, target_length) {
             Ok(args)
         } else {
-            Err(RadError::InvalidArgument(format!(
-                "Insufficient arguments."
-            )))
+            Err(RadError::InvalidArgument(
+                "Insufficient arguments.".to_string(),
+            ))
         }
     }
 
@@ -2315,7 +2308,7 @@ enum ParseResult {
     FoundMacro(String),
     Printable(String),
     NoPrint,
-    EOI,
+    Eoi,
 }
 
 /// Struct for backing current file and logging information

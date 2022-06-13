@@ -65,16 +65,15 @@ impl Utils {
             } else {
                 return Ok(true);
             }
-        } else {
-            if arg.to_lowercase() == "true" {
-                return Ok(true);
-            } else if arg.to_lowercase() == "false" {
-                return Ok(false);
-            }
+        } else if arg.to_lowercase() == "true" {
+            return Ok(true);
+        } else if arg.to_lowercase() == "false" {
+            return Ok(false);
         }
-        return Err(RadError::InvalidArgument(
+
+        Err(RadError::InvalidArgument(
             "Neither true nor false".to_owned(),
-        ));
+        ))
     }
 
     /// Get a substring of utf8 encoded text.
@@ -110,13 +109,14 @@ impl Utils {
                 return source.to_owned();
             }
         }
-        return result;
+
+        result
     }
 
     pub fn green(string: &str) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
-            return Box::new(string.green().to_owned());
+            return Box::new(string.green());
         }
         Box::new(string.to_owned())
     }
@@ -124,7 +124,7 @@ impl Utils {
     pub fn red(string: &str) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
-            return Box::new(string.red().to_owned());
+            return Box::new(string.red());
         }
         Box::new(string.to_owned())
     }
@@ -132,7 +132,7 @@ impl Utils {
     pub fn yellow(string: &str) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
-            return Box::new(string.yellow().to_owned());
+            return Box::new(string.yellow());
         }
         Box::new(string.to_owned())
     }
@@ -201,7 +201,7 @@ impl Utils {
         }
     }
 
-    pub(crate) fn subprocess(args: &Vec<&str>) -> RadResult<()> {
+    pub(crate) fn subprocess(args: &[&str]) -> RadResult<()> {
         #[cfg(target_os = "windows")]
         let process = std::process::Command::new("cmd")
             .arg("/C")

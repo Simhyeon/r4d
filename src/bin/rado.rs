@@ -1,4 +1,4 @@
-use rad::RadResult;
+use r4d::RadResult;
 
 pub fn main() -> RadResult<()> {
     // Enable color on pager such as "less"
@@ -9,7 +9,7 @@ pub fn main() -> RadResult<()> {
     // Command line parse
     #[cfg(feature = "clap")]
     {
-        use rad::RadoCli;
+        use r4d::RadoCli;
         use std::io::Write;
         if let Err(content) = RadoCli::new().parse() {
             writeln!(std::io::stderr(), "{}", content)?;

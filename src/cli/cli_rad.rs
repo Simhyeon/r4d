@@ -6,6 +6,7 @@ use crate::utils::Utils;
 use crate::RadResult;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
@@ -20,6 +21,12 @@ pub struct RadCli<'cli> {
     allow_auth: Option<Vec<AuthType>>,
     allow_auth_warn: Option<Vec<AuthType>>,
     processor: Processor<'cli>,
+}
+
+impl<'cli> Default for RadCli<'cli> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<'cli> RadCli<'cli> {
@@ -70,12 +77,12 @@ impl<'cli> RadCli<'cli> {
             .lenient(args.is_present("lenient"))
             .silent(WarningType::from_str(
                 args.value_of("silent").unwrap_or("none"),
-            ))
+            )?)
             .assert(args.is_present("assert"))
             .allow(std::mem::replace(&mut self.allow_auth, None))
             .allow_with_warning(std::mem::replace(&mut self.allow_auth_warn, None))
             .unix_new_line(args.is_present("newline"))
-            .melt_files(std::mem::replace(&mut self.rules, vec![]))?
+            .melt_files(std::mem::take(&mut self.rules))?
             .write_to_file(std::mem::replace(&mut self.write_to_file, None))?
             .discard(args.is_present("discard"))
             .error_to_file(std::mem::replace(&mut self.error_to_file, None))?;
@@ -121,7 +128,7 @@ impl<'cli> RadCli<'cli> {
         if let Some(sources) = args.values_of("INPUT") {
             // Also read from stdin if given combiation option
             if args.is_present("combination") {
-                self.processor.from_stdin()?;
+                self.processor.process_stdin()?;
             }
 
             // Interpret every input source as literal text
@@ -132,11 +139,11 @@ impl<'cli> RadCli<'cli> {
                 let src_as_file = Path::new(src);
 
                 if !literal && src_as_file.exists() {
-                    self.processor.from_file(src_as_file)?;
+                    self.processor.process_file(src_as_file)?;
                 } else {
                     // TODO
                     // This doesn't feel good...
-                    self.processor.from_string(src)?;
+                    self.processor.process_string(src)?;
                 }
             }
             #[cfg(feature = "signature")]
@@ -150,7 +157,7 @@ impl<'cli> RadCli<'cli> {
             if self.print_signature(args)? {
                 return Ok(());
             }
-            self.processor.from_stdin()?;
+            self.processor.process_stdin()?;
         }
 
         // Print result
@@ -197,39 +204,30 @@ impl<'cli> RadCli<'cli> {
         // Sub options
         // custom rules
         self.rules = if let Some(files) = args.values_of("melt") {
-            let files = files
-                .into_iter()
-                .map(|value| PathBuf::from(value))
-                .collect::<Vec<PathBuf>>();
             files
+                .into_iter()
+                .map(PathBuf::from)
+                .collect::<Vec<PathBuf>>()
         } else {
             vec![]
         };
 
         // Write to file
-        self.write_to_file = if let Some(output_file) = args.value_of("out") {
-            Some(PathBuf::from(output_file))
-        } else {
-            None
-        };
+        self.write_to_file = args.value_of("out").map(PathBuf::from);
 
         // Error to file
-        self.error_to_file = if let Some(error_file) = args.value_of("err") {
-            Some(PathBuf::from(error_file))
-        } else {
-            None
-        };
+        self.error_to_file = args.value_of("err").map(PathBuf::from);
 
         // Permission
         self.allow_auth = if let Some(auths) = args.value_of("allow") {
-            auths.split("+").map(|s| AuthType::from(s)).collect()
+            auths.split('+').map(AuthType::from).collect()
         } else {
             None
         };
 
         // Permission with warning
         self.allow_auth_warn = if let Some(auths) = args.value_of("allow_warn") {
-            auths.split("+").map(|s| AuthType::from(s)).collect()
+            auths.split('+').map(AuthType::from).collect()
         } else {
             None
         };

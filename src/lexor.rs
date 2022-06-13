@@ -46,12 +46,8 @@ impl Lexor {
 
     /// Validate the character
     pub fn lex(&mut self, ch: char) -> LexResult {
-        let result: LexResult;
         // Literal related
-        if self.start_literal(ch) {
-            self.previous_char.replace('0');
-            return LexResult::Literal(self.cursor);
-        } else if self.end_literal(ch) {
+        if self.start_literal(ch) || self.end_literal(ch) {
             self.previous_char.replace('0');
             return LexResult::Literal(self.cursor);
         } else if self.literal_count > 0 {
@@ -69,17 +65,11 @@ impl Lexor {
         }
 
         // Non literal related logics
-        match self.cursor {
-            Cursor::None => {
-                result = self.branch_none(ch);
-            }
-            Cursor::Name => {
-                result = self.branch_name(ch);
-            }
-            Cursor::Arg => {
-                result = self.branch_arg(ch);
-            } // end arg match
-        }
+        let result = match self.cursor {
+            Cursor::None => self.branch_none(ch),
+            Cursor::Name => self.branch_name(ch),
+            Cursor::Arg => self.branch_arg(ch),
+        }; // end arg match
 
         let replace = ch;
 
@@ -133,7 +123,7 @@ impl Lexor {
         let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
         // Right paren decreases paren_count
         if ch == ')' {
-            self.parenthesis_count = self.parenthesis_count - 1;
+            self.parenthesis_count -= 1;
             if self.parenthesis_count == 0 {
                 self.cursor = Cursor::None;
                 result = LexResult::EndFrag;
@@ -141,7 +131,7 @@ impl Lexor {
         }
         // Left paren increases paren_count
         else if ch == '(' {
-            self.parenthesis_count = self.parenthesis_count + 1;
+            self.parenthesis_count += 1;
         }
         // Other characters are added normally
         result
@@ -155,7 +145,7 @@ impl Lexor {
     fn start_literal(&mut self, ch: char) -> bool {
         // if given value is literal character and preceding character is escape
         if ch == LIT_CHAR && self.previous_char.unwrap_or('0') == ESCAPE_CHAR {
-            self.literal_count = self.literal_count + 1;
+            self.literal_count += 1;
             true
         } else {
             false
@@ -167,7 +157,7 @@ impl Lexor {
         // if given value is literal character and preceding character is escape
         if ch == ESCAPE_CHAR && self.previous_char.unwrap_or('0') == LIT_CHAR {
             if self.literal_count > 0 {
-                self.literal_count = self.literal_count - 1;
+                self.literal_count -= 1;
             } // else it is simply a *\ without starting \*
             true
         } else {

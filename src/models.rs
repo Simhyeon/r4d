@@ -7,7 +7,6 @@ use crate::runtime_map::{RuntimeMacro, RuntimeMacroMap};
 #[cfg(feature = "signature")]
 use crate::sigmap::MacroSignature;
 use crate::utils::Utils;
-use bincode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
@@ -264,10 +263,10 @@ impl UnbalancedChecker {
     }
     pub fn check(&mut self, ch: char) -> bool {
         match ch {
-            '(' => self.paren = self.paren + 1,
+            '(' => self.paren += 1,
             ')' => {
                 if self.paren > 0 {
-                    self.paren = self.paren - 1;
+                    self.paren -= 1;
                 } else {
                     return false;
                 }
@@ -313,33 +312,32 @@ impl RuleFile {
         }
     }
 
-    pub fn melt_literal(&mut self, literal: &Vec<u8>) -> RadResult<()> {
+    pub fn melt_literal(&mut self, literal: &[u8]) -> RadResult<()> {
         let result = bincode::deserialize::<Self>(literal);
-        if let Err(_) = result {
-            Err(RadError::BincodeError(format!(
-                "Failed to melt the literal value"
-            )))
-        } else {
-            self.rules.extend(result.unwrap().rules.into_iter());
+        if let Ok(rule_file) = result {
+            self.rules.extend(rule_file.rules.into_iter());
             Ok(())
+        } else {
+            Err(RadError::BincodeError(
+                "Failed to melt the literal value".to_string(),
+            ))
         }
     }
 
     /// Convert runtime rules into a single binary file
     pub(crate) fn freeze(&self, path: &std::path::Path) -> RadResult<()> {
         let result = bincode::serialize(self);
-        if let Err(_) = result {
+        if result.is_err() {
             Err(RadError::BincodeError(format!(
                 "Failed to freeze to a file : {}",
                 path.display()
             )))
+        } else if std::fs::write(path, result.unwrap()).is_err() {
+            Err(RadError::InvalidArgument(format!(
+                "Failed to create a file : {}",
+                path.display()
+            )))
         } else {
-            if let Err(_) = std::fs::write(path, result.unwrap()) {
-                return Err(RadError::InvalidArgument(format!(
-                    "Failed to create a file : {}",
-                    path.display()
-                )));
-            }
             Ok(())
         }
     }
@@ -421,17 +419,17 @@ pub enum CommentType {
     Any,
 }
 
-impl CommentType {
-    #[allow(dead_code)]
-    pub(crate) fn from_str(text: &str) -> RadResult<Self> {
-        let comment_type = match text.to_lowercase().as_str() {
+impl std::str::FromStr for CommentType {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let comment_type = match s.to_lowercase().as_str() {
             "none" => Self::None,
             "start" => Self::Start,
             "any" => Self::Any,
             _ => {
                 return Err(RadError::InvalidCommandOption(format!(
                     "Comment type : \"{}\" is not available.",
-                    text
+                    s
                 )));
             }
         };
@@ -446,8 +444,9 @@ pub enum DiffOption {
     Change,
 }
 
-impl DiffOption {
-    pub fn from_str(text: &str) -> RadResult<Self> {
+impl std::str::FromStr for DiffOption {
+    type Err = RadError;
+    fn from_str(text: &str) -> Result<Self, Self::Err> {
         let var = match text.to_lowercase().as_str() {
             "none" => Self::None,
             "all" => Self::All,
@@ -499,7 +498,7 @@ impl SignatureType {
 pub type StorageResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 pub trait RadStorage {
-    fn update(&mut self, args: &Vec<String>) -> StorageResult<()>;
+    fn update(&mut self, args: &[String]) -> StorageResult<()>;
     fn extract(&mut self, serialize: bool) -> StorageResult<Option<StorageOutput>>;
 }
 
@@ -510,10 +509,10 @@ pub enum StorageOutput {
 }
 
 impl StorageOutput {
-    pub(crate) fn into_printable(&self) -> String {
+    pub(crate) fn into_printable(self) -> String {
         match self {
             Self::Binary(bytes) => format!("{:?}", bytes),
-            Self::Text(text) => text.to_owned(),
+            Self::Text(text) => text,
         }
     }
 }
@@ -583,7 +582,7 @@ impl ExtMacroBuilder {
         self
     }
 
-    pub fn args(mut self, args: &Vec<impl AsRef<str>>) -> Self {
+    pub fn args(mut self, args: &[impl AsRef<str>]) -> Self {
         self.args = args.iter().map(|a| a.as_ref().to_string()).collect();
         self
     }

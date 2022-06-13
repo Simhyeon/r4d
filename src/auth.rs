@@ -2,6 +2,8 @@
 //!
 //! Permission should be given for some function macro types
 
+use crate::consts::LINE_ENDING;
+
 #[derive(Debug)]
 /// Struct that stores auth states
 pub(crate) struct AuthFlags {
@@ -33,16 +35,13 @@ impl AuthFlags {
             match self.get_state(&auth_type) {
                 &AuthState::Warn | &AuthState::Open => {
                     // Add newline before
-                    format.push_str(
-                        "
-",
-                    );
+                    format.push_str(LINE_ENDING);
                     format.push_str(&format!("Auth : {:?} is open.", auth_type));
                 }
                 &AuthState::Restricted => (),
             }
         }
-        if format.len() != 0 {
+        if !format.is_empty() {
             Some(format)
         } else {
             None

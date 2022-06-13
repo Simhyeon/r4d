@@ -130,8 +130,9 @@ pub enum HookType {
     Char,
 }
 
-impl HookType {
-    pub fn from_str(hook_type: &str) -> RadResult<Self> {
+impl std::str::FromStr for HookType {
+    type Err = RadError;
+    fn from_str(hook_type: &str) -> Result<Self, Self::Err> {
         let var = match hook_type.to_lowercase().as_str() {
             "macro" => Self::Macro,
             "char" => Self::Char,

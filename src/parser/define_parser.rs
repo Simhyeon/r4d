@@ -41,8 +41,8 @@ impl DefineParser {
     /// If definition doesn't comply with naming rules or syntaxes, if returnes "None"
     pub(crate) fn parse_define(&mut self, text: &str) -> Option<(String, String, String)> {
         self.clear(); // Start in fresh state
-        let mut char_iter = text.chars().peekable();
-        while let Some(ch) = char_iter.next() {
+        let char_iter = text.chars().peekable();
+        for ch in char_iter {
             match self.arg_cursor {
                 DefineCursor::Name => {
                     if let ParseIgnore::Ignore = self.branch_name(ch) {
@@ -73,7 +73,7 @@ impl DefineParser {
         // -> This is not a valid pattern
         // self.args.len() is 0, because
         // args are added only after equal(=) sign is detected
-        if self.args.len() == 0 && !self.bind {
+        if self.args.is_empty() && !self.bind {
             return None;
         }
 
@@ -83,8 +83,8 @@ impl DefineParser {
     }
 
     /// Check if char complies with naming rule
-    fn is_valid_char(&mut self, ch: char) -> bool {
-        if self.container.len() == 0 {
+    fn is_valid_char(&self, ch: char) -> bool {
+        if self.container.is_empty() {
             // Start of string
             // Not alphabetic
             // $define( 1name ) -> Not valid
@@ -120,7 +120,7 @@ impl DefineParser {
             // This means pattern like this
             // $define( name ) -> name is registered
             // $define( na me ) -> na is ignored and take me instead
-            if self.name.len() != 0 {
+            if !self.name.is_empty() {
                 self.container.clear();
                 ParseIgnore::None
             } else {
@@ -142,8 +142,8 @@ impl DefineParser {
     fn branch_args(&mut self, ch: char) -> ParseIgnore {
         // Blank space separates arguments
         // TODO: Why check name's length? Is it necessary?
-        if Utils::is_blank_char(ch) && self.name.len() != 0 {
-            if self.container.len() != 0 {
+        if Utils::is_blank_char(ch) && !self.name.is_empty() {
+            if !self.container.is_empty() {
                 self.args.push_str(&self.container);
                 self.args.push(' ');
                 self.container.clear();
