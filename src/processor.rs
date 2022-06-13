@@ -269,6 +269,7 @@ impl<'processor> Processor<'processor> {
     /// This creates a complete processor that can parse and create output without any extra
     /// informations.
     fn new_processor(use_default: bool) -> Self {
+        #[allow(unused_mut)] // Mut is required on feature codes
         let mut state = ProcessorState::new();
 
         // You cannot use filesystem in wasm target
@@ -1376,9 +1377,9 @@ impl<'processor> Processor<'processor> {
     /// Evaluate detected macro usage
     ///
     /// Evaluation order is followed
-    /// - Deterred macro
     /// - Local bound macro
     /// - Runtime macro
+    /// - Deterred macro
     /// - Function macro
     fn evaluate(
         &mut self,
@@ -1415,17 +1416,6 @@ impl<'processor> Processor<'processor> {
             )?;
         }
 
-        // Find deterred macro
-        if self.map.is_deterred_macro(name) {
-            if let Some(func) = self.map.deterred.get_deterred_macro(name) {
-                let final_result = func(&args, level, self)?;
-                // TODO
-                // Make parse logic consistent, not defined by delarator
-                // result = self.parse_chunk_args(level, caller, &result)?;
-                return Ok(final_result);
-            }
-        }
-
         // Find local macro
         // The macro can be  the one defined in parent macro
         let mut temp_level = level;
@@ -1435,6 +1425,7 @@ impl<'processor> Processor<'processor> {
             }
             temp_level -= 1;
         }
+
         // Find runtime macro
         // runtime macro comes before function macro so that
         // user can override it
@@ -1454,10 +1445,21 @@ impl<'processor> Processor<'processor> {
             }
 
             let result = self.invoke_rule(level, name, &args)?;
-            Ok(result)
+            return Ok(result);
         }
+        // Find deterred macro
+        else if self.map.is_deterred_macro(name) {
+            if let Some(func) = self.map.deterred.get_deterred_macro(name) {
+                let final_result = func(&args, level, self)?;
+                // TODO
+                // Make parse logic consistent, not defined by delarator
+                // result = self.parse_chunk_args(level, caller, &result)?;
+                return Ok(final_result);
+            }
+        }
+
         // Find function macro
-        else if self.map.function.contains(name) {
+        if self.map.function.contains(name) {
             // Func always exists, because contains succeeded.
             let func = self.map.function.get_func(name).unwrap();
             let final_result = func(&args, self)?;
@@ -1535,9 +1537,14 @@ impl<'processor> Processor<'processor> {
                     .map
                     .contains_macro(&name, MacroType::Any, self.state.hygiene)
             {
+                let mac_name = if frag.args.contains(',') {
+                    frag.args.split(',').collect::<Vec<&str>>()[0]
+                } else {
+                    frag.args.split('=').collect::<Vec<&str>>()[0]
+                };
                 let err = RadError::StrictPanic(format!(
                     "Can't override exsiting macro : \"{}\"",
-                    frag.args.split(',').collect::<Vec<&str>>()[0]
+                    mac_name
                 ));
                 return Err(err);
             }
