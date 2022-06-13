@@ -120,7 +120,7 @@ use rad::Processor;
 let processor = Processor::new()
     .write_to_file(Some(PathBuf::from("cache.txt")))?;
 
-processor.from_file(Path::new("input.txt"))?;
+processor.process_file(Path::new("input.txt"))?;
 processor.print_result()?;
 ```
 
