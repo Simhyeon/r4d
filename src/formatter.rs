@@ -16,7 +16,6 @@ impl Formatter {
     pub fn csv_to_table(table_format: &str, data: &str, newline: &str) -> RadResult<String> {
         let data = dcsv::Reader::new()
             .trim(true)
-            .has_header(false)
             .ignore_empty_row(true)
             .read_from_stream(data.as_bytes())?;
         let data_ref = data.read_only_ref();
