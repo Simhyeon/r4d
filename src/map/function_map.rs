@@ -1274,7 +1274,6 @@ impl FunctionMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let table_format = &args[0]; // Either gfm, wikitex, latex, none
             let csv_content = &args[1];
-            println!("--{}--", csv_content);
             let result = Formatter::csv_to_table(table_format, csv_content, &p.state.newline)?;
             Ok(Some(result))
         } else {

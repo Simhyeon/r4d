@@ -14,7 +14,6 @@ impl Formatter {
     /// - wikitext
     /// - html
     pub fn csv_to_table(table_format: &str, data: &str, newline: &str) -> RadResult<String> {
-        println!("--{}--", data);
         let data = dcsv::Reader::new()
             .trim(true)
             .has_header(false)
