@@ -1,9 +1,17 @@
-use crate::consts::{RADO_DIR, RADO_EDITOR};
 use crate::utils::Utils;
 use crate::RadResult;
 use crate::{RadCli, RadError};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+
+lazy_static::lazy_static! {
+    pub static ref RADO_DIR: std::path::PathBuf = std::env::temp_dir().join("rado");
+}
+
+#[cfg(windows)]
+pub(crate) const RADO_EDITOR: &str = "notepad.exe";
+#[cfg(not(windows))]
+pub(crate) const RADO_EDITOR: &str = "vim";
 
 /// Cli arguments parser for rado binary
 pub struct RadoCli {
