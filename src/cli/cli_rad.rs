@@ -55,7 +55,7 @@ impl<'cli> RadCli<'cli> {
         Ok(())
     }
 
-    pub(crate) fn parse_from(&mut self, source: &Vec<&str>) -> RadResult<()> {
+    pub(crate) fn parse_from(&mut self, source: &[&str]) -> RadResult<()> {
         let cli_args = Self::args_builder(Some(source));
         self.run_processor(&cli_args)?;
         Ok(())
@@ -254,7 +254,7 @@ impl<'cli> RadCli<'cli> {
         }
     }
 
-    fn args_builder(source: Option<&Vec<&str>>) -> clap::ArgMatches {
+    fn args_builder(source: Option<&[&str]>) -> clap::ArgMatches {
         use clap::{App, Arg};
         let app = App::new("rad")
             .version("3.0.0-rc.0")
