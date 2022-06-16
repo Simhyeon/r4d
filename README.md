@@ -5,6 +5,8 @@ processor.
 
 [Changes](./docs/change.md)
 
+[3.0 Changes](./docs/3_0.md)
+
 ### Note
 
 Because crates.io's readme is tied to version. There might be undocumented
