@@ -1,4 +1,4 @@
-use dcsv::ReadOnlyDataRef;
+use dcsv::VirtualArray;
 
 use crate::error::RadError;
 use crate::RadResult;
@@ -17,17 +17,17 @@ impl Formatter {
         let data = dcsv::Reader::new()
             .trim(true)
             .ignore_empty_row(true)
-            .read_from_stream(data.as_bytes())?;
-        let data_ref = data.read_only_ref();
-        if data_ref.rows.is_empty() {
+            .has_header(false)
+            .array_from_stream(data.as_bytes())?;
+        if data.rows.is_empty() {
             return Err(RadError::InvalidArgument(
                 "Table cannot be constructed from empty value".to_string(),
             ));
         }
         let table = match table_format {
-            "github" => Formatter::gfm_table(&data_ref, newline)?,
-            "wikitext" => Formatter::wikitext_table(&data_ref, newline)?,
-            "html" => Formatter::html_table(&data_ref)?,
+            "github" => Formatter::gfm_table(&data, newline)?,
+            "wikitext" => Formatter::wikitext_table(&data, newline)?,
+            "html" => Formatter::html_table(&data)?,
             _ => {
                 return Err(RadError::UnsupportedTableFormat(format!(
                     "Unsupported table format : {}",
@@ -45,12 +45,11 @@ impl Formatter {
     pub fn csv_to_macros(macro_name: &str, data: &str, newline: &str) -> RadResult<String> {
         let data = dcsv::Reader::new()
             .has_header(false)
-            .read_from_stream(data.as_bytes())?;
+            .array_from_stream(data.as_bytes())?;
         let mut exec = String::new();
         let mut iter = data.rows.iter().peekable();
         while let Some(row) = iter.next() {
-            let row_str = row.to_string(&data.columns)?;
-            exec.push_str(&format!("${}({})", macro_name, row_str));
+            exec.push_str(&format!("${}({})", macro_name, row.join(",")));
             if iter.peek().is_some() {
                 exec.push_str(newline);
             }
@@ -59,7 +58,7 @@ impl Formatter {
     }
 
     // Format csv into github formatted table
-    fn gfm_table(data: &ReadOnlyDataRef, newline: &str) -> RadResult<String> {
+    fn gfm_table(data: &VirtualArray, newline: &str) -> RadResult<String> {
         let mut table = String::new();
         let mut data_iter = data.rows.iter();
         let header = data_iter.next();
@@ -96,7 +95,7 @@ impl Formatter {
     }
 
     // Format csv into wikitext formatted table
-    fn wikitext_table(data: &ReadOnlyDataRef, newline: &str) -> RadResult<String> {
+    fn wikitext_table(data: &VirtualArray, newline: &str) -> RadResult<String> {
         let mut table = String::new();
         let mut data_iter = data.rows.iter();
         let header = data_iter.next();
@@ -134,7 +133,7 @@ impl Formatter {
     }
 
     // Format csv into html formatted table
-    fn html_table(data: &ReadOnlyDataRef) -> RadResult<String> {
+    fn html_table(data: &VirtualArray) -> RadResult<String> {
         let mut table = String::new();
         let mut data_iter = data.rows.iter();
         let header = data_iter.next();
