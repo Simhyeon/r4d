@@ -3,7 +3,7 @@ use crate::logger::WarningType;
 use crate::models::{CommentType, DiffOption};
 use crate::processor::Processor;
 use crate::utils::Utils;
-use crate::RadResult;
+use crate::{RadError, RadResult};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -124,7 +124,7 @@ impl<'cli> RadCli<'cli> {
             self.processor.set_pipe(&input)
         }
 
-        // -->> Read from files
+        // -->> Read from files or process as raw text
         if let Some(sources) = args.values_of("INPUT") {
             // Also read from stdin if given combiation option
             if args.is_present("combination") {
@@ -136,14 +136,15 @@ impl<'cli> RadCli<'cli> {
 
             // Read from given sources and write with given options
             for src in sources {
-                let src_as_file = Path::new(src);
-
-                if !literal && src_as_file.exists() {
-                    self.processor.process_file(src_as_file)?;
-                } else {
-                    // TODO
-                    // This doesn't feel good...
+                if literal {
                     self.processor.process_string(src)?;
+                } else {
+                    let src_as_file = Path::new(src);
+                    if src_as_file.exists() {
+                        self.processor.process_file(src_as_file)?;
+                    } else {
+                        return Err(RadError::InvalidFile(format!("{}", src_as_file.display())));
+                    }
                 }
             }
             #[cfg(feature = "signature")]
