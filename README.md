@@ -51,6 +51,9 @@ Evaluation : $prec($eval( $num(0.1second) + $num(0.2sekunde)),2)
 Evaluation : $evalk( 1 + 2 )
 ```
 **Processed texts**
+
+Ran with ```TABLE_FORM=github rad file_name.md -a env+fin --comment```
+
 ```
 ---
 title  : R4d demo
@@ -100,24 +103,26 @@ cargo install r4d --features basic --locked
 **Binary**
 
 There are two binaries each **rad** and **rado**. Rad is a main processor and
-rado is a rad-open binary.
+rado is a open+edit binary.
 
 ```
-# Read from file and print to stdout 
+# Read from a file and print to stdout 
 rad input_file.txt
-# Read from standard input and print to file
+# Read from standard input and print to a file
 printf '...text...' | rad -o out_file.txt
 
-# Edit source file
+# Edit a source file
 rado edit file_name.txt
-# Read processed file
+# Read a processed file
 rado read file_name.txt
+# Print environment variables
+rado env
 ```
 
 **Library**
 ```rust
-use rad::RadError;
-use rad::Processor;
+use r4d::RadError;
+use r4d::Processor;
 
 let processor = Processor::new()
     .write_to_file(Some(PathBuf::from("cache.txt")))?;

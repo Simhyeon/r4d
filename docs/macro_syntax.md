@@ -26,8 +26,8 @@ and following characters should be either alphanumeric or underscore.
 **Second argument** (Before equal sign)
 
 Second argument is macro's arguments. Macro argument also follows same rule
-of naming. Multiple arguments can be declared and should be separated by a
-whitespace.
+of naming. Multiple arguments can be declared and should be **separated by a
+whitespace.**
 
 **Third argument** (After equal sign)
 
@@ -49,8 +49,8 @@ $static(v_name,Simon creek)
 **Define is not evaluated on declaration**
 
 Definition's body can include any macro invocation in itself, but wrong macro
-use inside definition cannot be detected at the time of definition. To make
-matters worse, arguments doesn't have any types either.
+use inside definition cannot be detected at the time of definition. By other
+terms, defined macro is evaluated lazily.
 
 ```
 $define(panik,kalm=$calm())
@@ -68,7 +68,8 @@ KALM
 **Define is evaluated on every call**
 
 Because defined macro is evaluated on every invocation. This may not be a
-desired behaviour. Use static macro if you want statically bound value.
+desired behaviour. Use static macro if you want statically bound value. Static
+macro eagerly evaluates arguments and assign the processed value to a macro.
 
 ```
 $define(counter=0)
@@ -98,11 +99,11 @@ converts to
 My name is Simon Creek.
 ```
 
-Special argument ```$:``` is used for iterated value.
+Special macro ```$:()``` is used for iterated value.
 ```
-$foreach(\*John,Simon,Jane*\,Name : $:
+$foreach(\*John,Simon,Jane*\,Name : $:()
 )
-$forloop(5,10,$:th
+$forloop(5,10,$:()th
 )
 ```
 converts to

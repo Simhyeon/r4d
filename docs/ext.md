@@ -11,8 +11,12 @@ r4d = {version="*", features = [ .. "template"]}
 ```
 
 ```rust
-use rad::ExtMacroBuilder;
-use rad::ext_template::*;
+use r4d::ExtMacroBuilder;
+use r4d::ext_template::*;
+
+// ---
+// Processor creation precedes...
+// ---
 
 // Extend function macro
 processor.add_ext_macro(ExtMacroBuilder::new("macro_name")

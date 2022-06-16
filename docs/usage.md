@@ -37,7 +37,8 @@ rad --comment any
 # default is stderr
 -e, --err <FILE>      # Log error to <FILE>
 -s, --silent <OPTION> # Suppress warnings default is all. All|Security|sanity|None
--l, --lenient         # Disable strict mode
+-l, --lenient         # Disable strict mode. Print original if macro doesn't exist.
+-p, --purge           # Purge mode, print nothing if a macro doesn't exist.
     --assert          # Enable assertion mode
 
 # Use following options to decide deubbing behaviours
@@ -50,7 +51,6 @@ rad --comment any
 
 # Other flags
 -n                    # Always use unix newline (default is '\r\n' in windows platform)
--p, --purge           # Purge mode, print nothing if a macro doesn't exist. Doesn't work in strict mode
 -D, --discard         # Discard all output
 
 # Freeze(zip to binary) rules to a single file
@@ -61,13 +61,13 @@ rad test -m frozen.r4f
 
 # Print signature information into file
 rad --signature sig.json
-# Print signature to stdout but only custom macros
-rad --signature --sigtype custom
+# Print signature to stdout but only runtime macros
+rad --signature --sigtype runtime
 
 # Available signature types
-# all (This is the default value)
+# all (This is the default value for signature type)
 # default
-# custom
+# runtime
 ```
 
 Type ```-h``` or ```--help``` to see full options.
@@ -76,11 +76,11 @@ Type ```-h``` or ```--help``` to see full options.
 
 ```bash
 # Edit source file
-# It invokes default editor "RADO_EDITOR"
+# It invokes default editor "RADO\_EDITOR"
 rado edit file_name.txt
 
 # Read processed file.
-# Processed file is saved in temporary directory "RADO_DIR".
+# Processed file is saved in temporary directory "RADO\_DIR".
 # This command processes source file only when source file's timestamp is newer
 # than processed file's timestamp.
 # You can set processed file ith "out" flag.
@@ -108,7 +108,7 @@ rado env
 **Cargo.toml**
 ```toml
 [dependencies]
-rad = { version = "*", features = ["full"] }
+r4d = { version = "*", features = ["full"] }
 
 # Other available features are... 
 
@@ -125,14 +125,15 @@ rad = { version = "*", features = ["full"] }
 ```
 **rust file**
 ```rust
-use rad::RadResult;
-use rad::Processor;
-use rad::AuthType;
-use rad::CommentType;
-use rad::DiffOption;
-use rad::MacroType;
-use rad::Hygiene;
-use rad::HookType; // This is behind hook feature
+use r4d::RadResult;
+use r4d::Processor;
+use r4d::AuthType;
+use r4d::CommentType;
+use r4d::DiffOption;
+use r4d::MacroType;
+use r4d::WarningType;
+use r4d::Hygiene;
+use r4d::HookType; // This is behind hook feature
 use std::path::Path;
 
 // Assume following codes return "Result" at the end

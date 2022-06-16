@@ -4,22 +4,22 @@ There are various modes in processing
 
 First of all processor can be either **strict, lenient or purge**.
 
-Default mode is strict mode. Within strict mode certain behaviours is not
+Default mode is strict mode. Within strict mode, certain behaviours is not
 allowed or acts differently.
 
 - Overriding environment variables is an error
 - Overriding existing macros is an error
 - Failed executions of macros will interrupt a whole processing ( panics )
-- Getting invalid environment arguments yields a warning
+- Getting non-existent environment arguments yields a warning
 
 Lenient mode is more flexible than strict mode.
 
 - Overriding environment variables is not an error
-- Overriding existing macros is not an error macros.
-- Failed macros will be pasted as raw form
+- Overriding existing macro is not an error.
+- Failed macros will be pasted as literal text.
 
-Purge is a special lenient mode that purges inexistent macros without any error
-messages or left-over of macros.
+Purge is a special lenient mode that purges non-existent macros without any
+error messages or left-over of macros.
 
 ```
 % On lenient mode
@@ -39,8 +39,11 @@ For example, following macro can fail according to inner macro's existence.
 
 ```
 $define(unsafe=$some_random_macro())
+===
 % If some_random_macro exists if succeeds. If not, if fails.
 ```
+
+You can configure this behaviour through processor's method with following variants.
 
 **Macro hygiene** mode set every further runtime modification as
 volatile(temporary). Within hygiene mode, runtime macros gets automatically

@@ -4,6 +4,9 @@ If any permission is necessary, it is displayed as
 
 AUTH : (ENV|FIN|FOUT|CMD)
 
+Use ```-a env+fin``` syntax to allow multiple permission or ```-A``` to allow
+all.
+
 Macro expansion demonstration is displayed as
 
 ```
@@ -14,7 +17,7 @@ Evaluated text goes here
 Expanded text from macro // This is a demonstration comment and not a real comment
 ```
 
-## Basic(default) macros
+## Function(default) macros
 
 All macros are case sensitive and should come with dollar sign prefix.
 
@@ -92,6 +95,7 @@ For assertion macros refer [debug part](./debug.md)
 * [update](#update)
 * [extract](#extract)
 * [regcsv](#regcsv)
+* [dropcsv](#dropcsv)
 * [query](#query)
 * [flowcontrol](#flowcontrol)
 * [panic](#panic)
@@ -1254,7 +1258,7 @@ a
 1
 ```
 
-### Flowcontrol
+### flowcontrol
 
 ```exit``` and ```escape``` changes flow of the processor behaviour. However
 these flow control doesn't mean direct exit. Rather a signal to processor so
@@ -1313,7 +1317,7 @@ $clear()
 
 ### Hygiene
 
-Toggles hygiene's macro mode. Within macro mode runtime macros are volatile and
+Toggles hygiene's macro mode. Within hygiene mode runtime macros are volatile and
 newly defined macros is removed when macro invocation ends.
 
 Refer [modes](./modes.md) for more hygiene modes which can be toggled in

@@ -14,6 +14,7 @@ Create storage struct
 
 ```rust
 use serde::{Serialize,Deserialize};
+use r4d::{StorageOutput, StorageResult};
 
 #[derive(Serialize,Deserialize)]
 pub struct PlotModel {
@@ -22,7 +23,7 @@ pub struct PlotModel {
 }
 
 impl RadStorage for PlotModel {
-	fn update(&mut self, args : &Vec<String>) -> StorageResult<()> {
+	fn update(&mut self, args : &[String]) -> StorageResult<()> {
 		// Update logics
 	}
 

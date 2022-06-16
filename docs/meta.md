@@ -11,6 +11,7 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### Imminent
 
+* [ ] Multiline query is not working in cindex... It's you again? 
 * [x] I found a huge bug... How come I did not know this?
 	* [x] Non-printing macro removed newline while there are texts to print
 * [x] Enl does same thing with dnl... what? This is strange
@@ -19,6 +20,7 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 * [ ] Escape rule is somewhat bugged?
 - ```\* \* *\ Doesn't yield anything```
+
 * [ ] Purge is bugged? ( Gdengine )
 - It's about precedence mostly.
 
@@ -30,9 +32,7 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 - [x] Change library name : Check
 - [x] Rado binary : Check
 - [x] Consider macro execution order : Check
-- [x] Current behaviour interprets input as string if given input doesn't exist. I was not aware... but this looks very strange.
-	- Maybe this was because, sending stdin is somewhat clunky?
-	- This is breaing changes and has to handled properly
+- [x] Current behaviour interprets input as string if given input doesn't exist which is not ideal : Check
 - [ ] Clippy compatible : Check
 	- Changed method name : from_... variant
 	- I changed many len() == 0 and len() != 0 codes... Keep in mind that it
