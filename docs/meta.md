@@ -24,18 +24,23 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### 3.0
 
-- Remove 'for_macro' feature : Check
-- Remove unused compatibility feature : Check
-- Change library name : Check
-- Rado binary : Check
-- Consider macro execution order
-- Current behaviour interprets input as string if given input doesn't exist. I was not aware... but this looks very strange.
+- [ ] Documentation for all macros
+- [x] Remove 'for_macro' feature : Check
+- [x] Remove unused compatibility feature : Check
+- [x] Change library name : Check
+- [x] Rado binary : Check
+- [x] Consider macro execution order : Check
+- [x] Current behaviour interprets input as string if given input doesn't exist. I was not aware... but this looks very strange.
 	- Maybe this was because, sending stdin is somewhat clunky?
 	- This is breaing changes and has to handled properly
-- Clippy compatible
+- [ ] Clippy compatible : Check
+	- Changed method name : from_... variant
+	- I changed many len() == 0 and len() != 0 codes... Keep in mind that it
+	can happen , you know the stupid errors
 
 ### TODOs
 
+* [x] Dcsv update > This has no effect in r4d but just forwarded dcsv version.
 * [x] Fixed cindex bugs
 * [x] Strict level set should be single entry...
 * [x] KMacroSign should be renamed to DMacroSign

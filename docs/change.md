@@ -1,4 +1,11 @@
-# 2.2.0
+# 3.0
+
+[3.0 Changes](./docs/3_0.md)
+
+### ETC
+
+- New macros : import, source, cnl, listdir
+- Changed "enl" behaviour
 
 # 2.1.3
 

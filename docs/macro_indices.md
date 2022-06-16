@@ -1089,6 +1089,9 @@ Yatti yatta
 
 Consume new line. This mimics a function macro's behaviour when the macro yield
 nothing. Macro will consume a newline if the execution context has no texts.
+For example, define doesn't leave any text in it's original place because it
+uses cnl's logic internally. User can use cnl macro if the intent is to make
+the macro yield really nothing at all.
 
 ```
 $define(first=)
@@ -1097,7 +1100,9 @@ $first()
 $second()
 ===
 
-% Newline was created by first macro
+% Newline was created because after first macro invocation there is invisible
+% newline
+% Second macro leaves nothing because newline was consumed
 ```
 
 ### lipsum
