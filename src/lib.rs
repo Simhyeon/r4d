@@ -34,7 +34,7 @@
 //!
 //! **Library**
 //! ```rust
-//! use rad::{Processor, RadResult};
+//! use r4d::{Processor, RadResult};
 //! use std::path::Path;
 //!
 //! let mut processor = Processor::new()
@@ -101,3 +101,5 @@ pub use rad_ext_template;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;
+
+mod test;
