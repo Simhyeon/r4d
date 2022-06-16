@@ -9,14 +9,15 @@
 //!
 //! # Detailed usage
 //! ```rust
-//! use rad::RadResult;
-//! use rad::Processor;
-//! use rad::AuthType;
-//! use rad::CommentType;
-//! use rad::DiffOption;
-//! use rad::MacroType;
-//! use rad::HookType; // This is behind hook feature
-//! use rad::Hygiene;
+//! use r4d::RadResult;
+//! use r4d::Processor;
+//! use r4d::AuthType;
+//! use r4d::CommentType;
+//! use r4d::DiffOption;
+//! use r4d::WarningType;
+//! use r4d::MacroType;
+//! use r4d::HookType; // This is behind hook feature
+//! use r4d::Hygiene;
 //! use std::path::Path;
 //!
 //! // Builder
