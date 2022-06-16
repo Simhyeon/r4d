@@ -71,7 +71,7 @@ impl Formatter {
         table.push('|');
         let header_count = header.len();
         for h in header {
-            table.push_str(&h.to_string());
+            table.push_str(h);
             table.push('|');
         }
 
@@ -86,7 +86,7 @@ impl Formatter {
             table.push_str(newline);
             table.push('|');
             for value in row {
-                table.push_str(&value.to_string());
+                table.push_str(value);
                 table.push('|');
             }
         }
@@ -113,7 +113,7 @@ impl Formatter {
         // |-
         for h in header {
             table.push('!');
-            table.push_str(&h.to_string());
+            table.push_str(h);
             table.push_str(newline);
         }
         // Header separator
@@ -122,7 +122,7 @@ impl Formatter {
         for row in data_iter {
             for value in row {
                 table.push('|');
-                table.push_str(&value.to_string());
+                table.push_str(value);
                 table.push_str(newline);
             }
             table.push_str("|-");

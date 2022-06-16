@@ -6,8 +6,6 @@ use crate::Processor;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::io::BufRead;
-use std::io::Write;
-use std::process::Stdio;
 
 lazy_static! {
     pub static ref TRIM: Regex = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap();
@@ -201,7 +199,10 @@ impl Utils {
         }
     }
 
+    #[cfg(feature = "clap")]
     pub(crate) fn subprocess(args: &[&str]) -> RadResult<()> {
+        use std::io::Write;
+        use std::process::Stdio;
         #[cfg(target_os = "windows")]
         let process = std::process::Command::new("cmd")
             .arg("/C")
