@@ -674,8 +674,8 @@ impl<'processor> Processor<'processor> {
 
     /// Clear cached and organze multiple jobs
     ///
-    /// * - clear volatile macors
-    /// * - Check if there is any unterminated job
+    /// * clear volatile macors
+    /// * Check if there is any unterminated job
     /// Return cached string, if cache was not empty
     pub fn organize_and_clear_cache(&mut self) -> RadResult<Option<String>> {
         if self.state.hygiene == Hygiene::Input {
