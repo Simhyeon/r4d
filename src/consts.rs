@@ -1,6 +1,5 @@
 use regex::Regex;
 
-#[cfg(feature = "color")]
 pub type ColorDisplayFunc = Option<fn(string: &str) -> Box<dyn std::fmt::Display>>;
 
 pub const LOREM_SOURCE: &str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In rhoncus sapien iaculis sapien congue, a dictum urna malesuada. In hac habitasse platea dictumst. Quisque dapibus, justo a mollis condimentum, sapien ligula aliquam massa, in vehicula tellus magna vitae enim. Aliquam mattis ligula in enim congue auctor. Pellentesque at sollicitudin velit. Quisque blandit lobortis turpis at malesuada. Donec vitae luctus mauris. Aenean efficitur risus id tortor blandit laoreet. Vestibulum commodo aliquam sapien. Cras aliquam eget leo iaculis cursus. Morbi iaculis justo sed tellus ultrices aliquet. Nam bibendum ut erat quis. ";

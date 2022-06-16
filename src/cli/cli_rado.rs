@@ -4,6 +4,8 @@ use crate::{RadCli, RadError};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use crate::consts::ColorDisplayFunc;
+
 lazy_static::lazy_static! {
     pub static ref RADO_DIR: std::path::PathBuf = std::env::temp_dir().join("rado");
 }
@@ -209,8 +211,6 @@ impl RadoCli {
     #[cfg(feature = "debug")]
     fn show_diff(&self, file: &str, force: bool) -> RadResult<()> {
         use similar::ChangeTag;
-
-        use crate::consts::ColorDisplayFunc;
 
         let temp_file = self.get_temp_path(file)?;
 
