@@ -771,7 +771,7 @@ impl<'processor> Processor<'processor> {
             }
         }
         for (name, args, body) in rules {
-            let name = name.as_ref();
+            let name = name.as_ref().trim();
             if !MAC_NAME.is_match(name) {
                 let err = RadError::InvalidMacroName(format!(
                     "Name : \"{}\" is not a valid macro name",
@@ -823,7 +823,7 @@ impl<'processor> Processor<'processor> {
             }
         }
         for (name, body) in rules {
-            let name = name.as_ref();
+            let name = name.as_ref().trim();
             if !MAC_NAME.is_match(name) {
                 let err = RadError::InvalidMacroName(format!(
                     "Name : \"{}\" is not a valid macro name",
