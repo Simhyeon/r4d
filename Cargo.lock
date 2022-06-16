@@ -76,9 +76,9 @@ dependencies = [
 
 [[package]]
 name = "cindex"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ea6186162bfb60fdbbe9e6081b00efccb9a3347482782e5a2a22b450eb2424e"
+checksum = "a448c1d93d1a277da294968263c24acb6c671328d69448b236ecdc51261d680a"
 dependencies = [
  "dcsv",
  "regex",
