@@ -80,8 +80,15 @@ Evaluation : 1 + 2 = 3
 
 ### Install
 
+[Install rust related tools for build](https://www.rust-lang.org/tools/install)
+
 I recommend using ```cargo install``` until I prepare a proper CD
 pipeline.
+
+Currently version 3.0 is preparing for release and can be downloaded with
+specific version flag.
+
+```cargo install r4d --features binary,color --locked --version 3.0.0-rc.0```
 
 e.g.
 
@@ -163,17 +170,6 @@ processor.print_result()?;
 
 [Debug](./docs/debug.md)
 
-### 2.0 changes
-
-From 2.0, following breaking changes have been applied. 
-
-- Removed deprecated methods
-- Renamed concepts for better understanding
-- Relocated deterred macros into function macros
-- Removed closure macro
-- Now every macro is greedy
-- Pipe truncate as default
-
 ### Goal
 
 R4d aims to be a modern alternative to m4 processor, which means
@@ -182,12 +178,4 @@ R4d aims to be a modern alternative to m4 processor, which means
 - An explicit rule for macro definition and invocation
 - Enable combination of file stream and stdout
 - As expressive as current m4 macro processor
-- Easier binding with other programming languages(Rust's c binding)
-
-### CVE related issue
-
-[Setvar data races
-vulnerability](https://nvd.nist.gov/vuln/detail/CVE-2020-26235) is known issue
-at the time but for current state, it doesn't affect r4d since r4d doesn't
-utillize multi threading in processing. Every time,date call and env_set calls
-are sequential and doensn't overlap.
+- Easier binding to other environments
