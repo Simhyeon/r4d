@@ -59,3 +59,8 @@ rad_ext_template = { version="0.1.0", optional = true}
 wasm-bindgen = { version = "0.2.74", optional = true}
 console_error_panic_hook = { version = "0.1.7", optional = true}
 wee_alloc = { version = "0.4.5", optional = true }
+
+[package.metadata.deb]
+features = ["binary", "color", "signature"]
+maintainer = "Simon creek <simoncreek@tutanota.com>"
+copyright = "2022, Simon creek <simoncreek@tutanota.com>"
