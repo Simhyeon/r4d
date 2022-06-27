@@ -448,6 +448,10 @@ impl FunctionMacroMap {
                 FMacroSign::new("undef", ["a_macro_name"], Self::undefine_call, None),
             ),
             (
+                "unicode".to_owned(),
+                FMacroSign::new("unicode", ["a_value"], Self::paste_unicode, None),
+            ),
+            (
                 "upper".to_owned(),
                 FMacroSign::new("upper", ["a_text"], Self::capitalize, None),
             ),
@@ -2800,6 +2804,29 @@ impl FunctionMacroMap {
             .map(|p| p.display().to_string())
             .collect::<Vec<_>>();
         Ok(Some(result.join(delim)))
+    }
+
+    /// Paste unicode character in place
+    /// $unicode
+    fn paste_unicode(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let unicode_character = &args[0];
+            let unicode_hex = u32::from_str_radix(unicode_character, 16)?;
+            Ok(Some(
+                char::from_u32(unicode_hex)
+                    .ok_or_else(|| {
+                        RadError::InvalidArgument(format!(
+                            "Invalid unicode value : \"{}\" (as u32)",
+                            unicode_hex
+                        ))
+                    })?
+                    .to_string(),
+            ))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Unicode requires an argument".to_owned(),
+            ))
+        }
     }
 
     // END Default macros
