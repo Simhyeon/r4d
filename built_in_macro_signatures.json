@@ -1,0 +1,876 @@
+{
+    "append": {
+        "variant": "Function",
+        "name": "append",
+        "args": [
+            "a_macro_name",
+            "a_content"
+        ],
+        "expr": "$append(a_macro_name,a_content)",
+        "desc": "Append content to a macro"
+    },
+    "docu": {
+        "variant": "Function",
+        "name": "docu",
+        "args": [
+            "a_macro_name",
+            "a_content"
+        ],
+        "expr": "$docu(a_macro_name,a_content)",
+        "desc": "Append documents to a macro"
+    },
+    "tail": {
+        "variant": "Function",
+        "name": "tail",
+        "args": [
+            "a_count",
+            "a_content"
+        ],
+        "expr": "$tail(a_count,a_content)",
+        "desc": "Get last parts of texts"
+    },
+    "min": {
+        "variant": "Function",
+        "name": "min",
+        "args": [
+            "a_array"
+        ],
+        "expr": "$min(a_array)",
+        "desc": "Get min value from a given array"
+    },
+    "pause": {
+        "variant": "Function",
+        "name": "pause",
+        "args": [
+            "a_pause?"
+        ],
+        "expr": "$pause(a_pause?)",
+        "desc": "Pause a macro expansion from invocation"
+    },
+    "arr": {
+        "variant": "Function",
+        "name": "arr",
+        "args": [
+            "a_values"
+        ],
+        "expr": "$arr(a_values)",
+        "desc": "Convert spaced array into comma array"
+    },
+    "ifque": {
+        "variant": "Deterred",
+        "name": "ifque",
+        "args": [
+            "a_bool",
+            "a_content"
+        ],
+        "expr": "$ifque(a_bool,a_content)",
+        "desc": "If true, then queue expressions"
+    },
+    "clear": {
+        "variant": "Function",
+        "name": "clear",
+        "args": [
+            "a_content"
+        ],
+        "expr": "$clear(a_content)",
+        "desc": "Clear volatile macros"
+    },
+    "exec": {
+        "variant": "Deterred",
+        "name": "exec",
+        "args": [
+            "macro_name",
+            "macro_args"
+        ],
+        "expr": "$exec(macro_name,macro_args)",
+        "desc": "Execute a macro with arguments"
+    },
+    "ceil": {
+        "variant": "Function",
+        "name": "ceil",
+        "args": [
+            "a_number"
+        ],
+        "expr": "$ceil(a_number)",
+        "desc": "Get ceiling of the number"
+    },
+    "relay": {
+        "variant": "Function",
+        "name": "relay",
+        "args": [
+            "a_type",
+            "a_target+"
+        ],
+        "expr": "$relay(a_type,a_target+)",
+        "desc": "Start relaying"
+    },
+    "static": {
+        "variant": "Function",
+        "name": "static",
+        "args": [
+            "a_macro_name",
+            "a_value"
+        ],
+        "expr": "$static(a_macro_name,a_value)",
+        "desc": "Create a static macro"
+    },
+    "abs": {
+        "variant": "Function",
+        "name": "abs",
+        "args": [
+            "a_path"
+        ],
+        "expr": "$abs(a_path)",
+        "desc": "Get an absolute path"
+    },
+    "lipsum": {
+        "variant": "Function",
+        "name": "lipsum",
+        "args": [
+            "a_word_count"
+        ],
+        "expr": "$lipsum(a_word_count)",
+        "desc": "Create a placeholder text"
+    },
+    "sep": {
+        "variant": "Function",
+        "name": "sep",
+        "args": [
+            "separator",
+            "a_array"
+        ],
+        "expr": "$sep(separator,a_array)",
+        "desc": "Separate an array with seperator"
+    },
+    "enl": {
+        "variant": "Function",
+        "name": "enl",
+        "args": [],
+        "expr": "$enl()",
+        "desc": "Deny following new line"
+    },
+    "trim": {
+        "variant": "Function",
+        "name": "trim",
+        "args": [
+            "a_content"
+        ],
+        "expr": "$trim(a_content)",
+        "desc": "Trim text"
+    },
+    "pipe": {
+        "variant": "Function",
+        "name": "pipe",
+        "args": [
+            "a_value"
+        ],
+        "expr": "$pipe(a_value)",
+        "desc": "Pipe a given value"
+    },
+    "not": {
+        "variant": "Function",
+        "name": "not",
+        "args": [
+            "a_boolean"
+        ],
+        "expr": "$not(a_boolean)",
+        "desc": "Return a negated value of given boolean"
+    },
+    "halt": {
+        "variant": "Function",
+        "name": "halt",
+        "args": [],
+        "expr": "$halt()",
+        "desc": "Halt relaying"
+    },
+    "envset": {
+        "variant": "Function",
+        "name": "envset",
+        "args": [
+            "a_env_name",
+            "a_env_value"
+        ],
+        "expr": "$envset(a_env_name,a_env_value)",
+        "desc": "Set an environment variable"
+    },
+    "sub": {
+        "variant": "Function",
+        "name": "sub",
+        "args": [
+            "a_start_index",
+            "a_end_index",
+            "a_source"
+        ],
+        "expr": "$sub(a_start_index,a_end_index,a_source)",
+        "desc": "Get a substring with indices"
+    },
+    "foldl": {
+        "variant": "Function",
+        "name": "foldl",
+        "args": [
+            "a_content"
+        ],
+        "expr": "$foldl(a_content)",
+        "desc": "Fold lines into a single value"
+    },
+    "ifenvel": {
+        "variant": "Deterred",
+        "name": "ifenvel",
+        "args": [
+            "a_env_name",
+            "a_if_expr",
+            "a_else_expr"
+        ],
+        "expr": "$ifenvel(a_env_name,a_if_expr,a_else_expr)",
+        "desc": "Execute expression by whether environment variable is set or not"
+    },
+    "listdir": {
+        "variant": "Function",
+        "name": "listdir",
+        "args": [
+            "a_isabsolute",
+            "a_path?",
+            "a_delim?"
+        ],
+        "expr": "$listdir(a_isabsolute,a_path?,a_delim?)",
+        "desc": "List a directory's files as csv"
+    },
+    "cnl": {
+        "variant": "Function",
+        "name": "cnl",
+        "args": [],
+        "expr": "$cnl()",
+        "desc": null
+    },
+    "fold": {
+        "variant": "Function",
+        "name": "fold",
+        "args": [
+            "a_content"
+        ],
+        "expr": "$fold(a_content)",
+        "desc": "Fold array into a single value"
+    },
+    "ifdef": {
+        "variant": "Deterred",
+        "name": "ifdef",
+        "args": [
+            "a_macro_name",
+            "a_if_expr"
+        ],
+        "expr": "$ifdef(a_macro_name,a_if_expr)",
+        "desc": "Execute expression if macro is defined"
+    },
+    "-": {
+        "variant": "Function",
+        "name": "-",
+        "args": [],
+        "expr": "$-()",
+        "desc": "Get piped value"
+    },
+    "rename": {
+        "variant": "Function",
+        "name": "rename",
+        "args": [
+            "a_macro_name",
+            "a_new_name"
+        ],
+        "expr": "$rename(a_macro_name,a_new_name)",
+        "desc": "Rename a macro with new name"
+    },
+    "name": {
+        "variant": "Function",
+        "name": "name",
+        "args": [
+            "a_path"
+        ],
+        "expr": "$name(a_path)",
+        "desc": "Get a name from a given path"
+    },
+    "dnl": {
+        "variant": "Function",
+        "name": "dnl",
+        "args": [],
+        "expr": "$dnl()",
+        "desc": "Deny next newline."
+    },
+    "taill": {
+        "variant": "Function",
+        "name": "taill",
+        "args": [
+            "a_count",
+            "a_direction",
+            "a_content"
+        ],
+        "expr": "$taill(a_count,a_direction,a_content)",
+        "desc": null
+    },
+    "tempout": {
+        "variant": "Function",
+        "name": "tempout",
+        "args": [
+            "a_tempout"
+        ],
+        "expr": "$tempout(a_tempout)",
+        "desc": "Write to temporary file"
+    },
+    "sort": {
+        "variant": "Function",
+        "name": "sort",
+        "args": [
+            "a_values"
+        ],
+        "expr": "$sort(a_values)",
+        "desc": "Sort an array"
+    },
+    "declare": {
+        "variant": "Function",
+        "name": "declare",
+        "args": [
+            "a_macro_names"
+        ],
+        "expr": "$declare(a_macro_names)",
+        "desc": "Declare multiple variables separated by comma"
+    },
+    "count": {
+        "variant": "Function",
+        "name": "count",
+        "args": [
+            "a_array"
+        ],
+        "expr": "$count(a_array)",
+        "desc": "Get count of array"
+    },
+    "extract": {
+        "variant": "Function",
+        "name": "extract",
+        "args": [],
+        "expr": "$extract()",
+        "desc": "Extract from storage"
+    },
+    "forline": {
+        "variant": "Deterred",
+        "name": "forline",
+        "args": [
+            "a_iterable",
+            "a_body"
+        ],
+        "expr": "$forline(a_iterable,a_body)",
+        "desc": "Loop around given lines"
+    },
+    "ifelse": {
+        "variant": "Deterred",
+        "name": "ifelse",
+        "args": [
+            "a_boolean",
+            "a_if_expr",
+            "a_else_expr"
+        ],
+        "expr": "$ifelse(a_boolean,a_if_expr,a_else_expr)",
+        "desc": "Check condition and execute different expressions"
+    },
+    "max": {
+        "variant": "Function",
+        "name": "max",
+        "args": [
+            "a_array"
+        ],
+        "expr": "$max(a_array)",
+        "desc": "Get max value from a given array"
+    },
+    "countl": {
+        "variant": "Function",
+        "name": "countl",
+        "args": [
+            "a_content"
+        ],
+        "expr": "$countl(a_content)",
+        "desc": "Get count of lines"
+    },
+    "forloop": {
+        "variant": "Deterred",
+        "name": "forloop",
+        "args": [
+            "a_min",
+            "a_max",
+            "a_body"
+        ],
+        "expr": "$forloop(a_min,a_max,a_body)",
+        "desc": "Loop around given range"
+    },
+    "ifenv": {
+        "variant": "Deterred",
+        "name": "ifenv",
+        "args": [
+            "a_env_name",
+            "a_if_expr"
+        ],
+        "expr": "$ifenv(a_env_name,a_if_expr)",
+        "desc": "Execute expression if environment variable is set"
+    },
+    "tr": {
+        "variant": "Function",
+        "name": "tr",
+        "args": [
+            "a_source",
+            "a_matches",
+            "a_substitutions"
+        ],
+        "expr": "$tr(a_source,a_matches,a_substitutions)",
+        "desc": "Translate characters"
+    },
+    "source": {
+        "variant": "Function",
+        "name": "source",
+        "args": [
+            "a_file"
+        ],
+        "expr": "$source(a_file)",
+        "desc": "Source a env file"
+    },
+    "define": {
+        "variant": "Function",
+        "name": "define",
+        "args": [],
+        "expr": "$define()",
+        "desc": "Define a macro"
+    },
+    "path": {
+        "variant": "Function",
+        "name": "path",
+        "args": [
+            "a_paths"
+        ],
+        "expr": "$path(a_paths)",
+        "desc": "Merge given paths"
+    },
+    "comp": {
+        "variant": "Function",
+        "name": "comp",
+        "args": [
+            "a_content"
+        ],
+        "expr": "$comp(a_content)",
+        "desc": "Apply trim and chomp to content"
+    },
+    "assert": {
+        "variant": "Function",
+        "name": "assert",
+        "args": [
+            "a_lvalue",
+            "a_rvalue"
+        ],
+        "expr": "$assert(a_lvalue,a_rvalue)",
+        "desc": "Comopare two statements"
+    },
+    "triml": {
+        "variant": "Function",
+        "name": "triml",
+        "args": [
+            "a_content"
+        ],
+        "expr": "$triml(a_content)",
+        "desc": "Trim values by lines"
+    },
+    "update": {
+        "variant": "Function",
+        "name": "update",
+        "args": [
+            "a_text"
+        ],
+        "expr": "$update(a_text)",
+        "desc": "Update storage"
+    },
+    "unicode": {
+        "variant": "Function",
+        "name": "unicode",
+        "args": [
+            "a_value"
+        ],
+        "expr": "$unicode(a_value)",
+        "desc": "Create a unicode character from given hex number"
+    },
+    "hygiene": {
+        "variant": "Function",
+        "name": "hygiene",
+        "args": [
+            "a_hygiene?"
+        ],
+        "expr": "$hygiene(a_hygiene?)",
+        "desc": "Toggle hygiene mode"
+    },
+    "len": {
+        "variant": "Function",
+        "name": "len",
+        "args": [
+            "a_string"
+        ],
+        "expr": "$len(a_string)",
+        "desc": "Get a length of a text"
+    },
+    "escape": {
+        "variant": "Function",
+        "name": "escape",
+        "args": [],
+        "expr": "$escape()",
+        "desc": "Escape processing from invocation"
+    },
+    "read": {
+        "variant": "Function",
+        "name": "read",
+        "args": [
+            "a_filename"
+        ],
+        "expr": "$read(a_filename)",
+        "desc": "Read an file (deprecated)"
+    },
+    "exit": {
+        "variant": "Function",
+        "name": "exit",
+        "args": [],
+        "expr": "$exit()",
+        "desc": "Exit processing from invocation"
+    },
+    "import": {
+        "variant": "Function",
+        "name": "import",
+        "args": [
+            "a_file"
+        ],
+        "expr": "$import(a_file)",
+        "desc": "Import a frozen file"
+    },
+    "foreach": {
+        "variant": "Deterred",
+        "name": "foreach",
+        "args": [
+            "a_array",
+            "a_body"
+        ],
+        "expr": "$foreach(a_array,a_body)",
+        "desc": "Loop around given array"
+    },
+    "repeat": {
+        "variant": "Function",
+        "name": "repeat",
+        "args": [
+            "a_count",
+            "a_source"
+        ],
+        "expr": "$repeat(a_count,a_source)",
+        "desc": "Repeat a given source"
+    },
+    "syscmd": {
+        "variant": "Function",
+        "name": "syscmd",
+        "args": [
+            "a_command"
+        ],
+        "expr": "$syscmd(a_command)",
+        "desc": "Execute an sysctem command"
+    },
+    "tempto": {
+        "variant": "Function",
+        "name": "tempto",
+        "args": [
+            "a_filename"
+        ],
+        "expr": "$tempto(a_filename)",
+        "desc": "Change temporary file path"
+    },
+    "if": {
+        "variant": "Deterred",
+        "name": "if",
+        "args": [
+            "a_boolean",
+            "a_if_expr"
+        ],
+        "expr": "$if(a_boolean,a_if_expr)",
+        "desc": "Check condition and then execute"
+    },
+    "head": {
+        "variant": "Function",
+        "name": "head",
+        "args": [
+            "a_count",
+            "a_content"
+        ],
+        "expr": "$head(a_count,a_content)",
+        "desc": "Crop head texts from given content"
+    },
+    "chomp": {
+        "variant": "Function",
+        "name": "chomp",
+        "args": [
+            "a_content"
+        ],
+        "expr": "$chomp(a_content)",
+        "desc": "Remove duplicate newlines from content"
+    },
+    "num": {
+        "variant": "Function",
+        "name": "num",
+        "args": [
+            "a_text"
+        ],
+        "expr": "$num(a_text)",
+        "desc": "Extract a number part from given text"
+    },
+    "que": {
+        "variant": "Deterred",
+        "name": "que",
+        "args": [
+            "a_content"
+        ],
+        "expr": "$que(a_content)",
+        "desc": "Que expressions"
+    },
+    "parent": {
+        "variant": "Function",
+        "name": "parent",
+        "args": [
+            "a_path"
+        ],
+        "expr": "$parent(a_path)",
+        "desc": "Get a parent from a given path"
+    },
+    "floor": {
+        "variant": "Function",
+        "name": "floor",
+        "args": [
+            "a_number"
+        ],
+        "expr": "$floor(a_number)",
+        "desc": "Get floor integer from given number"
+    },
+    "sortl": {
+        "variant": "Function",
+        "name": "sortl",
+        "args": [
+            "a_values"
+        ],
+        "expr": "$sortl(a_values)",
+        "desc": "Sort lines"
+    },
+    "upper": {
+        "variant": "Function",
+        "name": "upper",
+        "args": [
+            "a_text"
+        ],
+        "expr": "$upper(a_text)",
+        "desc": "Get a uppercase english text"
+    },
+    "panic": {
+        "variant": "Function",
+        "name": "panic",
+        "args": [
+            "a_msg"
+        ],
+        "expr": "$panic(a_msg)",
+        "desc": "Panic manually"
+    },
+    "from": {
+        "variant": "Deterred",
+        "name": "from",
+        "args": [
+            "a_macro_name",
+            "a_csv_value"
+        ],
+        "expr": "$from(a_macro_name,a_csv_value)",
+        "desc": "Execute macro multiple times with given data chunk"
+    },
+    "lower": {
+        "variant": "Function",
+        "name": "lower",
+        "args": [
+            "a_text"
+        ],
+        "expr": "$lower(a_text)",
+        "desc": "Get lowercase english texts"
+    },
+    "headl": {
+        "variant": "Function",
+        "name": "headl",
+        "args": [
+            "a_count",
+            "a_content"
+        ],
+        "expr": "$headl(a_count,a_content)",
+        "desc": "Crop head texts but as lines from given content"
+    },
+    "fassert": {
+        "variant": "Deterred",
+        "name": "fassert",
+        "args": [
+            "a_lvalue",
+            "a_rvalue"
+        ],
+        "expr": "$fassert(a_lvalue,a_rvalue)",
+        "desc": "Assert succeedes when fails"
+    },
+    "let": {
+        "variant": "Function",
+        "name": "let",
+        "args": [
+            "a_macro_name",
+            "a_value"
+        ],
+        "expr": "$let(a_macro_name,a_value)",
+        "desc": "Bind a local macro"
+    },
+    "tempin": {
+        "variant": "Function",
+        "name": "tempin",
+        "args": [
+            "a_tempin"
+        ],
+        "expr": "$tempin(a_tempin)",
+        "desc": "Include a temporary file"
+    },
+    "nl": {
+        "variant": "Function",
+        "name": "nl",
+        "args": [],
+        "expr": "$nl()",
+        "desc": "A platform specific newline"
+    },
+    "rev": {
+        "variant": "Function",
+        "name": "rev",
+        "args": [
+            "a_array?"
+        ],
+        "expr": "$rev(a_array?)",
+        "desc": "Reverse an array"
+    },
+    "repl": {
+        "variant": "Function",
+        "name": "repl",
+        "args": [
+            "a_macro_name",
+            "a_new_value"
+        ],
+        "expr": "$repl(a_macro_name,a_new_value)",
+        "desc": "Replace macro contents"
+    },
+    "countw": {
+        "variant": "Function",
+        "name": "countw",
+        "args": [
+            "a_array"
+        ],
+        "expr": "$countw(a_array)",
+        "desc": "Get count of words"
+    },
+    "prec": {
+        "variant": "Function",
+        "name": "prec",
+        "args": [
+            "a_value",
+            "a_precision"
+        ],
+        "expr": "$prec(a_value,a_precision)",
+        "desc": "Convert a float number with a given precision"
+    },
+    "grep": {
+        "variant": "Function",
+        "name": "grep",
+        "args": [
+            "a_regex",
+            "a_content"
+        ],
+        "expr": "$grep(a_regex,a_content)",
+        "desc": "Grep text from given content"
+    },
+    "index": {
+        "variant": "Function",
+        "name": "index",
+        "args": [
+            "a_index",
+            "a_array"
+        ],
+        "expr": "$index(a_index,a_array)",
+        "desc": "Get a index of a array"
+    },
+    "env": {
+        "variant": "Function",
+        "name": "env",
+        "args": [
+            "a_env_name"
+        ],
+        "expr": "$env(a_env_name)",
+        "desc": "Get an environment variable"
+    },
+    "ifdefel": {
+        "variant": "Deterred",
+        "name": "ifdefel",
+        "args": [
+            "a_macro_name",
+            "a_if_expr",
+            "a_else_expr"
+        ],
+        "expr": "$ifdefel(a_macro_name,a_if_expr,a_else_expr)",
+        "desc": "Execute expressions whether macro is defined or not"
+    },
+    "table": {
+        "variant": "Function",
+        "name": "table",
+        "args": [
+            "a_table_form",
+            "a_csv_value"
+        ],
+        "expr": "$table(a_table_form,a_csv_value)",
+        "desc": "Construct a formatted table"
+    },
+    "fileout": {
+        "variant": "Function",
+        "name": "fileout",
+        "args": [
+            "a_truncate?",
+            "a_filename",
+            "a_content"
+        ],
+        "expr": "$fileout(a_truncate?,a_filename,a_content)",
+        "desc": "Write to a file"
+    },
+    "regex": {
+        "variant": "Function",
+        "name": "regex",
+        "args": [
+            "a_source",
+            "a_match",
+            "a_substitution"
+        ],
+        "expr": "$regex(a_source,a_match,a_substitution)",
+        "desc": "Apply regular expression substitution"
+    },
+    "include": {
+        "variant": "Function",
+        "name": "include",
+        "args": [
+            "a_filename"
+        ],
+        "expr": "$include(a_filename)",
+        "desc": "Include a file"
+    },
+    "nassert": {
+        "variant": "Function",
+        "name": "nassert",
+        "args": [
+            "a_lvalue",
+            "a_rvalue"
+        ],
+        "expr": "$nassert(a_lvalue,a_rvalue)",
+        "desc": "Panics when lvalue is equal to rvalue"
+    },
+    "undef": {
+        "variant": "Function",
+        "name": "undef",
+        "args": [
+            "a_macro_name"
+        ],
+        "expr": "$undef(a_macro_name)",
+        "desc": "Undefine a macro"
+    }
+}
