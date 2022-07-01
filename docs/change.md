@@ -1,6 +1,11 @@
-# 3.0
+# 3.0-rc.1
 
-[3.0 Changes](./docs/3_0.md)
+- All documentations for built-in macros
+- Forline macro fix
+
+# 3.0-rc.0
+
+[3.0 Changes](./3_0.md)
 
 ### ETC
 
