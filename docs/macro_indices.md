@@ -52,6 +52,7 @@ For assertion macros refer [debug part](./debug.md)
 * [arr](#arr)
 * [sep](#sep-macro)
 * [foreach](#foreach-deterred-macro)
+* [forline](#forline-deterred-macro)
 * [forloop](#forloop-deterred-macro)
 * [min](#min)
 * [max](#max)
@@ -529,11 +530,27 @@ $sep(|,1,2,3,4,5)
 ### foreach (deterred macro)
 
 Loop around given value. Value is separated with commas. Thus values should be
-always enclosed with double quotes. Iterated values are references with
-```$:()```.
+always escaped. Iterated values are references with ```$:()```.
 
 ```
 $foreach(\*a,b,c*\,Value: $:()
+)
+===
+Value: a
+Value: b
+Value: c
+
+```
+
+### forline (deterred macro)
+
+Loop around given lines. Value is separated with newline.Iterated values are
+references with ```$:()```.
+
+```
+$forline(a
+b
+c,Value: $:()
 )
 ===
 Value: a

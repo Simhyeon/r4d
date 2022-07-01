@@ -11,12 +11,13 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### Imminent
 
-* [ ] Multiline query is not working in cindex... It's you again? 
+* [x] Forline what? -> Still utilizes $: syntax
+* [x] Multiline query is not working in cindex... It's you again? 
 * [x] I found a huge bug... How come I did not know this?
 	* [x] Non-printing macro removed newline while there are texts to print
 * [x] Enl does same thing with dnl... what? This is strange
 * [x] New macro cnl
-* [ ] In-built documentation for function and deterred macro
+* [x] In-built documentation for function and deterred macro
 
 * [ ] Escape rule is somewhat bugged?
 - ```\* \* *\ Doesn't yield anything```
@@ -26,7 +27,7 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### 3.0
 
-- [ ] Documentation for all macros
+- [x] Documentation for all macros
 - [x] Remove 'for_macro' feature : Check
 - [x] Remove unused compatibility feature : Check
 - [x] Change library name : Check
@@ -40,6 +41,7 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 
 ### TODOs
 
+* [x] Unicode macro would be impressively useful e.g. ) $unicode(2212)
 * [x] Dcsv update > This has no effect in r4d but just forwarded dcsv version.
 * [x] Fixed cindex bugs
 * [x] Strict level set should be single entry...
