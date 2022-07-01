@@ -192,59 +192,129 @@ impl FunctionMacroMap {
             ),
             (
                 "enl".to_owned(),
-                FMacroSign::new("enl", ESR, Self::escape_newline, None),
+                FMacroSign::new(
+                    "enl",
+                    ESR,
+                    Self::escape_newline,
+                    Some("Deny following new line".to_string()),
+                ),
             ),
             (
                 "escape".to_owned(),
-                FMacroSign::new("escape", ESR, Self::escape, None),
+                FMacroSign::new(
+                    "escape",
+                    ESR,
+                    Self::escape,
+                    Some("Escape processing from invocation".to_string()),
+                ),
             ),
             (
                 "exit".to_owned(),
-                FMacroSign::new("exit", ESR, Self::exit, None),
+                FMacroSign::new(
+                    "exit",
+                    ESR,
+                    Self::exit,
+                    Some("Exit processing from invocation".to_string()),
+                ),
             ),
             (
                 "floor".to_owned(),
-                FMacroSign::new("floor", ["a_number"], Self::get_floor, None),
+                FMacroSign::new(
+                    "floor",
+                    ["a_number"],
+                    Self::get_floor,
+                    Some("Get floor integer from given number".to_string()),
+                ),
             ),
             (
                 "fold".to_owned(),
-                FMacroSign::new("fold", ["a_content"], Self::fold, None),
+                FMacroSign::new(
+                    "fold",
+                    ["a_content"],
+                    Self::fold,
+                    Some("Fold array into a single value".to_string()),
+                ),
             ),
             (
                 "foldl".to_owned(),
-                FMacroSign::new("foldl", ["a_content"], Self::fold_line, None),
+                FMacroSign::new(
+                    "foldl",
+                    ["a_content"],
+                    Self::fold_line,
+                    Some("Fold lines into a single value".to_string()),
+                ),
             ),
             (
                 "grep".to_owned(),
-                FMacroSign::new("grep", ["a_regex", "a_content"], Self::grep, None),
+                FMacroSign::new(
+                    "grep",
+                    ["a_regex", "a_content"],
+                    Self::grep,
+                    Some("Grep text from given content".to_string()),
+                ),
             ),
             (
                 "halt".to_owned(),
-                FMacroSign::new("halt", ESR, Self::halt_relay, None),
+                FMacroSign::new(
+                    "halt",
+                    ESR,
+                    Self::halt_relay,
+                    Some("Halt relaying".to_string()),
+                ),
             ),
             (
                 "head".to_owned(),
-                FMacroSign::new("head", ["a_count", "a_content"], Self::head, None),
+                FMacroSign::new(
+                    "head",
+                    ["a_count", "a_content"],
+                    Self::head,
+                    Some("Crop head texts from given content".to_string()),
+                ),
             ),
             (
                 "headl".to_owned(),
-                FMacroSign::new("headl", ["a_count", "a_content"], Self::head_line, None),
+                FMacroSign::new(
+                    "headl",
+                    ["a_count", "a_content"],
+                    Self::head_line,
+                    Some("Crop head texts but as lines from given content".to_string()),
+                ),
             ),
             (
                 "hygiene".to_owned(),
-                FMacroSign::new("hygiene", ["a_hygiene?"], Self::toggle_hygiene, None),
+                FMacroSign::new(
+                    "hygiene",
+                    ["a_hygiene?"],
+                    Self::toggle_hygiene,
+                    Some("Toggle hygiene mode".to_string()),
+                ),
             ),
             (
                 "index".to_owned(),
-                FMacroSign::new("index", ["a_index", "a_array"], Self::index_array, None),
+                FMacroSign::new(
+                    "index",
+                    ["a_index", "a_array"],
+                    Self::index_array,
+                    Some("Get a index of a array".to_string()),
+                ),
             ),
             (
                 "import".to_owned(),
-                FMacroSign::new("import", ["a_file"], Self::import_frozen_file, None),
+                FMacroSign::new(
+                    "import",
+                    ["a_file"],
+                    Self::import_frozen_file,
+                    Some("Import a frozen file".to_string()),
+                ),
             ),
             (
                 "len".to_owned(),
-                FMacroSign::new("len", ["a_string"], Self::len, None),
+                FMacroSign::new(
+                    "len",
+                    ["a_string"],
+                    Self::len,
+                    Some("Get a length of a text".to_string()),
+                ),
             ),
             (
                 "let".to_owned(),
@@ -252,12 +322,17 @@ impl FunctionMacroMap {
                     "let",
                     ["a_macro_name", "a_value"],
                     Self::bind_to_local,
-                    None,
+                    Some("Bind a local macro".to_string()),
                 ),
             ),
             (
                 "lipsum".to_owned(),
-                FMacroSign::new("lipsum", ["a_word_count"], Self::lipsum_words, None),
+                FMacroSign::new(
+                    "lipsum",
+                    ["a_word_count"],
+                    Self::lipsum_words,
+                    Some("Create a placeholder text".to_string()),
+                ),
             ),
             (
                 "listdir".to_owned(),
@@ -265,76 +340,161 @@ impl FunctionMacroMap {
                     "listdir",
                     ["a_isabsolute", "a_path?", "a_delim?"],
                     Self::list_directory_files,
-                    None,
+                    Some("List a directory's files as csv".to_string()),
                 ),
             ),
             (
                 "lower".to_owned(),
-                FMacroSign::new("lower", ["a_text"], Self::lower, None),
+                FMacroSign::new(
+                    "lower",
+                    ["a_text"],
+                    Self::lower,
+                    Some("Get lowercase english texts".to_string()),
+                ),
             ),
             (
                 "max".to_owned(),
-                FMacroSign::new("max", ["a_array"], Self::get_max, None),
+                FMacroSign::new(
+                    "max",
+                    ["a_array"],
+                    Self::get_max,
+                    Some("Get max value from a given array".to_string()),
+                ),
             ),
             (
                 "min".to_owned(),
-                FMacroSign::new("min", ["a_array"], Self::get_min, None),
+                FMacroSign::new(
+                    "min",
+                    ["a_array"],
+                    Self::get_min,
+                    Some("Get min value from a given array".to_string()),
+                ),
             ),
             (
                 "name".to_owned(),
-                FMacroSign::new("name", ["a_path"], Self::get_name, None),
+                FMacroSign::new(
+                    "name",
+                    ["a_path"],
+                    Self::get_name,
+                    Some("Get a name from a given path".to_string()),
+                ),
             ),
             (
                 "nassert".to_owned(),
-                FMacroSign::new("nassert", ["a_lvalue", "a_rvalue"], Self::assert_ne, None),
+                FMacroSign::new(
+                    "nassert",
+                    ["a_lvalue", "a_rvalue"],
+                    Self::assert_ne,
+                    Some("Panics when lvalue is equal to rvalue".to_string()),
+                ),
             ),
             (
                 "not".to_owned(),
-                FMacroSign::new("not", ["a_boolean"], Self::not, None),
+                FMacroSign::new(
+                    "not",
+                    ["a_boolean"],
+                    Self::not,
+                    Some("Return a negated value of given boolean".to_string()),
+                ),
             ),
             (
                 "num".to_owned(),
-                FMacroSign::new("num", ["a_text"], Self::get_number, None),
+                FMacroSign::new(
+                    "num",
+                    ["a_text"],
+                    Self::get_number,
+                    Some("Extract a number part from given text".to_string()),
+                ),
             ),
             (
                 "nl".to_owned(),
-                FMacroSign::new("nl", ESR, Self::newline, None),
+                FMacroSign::new(
+                    "nl",
+                    ESR,
+                    Self::newline,
+                    Some("A platform specific newline".to_string()),
+                ),
             ),
             (
                 "panic".to_owned(),
-                FMacroSign::new("panic", ["a_msg"], Self::manual_panic, None),
+                FMacroSign::new(
+                    "panic",
+                    ["a_msg"],
+                    Self::manual_panic,
+                    Some("Panic manually".to_string()),
+                ),
             ),
             (
                 "parent".to_owned(),
-                FMacroSign::new("parent", ["a_path"], Self::get_parent, None),
+                FMacroSign::new(
+                    "parent",
+                    ["a_path"],
+                    Self::get_parent,
+                    Some("Get a parent from a given path".to_string()),
+                ),
             ),
             (
                 "path".to_owned(),
-                FMacroSign::new("path", ["a_paths"], Self::merge_path, None),
+                FMacroSign::new(
+                    "path",
+                    ["a_paths"],
+                    Self::merge_path,
+                    Some("Merge given paths".to_string()),
+                ),
             ),
             (
                 "pause".to_owned(),
-                FMacroSign::new("pause", ["a_pause?"], Self::pause, None),
+                FMacroSign::new(
+                    "pause",
+                    ["a_pause?"],
+                    Self::pause,
+                    Some("Pause a macro expansion from invocation".to_string()),
+                ),
             ),
             (
                 "pipe".to_owned(),
-                FMacroSign::new("pipe", ["a_value"], Self::pipe, None),
+                FMacroSign::new(
+                    "pipe",
+                    ["a_value"],
+                    Self::pipe,
+                    Some("Pipe a given value".to_string()),
+                ),
             ),
             (
                 "pipeto".to_owned(),
-                FMacroSign::new("pipe", ["a_pipe_name", "a_value"], Self::pipe_to, None),
+                FMacroSign::new(
+                    "pipe",
+                    ["a_pipe_name", "a_value"],
+                    Self::pipe_to,
+                    Some("Pipe a given value to named pipe".to_string()),
+                ),
             ),
             (
                 "prec".to_owned(),
-                FMacroSign::new("prec", ["a_value", "a_precision"], Self::prec, None),
+                FMacroSign::new(
+                    "prec",
+                    ["a_value", "a_precision"],
+                    Self::prec,
+                    Some("Convert a float number with a given precision".to_string()),
+                ),
             ),
             (
                 "relay".to_owned(),
-                FMacroSign::new("relay", ["a_type", "a_target+"], Self::relay, None),
+                FMacroSign::new(
+                    "relay",
+                    ["a_type", "a_target+"],
+                    Self::relay,
+                    Some("Start relaying".to_string()),
+                ),
             ),
             (
                 "rev".to_owned(),
-                FMacroSign::new("rev", ["a_array?"], Self::reverse_array, None),
+                FMacroSign::new(
+                    "rev",
+                    ["a_array?"],
+                    Self::reverse_array,
+                    Some("Reverse an array".to_string()),
+                ),
             ),
             (
                 "regex".to_owned(),
@@ -342,7 +502,7 @@ impl FunctionMacroMap {
                     "regex",
                     ["a_source", "a_match", "a_substitution"],
                     Self::regex_sub,
-                    None,
+                    Some("Apply regular expression substitution".to_string()),
                 ),
             ),
             (
@@ -351,32 +511,62 @@ impl FunctionMacroMap {
                     "rename",
                     ["a_macro_name", "a_new_name"],
                     Self::rename_call,
-                    None,
+                    Some("Rename a macro with new name".to_string()),
                 ),
             ),
             (
                 "repeat".to_owned(),
-                FMacroSign::new("repeat", ["a_count", "a_source"], Self::repeat, None),
+                FMacroSign::new(
+                    "repeat",
+                    ["a_count", "a_source"],
+                    Self::repeat,
+                    Some("Repeat a given source".to_string()),
+                ),
             ),
             (
                 "repl".to_owned(),
-                FMacroSign::new("repl", ["a_macro_name", "a_new_value"], Self::replace, None),
+                FMacroSign::new(
+                    "repl",
+                    ["a_macro_name", "a_new_value"],
+                    Self::replace,
+                    Some("Replace macro contents".to_string()),
+                ),
             ),
             (
                 "sep".to_owned(),
-                FMacroSign::new("sep", ["separator", "a_array"], Self::separate_array, None),
+                FMacroSign::new(
+                    "sep",
+                    ["separator", "a_array"],
+                    Self::separate_array,
+                    Some("Separate an array with seperator".to_string()),
+                ),
             ),
             (
                 "source".to_owned(),
-                FMacroSign::new("source", ["a_file"], Self::source_static_file, None),
+                FMacroSign::new(
+                    "source",
+                    ["a_file"],
+                    Self::source_static_file,
+                    Some("Source a env file".to_string()),
+                ),
             ),
             (
                 "sort".to_owned(),
-                FMacroSign::new("sort", ["a_values"], Self::sort_array, None),
+                FMacroSign::new(
+                    "sort",
+                    ["a_values"],
+                    Self::sort_array,
+                    Some("Sort an array".to_string()),
+                ),
             ),
             (
                 "sortl".to_owned(),
-                FMacroSign::new("sortl", ["a_values"], Self::sort_lines, None),
+                FMacroSign::new(
+                    "sortl",
+                    ["a_values"],
+                    Self::sort_lines,
+                    Some("Sort lines".to_string()),
+                ),
             ),
             (
                 "static".to_owned(),
@@ -384,7 +574,7 @@ impl FunctionMacroMap {
                     "static",
                     ["a_macro_name", "a_value"],
                     Self::define_static,
-                    None,
+                    Some("Create a static macro".to_string()),
                 ),
             ),
             (
@@ -393,7 +583,7 @@ impl FunctionMacroMap {
                     "tail",
                     ["a_count", "a_direction", "a_content"],
                     Self::strip,
-                    None,
+                    Some("Either head or tail a given text".to_string()),
                 ),
             ),
             (
@@ -411,20 +601,35 @@ impl FunctionMacroMap {
                     "sub",
                     ["a_start_index", "a_end_index", "a_source"],
                     Self::substring,
-                    None,
+                    Some("Get a substring with indices".to_string()),
                 ),
             ),
             (
                 "tail".to_owned(),
-                FMacroSign::new("tail", ["a_count", "a_content"], Self::tail, None),
+                FMacroSign::new(
+                    "tail",
+                    ["a_count", "a_content"],
+                    Self::tail,
+                    Some("Get last parts of texts".to_string()),
+                ),
             ),
             (
                 "taill".to_owned(),
-                FMacroSign::new("taill", ["a_count", "a_content"], Self::tail_line, None),
+                FMacroSign::new(
+                    "taill",
+                    ["a_count", "a_content"],
+                    Self::tail_line,
+                    Some("Get last lines of texts".to_string()),
+                ),
             ),
             (
                 "table".to_owned(),
-                FMacroSign::new("table", ["a_table_form", "a_csv_value"], Self::table, None),
+                FMacroSign::new(
+                    "table",
+                    ["a_table_form", "a_csv_value"],
+                    Self::table,
+                    Some("Construct a formatted table".to_string()),
+                ),
             ),
             (
                 "tr".to_owned(),
@@ -432,33 +637,63 @@ impl FunctionMacroMap {
                     "tr",
                     ["a_source", "a_matches", "a_substitutions"],
                     Self::translate,
-                    None,
+                    Some("Translate characters".to_string()),
                 ),
             ),
             (
                 "trim".to_owned(),
-                FMacroSign::new("trim", ["a_content"], Self::trim, None),
+                FMacroSign::new(
+                    "trim",
+                    ["a_content"],
+                    Self::trim,
+                    Some("Trim text".to_string()),
+                ),
             ),
             (
                 "triml".to_owned(),
-                FMacroSign::new("triml", ["a_content"], Self::triml, None),
+                FMacroSign::new(
+                    "triml",
+                    ["a_content"],
+                    Self::triml,
+                    Some("Trim values by lines".to_string()),
+                ),
             ),
             (
                 "undef".to_owned(),
-                FMacroSign::new("undef", ["a_macro_name"], Self::undefine_call, None),
+                FMacroSign::new(
+                    "undef",
+                    ["a_macro_name"],
+                    Self::undefine_call,
+                    Some("Undefine a macro".to_string()),
+                ),
             ),
             (
                 "unicode".to_owned(),
-                FMacroSign::new("unicode", ["a_value"], Self::paste_unicode, None),
+                FMacroSign::new(
+                    "unicode",
+                    ["a_value"],
+                    Self::paste_unicode,
+                    Some("Create a unicode character from given hex number".to_string()),
+                ),
             ),
             (
                 "upper".to_owned(),
-                FMacroSign::new("upper", ["a_text"], Self::capitalize, None),
+                FMacroSign::new(
+                    "upper",
+                    ["a_text"],
+                    Self::capitalize,
+                    Some("Get a uppercase english text".to_string()),
+                ),
             ),
             // THis is simply a placeholder
             (
                 "define".to_owned(),
-                FMacroSign::new("define", ESR, Self::define_type, None),
+                FMacroSign::new(
+                    "define",
+                    ESR,
+                    Self::define_type,
+                    Some("Define a macro".to_string()),
+                ),
             ),
         ]));
 
@@ -467,39 +702,84 @@ impl FunctionMacroMap {
         {
             map.insert(
                 "env".to_owned(),
-                FMacroSign::new("env", ["a_env_name"], Self::get_env, None),
+                FMacroSign::new(
+                    "env",
+                    ["a_env_name"],
+                    Self::get_env,
+                    Some("Get an environment variable".to_string()),
+                ),
             );
             map.insert(
                 "envset".to_owned(),
-                FMacroSign::new("envset", ["a_env_name", "a_env_value"], Self::set_env, None),
+                FMacroSign::new(
+                    "envset",
+                    ["a_env_name", "a_env_value"],
+                    Self::set_env,
+                    Some("Set an environment variable".to_string()),
+                ),
             );
             map.insert(
                 "abs".to_owned(),
-                FMacroSign::new("abs", ["a_path"], Self::absolute_path, None),
+                FMacroSign::new(
+                    "abs",
+                    ["a_path"],
+                    Self::absolute_path,
+                    Some("Get an absolute path".to_string()),
+                ),
             );
             map.insert(
                 "syscmd".to_owned(),
-                FMacroSign::new("syscmd", ["a_command"], Self::syscmd, None),
+                FMacroSign::new(
+                    "syscmd",
+                    ["a_command"],
+                    Self::syscmd,
+                    Some("Execute an sysctem command".to_string()),
+                ),
             );
             map.insert(
                 "read".to_owned(),
-                FMacroSign::new("read", ["a_filename"], Self::read_from_file, None),
+                FMacroSign::new(
+                    "read",
+                    ["a_filename"],
+                    Self::read_from_file,
+                    Some("Read an file (deprecated)".to_string()),
+                ),
             );
             map.insert(
                 "tempin".to_owned(),
-                FMacroSign::new("tempin", ["a_tempin"], Self::temp_include, None),
+                FMacroSign::new(
+                    "tempin",
+                    ["a_tempin"],
+                    Self::temp_include,
+                    Some("Include a temporary file".to_string()),
+                ),
             );
             map.insert(
                 "tempout".to_owned(),
-                FMacroSign::new("tempout", ["a_tempout"], Self::temp_out, None),
+                FMacroSign::new(
+                    "tempout",
+                    ["a_tempout"],
+                    Self::temp_out,
+                    Some("Write to temporary file".to_string()),
+                ),
             );
             map.insert(
                 "tempto".to_owned(),
-                FMacroSign::new("tempto", ["a_filename"], Self::set_temp_target, None),
+                FMacroSign::new(
+                    "tempto",
+                    ["a_filename"],
+                    Self::set_temp_target,
+                    Some("Change temporary file path".to_string()),
+                ),
             );
             map.insert(
                 "include".to_owned(),
-                FMacroSign::new("include", ["a_filename"], Self::include, None),
+                FMacroSign::new(
+                    "include",
+                    ["a_filename"],
+                    Self::include,
+                    Some("Include a file".to_string()),
+                ),
             );
             map.insert(
                 "fileout".to_owned(),
@@ -507,7 +787,7 @@ impl FunctionMacroMap {
                     "fileout",
                     ["a_truncate?", "a_filename", "a_content"],
                     Self::file_out,
-                    None,
+                    Some("Write to a file".to_string()),
                 ),
             );
         }
@@ -520,20 +800,35 @@ impl FunctionMacroMap {
                     "regcsv",
                     ["a_table_name", "a_table"],
                     Self::cindex_register,
-                    None,
+                    Some("Register a csv table".to_string()),
                 ),
             );
             map.insert(
                 "dropcsv".to_owned(),
-                FMacroSign::new("dropcsv", ["a_table_name"], Self::cindex_drop, None),
+                FMacroSign::new(
+                    "dropcsv",
+                    ["a_table_name"],
+                    Self::cindex_drop,
+                    Some("Drop a csv table".to_string()),
+                ),
             );
             map.insert(
                 "query".to_owned(),
-                FMacroSign::new("query", ["a_query"], Self::cindex_query, None),
+                FMacroSign::new(
+                    "query",
+                    ["a_query"],
+                    Self::cindex_query,
+                    Some("Query a csv table".to_string()),
+                ),
             );
             map.insert(
                 "queries".to_owned(),
-                FMacroSign::new("queries", ["a_query"], Self::cindex_query_list, None),
+                FMacroSign::new(
+                    "queries",
+                    ["a_query"],
+                    Self::cindex_query_list,
+                    Some("Execute multiple queries".to_string()),
+                ),
             );
         }
 
@@ -541,36 +836,71 @@ impl FunctionMacroMap {
         {
             map.insert(
                 "time".to_owned(),
-                FMacroSign::new("time", ESR, Self::time, None),
+                FMacroSign::new(
+                    "time",
+                    ESR,
+                    Self::time,
+                    Some("Get current time".to_string()),
+                ),
             );
             map.insert(
                 "date".to_owned(),
-                FMacroSign::new("date", ESR, Self::date, None),
+                FMacroSign::new(
+                    "date",
+                    ESR,
+                    Self::date,
+                    Some("Get current date".to_string()),
+                ),
             );
             map.insert(
                 "tarray".to_owned(),
-                FMacroSign::new("tarray", ["a_second"], Self::tarray, None),
+                FMacroSign::new(
+                    "tarray",
+                    ["a_second"],
+                    Self::tarray,
+                    Some("Get given time as array".to_string()),
+                ),
             );
             map.insert(
                 "hms".to_owned(),
-                FMacroSign::new("hms", ["a_second"], Self::hms, None),
+                FMacroSign::new(
+                    "hms",
+                    ["a_second"],
+                    Self::hms,
+                    Some("Get given time in hh:mm:ss format".to_string()),
+                ),
             );
         }
         #[cfg(feature = "evalexpr")]
         {
             map.insert(
                 "eval".to_owned(),
-                FMacroSign::new("eval", ["a_expression"], Self::eval, None),
+                FMacroSign::new(
+                    "eval",
+                    ["a_expression"],
+                    Self::eval,
+                    Some("Evaluate expression".to_string()),
+                ),
             );
             map.insert(
                 "evalk".to_owned(),
-                FMacroSign::new("evalk", ["a_expression"], Self::eval_keep, None),
+                FMacroSign::new(
+                    "evalk",
+                    ["a_expression"],
+                    Self::eval_keep,
+                    Some("Evaluate expression keeping source texts".to_string()),
+                ),
             );
         }
         #[cfg(feature = "textwrap")]
         map.insert(
             "wrap".to_owned(),
-            FMacroSign::new("wrap", ["a_width", "a_content"], Self::wrap, None),
+            FMacroSign::new(
+                "wrap",
+                ["a_width", "a_content"],
+                Self::wrap,
+                Some("Wrap text by width".to_string()),
+            ),
         );
 
         #[cfg(feature = "hook")]
@@ -581,7 +911,7 @@ impl FunctionMacroMap {
                     "hookon",
                     ["a_macro_type", "a_target_name"],
                     Self::hook_enable,
-                    None,
+                    Some("Enable hook".to_string()),
                 ),
             );
             map.insert(
@@ -590,7 +920,7 @@ impl FunctionMacroMap {
                     "hookoff",
                     ["a_macro_type", "a_target_name"],
                     Self::hook_disable,
-                    None,
+                    Some("Disable hook".to_string()),
                 ),
             );
         }
@@ -599,11 +929,21 @@ impl FunctionMacroMap {
         {
             map.insert(
                 "update".to_owned(),
-                FMacroSign::new("update", ["a_text"], Self::update_storage, None),
+                FMacroSign::new(
+                    "update",
+                    ["a_text"],
+                    Self::update_storage,
+                    Some("Update storage".to_string()),
+                ),
             );
             map.insert(
                 "extract".to_owned(),
-                FMacroSign::new("extract", ESR, Self::extract_storage, None),
+                FMacroSign::new(
+                    "extract",
+                    ESR,
+                    Self::extract_storage,
+                    Some("Extract from storage".to_string()),
+                ),
             );
         }
 

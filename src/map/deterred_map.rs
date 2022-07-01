@@ -32,7 +32,7 @@ impl DeterredMacroMap {
                     "exec",
                     ["macro_name", "macro_args"],
                     DeterredMacroMap::execute_macro,
-                    None,
+                    Some("Execute a macro with arguments".to_string()),
                 ),
             ),
             (
@@ -41,7 +41,7 @@ impl DeterredMacroMap {
                     "fassert",
                     ["a_lvalue", "a_rvalue"],
                     DeterredMacroMap::assert_fail,
-                    None,
+                    Some("Assert succeedes when fails".to_string()),
                 ),
             ),
             (
@@ -50,7 +50,7 @@ impl DeterredMacroMap {
                     "foreach",
                     ["a_array", "a_body"],
                     DeterredMacroMap::foreach,
-                    None,
+                    Some("Loop around given array".to_string()),
                 ),
             ),
             (
@@ -59,7 +59,7 @@ impl DeterredMacroMap {
                     "forline",
                     ["a_iterable", "a_body"],
                     DeterredMacroMap::forline,
-                    None,
+                    Some("Loop around given lines".to_string()),
                 ),
             ),
             (
@@ -68,7 +68,7 @@ impl DeterredMacroMap {
                     "forloop",
                     ["a_min", "a_max", "a_body"],
                     DeterredMacroMap::forloop,
-                    None,
+                    Some("Loop around given range".to_string()),
                 ),
             ),
             (
@@ -77,7 +77,7 @@ impl DeterredMacroMap {
                     "from",
                     ["a_macro_name", "a_csv_value"],
                     Self::from_data,
-                    None,
+                    Some("Execute macro multiple times with given data chunk".to_string()),
                 ),
             ),
             (
@@ -86,7 +86,7 @@ impl DeterredMacroMap {
                     "if",
                     ["a_boolean", "a_if_expr"],
                     DeterredMacroMap::if_cond,
-                    None,
+                    Some("Check condition and then execute".to_string()),
                 ),
             ),
             (
@@ -95,7 +95,7 @@ impl DeterredMacroMap {
                     "ifelse",
                     ["a_boolean", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifelse,
-                    None,
+                    Some("Check condition and execute different expressions".to_string()),
                 ),
             ),
             (
@@ -104,7 +104,7 @@ impl DeterredMacroMap {
                     "ifdef",
                     ["a_macro_name", "a_if_expr"],
                     DeterredMacroMap::ifdef,
-                    None,
+                    Some("Execute expression if macro is defined".to_string()),
                 ),
             ),
             (
@@ -113,12 +113,17 @@ impl DeterredMacroMap {
                     "ifdefel",
                     ["a_macro_name", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifdefel,
-                    None,
+                    Some("Execute expressions whether macro is defined or not".to_string()),
                 ),
             ),
             (
                 "que".to_owned(),
-                DMacroSign::new("que", ["a_content"], DeterredMacroMap::queue_content, None),
+                DMacroSign::new(
+                    "que",
+                    ["a_content"],
+                    DeterredMacroMap::queue_content,
+                    Some("Que expressions".to_string()),
+                ),
             ),
             (
                 "ifque".to_owned(),
@@ -126,7 +131,7 @@ impl DeterredMacroMap {
                     "ifque",
                     ["a_bool", "a_content"],
                     DeterredMacroMap::if_queue_content,
-                    None,
+                    Some("If true, then queue expressions".to_string()),
                 ),
             ),
         ]));
@@ -139,7 +144,7 @@ impl DeterredMacroMap {
                     "ifenv",
                     ["a_env_name", "a_if_expr"],
                     DeterredMacroMap::ifenv,
-                    None,
+                    Some("Execute expression if environment variable is set".to_string()),
                 ),
             );
             map.insert(
@@ -148,7 +153,10 @@ impl DeterredMacroMap {
                     "ifenvel",
                     ["a_env_name", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifenvel,
-                    None,
+                    Some(
+                        "Execute expression by whether environment variable is set or not"
+                            .to_string(),
+                    ),
                 ),
             );
         }
@@ -160,7 +168,7 @@ impl DeterredMacroMap {
                     "ieval",
                     ["a_macro", "a_expression"],
                     Self::eval_inplace,
-                    None,
+                    Some("Eval expression in-place for macro".to_string()),
                 ),
             );
         }
