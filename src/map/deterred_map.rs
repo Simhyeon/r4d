@@ -252,8 +252,8 @@ impl DeterredMacroMap {
             for value in loopable.lines() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
-                let result =
-                    processor.parse_chunk_args(level, "", &args[1].replace("$:", value))?;
+                processor.add_new_local_macro(level, ":", value);
+                let result = processor.parse_chunk_args(level, "", &args[1])?;
                 sums.push_str(&result);
                 count += 1;
             }
