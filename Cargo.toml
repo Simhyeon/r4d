@@ -1,7 +1,7 @@
 [package]
 name = "r4d"
 version = "3.0.0-rc.1"
-edition = "2018"
+edition = "2021"
 license = "MIT OR Apache-2.0"
 keywords = ["macro", "cli", "text-processing"]
 categories = ["command-line-utilities", "text-processing"]
