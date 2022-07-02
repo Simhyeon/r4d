@@ -6,3 +6,6 @@ diff.out
 addr.csv
 wasm
 pkg
+cache.txt
+err.txt
+file.r4f
