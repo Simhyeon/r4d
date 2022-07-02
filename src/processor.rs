@@ -12,6 +12,7 @@ use crate::logger::{Logger, LoggerLines, WarningType};
 use crate::models::DiffOption;
 #[cfg(not(feature = "wasm"))]
 use crate::models::FileTarget;
+use crate::models::RegexCache;
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
 use crate::models::{
@@ -82,6 +83,7 @@ pub(crate) struct ProcessorState {
     pub consume_newline: bool, // This consumes newline if the line was only empty
     pub escape_newline: bool,  // This escapes right next newline
     pub queued: Vec<String>,
+    pub regex_cache: RegexCache,
 }
 
 impl ProcessorState {
@@ -108,6 +110,7 @@ impl ProcessorState {
             consume_newline: false,
             escape_newline: false,
             queued: vec![],
+            regex_cache: RegexCache::new(),
         }
     }
 
@@ -165,14 +168,14 @@ impl ProcessorState {
 ///         .lenient(true)                                       // Disable strict mode
 ///         .hygiene(Hygiene::Macro)                             // Enable hygiene mode
 ///         .pipe_truncate(false)                                // Disable pipe truncate
-///         .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
-///         .error_to_file(Some(Path::new("err.txt")))?          // default is stderr
+///         .write_to_file(Path::new("out.txt"))?                // default is stdout
+///         .error_to_file(Path::new("err.txt"))?                // default is stderr
 ///         .unix_new_line(true)                                 // use unix new line for formatting
 ///         .discard(true)                                       // discard all output
 ///         .melt_files(&[Path::new("source.r4d")])?             // Read runtime macros from frozen
 ///         // Permission
-///         .allow(Some(&[AuthType::ENV]))                       // Grant permission of authtypes
-///         .allow_with_warning(Some(&[AuthType::CMD]));         // Grant permission of authypes with warning enabled
+///         .allow(&[AuthType::ENV])                             // Grant permission of authtypes
+///         .allow_with_warning(&[AuthType::CMD]);               // Grant permission of authypes with warning enabled
 ///
 ///
 ///         // Debugging options
@@ -270,7 +273,7 @@ impl<'processor> Processor<'processor> {
     ///     .lenient(true)
     ///     .pipe_truncate(false)
     ///     .unix_new_line(true)
-    ///     .write_to_file(Some(Path::new("cache.txt")))
+    ///     .write_to_file(Path::new("cache.txt"))
     ///     .expect("Failed to open a file");
     /// ```
     pub fn new() -> Self {
@@ -287,7 +290,7 @@ impl<'processor> Processor<'processor> {
     ///     .lenient(true)
     ///     .pipe_truncate(false)
     ///     .unix_new_line(true)
-    ///     .write_to_file(Some(Path::new("cache.txt")))
+    ///     .write_to_file(Path::new("cache.txt"))
     ///     .expect("Failed to open a file");
     /// ```
     pub fn empty() -> Self {
@@ -341,25 +344,23 @@ impl<'processor> Processor<'processor> {
     /// ```rust
     /// use std::path::Path;
     /// let proc = r4d::Processor::empty()
-    ///     .write_to_file(Some(Path::new("cache.txt")))
+    ///     .write_to_file(Path::new("cache.txt"))
     ///     .expect("Failed to open a file");
     /// ```
-    pub fn write_to_file(mut self, target_file: Option<impl AsRef<Path>>) -> RadResult<Self> {
-        if let Some(target_file) = target_file {
-            let file = OpenOptions::new()
-                .create(true)
-                .write(true)
-                .truncate(true)
-                .open(&target_file);
+    pub fn write_to_file<P: AsRef<Path>>(mut self, target_file: P) -> RadResult<Self> {
+        let file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(&target_file);
 
-            if let Ok(file) = file {
-                self.write_option = WriteOption::File(file);
-            } else {
-                return Err(RadError::InvalidCommandOption(format!(
-                    "Could not create file \"{}\"",
-                    target_file.as_ref().display()
-                )));
-            }
+        if let Ok(file) = file {
+            self.write_option = WriteOption::File(file);
+        } else {
+            return Err(RadError::InvalidCommandOption(format!(
+                "Could not create file \"{}\"",
+                target_file.as_ref().display()
+            )));
         }
         Ok(self)
     }
@@ -381,26 +382,24 @@ impl<'processor> Processor<'processor> {
     /// ```rust
     /// use std::path::Path;
     /// let proc = r4d::Processor::empty()
-    ///     .error_to_file(Some(Path::new("err.txt")))
+    ///     .error_to_file(Path::new("err.txt"))
     ///     .expect("Failed to open a file");
     /// ```
-    pub fn error_to_file(mut self, target_file: Option<impl AsRef<Path>>) -> RadResult<Self> {
-        if let Some(target_file) = target_file {
-            let file = OpenOptions::new()
-                .create(true)
-                .write(true)
-                .truncate(true)
-                .open(&target_file);
+    pub fn error_to_file<F: AsRef<Path>>(mut self, target_file: F) -> RadResult<Self> {
+        let file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(&target_file);
 
-            if let Ok(file) = file {
-                self.logger = Logger::new();
-                self.logger.set_write_option(Some(WriteOption::File(file)));
-            } else {
-                return Err(RadError::InvalidCommandOption(format!(
-                    "Could not create file \"{}\"",
-                    target_file.as_ref().display()
-                )));
-            }
+        if let Ok(file) = file {
+            self.logger = Logger::new();
+            self.logger.set_write_option(Some(WriteOption::File(file)));
+        } else {
+            return Err(RadError::InvalidCommandOption(format!(
+                "Could not create file \"{}\"",
+                target_file.as_ref().display()
+            )));
         }
         Ok(self)
     }
@@ -710,13 +709,11 @@ impl<'processor> Processor<'processor> {
     ///
     /// ```rust
     /// let proc = r4d::Processor::empty()
-    ///     .allow(Some(&[r4d::AuthType::CMD]));
+    ///     .allow(&[r4d::AuthType::CMD]);
     /// ```
-    pub fn allow(mut self, auth_types: Option<&[AuthType]>) -> Self {
-        if let Some(auth_types) = auth_types {
-            for auth in auth_types {
-                self.state.auth_flags.set_state(auth, AuthState::Open)
-            }
+    pub fn allow(mut self, auth_types: &[AuthType]) -> Self {
+        for auth in auth_types {
+            self.state.auth_flags.set_state(auth, AuthState::Open)
         }
         self
     }
@@ -735,13 +732,11 @@ impl<'processor> Processor<'processor> {
     ///
     /// ```rust
     /// let proc = r4d::Processor::empty()
-    ///     .allow(Some(&[r4d::AuthType::CMD]));
+    ///     .allow_with_warning(&[r4d::AuthType::CMD]);
     /// ```
-    pub fn allow_with_warning(mut self, auth_types: Option<&[AuthType]>) -> Self {
-        if let Some(auth_types) = auth_types {
-            for auth in auth_types {
-                self.state.auth_flags.set_state(auth, AuthState::Warn)
-            }
+    pub fn allow_with_warning(mut self, auth_types: &[AuthType]) -> Self {
+        for auth in auth_types {
+            self.state.auth_flags.set_state(auth, AuthState::Warn)
         }
         self
     }
