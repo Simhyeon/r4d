@@ -50,8 +50,7 @@
 //! module](crate::processor)
 
 mod error;
-// This is necessary for docs.rs documentation
-pub mod processor;
+mod processor;
 
 mod parser;
 pub(crate) use parser::DefineParser;
@@ -86,6 +85,10 @@ pub use models::{ExtMacroBuilder, MacroType, RadStorage, StorageOutput, StorageR
 pub use processor::Processor;
 
 // Optional
+
+// User configurable script execution
+#[cfg(feature = "template")]
+mod script;
 
 // Binary option
 #[cfg(feature = "clap")]
