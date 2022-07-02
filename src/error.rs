@@ -2,6 +2,7 @@ use crate::AuthType;
 #[cfg(feature = "cindex")]
 use cindex::CIndexError;
 
+/// Blank implementation for error trait
 impl std::error::Error for RadError {}
 
 /// R4d's error type
@@ -25,6 +26,7 @@ pub enum RadError {
     InvalidArgBoolean(std::str::ParseBoolError),
     InvalidFile(String),
     StdIo(std::io::Error),
+    FmtError(std::fmt::Error),
     Utf8Err(std::string::FromUtf8Error),
     UnsupportedTableFormat(String),
     BincodeError(String),
@@ -59,6 +61,7 @@ impl std::fmt::Display for RadError {
             Self::InvalidArgBoolean(err) => format!("Invalid argument type\n= {}", err),
             Self::InvalidFile(file) => format!("File,\"{}\", does not exist", file),
             Self::StdIo(err) => format!("Standard IO error\n= {}", err),
+            Self::FmtError(err) => format!("Formatting error\n= {}", err),
             Self::Utf8Err(err) => format!("Failed to convert to utf8 string\n= {}", err),
             Self::UnsupportedTableFormat(txt) => format!("Unsupported table format\n= {}", txt),
             Self::BincodeError(txt) => format!("Failed frozen operation\n= {}", txt),
@@ -119,6 +122,12 @@ impl From<std::str::ParseBoolError> for RadError {
 impl From<std::io::Error> for RadError {
     fn from(err: std::io::Error) -> Self {
         Self::StdIo(err)
+    }
+}
+
+impl From<std::fmt::Error> for RadError {
+    fn from(err: std::fmt::Error) -> Self {
+        Self::FmtError(err)
     }
 }
 

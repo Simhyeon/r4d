@@ -23,6 +23,7 @@ use cindex::OutOption;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
+use std::fmt::Write as _;
 use std::fs::OpenOptions;
 use std::io::{BufRead, Write};
 use std::iter::FromIterator;
@@ -2920,7 +2921,7 @@ impl FunctionMacroMap {
                 splited.push_str(first);
 
                 for item in array {
-                    splited.push_str(&format!("{}{}", separator, item));
+                    write!(splited, "{}{}", separator, item)?;
                 }
             }
 

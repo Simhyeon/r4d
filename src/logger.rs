@@ -5,7 +5,8 @@
 use crate::models::{ProcessInput, RadResult, WriteOption};
 use crate::utils::Utils;
 use crate::{consts::*, RadError};
-use std::io::Write;
+use std::fmt::Write;
+use std::io::Write as _;
 
 /// Struct specifically exists to backup information of logger
 #[derive(Debug)]
@@ -195,14 +196,17 @@ impl<'logger> Logger<'logger> {
                         LINE_ENDING
                     )?;
                 }
-                WriteOption::Variable(var) => var.push_str(&format!(
-                    "error : {} -> {}:{}:{}{}",
-                    log,
-                    self.current_input.to_string(),
-                    self.last_line_number,
-                    last_char,
-                    LINE_ENDING
-                )),
+                WriteOption::Variable(var) => {
+                    write!(
+                        var,
+                        "error : {} -> {}:{}:{}{}",
+                        log,
+                        self.current_input.to_string(),
+                        self.last_line_number,
+                        last_char,
+                        LINE_ENDING
+                    )?;
+                }
                 WriteOption::Discard | WriteOption::Return => (),
             } // Match end
         }
@@ -265,14 +269,17 @@ impl<'logger> Logger<'logger> {
                         self.last_char_number
                     )?;
                 }
-                WriteOption::Variable(var) => var.push_str(&format!(
-                    "error : {} -> {}:{}:{}{}",
-                    log,
-                    self.current_input.to_string(),
-                    self.last_line_number,
-                    last_char,
-                    LINE_ENDING
-                )),
+                WriteOption::Variable(var) => {
+                    write!(
+                        var,
+                        "error : {} -> {}:{}:{}{}",
+                        log,
+                        self.current_input.to_string(),
+                        self.last_line_number,
+                        last_char,
+                        LINE_ENDING
+                    )?;
+                }
                 WriteOption::Discard | WriteOption::Return => (),
             } // match end
         }
@@ -313,13 +320,14 @@ impl<'logger> Logger<'logger> {
                         last_char
                     )?;
                 }
-                WriteOption::Variable(var) => var.push_str(&format!(
+                WriteOption::Variable(var) => write!(
+                    var,
                     "assert fail -> {}:{}:{}{}",
                     self.current_input.to_string(),
                     self.last_line_number,
                     last_char,
                     LINE_ENDING
-                )),
+                )?,
                 WriteOption::Discard | WriteOption::Return => (),
             } // match end
         }

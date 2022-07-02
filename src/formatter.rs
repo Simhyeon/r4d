@@ -2,6 +2,7 @@ use dcsv::VirtualArray;
 
 use crate::error::RadError;
 use crate::RadResult;
+use std::fmt::Write;
 
 /// Formatter that constructs multiple text formats
 pub(crate) struct Formatter;
@@ -49,7 +50,7 @@ impl Formatter {
         let mut exec = String::new();
         let mut iter = data.rows.iter().peekable();
         while let Some(row) = iter.next() {
-            exec.push_str(&format!("${}({})", macro_name, row.join(",")));
+            write!(exec, "${}({})", macro_name, row.join(","))?;
             if iter.peek().is_some() {
                 exec.push_str(newline);
             }
@@ -147,14 +148,15 @@ impl Formatter {
         // Add header
         table.push_str("\t<thead>\n\t\t<tr>\n");
         for h in header {
-            table.push_str(&format!("\t\t\t<th>{}</th>\n", h));
+            // This ditched \n after with with writeln but, is it desirable?
+            writeln!(table, "\t\t\t<th>{}</th>", h)?;
         }
         table.push_str("\t\t</tr>\n\t</thead>\n");
         table.push_str("\t<tbody>\n");
         for row in data_iter {
             table.push_str("\t\t<tr>\n");
             for value in row {
-                table.push_str(&format!("\t\t\t<td>{}</td>\n", value));
+                writeln!(table, "\t\t\t<td>{}</td>", value)?;
             }
             table.push_str("\t\t</tr>\n");
         }

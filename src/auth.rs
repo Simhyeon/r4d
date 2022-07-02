@@ -3,6 +3,7 @@
 //! Permission should be given for some function macro types
 
 use crate::consts::LINE_ENDING;
+use std::fmt::Write;
 
 #[derive(Debug)]
 /// Struct that stores auth states
@@ -36,7 +37,8 @@ impl AuthFlags {
                 &AuthState::Warn | &AuthState::Open => {
                     // Add newline before
                     format.push_str(LINE_ENDING);
-                    format.push_str(&format!("Auth : {:?} is open.", auth_type));
+                    // This is mostly ok since, auth_type is always valid utf8 character
+                    write!(format, "Auth : {:?} is open.", auth_type).ok();
                 }
                 &AuthState::Restricted => (),
             }
