@@ -381,6 +381,8 @@ dependencies = [
 [[package]]
 name = "rad_ext_template"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "622bac5b301cde617d427b8f6691376b53b64a9dcac2ab95bbce29628a6858a7"
 
 [[package]]
 name = "redox_syscall"
