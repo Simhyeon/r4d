@@ -66,6 +66,7 @@ impl<'cli> RadCli<'cli> {
     /// Parse arguments and run processor
     fn run_processor(&mut self, args: &clap::ArgMatches) -> RadResult<()> {
         self.parse_options(args);
+
         // Build processor
         let mut processor = Processor::new()
             .set_comment_type(CommentType::from_str(
@@ -86,6 +87,20 @@ impl<'cli> RadCli<'cli> {
             .unix_new_line(args.is_present("newline"))
             .melt_files(&self.rules)?
             .discard(args.is_present("discard"));
+
+        // Help command
+        #[cfg(feature = "signature")]
+        if let Some(name) = args.value_of("manual") {
+            match processor.get_macro_manual(name) {
+                Some(text) => writeln!(std::io::stdout(), "{}", text)?,
+                None => writeln!(
+                    std::io::stdout(),
+                    "Given macro \"{}\" doesn't exist and cannot display a manual",
+                    name
+                )?,
+            }
+            return Ok(());
+        }
 
         if let Some(file) = self.write_to_file.as_ref() {
             processor = processor.write_to_file(file)?;
@@ -387,6 +402,13 @@ impl<'cli> RadCli<'cli> {
 
         #[cfg(feature = "signature")]
         let app = app
+            .arg(
+                Arg::new("manual")
+                    .long("man")
+                    .takes_value(true)
+                    .value_name("MACRO_NAME")
+                    .help("Get manual of a macro"),
+            )
             .arg(
                 Arg::new("signature")
                     .long("signature")

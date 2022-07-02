@@ -48,7 +48,7 @@ impl std::fmt::Display for RuntimeMacro {
 impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
     fn from(mac: &RuntimeMacro) -> Self {
         Self {
-            variant: crate::sigmap::MacroVariant::Custom,
+            variant: crate::sigmap::MacroVariant::Runtime,
             name: mac.name.to_owned(),
             args: mac.args.to_owned(),
             expr: mac.to_string(),

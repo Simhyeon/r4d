@@ -987,6 +987,12 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Get Function pointer from map
+    #[cfg(feature = "signature")]
+    pub(crate) fn get_signature(&self, name: &str) -> Option<&FMacroSign> {
+        self.macros.get(name)
+    }
+
     /// Undefine a macro
     ///
     /// # Arguments

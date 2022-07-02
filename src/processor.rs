@@ -2528,6 +2528,11 @@ impl<'processor> Processor<'processor> {
         }
     }
 
+    #[cfg(feature = "signature")]
+    pub(crate) fn get_macro_manual(&self, macro_name: &str) -> Option<String> {
+        self.map.get_signature(macro_name).map(|s| s.to_string())
+    }
+
     /// This returns canonicalized absolute path
     ///
     /// It fails when the parent path cannot be canonicalized

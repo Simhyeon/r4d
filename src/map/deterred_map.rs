@@ -185,6 +185,12 @@ impl DeterredMacroMap {
         }
     }
 
+    /// Get Function pointer from map
+    #[cfg(feature = "signature")]
+    pub(crate) fn get_signature(&self, name: &str) -> Option<&DMacroSign> {
+        self.macros.get(name)
+    }
+
     /// Check if map contains the name
     pub fn contains(&self, name: &str) -> bool {
         self.macros.contains_key(name)

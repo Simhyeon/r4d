@@ -210,6 +210,20 @@ impl MacroMap {
         }
     }
 
+    /// Get a macro signature
+    #[cfg(feature = "signature")]
+    pub fn get_signature(&self, macro_name: &str) -> Option<MacroSignature> {
+        if let Some(mac) = self.runtime.get(macro_name, Hygiene::None) {
+            Some(MacroSignature::from(mac))
+        } else if let Some(mac) = self.deterred.get_signature(macro_name) {
+            Some(MacroSignature::from(mac))
+        } else if let Some(mac) = self.function.get_signature(macro_name) {
+            Some(MacroSignature::from(mac))
+        } else {
+            None
+        }
+    }
+
     /// Get macro signatures object
     #[cfg(feature = "signature")]
     pub fn get_signatures(&self) -> Vec<MacroSignature> {

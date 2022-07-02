@@ -33,7 +33,7 @@ impl SignatureMap {
 pub enum MacroVariant {
     Deterred,
     Function,
-    Custom,
+    Runtime,
 }
 
 /// Macro signature
@@ -44,4 +44,22 @@ pub struct MacroSignature {
     pub args: Vec<String>,
     pub expr: String,
     pub desc: Option<String>,
+}
+
+impl std::fmt::Display for MacroSignature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Macro Type : {:#?}
+Macro Name : {}
+Arguments : {:?}
+Usage : {}
+Description : {}",
+            self.variant,
+            self.name,
+            self.args,
+            self.expr,
+            self.desc.as_ref().unwrap_or(&String::new()) // This is ugly...
+        )
+    }
 }
