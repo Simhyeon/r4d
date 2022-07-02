@@ -23,7 +23,7 @@ use cindex::OutOption;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
-use std::fs::{canonicalize, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::{BufRead, Write};
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
@@ -737,15 +737,6 @@ impl FunctionMacroMap {
                 ),
             );
             map.insert(
-                "read".to_owned(),
-                FMacroSign::new(
-                    "read",
-                    ["a_filename"],
-                    Self::read_from_file,
-                    Some("Read an file (deprecated)".to_string()),
-                ),
-            );
-            map.insert(
                 "tempin".to_owned(),
                 FMacroSign::new(
                     "tempin",
@@ -1390,48 +1381,6 @@ impl FunctionMacroMap {
             }
         }
         Ok(())
-    }
-
-    /// Paste given file's content as bufstream using File I/O
-    ///
-    /// Every macros within the file is also expanded
-    ///
-    /// # Usage
-    ///
-    /// $read(path)
-    fn read_from_file(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("read", AuthType::FIN, processor)? {
-            return Ok(None);
-        }
-
-        if processor.on_cache() {
-            return Err(RadError::UnallowedMacroExecution(
-                "Nested read is not allowed".to_owned(),
-            ));
-        }
-
-        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let arg = &Utils::trim(&args[0]);
-            let file_path = Path::new(arg);
-            let canonic = canonicalize(file_path)?;
-            Self::check_include_sanity(processor, file_path, &canonic)?;
-            processor.enable_cache(true)?;
-
-            // Set sandbox after error checking or it will act starngely
-            processor.set_sandbox(true);
-
-            // This operation saves all input into CACHE
-            processor.process_file(file_path)?;
-            // Reads all cache file into original source
-            processor.flush_cache()?;
-
-            processor.set_sandbox(false);
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "Read requires an argument".to_owned(),
-            ))
-        }
     }
 
     /// Repeat given expression about given amount times
