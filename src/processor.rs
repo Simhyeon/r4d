@@ -1859,11 +1859,15 @@ impl<'processor> Processor<'processor> {
             let err =
                 RadError::InvalidMacroName("Cannot invoke a macro with empty name".to_string());
 
-            // Gracefully pickup because it can be handled
-            remainder.push_str(&frag.whole_string);
-            frag.clear();
+            // Handle empty name error
+            match self.state.behaviour {
+                ErrorBehaviour::Strict => return Err(err), // Error
+                ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
+                ErrorBehaviour::Purge => (),
+            }
 
-            return Err(err);
+            // Clear fragment regardless
+            frag.clear();
         }
 
         // Debug
