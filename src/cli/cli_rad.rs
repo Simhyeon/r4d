@@ -20,8 +20,8 @@ pub struct RadCli<'cli> {
     rules: Vec<PathBuf>,
     write_to_file: Option<PathBuf>,
     error_to_file: Option<PathBuf>,
-    allow_auth: Option<Vec<AuthType>>,
-    allow_auth_warn: Option<Vec<AuthType>>,
+    allow_auth: Vec<AuthType>,
+    allow_auth_warn: Vec<AuthType>,
     processor: Processor<'cli>,
 }
 
@@ -42,8 +42,8 @@ impl<'cli> RadCli<'cli> {
             rules: vec![],
             write_to_file: None,
             error_to_file: None,
-            allow_auth: None,
-            allow_auth_warn: None,
+            allow_auth: vec![],
+            allow_auth_warn: vec![],
             processor: Processor::new(),
         }
     }
@@ -81,13 +81,18 @@ impl<'cli> RadCli<'cli> {
                 args.value_of("silent").unwrap_or("none"),
             )?)
             .assert(args.is_present("assert"))
-            .allow(self.allow_auth.as_ref().map(|v| &v[..]))
-            .allow_with_warning(self.allow_auth_warn.as_ref().map(|v| &v[..]))
+            .allow(&self.allow_auth)
+            .allow_with_warning(&self.allow_auth_warn)
             .unix_new_line(args.is_present("newline"))
             .melt_files(&self.rules)?
-            .write_to_file(self.write_to_file.as_ref())?
-            .discard(args.is_present("discard"))
-            .error_to_file(self.error_to_file.as_ref())?;
+            .discard(args.is_present("discard"));
+
+        if let Some(file) = self.write_to_file.as_ref() {
+            processor = processor.write_to_file(file)?;
+        }
+        if let Some(file) = self.error_to_file.as_ref() {
+            processor = processor.error_to_file(file)?;
+        }
 
         #[cfg(feature = "template")]
         script::extend_processor(&mut processor)?;
@@ -232,37 +237,32 @@ impl<'cli> RadCli<'cli> {
         self.error_to_file = args.value_of("err").map(PathBuf::from);
 
         // Permission
-        self.allow_auth = if let Some(auths) = args.value_of("allow") {
-            auths.split('+').map(AuthType::from).collect()
-        } else {
-            None
-        };
+        if let Some(auths) = args.value_of("allow") {
+            self.allow_auth = auths
+                .split('+')
+                .into_iter()
+                .filter_map(AuthType::from)
+                .collect()
+        }
 
         // Permission with warning
-        self.allow_auth_warn = if let Some(auths) = args.value_of("allow_warn") {
-            auths.split('+').map(AuthType::from).collect()
-        } else {
-            None
-        };
+        if let Some(auths) = args.value_of("allow_warn") {
+            self.allow_auth_warn = auths
+                .split('+')
+                .into_iter()
+                .filter_map(AuthType::from)
+                .collect()
+        }
 
         // Permission all
         if args.is_present("allow_all") {
-            self.allow_auth = Some(vec![
-                AuthType::FIN,
-                AuthType::FOUT,
-                AuthType::ENV,
-                AuthType::CMD,
-            ]);
+            self.allow_auth = vec![AuthType::FIN, AuthType::FOUT, AuthType::ENV, AuthType::CMD];
         }
 
         // Permission all with warning
         if args.is_present("allow_all_warn") {
-            self.allow_auth_warn = Some(vec![
-                AuthType::FIN,
-                AuthType::FOUT,
-                AuthType::ENV,
-                AuthType::CMD,
-            ]);
+            self.allow_auth_warn =
+                vec![AuthType::FIN, AuthType::FOUT, AuthType::ENV, AuthType::CMD];
         }
     }
 

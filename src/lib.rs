@@ -37,7 +37,7 @@
 //!
 //! let mut processor = Processor::new()
 //!     .purge(true)
-//!     .write_to_file(Some(Path::new("cache.txt")))
+//!     .write_to_file(Path::new("cache.txt"))
 //!     .expect("Failed to open a file");
 //!
 //! processor.process_file(Path::new("input.txt"))
