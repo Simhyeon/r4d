@@ -217,10 +217,10 @@ impl MacroMap {
             Some(MacroSignature::from(mac))
         } else if let Some(mac) = self.deterred.get_signature(macro_name) {
             Some(MacroSignature::from(mac))
-        } else if let Some(mac) = self.function.get_signature(macro_name) {
-            Some(MacroSignature::from(mac))
         } else {
-            None
+            self.function
+                .get_signature(macro_name)
+                .map(MacroSignature::from)
         }
     }
 
