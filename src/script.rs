@@ -9,6 +9,7 @@ use crate::RadResult;
 ///
 /// Refer https://github.com/Simhyeon/r4d/blob/master/docs/ext.md for detailed explanation about
 /// macro extensions
+#[allow(unused_variables)]
 pub fn extend_processor(processor: &mut Processor) -> RadResult<()> {
     // ---
     // Write your custom extension macros from here
@@ -30,6 +31,7 @@ pub fn extend_processor(processor: &mut Processor) -> RadResult<()> {
         ExtMacroBuilder::new("macro_name")
             .args(&["a1", "b2"])
             .deterred(deterred_template!(
+                    audit_auth!("macro_name",crate::AuthType::CMD);
                     let args = split_args!(2)?;
                     let result = if expand!(&args[0])? == "doit" {
                         Some(format!("I did it -> {}", expand!(&args[1])?))
