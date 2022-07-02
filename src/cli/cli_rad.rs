@@ -2,6 +2,8 @@ use crate::auth::AuthType;
 use crate::logger::WarningType;
 use crate::models::{CommentType, DiffOption};
 use crate::processor::Processor;
+#[cfg(feature = "template")]
+use crate::script;
 use crate::utils::Utils;
 use crate::{RadError, RadResult};
 use std::io::Read;
@@ -86,6 +88,9 @@ impl<'cli> RadCli<'cli> {
             .write_to_file(std::mem::replace(&mut self.write_to_file, None))?
             .discard(args.is_present("discard"))
             .error_to_file(std::mem::replace(&mut self.error_to_file, None))?;
+
+        #[cfg(feature = "template")]
+        script::extend_processor(&mut processor)?;
 
         #[cfg(feature = "debug")]
         {
