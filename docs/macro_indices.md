@@ -83,6 +83,8 @@ For assertion macros refer [debug part](./debug.md)
 * [tr](#tr)
 * [len](#len)
 * [regex](#regex)
+* [find](#find)
+* [findm](#findm)
 * [trim, chomp, comp, triml](#trim-chomp-comp-triml)
 * [wrap](#wrap)
 * [nl](#nl)
@@ -981,15 +983,43 @@ $len(我们刚才从图书馆来了)
 
 ### regex
 
-Regex substitution and regex deletion gets source and additional arguments to
-process regex operation. Second argument is regex expression. This use [regex
-crate](https://crates.io/crates/regex).
+Regex substitution. This use [regex crate](https://crates.io/crates/regex).
+
+Regex is saved in cache and has hard limit of 100. Until 100 regex creation,
+recompilation of regex is prevented.
+
 ```
-$regex(Hello world,w.*?d,rust)
-$regex(Hello World// TODO,//.*$,)
+$regex(w.*?d,rust,Hello world)
+$regex(//.*$,,Hello World// TODO)
 ===
 Hello rust
 Hello World
+```
+
+### find
+
+Find match from source. This return boolean.
+
+```
+% Use \\* because \* will occur literal chunk
+% But use \[ to include literal [ since \ doesn't do anything without following
+% asterisk
+$find(^\\* \[ \],* [ ] Todo)
+===
+true
+```
+
+### findm
+
+Find multiple occurrences from source. This return integer. If none found, this
+will return 0.
+
+```
+$findm(a,I have many a's inside me ay.)
+$findm(Oops,Hello world)
+===
+4
+0
 ```
 
 ### trim, chomp, comp, triml

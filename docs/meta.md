@@ -2,8 +2,20 @@
 
 $todo_start()
 $h(R4d todos)
-* [ ] Make a man page
+* [x] Apply new(1.62) clippy fix
+* [x] Ditch unnecessary "Some" arguments
+- This is tedious but better for user experience.
+* [x] Regex syntax change
+* [x] New macros
+	* [x] Find
+	* [x] Findm
+* [x] Changed argument parsing behaviour frome lexor and arg parser
+	* [x] Regex pattern doesn't go well with string literal "\* *\" syntax
+	* [x] \\* Should be represented as literal \*
+
 * [ ] Make a help option
+- At least enable user to get information how to use a macro
+
 * [ ] Test windows build
 * [ ] Test multiple use cases
 $todo_end()
