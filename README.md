@@ -117,6 +117,8 @@ rado is a open+edit binary.
 rad input_file.txt
 # Read from standard input and print to a file
 printf '...text...' | rad -o out_file.txt
+# Get a simple manual for a macro
+rad --man ifdef
 
 # Edit a source file
 rado edit file_name.txt

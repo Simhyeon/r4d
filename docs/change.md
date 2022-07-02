@@ -1,3 +1,20 @@
+# 3.0.0-rc.3
+
+### Breaking
+
+- Changed syntax of regex macro
+- Ditched many Option parameters and made it intuitive
+
+### Else
+
+- CHG : Changed a parsing logic little bit
+- CHG : Applied new clippy fix
+- FET : Manual flag
+- FET : RegexCache for better regex performance
+- FET : New macros
+	- Find
+	- FIndm
+
 # 3.0.0-rc.2
 
 - ERG : Many rustdoc improvement

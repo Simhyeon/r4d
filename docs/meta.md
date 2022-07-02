@@ -12,9 +12,9 @@ $h(R4d todos)
 * [x] Changed argument parsing behaviour frome lexor and arg parser
 	* [x] Regex pattern doesn't go well with string literal "\* *\" syntax
 	* [x] \\* Should be represented as literal \*
-
-* [ ] Make a help option
-- At least enable user to get information how to use a macro
+* [x] Make a manual option (With signature option)
+* [ ] Decide when to push to 3.0
+* [ ] Improve description for real manual
 
 * [ ] Test windows build
 * [ ] Test multiple use cases
