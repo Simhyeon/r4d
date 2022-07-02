@@ -1607,7 +1607,6 @@ impl FunctionMacroMap {
                     None => p.state.regex_cache.append(expr)?,
                 };
                 vec = vec.into_iter().filter(|&item| reg.is_match(item)).collect();
-                println!("{:#?}", vec);
             }
 
             // Join as csv
