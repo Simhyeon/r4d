@@ -61,10 +61,15 @@ impl AuthFlags {
 /// - LEN  : This is a functional variant not a real value, namely a length
 /// ```
 pub enum AuthType {
+    /// Environment variable permission
     ENV = 0,
+    /// File in(read) permission
     FIN = 1,
+    /// File out(write) permission
     FOUT = 2,
+    /// System command permission
     CMD = 3,
+    /// This is a functional variant not a real value
     LEN = 4,
 }
 
@@ -108,7 +113,10 @@ impl AuthType {
 #[derive(Clone, Copy, Debug)]
 /// Current state authorization
 pub(crate) enum AuthState {
+    /// Not allowed
     Restricted,
+    /// Allowed but wans user
     Warn,
+    /// Openly allowed
     Open,
 }
