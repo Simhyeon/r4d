@@ -219,6 +219,24 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "find".to_owned(),
+                FMacroSign::new(
+                    "find",
+                    ["a_match", "a_source"],
+                    Self::find_occurence,
+                    Some("Find an occurrence of expression from source".to_string()),
+                ),
+            ),
+            (
+                "findm".to_owned(),
+                FMacroSign::new(
+                    "findm",
+                    ["a_match", "a_source"],
+                    Self::find_multiple_occurence,
+                    Some("Find occurrences of expression from source".to_string()),
+                ),
+            ),
+            (
                 "floor".to_owned(),
                 FMacroSign::new(
                     "floor",
@@ -501,7 +519,7 @@ impl FunctionMacroMap {
                 "regex".to_owned(),
                 FMacroSign::new(
                     "regex",
-                    ["a_source", "a_match", "a_substitution"],
+                    ["a_match", "a_substitution", "a_source"],
                     Self::regex_sub,
                     Some("Apply regular expression substitution".to_string()),
                 ),
@@ -1083,19 +1101,97 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $regex(source_text,regex_match,substitution)
-    fn regex_sub(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+    fn regex_sub(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let source = &args[0];
-            let match_expr = &args[1];
-            let substitution = &args[2];
+            let match_expr = &args[0];
+            let substitution = &args[1];
+            let source = &args[2];
 
-            // This is regex expression without any preceding and trailing commands
-            let reg = Regex::new(match_expr)?;
-            let result = reg.replace_all(source, substitution); // This is a cow, moo~
-            Ok(Some(result.to_string()))
+            if match_expr.trim().is_empty() {
+                return Err(RadError::InvalidArgument(
+                    "Regex expressino cannot be a empty string".to_string(),
+                ));
+            }
+
+            match p.state.regex_cache.get(match_expr) {
+                Some(reg) => Ok(Some(reg.replace_all(source, substitution).to_string())),
+                None => {
+                    let result = p
+                        .state
+                        .regex_cache
+                        .append(match_expr)?
+                        .replace_all(source, substitution);
+                    Ok(Some(result.to_string()))
+                }
+            }
         } else {
             Err(RadError::InvalidArgument(
                 "Regex sub requires three arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Find an occurrence form a source
+    ///
+    /// # Usage
+    ///
+    /// $find(regex_match,source)
+    fn find_occurence(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let match_expr = &args[0];
+            let source = &args[1];
+
+            if match_expr.trim().is_empty() {
+                return Err(RadError::InvalidArgument(
+                    "Regex expressino cannot be a empty string".to_string(),
+                ));
+            }
+
+            match p.state.regex_cache.get(match_expr) {
+                Some(reg) => Ok(Some(reg.is_match(source).to_string())),
+                None => {
+                    let result = p.state.regex_cache.append(match_expr)?.is_match(source);
+                    Ok(Some(result.to_string()))
+                }
+            }
+        } else {
+            Err(RadError::InvalidArgument(
+                "find requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Find multiple occurrence form a source
+    ///
+    /// # Usage
+    ///
+    /// $findm(regex_match,source)
+    fn find_multiple_occurence(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let match_expr = &args[0];
+            let source = &args[1];
+
+            if match_expr.trim().is_empty() {
+                return Err(RadError::InvalidArgument(
+                    "Regex expressino cannot be a empty string".to_string(),
+                ));
+            }
+
+            match p.state.regex_cache.get(match_expr) {
+                Some(reg) => Ok(Some(reg.find_iter(source).count().to_string())),
+                None => {
+                    let result = p
+                        .state
+                        .regex_cache
+                        .append(match_expr)?
+                        .find_iter(source)
+                        .count();
+                    Ok(Some(result.to_string()))
+                }
+            }
+        } else {
+            Err(RadError::InvalidArgument(
+                "findm requires two arguments".to_owned(),
             ))
         }
     }
@@ -1487,7 +1583,9 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $arr(1 2 3)
-    fn array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+    /// $arr(1 2 3, )   // Separator
+    /// $arr(1 2 3, ,2) // Separator + regex filter
+    fn array(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         let parsed = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
         if parsed.is_empty() {
             Err(RadError::InvalidArgument(
@@ -1503,8 +1601,13 @@ impl FunctionMacroMap {
 
             // Also given filter argument, then filter with regex expression
             if parsed.len() == 3 {
-                let reg = Regex::new(&parsed[2])?;
+                let expr = &parsed[2];
+                let reg = match p.state.regex_cache.get(expr) {
+                    Some(reg) => reg,
+                    None => p.state.regex_cache.append(expr)?,
+                };
                 vec = vec.into_iter().filter(|&item| reg.is_match(item)).collect();
+                println!("{:#?}", vec);
             }
 
             // Join as csv
@@ -2353,10 +2456,14 @@ impl FunctionMacroMap {
     /// $grep(EXPR,CONTENT)
     fn grep(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let expr = Regex::new(args[0].as_str())?;
+            let expr = &args[0];
+            let reg = match p.state.regex_cache.get(expr) {
+                Some(reg) => reg,
+                None => p.state.regex_cache.append(expr)?,
+            };
             let content = args[1].lines();
             let grepped = content
-                .filter(|l| expr.is_match(l))
+                .filter(|l| reg.is_match(l))
                 .collect::<Vec<&str>>()
                 .join(&p.state.newline);
             Ok(Some(grepped))
