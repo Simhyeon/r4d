@@ -141,85 +141,94 @@ impl ProcessorState {
 /// - Processor can handle various types of inputs (string|stdin|file)
 ///
 /// # Detailed usage
-/// ```rust
-/// use r4d::RadResult;
-/// use r4d::Processor;
-/// use r4d::AuthType;
-/// use r4d::CommentType;
+/// ```no_run
+/// use r4d::{
+///     RadResult, Processor, AuthType, CommentType,
+///     WarningType, MacroType, Hygiene
+/// };
+/// #[cfg(feature = "debug")]
 /// use r4d::DiffOption;
-/// use r4d::WarningType;
-/// use r4d::MacroType;
+/// #[cfg(feature = "hook")]
 /// use r4d::HookType; // This is behind hook feature
-/// use r4d::Hygiene;
 /// use std::path::Path;
 ///
-/// // Builder
-/// let mut processor = Processor::new()
-///     .set_comment_type(CommentType::Start)                // Use comment
-///     .custom_macro_char('~')?                             // use custom macro character
-///     .custom_comment_char('#')?                           // use custom comment character
-///     .purge(true)                                         // Purge undefined macro
-///     .silent(WarningType::Security)                       // Silents all warnings
-///     .assert(true)                                        // Enable assertion mode
-///     .lenient(true)                                       // Disable strict mode
-///     .hygiene(Hygiene::Macro)                             // Enable hygiene mode
-///     .pipe_truncate(false)                                // Disable pipe truncate
-///     .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
-///     .error_to_file(Some(Path::new("err.txt")))?          // default is stderr
-///     .unix_new_line(true)                                 // use unix new line for formatting
-///     .discard(true)                                       // discard all output
-///     .melt_files(vec![Path::new("source.r4d")])?          // Read runtime macros from frozen
-///     // Permission
-///     .allow(Some(vec![AuthType::ENV]))                    // Grant permission of authtypes
-///     .allow_with_warning(Some(vec![AuthType::CMD]))       // Grant permission of authypes with warning enabled
-///     // Debugging options
-///     .debug(true)                                         // Turn on debug mode
-///     .log(true)                                           // Use logging to terminal
-///     .diff(DiffOption::All)?                              // Print diff in final result
-///     .interactive(true);                                   // Use interactive mode
+/// fn main() -> RadResult<()> {
+///     // Builder
+///     let mut processor = Processor::new()
+///         .set_comment_type(CommentType::Start)                // Use comment
+///         .custom_macro_char('~')?                             // use custom macro character
+///         .custom_comment_char('#')?                           // use custom comment character
+///         .purge(true)                                         // Purge undefined macro
+///         .silent(WarningType::Security)                       // Silents all warnings
+///         .assert(true)                                        // Enable assertion mode
+///         .lenient(true)                                       // Disable strict mode
+///         .hygiene(Hygiene::Macro)                             // Enable hygiene mode
+///         .pipe_truncate(false)                                // Disable pipe truncate
+///         .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
+///         .error_to_file(Some(Path::new("err.txt")))?          // default is stderr
+///         .unix_new_line(true)                                 // use unix new line for formatting
+///         .discard(true)                                       // discard all output
+///         .melt_files(&[Path::new("source.r4d")])?             // Read runtime macros from frozen
+///         // Permission
+///         .allow(Some(&[AuthType::ENV]))                       // Grant permission of authtypes
+///         .allow_with_warning(Some(&[AuthType::CMD]));         // Grant permission of authypes with warning enabled
 ///
-/// // Comment char and macro char cannot be same
-/// // Unallowed pattern for the characters are [a-zA-Z1-9\\_\*\^\|\(\)=,]
 ///
-/// // Use Processor::empty() instead of Processor::new()
-/// // if you don't want any default macros
+///         // Debugging options
+///         #[cfg(feature = "debug")]
+///         {
+///             processor = processor
+///                 .diff(DiffOption::All)?                      // Print diff in final result
+///                 .debug(true)                                 // Turn on debug mode
+///                 .interactive(true)                           // Use interactive mode
+///                 .log(true);                                  // Log all macro invocations
+///         }
 ///
-/// // Print information about current processor permissions
-/// // This is an warning and can be suppressed with silent option
-/// processor.print_permission()?;
+///     // Comment char and macro char cannot be same
+///     // Unallowed pattern for the characters are [a-zA-Z1-9\\_\*\^\|\(\)=,]
 ///
-/// // Register a hook macro
-/// // Trigger and execution macro should be defined elsewhere
-/// processor.register_hook(
-///     HookType::Macro,            // Macro type
-///     "trigger_macro",            // Macro that triggers
-///     "hook_div",                 // Macro to be executed
-///     1,                          // target count
-///     false                       // Resetable
-/// )?;
+///     // Use Processor::empty() instead of Processor::new()
+///     // if you don't want any default macros
 ///
-/// // Add runtime rules(in order of "name, args, body")
-/// processor.add_runtime_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")])?;
+///     // Print information about current processor permissions
+///     // This is an warning and can be suppressed with silent option
+///     processor.print_permission()?;
 ///
-/// // Add custom rules without any arguments
-/// processor.add_static_rules(vec![("test","TEST"),("lul","kekw")])?;
+///     // Register a hook macro
+///     // Trigger and execution macro should be defined elsewhere
+///     #[cfg(feature = "hook")]
+///     processor.register_hook(
+///         HookType::Macro,            // Macro type
+///         "trigger_macro",            // Macro that triggers
+///         "hook_div",                 // Macro to be executed
+///         1,                          // target count
+///         false                       // Resetable
+///     )?;
 ///
-/// // Undefine only macro
-/// processor.undefine_macro("name1", MacroType::Any);
+///     // Add runtime rules(in order of "name, args, body")
+///     processor.add_runtime_rules(&[("test","a_src a_link","$a_src() -> $a_link()")])?;
 ///
-/// // Process with inputs
-/// // This prints to desginated write destinations
-/// processor.process_string(r#"$define(test=Test)"#)?;
-/// processor.process_stdin()?;
-/// processor.process_file(Path::new("from.txt"))?;
+///     // Add custom rules without any arguments
+///     processor.add_static_rules(&[("test","TEST"),("lul","kekw")])?;
 ///
-/// processor.freeze_to_file(Path::new("out.r4f"))?; // Create frozen file
+///     // Undefine only macro
+///     processor.undefine_macro("name1", MacroType::Any);
 ///
-/// // Print out result
-/// // This will print counts of warning and errors.
-/// // It will also print diff between source and processed if diff option was
-/// // given as builder pattern.
-/// processor.print_result()?;                       
+///     // Process with inputs
+///     // This prints to desginated write destinations
+///     processor.process_string(r#"$define(test=Test)"#)?;
+///     processor.process_stdin()?;
+///     processor.process_file(Path::new("from.txt"))?;
+///
+///     processor.freeze_to_file(Path::new("out.r4f"))?; // Create frozen file
+///
+///     // Print out result
+///     // This will print counts of warning and errors.
+///     // It will also print diff between source and processed if diff option was
+///     // given as builder pattern.
+///     processor.print_result()?;                       
+///     Ok(())
+/// }
 /// ```
 pub struct Processor<'processor> {
     map: MacroMap,
@@ -235,9 +244,9 @@ pub struct Processor<'processor> {
     debugger: Debugger,
     checker: UnbalancedChecker,
     pub(crate) state: ProcessorState,
-    pub storage: Option<Box<dyn RadStorage>>,
+    pub(crate) storage: Option<Box<dyn RadStorage>>,
     #[cfg(feature = "cindex")]
-    pub indexer: Indexer,
+    pub(crate) indexer: Indexer,
 }
 
 impl<'processor> Default for Processor<'processor> {
@@ -658,7 +667,6 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Print the result of a processing
-    #[allow(dead_code)]
     pub fn print_result(&mut self) -> RadResult<()> {
         self.logger.print_result()?;
 
@@ -749,7 +757,8 @@ impl<'processor> Processor<'processor> {
     /// # Example
     ///
     /// ```rust
-    /// processor.add_runtime_rules(vec![("macro_name","macro_arg1 macro_arg2","macro_body=$macro_arg1()")]);
+    /// let mut processor = r4d::Processor::new();
+    /// processor.add_runtime_rules(&[("macro_name","macro_arg1 macro_arg2","macro_body=$macro_arg1()")]);
     /// ```
     pub fn add_runtime_rules(&mut self, rules: &[(impl AsRef<str>, &str, &str)]) -> RadResult<()> {
         if self.state.hygiene == Hygiene::Aseptic {
@@ -799,7 +808,8 @@ impl<'processor> Processor<'processor> {
     /// # Example
     ///
     /// ```rust
-    /// processor.add_static_rules(vec![("macro_name","Macro body without arguments")]);
+    /// let mut processor = r4d::Processor::new();
+    /// processor.add_static_rules(&[("macro_name","Macro body without arguments")]);
     /// ```
     pub fn add_static_rules(
         &mut self,
