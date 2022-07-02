@@ -33,21 +33,23 @@
 //! ```
 //!
 //! **Library**
-//! ```rust
+//! ```no_run
 //! use r4d::{Processor, RadResult};
 //! use std::path::Path;
 //!
 //! let mut processor = Processor::new()
 //!     .purge(true)
-//!     .write_to_file(Some(Path::new("cache.txt")))?
+//!     .write_to_file(Some(Path::new("cache.txt")))
+//!     .expect("Failed to write to file");
 //!
-//! processor.process_file(Path::new("input.txt"))?;
-//! processor.print_result()?;
+//! processor.process_file(Path::new("input.txt"))
+//!     .expect("Failed to process file");
+//! processor.print_result().expect("Failed to print result");
 //! ```
 //!
 //! Detailed r4d usage is illustrated in [github
-//! page](https://github.com/simhyeon/r4d/blob/master/docs/usage.md) or in [processor
-//! module](crate::processor)
+//! page](https://github.com/simhyeon/r4d/blob/master/docs/usage.md) or in
+//! [Processor](crate::Processor)
 
 mod error;
 mod processor;
