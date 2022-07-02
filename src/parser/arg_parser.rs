@@ -126,14 +126,14 @@ impl ArgParser {
     }
 
     fn branch_escape_char(&mut self, ch: char, value: &mut String, next: Option<&char>) {
-        // If literal print everything without escaping
-        if self.lit_count > 0 {
-            value.push(ch);
+        if self.previous.unwrap_or(' ') == ESCAPE_CHAR {
+            self.no_previous = true;
         } else if let Some(&LIT_CHAR) = next {
-            // if next is literal character
+            // if next is literal character and previous was not a escape character
             // Do nothing
         } else {
-            // if next is anything simply add
+            // If literal print everything without escaping
+            // or next is anything simply add
             value.push(ch);
         }
     } // end function

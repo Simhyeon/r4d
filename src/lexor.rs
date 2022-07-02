@@ -19,6 +19,7 @@ pub struct Lexor {
     parenthesis_count: usize, // Parenthesis nest level
     macro_char: char,
     comment_char: Option<char>,
+    consume_previous: bool,
 }
 
 impl Lexor {
@@ -35,6 +36,7 @@ impl Lexor {
             parenthesis_count: 0,
             macro_char,
             comment_char,
+            consume_previous: false,
         }
     }
     /// Reset lexor state
@@ -42,6 +44,7 @@ impl Lexor {
         self.previous_char = None;
         self.cursor = Cursor::None;
         self.parenthesis_count = 0;
+        self.consume_previous = false;
     }
 
     /// Validate the character
@@ -71,9 +74,13 @@ impl Lexor {
             Cursor::Arg => self.branch_arg(ch),
         }; // end arg match
 
-        let replace = ch;
-
-        self.previous_char.replace(replace);
+        if self.consume_previous {
+            self.previous_char.replace(' ');
+            self.consume_previous = false;
+        } else {
+            let replace = ch;
+            self.previous_char.replace(replace);
+        }
         result
     }
 
@@ -132,6 +139,9 @@ impl Lexor {
         // Left paren increases paren_count
         else if ch == '(' {
             self.parenthesis_count += 1;
+        } else if ch == ESCAPE_CHAR && self.previous_char.unwrap_or(' ') == ESCAPE_CHAR {
+            // If current ch is \ and previous was also \ consume previous and paste it
+            self.consume_previous = true;
         }
         // Other characters are added normally
         result
