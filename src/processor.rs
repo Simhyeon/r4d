@@ -935,12 +935,20 @@ impl<'processor> Processor<'processor> {
 
     /// Process contents from a file
     pub fn process_file(&mut self, path: impl AsRef<Path>) -> RadResult<Option<String>> {
+        if path.as_ref().is_dir() {
+            return Err(RadError::InvalidFile(format!(
+                "File \"{}\" is not a readable file",
+                path.as_ref().display()
+            )));
+        }
+
         // Sandboxed environment, backup
         let backup = if self.state.sandbox {
             Some(self.backup())
         } else {
             None
         };
+
         // Set file as name of given path
         self.set_file(path.as_ref().to_str().unwrap())?;
 
