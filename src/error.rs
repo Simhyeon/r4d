@@ -2,6 +2,8 @@ use crate::AuthType;
 #[cfg(feature = "cindex")]
 use cindex::CIndexError;
 
+impl std::error::Error for RadError {}
+
 /// R4d's error type
 #[derive(Debug)]
 pub enum RadError {

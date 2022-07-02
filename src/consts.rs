@@ -48,9 +48,6 @@ pub const DIFF_SOURCE_FILE: &str = "diff.src";
 #[cfg(feature = "debug")]
 pub const DIFF_OUT_FILE: &str = "diff.out";
 
-// Read cache
-pub const READ_CACHE: &str = ".R4D_READ_CACHE";
-
 // Platform specific consts
 #[cfg(windows)]
 pub const LINE_ENDING: &str = "\r\n";

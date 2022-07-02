@@ -8,9 +8,8 @@
 //! # Features
 //!
 //! ```text
-//! - evalexpr  : "eval", "evalk" macro
-//! - chrono    : "date", "time" macro
-//! - lipsum    : "lipsum" macro
+//! - evalexpr  : eval related macros
+//! - chrono    : time related macros
 //! - textwrap  : "wrap" macro
 //! - cindex    : Query related macros
 //! - full      : all features above
@@ -19,7 +18,6 @@
 //! - color     : Enable color prompt
 //! - hook      : Enable hook macro
 //! - signature : Enable signature option
-//! - storage   : Enable storage feature
 //! ```
 //!
 //! # Simple usage
@@ -40,7 +38,7 @@
 //! let mut processor = Processor::new()
 //!     .purge(true)
 //!     .write_to_file(Some(Path::new("cache.txt")))
-//!     .expect("Failed to write to file");
+//!     .expect("Failed to open a file");
 //!
 //! processor.process_file(Path::new("input.txt"))
 //!     .expect("Failed to process file");

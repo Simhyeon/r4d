@@ -134,8 +134,9 @@ impl ProcessorState {
     }
 }
 
-/// Processor manipulates given input.
+/// Central macro logic processor
 ///
+/// - Processor parses given input and expands detected macros
 /// - Processor substitutes all macros only when the macros were already defined. The fallback
 /// behaviour can be configured.
 /// - Processor can handle various types of inputs (string|stdin|file)
@@ -259,12 +260,36 @@ impl<'processor> Processor<'processor> {
     // ----------
     // Builder pattern methods
     // <BUILDER>
-    /// Creates default processor with default macros
+    /// Creates default processor with built-in macros
+    ///
+    /// You can chain builder methods to further configure processor
+    ///
+    /// ```rust
+    /// use std::path::Path;
+    /// let proc = r4d::Processor::new()
+    ///     .lenient(true)
+    ///     .pipe_truncate(false)
+    ///     .unix_new_line(true)
+    ///     .write_to_file(Some(Path::new("cache.txt")))
+    ///     .expect("Failed to open a file");
+    /// ```
     pub fn new() -> Self {
         Self::new_processor(true)
     }
 
-    /// Creates default processor without default macros
+    /// Creates default processor without built-in macros
+    ///
+    /// You can chain builder methods to further configure processor
+    ///
+    /// ```rust
+    /// use std::path::Path;
+    /// let proc = r4d::Processor::empty()
+    ///     .lenient(true)
+    ///     .pipe_truncate(false)
+    ///     .unix_new_line(true)
+    ///     .write_to_file(Some(Path::new("cache.txt")))
+    ///     .expect("Failed to open a file");
+    /// ```
     pub fn empty() -> Self {
         Self::new_processor(false)
     }
@@ -312,6 +337,13 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Set write option to yield output to the file
+    ///
+    /// ```rust
+    /// use std::path::Path;
+    /// let proc = r4d::Processor::empty()
+    ///     .write_to_file(Some(Path::new("cache.txt")))
+    ///     .expect("Failed to open a file");
+    /// ```
     pub fn write_to_file(mut self, target_file: Option<impl AsRef<Path>>) -> RadResult<Self> {
         if let Some(target_file) = target_file {
             let file = OpenOptions::new()
@@ -333,12 +365,25 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Write to variable
+    ///
+    /// ```rust
+    /// let mut acc = String::new();
+    /// let proc = r4d::Processor::empty()
+    ///     .write_to_variable(&mut acc);
+    /// ```
     pub fn write_to_variable(mut self, value: &'processor mut String) -> Self {
         self.write_option = WriteOption::Variable(value);
         self
     }
 
     /// Yield error to the file
+    ///
+    /// ```rust
+    /// use std::path::Path;
+    /// let proc = r4d::Processor::empty()
+    ///     .error_to_file(Some(Path::new("err.txt")))
+    ///     .expect("Failed to open a file");
+    /// ```
     pub fn error_to_file(mut self, target_file: Option<impl AsRef<Path>>) -> RadResult<Self> {
         if let Some(target_file) = target_file {
             let file = OpenOptions::new()
@@ -361,6 +406,12 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Yield error to the file
+    ///
+    /// ```rust
+    /// let mut acc = String::new();
+    /// let proc = r4d::Processor::empty()
+    ///     .error_to_variable(&mut acc);
+    /// ```
     pub fn error_to_variable(mut self, value: &'processor mut String) -> Self {
         self.logger
             .set_write_option(Some(WriteOption::Variable(value)));
@@ -368,6 +419,14 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Custom comment character
+    ///
+    /// Every character that consists of valid macro name cannot be a custom comment character.
+    /// Unallowed characters are ```[a-zA-Z1-9\\_\*\^\|\(\)=,]```
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .custom_comment_char('&');
+    /// ```
     pub fn custom_comment_char(mut self, character: char) -> RadResult<Self> {
         // check if unallowed character
         if UNALLOWED_CHARS.is_match(&character.to_string()) {
@@ -387,6 +446,14 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Custom macro character
+    ///
+    /// Every character that consists of valid macro name cannot be a custom macro character.
+    /// Unallowed characters are ```[a-zA-Z1-9\\_\*\^\|\(\)=,]```
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .custom_macro_char('&');
+    /// ```
     pub fn custom_macro_char(mut self, character: char) -> RadResult<Self> {
         if UNALLOWED_CHARS.is_match(&character.to_string()) {
             return Err(RadError::UnallowedChar(format!(
@@ -405,6 +472,11 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Use unix line ending instead of operating system's default one
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .unix_new_line(true);
+    /// ```
     pub fn unix_new_line(mut self, use_unix_new_line: bool) -> Self {
         if use_unix_new_line {
             self.state.newline = "\n".to_owned();
@@ -413,6 +485,15 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Set purge option
+    ///
+    /// Purge mode removed failed macro expression.
+    ///
+    /// This overrides lenient option
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .purge(true);
+    /// ```
     pub fn purge(mut self, purge: bool) -> Self {
         if purge {
             self.state.behaviour = ErrorBehaviour::Purge;
@@ -421,6 +502,15 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Set lenient
+    ///
+    /// Lenient mode left macro expression in place.
+    ///
+    /// This overrides purge option
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .lenient(true);
+    /// ```
     pub fn lenient(mut self, lenient: bool) -> Self {
         if lenient {
             self.state.behaviour = ErrorBehaviour::Lenient;
@@ -429,30 +519,78 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Set hygiene variant
+    ///
+    /// Hygiene decides the processor's behaviour toward runtime macros
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .hygiene(r4d::Hygiene::Macro);
+    /// ```
     pub fn hygiene(mut self, hygiene: Hygiene) -> Self {
         self.state.hygiene = hygiene;
         self
     }
 
-    /// Set truncate option
+    /// Set pipe truncate option
+    ///
+    /// By default, ```pipe``` truncates original value and leave empty value in place.
+    ///
+    /// If pipe_truncate is set to false, it will retain the original value.
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .pipe_truncate(false);
+    /// ```
     pub fn pipe_truncate(mut self, truncate: bool) -> Self {
         self.state.pipe_truncate = truncate;
         self
     }
 
     /// Set comment type
+    ///
+    /// By default, comment is disabled for better compatibility.
+    ///
+    /// There are two types of comments other than none
+    /// - Start : Treats a line comment only if a comment character was placed in the
+    /// first index.
+    /// - Any   : Treats any text chunk followed as a comment whenever a comment character is detected.
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .set_comment_type(r4d::CommentType::Start);
+    /// ```
     pub fn set_comment_type(mut self, comment_type: CommentType) -> Self {
         self.state.comment_type = comment_type;
         self
     }
 
     /// Set silent option
+    ///
+    /// By default, every warning types are enabled>
+    ///
+    /// There are three types of warnings
+    /// - Sanity   : Rrelated to possibly unintended behaviours.
+    /// - Security : Related to possibly dangerous behaviour related to a file system.
+    /// - Any      : Both of the warnings
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .silent(r4d::WarningType::Sanity);
+    /// ```
     pub fn silent(mut self, silent_type: WarningType) -> Self {
         self.logger.suppress_warning(silent_type);
         self
     }
 
     /// Set assertion mode
+    ///
+    /// Assert mode will not print the output by default and treat assertion fallable not
+    /// panicking.
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .assert(true);
+    /// ```
     pub fn assert(mut self, assert: bool) -> Self {
         if assert {
             self.logger.assert();
@@ -462,6 +600,13 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Add debug options
+    ///
+    /// This toggles debugger.
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .debug(true);
+    /// ```
     #[cfg(feature = "debug")]
     pub fn debug(mut self, debug: bool) -> Self {
         self.debugger.debug = debug;
@@ -469,6 +614,14 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Add debug log options
+    ///
+    /// This toggles loggig. When logging is enabled every macro invocation is saved into a log
+    /// file.
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .log(true);
+    /// ```
     #[cfg(feature = "debug")]
     pub fn log(mut self, log: bool) -> Self {
         self.debugger.log = log;
@@ -476,6 +629,13 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Add diff option
+    ///
+    /// This toggles diffing. When diffing is enabled diff_file is created after macro execution.
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .diff(true);
+    /// ```
     #[cfg(feature = "debug")]
     pub fn diff(mut self, diff: DiffOption) -> RadResult<Self> {
         self.debugger.enable_diff(diff)?;
@@ -483,6 +643,14 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Add debug interactive options
+    ///
+    /// This toggles interactive mode. When interactive is set, smooth terminal interaction is
+    /// enabled.
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .interactive(true);
+    /// ```
     #[cfg(feature = "debug")]
     pub fn interactive(mut self, interactive: bool) -> Self {
         if interactive {
@@ -493,7 +661,14 @@ impl<'processor> Processor<'processor> {
 
     /// Melt rule file
     ///
-    /// This always melt file into non-volatile form
+    /// This always melt file into non-volatile form, which means hygiene doesn't affect melted
+    /// macros.
+    ///
+    /// ```rust
+    /// use std::path::Path;
+    /// let proc = r4d::Processor::empty()
+    ///     .melt_files(&[Path::new("a.r4f"), Path::new("b.r4f")]);
+    /// ```
     pub fn melt_files(mut self, paths: &[impl AsRef<Path>]) -> RadResult<Self> {
         let mut rule_file = RuleFile::new(None);
         for p in paths.iter() {
@@ -508,6 +683,15 @@ impl<'processor> Processor<'processor> {
     // This is not included in docs.rs documentation becuase... is it necessary?
     // I don't really remember when this method was added at the first time.
     /// Melt rule as literal input source, or say from byte array
+    ///
+    /// This always melt file into non-volatile form, which means hygiene doesn't affect melted
+    /// macros.
+    ///
+    /// ```rust
+    /// let source = b"Some frozen macro definition";
+    /// let proc = r4d::Processor::empty()
+    ///     .rule_literal(source);
+    /// ```
     pub fn rule_literal(mut self, literal: &[u8]) -> RadResult<Self> {
         let mut rule_file = RuleFile::new(None);
         rule_file.melt_literal(literal)?;
@@ -516,26 +700,60 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Open authorization of processor
+    ///
+    /// Some macros require authorization be granted by user. There are several authorization types
+    /// as follows.
+    /// - ENV  : Get or set environment variable
+    /// - CMD  : System command
+    /// - FIN  : File read
+    /// - FOUT : File write
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .allow(Some(&[r4d::AuthType::CMD]));
+    /// ```
     pub fn allow(mut self, auth_types: Option<&[AuthType]>) -> Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
-                self.state.auth_flags.set_state(&auth, AuthState::Open)
+                self.state.auth_flags.set_state(auth, AuthState::Open)
             }
         }
         self
     }
 
     /// Open authorization of processor but yield warning
+    ///
+    /// Some macros require authorization be granted by user. This grants authorization to
+    /// processor but yields warning on every authorized macro invocation.
+    ///
+    /// There are several authorization types
+    /// as follows.
+    /// - ENV  : Get or set environment variable
+    /// - CMD  : System command
+    /// - FIN  : File read
+    /// - FOUT : File write
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .allow(Some(&[r4d::AuthType::CMD]));
+    /// ```
     pub fn allow_with_warning(mut self, auth_types: Option<&[AuthType]>) -> Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
-                self.state.auth_flags.set_state(&auth, AuthState::Warn)
+                self.state.auth_flags.set_state(auth, AuthState::Warn)
             }
         }
         self
     }
 
     /// Discard output
+    ///
+    /// Set write option to discard. Nothing will be printed or redirected.
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .discard(true);
+    /// ```
     pub fn discard(mut self, discard: bool) -> Self {
         if discard {
             self.write_option = WriteOption::Discard;
@@ -544,6 +762,15 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Build with storage
+    ///
+    /// Append Storage to a processor. Storage should implment [RadStorage](RadStorage) trait.
+    ///
+    /// Storage interaction is accessed with update and extract macro.
+    ///
+    /// ```ignore
+    /// let proc = r4d::Processor::empty()
+    ///     .storage(Box::new(CustomStorage));
+    /// ```
     pub fn storage(mut self, storage: Box<dyn RadStorage>) -> Self {
         self.storage.replace(storage);
         self
@@ -558,9 +785,15 @@ impl<'processor> Processor<'processor> {
     // <PROCESS>
     //
 
-    /// Import rule file
+    /// Import(melt) a frozen file
     ///
     /// This always melt file into non-volatile form
+    ///
+    /// ```rust
+    /// use std::path::Path;
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.import_frozen_file(Path::new("file.r4f")).expect("Failed to import a frozen file");
+    /// ```
     pub fn import_frozen_file(&mut self, path: &Path) -> RadResult<()> {
         let mut rule_file = RuleFile::new(None);
         rule_file.melt(path)?;
@@ -570,13 +803,31 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Set queue object
+    ///
+    /// This is intended for macro logics not processor logics.
+    ///
+    /// Queued objects are not executed immediately but executed only after currently aggregated
+    /// macro fragments are fully expanded.
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.insert_queue("$halt()");
+    /// ```
     pub fn insert_queue(&mut self, item: &str) {
         self.state.queued.push(item.to_owned());
     }
 
     /// Set hygiene type
     ///
-    /// This also clears volatile runtime macro at the same time.
+    /// Set hygiene type and also clears volatile runtime macro.
+    ///
+    /// Queued objects are not executed immediately but executed only after currently aggregated
+    /// macro fragments are fully expanded.
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.set_hygiene(r4d::Hygiene::Macro);
+    /// ```
     pub fn set_hygiene(&mut self, hygiene: Hygiene) {
         if !self.map.runtime.volatile.is_empty() {
             self.map.clear_runtime_macros(true);
@@ -585,6 +836,13 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Clear volatile macros
+    ///
+    /// This removes runtime macros which are not melted from.
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.clear_volatile();
+    /// ```
     pub fn clear_volatile(&mut self) {
         if !self.map.runtime.volatile.is_empty() {
             self.map.clear_runtime_macros(true);
@@ -592,7 +850,7 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Toggle macro hygiene
-    pub fn toggle_hygiene(&mut self, toggle: bool) {
+    pub(crate) fn toggle_hygiene(&mut self, toggle: bool) {
         if toggle {
             if !self.map.runtime.volatile.is_empty() {
                 self.map.clear_runtime_macros(true);
@@ -604,49 +862,28 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Set write option in the process
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.set_write_option(r4d::WriteOption::Discard);
+    /// ```
     pub fn set_write_option(&mut self, write_option: WriteOption<'processor>) {
         self.write_option = write_option;
     }
 
-    /// Check if processing is on caching state
-    pub fn on_cache(&self) -> bool {
-        self.cache_file.is_some()
-    }
-
-    /// Toggle cache option
-    pub fn enable_cache(&mut self, truncate: bool) -> RadResult<()> {
-        self.cache_file = Some(
-            std::fs::OpenOptions::new()
-                .create(true)
-                .write(true)
-                .truncate(truncate)
-                .open(READ_CACHE)?,
-        );
-        Ok(())
-    }
-
-    pub fn flush_cache(&mut self) -> RadResult<()> {
-        // No expansion in cache flush
-        self.state.paused = true;
-
-        // This should come first before read
-        self.cache_file = None;
-        self.process_file(READ_CACHE)?;
-
-        // Recover states
-        std::fs::remove_file(READ_CACHE)?;
-        self.state.paused = false;
-        Ok(())
-    }
-
-    /// Set write option in the process
+    /// Reset flow control
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.reset_flow_control();
+    /// ```
     pub fn reset_flow_control(&mut self) {
         self.state.flow_control = FlowControl::None;
     }
 
     /// Get macro signatrue map
     #[cfg(feature = "signature")]
-    pub fn get_signature_map(&self, sig_type: SignatureType) -> RadResult<SignatureMap> {
+    pub(crate) fn get_signature_map(&self, sig_type: SignatureType) -> RadResult<SignatureMap> {
         let signatures = match sig_type {
             SignatureType::All => self.map.get_signatures(),
             SignatureType::Default => self.map.get_default_signatures(),
@@ -656,6 +893,11 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Print current permission status
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.print_permission().expect("Failed to print permission data");
+    /// ```
     #[allow(dead_code)]
     pub fn print_permission(&mut self) -> RadResult<()> {
         if let Some(status) = self.state.auth_flags.get_status_string() {
@@ -667,6 +909,13 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Print the result of a processing
+    ///
+    /// This will also print diff file if debug and diff feature is enabled.
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.print_result().expect("Failed to print result");
+    /// ```
     pub fn print_result(&mut self) -> RadResult<()> {
         self.logger.print_result()?;
 
@@ -681,7 +930,7 @@ impl<'processor> Processor<'processor> {
     /// * clear volatile macors
     /// * Check if there is any unterminated job
     /// Return cached string, if cache was not empty
-    pub fn organize_and_clear_cache(&mut self) -> RadResult<Option<String>> {
+    pub(crate) fn organize_and_clear_cache(&mut self) -> RadResult<Option<String>> {
         if self.state.hygiene == Hygiene::Input {
             self.map.clear_runtime_macros(true);
         }
@@ -715,11 +964,24 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Set storage
+    ///
+    /// Storage should implment [RadStorage](RadStorage) trait.
+    ///
+    /// ```ignore
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.set_storage(Box::new(some_storage_struct));
+    /// ```
     pub fn set_storage(&mut self, storage: Box<dyn RadStorage>) {
         self.storage.replace(storage);
     }
 
     /// Extract from storage
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// let serialize = false;
+    /// proc.extract_storage(serialize).expect("Failed to extract storage information");
+    /// ```
     pub fn extract_storage(&mut self, serialize: bool) -> RadResult<Option<StorageOutput>> {
         if let Some(storage) = self.storage.as_mut() {
             match storage.extract(serialize) {
@@ -734,6 +996,12 @@ impl<'processor> Processor<'processor> {
     /// Freeze to a single file
     ///
     /// Frozen file is a bincode encoded binary format file.
+    ///
+    /// ```rust
+    /// use std::path::Path;
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.freeze_to_file(Path::new("file.r4f")).expect("Failed to freeze to a file");
+    /// ```
     pub fn freeze_to_file(&mut self, path: impl AsRef<Path>) -> RadResult<()> {
         // File path validity is checked by freeze method
         RuleFile::new(Some(self.map.runtime.macros.clone())).freeze(path.as_ref())?;
@@ -741,6 +1009,23 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Add a new macro as an extension
+    ///
+    /// Register a function as macro. To make a register process eaiser, use template feature if
+    /// possible.
+    ///
+    /// Refer [doc](https://github.com/Simhyeon/r4d/blob/master/docs/ext.md) for detailed usage.
+    ///
+    /// ```rust
+    /// let mut processor = r4d::Processor::empty();
+    /// #[cfg(feature = "template")]
+    /// processor.add_ext_macro(r4d::ExtMacroBuilder::new("macro_name")
+    ///     .args(&["a1","b2"])
+    ///     .function(r4d::function_template!(
+    ///         let args = r4d::split_args!(2)?;
+    ///         let result = format!("{} + {}", args[0], args[1]);
+    ///         Ok(Some(result))
+    /// )));
+    /// ```
     pub fn add_ext_macro(&mut self, ext: ExtMacroBuilder) {
         match ext.macro_type {
             ExtMacroType::Function => self.map.function.new_ext_macro(ext),
@@ -757,7 +1042,7 @@ impl<'processor> Processor<'processor> {
     /// # Example
     ///
     /// ```rust
-    /// let mut processor = r4d::Processor::new();
+    /// let mut processor = r4d::Processor::empty();
     /// processor.add_runtime_rules(&[("macro_name","macro_arg1 macro_arg2","macro_body=$macro_arg1()")]);
     /// ```
     pub fn add_runtime_rules(&mut self, rules: &[(impl AsRef<str>, &str, &str)]) -> RadResult<()> {
@@ -885,7 +1170,7 @@ impl<'processor> Processor<'processor> {
     }
 
     #[cfg(feature = "hook")]
-    /// Deregister
+    /// Deregister a hook
     pub fn deregister_hook(&mut self, hook_type: HookType, target_macro: &str) -> RadResult<()> {
         // Check target macro is empty
         if target_macro.is_empty() {
@@ -901,6 +1186,12 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Read from string
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.process_string("$define(new=NEW)")
+    ///     .expect("Failed to process a string");
+    /// ```
     pub fn process_string(&mut self, content: &str) -> RadResult<Option<String>> {
         // Set name as string
         self.set_input_stdin()?;
@@ -914,6 +1205,12 @@ impl<'processor> Processor<'processor> {
     ///
     /// If debug mode is enabled this, doesn't read stdin line by line but by chunk because user
     /// input is also a standard input and processor cannot distinguish the two
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.process_stdin()
+    ///     .expect("Failed to process a standard input");
+    /// ```
     pub fn process_stdin(&mut self) -> RadResult<Option<String>> {
         #[allow(unused_imports)]
         use std::io::Read;
@@ -936,6 +1233,13 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Process contents from a file
+    ///
+    /// ```no_run
+    /// use std::path::Path;
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.process_file(Path::new("source.txt"))
+    ///     .expect("Failed to process a file");
+    /// ```
     pub fn process_file(&mut self, path: impl AsRef<Path>) -> RadResult<Option<String>> {
         if path.as_ref().is_dir() {
             return Err(RadError::InvalidFile(format!(
@@ -2206,6 +2510,20 @@ impl<'processor> Processor<'processor> {
     // Function that is exposed for better end user's qualify of life
     // <EXT>
 
+    /// Set documentation for a macro
+    ///
+    /// This sets a description for a macro. This will fail silent if macro doesn't exist
+    ///
+    /// # Return
+    ///
+    /// - Boolean value represents a success of an operation
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// proc.set_documentation("macro_name", "this is a new macro");
+    /// ```
     pub fn set_documentation(&mut self, macro_name: &str, content: &str) -> bool {
         if let Some(mac) = self.map.runtime.get_mut(macro_name, Hygiene::None) {
             mac.desc = Some(content.to_owned());
@@ -2218,7 +2536,7 @@ impl<'processor> Processor<'processor> {
     /// This returns canonicalized absolute path
     ///
     /// It fails when the parent path cannot be canonicalized
-    pub fn get_current_dir(&self) -> RadResult<PathBuf> {
+    pub(crate) fn get_current_dir(&self) -> RadResult<PathBuf> {
         let path = match &self.state.current_input {
             ProcessInput::Stdin => std::env::current_dir()?,
             ProcessInput::File(path) => {
@@ -2233,11 +2551,27 @@ impl<'processor> Processor<'processor> {
         Ok(path)
     }
 
+    /// Print error using a processor's error logger
+    ///
+    /// This utilizes logger's line number tracking and colored prompt
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// proc.print_error("Error occured right now").expect("Failed to write error");
+    /// ```
     pub fn print_error(&mut self, error: &str) -> RadResult<()> {
         self.log_error(error)?;
         Ok(())
     }
 
+    /// Split arguments as vector
+    ///
+    /// This is for internal macros logics
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// proc.get_split_arguments(2, "a,b").expect("Failed to split arguments");
+    /// ```
     pub fn get_split_arguments(
         &self,
         target_length: usize,
@@ -2254,9 +2588,20 @@ impl<'processor> Processor<'processor> {
 
     /// Check auth information
     ///
+    /// This exits for internal macro logic.
+    ///
     /// This will print log_error if auth was enabled with warning
     ///
-    /// @return If auth is enabled or not
+    /// # Return
+    ///
+    /// Whether auth is enabled or not
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// proc.check_auth(r4d::AuthType::CMD).expect("Failed to get auth information");
+    /// ```
     pub fn check_auth(&mut self, auth_type: AuthType) -> RadResult<bool> {
         let variant = match self.state.auth_flags.get_state(&auth_type) {
             AuthState::Warn => {
@@ -2274,49 +2619,131 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Expand given text
+    ///
+    /// This exits for internal macro logic.
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// proc.expand(0, "argument").expect("Failed to expand a macro argument");
+    /// ```
     pub fn expand(&mut self, level: usize, source: impl AsRef<str>) -> RadResult<String> {
         self.parse_chunk_args(level, MAIN_CALLER, source.as_ref())
     }
 
     /// Check if given macro exists
+    ///
+    /// This exits for internal macro logic.
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// if !proc.contains_macro("name", r4d::MacroType::Runtime) {
+    ///     proc.print_error("Error").expect("Failed to write error");
+    /// }
+    /// ```
     pub fn contains_macro(&self, macro_name: &str, macro_type: MacroType) -> bool {
         self.map
             .contains_macro(macro_name, macro_type, self.state.hygiene)
     }
 
-    /// Try undefine macro
+    /// Try undefine a macro
+    ///
+    /// This exits for internal macro logic.
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// if proc.contains_macro("name", r4d::MacroType::Runtime) {
+    ///     proc.undefine_macro("name", r4d::MacroType::Runtime);
+    /// }
+    /// ```
     pub fn undefine_macro(&mut self, macro_name: &str, macro_type: MacroType) {
         self.map
             .undefine(macro_name, macro_type, self.state.hygiene);
     }
 
     /// Rename macro
+    ///
+    /// This exits for internal macro logic.
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// if proc.contains_macro("name", r4d::MacroType::Runtime) {
+    ///     proc.rename_macro("name", "new_name",r4d::MacroType::Runtime);
+    /// }
+    /// ```
     pub fn rename_macro(&mut self, macro_name: &str, target_name: &str, macro_type: MacroType) {
         self.map
             .rename(macro_name, target_name, macro_type, self.state.hygiene);
     }
 
     /// Append content into a macro
+    ///
+    /// This exits for internal macro logic.
+    ///
+    /// This will do nothing if macro doesn't exist
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// if proc.contains_macro("name", r4d::MacroType::Runtime) {
+    ///     proc.append_macro("name", "added text");
+    /// }
+    /// ```
     pub fn append_macro(&mut self, macro_name: &str, target: &str) {
         self.map.append(macro_name, target, self.state.hygiene);
     }
 
     /// Replace macro's content
+    ///
+    /// This exits for internal macro logic.
+    ///
+    /// This will do nothing if macro doesn't exist
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// if proc.contains_macro("name", r4d::MacroType::Runtime) {
+    ///     proc.replace_macro("name", "new macro content");
+    /// }
+    /// ```
     pub fn replace_macro(&mut self, macro_name: &str, target: &str) -> bool {
         self.map.replace(macro_name, target, self.state.hygiene)
     }
 
     /// Add new local macro
+    ///
+    /// This exits for internal macro logic.
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// proc.add_new_local_macro(0,"a_macro", "macro body");
+    /// ```
     pub fn add_new_local_macro(&mut self, level: usize, macro_name: &str, body: &str) {
         self.map.add_local_macro(level, macro_name, body);
     }
 
     /// Remove local macro
+    ///
+    /// This exits for internal macro logic.
+    ///
+    /// This will do nothing if macro doesn't exist
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// proc.remove_local_macro(0,"a_macro");
+    /// ```
     pub fn remove_local_macro(&mut self, level: usize, macro_name: &str) {
         self.map.remove_local_macro(level, macro_name);
     }
 
     /// Check if given text is boolean-able
+    ///
+    /// This exits for internal macro logic.
+    ///
+    /// This panics when the value is neither true nor false
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// assert_eq!(false,proc.is_true("0").expect("Failed to convert"));
+    /// assert_eq!(true,proc.is_true("true").expect("Failed to convert"));
+    /// ```
     pub fn is_true(&self, src: &str) -> RadResult<bool> {
         Utils::is_arg_true(src)
     }

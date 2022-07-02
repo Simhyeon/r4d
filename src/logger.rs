@@ -437,9 +437,13 @@ FAIL: {}",
 /// - Any : Both warnings
 #[derive(PartialEq)]
 pub enum WarningType {
+    /// Default wrapping type
     None,
+    /// About possibly dangerous behaviours
     Security,
+    /// About possibly unintended behaviours
     Sanity,
+    /// Both warnings
     Any,
 }
 

@@ -12,6 +12,9 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
+/// Genenric result type for every rad operations
+///
+/// RadResult is a genric result type of T and error of [RadError](RadError)
 pub type RadResult<T> = Result<T, RadError>;
 
 /// State enum value about direction of processed text
@@ -414,8 +417,11 @@ impl MacroFragment {
 /// ```
 #[derive(PartialEq, Debug)]
 pub enum CommentType {
+    /// Don't enable comment
     None,
+    /// Only treat a line as a comment when it starts with comment character
     Start,
+    /// Treat any text chunk that starts with comment character
     Any,
 }
 
@@ -438,9 +444,13 @@ impl std::str::FromStr for CommentType {
 }
 
 #[derive(Debug)]
+/// Diffing behaviour
 pub enum DiffOption {
+    /// Do not yield diff
     None,
+    /// Diff all texts
     All,
+    /// Diff only changes
     Change,
 }
 
@@ -495,16 +505,61 @@ impl SignatureType {
     }
 }
 
+/// Result alias for storage operation
+///
+/// Error is a boxed container for generic error trait. Therefore any kind of errors can be
+/// captured by storageresult.
 pub type StorageResult<T> = Result<T, Box<dyn std::error::Error>>;
 
+/// Triat for storage interaction
+///
+/// Rad can utilizes storage to save given input as modified form and extract data from
+///
+/// # Example
+///
+/// ```rust
+/// use r4d::{RadStorage, RadError, StorageOutput, StorageResult};
+///
+/// pub struct StorageDemo {
+///     content: Vec<String>,
+/// }
+///
+/// impl RadStorage for StorageDemo {
+///     fn update(&mut self, args: &[String]) -> StorageResult<()> {
+///         if args.is_empty() {
+///             return Err(Box::new(RadError::InvalidArgument("Not enough arguments".to_string())));
+///         }
+///         self.content.push(args[0].clone());
+///
+///         Ok(())
+///     }
+///     fn extract(&mut self, serialize: bool) -> StorageResult<Option<StorageOutput>> {
+///         let result = if serialize {
+///             StorageOutput::Binary(self.content.join(",").as_bytes().to_vec())
+///         } else {
+///             StorageOutput::Text(self.content.join(","))
+///         };
+///         Ok(Some(result))
+///     }
+/// }
+/// ```
 pub trait RadStorage {
+    /// Update storage with given arguments
     fn update(&mut self, args: &[String]) -> StorageResult<()>;
+    /// Extract data from storage.
+    ///
+    /// # Args
+    ///
+    /// - serialize : whether to serialize storage output or not
     fn extract(&mut self, serialize: bool) -> StorageResult<Option<StorageOutput>>;
 }
 
 #[derive(Debug)]
+/// Output that storage creates
 pub enum StorageOutput {
+    /// Binary form of output
     Binary(Vec<u8>),
+    /// Text form of output
     Text(String),
 }
 
@@ -550,6 +605,25 @@ pub enum ErrorBehaviour {
 }
 
 #[derive(Clone)]
+/// Builder struct for extension macros
+///
+/// This creates an extension macro without going through tedious processor methods interaction.
+///
+/// Use a template feature to utilizes eaiser extension register.
+///
+/// # Example
+///
+/// ```
+/// let mut processor = r4d::Processor::new();
+/// #[cfg(feature = "template")]
+/// processor.add_ext_macro(r4d::ExtMacroBuilder::new("macro_name")
+///     .args(&["a1","b2"])
+///     .function(r4d::function_template!(
+///         let args = r4d::split_args!(2)?;
+///         let result = format!("{} + {}", args[0], args[1]);
+///         Ok(Some(result))
+/// )));
+/// ```
 pub struct ExtMacroBuilder {
     pub(crate) macro_name: String,
     pub(crate) macro_type: ExtMacroType,
@@ -559,6 +633,7 @@ pub struct ExtMacroBuilder {
 }
 
 impl ExtMacroBuilder {
+    /// Creates an empty macro with given macro name
     pub fn new(macro_name: &str) -> Self {
         Self {
             macro_name: macro_name.to_string(),
@@ -570,18 +645,21 @@ impl ExtMacroBuilder {
         }
     }
 
+    /// Set macro's body type as function
     pub fn function(mut self, func: FunctionMacroType) -> Self {
         self.macro_type = ExtMacroType::Function;
         self.macro_body = Some(ExtMacroBody::Function(func));
         self
     }
 
+    /// Set macro's body type as deterred
     pub fn deterred(mut self, func: DFunctionMacroType) -> Self {
         self.macro_type = ExtMacroType::Deterred;
         self.macro_body = Some(ExtMacroBody::Deterred(func));
         self
     }
 
+    /// Set macro's arguments
     pub fn args(mut self, args: &[impl AsRef<str>]) -> Self {
         self.args = args.iter().map(|a| a.as_ref().to_string()).collect();
         self
@@ -606,7 +684,9 @@ pub(crate) enum ExtMacroBody {
     Deterred(DFunctionMacroType),
 }
 
-/// Intended for processor ext interface
+/// Types of a macros
+///
+/// This is intended for processor ext interface but user can use it directly
 pub enum MacroType {
     Function,
     Deterred,
@@ -645,12 +725,16 @@ impl FileTarget {
 /// Hygiene variant
 ///
 /// - None    : No hygiene applied
-/// - Macro : Hygine by per invocation
+/// - Macro   : Hygine by per invocation
 /// - Input   : Hygiene by per input
 /// - Aseptic : No runtime definition or invocation at all.
 pub enum Hygiene {
+    /// No hygiene applied
     None,
+    /// Hygine by per invocation
     Macro,
+    /// Hygiene by per input
     Input,
+    /// No runtime definition or invocation at all.
     Aseptic,
 }
