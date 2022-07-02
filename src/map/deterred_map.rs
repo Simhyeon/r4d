@@ -48,9 +48,12 @@ impl DeterredMacroMap {
                 "foreach".to_owned(),
                 DMacroSign::new(
                     "foreach",
-                    ["a_array", "a_body"],
+                    ["\\*a_array*\\", "a_body"],
                     DeterredMacroMap::foreach,
-                    Some("Loop around given array".to_string()),
+                    Some(
+                        "Loop around given array. Array should be enclosed as literal text"
+                            .to_string(),
+                    ),
                 ),
             ),
             (
@@ -59,7 +62,7 @@ impl DeterredMacroMap {
                     "forline",
                     ["a_iterable", "a_body"],
                     DeterredMacroMap::forline,
-                    Some("Loop around given lines".to_string()),
+                    Some("Loop around given lines separated by newline chraracter".to_string()),
                 ),
             ),
             (
@@ -68,7 +71,7 @@ impl DeterredMacroMap {
                     "forloop",
                     ["a_min", "a_max", "a_body"],
                     DeterredMacroMap::forloop,
-                    Some("Loop around given range".to_string()),
+                    Some("Loop around given range (min,max)".to_string()),
                 ),
             ),
             (

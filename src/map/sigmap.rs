@@ -50,10 +50,10 @@ impl std::fmt::Display for MacroSignature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Macro Type : {:#?}
-Macro Name : {}
-Arguments : {:?}
-Usage : {}
+            "Macro Type  : {:#?}
+Macro Name  : {}
+Arguments   : {:?}
+Usage       : {}
 Description : {}",
             self.variant,
             self.name,
