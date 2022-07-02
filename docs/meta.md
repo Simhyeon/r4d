@@ -2,13 +2,6 @@
 
 $todo_start()
 $h(R4d todos)
-* [x] Hide processor and enhance Processor's documentation
-* [x] Exit status handling : It exited the whole process without going further
-sources
-* [x] Audit auth template
-* [x] Easily extend with script.rs file
-* [x] Change from Vec<> into &[] if possible
-* [ ] Docs.rs documentation
 * [ ] Make a man page
 * [ ] Make a help option
 * [ ] Test windows build
@@ -686,3 +679,13 @@ After 2.1.4
 		* [x] -o out option
 		* [x] arguments option
 
+---
+3.0.0-rc.2
+
+* [x] Hide processor and enhance Processor's documentation
+* [x] Exit status handling : It exited the whole process without going further
+sources
+* [x] Audit auth template
+* [x] Easily extend with script.rs file
+* [x] Change from Vec<> into &[] if possible
+* [x] Docs.rs documentation

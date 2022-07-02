@@ -88,7 +88,7 @@ pipeline.
 Currently version 3.0 is preparing for release and can be downloaded with
 specific version flag.
 
-```cargo install r4d --features binary,color --locked --version 3.0.0-rc.0```
+```cargo install r4d --features binary,color --locked --version 3.0.0-rc.2```
 
 e.g.
 

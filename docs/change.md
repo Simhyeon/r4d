@@ -1,9 +1,17 @@
-# 3.0-rc.1
+# 3.0.0-rc.2
 
-- All documentations for built-in macros
-- Forline macro fix
+- ERG : Many rustdoc improvement
+- FET : Extension macro configuration with script.rs file
+- BUG : Exit status handling
+- CHG : New template macro ```audit_auth```
+- CHG : Moved from ```Vec<_>``` into ```&[]```
 
-# 3.0-rc.0
+# 3.0.0-rc.1
+
+- ERG : All documentations for built-in macros
+- BUG : Forline macro fix
+
+# 3.0.0-rc.0
 
 [3.0 Changes](./3_0.md)
 
