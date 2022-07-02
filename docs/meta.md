@@ -1,16 +1,23 @@
-### Changed
+### TODO
 
-### Note
-
-Let's rearragne before I forget every fucking things. Current implementation of
-hygiene is very strange.
-
-There are three types of hyg; None, Default, Aseptic.
-
-Aseptic prevents any runtime macro definition and usage. ( Which is very inefficient in my opinion )
+$todo_start()
+$h(R4d todos)
+* [x] Hide processor and enhance Processor's documentation
+* [x] Exit status handling : It exited the whole process without going further
+sources
+* [x] Audit auth template
+* [x] Easily extend with script.rs file
+* [x] Change from Vec<> into &[] if possible
+* [ ] Docs.rs documentation
+* [ ] Make a man page
+* [ ] Make a help option
+* [ ] Test windows build
+* [ ] Test multiple use cases
+$todo_end()
 
 ### Imminent
 
+* [x] Empty name is not handled by error behaviours
 * [x] Forline what? -> Still utilizes $: syntax
 * [x] Multiline query is not working in cindex... It's you again? 
 * [x] I found a huge bug... How come I did not know this?
@@ -22,11 +29,9 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 * [ ] Escape rule is somewhat bugged?
 - ```\* \* *\ Doesn't yield anything```
 
-* [ ] Purge is bugged? ( Gdengine )
-- It's about precedence mostly.
-
 ### 3.0
 
+- [ ] Test on windows
 - [x] Documentation for all macros
 - [x] Remove 'for_macro' feature : Check
 - [x] Remove unused compatibility feature : Check
@@ -73,7 +78,7 @@ Aseptic prevents any runtime macro definition and usage. ( Which is very ineffic
 	* For example, Local should come first?
 
 * [ ] Include as namespace
-	- Enabling macro usage such as std.include()
+	- Enabling macro usage such as std:include()
 	- This may not worth, but maybe useful.
 
 * [ ] Better debugger + Ditch crossterm

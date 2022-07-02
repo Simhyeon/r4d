@@ -3,16 +3,20 @@
 You can extend macros easily with processor interface which is enabled by
 **template** feature.
 
+Refer last part of this documentation if you want to extend macros as binary
+target.
+
 **Basic demo**
 
 ```toml
 [dependencies]
-r4d = {version="*", features = [ .. "template"]}
+r4d = {version="*", features = ["template"]}
 ```
 
 ```rust
 use r4d::ExtMacroBuilder;
 use r4d::ext_template::*;
+use r4d::AuthType;
 
 // ---
 // Processor creation precedes...
@@ -20,7 +24,7 @@ use r4d::ext_template::*;
 
 // Extend function macro
 processor.add_ext_macro(ExtMacroBuilder::new("macro_name")
-    .args(&vec!["a1","b2"])
+    .args(&["a1","b2"])
     .function(function_template!(
         let args = split_args!(2)?;
         let result = format!("{} + {}", args[0], args[1]);
@@ -29,7 +33,7 @@ processor.add_ext_macro(ExtMacroBuilder::new("macro_name")
 
 // Extend deterred macro
 processor.add_ext_macro(ExtMacroBuilder::new("macro_name")
-    .args(&vec!["a1","b2"])
+    .args(&["a1","b2"])
     .deterred(deterred_template!(
         let args = split_args!(2)?;
         let result = if expand!(&args[0])? == "doit" {
@@ -38,11 +42,9 @@ processor.add_ext_macro(ExtMacroBuilder::new("macro_name")
         Ok(result)
 )));
 
-/// Optionally use check_auth for auth requirment.
-let ok_to_go = processor.check_auth(AuthType::ENV)?;
-if ok_to_go {
-	// Logics go here
-}
+/// Optionally use audit_auth inside template macro for auth requirment.
+/// This will return error if given auth is not allowed
+audit_auth!("macro_name",AuthType::CMD);
 ```
 
 **More about codes**
@@ -75,3 +77,23 @@ processor.expand(level,"text_to_parse")
 ```
 
 You can also simply send your function as argument instead of using template macros.
+
+### Extend macros as binary with help of script.rs file
+
+You can also extend rad macros by manually editing script.rs file and compiling
+with ```template``` feature.
+
+[Script file](../src/script.rs) doesn't do anything by default and actually
+doesn't get included.
+
+You can modify the file and make it included by compiling with ```template``` feature.
+
+```bash
+# You need to work in a local copy of a project e.g) git clone
+git clone https://github.com/simhyeon/r4d
+
+# Build within r4d procject
+cargo build --release --features binary,color,template
+
+# Built binary is located in "target/release" directory
+```
