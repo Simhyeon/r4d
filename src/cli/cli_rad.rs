@@ -141,7 +141,14 @@ impl<'cli> RadCli<'cli> {
                 } else {
                     let src_as_file = Path::new(src);
                     if src_as_file.exists() {
-                        self.processor.process_file(src_as_file)?;
+                        match self.processor.process_file(src_as_file) {
+                            // Exit is a sane behaviour and should not exit from whole process
+                            Err(RadError::Exit) | Ok(_) => {
+                                self.processor.reset_flow_control();
+                                continue;
+                            }
+                            Err(err) => return Err(err),
+                        }
                     } else {
                         return Err(RadError::InvalidFile(format!("{}", src_as_file.display())));
                     }
