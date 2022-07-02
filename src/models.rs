@@ -7,6 +7,7 @@ use crate::runtime_map::{RuntimeMacro, RuntimeMacroMap};
 #[cfg(feature = "signature")]
 use crate::sigmap::MacroSignature;
 use crate::utils::Utils;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
@@ -737,4 +738,30 @@ pub enum Hygiene {
     Input,
     /// No runtime definition or invocation at all.
     Aseptic,
+}
+
+/// Cache for regex compilation
+pub(crate) struct RegexCache {
+    cache: HashMap<String, Regex>,
+}
+
+impl RegexCache {
+    pub fn new() -> Self {
+        Self {
+            cache: HashMap::new(),
+        }
+    }
+
+    pub fn append(&mut self, src: &str) -> RadResult<&Regex> {
+        // Set hard capacity of 100
+        if self.cache.len() > 100 {
+            self.cache.clear();
+        }
+        self.cache.insert(src.to_string(), Regex::new(src)?);
+        Ok(self.get(src).unwrap())
+    }
+
+    pub fn get(&self, src: &str) -> Option<&Regex> {
+        self.cache.get(src)
+    }
 }
