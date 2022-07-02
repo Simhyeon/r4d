@@ -2808,7 +2808,7 @@ impl FunctionMacroMap {
         }
 
         // Add runtime rules
-        processor.add_runtime_rules(runtime_rules)?;
+        processor.add_runtime_rules(&runtime_rules)?;
         Ok(None)
     }
 
@@ -2946,7 +2946,7 @@ impl FunctionMacroMap {
                     )?;
                 }
             }
-            processor.add_static_rules(vec![(&name, &value)])?;
+            processor.add_static_rules(&[(&name, &value)])?;
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -3031,7 +3031,7 @@ impl FunctionMacroMap {
                 let idx = idx + 1; // 1 starting index is more human friendly
                 if let Some((name, body)) = line.split_once('=') {
                     match processor.parse_chunk_args(0, MAIN_CALLER, body) {
-                        Ok(body) => processor.add_static_rules(vec![(name, body)])?,
+                        Ok(body) => processor.add_static_rules(&[(name, body)])?,
                         Err(err) => {
                             processor.log_error(&format!(
                                 "Failed to source a file \"{}\" in line \"{}\"",

@@ -507,7 +507,7 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Open authorization of processor
-    pub fn allow(mut self, auth_types: Option<Vec<AuthType>>) -> Self {
+    pub fn allow(mut self, auth_types: Option<&[AuthType]>) -> Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
                 self.state.auth_flags.set_state(&auth, AuthState::Open)
@@ -517,7 +517,7 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Open authorization of processor but yield warning
-    pub fn allow_with_warning(mut self, auth_types: Option<Vec<AuthType>>) -> Self {
+    pub fn allow_with_warning(mut self, auth_types: Option<&[AuthType]>) -> Self {
         if let Some(auth_types) = auth_types {
             for auth in auth_types {
                 self.state.auth_flags.set_state(&auth, AuthState::Warn)
@@ -751,10 +751,7 @@ impl<'processor> Processor<'processor> {
     /// ```rust
     /// processor.add_runtime_rules(vec![("macro_name","macro_arg1 macro_arg2","macro_body=$macro_arg1()")]);
     /// ```
-    pub fn add_runtime_rules(
-        &mut self,
-        rules: Vec<(impl AsRef<str>, &str, &str)>,
-    ) -> RadResult<()> {
+    pub fn add_runtime_rules(&mut self, rules: &[(impl AsRef<str>, &str, &str)]) -> RadResult<()> {
         if self.state.hygiene == Hygiene::Aseptic {
             let err = RadError::StrictPanic(format!(
                 "Cannot register macros : \"{:?}\" in aseptic mode",
@@ -783,7 +780,7 @@ impl<'processor> Processor<'processor> {
                         .split_whitespace()
                         .map(|s| s.to_owned())
                         .collect::<Vec<String>>(),
-                    body: body.to_owned(),
+                    body: body.to_string(),
                     desc: None,
                 },
             );
@@ -806,7 +803,7 @@ impl<'processor> Processor<'processor> {
     /// ```
     pub fn add_static_rules(
         &mut self,
-        rules: Vec<(impl AsRef<str>, impl AsRef<str>)>,
+        rules: &[(impl AsRef<str>, impl AsRef<str>)],
     ) -> RadResult<()> {
         if self.state.hygiene == Hygiene::Aseptic {
             let err = RadError::StrictPanic(format!(

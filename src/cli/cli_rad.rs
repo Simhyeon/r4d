@@ -81,13 +81,13 @@ impl<'cli> RadCli<'cli> {
                 args.value_of("silent").unwrap_or("none"),
             )?)
             .assert(args.is_present("assert"))
-            .allow(self.allow_auth.map(|v| &v[..]))
-            .allow_with_warning(self.allow_auth_warn.map(|v| &v[..]))
+            .allow(self.allow_auth.as_ref().map(|v| &v[..]))
+            .allow_with_warning(self.allow_auth_warn.as_ref().map(|v| &v[..]))
             .unix_new_line(args.is_present("newline"))
             .melt_files(&self.rules)?
-            .write_to_file(self.write_to_file)?
+            .write_to_file(self.write_to_file.as_ref())?
             .discard(args.is_present("discard"))
-            .error_to_file(self.error_to_file)?;
+            .error_to_file(self.error_to_file.as_ref())?;
 
         #[cfg(feature = "template")]
         script::extend_processor(&mut processor)?;
