@@ -5,13 +5,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignatureMap {
-    pub object: HashMap<String, MacroSignature>,
+    pub content: HashMap<String, MacroSignature>,
 }
 
 impl SignatureMap {
     pub fn new(sigs: Vec<MacroSignature>) -> Self {
         let sig = HashMap::from_iter(sigs.into_iter().map(|sig| (sig.name.clone(), sig)));
-        Self { object: sig }
+        Self { content: sig }
     }
 }
 

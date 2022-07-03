@@ -1,19 +1,22 @@
 use crate::auth::AuthType;
+#[cfg(feature = "signature")]
+use crate::consts::LINE_ENDING;
 use crate::logger::WarningType;
+#[cfg(feature = "signature")]
+use crate::models::SignatureType;
 use crate::models::{CommentType, DiffOption};
 use crate::processor::Processor;
 #[cfg(feature = "template")]
 use crate::script;
 use crate::utils::Utils;
 use crate::{RadError, RadResult};
-use std::io::Read;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-
 #[cfg(feature = "signature")]
-use crate::models::SignatureType;
+use std::fmt::Write as _;
+use std::io::Read;
 #[cfg(feature = "signature")]
 use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 /// Struct to parse command line arguments and execute proper operations
 pub struct RadCli<'cli> {
@@ -91,13 +94,27 @@ impl<'cli> RadCli<'cli> {
         // Help command
         #[cfg(feature = "signature")]
         if let Some(name) = args.value_of("manual") {
-            match processor.get_macro_manual(name) {
-                Some(text) => writeln!(std::io::stdout(), "{}", text)?,
-                None => writeln!(
-                    std::io::stdout(),
-                    "Given macro \"{}\" doesn't exist and cannot display a manual",
-                    name
-                )?,
+            if name == "*" {
+                // Get all values
+                // Sort by name
+                // and make it a single stirng, then print
+                let sig_map = processor.get_signature_map(SignatureType::All)?;
+                let mut manual = sig_map.content.values().collect::<Vec<_>>();
+                manual.sort_unstable_by(|a, b| a.name.cmp(&b.name));
+                let manual = manual.iter().fold(String::new(), |mut acc, sig| {
+                    writeln!(acc, "{0}{1}----------", sig, LINE_ENDING).unwrap();
+                    acc
+                });
+                write!(std::io::stdout(), "{}", manual)?
+            } else {
+                match processor.get_macro_manual(name) {
+                    Some(text) => writeln!(std::io::stdout(), "{}", text)?,
+                    None => writeln!(
+                        std::io::stdout(),
+                        "Given macro \"{}\" doesn't exist and cannot display a manual",
+                        name
+                    )?,
+                }
             }
             return Ok(());
         }
@@ -214,7 +231,7 @@ impl<'cli> RadCli<'cli> {
             let sig_map = self.processor.get_signature_map(sig_type)?;
             // TODO
             let sig_json =
-                serde_json::to_string(&sig_map.object).expect("Failed to create sig map");
+                serde_json::to_string(&sig_map.content).expect("Failed to create sig map");
 
             // This is file name
             let file_name = args.value_of("signature").unwrap();
@@ -406,6 +423,7 @@ impl<'cli> RadCli<'cli> {
                 Arg::new("manual")
                     .long("man")
                     .takes_value(true)
+                    .default_missing_value("*")
                     .value_name("MACRO_NAME")
                     .help("Get manual of a macro"),
             )
