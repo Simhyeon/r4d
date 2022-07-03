@@ -757,15 +757,26 @@ pub enum Hygiene {
 /// Cache for regex compilation
 pub(crate) struct RegexCache {
     cache: HashMap<String, Regex>,
+    register: HashMap<String, Regex>,
 }
 
 impl RegexCache {
     pub fn new() -> Self {
         Self {
             cache: HashMap::new(),
+            register: HashMap::new(),
         }
     }
 
+    /// Register a regex
+    ///
+    /// Registered regex is not cleared
+    pub fn register(&mut self, name: &str, source: &str) -> RadResult<()> {
+        self.cache.insert(name.to_string(), Regex::new(source)?);
+        Ok(())
+    }
+
+    /// Append a regex to cache
     pub fn append(&mut self, src: &str) -> RadResult<&Regex> {
         // Set hard capacity of 100
         if self.cache.len() > 100 {
@@ -776,6 +787,10 @@ impl RegexCache {
     }
 
     pub fn get(&self, src: &str) -> Option<&Regex> {
-        self.cache.get(src)
+        if self.register.get(src).is_some() {
+            self.register.get(src)
+        } else {
+            self.cache.get(src)
+        }
     }
 }
