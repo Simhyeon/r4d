@@ -1438,7 +1438,6 @@ impl<'processor> Processor<'processor> {
         lexor: &mut Lexor,
         frag: &mut MacroFragment,
     ) -> RadResult<ParseResult> {
-        let frag_on_going = !frag.is_empty();
         self.logger.add_line_number();
         if let Some(line) = lines.next() {
             let line = line?;
@@ -1462,6 +1461,7 @@ impl<'processor> Processor<'processor> {
             self.debugger.write_to_original(&line)?;
 
             let remainder = self.parse(lexor, frag, &line, 0, MAIN_CALLER)?;
+            let frag_on_going = !frag.is_empty();
 
             // Clear local variable macros
             self.map.clear_local();
