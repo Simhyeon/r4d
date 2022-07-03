@@ -11,8 +11,14 @@ $h(R4d todos)
 	* [x] Findm
 * [x] Changed argument parsing behaviour frome lexor and arg parser
 	* [x] Regex pattern doesn't go well with string literal "\* *\" syntax
-	* [x] \\* Should be represented as literal \*
+	* [x] Should be represented as literal
 * [x] Make a manual option (With signature option)
+* [x] Manual to have default value as whole signatures
+* [x] Register regex
+* [x] Argument as trimmed_line '=' character
+* [x] Now define macro also detects trim and trim input attribute
+* [x] Actually, cnl is not so consistent : Just removed it, because frag_on_going was properly set
+* [ ] Find possible inconsistent \n chracter usage
 * [ ] Decide when to push to 3.0
 * [ ] Improve description for real manual
 
