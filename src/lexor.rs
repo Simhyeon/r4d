@@ -14,6 +14,7 @@ use crate::utils::Utils;
 /// Struct that validated a given character
 pub struct Lexor {
     previous_char: Option<char>,
+    inner_parse: bool,
     cursor: Cursor,
     literal_count: usize,     // Literal nest level
     parenthesis_count: usize, // Parenthesis nest level
@@ -31,6 +32,7 @@ impl Lexor {
         };
         Lexor {
             previous_char: None,
+            inner_parse: false,
             cursor: Cursor::None,
             literal_count: 0,
             parenthesis_count: 0,
@@ -39,6 +41,11 @@ impl Lexor {
             consume_previous: false,
         }
     }
+    /// This sets inner rules
+    pub fn set_inner(&mut self) {
+        self.inner_parse = true;
+    }
+
     /// Reset lexor state
     pub fn reset(&mut self) {
         self.previous_char = None;
@@ -93,6 +100,14 @@ impl Lexor {
         if ch == self.macro_char && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
             self.cursor = Cursor::Name;
             result = LexResult::Ignore;
+        } else if self.inner_parse
+            && ch == ESCAPE_CHAR
+            && self.previous_char.unwrap_or(' ') == ESCAPE_CHAR
+        {
+            // On inner parse, \\* is interpreted as \*
+            // If current ch is \ and previous was also \ consume previous and paste it
+            self.consume_previous = true;
+            result = LexResult::AddToRemainder;
         }
         // Characters other than newline means other characters has been introduced
         else {

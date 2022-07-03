@@ -1535,6 +1535,8 @@ impl<'processor> Processor<'processor> {
             self.get_comment_char(),
             &self.state.comment_type,
         );
+        // Set inner parsing logic
+        lexor.set_inner();
         let mut frag = MacroFragment::new();
         let mut result = String::new();
         let backup = self.logger.backup_lines();
