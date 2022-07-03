@@ -1858,7 +1858,7 @@ impl<'processor> Processor<'processor> {
     ///
     /// This doesn't clear fragment
     fn add_rule(&mut self, frag: &MacroFragment) -> RadResult<()> {
-        if let Some((name, args, body)) = self.define_parser.parse_define(&frag.args) {
+        if let Some((name, args, mut body)) = self.define_parser.parse_define(&frag.args) {
             if name.is_empty() {
                 let err = RadError::InvalidMacroName("Cannot define a empty macro".to_string());
                 return Err(err);
@@ -1880,6 +1880,18 @@ impl<'processor> Processor<'processor> {
                     mac_name
                 ));
                 return Err(err);
+            }
+
+            if frag.trim_input {
+                body = body
+                    .lines()
+                    .map(|l| l.trim())
+                    .collect::<Vec<_>>()
+                    .join(&self.state.newline);
+            }
+
+            if frag.trimmed {
+                body = body.trim().to_owned();
             }
 
             self.map
