@@ -375,6 +375,7 @@ pub(crate) struct MacroFragment {
     pub pipe: bool,
     pub greedy: bool,
     pub yield_literal: bool,
+    pub trim_input: bool,
     pub trimmed: bool,
 }
 
@@ -389,6 +390,7 @@ impl MacroFragment {
             pipe: false,
             greedy: false,
             yield_literal: false,
+            trim_input: false,
             trimmed: false,
         }
     }
@@ -403,6 +405,7 @@ impl MacroFragment {
         self.pipe = false;
         self.greedy = false;
         self.yield_literal = false;
+        self.trim_input = false;
         self.trimmed = false;
     }
 
@@ -414,7 +417,7 @@ impl MacroFragment {
     }
 
     pub(crate) fn has_attribute(&self) -> bool {
-        self.pipe || self.greedy || self.yield_literal || self.trimmed
+        self.pipe || self.greedy || self.yield_literal || self.trimmed || self.trim_input
     }
 }
 

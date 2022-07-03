@@ -1703,17 +1703,38 @@ impl<'processor> Processor<'processor> {
         let level = level + 1;
         let (name, raw_args) = (&frag.name, &frag.args);
 
-        let mut args: String = raw_args.to_owned();
+        let args: String;
         // Preprocess only when macro is not a deterred macro
         if !self.map.is_deterred_macro(name) {
+            if frag.trim_input {
+                let new_args = raw_args
+                    .lines()
+                    .map(|l| l.trim())
+                    .collect::<Vec<_>>()
+                    .join(&self.state.newline);
+                args = self.parse_chunk_args(level, name, &new_args)?;
+            } else {
+                args = self.parse_chunk_args(level, name, raw_args)?;
+            };
             // This parses and processes arguments
             // and macro should be evaluated after
-            args = self.parse_chunk_args(level, name, raw_args)?;
 
             // Also update original arguments for better debugging
             #[cfg(feature = "debug")]
             {
                 frag.processed_args = args.clone();
+            }
+        } else {
+            // Even if deterred macro should
+            // respect input_trim
+            if frag.trim_input {
+                args = raw_args
+                    .lines()
+                    .map(|l| l.trim())
+                    .collect::<Vec<_>>()
+                    .join(&self.state.newline);
+            } else {
+                args = raw_args.to_string();
             }
         }
 
@@ -2051,6 +2072,7 @@ impl<'processor> Processor<'processor> {
                 match ch {
                     '|' => frag.pipe = true,
                     '*' => frag.yield_literal = true,
+                    '=' => frag.trim_input = true,
                     '^' => frag.trimmed = true,
                     _ => {
                         // This is mostly not reached because it is captured as non-exsitent name
