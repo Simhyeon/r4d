@@ -1,3 +1,20 @@
+# 3.0.0-rc.4
+
+- CHG : Apply new(1.62) clippy fix
+- CHG : Ditch unnecessary "Some" arguments
+- CHG : Regex syntax change
+- CHG : Changed argument parsing behaviour frome lexor and arg parser
+- FET : manual flag
+- FET : New macros
+	- find
+	- findm
+	- regexpr
+- FET : New macro attribute
+- CHG : Now define macro also detects trim and trim input attribute
+- CHG : Removed cnl macro and fixed a newline bug
+- CHG : Made formatter respect processor line ending
+- ERG : Improved descriptions
+
 # 3.0.0-rc.3
 
 ### Breaking

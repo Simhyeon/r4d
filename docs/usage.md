@@ -17,6 +17,10 @@ printf '...text...' | rad -o out_file.txt
 # Read from stdin and print to stdout 
 printf '...text...' | rad 
 
+# Print simple manual
+rad --man 
+rad --man ifdef
+
 # Use comment in input texts
 # Comment character is '%'
 # Refer macro_syntax for further information
@@ -149,14 +153,14 @@ let mut processor = Processor::new()
     .aseptic(true)                                       // Enable aseptic mode
     .hygiene(Hygiene::Macro)                             // Enable hygiene mode
     .pipe_truncate(false)                                // Disable pipe truncate
-    .write_to_file(Some(Path::new("out.txt")))?          // default is stdout
-    .error_to_file(Some(Path::new("err.txt")))?          // default is stderr
+    .write_to_file(Path::new("out.txt"))?          // default is stdout
+    .error_to_file(Path::new("err.txt"))?          // default is stderr
     .unix_new_line(true)                                 // use unix new line for formatting
     .discard(true)                                       // discard all output
-    .melt_files(vec![Path::new("source.r4d")])?          // Read runtime macros from frozen
+    .melt_files(&[Path::new("source.r4d")])?          // Read runtime macros from frozen
     // Permission
-    .allow(Some(vec![AuthType::ENV]))                    // Grant permission of authtypes
-    .allow_with_warning(Some(vec![AuthType::CMD]))       // Grant permission of authypes with warning enabled
+    .allow(&[AuthType::ENV])                    // Grant permission of authtypes
+    .allow_with_warning(&[AuthType::CMD])       // Grant permission of authypes with warning enabled
     // Debugging options
     .debug(true)                                         // Turn on debug mode
     .log(true)                                           // Use logging to terminal
@@ -184,10 +188,10 @@ processor.register_hook(
 )?;
 
 // Add runtime rules(in order of "name, args, body")
-processor.add_runtime_rules(vec![("test","a_src a_link","$a_src() -> $a_link()")])?;
+processor.add_runtime_rules(&[("test","a_src a_link","$a_src() -> $a_link()")])?;
 
 // Add custom rules without any arguments
-processor.add_static_rules(vec![("test","TEST"),("lul","kekw")])?;
+processor.add_static_rules(&[("test","TEST"),("lul","kekw")])?;
 
 // Undefine only macro
 processor.undefine_macro("name1", MacroType::Any);

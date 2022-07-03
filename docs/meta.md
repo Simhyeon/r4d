@@ -1,7 +1,7 @@
 ### TODO
 
 $todo_start()
-$h(R4d todos)
+$h(rad)
 * [x] Apply new(1.62) clippy fix
 * [x] Ditch unnecessary "Some" arguments
 - This is tedious but better for user experience.
@@ -18,10 +18,10 @@ $h(R4d todos)
 * [x] Argument as trimmed_line '=' character
 * [x] Now define macro also detects trim and trim input attribute
 * [x] Actually, cnl is not so consistent : Just removed it, because frag_on_going was properly set
-* [ ] Find possible inconsistent \n chracter usage
-* [ ] Decide when to push to 3.0
-* [ ] Improve description for real manual
+* [x] Find possible inconsistent \n chracter usage
+* [x] Improve description for real manual
 
+* [ ] Decide when to push to 3.0
 * [ ] Test windows build
 * [ ] Test multiple use cases
 $todo_end()

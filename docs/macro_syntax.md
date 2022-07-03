@@ -149,56 +149,49 @@ Prior content goes here  % This is only valid comment on any mode.
 
 ### Macro attributes
 
-**Trim**
+**Trim output**
 
-Trim attribute trims preceding and following newlines, whitespaces from output.
-To make a definition look much more easier to read, many blank spaces are often
-included.
-
-for e.g.
+Trim output attribute ```^``` trims preceding and following newlines,
+whitespaces from output.
 
 ```
-$define(
-    test,
-    a_expr a_path
-    =                                        // This new line
-    $let(cond,$eval($a_expr()))              // Whitespaces before "$let"
-    $let(true_path,$path(cache,$a_path()))   // Whitespaces before "$let"
-    $let(false_path,$path(cache,index.md))   // Whitespaces before "$let"
-    $ifelse(                                 // Whitespaces before "$ifelse"
-        $cond(),
-        $include($true_path()),
-        $include($false_path())
-    )                                        // This new line
+$ifenv^(HOME,
+
+
+    hello world
+
+
+    hello rust
+
+
 )
-$test(1==1,out.md)
 ===
+hello world
 
 
-                1
-2
-3
-4
-5
-
-
-
+        hello rust
 ```
 
-Such definition is easier to read, but makes formatting unpredictable. So trim
-attribute comes handy, although you can always manually call trim macro.
+**Trim input**
+
+Trim input attribute ```=``` trims macro arguments by lines rather than
+trimming macro output. This is useful when you want to use a multiline complex
+text as arguments but surplus blank spaces are unnecessary.
+
+Trim input attribute applies triml macro for the input
 
 ```
-...
-$test^(1==1,out.md)
-% This is same with 
-% $trim($test(1==1,out.md))
+$ifenv^=(HOME,
+    hello world
+    How are you?
+    I'm fine, thanks. How's it going?
+    yatti yatta
+)
 ===
-1
-2
-3
-4
-5
+hello world
+How are you?
+I'm fine, thanks. How's it going?
+yatti yatta
 ```
 
 **Piping**
