@@ -67,7 +67,10 @@ impl FunctionMacroMap {
                     "-",
                     ESR,
                     Self::get_pipe,
-                    Some("Get piped value".to_string()),
+                    Some(
+                        "Get piped value. This truncates pipe vaule by default if not configured"
+                            .to_string(),
+                    ),
                 ),
             ),
             (
@@ -76,16 +79,21 @@ impl FunctionMacroMap {
                     "append",
                     ["a_macro_name", "a_content"],
                     Self::append,
-                    Some("Append content to a macro".to_string()),
+                    Some(
+                        "Append content to a macro. If macro doesn't exist, yields error"
+                            .to_string(),
+                    ),
                 ),
             ),
             (
                 "arr".to_owned(),
                 FMacroSign::new(
                     "arr",
-                    ["a_values"],
+                    ["a_values","a_sep+", "a_retain_expr+"],
                     Self::array,
-                    Some("Convert spaced array into comma array".to_string()),
+                    Some("Convert spaced array into comma array. You can give surplus arguments to configure behaviour.
+        - Second : array separator
+        - Third  : Regex expression to retain".to_string()),
                 ),
             ),
             (
@@ -94,7 +102,7 @@ impl FunctionMacroMap {
                     "assert",
                     ["a_lvalue", "a_rvalue"],
                     Self::assert,
-                    Some("Comopare two statements".to_string()),
+                    Some("Compare lvalue and rvalue, panics with two values are not equal".to_string()),
                 ),
             ),
             (
@@ -103,7 +111,7 @@ impl FunctionMacroMap {
                     "ceil",
                     ["a_number"],
                     Self::get_ceiling,
-                    Some("Get ceiling of the number".to_string()),
+                    Some("Get ceiling of a number".to_string()),
                 ),
             ),
             (
@@ -130,7 +138,7 @@ impl FunctionMacroMap {
                     "comp",
                     ["a_content"],
                     Self::compress,
-                    Some("Apply trim and chomp to content".to_string()),
+                    Some("Apply trim and chomp to content at the same time".to_string()),
                 ),
             ),
             (
@@ -139,7 +147,7 @@ impl FunctionMacroMap {
                     "count",
                     ["a_array"],
                     Self::count,
-                    Some("Get count of array".to_string()),
+                    Some("Get counts of an array".to_string()),
                 ),
             ),
             (
@@ -157,7 +165,7 @@ impl FunctionMacroMap {
                     "countl",
                     ["a_content"],
                     Self::count_lines,
-                    Some("Get count of lines".to_string()),
+                    Some("Get counts of lines".to_string()),
                 ),
             ),
             (
@@ -166,7 +174,7 @@ impl FunctionMacroMap {
                     "dnl",
                     ESR,
                     Self::deny_newline,
-                    Some("Deny next newline.".to_string()),
+                    Some("Deny next newline. This technically squashes following two consequent line_ending into a single one".to_string()),
                 ),
             ),
             (
@@ -175,7 +183,7 @@ impl FunctionMacroMap {
                     "declare",
                     ["a_macro_names"],
                     Self::declare,
-                    Some("Declare multiple variables separated by comma".to_string()),
+                    Some("Declare multiple variables separated by commas".to_string()),
                 ),
             ),
             (
@@ -184,7 +192,7 @@ impl FunctionMacroMap {
                     "docu",
                     ["a_macro_name", "a_content"],
                     Self::document,
-                    Some("Append documents to a macro".to_string()),
+                    Some("Append documents(description) to a macro".to_string()),
                 ),
             ),
             (
@@ -200,9 +208,10 @@ impl FunctionMacroMap {
                 "escape".to_owned(),
                 FMacroSign::new(
                     "escape",
-                    ESR,
+                    ["a_escape?"],
                     Self::escape,
-                    Some("Escape processing from invocation".to_string()),
+                    Some("Escape processing from the invocation.
+        - NOTE : This flow control only sustains for the processing.".to_string()),
                 ),
             ),
             (
@@ -211,7 +220,8 @@ impl FunctionMacroMap {
                     "exit",
                     ESR,
                     Self::exit,
-                    Some("Exit processing from invocation".to_string()),
+                    Some("Exit processing from invocation
+        - NOTE : This flow control only sustains for the processing".to_string()),
                 ),
             ),
             (
@@ -220,7 +230,7 @@ impl FunctionMacroMap {
                     "find",
                     ["a_match", "a_source"],
                     Self::find_occurence,
-                    Some("Find an occurrence of expression from source".to_string()),
+                    Some("Find an occurrence of expression from source. This return boolean value".to_string()),
                 ),
             ),
             (
@@ -229,7 +239,7 @@ impl FunctionMacroMap {
                     "findm",
                     ["a_match", "a_source"],
                     Self::find_multiple_occurence,
-                    Some("Find occurrences of expression from source".to_string()),
+                    Some("Find occurrences of expression from source. This return 0 if there are no occurrences".to_string()),
                 ),
             ),
             (
@@ -238,7 +248,7 @@ impl FunctionMacroMap {
                     "floor",
                     ["a_number"],
                     Self::get_floor,
-                    Some("Get floor integer from given number".to_string()),
+                    Some("Get floor integer from a given number".to_string()),
                 ),
             ),
             (
@@ -247,7 +257,7 @@ impl FunctionMacroMap {
                     "fold",
                     ["a_content"],
                     Self::fold,
-                    Some("Fold array into a single value".to_string()),
+                    Some("Fold an array into a single value".to_string()),
                 ),
             ),
             (
@@ -265,7 +275,7 @@ impl FunctionMacroMap {
                     "grep",
                     ["a_regex", "a_content"],
                     Self::grep,
-                    Some("Grep text from given content".to_string()),
+                    Some("Grep text from given content. This returns all lines that matches given expression".to_string()),
                 ),
             ),
             (
@@ -274,7 +284,8 @@ impl FunctionMacroMap {
                     "halt",
                     ESR,
                     Self::halt_relay,
-                    Some("Halt relaying".to_string()),
+                    Some("Halt relaying
+        - NOTE : Always use halt inside que or else text block includes halt macro will not be included inside relay target".to_string()),
                 ),
             ),
             (
@@ -301,7 +312,7 @@ impl FunctionMacroMap {
                     "hygiene",
                     ["a_hygiene?"],
                     Self::toggle_hygiene,
-                    Some("Toggle hygiene mode".to_string()),
+                    Some("Toggle hygiene mode. This enables macro hygiene".to_string()),
                 ),
             ),
             (
@@ -310,7 +321,7 @@ impl FunctionMacroMap {
                     "index",
                     ["a_index", "a_array"],
                     Self::index_array,
-                    Some("Get a index of a array".to_string()),
+                    Some("Get an indexed value of an array".to_string()),
                 ),
             ),
             (
@@ -319,7 +330,7 @@ impl FunctionMacroMap {
                     "import",
                     ["a_file"],
                     Self::import_frozen_file,
-                    Some("Import a frozen file".to_string()),
+                    Some("Import a frozen file at runtime".to_string()),
                 ),
             ),
             (
@@ -328,7 +339,7 @@ impl FunctionMacroMap {
                     "len",
                     ["a_string"],
                     Self::len,
-                    Some("Get a length of a text".to_string()),
+                    Some("Get a length of a text. This count utf8 characters not ascii.".to_string()),
                 ),
             ),
             (
@@ -337,7 +348,7 @@ impl FunctionMacroMap {
                     "let",
                     ["a_macro_name", "a_value"],
                     Self::bind_to_local,
-                    Some("Bind a local macro".to_string()),
+                    Some("Bind a local macro. Every local macro gets removed after outmost level macro expansion ends.".to_string()),
                 ),
             ),
             (
@@ -353,9 +364,9 @@ impl FunctionMacroMap {
                 "listdir".to_owned(),
                 FMacroSign::new(
                     "listdir",
-                    ["a_isabsolute", "a_path?", "a_delim?"],
+                    ["a_isabsolute", "a_path+", "a_delim+"],
                     Self::list_directory_files,
-                    Some("List a directory's files as csv".to_string()),
+                    Some("List a directory's files as csv. Default path is current working directory.".to_string()),
                 ),
             ),
             (
@@ -391,7 +402,7 @@ impl FunctionMacroMap {
                     "name",
                     ["a_path"],
                     Self::get_name,
-                    Some("Get a name from a given path".to_string()),
+                    Some("Get a name from a given path including an extension".to_string()),
                 ),
             ),
             (
@@ -409,7 +420,7 @@ impl FunctionMacroMap {
                     "not",
                     ["a_boolean"],
                     Self::not,
-                    Some("Return a negated value of given boolean".to_string()),
+                    Some("Return a negated value of a given boolean".to_string()),
                 ),
             ),
             (
@@ -427,7 +438,7 @@ impl FunctionMacroMap {
                     "nl",
                     ESR,
                     Self::newline,
-                    Some("A platform specific newline".to_string()),
+                    Some("A platform specific newline. It's behaviour can be configured.".to_string()),
                 ),
             ),
             (
@@ -436,7 +447,7 @@ impl FunctionMacroMap {
                     "panic",
                     ["a_msg"],
                     Self::manual_panic,
-                    Some("Panic manually".to_string()),
+                    Some("Panics manually with message".to_string()),
                 ),
             ),
             (
@@ -445,7 +456,8 @@ impl FunctionMacroMap {
                     "parent",
                     ["a_path"],
                     Self::get_parent,
-                    Some("Get a parent from a given path".to_string()),
+                    Some("Get a parent from a given path. 
+        - NOTE : This yields error if path is root and will return empty value not a none value if path is a single node.".to_string()),
                 ),
             ),
             (
@@ -454,7 +466,8 @@ impl FunctionMacroMap {
                     "path",
                     ["a_paths"],
                     Self::merge_path,
-                    Some("Merge given paths".to_string()),
+                    Some("Merge given paths
+        - NOTE : This respects a platform path separator".to_string()),
                 ),
             ),
             (
@@ -463,7 +476,8 @@ impl FunctionMacroMap {
                     "pause",
                     ["a_pause?"],
                     Self::pause,
-                    Some("Pause a macro expansion from invocation".to_string()),
+                    Some("Pause a macro expansion from invocation. Paused processor will only expand $pause(false)
+        - NOTE : Pause is not a flow control but a processor state, thus the state will sustain for the whole processing.".to_string()),
                 ),
             ),
             (
@@ -472,7 +486,7 @@ impl FunctionMacroMap {
                     "pipe",
                     ["a_value"],
                     Self::pipe,
-                    Some("Pipe a given value".to_string()),
+                    Some("Pipe a given value into an unnamed pipe".to_string()),
                 ),
             ),
             (
@@ -481,7 +495,7 @@ impl FunctionMacroMap {
                     "pipe",
                     ["a_pipe_name", "a_value"],
                     Self::pipe_to,
-                    Some("Pipe a given value to named pipe".to_string()),
+                    Some("Pipe a given value to a named pipe".to_string()),
                 ),
             ),
             (
@@ -497,7 +511,7 @@ impl FunctionMacroMap {
                 "relay".to_owned(),
                 FMacroSign::new(
                     "relay",
-                    ["a_type", "a_target+"],
+                    ["a_type", "a_target"],
                     Self::relay,
                     Some("Start relaying".to_string()),
                 ),
@@ -506,18 +520,18 @@ impl FunctionMacroMap {
                 "rev".to_owned(),
                 FMacroSign::new(
                     "rev",
-                    ["a_array?"],
+                    ["a_array"],
                     Self::reverse_array,
-                    Some("Reverse an array".to_string()),
+                    Some("Reverse an order of an array".to_string()),
                 ),
             ),
             (
                 "regex".to_owned(),
                 FMacroSign::new(
                     "regex",
-                    ["a_match", "a_substitution", "a_source"],
+                    ["a_expression", "a_substitution", "a_source"],
                     Self::regex_sub,
-                    Some("Apply regular expression substitution".to_string()),
+                    Some("Apply regular expression substitution to a source".to_string()),
                 ),
             ),
             (
@@ -526,7 +540,8 @@ impl FunctionMacroMap {
                     "regexpr",
                     ["a_name", "a_expr"],
                     Self::register_expression,
-                    Some("Register an regular expression".to_string()),
+                    Some("Register an regular expression
+        - NOTE : Registered name will not be able to compiled into a expression directly".to_string()),
                 ),
             ),
             (
@@ -544,7 +559,7 @@ impl FunctionMacroMap {
                     "repeat",
                     ["a_count", "a_source"],
                     Self::repeat,
-                    Some("Repeat a given source".to_string()),
+                    Some("Repeat a given source by given counts".to_string()),
                 ),
             ),
             (
@@ -553,7 +568,7 @@ impl FunctionMacroMap {
                     "repl",
                     ["a_macro_name", "a_new_value"],
                     Self::replace,
-                    Some("Replace macro contents".to_string()),
+                    Some("Replace a macro's contents with new values".to_string()),
                 ),
             ),
             (
@@ -571,14 +586,14 @@ impl FunctionMacroMap {
                     "source",
                     ["a_file"],
                     Self::source_static_file,
-                    Some("Source a env file".to_string()),
+                    Some("Source a env file. Sourced file is eagerly expanded (As if it was static defined)".to_string()),
                 ),
             ),
             (
                 "sort".to_owned(),
                 FMacroSign::new(
                     "sort",
-                    ["a_values"],
+                    ["a_array"],
                     Self::sort_array,
                     Some("Sort an array".to_string()),
                 ),
@@ -587,7 +602,7 @@ impl FunctionMacroMap {
                 "sortl".to_owned(),
                 FMacroSign::new(
                     "sortl",
-                    ["a_values"],
+                    ["a_text"],
                     Self::sort_lines,
                     Some("Sort lines".to_string()),
                 ),
@@ -598,25 +613,25 @@ impl FunctionMacroMap {
                     "static",
                     ["a_macro_name", "a_value"],
                     Self::define_static,
-                    Some("Create a static macro".to_string()),
+                    Some("Create a static macro. Static macro is eagerly expanded not like define".to_string()),
                 ),
             ),
             (
                 "strip".to_owned(),
                 FMacroSign::new(
-                    "tail",
+                    "strip",
                     ["a_count", "a_direction", "a_content"],
                     Self::strip,
-                    Some("Either head or tail a given text".to_string()),
+                    Some("Either head or tail a given text. Direction is either head or tail".to_string()),
                 ),
             ),
             (
                 "stripl".to_owned(),
                 FMacroSign::new(
-                    "taill",
+                    "stripl",
                     ["a_count", "a_direction", "a_content"],
                     Self::strip_line,
-                    None,
+                    Some("Either head or tail a given text by lines. Direction is either head or tail".to_string()),
                 ),
             ),
             (
@@ -652,7 +667,7 @@ impl FunctionMacroMap {
                     "table",
                     ["a_table_form", "a_csv_value"],
                     Self::table,
-                    Some("Construct a formatted table".to_string()),
+                    Some("Construct a formatted table. Available table forms are \"github,html,wikitext\"".to_string()),
                 ),
             ),
             (
@@ -697,7 +712,7 @@ impl FunctionMacroMap {
                     "unicode",
                     ["a_value"],
                     Self::paste_unicode,
-                    Some("Create a unicode character from given hex number".to_string()),
+                    Some("Create a unicode character from given hex number without prefix".to_string()),
                 ),
             ),
             (
@@ -748,7 +763,9 @@ impl FunctionMacroMap {
                     "abs",
                     ["a_path"],
                     Self::absolute_path,
-                    Some("Get an absolute path".to_string()),
+                    Some(
+                        "Get an absolute path. This requires a path to be a real path.".to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -775,7 +792,7 @@ impl FunctionMacroMap {
                     "tempout",
                     ["a_tempout"],
                     Self::temp_out,
-                    Some("Write to temporary file".to_string()),
+                    Some("Write to a temporary file".to_string()),
                 ),
             );
             map.insert(
@@ -894,7 +911,7 @@ impl FunctionMacroMap {
                     "eval",
                     ["a_expression"],
                     Self::eval,
-                    Some("Evaluate expression".to_string()),
+                    Some("Evaluate a given expression".to_string()),
                 ),
             );
             map.insert(
@@ -903,7 +920,7 @@ impl FunctionMacroMap {
                     "evalk",
                     ["a_expression"],
                     Self::eval_keep,
-                    Some("Evaluate expression keeping source texts".to_string()),
+                    Some("Evaluate an expression while keeping source texts".to_string()),
                 ),
             );
         }
@@ -914,7 +931,7 @@ impl FunctionMacroMap {
                 "wrap",
                 ["a_width", "a_content"],
                 Self::wrap,
-                Some("Wrap text by width".to_string()),
+                Some("Wrap texts by width".to_string()),
             ),
         );
 
@@ -1111,7 +1128,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $regex(source_text,regex_match,substitution)
+    /// $regex(expression,substitution,source)
     fn regex_sub(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let match_expr = &args[0];

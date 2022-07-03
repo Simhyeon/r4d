@@ -39,9 +39,9 @@ impl DeterredMacroMap {
                 "fassert".to_owned(),
                 DMacroSign::new(
                     "fassert",
-                    ["a_lvalue", "a_rvalue"],
+                    ["a_text"],
                     DeterredMacroMap::assert_fail,
-                    Some("Assert succeedes when fails".to_string()),
+                    Some("Assert succeedes when text expansion yields error".to_string()),
                 ),
             ),
             (
@@ -51,7 +51,7 @@ impl DeterredMacroMap {
                     ["\\*a_array*\\", "a_body"],
                     DeterredMacroMap::foreach,
                     Some(
-                        "Loop around given array. Array should be enclosed as literal text"
+                        "Loop around given array. Array should be enclosed as literal text. Iterated value is bound to macro $:"
                             .to_string(),
                     ),
                 ),
@@ -62,7 +62,7 @@ impl DeterredMacroMap {
                     "forline",
                     ["a_iterable", "a_body"],
                     DeterredMacroMap::forline,
-                    Some("Loop around given lines separated by newline chraracter".to_string()),
+                    Some("Loop around given lines separated by newline chraracter. Iterated value is bound to macro $:".to_string()),
                 ),
             ),
             (
@@ -71,7 +71,7 @@ impl DeterredMacroMap {
                     "forloop",
                     ["a_min", "a_max", "a_body"],
                     DeterredMacroMap::forloop,
-                    Some("Loop around given range (min,max)".to_string()),
+                    Some("Loop around given range (min,max). Iterated value is bound to macro $:".to_string()),
                 ),
             ),
             (
@@ -80,25 +80,31 @@ impl DeterredMacroMap {
                     "from",
                     ["a_macro_name", "a_csv_value"],
                     Self::from_data,
-                    Some("Execute macro multiple times with given data chunk".to_string()),
+                    Some("Execute macro multiple times with given data chunk. Each csv line represent arguments for a macro".to_string()),
                 ),
             ),
             (
                 "if".to_owned(),
                 DMacroSign::new(
                     "if",
-                    ["a_boolean", "a_if_expr"],
+                    ["a_boolean?", "a_if_expr"],
                     DeterredMacroMap::if_cond,
-                    Some("Check condition and then execute".to_string()),
+                    Some(
+                        "Check condition and then execute the expression if the condition is true"
+                            .to_string(),
+                    ),
                 ),
             ),
             (
                 "ifelse".to_owned(),
                 DMacroSign::new(
                     "ifelse",
-                    ["a_boolean", "a_if_expr", "a_else_expr"],
+                    ["a_boolean?", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifelse,
-                    Some("Check condition and execute different expressions".to_string()),
+                    Some(
+                        "Check condition and execute different expressions by the condition"
+                            .to_string(),
+                    ),
                 ),
             ),
             (
@@ -125,14 +131,14 @@ impl DeterredMacroMap {
                     "que",
                     ["a_content"],
                     DeterredMacroMap::queue_content,
-                    Some("Que expressions".to_string()),
+                    Some("Que expressions. Queued expressions will be executed only when the outmost level macro expression ends.".to_string()),
                 ),
             ),
             (
                 "ifque".to_owned(),
                 DMacroSign::new(
                     "ifque",
-                    ["a_bool", "a_content"],
+                    ["a_bool?", "a_content"],
                     DeterredMacroMap::if_queue_content,
                     Some("If true, then queue expressions".to_string()),
                 ),
@@ -171,7 +177,7 @@ impl DeterredMacroMap {
                     "ieval",
                     ["a_macro", "a_expression"],
                     Self::eval_inplace,
-                    Some("Eval expression in-place for macro".to_string()),
+                    Some("Evaluate expression in-place for macro.".to_string()),
                 ),
             );
         }
@@ -496,7 +502,7 @@ impl DeterredMacroMap {
     ///
     /// # Usage
     ///
-    /// $fassert(abc,abc)
+    /// $fassert(abc)
     fn assert_fail(
         args: &str,
         level: usize,
