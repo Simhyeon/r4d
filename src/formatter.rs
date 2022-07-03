@@ -28,7 +28,7 @@ impl Formatter {
         let table = match table_format {
             "github" => Formatter::gfm_table(&data, newline)?,
             "wikitext" => Formatter::wikitext_table(&data, newline)?,
-            "html" => Formatter::html_table(&data)?,
+            "html" => Formatter::html_table(&data, newline)?,
             _ => {
                 return Err(RadError::UnsupportedTableFormat(format!(
                     "Unsupported table format : {}",
@@ -72,23 +72,19 @@ impl Formatter {
         table.push('|');
         let header_count = header.len();
         for h in header {
-            table.push_str(h);
-            table.push('|');
+            write!(table, "{}|", h)?;
         }
 
         // Add separator
-        table.push_str(newline);
-        table.push('|');
+        write!(table, "{}|", newline)?;
         for _ in 0..header_count {
             table.push_str("-|");
         }
 
         for row in data_iter {
-            table.push_str(newline);
-            table.push('|');
+            write!(table, "{}|", newline)?;
             for value in row {
-                table.push_str(value);
-                table.push('|');
+                write!(table, "{}|", value)?;
             }
         }
 
@@ -108,33 +104,26 @@ impl Formatter {
         let header = header.unwrap();
 
         // Add header
-        table.push_str("{| class=\"wikitable\"");
-        table.push_str(newline);
+        write!(table, "{{| class=\"wikitable\"{}", newline)?;
         // ! Header text !! Header text !! Header text
         // |-
         for h in header {
-            table.push('!');
-            table.push_str(h);
-            table.push_str(newline);
+            write!(table, "!{}{}", h, newline)?;
         }
         // Header separator
-        table.push_str("|-");
-        table.push_str(newline);
+        write!(table, "|-{}", newline)?;
         for row in data_iter {
             for value in row {
-                table.push('|');
-                table.push_str(value);
-                table.push_str(newline);
+                write!(table, "|{}{}", value, newline)?;
             }
-            table.push_str("|-");
-            table.push_str(newline);
+            write!(table, "|-{}", newline)?;
         }
         table.push_str("|}");
         Ok(table)
     }
 
     // Format csv into html formatted table
-    fn html_table(data: &VirtualArray) -> RadResult<String> {
+    fn html_table(data: &VirtualArray, newline: &str) -> RadResult<String> {
         let mut table = String::new();
         let mut data_iter = data.rows.iter();
         let header = data_iter.next();
@@ -144,23 +133,20 @@ impl Formatter {
             ));
         }
         let header = header.unwrap();
-        table.push_str("<table>\n");
-        // Add header
-        table.push_str("\t<thead>\n\t\t<tr>\n");
+        // Add header parts
+        write!(table, "<table>{0}\t<thead>{0}\t\t<tr>{0}", newline)?;
         for h in header {
-            // This ditched \n after with with writeln but, is it desirable?
-            writeln!(table, "\t\t\t<th>{}</th>", h)?;
+            write!(table, "\t\t\t<th>{}</th>{}", h, newline)?;
         }
-        table.push_str("\t\t</tr>\n\t</thead>\n");
-        table.push_str("\t<tbody>\n");
+        write!(table, "\t\t</tr>{0}\t</thead>{0}\t<tbody>{0}", newline)?;
         for row in data_iter {
-            table.push_str("\t\t<tr>\n");
+            write!(table, "\t\t<tr>{}", newline)?;
             for value in row {
-                writeln!(table, "\t\t\t<td>{}</td>", value)?;
+                write!(table, "\t\t\t<td>{}</td>", value)?;
             }
-            table.push_str("\t\t</tr>\n");
+            write!(table, "\t\t</tr>{}", newline)?;
         }
-        table.push_str("\t</tbody>\n</table>");
+        write!(table, "\t</tbody>{}</table>", newline)?;
         Ok(table)
     }
 }
