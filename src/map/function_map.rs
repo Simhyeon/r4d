@@ -1834,8 +1834,15 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $nl()
-    fn newline(_: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        Ok(Some(p.state.newline.to_owned()))
+    fn newline(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        let count = if !args.is_empty() {
+            args.parse::<usize>()
+                .map_err(|_| RadError::InvalidArgument("nl requires number".to_string()))?
+        } else {
+            1
+        };
+
+        Ok(Some(p.state.newline.repeat(count)))
     }
 
     /// deny new line
