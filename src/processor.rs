@@ -1712,7 +1712,7 @@ impl<'processor> Processor<'processor> {
                     .map(|l| l.trim())
                     .collect::<Vec<_>>()
                     .join(&self.state.newline);
-                args = self.parse_chunk_args(level, name, &new_args)?;
+                args = self.parse_chunk_args(level, name, &new_args.trim())?;
             } else {
                 args = self.parse_chunk_args(level, name, raw_args)?;
             };
@@ -1732,7 +1732,9 @@ impl<'processor> Processor<'processor> {
                     .lines()
                     .map(|l| l.trim())
                     .collect::<Vec<_>>()
-                    .join(&self.state.newline);
+                    .join(&self.state.newline)
+                    .trim()
+                    .to_string();
             } else {
                 args = raw_args.to_string();
             }

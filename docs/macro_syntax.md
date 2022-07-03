@@ -155,32 +155,34 @@ Trim output attribute ```^``` trims preceding and following newlines,
 whitespaces from output.
 
 ```
-$ifenv^(HOME,
-
-
-    hello world
-
-
-    hello rust
-
-
+$define(
+	test
+	=
+	Hello
+	World
 )
+$test()
+$test^()
 ===
-hello world
 
+        Hello
+        World
 
-        hello rust
+Hello
+        World
 ```
 
 **Trim input**
 
-Trim input attribute ```=``` trims macro arguments by lines rather than
-trimming macro output. This is useful when you want to use a multiline complex
-text as arguments but surplus blank spaces are unnecessary.
+Trim input attribute ```=``` trims macro arguments by lines and also trim by
+chunk. This is useful when you want to use a multiline complex text as
+arguments but surplus blank spaces are unnecessary.
 
-Trim input attribute applies triml macro for the input
+Trim input attribute applies triml & trim macro for the input. Though those
+trimming is applied as chunk not per arguments.
 
 ```
+% Needs trim output to remove newline that comes before "hello world"
 $ifenv^=(HOME,
     hello world
     How are you?

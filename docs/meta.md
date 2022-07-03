@@ -20,6 +20,8 @@ $h(rad)
 * [x] Actually, cnl is not so consistent : Just removed it, because frag_on_going was properly set
 * [x] Find possible inconsistent \n chracter usage
 * [x] Improve description for real manual
+* [ ] Newline can be repeated
+* [ ] Improve macro ergonomics
 
 * [ ] Decide when to push to 3.0
 * [ ] Test windows build
@@ -27,6 +29,17 @@ $h(rad)
 $todo_end()
 
 ### Imminent
+
+* [ ] If condition should be trimmed?
+	* [ ] Values that expect specific form: such as boolean or enum variants is better trimed by default.
+* [ ] Let macro leveas newline? what?
+	- More specifically consume newline doesn't affet inside macro arguments
+	- God damn...
+	- This is because body is parsed as chunk, the reason why body parse works
+	in chunk level is to make chunk(define body) literal. That every character
+	inside define is displayed as it is. Therefore, there are lines inside
+	definition body thus, no consume line. It's like invoking multiple macros
+	inside a single line.
 
 * [x] Empty name is not handled by error behaviours
 * [x] Forline what? -> Still utilizes $: syntax
