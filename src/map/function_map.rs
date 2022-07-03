@@ -525,6 +525,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "regexpr".to_owned(),
+                FMacroSign::new(
+                    "regexpr",
+                    ["a_name", "a_expr"],
+                    Self::register_expression,
+                    Some("Register an regular expression".to_string()),
+                ),
+            ),
+            (
                 "rename".to_owned(),
                 FMacroSign::new(
                     "rename",
@@ -2450,6 +2459,25 @@ impl FunctionMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "foldl requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Register expressino
+    ///
+    /// # Usage
+    ///
+    /// $regexpr(name,EXPR)
+    fn register_expression(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let name = &args[0];
+            let expr = &args[1];
+
+            p.state.regex_cache.register(name, expr)?;
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "regexpr requires two argument".to_owned(),
             ))
         }
     }
