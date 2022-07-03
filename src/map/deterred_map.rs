@@ -69,7 +69,7 @@ impl DeterredMacroMap {
                 "forloop".to_owned(),
                 DMacroSign::new(
                     "forloop",
-                    ["a_min", "a_max", "a_body"],
+                    ["a_min^", "a_max^", "a_body"],
                     DeterredMacroMap::forloop,
                     Some("Loop around given range (min,max). Iterated value is bound to macro $:".to_string()),
                 ),
@@ -87,7 +87,7 @@ impl DeterredMacroMap {
                 "if".to_owned(),
                 DMacroSign::new(
                     "if",
-                    ["a_boolean?", "a_if_expr"],
+                    ["a_boolean?^", "a_if_expr"],
                     DeterredMacroMap::if_cond,
                     Some(
                         "Check condition and then execute the expression if the condition is true"
@@ -99,7 +99,7 @@ impl DeterredMacroMap {
                 "ifelse".to_owned(),
                 DMacroSign::new(
                     "ifelse",
-                    ["a_boolean?", "a_if_expr", "a_else_expr"],
+                    ["a_boolean?^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifelse,
                     Some(
                         "Check condition and execute different expressions by the condition"
@@ -111,7 +111,7 @@ impl DeterredMacroMap {
                 "ifdef".to_owned(),
                 DMacroSign::new(
                     "ifdef",
-                    ["a_macro_name", "a_if_expr"],
+                    ["a_macro_name^", "a_if_expr"],
                     DeterredMacroMap::ifdef,
                     Some("Execute expression if macro is defined".to_string()),
                 ),
@@ -120,7 +120,7 @@ impl DeterredMacroMap {
                 "ifdefel".to_owned(),
                 DMacroSign::new(
                     "ifdefel",
-                    ["a_macro_name", "a_if_expr", "a_else_expr"],
+                    ["a_macro_name^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifdefel,
                     Some("Execute expressions whether macro is defined or not".to_string()),
                 ),
@@ -151,7 +151,7 @@ impl DeterredMacroMap {
                 "ifenv".to_owned(),
                 DMacroSign::new(
                     "ifenv",
-                    ["a_env_name", "a_if_expr"],
+                    ["a_env_name^", "a_if_expr"],
                     DeterredMacroMap::ifenv,
                     Some("Execute expression if environment variable is set".to_string()),
                 ),
@@ -160,7 +160,7 @@ impl DeterredMacroMap {
                 "ifenvel".to_owned(),
                 DMacroSign::new(
                     "ifenvel",
-                    ["a_env_name", "a_if_expr", "a_else_expr"],
+                    ["a_env_name^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifenvel,
                     Some(
                         "Execute expression by whether environment variable is set or not"
@@ -175,7 +175,7 @@ impl DeterredMacroMap {
                 "ieval".to_owned(),
                 DMacroSign::new(
                     "ieval",
-                    ["a_macro", "a_expression"],
+                    ["a_macro^", "a_expression"],
                     Self::eval_inplace,
                     Some("Evaluate expression in-place for macro.".to_string()),
                 ),

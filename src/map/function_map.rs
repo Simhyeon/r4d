@@ -109,7 +109,7 @@ impl FunctionMacroMap {
                 "ceil".to_owned(),
                 FMacroSign::new(
                     "ceil",
-                    ["a_number"],
+                    ["a_number^"],
                     Self::get_ceiling,
                     Some("Get ceiling of a number".to_string()),
                 ),
@@ -127,7 +127,7 @@ impl FunctionMacroMap {
                 "clear".to_owned(),
                 FMacroSign::new(
                     "clear",
-                    ["a_content"],
+                    ESR,
                     Self::clear,
                     Some("Clear volatile macros".to_string()),
                 ),
@@ -246,7 +246,7 @@ impl FunctionMacroMap {
                 "floor".to_owned(),
                 FMacroSign::new(
                     "floor",
-                    ["a_number"],
+                    ["a_number^"],
                     Self::get_floor,
                     Some("Get floor integer from a given number".to_string()),
                 ),
@@ -292,7 +292,7 @@ impl FunctionMacroMap {
                 "head".to_owned(),
                 FMacroSign::new(
                     "head",
-                    ["a_count", "a_content"],
+                    ["a_count^", "a_content"],
                     Self::head,
                     Some("Crop head texts from given content".to_string()),
                 ),
@@ -301,7 +301,7 @@ impl FunctionMacroMap {
                 "headl".to_owned(),
                 FMacroSign::new(
                     "headl",
-                    ["a_count", "a_content"],
+                    ["a_count^", "a_content"],
                     Self::head_line,
                     Some("Crop head texts but as lines from given content".to_string()),
                 ),
@@ -319,7 +319,7 @@ impl FunctionMacroMap {
                 "index".to_owned(),
                 FMacroSign::new(
                     "index",
-                    ["a_index", "a_array"],
+                    ["a_index^", "a_array"],
                     Self::index_array,
                     Some("Get an indexed value of an array".to_string()),
                 ),
@@ -328,7 +328,7 @@ impl FunctionMacroMap {
                 "import".to_owned(),
                 FMacroSign::new(
                     "import",
-                    ["a_file"],
+                    ["a_file^"],
                     Self::import_frozen_file,
                     Some("Import a frozen file at runtime".to_string()),
                 ),
@@ -346,7 +346,7 @@ impl FunctionMacroMap {
                 "let".to_owned(),
                 FMacroSign::new(
                     "let",
-                    ["a_macro_name", "a_value"],
+                    ["a_macro_name^", "a_value^"],
                     Self::bind_to_local,
                     Some("Bind a local macro. Every local macro gets removed after outmost level macro expansion ends.".to_string()),
                 ),
@@ -355,7 +355,7 @@ impl FunctionMacroMap {
                 "lipsum".to_owned(),
                 FMacroSign::new(
                     "lipsum",
-                    ["a_word_count"],
+                    ["a_word_count^"],
                     Self::lipsum_words,
                     Some("Create a placeholder text".to_string()),
                 ),
@@ -364,7 +364,7 @@ impl FunctionMacroMap {
                 "listdir".to_owned(),
                 FMacroSign::new(
                     "listdir",
-                    ["a_isabsolute", "a_path+", "a_delim+"],
+                    ["a_path+", "a_absolute?^+", "a_delim+"],
                     Self::list_directory_files,
                     Some("List a directory's files as csv. Default path is current working directory.".to_string()),
                 ),
@@ -436,7 +436,7 @@ impl FunctionMacroMap {
                 "nl".to_owned(),
                 FMacroSign::new(
                     "nl",
-                    ESR,
+                    ["a_count+^"],
                     Self::newline,
                     Some("A platform specific newline. It's behaviour can be configured.".to_string()),
                 ),
@@ -464,7 +464,7 @@ impl FunctionMacroMap {
                 "path".to_owned(),
                 FMacroSign::new(
                     "path",
-                    ["a_paths"],
+                    ["a_paths^"],
                     Self::merge_path,
                     Some("Merge given paths
 - NOTE : This respects a platform path separator".to_string()),
@@ -474,7 +474,7 @@ impl FunctionMacroMap {
                 "pause".to_owned(),
                 FMacroSign::new(
                     "pause",
-                    ["a_pause?"],
+                    ["a_pause?^"],
                     Self::pause,
                     Some("Pause a macro expansion from invocation. Paused processor will only expand $pause(false)
 - NOTE : Pause is not a flow control but a processor state, thus the state will sustain for the whole processing.".to_string()),
@@ -502,7 +502,7 @@ impl FunctionMacroMap {
                 "prec".to_owned(),
                 FMacroSign::new(
                     "prec",
-                    ["a_value", "a_precision"],
+                    ["a_number^", "a_precision^"],
                     Self::prec,
                     Some("Convert a float number with a given precision".to_string()),
                 ),
@@ -511,7 +511,7 @@ impl FunctionMacroMap {
                 "relay".to_owned(),
                 FMacroSign::new(
                     "relay",
-                    ["a_type", "a_target"],
+                    ["a_type^", "a_target^"],
                     Self::relay,
                     Some("Start relaying".to_string()),
                 ),
@@ -548,7 +548,7 @@ impl FunctionMacroMap {
                 "rename".to_owned(),
                 FMacroSign::new(
                     "rename",
-                    ["a_macro_name", "a_new_name"],
+                    ["a_macro_name^", "a_new_name^"],
                     Self::rename_call,
                     Some("Rename a macro with new name".to_string()),
                 ),
@@ -557,7 +557,7 @@ impl FunctionMacroMap {
                 "repeat".to_owned(),
                 FMacroSign::new(
                     "repeat",
-                    ["a_count", "a_source"],
+                    ["a_count^", "a_source"],
                     Self::repeat,
                     Some("Repeat a given source by given counts".to_string()),
                 ),
@@ -566,7 +566,7 @@ impl FunctionMacroMap {
                 "repl".to_owned(),
                 FMacroSign::new(
                     "repl",
-                    ["a_macro_name", "a_new_value"],
+                    ["a_macro_name^", "a_new_value"],
                     Self::replace,
                     Some("Replace a macro's contents with new values".to_string()),
                 ),
@@ -584,7 +584,7 @@ impl FunctionMacroMap {
                 "source".to_owned(),
                 FMacroSign::new(
                     "source",
-                    ["a_file"],
+                    ["a_file^"],
                     Self::source_static_file,
                     Some("Source a env file. Sourced file is eagerly expanded (As if it was static defined)".to_string()),
                 ),
@@ -611,7 +611,7 @@ impl FunctionMacroMap {
                 "static".to_owned(),
                 FMacroSign::new(
                     "static",
-                    ["a_macro_name", "a_value"],
+                    ["a_macro_name^", "a_value"],
                     Self::define_static,
                     Some("Create a static macro. Static macro is eagerly expanded not like define".to_string()),
                 ),
@@ -620,7 +620,7 @@ impl FunctionMacroMap {
                 "strip".to_owned(),
                 FMacroSign::new(
                     "strip",
-                    ["a_count", "a_direction", "a_content"],
+                    ["a_count^", "a_direction^", "a_content"],
                     Self::strip,
                     Some("Either head or tail a given text. Direction is either head or tail".to_string()),
                 ),
@@ -629,7 +629,7 @@ impl FunctionMacroMap {
                 "stripl".to_owned(),
                 FMacroSign::new(
                     "stripl",
-                    ["a_count", "a_direction", "a_content"],
+                    ["a_count^", "a_direction^", "a_content"],
                     Self::strip_line,
                     Some("Either head or tail a given text by lines. Direction is either head or tail".to_string()),
                 ),
@@ -638,7 +638,7 @@ impl FunctionMacroMap {
                 "sub".to_owned(),
                 FMacroSign::new(
                     "sub",
-                    ["a_start_index", "a_end_index", "a_source"],
+                    ["a_start_index^", "a_end_index^", "a_source"],
                     Self::substring,
                     Some("Get a substring with indices".to_string()),
                 ),
@@ -647,7 +647,7 @@ impl FunctionMacroMap {
                 "tail".to_owned(),
                 FMacroSign::new(
                     "tail",
-                    ["a_count", "a_content"],
+                    ["a_count^", "a_content"],
                     Self::tail,
                     Some("Get last parts of texts".to_string()),
                 ),
@@ -656,7 +656,7 @@ impl FunctionMacroMap {
                 "taill".to_owned(),
                 FMacroSign::new(
                     "taill",
-                    ["a_count", "a_content"],
+                    ["a_count^", "a_content"],
                     Self::tail_line,
                     Some("Get last lines of texts".to_string()),
                 ),
@@ -665,7 +665,7 @@ impl FunctionMacroMap {
                 "table".to_owned(),
                 FMacroSign::new(
                     "table",
-                    ["a_table_form", "a_csv_value"],
+                    ["a_table_form^", "a_csv_value^"],
                     Self::table,
                     Some("Construct a formatted table. Available table forms are \"github,html,wikitext\"".to_string()),
                 ),
@@ -701,7 +701,7 @@ impl FunctionMacroMap {
                 "undef".to_owned(),
                 FMacroSign::new(
                     "undef",
-                    ["a_macro_name"],
+                    ["a_macro_name^"],
                     Self::undefine_call,
                     Some("Undefine a macro".to_string()),
                 ),
@@ -710,7 +710,7 @@ impl FunctionMacroMap {
                 "unicode".to_owned(),
                 FMacroSign::new(
                     "unicode",
-                    ["a_value"],
+                    ["a_value^"],
                     Self::paste_unicode,
                     Some("Create a unicode character from given hex number without prefix".to_string()),
                 ),
@@ -781,7 +781,7 @@ impl FunctionMacroMap {
                 "tempin".to_owned(),
                 FMacroSign::new(
                     "tempin",
-                    ["a_tempin"],
+                    ESR,
                     Self::temp_include,
                     Some("Include a temporary file".to_string()),
                 ),
@@ -790,7 +790,7 @@ impl FunctionMacroMap {
                 "tempout".to_owned(),
                 FMacroSign::new(
                     "tempout",
-                    ["a_tempout"],
+                    ["a_content"],
                     Self::temp_out,
                     Some("Write to a temporary file".to_string()),
                 ),
@@ -799,7 +799,7 @@ impl FunctionMacroMap {
                 "tempto".to_owned(),
                 FMacroSign::new(
                     "tempto",
-                    ["a_filename"],
+                    ["a_filename^"],
                     Self::set_temp_target,
                     Some("Change temporary file path".to_string()),
                 ),
@@ -808,7 +808,7 @@ impl FunctionMacroMap {
                 "include".to_owned(),
                 FMacroSign::new(
                     "include",
-                    ["a_filename"],
+                    ["a_filename^", "a_raw_mode^+?"],
                     Self::include,
                     Some("Include a file".to_string()),
                 ),
@@ -817,7 +817,7 @@ impl FunctionMacroMap {
                 "fileout".to_owned(),
                 FMacroSign::new(
                     "fileout",
-                    ["a_truncate?", "a_filename", "a_content"],
+                    ["a_truncate?^", "a_filename^", "a_content"],
                     Self::file_out,
                     Some("Write to a file".to_string()),
                 ),
@@ -857,7 +857,7 @@ impl FunctionMacroMap {
                 "queries".to_owned(),
                 FMacroSign::new(
                     "queries",
-                    ["a_query"],
+                    ["a_queries"],
                     Self::cindex_query_list,
                     Some("Execute multiple queries".to_string()),
                 ),
@@ -888,7 +888,7 @@ impl FunctionMacroMap {
                 "tarray".to_owned(),
                 FMacroSign::new(
                     "tarray",
-                    ["a_second"],
+                    ["a_second^"],
                     Self::tarray,
                     Some("Get given time as array".to_string()),
                 ),
@@ -897,7 +897,7 @@ impl FunctionMacroMap {
                 "hms".to_owned(),
                 FMacroSign::new(
                     "hms",
-                    ["a_second"],
+                    ["a_second^"],
                     Self::hms,
                     Some("Get given time in hh:mm:ss format".to_string()),
                 ),
@@ -929,7 +929,7 @@ impl FunctionMacroMap {
             "wrap".to_owned(),
             FMacroSign::new(
                 "wrap",
-                ["a_width", "a_content"],
+                ["a_width^", "a_content"],
                 Self::wrap,
                 Some("Wrap texts by width".to_string()),
             ),
@@ -1059,7 +1059,7 @@ impl FunctionMacroMap {
     #[cfg(feature = "chrono")]
     fn tarray(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let seconds = &args[0].parse::<usize>().map_err(|_| {
+            let seconds = Utils::trim(&args[0]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "Could not convert given value \"{}\" into a number",
                     args[0]
@@ -1093,7 +1093,7 @@ impl FunctionMacroMap {
     #[cfg(feature = "chrono")]
     fn hms(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let seconds = &args[0].parse::<usize>().map_err(|_| {
+            let seconds = Utils::trim(&args[0]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "Could not convert given value \"{}\" into a number",
                     args[0]
@@ -1696,9 +1696,9 @@ impl FunctionMacroMap {
     /// 4,5,6)
     fn table(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let table_format = &args[0]; // Either gfm, wikitex, latex, none
-            let csv_content = &args[1];
-            let result = Formatter::csv_to_table(table_format, csv_content, &p.state.newline)?;
+            let table_format = Utils::trim(&args[0]); // Either gfm, wikitex, latex, none
+            let csv_content = Utils::trim(&args[1]);
+            let result = Formatter::csv_to_table(&table_format, &csv_content, &p.state.newline)?;
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
@@ -1836,7 +1836,8 @@ impl FunctionMacroMap {
     /// $nl()
     fn newline(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         let count = if !args.is_empty() {
-            args.parse::<usize>()
+            Utils::trim(args)
+                .parse::<usize>()
                 .map_err(|_| RadError::InvalidArgument("nl requires number".to_string()))?
         } else {
             1
@@ -1993,11 +1994,11 @@ impl FunctionMacroMap {
     /// $rename(name,target)
     fn rename_call(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let target = &args[0];
-            let new = &args[1];
+            let target = Utils::trim(&args[0]);
+            let new = Utils::trim(&args[1]);
 
-            if processor.contains_macro(target, MacroType::Any) {
-                processor.rename_macro(target, new, MacroType::Any);
+            if processor.contains_macro(&target, MacroType::Any) {
+                processor.rename_macro(&target, &new, MacroType::Any);
             } else {
                 processor.log_error(&format!(
                     "Macro \"{}\" doesn't exist, therefore cannot rename",
@@ -2139,10 +2140,10 @@ impl FunctionMacroMap {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let truncate = &args[0];
-            let file_name = &args[1];
+            let truncate = Utils::trim(&args[0]);
+            let file_name = Utils::trim(&args[1]);
             let content = &args[2];
-            if let Ok(truncate) = Utils::is_arg_true(truncate) {
+            if let Ok(truncate) = Utils::is_arg_true(&truncate) {
                 let file = std::env::current_dir()?.join(file_name);
                 let mut target_file = if truncate {
                     OpenOptions::new()
@@ -2179,14 +2180,14 @@ impl FunctionMacroMap {
     /// $head(2,Text To extract)
     fn head(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let count = &args[0].parse::<usize>().map_err(|_| {
+            let count = Utils::trim(&args[0]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "Head requires positive integer number but got \"{}\"",
                     &args[0]
                 ))
             })?;
             let content = &args[1].chars().collect::<Vec<_>>();
-            let length = *count.min(&content.len());
+            let length = count.min(content.len());
 
             Ok(Some(content[0..length].iter().collect()))
         } else {
@@ -2203,7 +2204,7 @@ impl FunctionMacroMap {
     /// $headl(2,Text To extract)
     fn head_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let count = &args[0].parse::<usize>().map_err(|_| {
+            let count = Utils::trim(&args[0]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "Headl requires positive integer number but got \"{}\"",
                     &args[0]
@@ -2212,7 +2213,7 @@ impl FunctionMacroMap {
             let lines = Utils::full_lines(args[1].as_bytes())
                 .map(|line| line.unwrap())
                 .collect::<Vec<String>>();
-            let length = *count.min(&lines.len());
+            let length = count.min(lines.len());
 
             Ok(Some(lines[0..length].concat()))
         } else {
@@ -2229,14 +2230,14 @@ impl FunctionMacroMap {
     /// $tail(2,Text To extract)
     fn tail(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let count = &args[0].parse::<usize>().map_err(|_| {
+            let count = Utils::trim(&args[0]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "tail requires positive integer number but got \"{}\"",
                     &args[0]
                 ))
             })?;
             let content = &args[1].chars().collect::<Vec<_>>();
-            let length = *count.min(&content.len());
+            let length = count.min(content.len());
 
             Ok(Some(
                 content[content.len() - length..content.len()]
@@ -2257,7 +2258,7 @@ impl FunctionMacroMap {
     /// $taill(2,Text To extract)
     fn tail_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let count = &args[0].parse::<usize>().map_err(|_| {
+            let count = Utils::trim(&args[0]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "taill requires positive integer number but got \"{}\"",
                     &args[0]
@@ -2266,7 +2267,7 @@ impl FunctionMacroMap {
             let lines = Utils::full_lines(args[1].as_bytes())
                 .map(|line| line.unwrap())
                 .collect::<Vec<String>>();
-            let length = *count.min(&lines.len());
+            let length = count.min(lines.len());
 
             Ok(Some(lines[lines.len() - length..lines.len()].concat()))
         } else {
@@ -2284,15 +2285,15 @@ impl FunctionMacroMap {
     /// $strip(2,tail,Text To extract)
     fn strip(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let count = &args[0].parse::<usize>().map_err(|_| {
+            let count = Utils::trim(&args[0]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "strip requires positive integer number but got \"{}\"",
                     &args[0]
                 ))
             })?;
-            let variant = &args[1];
+            let variant = Utils::trim(&args[1]);
             let content = &args[2].chars().collect::<Vec<_>>();
-            let length = *count.min(&content.len());
+            let length = count.min(content.len());
 
             match variant.to_lowercase().as_str() {
                 "head" => Ok(Some(content[length..].iter().collect())),
@@ -2319,17 +2320,17 @@ impl FunctionMacroMap {
     /// $stripl(2,tail,Text To extract)
     fn strip_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let count = &args[0].parse::<usize>().map_err(|_| {
+            let count = Utils::trim(&args[0]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "stripl requires positive integer number but got \"{}\"",
                     &args[0]
                 ))
             })?;
-            let variant = &args[1];
+            let variant = Utils::trim(&args[1]);
             let lines = Utils::full_lines(args[2].as_bytes())
                 .map(|line| line.unwrap())
                 .collect::<Vec<String>>();
-            let length = *count.min(&lines.len());
+            let length = count.min(lines.len());
 
             match variant.to_lowercase().as_str() {
                 "head" => Ok(Some(lines[length..].concat())),
@@ -2417,7 +2418,7 @@ impl FunctionMacroMap {
     /// $index(1,1,2,3,4,5)
     fn index_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let index = &args[0].parse::<usize>().map_err(|_| {
+            let index = Utils::trim(&args[0]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "index requires positive integer number but got \"{}\"",
                     &args[0]
@@ -2425,7 +2426,7 @@ impl FunctionMacroMap {
             })?;
             let content = &mut args[1].split(',').collect::<Vec<&str>>();
 
-            if &content.len() <= index {
+            if content.len() <= index {
                 return Err(RadError::InvalidArgument(format!(
                     "Index \"{}\" is bigger than content's length \"{}\"",
                     index,
@@ -2433,7 +2434,7 @@ impl FunctionMacroMap {
                 )));
             }
 
-            Ok(Some(content[*index].to_owned()))
+            Ok(Some(content[index].to_owned()))
         } else {
             Err(RadError::InvalidArgument(
                 "index requires two argument".to_owned(),
@@ -2602,8 +2603,9 @@ impl FunctionMacroMap {
             WarningType::Security,
         )?;
 
-        let raw_type = args[0];
-        let relay_type = match raw_type {
+        let raw_type = Utils::trim(args[0]);
+        let target = Utils::trim(args.get(1).unwrap_or(&""));
+        let relay_type = match raw_type.as_str() {
             #[cfg(not(feature = "wasm"))]
             "temp" => {
                 if !Utils::is_granted("relay", AuthType::FOUT, p)? {
@@ -2623,7 +2625,7 @@ impl FunctionMacroMap {
                     ));
                 }
                 let mut file_target = FileTarget::empty();
-                file_target.set_path(Path::new(args[1]));
+                file_target.set_path(Path::new(&target));
                 RelayTarget::File(file_target)
             }
             "macro" => {
@@ -2633,10 +2635,10 @@ impl FunctionMacroMap {
                             .to_owned(),
                     ));
                 }
-                if !p.contains_macro(args[1], MacroType::Runtime) {
+                if !p.contains_macro(&target, MacroType::Runtime) {
                     return Err(RadError::InvalidMacroName(format!(
                         "Cannot relay to non-exsitent macro or non-runtime macro \"{}\"",
-                        args[1]
+                        target
                     )));
                 }
                 RelayTarget::Macro(args[1].to_owned())
@@ -2674,7 +2676,7 @@ impl FunctionMacroMap {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            processor.set_temp_file(&std::env::temp_dir().join(&args[0]));
+            processor.set_temp_file(&std::env::temp_dir().join(Utils::trim(&args[0])));
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -3024,10 +3026,10 @@ impl FunctionMacroMap {
     /// $static(name,value)
     fn define_static(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = &args[0];
+            let name = Utils::trim(&args[0]);
             let value = &args[1];
             // Macro name already exists
-            if processor.contains_macro(name, MacroType::Any) {
+            if processor.contains_macro(&name, MacroType::Any) {
                 // Strict mode prevents overriding
                 // Return error
                 if processor.state.behaviour == ErrorBehaviour::Strict {
@@ -3090,9 +3092,9 @@ impl FunctionMacroMap {
     /// $repl(macro,value)
     fn replace(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = &args[0];
+            let name = Utils::trim(&args[0]);
             let target = &args[1];
-            if !processor.replace_macro(name, target) {
+            if !processor.replace_macro(&name, target) {
                 return Err(RadError::InvalidArgument(format!(
                     "{} doesn't exist, thus cannot replace it's content",
                     name
@@ -3115,7 +3117,8 @@ impl FunctionMacroMap {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let path = Path::new(&args[0]);
+            let path = &Utils::trim(&args[0]);
+            let path = Path::new(path);
             if !path.exists() {
                 return Err(RadError::InvalidArgument(format!(
                     "Cannot source non-existent file \"{}\"",
@@ -3165,7 +3168,8 @@ impl FunctionMacroMap {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let path = Path::new(&args[0]);
+            let path = &Utils::trim(&args[0]);
+            let path = Path::new(path);
             if !path.exists() {
                 return Err(RadError::InvalidArgument(format!(
                     "Cannot import from non-existent file \"{}\"",
@@ -3250,8 +3254,8 @@ impl FunctionMacroMap {
     /// $unicode
     fn paste_unicode(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let unicode_character = &args[0];
-            let unicode_hex = u32::from_str_radix(unicode_character, 16)?;
+            let unicode_character = Utils::trim(&args[0]);
+            let unicode_hex = u32::from_str_radix(&unicode_character, 16)?;
             Ok(Some(
                 char::from_u32(unicode_hex)
                     .ok_or_else(|| {
