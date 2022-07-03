@@ -102,7 +102,7 @@ impl<'cli> RadCli<'cli> {
                 let mut manual = sig_map.content.values().collect::<Vec<_>>();
                 manual.sort_unstable_by(|a, b| a.name.cmp(&b.name));
                 let manual = manual.iter().fold(String::new(), |mut acc, sig| {
-                    writeln!(acc, "{0}{1}----------", sig, LINE_ENDING).unwrap();
+                    writeln!(acc, "{0}{1}{1}----", sig, LINE_ENDING).unwrap();
                     acc
                 });
                 write!(std::io::stdout(), "{}", manual)?

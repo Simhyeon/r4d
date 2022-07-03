@@ -3,6 +3,8 @@ use std::iter::FromIterator;
 
 use serde::{Deserialize, Serialize};
 
+use crate::consts::LINE_ENDING;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignatureMap {
     pub content: HashMap<String, MacroSignature>,
@@ -54,12 +56,20 @@ impl std::fmt::Display for MacroSignature {
 Macro Name  : {}
 Arguments   : {:?}
 Usage       : {}
-Description : {}",
+Description >> 
+{}",
             self.variant,
             self.name,
             self.args,
             self.expr,
-            self.desc.as_ref().unwrap_or(&String::new()) // This is ugly...
+            self.desc
+                .as_ref()
+                .map(|d| d
+                    .lines()
+                    .map(|line| "    ".to_owned() + line)
+                    .collect::<Vec<_>>()
+                    .join(LINE_ENDING))
+                .unwrap_or_default()
         )
     }
 }

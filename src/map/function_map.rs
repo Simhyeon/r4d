@@ -92,8 +92,8 @@ impl FunctionMacroMap {
                     ["a_values","a_sep+", "a_retain_expr+"],
                     Self::array,
                     Some("Convert spaced array into comma array. You can give surplus arguments to configure behaviour.
-        - Second : array separator
-        - Third  : Regex expression to retain".to_string()),
+    - Second : array separator
+    - Third  : Regex expression to retain".to_string()),
                 ),
             ),
             (
@@ -211,7 +211,7 @@ impl FunctionMacroMap {
                     ["a_escape?"],
                     Self::escape,
                     Some("Escape processing from the invocation.
-        - NOTE : This flow control only sustains for the processing.".to_string()),
+- NOTE : This flow control only sustains for the processing.".to_string()),
                 ),
             ),
             (
@@ -221,7 +221,7 @@ impl FunctionMacroMap {
                     ESR,
                     Self::exit,
                     Some("Exit processing from invocation
-        - NOTE : This flow control only sustains for the processing".to_string()),
+- NOTE : This flow control only sustains for the processing".to_string()),
                 ),
             ),
             (
@@ -285,7 +285,7 @@ impl FunctionMacroMap {
                     ESR,
                     Self::halt_relay,
                     Some("Halt relaying
-        - NOTE : Always use halt inside que or else text block includes halt macro will not be included inside relay target".to_string()),
+- NOTE : Always use halt inside que or else text block includes halt macro will not be included inside relay target".to_string()),
                 ),
             ),
             (
@@ -457,7 +457,7 @@ impl FunctionMacroMap {
                     ["a_path"],
                     Self::get_parent,
                     Some("Get a parent from a given path. 
-        - NOTE : This yields error if path is root and will return empty value not a none value if path is a single node.".to_string()),
+- NOTE : This yields error if path is root and will return empty value not a none value if path is a single node.".to_string()),
                 ),
             ),
             (
@@ -467,7 +467,7 @@ impl FunctionMacroMap {
                     ["a_paths"],
                     Self::merge_path,
                     Some("Merge given paths
-        - NOTE : This respects a platform path separator".to_string()),
+- NOTE : This respects a platform path separator".to_string()),
                 ),
             ),
             (
@@ -477,7 +477,7 @@ impl FunctionMacroMap {
                     ["a_pause?"],
                     Self::pause,
                     Some("Pause a macro expansion from invocation. Paused processor will only expand $pause(false)
-        - NOTE : Pause is not a flow control but a processor state, thus the state will sustain for the whole processing.".to_string()),
+- NOTE : Pause is not a flow control but a processor state, thus the state will sustain for the whole processing.".to_string()),
                 ),
             ),
             (
@@ -541,7 +541,7 @@ impl FunctionMacroMap {
                     ["a_name", "a_expr"],
                     Self::register_expression,
                     Some("Register an regular expression
-        - NOTE : Registered name will not be able to compiled into a expression directly".to_string()),
+- NOTE : Registered name will not be able to compiled into an expression directly".to_string()),
                 ),
             ),
             (
@@ -729,7 +729,7 @@ impl FunctionMacroMap {
                 "define".to_owned(),
                 FMacroSign::new(
                     "define",
-                    ESR,
+                    ["a_define_statement"],
                     Self::define_type,
                     Some("Define a macro".to_string()),
                 ),
