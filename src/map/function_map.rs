@@ -862,9 +862,9 @@ impl FunctionMacroMap {
                 "fileout".to_owned(),
                 FMacroSign::new(
                     "fileout",
-                    ["a_truncate?^", "a_filename^", "a_content"],
+                    ["a_filename^", "a_truncate?^", "a_content"],
                     Self::file_out,
-                    Some("Write to a file".to_string()),
+                    Some("Write content to a file".to_string()),
                 ),
             );
         }
@@ -2343,8 +2343,8 @@ impl FunctionMacroMap {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let truncate = Utils::trim(&args[0]);
-            let file_name = Utils::trim(&args[1]);
+            let file_name = Utils::trim(&args[0]);
+            let truncate = Utils::trim(&args[1]);
             let content = &args[2];
             if let Ok(truncate) = Utils::is_arg_true(&truncate) {
                 let file = std::env::current_dir()?.join(file_name);
@@ -2898,7 +2898,7 @@ impl FunctionMacroMap {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            processor.set_temp_file(&std::env::temp_dir().join(Utils::trim(&args[0])));
+            processor.set_temp_file(&std::env::temp_dir().join(Utils::trim(&args[0])))?;
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(

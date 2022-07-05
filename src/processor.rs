@@ -116,8 +116,12 @@ impl ProcessorState {
 
     #[cfg(not(feature = "wasm"))]
     /// Internal method for setting temp target
-    pub(crate) fn set_temp_target(&mut self, path: &Path) {
+    pub(crate) fn set_temp_target(&mut self, path: &Path) -> RadResult<()> {
+        if path.exists() {
+            std::fs::remove_file(path)?;
+        }
         self.temp_target.set_path(path);
+        Ok(())
     }
 
     pub fn add_pipe(&mut self, name: Option<&str>, value: String) {
@@ -306,9 +310,12 @@ impl<'processor> Processor<'processor> {
         let mut state = ProcessorState::new();
 
         // You cannot use filesystem in wasm target
+        // Since, temp_dir is always present it can't fail, therefore unwrap is safe
         #[cfg(not(feature = "wasm"))]
         {
-            state.set_temp_target(&std::env::temp_dir().join("rad.txt"));
+            state
+                .set_temp_target(&std::env::temp_dir().join("rad.txt"))
+                .unwrap();
         }
 
         let mut logger = Logger::new();
@@ -2388,8 +2395,8 @@ impl<'processor> Processor<'processor> {
     ///
     /// This will create a new temp file if not existent
     #[cfg(not(feature = "wasm"))]
-    pub(crate) fn set_temp_file(&mut self, path: &Path) {
-        self.state.set_temp_target(path);
+    pub(crate) fn set_temp_file(&mut self, path: &Path) -> RadResult<()> {
+        self.state.set_temp_target(path)
     }
 
     /// Set pipe value manually
