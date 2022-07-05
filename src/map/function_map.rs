@@ -197,6 +197,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "empty".to_owned(),
+                FMacroSign::new(
+                    "empty",
+                    ESR,
+                    Self::print_empty,
+                    Some("Print nothing".to_string()),
+                ),
+            ),
+            (
                 "enl".to_owned(),
                 FMacroSign::new(
                     "enl",
@@ -350,6 +359,24 @@ impl FunctionMacroMap {
                     ["a_file^"],
                     Self::import_frozen_file,
                     Some("Import a frozen file at runtime".to_string()),
+                ),
+            ),
+            (
+                "join".to_owned(),
+                FMacroSign::new(
+                    "join",
+                    ["a_sep","a_array"],
+                    Self::join,
+                    Some("Join array into a single chunk".to_string()),
+                ),
+            ),
+            (
+                "joinl".to_owned(),
+                FMacroSign::new(
+                    "joinl",
+                    ["a_sep","a_text"],
+                    Self::joinl,
+                    Some("Join text lines into a single line".to_string()),
                 ),
             ),
             (
@@ -1865,6 +1892,40 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Join an array
+    ///
+    /// # Usage
+    ///
+    /// $join(" ",a,b,c)
+    fn join(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let sep = &args[0];
+            let text = &args[1];
+            Ok(Some(text.split(',').collect::<Vec<_>>().join(sep)))
+        } else {
+            Err(RadError::InvalidArgument(
+                "join requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Join lines
+    ///
+    /// # Usage
+    ///
+    /// $joinl(" ",text)
+    fn joinl(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let sep = &args[0];
+            let text = &args[1];
+            Ok(Some(text.lines().collect::<Vec<_>>().join(sep)))
+        } else {
+            Err(RadError::InvalidArgument(
+                "joinl requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     /// Create a table with given format and csv input
     ///
     /// Available formats are 'github', 'wikitext' and 'html'
@@ -2043,6 +2104,11 @@ impl FunctionMacroMap {
         };
 
         Ok(Some(" ".repeat(count)))
+    }
+
+    /// Print nothing
+    fn print_empty(_: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        Ok(None)
     }
 
     /// Yield newline according to platform or user option
