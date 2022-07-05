@@ -364,7 +364,7 @@ impl FunctionMacroMap {
                 "let".to_owned(),
                 FMacroSign::new(
                     "let",
-                    ["a_macro_name^", "a_value^"],
+                    ["a_macro_name^", "a_value"],
                     Self::bind_to_local,
                     Some("Bind a local macro. Every local macro gets removed after outmost level macro expansion ends.".to_string()),
                 ),
@@ -3171,8 +3171,8 @@ impl FunctionMacroMap {
     fn bind_to_local(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = Utils::trim(&args[0]);
-            let value = Utils::trim(&args[1]);
-            processor.add_new_local_macro(1, &name, &value);
+            let value = &args[1];
+            processor.add_new_local_macro(1, &name, value);
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
