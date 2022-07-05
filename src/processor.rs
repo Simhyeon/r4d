@@ -1352,14 +1352,6 @@ impl<'processor> Processor<'processor> {
             // Increase absolute line number
             #[cfg(feature = "debug")]
             self.debugger.inc_line_number();
-
-            // Execute queued object
-            let queued = std::mem::take(&mut self.state.queued); // Queue should be emptied after
-            for item in queued {
-                // This invokes parse method
-                let result = self.parse_chunk_args(0, MAIN_CALLER, &item)?;
-                self.write_to(&result, &mut cont)?;
-            }
         } // Loop end
 
         // Recover previous state from sandboxed processing
@@ -2246,6 +2238,15 @@ impl<'processor> Processor<'processor> {
         }
         // Clear fragment regardless of success
         frag.clear();
+
+        // Execute queues
+        // Execute queued object
+        let queued = std::mem::take(&mut self.state.queued); // Queue should be emptied after
+        for item in queued {
+            // This invokes parse method
+            let result = self.parse_chunk_args(0, MAIN_CALLER, &item)?;
+            remainder.push_str(&result);
+        }
 
         Ok(())
     }

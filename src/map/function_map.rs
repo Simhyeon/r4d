@@ -2859,10 +2859,29 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $hold()
-    fn halt_relay(_: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        // This remove last element from stack
-        p.state.relay.pop();
-        Ok(None)
+    fn halt_relay(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let halt_immediate = if args[0].is_empty() {
+                false
+            } else {
+                args[0].trim().parse::<bool>().map_err(|_| {
+                    RadError::InvalidArgument(
+                        "Halt's argument should be a boolean value".to_string(),
+                    )
+                })?
+            };
+            if halt_immediate {
+                // This remove last element from stack
+                p.state.relay.pop();
+            } else {
+                p.insert_queue("$halt(true)");
+            }
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "halt requires an argument".to_owned(),
+            ))
+        }
     }
 
     /// Set temporary file
