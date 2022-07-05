@@ -325,6 +325,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "indent".to_owned(),
+                FMacroSign::new(
+                    "indent",
+                    ["a_indenter", "a_lines"],
+                    Self::indent_lines,
+                    Some("Indent lines with indenter".to_string()),
+                ),
+            ),
+            (
                 "index".to_owned(),
                 FMacroSign::new(
                     "index",
@@ -617,6 +626,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "space".to_owned(),
+                FMacroSign::new(
+                    "space",
+                    ["a_amount?^"],
+                    Self::space,
+                    Some("Print spaces".to_string()),
+                ),
+            ),
+            (
                 "static".to_owned(),
                 FMacroSign::new(
                     "static",
@@ -650,6 +668,15 @@ impl FunctionMacroMap {
                     ["a_start_index^", "a_end_index^", "a_source"],
                     Self::substring,
                     Some("Get a substring with indices".to_string()),
+                ),
+            ),
+            (
+                "tab".to_owned(),
+                FMacroSign::new(
+                    "tab",
+                    ["a_amount?^"],
+                    Self::tab,
+                    Some("Print tab".to_string()),
                 ),
             ),
             (
@@ -1343,6 +1370,36 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Indent lines
+    ///
+    /// # Usage
+    ///
+    /// $indent(*, multi
+    /// line
+    /// expression
+    /// )
+    fn indent_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let indenter = &args[0];
+            let mut lines = String::new();
+            let mut iter = args[1].lines().peekable();
+            while let Some(line) = iter.next() {
+                if !line.is_empty() {
+                    write!(lines, "{}{}", indenter, line)?;
+                }
+                // Append newline because String.lines() method cuts off all newlines
+                if iter.peek().is_some() {
+                    lines.push_str(&p.state.newline);
+                }
+            }
+            Ok(Some(lines))
+        } else {
+            Err(RadError::InvalidArgument(
+                "indent requires an argument".to_owned(),
+            ))
+        }
+    }
+
     /// Trim preceding and trailing whitespaces (' ', '\n', '\t', '\r') but for all lines
     ///
     /// # Usage
@@ -1936,6 +1993,40 @@ impl FunctionMacroMap {
                 out.display()
             )))
         }
+    }
+
+    /// Print tab
+    ///
+    /// # Usage
+    ///
+    /// $tab()
+    fn tab(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        let count = if !args.is_empty() {
+            Utils::trim(args)
+                .parse::<usize>()
+                .map_err(|_| RadError::InvalidArgument("tab requires number".to_string()))?
+        } else {
+            1
+        };
+
+        Ok(Some("\t".repeat(count)))
+    }
+
+    /// Yield spaces
+    ///
+    /// # Usage
+    ///
+    /// $space()
+    fn space(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        let count = if !args.is_empty() {
+            Utils::trim(args)
+                .parse::<usize>()
+                .map_err(|_| RadError::InvalidArgument("space requires number".to_string()))?
+        } else {
+            1
+        };
+
+        Ok(Some(" ".repeat(count)))
     }
 
     /// Yield newline according to platform or user option
