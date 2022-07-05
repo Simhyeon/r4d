@@ -45,14 +45,24 @@ impl DeterredMacroMap {
                 ),
             ),
             (
+                "forby".to_owned(),
+                DMacroSign::new(
+                    "forby",
+                    ["a_body", "a_sep","a_array"],
+                    DeterredMacroMap::forby,
+                    Some(
+                        "Loop around text separated by separator.".to_string(),
+                    ),
+                ),
+            ),
+            (
                 "foreach".to_owned(),
                 DMacroSign::new(
                     "foreach",
-                    ["\\*a_array*\\", "a_body"],
+                    ["a_body", "a_array"],
                     DeterredMacroMap::foreach,
                     Some(
-                        "Loop around given array. Array should be enclosed as literal text. Iterated value is bound to macro $:"
-                            .to_string(),
+                        "Loop around given array.".to_string(),
                     ),
                 ),
             ),
@@ -60,7 +70,7 @@ impl DeterredMacroMap {
                 "forline".to_owned(),
                 DMacroSign::new(
                     "forline",
-                    ["a_iterable", "a_body"],
+                    ["a_body","a_iterable"],
                     DeterredMacroMap::forline,
                     Some("Loop around given lines separated by newline chraracter. Iterated value is bound to macro $:".to_string()),
                 ),
@@ -69,7 +79,7 @@ impl DeterredMacroMap {
                 "forloop".to_owned(),
                 DMacroSign::new(
                     "forloop",
-                    ["a_min^", "a_max^", "a_body"],
+                    ["a_body","a_min^", "a_max^"],
                     DeterredMacroMap::forloop,
                     Some("Loop around given range (min,max). Iterated value is bound to macro $:".to_string()),
                 ),
@@ -224,21 +234,54 @@ impl DeterredMacroMap {
     // ----------
     // Keyword Macros start
 
+    /// Loop around given values which is separated by given separator
+    ///
+    /// # Usage
+    ///
+    /// $forby($:(),-,a-b-c)
+    fn forby(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
+            let mut sums = String::new();
+            let body = &args[0];
+            let sep = &args[1];
+            let loopable = &args[2];
+            for (count, value) in loopable.split(sep).enumerate() {
+                // This overrides value
+                processor.add_new_local_macro(level, "a_LN", &count.to_string());
+
+                processor.add_new_local_macro(level, ":", value);
+                let result = processor.parse_chunk_args(level, "", body)?;
+
+                sums.push_str(&result);
+            }
+
+            // Clear local macro
+            processor.remove_local_macro(level, ":");
+
+            Ok(Some(sums))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Foreach requires two argument".to_owned(),
+            ))
+        }
+    }
+
     /// Loop around given values and substitute iterators  with the value
     ///
     /// # Usage
     ///
-    /// $foreach(\*a,b,c*\,$:)
+    /// $foreach($:(),a,b,c)
     fn foreach(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let mut sums = String::new();
-            let loopable = &processor.parse_chunk_args(level, "", &args[0])?;
+            let body = &args[0];
+            let loopable = &processor.parse_chunk_args(level, "", &args[1])?;
             for (count, value) in loopable.split(',').enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
 
                 processor.add_new_local_macro(level, ":", value);
-                let result = processor.parse_chunk_args(level, "", &args[1])?;
+                let result = processor.parse_chunk_args(level, "", body)?;
 
                 sums.push_str(&result);
             }
@@ -258,17 +301,18 @@ impl DeterredMacroMap {
     ///
     /// # Usage
     ///
-    /// $forline(TTT,$:)
+    /// $forline($:(),Content)
     fn forline(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let mut sums = String::new();
-            let loopable = &processor.parse_chunk_args(level, "", &args[0])?;
+            let body = &args[0];
+            let loopable = &processor.parse_chunk_args(level, "", &args[1])?;
             let mut count = 1;
             for value in loopable.lines() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 processor.add_new_local_macro(level, ":", value);
-                let result = processor.parse_chunk_args(level, "", &args[1])?;
+                let result = processor.parse_chunk_args(level, "", body)?;
                 sums.push_str(&result);
                 count += 1;
             }
@@ -284,13 +328,14 @@ impl DeterredMacroMap {
     ///
     /// # Usage
     ///
-    /// $forloop(1,5,$:)
+    /// $forloop($:(),1,5)
     fn forloop(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let mut sums = String::new();
 
-            let min_src = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
-            let max_src = processor.parse_chunk_args(level, "", &Utils::trim(&args[1]))?;
+            let body = &args[0];
+            let min_src = processor.parse_chunk_args(level, "", &Utils::trim(&args[1]))?;
+            let max_src = processor.parse_chunk_args(level, "", &Utils::trim(&args[2]))?;
 
             let min = if let Ok(num) = min_src.parse::<usize>() {
                 num
@@ -311,7 +356,7 @@ impl DeterredMacroMap {
             let mut result: String;
             for value in min..=max {
                 processor.add_new_local_macro(level, ":", &value.to_string());
-                result = processor.parse_chunk_args(level, "", &args[2])?;
+                result = processor.parse_chunk_args(level, "", body)?;
 
                 sums.push_str(&result);
                 result.clear();
