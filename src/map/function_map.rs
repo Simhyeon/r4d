@@ -707,6 +707,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "trimla".to_owned(),
+                FMacroSign::new(
+                    "trimla",
+                    ["a_trim_option^","a_content"],
+                    Self::trimla,
+                    Some("Triml with given amount".to_string()),
+                ),
+            ),
+            (
                 "undef".to_owned(),
                 FMacroSign::new(
                     "undef",
@@ -1356,7 +1365,78 @@ impl FunctionMacroMap {
             Ok(Some(lines))
         } else {
             Err(RadError::InvalidArgument(
-                "Trim requires an argument".to_owned(),
+                "Triml requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Trim lines with given amount
+    ///
+    /// # Usage
+    ///
+    /// $trimla(min,
+    /// \t multi
+    /// \t line
+    /// \t expression
+    /// )
+    fn trimla(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let option = &args[0];
+            let source = &args[1];
+            let mut try_amount = None;
+            let min_amount = match option.as_str() {
+                "max" => None,
+                "min" => {
+                    let mut min_amount = usize::MAX;
+                    for line in source.lines() {
+                        let space_amount = line.len() - line.trim_start().len();
+                        if min_amount > space_amount && !line.trim_start().is_empty() {
+                            min_amount = space_amount;
+                        }
+                    }
+                    if min_amount == usize::MAX {
+                        None
+                    } else {
+                        Some(min_amount)
+                    }
+                }
+                _ => {
+                    try_amount = Some(option.parse::<usize>().map_err(|_| {
+                        RadError::InvalidArgument(
+                            "Trimla option should be either min,max or number".to_string(),
+                        )
+                    })?);
+                    None
+                }
+            };
+
+            let mut lines = String::new();
+            let mut source_iter = source.lines().peekable();
+            while let Some(line) = source_iter.next() {
+                if line.trim_start().is_empty() {
+                    lines.push_str(line);
+                } else {
+                    let trimmed = match min_amount {
+                        Some(amount) => line[amount..].to_string(),
+                        None => match try_amount {
+                            Some(amount) => {
+                                let space_amount = line.len() - line.trim_start().len();
+                                line[amount.min(space_amount)..].to_string()
+                            }
+                            None => Utils::trim(line),
+                        },
+                    };
+                    lines.push_str(&trimmed);
+                }
+                // Append newline because String.lines() method cuts off all newlines
+                if source_iter.peek().is_some() {
+                    lines.push_str(&p.state.newline);
+                }
+            }
+            Ok(Some(lines))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Trimla requires two arguments".to_owned(),
             ))
         }
     }
