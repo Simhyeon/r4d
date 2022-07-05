@@ -225,11 +225,11 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "file".to_owned(),
+                "input".to_owned(),
                 FMacroSign::new(
-                    "file",
+                    "input",
                     ["a_absolute?^"],
-                    Self::print_current_file,
+                    Self::print_current_input,
                     Some("Print current file input.".to_string()),
                 ),
             ),
@@ -1203,8 +1203,11 @@ impl FunctionMacroMap {
             ))
         }
     }
+
     /// Print current file input
-    fn print_current_file(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+    ///
+    /// $input()
+    fn print_current_input(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         match &p.state.current_input {
             ProcessInput::Stdin => Ok(Some("Stdin".to_string())),
             ProcessInput::File(path) => {
@@ -1212,7 +1215,7 @@ impl FunctionMacroMap {
                 if !args.is_empty() && !args[0].trim().is_empty() {
                     let print_absolute = Utils::trim(&args[0]).parse::<bool>().map_err(|_| {
                         RadError::InvalidArgument(
-                            "File's argument should be a boolean value".to_string(),
+                            "Input's argument should be a boolean value".to_string(),
                         )
                     })?;
                     if print_absolute {
