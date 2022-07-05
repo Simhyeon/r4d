@@ -9,6 +9,10 @@ $h(rad)
 * [x] New macros
 	* [x] Find
 	* [x] Findm
+	* [x] File
+	* [x] Trimla ( Trim line amount )
+	* [x] Indent ( Indent lines )
+	* [x] Tab && space
 * [x] Changed argument parsing behaviour frome lexor and arg parser
 	* [x] Regex pattern doesn't go well with string literal "\* *\" syntax
 	* [x] Should be represented as literal
@@ -21,12 +25,14 @@ $h(rad)
 * [x] Find possible inconsistent \n chracter usage
 * [x] Improve description for real manual
 * [x] Newline can be repeated
+* [ ] Utils::trim doesn't have to make it a string. It is a waste of everything
+	make it return a reference
+	- I'm thinking that if Utils' trim is necessary at all?
 * [ ] Improve macro ergonomics
-	* [ ] Triml to support trim levels
 	* [ ] Tempout truncate option
 	* [ ] Halt with boolean arguments so that, halt is queued by default
 		- Queue is intended to work after outmost execution, but to fully support tag ergonimcs, I think simply deterring a macro execution until the current macro would be useful I guess
-* [ ] Assert mode doesn't work, simply panicks on first error
+* [x] Assert mode doesn't work, simply panicks on first error
 
 * [ ] Decide when to push to 3.0
 * [ ] Test windows build
