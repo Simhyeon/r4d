@@ -33,6 +33,7 @@ $h(rad)
 	* [ ] Halt with boolean arguments so that, halt is queued by default
 		- Queue is intended to work after outmost execution, but to fully support tag ergonimcs, I think simply deterring a macro execution until the current macro would be useful I guess
 * [x] Assert mode doesn't work, simply panicks on first error
+* [x] Queue is inconsistent
 
 * [ ] Decide when to push to 3.0
 * [ ] Test windows build
