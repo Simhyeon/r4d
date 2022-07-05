@@ -174,11 +174,7 @@ impl<'logger> Logger<'logger> {
                     file.write_all(
                         format!(
                             "error : {} -> {}:{}:{}{}",
-                            log,
-                            self.current_input.to_string(),
-                            self.last_line_number,
-                            last_char,
-                            LINE_ENDING
+                            log, self.current_input, self.last_line_number, last_char, LINE_ENDING
                         )
                         .as_bytes(),
                     )?;
@@ -190,7 +186,7 @@ impl<'logger> Logger<'logger> {
                         Utils::red("error"),
                         log,
                         LINE_ENDING,
-                        self.current_input.to_string(),
+                        self.current_input,
                         self.last_line_number,
                         last_char,
                         LINE_ENDING
@@ -200,11 +196,7 @@ impl<'logger> Logger<'logger> {
                     write!(
                         var,
                         "error : {} -> {}:{}:{}{}",
-                        log,
-                        self.current_input.to_string(),
-                        self.last_line_number,
-                        last_char,
-                        LINE_ENDING
+                        log, self.current_input, self.last_line_number, last_char, LINE_ENDING
                     )?;
                 }
                 WriteOption::Discard | WriteOption::Return => (),
@@ -248,11 +240,7 @@ impl<'logger> Logger<'logger> {
                     file.write_all(
                         format!(
                             "warning : {} -> {}:{}:{}{}",
-                            log,
-                            self.current_input.to_string(),
-                            self.last_line_number,
-                            last_char,
-                            LINE_ENDING
+                            log, self.current_input, self.last_line_number, last_char, LINE_ENDING
                         )
                         .as_bytes(),
                     )?;
@@ -264,7 +252,7 @@ impl<'logger> Logger<'logger> {
                         Utils::yellow("warning"),
                         log,
                         LINE_ENDING,
-                        self.current_input.to_string(),
+                        self.current_input,
                         last_char,
                         self.last_char_number
                     )?;
@@ -273,11 +261,7 @@ impl<'logger> Logger<'logger> {
                     write!(
                         var,
                         "error : {} -> {}:{}:{}{}",
-                        log,
-                        self.current_input.to_string(),
-                        self.last_line_number,
-                        last_char,
-                        LINE_ENDING
+                        log, self.current_input, self.last_line_number, last_char, LINE_ENDING
                     )?;
                 }
                 WriteOption::Discard | WriteOption::Return => (),
@@ -302,10 +286,7 @@ impl<'logger> Logger<'logger> {
                     file.write_all(
                         format!(
                             "assert fail -> {}:{}:{}{}",
-                            self.current_input.to_string(),
-                            self.last_line_number,
-                            last_char,
-                            LINE_ENDING
+                            self.current_input, self.last_line_number, last_char, LINE_ENDING
                         )
                         .as_bytes(),
                     )?;
@@ -315,7 +296,7 @@ impl<'logger> Logger<'logger> {
                         std::io::stderr(),
                         "{} -> {}:{}:{}",
                         Utils::red("assert fail"),
-                        self.current_input.to_string(),
+                        self.current_input,
                         self.last_line_number,
                         last_char
                     )?;
@@ -323,10 +304,7 @@ impl<'logger> Logger<'logger> {
                 WriteOption::Variable(var) => write!(
                     var,
                     "assert fail -> {}:{}:{}{}",
-                    self.current_input.to_string(),
-                    self.last_line_number,
-                    last_char,
-                    LINE_ENDING
+                    self.current_input, self.last_line_number, last_char, LINE_ENDING
                 )?,
                 WriteOption::Discard | WriteOption::Return => (),
             } // match end
