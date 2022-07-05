@@ -24,6 +24,7 @@ use crate::models::{RadStorage, StorageOutput};
 use crate::runtime_map::RuntimeMacro;
 #[cfg(feature = "signature")]
 use crate::sigmap::SignatureMap;
+use crate::trim;
 use crate::utils::Utils;
 use crate::DefineParser;
 use crate::{consts::*, RadResult};
@@ -2306,7 +2307,7 @@ impl<'processor> Processor<'processor> {
             // else it is ok to proceed.
             // thus it is safe to unwrap it
             if frag.trimmed {
-                content = Utils::trim(&content);
+                content = trim!(&content).to_string();
             }
             if frag.yield_literal {
                 content = format!("\\*{}*\\", content);

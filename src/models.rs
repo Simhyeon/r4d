@@ -6,6 +6,7 @@ use crate::function_map::FunctionMacroType;
 use crate::runtime_map::{RuntimeMacro, RuntimeMacroMap};
 #[cfg(feature = "signature")]
 use crate::sigmap::MacroSignature;
+use crate::trim;
 use crate::utils::Utils;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -145,7 +146,7 @@ impl MacroMap {
         hygiene_type: Hygiene,
     ) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
-        let mac = RuntimeMacro::new(&Utils::trim(name), &Utils::trim(args), body);
+        let mac = RuntimeMacro::new(&trim!(name), &trim!(args), body);
         self.runtime.new_macro(name, mac, hygiene_type);
         Ok(())
     }

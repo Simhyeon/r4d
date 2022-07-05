@@ -11,6 +11,13 @@ lazy_static! {
     pub static ref TRIM: Regex = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap();
 }
 
+#[macro_export]
+macro_rules! trim {
+    ($e:expr) => {
+        $crate::utils::TRIM.replace_all($e, "")
+    };
+}
+
 #[cfg(feature = "color")]
 use colored::*;
 
@@ -20,17 +27,6 @@ impl Utils {
     /// Create local name
     pub(crate) fn local_name(level: usize, name: &str) -> String {
         format!("{}.{}", level, name)
-    }
-
-    /// Trim preceding and trailing whitespaces for given input
-    ///
-    /// # Arguments
-    ///
-    /// * `args` - Text to trim
-    pub(crate) fn trim(args: &str) -> String {
-        let result = TRIM.replace_all(args, "");
-
-        result.to_string()
     }
 
     // Shamelessly copied from
@@ -56,7 +52,7 @@ impl Utils {
     ///
     /// In this contenxt, true and non zero number is 'true' while false and zero number is false
     pub(crate) fn is_arg_true(arg: &str) -> RadResult<bool> {
-        let arg = Utils::trim(arg);
+        let arg = trim!(arg);
         if let Ok(value) = arg.parse::<usize>() {
             if value == 0 {
                 return Ok(false);

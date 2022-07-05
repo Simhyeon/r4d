@@ -2,6 +2,7 @@ use crate::formatter::Formatter;
 use crate::models::MacroType;
 use crate::models::RadResult;
 use crate::models::{ExtMacroBody, ExtMacroBuilder};
+use crate::trim;
 use crate::utils::Utils;
 use crate::ArgParser;
 use crate::Processor;
@@ -334,8 +335,8 @@ impl DeterredMacroMap {
             let mut sums = String::new();
 
             let body = &args[0];
-            let min_src = processor.parse_chunk_args(level, "", &Utils::trim(&args[1]))?;
-            let max_src = processor.parse_chunk_args(level, "", &Utils::trim(&args[2]))?;
+            let min_src = processor.parse_chunk_args(level, "", &trim!(&args[1]))?;
+            let max_src = processor.parse_chunk_args(level, "", &trim!(&args[2]))?;
 
             let min = if let Ok(num) = min_src.parse::<usize>() {
                 num
@@ -383,7 +384,7 @@ impl DeterredMacroMap {
             let boolean = &processor.parse_chunk_args(level, "", &args[0])?;
 
             // Given condition is true
-            let cond = Utils::is_arg_true(&Utils::trim(boolean));
+            let cond = Utils::is_arg_true(&trim!(boolean));
             if let Ok(cond) = cond {
                 if cond {
                     let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
@@ -414,7 +415,7 @@ impl DeterredMacroMap {
             let boolean = &processor.parse_chunk_args(level, "", &args[0])?;
 
             // Given condition is true
-            let cond = Utils::is_arg_true(&Utils::trim(boolean));
+            let cond = Utils::is_arg_true(&trim!(boolean));
             if let Ok(cond) = cond {
                 if cond {
                     let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
@@ -444,7 +445,7 @@ impl DeterredMacroMap {
     /// $ifdef(macro_name, expr)
     fn ifdef(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
+            let name = processor.parse_chunk_args(level, "", &trim!(&args[0]))?;
 
             let boolean = processor.contains_macro(&name, MacroType::Any);
             // Return true or false by the definition
@@ -467,7 +468,7 @@ impl DeterredMacroMap {
     /// $ifdefelse(macro_name,expr,expr2)
     fn ifdefel(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
+            let name = processor.parse_chunk_args(level, "", &trim!(&args[0]))?;
 
             let boolean = processor.contains_macro(&name, MacroType::Any);
             // Return true or false by the definition
@@ -495,7 +496,7 @@ impl DeterredMacroMap {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
+            let name = processor.parse_chunk_args(level, "", &trim!(&args[0]))?;
 
             let boolean = std::env::var(name).is_ok();
 
@@ -522,7 +523,7 @@ impl DeterredMacroMap {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let name = processor.parse_chunk_args(level, "", &Utils::trim(&args[0]))?;
+            let name = processor.parse_chunk_args(level, "", &trim!(&args[0]))?;
 
             let boolean = std::env::var(name).is_ok();
 
@@ -639,7 +640,7 @@ impl DeterredMacroMap {
     /// )
     fn from_data(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let macro_name = Utils::trim(&args[0]);
+            let macro_name = trim!(&args[0]);
             // Trimming data might be very costly operation
             // Plus, it is already trimmed by csv crate.
             let macro_data = &args[1];
@@ -699,7 +700,7 @@ impl DeterredMacroMap {
     ) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             // This is the processed raw formula
-            let macro_name = Utils::trim(&args[0]);
+            let macro_name = trim!(&args[0]);
             if !processor.contains_macro(&macro_name, MacroType::Runtime) {
                 return Err(RadError::InvalidArgument(format!(
                     "Macro \"{}\" doesn't exist",
@@ -707,7 +708,7 @@ impl DeterredMacroMap {
                 )));
             }
 
-            let expr = Utils::trim(&args[1]);
+            let expr = trim!(&args[1]);
             let chunk = format!("$eval( ${}() {} )", macro_name, expr);
             let result = processor.parse_chunk_args(level, "", &chunk)?;
 

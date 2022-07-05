@@ -73,6 +73,7 @@ pub(crate) mod formatter;
 pub(crate) mod lexor;
 pub(crate) mod logger;
 pub(crate) mod models;
+#[macro_use]
 pub(crate) mod utils;
 
 pub use auth::AuthType;
