@@ -593,6 +593,7 @@ impl<'processor> Processor<'processor> {
     pub fn assert(mut self, assert: bool) -> Self {
         if assert {
             self.logger.assert();
+            self.state.behaviour = ErrorBehaviour::Purge; // Default is purge
             self.write_option = WriteOption::Discard;
         }
         self
