@@ -605,11 +605,11 @@ pub enum ProcessInput {
     File(PathBuf),
 }
 
-impl ToString for ProcessInput {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for ProcessInput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Stdin => "Stdin".to_owned(),
-            Self::File(file) => file.display().to_string(),
+            Self::Stdin => write!(f, "Stdin"),
+            Self::File(file) => write!(f, "{}", file.display()),
         }
     }
 }
