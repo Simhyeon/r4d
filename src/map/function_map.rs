@@ -225,6 +225,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "file".to_owned(),
+                FMacroSign::new(
+                    "file",
+                    ["a_absolute?^"],
+                    Self::print_current_file,
+                    Some("Print current file input.".to_string()),
+                ),
+            ),
+            (
                 "find".to_owned(),
                 FMacroSign::new(
                     "find",
@@ -1156,6 +1165,26 @@ impl FunctionMacroMap {
             Err(RadError::InvalidArgument(
                 "Regex sub requires three arguments".to_owned(),
             ))
+        }
+    }
+    /// Print current file input
+    fn print_current_file(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        match &p.state.current_input {
+            ProcessInput::Stdin => Ok(Some("Stdin".to_string())),
+            ProcessInput::File(path) => {
+                let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+                if !args.is_empty() && !args[0].trim().is_empty() {
+                    let print_absolute = Utils::trim(&args[0]).parse::<bool>().map_err(|_| {
+                        RadError::InvalidArgument(
+                            "File's argument should be a boolean value".to_string(),
+                        )
+                    })?;
+                    if print_absolute {
+                        return Ok(Some(path.canonicalize()?.display().to_string()));
+                    }
+                }
+                Ok(Some(path.display().to_string()))
+            }
         }
     }
 
