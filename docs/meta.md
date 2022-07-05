@@ -20,18 +20,36 @@ $h(rad)
 * [x] Actually, cnl is not so consistent : Just removed it, because frag_on_going was properly set
 * [x] Find possible inconsistent \n chracter usage
 * [x] Improve description for real manual
-* [ ] Newline can be repeated
+* [x] Newline can be repeated
 * [ ] Improve macro ergonomics
+	* [ ] Triml to support trim levels
+	* [ ] Tempout truncate option
+	* [ ] Halt with boolean arguments so that, halt is queued by default
+		- Queue is intended to work after outmost execution, but to fully support tag ergonimcs, I think simply deterring a macro execution until the current macro would be useful I guess
+* [ ] Assert mode doesn't work, simply panicks on first error
 
 * [ ] Decide when to push to 3.0
 * [ ] Test windows build
 * [ ] Test multiple use cases
+
 $todo_end()
+
+### Macro ergonomics
+
+- Relay warning is not so helpful? Only warn on start
+- Countl doesn't count empty trailing line
+- Let trims all arguments is this ok? won't this work like static macro?
+- How about trim_input macro to trim arguments separately? not entirely? -> Ok
+this is not technically possible, because, arguments separattion happens at
+macro invocation. Before the expansion, processor don't know if the arguments
+are separatable or not.
+
+- ENL and CNL(Removed one) doesn't work inside macro definition because macro
+body is expanded as a chunk not a lines iterator + also cnl is not checked on
+macro expansion
 
 ### Imminent
 
-* [ ] If condition should be trimmed?
-	* [ ] Values that expect specific form: such as boolean or enum variants is better trimed by default.
 * [ ] Let macro leveas newline? what?
 	- More specifically consume newline doesn't affet inside macro arguments
 	- God damn...
