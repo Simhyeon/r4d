@@ -243,8 +243,8 @@ impl DeterredMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let mut sums = String::new();
             let body = &args[0];
-            let sep = &args[1];
-            let loopable = &args[2];
+            let sep = &processor.parse_chunk_args(level, "", &args[1])?;
+            let loopable = &processor.parse_chunk_args(level, "", &args[2])?;
             for (count, value) in loopable.split(sep).enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
