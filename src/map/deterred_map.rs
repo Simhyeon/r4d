@@ -163,7 +163,7 @@ impl DeterredMacroMap {
                 "readto".to_owned(),
                 DMacroSign::new(
                     "readto",
-                    ["a_from_file?", "a_to_file?"],
+                    ["a_from_file?^", "a_to_file?^"],
                     DeterredMacroMap::read_to,
                     Some("Read from a file to a file".to_string()),
                 ),
@@ -172,9 +172,18 @@ impl DeterredMacroMap {
                 "readin".to_owned(),
                 DMacroSign::new(
                     "readin",
-                    ["a_file?"],
+                    ["a_file?^"],
                     DeterredMacroMap::read_in,
                     Some("Read from a file".to_string()),
+                ),
+            ),
+            (
+                "unwrap".to_owned(),
+                DMacroSign::new(
+                    "unwrap",
+                    ["a_literl_expr"],
+                    DeterredMacroMap::unwrap_expression,
+                    Some("Unwrap literal expression to expanded text".to_string()),
                 ),
             ),
         ]));
@@ -562,6 +571,22 @@ impl DeterredMacroMap {
                 "ifenvel requires three arguments".to_owned(),
             ))
         }
+    }
+
+    /// Unwrap literal expression
+    ///
+    /// # Usage
+    ///
+    /// $unwrap(\*expression*\)
+    fn unwrap(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        let result = processor.parse_chunk_args(level, "", args)?;
+        let result = processor.parse_chunk_args(level, "", &result)?;
+
+        Ok(if result.is_empty() {
+            None
+        } else {
+            Some(result)
+        })
     }
 
     /// Assert fail
