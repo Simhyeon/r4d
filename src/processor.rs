@@ -2508,6 +2508,12 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// Log message
+    pub(crate) fn log_message(&mut self, log: &str) -> RadResult<()> {
+        self.logger.log(log)?;
+        Ok(())
+    }
+
     /// Log error
     pub(crate) fn log_error(&mut self, log: &str) -> RadResult<()> {
         self.logger.elog(log)?;
@@ -2827,6 +2833,16 @@ impl<'processor> Processor<'processor> {
     /// ```
     pub fn is_true(&self, src: &str) -> RadResult<bool> {
         Utils::is_arg_true(src)
+    }
+
+    pub(crate) fn get_runtime_macro_body(&self, macro_name: &str) -> RadResult<&str> {
+        let body = &self
+            .map
+            .runtime
+            .get(macro_name, self.state.hygiene)
+            .unwrap()
+            .body;
+        Ok(body)
     }
 
     // </EXT>
