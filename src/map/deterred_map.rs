@@ -578,7 +578,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $unwrap(\*expression*\)
-    fn unwrap(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+    fn unwrap_expression(
+        args: &str,
+        level: usize,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
         let result = processor.parse_chunk_args(level, "", args)?;
         let result = processor.parse_chunk_args(level, "", &result)?;
 
