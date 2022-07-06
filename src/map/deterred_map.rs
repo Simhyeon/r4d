@@ -13,6 +13,7 @@ use crate::Processor;
 use crate::{AuthType, RadError};
 use std::collections::HashMap;
 use std::iter::FromIterator;
+use std::path::PathBuf;
 
 pub(crate) type DFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResult<Option<String>>;
 
@@ -638,8 +639,10 @@ impl DeterredMacroMap {
         }
         let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
         if args.len() >= 2 {
-            let file_path = std::path::PathBuf::from(trim!(&args[0]).as_ref());
-            let to_path = std::path::PathBuf::from(trim!(&args[1]).as_ref());
+            let file_path =
+                PathBuf::from(processor.parse_chunk_args(level, "", trim!(&args[0]).as_ref())?);
+            let to_path =
+                PathBuf::from(processor.parse_chunk_args(level, "", trim!(&args[1]).as_ref())?);
             let mut raw_include = false;
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
@@ -654,7 +657,11 @@ impl DeterredMacroMap {
 
                 // Optionally enable raw mode
                 if args.len() >= 3 {
-                    raw_include = Utils::is_arg_true(&args[2])?;
+                    raw_include = Utils::is_arg_true(&processor.parse_chunk_args(
+                        level,
+                        "",
+                        trim!(&args[2]).as_ref(),
+                    )?)?;
 
                     // You don't have to backup pause state because include wouldn't be triggered
                     // at the first place, if paused was true
@@ -710,7 +717,8 @@ impl DeterredMacroMap {
         }
         let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
         if !args.is_empty() {
-            let file_path = std::path::PathBuf::from(trim!(&args[0]).as_ref());
+            let file_path =
+                PathBuf::from(processor.parse_chunk_args(level, "", trim!(&args[0]).as_ref())?);
             let mut raw_include = false;
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
@@ -720,7 +728,11 @@ impl DeterredMacroMap {
 
                 // Optionally enable raw mode
                 if args.len() >= 2 {
-                    raw_include = Utils::is_arg_true(&args[2])?;
+                    raw_include = Utils::is_arg_true(&processor.parse_chunk_args(
+                        level,
+                        "",
+                        trim!(&args[1]).as_ref(),
+                    )?)?;
 
                     // You don't have to backup pause state because include wouldn't be triggered
                     // at the first place, if paused was true
