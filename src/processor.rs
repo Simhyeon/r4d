@@ -1474,7 +1474,6 @@ impl<'processor> Processor<'processor> {
             self.debugger.write_to_original(&line)?;
 
             let remainder = self.parse(lexor, frag, &line, 0, MAIN_CALLER)?;
-            let frag_on_going = !frag.is_empty();
 
             // Clear local variable macros
             self.map.clear_local();
@@ -1495,9 +1494,9 @@ impl<'processor> Processor<'processor> {
                         self.state.consume_newline = false;
                     }
                     Ok(ParseResult::FoundMacro(remainder))
-                }
-                // Print everything
-                else {
+                } else {
+                    // Frag is empty
+                    // Print everything
                     let mut remainder = remainder.as_str();
 
                     // Consume a newline only when Macro execution was not "multiline".
@@ -1511,8 +1510,8 @@ impl<'processor> Processor<'processor> {
                     // 1
                     // 2
                     if self.state.consume_newline {
-                        if !frag_on_going && (remainder == "\n" || remainder == "\r\n") {
-                            remainder = "";
+                        if remainder.ends_with('\n') || remainder.ends_with("\r\n") {
+                            remainder = remainder.trim_end();
                         }
                         self.state.consume_newline = false;
                     }
@@ -1559,12 +1558,31 @@ impl<'processor> Processor<'processor> {
         for line in Utils::full_lines(chunk.as_bytes()) {
             let line = line?;
 
+            // Deny newline
+            if self.state.deny_newline {
+                self.state.deny_newline = false;
+                if line == "\n" || line == "\r\n" {
+                    continue;
+                }
+            }
+
             // NOTE
             // Parse's final argument is some kind of legacy of previous logics
             // However it can detect self calling macros in some cases
             // parse_chunk_body needs this caller but, parse_chunk_args doesn't need because
             // this methods only parses arguments thus, infinite loop is unlikely to happen
-            result.push_str(&self.parse(&mut lexor, &mut frag, &line, level, "")?);
+            let mut line_result = self.parse(&mut lexor, &mut frag, &line, level, "")?;
+
+            // Escape new line
+            if self.state.escape_newline {
+                self.state.escape_newline = false;
+                if let Some(line) = line_result.strip_suffix("\r\n") {
+                    line_result = line.to_owned();
+                } else if let Some(line) = line_result.strip_suffix('\n') {
+                    line_result = line.to_owned();
+                };
+            }
+            result.push_str(&line_result);
 
             self.logger.add_line_number();
         }
@@ -1579,33 +1597,6 @@ impl<'processor> Processor<'processor> {
         self.logger.recover_lines(backup);
         Ok(result)
     } // parse_chunk_lines end
-
-    /// Parse chunk body without separating lines
-    ///
-    /// In contrast to parse_chunk_lines, parse_chunk doesn't create lines iterator but parses the
-    /// chunk as a single entity or line.
-    fn parse_chunk_body(&mut self, level: usize, caller: &str, chunk: &str) -> RadResult<String> {
-        let mut lexor = Lexor::new(
-            self.get_macro_char(),
-            self.get_comment_char(),
-            &self.state.comment_type,
-        );
-        let mut frag = MacroFragment::new();
-        let backup = self.logger.backup_lines();
-
-        // NOTE
-        // Parse's final argument is some kind of legacy of previous logics
-        // However it can detect self calling macros in some cases
-        let mut result = self.parse(&mut lexor, &mut frag, chunk, level, caller)?;
-
-        // Frag has not been cleared which means unterminated string has been not picked up yet.
-        if !frag.is_empty() {
-            result = frag.whole_string;
-        }
-
-        self.logger.recover_lines(backup);
-        Ok(result)
-    } // parse_chunk end
 
     /// Parse a given line
     ///
@@ -1875,8 +1866,11 @@ impl<'processor> Processor<'processor> {
             //Set arg to be substitued
             self.map.add_local_macro(level + 1, arg_type, &args[idx]);
         }
+
         // Process the rule body
-        let result = self.parse_chunk_body(level, name, &rule.body)?;
+        // NOTE
+        // Previously, this was parse_chunk_body
+        let result = self.parse_chunk_args(level, name, &rule.body)?;
 
         // Clear lower locals to prevent local collisions
         self.map.clear_lower_locals(level);
@@ -1915,7 +1909,7 @@ impl<'processor> Processor<'processor> {
             if frag.trim_input {
                 body = trim!(&body
                     .lines()
-                    .map(|l| l.trim())
+                    .map(|l| trim!(l))
                     .collect::<Vec<_>>()
                     .join(&self.state.newline))
                 .to_string();
@@ -2200,7 +2194,7 @@ impl<'processor> Processor<'processor> {
                 }
                 // If purge mode is set, don't print anything
                 // and don't print error
-                ErrorBehaviour::Purge => self.state.consume_newline = true,
+                ErrorBehaviour::Purge => (),
                 ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
             }
         }
@@ -2311,7 +2305,7 @@ impl<'processor> Processor<'processor> {
             }
             // If purge mode is set, don't print anything
             // and don't print error
-            ErrorBehaviour::Purge => self.state.consume_newline = true,
+            ErrorBehaviour::Purge => (),
             ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
         }
         Ok(())
