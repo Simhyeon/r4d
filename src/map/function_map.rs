@@ -107,6 +107,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "counter".to_owned(),
+                FMacroSign::new(
+                    "counter",
+                    ["a_macro_name^","a_counter_type^"],
+                    Self::change_counter,
+                    Some("Increae/decrease counter macro".to_string()),
+                ),
+            ),
+            (
                 "ceil".to_owned(),
                 FMacroSign::new(
                     "ceil",
@@ -425,6 +434,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "log".to_owned(),
+                FMacroSign::new(
+                    "log",
+                    ["a_log^"],
+                    Self::log_message,
+                    Some("Log message to console".to_string()),
+                ),
+            ),
+            (
                 "lower".to_owned(),
                 FMacroSign::new(
                     "lower",
@@ -494,6 +512,16 @@ impl FunctionMacroMap {
                     ["a_count+^"],
                     Self::newline,
                     Some("A platform specific newline. It's behaviour can be configured.".to_string()),
+                ),
+            ),
+            (
+                "notat".to_owned(),
+                FMacroSign::new(
+                    "notat",
+                    ["a_number^", "a_notation^"],
+                    Self::change_notation,
+                    Some("Chagne the notaion of a number
+- Notations : bin,oct,hex".to_string()),
                 ),
             ),
             (
@@ -1889,6 +1917,49 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Increment Counter
+    ///
+    /// # Usage
+    ///
+    /// $counter(name, type)
+    fn change_counter(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let counter_name = trim!(&args[0]);
+            let counter_type = trim!(&args[1]);
+            // Crate new macro if non-existent
+            if !p.contains_macro(&counter_name, MacroType::Runtime) {
+                p.add_static_rules(&[(&counter_name, "0")])?;
+            }
+            let body = p
+                .get_runtime_macro_body(&counter_name)?
+                .parse::<isize>()
+                .map_err(|_| {
+                    RadError::UnallowedMacroExecution(
+                        "You cannot call counter on non-number macro values".to_string(),
+                    )
+                })?;
+            match counter_type.to_lowercase().as_ref() {
+                "plus" => {
+                    p.replace_macro(&counter_name, &(body + 1).to_string());
+                }
+                "minus" => {
+                    p.replace_macro(&counter_name, &(body - 1).to_string());
+                }
+                _ => {
+                    return Err(RadError::InvalidArgument(format!(
+                        "Given counter type is not valid \"{}\"",
+                        counter_type
+                    )))
+                }
+            }
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "counter requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     /// Join an array
     ///
     /// # Usage
@@ -3069,6 +3140,16 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Log message
+    ///
+    /// # Usage
+    ///
+    /// $log(This is a problem)
+    fn log_message(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        p.log_message(args)?;
+        Ok(None)
+    }
+
     /// Get max value from array
     ///
     /// # Usage
@@ -3465,6 +3546,40 @@ impl FunctionMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "sep requires two argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Change a notation of a number
+    ///
+    /// # Usage
+    ///
+    /// $notat(23,binary)
+    fn change_notation(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let number = trim!(&args[0]);
+            let notation = trim!(&args[1]).to_lowercase();
+            let format = if let Ok(num) = number.parse::<isize>() {
+                match notation.as_str() {
+                    "bin" => format!("{:b}", num),
+                    "oct" => format!("{:o}", num),
+                    "hex" => format!("{:x}", num),
+                    _ => {
+                        return Err(RadError::InvalidArgument(format!(
+                            "Unsupported notation format \"{}\"",
+                            notation
+                        )))
+                    }
+                }
+            } else {
+                return Err(RadError::InvalidArgument(
+                    "Notat can only change notation of signed integer ".to_owned(),
+                ));
+            };
+            Ok(Some(format))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Notat requires two arguments".to_owned(),
             ))
         }
     }
