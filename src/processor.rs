@@ -1284,6 +1284,7 @@ impl<'processor> Processor<'processor> {
         } else {
             None
         };
+
         // Set file as name of given path
         self.set_file(path.as_ref().to_str().unwrap())?;
 
@@ -1461,7 +1462,6 @@ impl<'processor> Processor<'processor> {
             match self.state.flow_control {
                 FlowControl::Escape => return Ok(ParseResult::Printable(line)),
                 FlowControl::Exit => {
-                    self.reset_flow_control();
                     return Ok(ParseResult::Eoi);
                 }
                 FlowControl::None => (),
@@ -1944,9 +1944,13 @@ impl<'processor> Processor<'processor> {
         }
 
         // Save to container if it has value then return
+        // **IMPORTANT**
+        // However this doesn't have priority over relaying
         if let Some(cont) = container.as_mut() {
-            cont.push_str(content);
-            return Ok(());
+            if self.state.relay.is_empty() {
+                cont.push_str(content);
+                return Ok(());
+            }
         }
 
         // Redirect to cache if set
@@ -2254,7 +2258,7 @@ impl<'processor> Processor<'processor> {
         match evaluation_result {
             // If panicked, this means unrecoverable error occured.
             Err(error) => {
-                self.lex_branch_end_frag_eval_result_error(error, frag, remainder)?;
+                self.lex_branch_end_frag_eval_result_error(level, error, frag, remainder)?;
             }
             Ok(eval_variant) => {
                 self.lex_branch_end_frag_eval_result_ok(
@@ -2284,13 +2288,17 @@ impl<'processor> Processor<'processor> {
     /// When evaluation failed for various reasons.
     fn lex_branch_end_frag_eval_result_error(
         &mut self,
-        _error: RadError,
+        level: usize,
+        error: RadError,
         frag: &MacroFragment,
         remainder: &mut String,
     ) -> RadResult<()> {
-        // TODO
-        // I disabled the code because it rewind backward which created tons of error messages
-        //self.log_error(&error.to_string())?;
+        // Only print error when the macro is at the outmost level.
+        // THis is necessary because failed macro inside nested defnition will cascade a error
+        // messages by level 0 macro
+        if level == 0 {
+            self.log_error(&error.to_string())?;
+        }
         match self.state.behaviour {
             // Re-throw error
             // It is not captured in cli but it can be handled by library user.
