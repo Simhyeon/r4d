@@ -492,6 +492,7 @@ impl std::str::FromStr for DiffOption {
 }
 
 /// Enum that controls processing flow
+#[derive(Debug, PartialEq)]
 pub enum FlowControl {
     None,
     Escape,
