@@ -617,11 +617,12 @@ impl std::fmt::Display for ProcessInput {
 }
 
 /// Standards of behaviour
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum ErrorBehaviour {
     Strict,
     Lenient,
     Purge,
+    Assert,
 }
 
 #[derive(Clone)]

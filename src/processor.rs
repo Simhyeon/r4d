@@ -2190,6 +2190,7 @@ impl<'processor> Processor<'processor> {
         if let Err(err) = self.add_rule(frag) {
             self.log_error(&err.to_string())?;
             match self.state.behaviour {
+                ErrorBehaviour::Assert => return Err(RadError::AssertFail),
                 // Re-throw error
                 // It is not captured in cli but it can be handled by library user.
                 ErrorBehaviour::Strict => {
@@ -2229,6 +2230,7 @@ impl<'processor> Processor<'processor> {
 
             // Handle empty name error
             match self.state.behaviour {
+                ErrorBehaviour::Assert => return Err(RadError::AssertFail),
                 ErrorBehaviour::Strict => return Err(err), // Error
                 ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
                 ErrorBehaviour::Purge => (),
@@ -2299,6 +2301,7 @@ impl<'processor> Processor<'processor> {
             self.state.error_cache.replace(error);
         }
         match self.state.behaviour {
+            ErrorBehaviour::Assert => return Err(RadError::AssertFail),
             // Re-throw error
             // It is not captured in cli but it can be handled by library user.
             ErrorBehaviour::Strict => {
