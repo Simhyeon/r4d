@@ -1913,15 +1913,12 @@ impl<'processor> Processor<'processor> {
             }
 
             if frag.trim_input {
-                body = body
+                body = trim!(&body
                     .lines()
                     .map(|l| l.trim())
                     .collect::<Vec<_>>()
-                    .join(&self.state.newline);
-            }
-
-            if frag.trimmed {
-                body = body.trim().to_owned();
+                    .join(&self.state.newline))
+                .to_string();
             }
 
             self.map
