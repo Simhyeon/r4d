@@ -249,7 +249,6 @@ impl DeterredMacroMap {
             for (count, value) in loopable.split(sep).enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
-
                 processor.add_new_local_macro(level, ":", value);
                 let result = processor.parse_chunk_args(level, "", body)?;
 
