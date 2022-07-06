@@ -1,7 +1,11 @@
 use crate::formatter::Formatter;
+use crate::models::FileTarget;
+use crate::models::FlowControl;
 use crate::models::MacroType;
 use crate::models::RadResult;
+use crate::models::RelayTarget;
 use crate::models::{ExtMacroBody, ExtMacroBuilder};
+use crate::parser::GreedyState;
 use crate::trim;
 use crate::utils::Utils;
 use crate::ArgParser;
@@ -152,6 +156,24 @@ impl DeterredMacroMap {
                     ["a_bool?", "a_content"],
                     DeterredMacroMap::if_queue_content,
                     Some("If true, then queue expressions".to_string()),
+                ),
+            ),
+            (
+                "readto".to_owned(),
+                DMacroSign::new(
+                    "readto",
+                    ["a_from_file?", "a_to_file?"],
+                    DeterredMacroMap::read_to,
+                    Some("Read from a file to a file".to_string()),
+                ),
+            ),
+            (
+                "readin".to_owned(),
+                DMacroSign::new(
+                    "readin",
+                    ["a_file?"],
+                    DeterredMacroMap::read_in,
+                    Some("Read from a file".to_string()),
                 ),
             ),
         ]));
@@ -593,6 +615,142 @@ impl DeterredMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "ifque requires two argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Read to
+    ///
+    /// # Usage
+    ///
+    /// $readto(file_a,file_b)
+    fn read_to(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        // Needs both permission
+        if !Utils::is_granted("readto", AuthType::FIN, processor)?
+            || !Utils::is_granted("readto", AuthType::FOUT, processor)?
+        {
+            return Ok(None);
+        }
+        if level != 1 {
+            return Err(RadError::UnallowedMacroExecution(
+                "Readto doesn't support nested buf read".to_string(),
+            ));
+        }
+        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        if args.len() >= 2 {
+            let file_path = std::path::PathBuf::from(trim!(&args[0]).as_ref());
+            let to_path = std::path::PathBuf::from(trim!(&args[1]).as_ref());
+            let mut raw_include = false;
+            if file_path.is_file() {
+                let canonic = file_path.canonicalize()?;
+                Utils::check_include_sanity(processor, &canonic)?;
+
+                // Check path sanity if to_path exists
+                if to_path.exists() {
+                    Utils::check_include_sanity(processor, &to_path.canonicalize()?)?;
+                }
+                // Set sandbox after error checking or it will act starngely
+                processor.set_sandbox(true);
+
+                // Optionally enable raw mode
+                if args.len() >= 3 {
+                    raw_include = Utils::is_arg_true(&args[2])?;
+
+                    // You don't have to backup pause state because include wouldn't be triggered
+                    // at the first place, if paused was true
+                    if raw_include {
+                        processor.state.paused = true;
+                    }
+                }
+
+                let mut file_target = FileTarget::empty();
+                file_target.set_path(&to_path);
+                processor.state.relay.push(RelayTarget::File(file_target));
+
+                // Create chunk
+                let chunk = processor.process_file_as_chunk(&file_path)?;
+
+                // Reset flow control per processing
+                if processor.state.flow_control != FlowControl::None {
+                    processor.reset_flow_control();
+                }
+                if raw_include {
+                    processor.state.paused = false; // Recover paused state
+                }
+                processor.set_sandbox(false);
+                processor.state.input_stack.remove(&canonic); // Collect stack
+                processor.state.relay.pop(); // Pop relay
+                Ok(chunk)
+            } else {
+                Err(RadError::InvalidArgument(format!(
+                    "readto cannot read non-file \"{}\"",
+                    file_path.display()
+                )))
+            }
+        } else {
+            Err(RadError::InvalidArgument(
+                "readto requires two argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Read in
+    ///
+    /// # Usage
+    ///
+    /// $readin(file_a)
+    fn read_in(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("readin", AuthType::FIN, processor)? {
+            return Ok(None);
+        }
+        if level != 1 {
+            return Err(RadError::UnallowedMacroExecution(
+                "Readin doesn't support nested buf read".to_string(),
+            ));
+        }
+        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        if !args.is_empty() {
+            let file_path = std::path::PathBuf::from(trim!(&args[0]).as_ref());
+            let mut raw_include = false;
+            if file_path.is_file() {
+                let canonic = file_path.canonicalize()?;
+                Utils::check_include_sanity(processor, &canonic)?;
+                // Set sandbox after error checking or it will act starngely
+                processor.set_sandbox(true);
+
+                // Optionally enable raw mode
+                if args.len() >= 2 {
+                    raw_include = Utils::is_arg_true(&args[2])?;
+
+                    // You don't have to backup pause state because include wouldn't be triggered
+                    // at the first place, if paused was true
+                    if raw_include {
+                        processor.state.paused = true;
+                    }
+                }
+
+                // Create chunk
+                let chunk = processor.process_file(&file_path)?;
+
+                // Reset flow control per processing
+                if processor.state.flow_control != FlowControl::None {
+                    processor.reset_flow_control();
+                }
+                if raw_include {
+                    processor.state.paused = false; // Recover paused state
+                }
+                processor.set_sandbox(false);
+                processor.state.input_stack.remove(&canonic); // Collect stack
+                Ok(chunk)
+            } else {
+                Err(RadError::InvalidArgument(format!(
+                    "readto cannot read non-file \"{}\"",
+                    file_path.display()
+                )))
+            }
+        } else {
+            Err(RadError::InvalidArgument(
+                "readto requires two argument".to_owned(),
             ))
         }
     }
