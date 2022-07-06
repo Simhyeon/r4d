@@ -1,11 +1,12 @@
 use crate::auth::{AuthState, AuthType};
 use crate::error::RadError;
 use crate::logger::WarningType;
-use crate::models::RadResult;
+use crate::models::{ProcessInput, RadResult, RelayTarget};
 use crate::Processor;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::io::BufRead;
+use std::path::Path;
 
 lazy_static! {
     pub static ref TRIM: Regex = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap();
@@ -228,6 +229,41 @@ impl Utils {
         }
         if err_content.len() != 0 {
             write!(std::io::stderr(), "{}", &err_content)?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn check_include_sanity(processor: &Processor, canonic: &Path) -> RadResult<()> {
+        // Rules 1
+        // You cannot include self
+        if let ProcessInput::File(path) = &processor.state.current_input {
+            if path.canonicalize()? == canonic {
+                return Err(RadError::UnallowedMacroExecution(format!(
+                    "Processing self is not allowed : \"{}\"",
+                    &path.display()
+                )));
+            }
+        }
+
+        // Rules 1.5
+        // Field is in input stack
+        // This unwraps is mostly ok ( I guess )
+        if processor.state.input_stack.contains(canonic) {
+            return Err(RadError::UnallowedMacroExecution(format!(
+                "Processing self is not allowed : \"{}\"",
+                &canonic.file_name().unwrap().to_string_lossy()
+            )));
+        }
+
+        // Rules 2
+        // You cannot include file that is being relayed
+        if let Some(RelayTarget::File(target)) = &processor.state.relay.last() {
+            if target.path.canonicalize()? == canonic {
+                return Err(RadError::UnallowedMacroExecution(format!(
+                    "Processing relay target while relaying to the file is not allowed : \"{}\"",
+                    &target.path.display()
+                )));
+            }
         }
         Ok(())
     }
