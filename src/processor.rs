@@ -1264,7 +1264,6 @@ impl<'processor> Processor<'processor> {
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
-        println!("BEFORE READ");
         self.process_buffer(&mut reader, backup, false)?;
         self.organize_and_clear_cache()
     }
@@ -1315,6 +1314,7 @@ impl<'processor> Processor<'processor> {
         #[cfg(feature = "debug")]
         self.debugger
             .user_input_on_start(&self.state.current_input.to_string(), &mut self.logger)?;
+
         loop {
             #[cfg(feature = "debug")]
             if let Some(line) = line_iter.peek() {
@@ -1324,7 +1324,13 @@ impl<'processor> Processor<'processor> {
                 // Only if debug switch is nextline
                 self.debugger.user_input_on_line(&frag, &mut self.logger)?;
             }
-            let result = self.parse_line(&mut line_iter, &mut lexor, &mut frag)?;
+            //let result = self.parse_line(&mut line_iter, &mut lexor, &mut frag)?;
+            let result = match self.parse_line(&mut line_iter, &mut lexor, &mut frag) {
+                Ok(oo) => oo,
+                Err(err) => {
+                    return Err(err);
+                }
+            };
             match result {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
@@ -1808,7 +1814,13 @@ impl<'processor> Processor<'processor> {
         if self.map.function.contains(name) {
             // Func always exists, because contains succeeded.
             let func = self.map.function.get_func(name).unwrap();
-            let final_result = func(&args, self)?;
+            //let final_result = func(&args, self)?;
+            let final_result = match func(&args, self) {
+                Ok(e) => e,
+                Err(err) => {
+                    return Err(err);
+                }
+            };
             Ok(final_result)
         }
         // No macros found to evaluate
@@ -2272,11 +2284,13 @@ impl<'processor> Processor<'processor> {
     /// When evaluation failed for various reasons.
     fn lex_branch_end_frag_eval_result_error(
         &mut self,
-        error: RadError,
+        _error: RadError,
         frag: &MacroFragment,
         remainder: &mut String,
     ) -> RadResult<()> {
-        self.log_error(&error.to_string())?;
+        // TODO
+        // I disabled the code because it rewind backward which created tons of error messages
+        //self.log_error(&error.to_string())?;
         match self.state.behaviour {
             // Re-throw error
             // It is not captured in cli but it can be handled by library user.

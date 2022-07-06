@@ -1,6 +1,6 @@
-use r4d::RadResult;
 #[cfg(feature = "clap")]
-use r4d::{RadCli, RadError};
+use r4d::RadCli;
+use r4d::RadResult;
 
 pub fn main() -> RadResult<()> {
     // Enable color on pager such as "less"
