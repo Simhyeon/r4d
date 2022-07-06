@@ -64,6 +64,7 @@ pub(crate) struct ProcessorState {
     pub input_stack: HashSet<PathBuf>,
     pub newline: String,
     pub paused: bool,
+    pub error_cache: Option<RadError>,
     // This is reserved for hygienic execution
     pub hygiene: Hygiene,
     pub pipe_truncate: bool,
@@ -97,6 +98,7 @@ impl ProcessorState {
             pipe_truncate: true,
             pipe_map: HashMap::new(),
             paused: false,
+            error_cache: None,
             hygiene: Hygiene::None,
             relay: vec![],
             behaviour: ErrorBehaviour::Strict,
@@ -1377,7 +1379,7 @@ impl<'processor> Processor<'processor> {
         }
 
         if use_container {
-            Ok(cont)
+            Ok(cont.filter(|t| !t.is_empty()))
         } else {
             Ok(None)
         }
@@ -1476,6 +1478,8 @@ impl<'processor> Processor<'processor> {
 
             // Clear local variable macros
             self.map.clear_local();
+            // Reset error cache
+            self.state.error_cache.take();
 
             // Clear volatile variables when macro hygiene is enabled
             if self.state.hygiene == Hygiene::Macro {
@@ -2258,7 +2262,7 @@ impl<'processor> Processor<'processor> {
         match evaluation_result {
             // If panicked, this means unrecoverable error occured.
             Err(error) => {
-                self.lex_branch_end_frag_eval_result_error(level, error, frag, remainder)?;
+                self.lex_branch_end_frag_eval_result_error(error, frag, remainder)?;
             }
             Ok(eval_variant) => {
                 self.lex_branch_end_frag_eval_result_ok(
@@ -2288,16 +2292,13 @@ impl<'processor> Processor<'processor> {
     /// When evaluation failed for various reasons.
     fn lex_branch_end_frag_eval_result_error(
         &mut self,
-        level: usize,
         error: RadError,
         frag: &MacroFragment,
         remainder: &mut String,
     ) -> RadResult<()> {
-        // Only print error when the macro is at the outmost level.
-        // THis is necessary because failed macro inside nested defnition will cascade a error
-        // messages by level 0 macro
-        if level == 0 {
+        if self.state.error_cache.is_none() {
             self.log_error(&error.to_string())?;
+            self.state.error_cache.replace(error);
         }
         match self.state.behaviour {
             // Re-throw error
