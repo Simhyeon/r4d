@@ -1677,6 +1677,11 @@ impl FunctionMacroMap {
 
                 // Create chunk
                 let chunk = processor.process_file_as_chunk(&file_path)?;
+
+                // Reset flow control per processing
+                if processor.state.flow_control != FlowControl::None {
+                    processor.reset_flow_control();
+                }
                 if raw_include {
                     processor.state.paused = false; // Recover paused state
                 }
