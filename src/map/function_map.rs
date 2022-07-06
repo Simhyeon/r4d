@@ -1660,7 +1660,7 @@ impl FunctionMacroMap {
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
 
-                Self::check_include_sanity(processor, &file_path, &canonic)?;
+                Utils::check_include_sanity(processor, &canonic)?;
                 // Set sandbox after error checking or it will act starngely
                 processor.set_sandbox(true);
 
@@ -1700,44 +1700,6 @@ impl FunctionMacroMap {
                 "Include requires an argument".to_owned(),
             ))
         }
-    }
-
-    fn check_include_sanity(
-        processor: &Processor,
-        file_path: &Path,
-        canonic: &Path,
-    ) -> RadResult<()> {
-        // Rules 1
-        // You cannot include self
-        if let ProcessInput::File(path) = &processor.state.current_input {
-            if path.canonicalize()? == canonic {
-                return Err(RadError::InvalidArgument(format!(
-                    "You cannot include self while including a file : \"{}\"",
-                    &path.display()
-                )));
-            }
-        }
-
-        // Rules 1.5
-        // Field is in input stack
-        if processor.state.input_stack.contains(canonic) {
-            return Err(RadError::InvalidArgument(format!(
-                "You cannot include self while including a file : \"{}\"",
-                &file_path.display()
-            )));
-        }
-
-        // Rules 2
-        // You cannot include file that is being relayed
-        if let Some(RelayTarget::File(target)) = &processor.state.relay.last() {
-            if target.path.canonicalize()? == file_path.canonicalize()? {
-                return Err(RadError::InvalidArgument(format!(
-                    "You cannot include relay target while relaying to the file : \"{}\"",
-                    &target.path.display()
-                )));
-            }
-        }
-        Ok(())
     }
 
     /// Repeat given expression about given amount times
