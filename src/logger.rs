@@ -160,6 +160,46 @@ impl<'logger> Logger<'logger> {
         }
     }
 
+    /// Log message
+    pub fn log(&mut self, log: &str) -> RadResult<()> {
+        let last_char = self.try_get_last_char();
+        if let Some(option) = &mut self.write_option {
+            match option {
+                WriteOption::File(file) => {
+                    file.write_all(
+                        format!(
+                            "Log : {} -> {}:{}:{}{}",
+                            log, self.current_input, self.last_line_number, last_char, LINE_ENDING
+                        )
+                        .as_bytes(),
+                    )?;
+                }
+                WriteOption::Terminal => {
+                    write!(
+                        std::io::stderr(),
+                        "{}: {} {} --> {}:{}:{}{}",
+                        Utils::green("log"),
+                        log,
+                        LINE_ENDING,
+                        self.current_input,
+                        self.last_line_number,
+                        last_char,
+                        LINE_ENDING
+                    )?;
+                }
+                WriteOption::Variable(var) => {
+                    write!(
+                        var,
+                        "log : {} -> {}:{}:{}{}",
+                        log, self.current_input, self.last_line_number, last_char, LINE_ENDING
+                    )?;
+                }
+                WriteOption::Discard | WriteOption::Return => (),
+            } // Match end
+        }
+        Ok(())
+    }
+
     /// Log error
     pub fn elog(&mut self, log: &str) -> RadResult<()> {
         self.error_count += 1;
