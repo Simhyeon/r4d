@@ -905,6 +905,15 @@ impl FunctionMacroMap {
                 ),
             );
             map.insert(
+                "temp".to_owned(),
+                FMacroSign::new(
+                    "temp",
+                    ESR,
+                    Self::get_temp_path,
+                    Some("Get temp path".to_string()),
+                ),
+            );
+            map.insert(
                 "include".to_owned(),
                 FMacroSign::new(
                     "include",
@@ -2990,6 +2999,16 @@ impl FunctionMacroMap {
                 "Temp requires an argument".to_owned(),
             ))
         }
+    }
+
+    /// Get temporary path
+    ///
+    /// # Usage
+    ///
+    /// $temp()
+    #[cfg(not(feature = "wasm"))]
+    fn get_temp_path(_: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        Ok(Some(processor.state.temp_target.to_string()))
     }
 
     /// Get number
