@@ -69,8 +69,11 @@ impl FunctionMacroMap {
                     ESR,
                     Self::get_pipe,
                     Some(
-                        "Get piped value. This truncates pipe vaule by default if not configured"
-                            .to_string(),
+                        "Get piped value. This truncates original value by default if not configured
+
+# Exmaple
+
+$:()".to_string(),
                     ),
                 ),
             ),
@@ -78,11 +81,20 @@ impl FunctionMacroMap {
                 "append".to_owned(),
                 FMacroSign::new(
                     "append",
-                    ["a_macro_name", "a_content"],
+                    ["a_macro_name^", "a_content"],
                     Self::append,
                     Some(
-                        "Append content to a macro. If macro doesn't exist, yields error"
-                            .to_string(),
+                        "Append contents to a macro. If macro doesn't exist, yields error
+
+# Arguments
+- a_macro_name : a macro name to append to ( trimmed )
+- a_content    : contents to be added
+
+# Example
+
+$define(container=Before)
+$append(container,$space()After)
+$assert($container(),Before After)".to_string(),
                     ),
                 ),
             ),
@@ -92,9 +104,18 @@ impl FunctionMacroMap {
                     "arr",
                     ["a_values","a_sep+", "a_retain_expr+"],
                     Self::array,
-                    Some("Convert spaced array into comma array. You can give surplus arguments to configure behaviour.
-    - Second : array separator
-    - Third  : Regex expression to retain".to_string()),
+                    Some("Convert spaced array into a comma-ed array. You can give surplus arguments to configure behaviour.
+
+# Arguments
+
+- a_values      : space separated values
+- a_sep         : New separator (optional)
+- a_retain_expr : Regex to match from values (optional)
+
+# Example
+
+$static(script,$arr($syscmd(ls),$nl(),\\.sh))
+$assert($script(),auto.sh)".to_string()),
                 ),
             ),
             (
@@ -103,7 +124,19 @@ impl FunctionMacroMap {
                     "assert",
                     ["a_lvalue", "a_rvalue"],
                     Self::assert,
-                    Some("Compare lvalue and rvalue, panics with two values are not equal".to_string()),
+                    Some("Compare lvalue and rvalue, panics with two values are not equal
+
+# Arguments
+
+- a_lvalue : Left  value to compare
+- a_rvalue : Right value to compare
+
+# Example
+
+% Succeed
+$assert(1,1)
+% Fails
+$assert(a,b)".to_string()),
                 ),
             ),
             (
@@ -112,7 +145,23 @@ impl FunctionMacroMap {
                     "counter",
                     ["a_macro_name^","a_counter_type^"],
                     Self::change_counter,
-                    Some("Increae/decrease counter macro".to_string()),
+                    Some("Increae/decrease counter macro. Counter's value should be a number and can be negative. 
+
+# Arguments
+
+- a_macro_name   : Macro name to use as counter ( trimmed )
+- a_counter_type : Counter opration type [ plus, minus ]
+
+# Example
+
+$define(ct=0)
+$counter(ct,plus)
+$counter(ct,plus)
+$counter(ct,plus)
+$assert($ct(),3)
+
+$counter(ct,minus)
+$assert($ct(),2)".to_string()),
                 ),
             ),
             (
@@ -121,7 +170,16 @@ impl FunctionMacroMap {
                     "ceil",
                     ["a_number^"],
                     Self::get_ceiling,
-                    Some("Get ceiling of a number".to_string()),
+                    Some("Get ceiling of a number
+
+# Arguments
+
+- a_number : Number to get a ceiling from ( trimmed )
+
+# Example
+
+$assert($ceil(0.9),1)
+$assert($ceil(3.1),4)".to_string()),
                 ),
             ),
             (
@@ -130,7 +188,20 @@ impl FunctionMacroMap {
                     "chomp",
                     ["a_content"],
                     Self::chomp,
-                    Some("Remove duplicate newlines from content".to_string()),
+                    Some("Remove duplicate newlines from content
+
+# Arguments
+
+- a_content: Contents to chomp
+
+# Example
+
+$staticr(lines,Upper
+
+
+Down)
+$assert($countl($lines()),4)
+$assert($countl($chomp($lines())),3)".to_string()),
                 ),
             ),
             (
@@ -139,7 +210,11 @@ impl FunctionMacroMap {
                     "clear",
                     ESR,
                     Self::clear,
-                    Some("Clear volatile macros".to_string()),
+                    Some("Clear volatile macros. This macro is intended to be used when hygiene mode is enabled and user wants to clear volatile on right away without waiting.
+
+# Example
+
+$clear()".to_string()),
                 ),
             ),
             (
@@ -148,7 +223,21 @@ impl FunctionMacroMap {
                     "comp",
                     ["a_content"],
                     Self::compress,
-                    Some("Apply trim and chomp to content at the same time".to_string()),
+                    Some("Apply both trim and chomp, or say compress content
+
+# Arguments
+
+- a_content : Content to compress
+
+# Example
+$staticr(lines,
+    upper
+    
+
+    down
+)
+$assert($countl($lines()),5)
+$assert($countl($comp($lines())),3)".to_string()),
                 ),
             ),
             (
@@ -157,7 +246,15 @@ impl FunctionMacroMap {
                     "count",
                     ["a_array"],
                     Self::count,
-                    Some("Get counts of an array".to_string()),
+                    Some("Get counts of an array
+
+# Arguments
+
+- a_array : An array to get counts from
+
+# Example
+
+$assert($count(a,b,c),3)".to_string()),
                 ),
             ),
             (
@@ -166,16 +263,33 @@ impl FunctionMacroMap {
                     "countw",
                     ["a_array"],
                     Self::count_word,
-                    Some("Get count of words".to_string()),
+                    Some("Get count of words
+# Arguments
+
+- a_array : An array to get word counts from
+
+# Example
+
+$assert($countw(hello world),2)".to_string()),
                 ),
             ),
             (
                 "countl".to_owned(),
                 FMacroSign::new(
                     "countl",
-                    ["a_content"],
+                    ["a_lines"],
                     Self::count_lines,
-                    Some("Get counts of lines".to_string()),
+                    Some("Get counts of lines. This ignores empty line
+
+# Arguments
+
+- a_lines : Lines to get counts from
+
+# Example
+
+$assert(3,$countl(1
+2
+3))".to_string()),
                 ),
             ),
             (
@@ -184,7 +298,13 @@ impl FunctionMacroMap {
                     "dnl",
                     ESR,
                     Self::deny_newline,
-                    Some("Deny next newline. This technically squashes following two consequent line_ending into a single one".to_string()),
+                    Some("Deny next newline. This technically squashes following two consequent line_ending into a single one
+
+# Example
+
+$assert(a$nl()b,a$dnl()
+
+b)".to_string()),
                 ),
             ),
             (
@@ -193,16 +313,35 @@ impl FunctionMacroMap {
                     "declare",
                     ["a_macro_names"],
                     Self::declare,
-                    Some("Declare multiple variables separated by commas".to_string()),
+                    Some("Declare multiple variables separated by commas
+
+# Arguments
+
+- a_macro_names: Macro names array
+
+# Example
+
+$declare(first,second)
+$assert($first(),$empty())".to_string()),
                 ),
             ),
             (
                 "docu".to_owned(),
                 FMacroSign::new(
                     "docu",
-                    ["a_macro_name", "a_content"],
+                    ["a_macro_name", "a_doc"],
                     Self::document,
-                    Some("Append documents(description) to a macro".to_string()),
+                    Some("Append documents(description) to a macro. You cannot directly retreive documentation from macros but by --man flag.
+
+# Arguments
+
+- a_macro_name : Macro to append documentation
+- a_doc        : A document to append
+
+# Example
+
+$define(test=)
+$docu(test,This is test macro)".to_string()),
                 ),
             ),
             (
@@ -211,7 +350,11 @@ impl FunctionMacroMap {
                     "empty",
                     ESR,
                     Self::print_empty,
-                    Some("Print nothing".to_string()),
+                    Some("Print nothing. Used for semantic formatting.
+
+# Example
+
+$assert( ,$empty())".to_string()),
                 ),
             ),
             (
@@ -220,17 +363,26 @@ impl FunctionMacroMap {
                     "enl",
                     ESR,
                     Self::escape_newline,
-                    Some("Deny following new line".to_string()),
+                    Some("Escape following new line
+
+# Example
+
+$assert(ab,a$enl()
+b)".to_string()),
                 ),
             ),
             (
                 "escape".to_owned(),
                 FMacroSign::new(
                     "escape",
-                    ["a_escape?"],
+                    ESR,
                     Self::escape,
                     Some("Escape processing from the invocation.
-- NOTE : This flow control only sustains for the processing.".to_string()),
+- NOTE : This flow control only sustains for the processing.
+
+# Example
+
+$escape()".to_string()),
                 ),
             ),
             (
@@ -240,7 +392,11 @@ impl FunctionMacroMap {
                     ESR,
                     Self::exit,
                     Some("Exit processing from invocation
-- NOTE : This flow control only sustains for the processing".to_string()),
+- NOTE : This flow control only sustains for the processing
+
+# Example
+
+$exit()".to_string()),
                 ),
             ),
             (
@@ -249,7 +405,16 @@ impl FunctionMacroMap {
                     "input",
                     ["a_absolute?^"],
                     Self::print_current_input,
-                    Some("Print current file input.".to_string()),
+                    Some("Print current file input.
+
+# Arguments
+
+- a_absolute : Whether to print input path as absolute
+
+# Example
+
+$assert($input(),test)
+$assert($input(true),/home/user/dir/test)".to_string()),
                 ),
             ),
             (
@@ -276,7 +441,16 @@ impl FunctionMacroMap {
                     "floor",
                     ["a_number^"],
                     Self::get_floor,
-                    Some("Get floor integer from a given number".to_string()),
+                    Some("Get floor integer from a given number
+
+# Arguments
+
+- a_number : Number to get a floor from ( trimmed )
+
+# Example
+
+$assert($floor( 1.9),1)
+$assert($floor(-3.1),-4)".to_string()),
                 ),
             ),
             (
