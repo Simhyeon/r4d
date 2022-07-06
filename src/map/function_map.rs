@@ -1645,6 +1645,7 @@ impl FunctionMacroMap {
         let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
         if !args.is_empty() {
             let raw = trim!(&args[0]);
+            let mut raw_include = false;
             let mut file_path = PathBuf::from(raw.as_ref());
 
             // if current input is not stdin and file path is relative
@@ -1665,7 +1666,7 @@ impl FunctionMacroMap {
 
                 // Optionally enable raw mode
                 if args.len() >= 2 {
-                    let raw_include = Utils::is_arg_true(&args[1])?;
+                    raw_include = Utils::is_arg_true(&args[1])?;
 
                     // You don't have to backup pause state because include wouldn't be triggered
                     // at the first place, if paused was true
@@ -1676,7 +1677,9 @@ impl FunctionMacroMap {
 
                 // Create chunk
                 let chunk = processor.process_file_as_chunk(&file_path)?;
-                processor.state.paused = false; // Recover paused state
+                if raw_include {
+                    processor.state.paused = false; // Recover paused state
+                }
                 processor.set_sandbox(false);
                 processor.state.input_stack.remove(&canonic); // Collect stack
                 Ok(chunk)
