@@ -392,9 +392,18 @@ impl FunctionMacroMap {
                 "let".to_owned(),
                 FMacroSign::new(
                     "let",
-                    ["a_macro_name^", "a_value"],
+                    ["a_macro_name^", "a_value^"],
                     Self::bind_to_local,
                     Some("Bind a local macro. Every local macro gets removed after outmost level macro expansion ends.".to_string()),
+                ),
+            ),
+            (
+                "letr".to_owned(),
+                FMacroSign::new(
+                    "letr",
+                    ["a_macro_name^", "a_value"],
+                    Self::bind_to_local_raw,
+                    Some("Bind a local macro with raw value. Every local macro gets removed after outmost level macro expansion ends.".to_string()),
                 ),
             ),
             (
@@ -666,9 +675,18 @@ impl FunctionMacroMap {
                 "static".to_owned(),
                 FMacroSign::new(
                     "static",
-                    ["a_macro_name^", "a_value"],
+                    ["a_macro_name^", "a_value^"],
                     Self::define_static,
                     Some("Create a static macro. Static macro is eagerly expanded not like define".to_string()),
+                ),
+            ),
+            (
+                "staticr".to_owned(),
+                FMacroSign::new(
+                    "staticr",
+                    ["a_macro_name^", "a_value"],
+                    Self::define_static_raw,
+                    Some("Create a static macro with raw value. Static macro is eagerly expanded not like define".to_string()),
                 ),
             ),
             (
@@ -3268,12 +3286,32 @@ impl FunctionMacroMap {
     fn bind_to_local(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = trim!(&args[0]);
+            let value = trim!(&args[1]);
+            processor.add_new_local_macro(1, &name, &value);
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Let requires two argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Declare a local macro raw
+    ///
+    /// Local macro gets deleted after macro execution
+    ///
+    /// # Usage
+    ///
+    /// $letr(name,value)
+    fn bind_to_local_raw(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let name = trim!(&args[0]);
             let value = &args[1];
             processor.add_new_local_macro(1, &name, value);
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
-                "Let requires two argument".to_owned(),
+                "Letr requires two argument".to_owned(),
             ))
         }
     }
@@ -3346,7 +3384,7 @@ impl FunctionMacroMap {
     fn define_static(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let name = trim!(&args[0]);
-            let value = &args[1];
+            let value = trim!(&args[1]);
             // Macro name already exists
             if processor.contains_macro(&name, MacroType::Any) {
                 // Strict mode prevents overriding
@@ -3372,6 +3410,44 @@ impl FunctionMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "Static requires two argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Define a static macro raw
+    ///
+    /// # Usage
+    ///
+    /// $staticr(name,value)
+    fn define_static_raw(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let name = trim!(&args[0]);
+            let value = &args[1];
+            // Macro name already exists
+            if processor.contains_macro(&name, MacroType::Any) {
+                // Strict mode prevents overriding
+                // Return error
+                if processor.state.behaviour == ErrorBehaviour::Strict {
+                    return Err(RadError::InvalidMacroName(format!(
+                        "Creating a static macro with a name already existing : \"{}\"",
+                        name
+                    )));
+                } else {
+                    // Its warn-able anyway
+                    processor.log_warning(
+                        &format!(
+                            "Creating a static macro with a name already existing : \"{}\"",
+                            name
+                        ),
+                        WarningType::Sanity,
+                    )?;
+                }
+            }
+            processor.add_static_rules(&[(&name, &value)])?;
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Staticr requires two argument".to_owned(),
             ))
         }
     }
