@@ -1,4 +1,5 @@
 use crate::formatter::Formatter;
+use crate::models::ErrorBehaviour;
 use crate::models::FileTarget;
 use crate::models::FlowControl;
 use crate::models::MacroType;
@@ -605,7 +606,10 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
+        let backup = processor.state.behaviour;
+        processor.state.behaviour = ErrorBehaviour::Assert;
         let result = processor.parse_chunk_args(level, "", args);
+        processor.state.behaviour = backup;
         if result.is_err() {
             processor.track_assertion(true)?;
             Ok(None)
