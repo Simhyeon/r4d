@@ -1,6 +1,6 @@
 #[cfg(feature = "clap")]
 use r4d::RadCli;
-use r4d::RadResult;
+use r4d::{RadError, RadResult};
 
 pub fn main() -> RadResult<()> {
     // Enable color on pager such as "less"
@@ -14,7 +14,10 @@ pub fn main() -> RadResult<()> {
         use std::io::Write;
         let mut cli = RadCli::new();
         if let Err(err) = cli.parse() {
-            cli.print_error(&err.to_string())?;
+            match err {
+                RadError::StrictPanic(_) => (),
+                _ => cli.print_error(&err.to_string())?,
+            }
             writeln!(std::io::stderr(), "=== Processor panicked ===",)?;
         }
     }
