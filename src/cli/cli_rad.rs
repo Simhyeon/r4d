@@ -186,8 +186,6 @@ impl<'cli> RadCli<'cli> {
                         match self.processor.process_file(src_as_file) {
                             // Exit is a sane behaviour and should not exit from whole process
                             Ok(_) => {
-                                // TODO
-                                // Now reset is done after exit detection, is it necessary?
                                 self.processor.reset_flow_control();
                                 continue;
                             }
