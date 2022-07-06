@@ -185,11 +185,15 @@ impl<'cli> RadCli<'cli> {
                     if src_as_file.exists() {
                         match self.processor.process_file(src_as_file) {
                             // Exit is a sane behaviour and should not exit from whole process
-                            Err(RadError::Exit) | Ok(_) => {
+                            Ok(_) => {
+                                // TODO
+                                // Now reset is done after exit detection, is it necessary?
                                 self.processor.reset_flow_control();
                                 continue;
                             }
-                            Err(err) => return Err(err),
+                            Err(err) => {
+                                return Err(err);
+                            }
                         }
                     } else {
                         return Err(RadError::InvalidFile(format!("{}", src_as_file.display())));

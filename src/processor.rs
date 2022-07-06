@@ -1264,6 +1264,7 @@ impl<'processor> Processor<'processor> {
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
+        println!("BEFORE READ");
         self.process_buffer(&mut reader, backup, false)?;
         self.organize_and_clear_cache()
     }
@@ -1453,7 +1454,10 @@ impl<'processor> Processor<'processor> {
 
             match self.state.flow_control {
                 FlowControl::Escape => return Ok(ParseResult::Printable(line)),
-                FlowControl::Exit => return Err(RadError::Exit),
+                FlowControl::Exit => {
+                    self.reset_flow_control();
+                    return Ok(ParseResult::Eoi);
+                }
                 FlowControl::None => (),
             }
 

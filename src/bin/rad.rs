@@ -14,10 +14,6 @@ pub fn main() -> RadResult<()> {
         use std::io::Write;
         let mut cli = RadCli::new();
         if let Err(err) = cli.parse() {
-            // This is a totally sane behaviour
-            if let RadError::Exit = err {
-                return Ok(());
-            }
             cli.print_error(&err.to_string())?;
             writeln!(std::io::stderr(), "=== Processor panicked ===",)?;
         }
