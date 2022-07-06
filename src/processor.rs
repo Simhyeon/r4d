@@ -1582,7 +1582,13 @@ impl<'processor> Processor<'processor> {
         // NOTE
         // Parse's final argument is some kind of legacy of previous logics
         // However it can detect self calling macros in some cases
-        let result = self.parse(&mut lexor, &mut frag, chunk, level, caller)?;
+        let mut result = self.parse(&mut lexor, &mut frag, chunk, level, caller)?;
+
+        // Frag has not been cleared which means unterminated string has been not picked up yet.
+        if !frag.is_empty() {
+            result = frag.whole_string;
+        }
+
         self.logger.recover_lines(backup);
         Ok(result)
     } // parse_chunk end
