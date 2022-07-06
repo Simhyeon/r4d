@@ -720,6 +720,12 @@ pub struct FileTarget {
     pub(crate) file: Option<File>,
 }
 
+impl std::fmt::Display for FileTarget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.path.display())
+    }
+}
+
 impl FileTarget {
     pub fn empty() -> Self {
         Self {
