@@ -1626,7 +1626,8 @@ impl<'processor> Processor<'processor> {
 
         // Check comment line
         // If it is a comment then return nothing and write nothing
-        if self.state.comment_type != CommentType::None && line.starts_with(self.get_comment_char())
+        if self.state.comment_type != CommentType::None
+            && line.trim().starts_with(self.get_comment_char())
         {
             return Ok(String::new());
         }
