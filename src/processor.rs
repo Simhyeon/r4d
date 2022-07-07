@@ -2657,6 +2657,7 @@ impl<'processor> Processor<'processor> {
     /// This returns canonicalized absolute path
     ///
     /// It fails when the parent path cannot be canonicalized
+    #[cfg(not(feature = "wasm"))]
     pub(crate) fn get_current_dir(&self) -> RadResult<PathBuf> {
         let path = match &self.state.current_input {
             ProcessInput::Stdin => std::env::current_dir()?,

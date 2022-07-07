@@ -2926,6 +2926,7 @@ $extract()"
     /// # Usage
     ///
     /// $syscmd(system command -a arguments)
+    #[cfg(not(feature = "wasm"))]
     fn syscmd(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("syscmd", AuthType::CMD, p)? {
             return Ok(None);
@@ -3394,6 +3395,7 @@ $extract()"
     /// # Usage
     ///
     /// $abs(../canonic_path.txt)
+    #[cfg(not(feature = "wasm"))]
     fn absolute_path(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("abs", AuthType::FIN, p)? {
             return Ok(None);
