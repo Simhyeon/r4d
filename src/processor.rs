@@ -1570,7 +1570,7 @@ impl<'processor> Processor<'processor> {
     pub(crate) fn parse_chunk_args(
         &mut self,
         level: usize,
-        _caller: &str,
+        caller: &str,
         chunk: &str,
     ) -> RadResult<String> {
         let mut lexor = Lexor::new(
@@ -1600,7 +1600,7 @@ impl<'processor> Processor<'processor> {
             // However it can detect self calling macros in some cases
             // parse_chunk_body needs this caller but, parse_chunk_args doesn't need because
             // this methods only parses arguments thus, infinite loop is unlikely to happen
-            let mut line_result = self.parse(&mut lexor, &mut frag, &line, level, "")?;
+            let mut line_result = self.parse(&mut lexor, &mut frag, &line, level, caller)?;
 
             // Escape new line
             if self.state.escape_newline {
