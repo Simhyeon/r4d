@@ -1,6 +1,6 @@
-### Usage
+## Usage
 
-**Rad binary**
+### Rad binary
 
 ```bash
 # Usage : rad [OPTIONS] [FILE]...
@@ -76,7 +76,7 @@ rad --signature --sigtype runtime
 
 Type ```-h``` or ```--help``` to see full options.
 
-**Rado binary**
+### Rado binary
 
 ```bash
 # Edit source file
