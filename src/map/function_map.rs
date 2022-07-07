@@ -1928,6 +1928,8 @@ $tempto(/new/path)"
 - Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
 - *nix    : /tmp/rad.txt 
 
+# Auth: FIN
+
 # Example
 
 $assert(/tmp/rad.txt,$temp())"
@@ -4148,6 +4150,9 @@ $extract()"
     /// $temp()
     #[cfg(not(feature = "wasm"))]
     fn get_temp_path(_: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("temp", AuthType::FIN, processor)? {
+            return Ok(None);
+        }
         Ok(Some(processor.state.temp_target.to_string()))
     }
 
