@@ -1539,8 +1539,10 @@ impl<'processor> Processor<'processor> {
                     // 1
                     // 2
                     if self.state.consume_newline {
-                        if remainder.ends_with('\n') || remainder.ends_with("\r\n") {
-                            remainder = remainder.trim_end();
+                        if remainder.ends_with("\r\n") {
+                            remainder = remainder.strip_suffix("\r\n").unwrap();
+                        } else if remainder.ends_with('\n') {
+                            remainder = remainder.strip_suffix('\n').unwrap();
                         }
                         self.state.consume_newline = false;
                     }
