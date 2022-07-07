@@ -179,12 +179,12 @@ impl DeterredMacroMap {
                 ),
             ),
             (
-                "unpack".to_owned(),
+                "strip".to_owned(),
                 DMacroSign::new(
-                    "unpack",
+                    "strip",
                     ["a_literl_expr"],
                     DeterredMacroMap::unpack_expression,
-                    Some("Unpack literal expression to expanded text".to_string()),
+                    Some("Strip literal expression and expanded text".to_string()),
                 ),
             ),
         ]));
@@ -526,6 +526,7 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $ifenv(env_name, expr)
+    #[cfg(not(feature = "wasm"))]
     fn ifenv(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("ifenv", AuthType::ENV, processor)? {
             return Ok(None);
@@ -553,6 +554,7 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $ifenvel(env_name,expr,expr2)
+    #[cfg(not(feature = "wasm"))]
     fn ifenvel(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("ifenvel", AuthType::ENV, processor)? {
             return Ok(None);
@@ -587,8 +589,8 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let result = processor.parse_chunk_args(level, "", args)?;
-        let result = processor.parse_chunk_args(level, "", &result)?;
+        let args = ArgParser::new().strip_literal(args);
+        let result = processor.parse_chunk_args(level, "", &args)?;
 
         Ok(if result.is_empty() {
             None
@@ -611,7 +613,8 @@ impl DeterredMacroMap {
     ) -> RadResult<Option<String>> {
         let backup = processor.state.behaviour;
         processor.state.behaviour = ErrorBehaviour::Assert;
-        let result = processor.parse_chunk_args(level, "", args);
+        let args = ArgParser::new().strip_literal(args);
+        let result = processor.parse_chunk_args(level, "", &args);
         processor.state.behaviour = backup;
         if result.is_err() {
             processor.track_assertion(true)?;
@@ -628,7 +631,8 @@ impl DeterredMacroMap {
     ///
     /// $que(Sentence to process)
     fn queue_content(args: &str, _: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        processor.insert_queue(args);
+        let args = ArgParser::new().strip_literal(args);
+        processor.insert_queue(&args);
         Ok(None)
     }
 
