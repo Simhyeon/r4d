@@ -110,23 +110,21 @@ $assert($container(),Before After)".to_string(),
                 ),
             ),
             (
-                "arr".to_owned(),
+                "split".to_owned(),
                 FMacroSign::new(
-                    "arr",
-                    ["a_values","a_sep+", "a_retain_expr+"],
-                    Self::array,
-                    Some("Convert spaced array into a comma-ed array. You can give surplus arguments to configure behaviour.
+                    "spilt",
+                    ["a_sep", "a_text"],
+                    Self::split,
+                    Some("Split text into an array
 
 # Arguments
 
-- a_values      : space separated values
-- a_sep         : New separator (optional)
-- a_retain_expr : Regex to match from values (optional)
+- a_sep  : Separator
+- a_text : Text to spilt
 
 # Example
 
-$static(script,$arr($syscmd(ls),$nl(),\\.sh))
-$assert($script(),auto.sh)".to_string()),
+$assert(\\*a,b,c*\\,$split(/,a/b/c))".to_string()),
                 ),
             ),
             (
@@ -540,19 +538,37 @@ c))".to_string()),
             (
                 "grep".to_owned(),
                 FMacroSign::new(
-                    "grep",
-                    ["a_expr", "a_content"],
-                    Self::grep,
-                    Some("Grep text from given content. This returns all lines that matches given expression
+                    "grepl",
+                    ["a_expr", "a_array"],
+                    Self::grep_array,
+                    Some("Grep line from given array. This returns all items as array
 
 # Arguments
 
-- a_expr    : Regex expression to match
-- a_content : Content to get matches from
+- a_expr  : Regex expression to match
+- a_lines : Array to get matches from
 
 # Example
 
-$assert(2,$countl($grep(Cargo,$syscmd(ls))))".to_string()),
+$assert(\\*a,b,c*\\,$grep([a-z],a,b,c,1,2))".to_string()),
+                ),
+            ),
+            (
+                "grepl".to_owned(),
+                FMacroSign::new(
+                    "grepl",
+                    ["a_expr", "a_lines"],
+                    Self::grep_lines,
+                    Some("Grep line from given lines. This returns all lines that matches given expression
+
+# Arguments
+
+- a_expr  : Regex expression to match
+- a_lines : Lines to get matches from
+
+# Example
+
+$assert(2,$countl($grepl(Cargo,$syscmd(ls))))".to_string()),
                 ),
             ),
             (
@@ -1293,24 +1309,6 @@ $define(demo=Demo)
 $assert(Demo,$demo())
 $repl(demo,DOMO)
 $assert(DOMO,$demo())".to_string()),
-                ),
-            ),
-            (
-                "sep".to_owned(),
-                FMacroSign::new(
-                    "sep",
-                    ["a_sep", "a_array"],
-                    Self::separate_array,
-                    Some("Separate an array with seperator
-
-# Arguments
-
-- a_sep   : Separator to display
-- a_array : Array source to separate
-
-# Example
-
-$assert(3,$countl($sep($nl(),a,b,c)))".to_string()),
                 ),
             ),
             (
@@ -2967,41 +2965,26 @@ $extract()"
         Ok(None)
     }
 
-    /// Array
+    /// Split
     ///
     /// # Usage
     ///
-    /// $arr(1 2 3)
-    /// $arr(1 2 3, )   // Separator
-    /// $arr(1 2 3, ,2) // Separator + regex filter
-    fn array(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let parsed = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
-        if parsed.is_empty() {
-            Err(RadError::InvalidArgument(
-                "Array requires an argument".to_owned(),
-            ))
+    /// $split(/,a/b/c)
+    fn split(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let sep = &args[0];
+            let text = &args[1];
+
+            let mut result = text.split(sep).fold(String::new(), |mut acc, v| {
+                write!(acc, "{},", v).unwrap();
+                acc
+            });
+            result.pop();
+            Ok(Some(result))
         } else {
-            let separater = if parsed.len() >= 2 {
-                &parsed[1] // Use given separater
-            } else {
-                " "
-            }; // Use whitespace as default
-            let mut vec = parsed[0].split(separater).collect::<Vec<&str>>();
-
-            // Also given filter argument, then filter with regex expression
-            if parsed.len() == 3 {
-                let expr = &parsed[2];
-                let reg = match p.state.regex_cache.get(expr) {
-                    Some(reg) => reg,
-                    None => p.state.regex_cache.append(expr)?,
-                };
-                vec = vec.into_iter().filter(|&item| reg.is_match(item)).collect();
-            }
-
-            // Join as csv
-            let joined = vec.join(",");
-
-            Ok(Some(joined))
+            Err(RadError::InvalidArgument(
+                "Split requires two arguments".to_owned(),
+            ))
         }
     }
 
@@ -3933,7 +3916,34 @@ $extract()"
     /// # Usage
     ///
     /// $grep(EXPR,CONTENT)
-    fn grep(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+    fn grep_array(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let expr = &args[0];
+            let reg = match p.state.regex_cache.get(expr) {
+                Some(reg) => reg,
+                None => p.state.regex_cache.append(expr)?,
+            };
+            let content = args[1].split(',').collect::<Vec<_>>();
+            let grepped = content
+                .iter()
+                .filter(|l| reg.is_match(l))
+                .copied()
+                .collect::<Vec<&str>>()
+                .join(",");
+            Ok(Some(grepped))
+        } else {
+            Err(RadError::InvalidArgument(
+                "grep requires two argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Grep
+    ///
+    /// # Usage
+    ///
+    /// $grep(EXPR,CONTENT)
+    fn grep_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let expr = &args[0];
             let reg = match p.state.regex_cache.get(expr) {
@@ -3948,7 +3958,7 @@ $extract()"
             Ok(Some(grepped))
         } else {
             Err(RadError::InvalidArgument(
-                "grep requires two argument".to_owned(),
+                "grepl requires two argument".to_owned(),
             ))
         }
     }
@@ -4592,34 +4602,6 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "Staticr requires two argument".to_owned(),
-            ))
-        }
-    }
-
-    /// Separate an array
-    ///
-    /// # Usage
-    ///
-    /// $sep( ,1,2,3,4,5)
-    fn separate_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let separator = &args[0];
-            let array = &args[1];
-            let mut array = array.split(',');
-            let mut splited = String::new();
-
-            if let Some(first) = array.next() {
-                splited.push_str(first);
-
-                for item in array {
-                    write!(splited, "{}{}", separator, item)?;
-                }
-            }
-
-            Ok(Some(splited))
-        } else {
-            Err(RadError::InvalidArgument(
-                "sep requires two argument".to_owned(),
             ))
         }
     }
