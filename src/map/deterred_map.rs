@@ -1,3 +1,4 @@
+use crate::consts::ESR;
 use crate::formatter::Formatter;
 use crate::models::ErrorBehaviour;
 use crate::models::FileTarget;
@@ -33,6 +34,19 @@ impl DeterredMacroMap {
 
     pub fn new() -> Self {
         let mut map = HashMap::from_iter(IntoIterator::into_iter([
+            (
+                "EB".to_owned(),
+                DMacroSign::new(
+                    "EB",
+                    ESR,
+                    DeterredMacroMap::escape_blanks,
+                    Some("Escape following all blanks until not. This can only be invoked at first level
+
+# Example
+
+$EB()".to_string()),
+                ),
+            ),
             (
                 "exec".to_owned(),
                 DMacroSign::new(
@@ -658,6 +672,20 @@ impl DeterredMacroMap {
                 "ifque requires two argument".to_owned(),
             ))
         }
+    }
+
+    fn escape_blanks(
+        _: &str,
+        level: usize,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        if level != 1 {
+            return Err(RadError::UnallowedMacroExecution(
+                "\"EB\" is only available on first level".to_string(),
+            ));
+        }
+        processor.state.lexor_escape_blanks = true;
+        Ok(None)
     }
 
     /// Read to
