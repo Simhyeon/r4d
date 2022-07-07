@@ -151,21 +151,21 @@ $assert(a,b)".to_string()),
                 "counter".to_owned(),
                 FMacroSign::new(
                     "counter",
-                    ["a_macro_name^","a_counter_type^"],
+                    ["a_macro_name^","a_counter_type^+"],
                     Self::change_counter,
                     Some("Increae/decrease counter macro. Counter's value should be a number and can be negative. 
 
 # Arguments
 
 - a_macro_name   : Macro name to use as counter ( trimmed )
-- a_counter_type : Counter opration type [ \"plus\", \"minus\" ]
+- a_counter_type : Counter opration type. Dfault is plus [ \"plus\", \"minus\" ]
 
 # Example
 
 $define(ct=0)
-$counter(ct,plus)
-$counter(ct,plus)
-$counter(ct,plus)
+$counter(ct)
+$counter(ct)
+$counter(ct,minus)
 $assert($ct(),3)
 
 $counter(ct,minus)
@@ -968,9 +968,13 @@ $assert(30,$num(30k/h for 3 hours))".to_string()),
                 "nl".to_owned(),
                 FMacroSign::new(
                     "nl",
-                    ["a_count+^"],
+                    ["a_amount+^"],
                     Self::newline,
                     Some("A platform specific newline. It's behaviour can be configured.
+
+# Arguments
+
+- a_amount : Amount of newlines [Unsigned integer] ( trimmed )
 
 # Example
 
@@ -1080,9 +1084,9 @@ $assert(a/b,$path(a/,b))".to_string()),
 
 # Example
 
-$counter(i,plus)
+$counter(i)
 $pause(true)
-$counter(i,plus)
+$counter(i)
 $pause(false)
 
 $nassert(2,$i())
@@ -1333,18 +1337,40 @@ $source(def.env)".to_string()),
                 "sort".to_owned(),
                 FMacroSign::new(
                     "sort",
-                    ["a_array"],
+                    ["a_sort_type^","a_array"],
                     Self::sort_array,
-                    Some("Sort an array".to_string()),
+                    Some("Sort an array
+
+# Arguments
+
+- a_sort_type : Sor type [\"asec\",\"desc\"] (trimmed)
+- a_array     : Array to sort
+
+# Example
+
+$assert(\\*0,1,3,4,6,7,9*\\,$enl()
+$sort(asec,3,6,7,4,1,9,0))".to_string()),
                 ),
             ),
             (
                 "sortl".to_owned(),
                 FMacroSign::new(
                     "sortl",
-                    ["a_text"],
+                    ["a_sort_type^","a_lines"],
                     Self::sort_lines,
-                    Some("Sort lines".to_string()),
+                    Some("Sort lines
+
+# Arguments
+
+- a_sort_type : Sor type [\"asec\",\"desc\"] (trimmed)
+- a_lines     : Lines to sort
+
+# Example
+
+$assert(f$nl()e$nl()d$nl()c,$sortl(desc,f
+e
+d
+c))".to_string()),
                 ),
             ),
             (
@@ -1357,7 +1383,7 @@ $source(def.env)".to_string()),
 
 # Arguments
 
-- a_amount : Amount of spaces
+- a_amount : Amount of spaces [Unsigned integer] ( trimmed )
 
 # Example
 
@@ -1368,9 +1394,24 @@ $assert(    ,$space(4))".to_string()),
                 "static".to_owned(),
                 FMacroSign::new(
                     "static",
-                    ["a_macro_name^", "a_value^"],
+                    ["a_macro_name^", "a_expr^"],
                     Self::define_static,
-                    Some("Create a static macro. Static macro is eagerly expanded not like define".to_string()),
+                    Some("Create a static macro. Static macro is eagerly expanded unlike define
+
+# Arguments
+
+- a_macro_name : Macro to create ( trimmed )
+- a_expr       : Expression to bind to ( trimmed )
+
+# Example
+
+$define(ct=0)
+$define(ddf=$ct())
+$static(stt,$ct())
+$counter(ct)
+$counter(ct)
+$assert(2,$ddf())
+$assert(0,$stt())".to_string()),
                 ),
             ),
             (
@@ -1379,25 +1420,22 @@ $assert(    ,$space(4))".to_string()),
                     "staticr",
                     ["a_macro_name^", "a_value"],
                     Self::define_static_raw,
-                    Some("Create a static macro with raw value. Static macro is eagerly expanded not like define".to_string()),
-                ),
-            ),
-            (
-                "strip".to_owned(),
-                FMacroSign::new(
-                    "strip",
-                    ["a_count^", "a_direction^", "a_content"],
-                    Self::strip,
-                    Some("Either head or tail a given text. Direction is either head or tail".to_string()),
-                ),
-            ),
-            (
-                "stripl".to_owned(),
-                FMacroSign::new(
-                    "stripl",
-                    ["a_count^", "a_direction^", "a_content"],
-                    Self::strip_line,
-                    Some("Either head or tail a given text by lines. Direction is either head or tail".to_string()),
+                    Some("Create a static macro with raw value. Static macro is eagerly expanded unlike define
+
+# Arguments
+
+- a_macro_name : Macro to create ( trimmed )
+- a_expr       : Expression to bind to which is not trimmed
+
+# Example
+
+$define(ct=0)
+$define(ddf=$ct())
+$staticr(stt,$ct() )
+$counter(ct)
+$counter(ct)
+$assert(2,$ddf())
+$assert(0 ,$stt())".to_string()),
                 ),
             ),
             (
@@ -1406,7 +1444,21 @@ $assert(    ,$space(4))".to_string()),
                     "sub",
                     ["a_start_index^", "a_end_index^", "a_source"],
                     Self::substring,
-                    Some("Get a substring with indices".to_string()),
+                    Some("Get a substring with indices. 
+
+- Out of range index is error
+- Substring is calculated as char iterator not a byte iterator
+- this operation is technically same with string[start_index..end_index]
+
+# Arguments
+
+- a_start_index : Start substring index [Unsigned integer] (trimmed)
+- a_end_index   : End   substring index [Unsigned integer] (trimmed)
+- a_source      : Source text get substring from
+
+# Example
+
+$assert(def,$sub(3,5,abcdef))".to_string()),
                 ),
             ),
             (
@@ -1415,7 +1467,18 @@ $assert(    ,$space(4))".to_string()),
                     "surr",
                     ["a_start_pair","a_end_pair","a_content"],
                     Self::surround_with_pair,
-                    Some("Surround given content with given pair".to_string()),
+                    Some("Surround given content with given pair
+
+# Arguments
+
+- a_start_pair : Start pair
+- a_end_pair   : End pair
+- a_content    : Text to surround with
+
+# Example
+
+$assert(<div>dividivi dip</div>,$enl()
+$surr(<div>,</div>,dividivi dip))".to_string()),
                 ),
             ),
             (
@@ -1424,7 +1487,15 @@ $assert(    ,$space(4))".to_string()),
                     "tab",
                     ["a_amount?^"],
                     Self::tab,
-                    Some("Print tab".to_string()),
+                    Some("Print tab
+
+# Arguments
+
+- a_amount : Amount of tabs to print [Unsigned integer] ( trimmed )
+
+# Example
+
+$tab(2)".to_string()),
                 ),
             ),
             (
@@ -1433,7 +1504,16 @@ $assert(    ,$space(4))".to_string()),
                     "tail",
                     ["a_count^", "a_content"],
                     Self::tail,
-                    Some("Get last parts of texts".to_string()),
+                    Some("Get last parts of texts
+
+# Arguments
+
+- a_count   : Amount of characters to crop [unsigned integer] ( trimmed )
+- a_content : Text to crop from
+
+# Example
+
+$assert(World,$tail( 5 ,Hello~ World))".to_string()),
                 ),
             ),
             (
@@ -1442,7 +1522,18 @@ $assert(    ,$space(4))".to_string()),
                     "taill",
                     ["a_count^", "a_content"],
                     Self::tail_line,
-                    Some("Get last lines of texts".to_string()),
+                    Some("Get last lines of texts
+
+# Arguments
+
+- a_count   : Amount of lines to crop [unsigned integer] ( trimmed )
+- a_lines   : Lines to crop from
+
+# Example
+
+$assert(b$nl()c,$taill( 2 ,a
+b
+c))".to_string()),
                 ),
             ),
             (
@@ -1451,25 +1542,60 @@ $assert(    ,$space(4))".to_string()),
                     "table",
                     ["a_table_form^", "a_csv_value^"],
                     Self::table,
-                    Some("Construct a formatted table. Available table forms are \"github,html,wikitext\"".to_string()),
+                    Some("Construct a formatted table. Available table forms are \"github,html,wikitext\"
+
+# Arguments
+
+- a_table_form : Table format [ \"github\", \"html\", \"wikitext\" ]
+- a_csv_value  : Value to convert to table
+
+# Example
+
+$assert=(
+	|a|b|c|
+	|-|-|-|
+	|1|2|3|,$enl()
+	$table(github,a,b,c
+	1,2,3)
+)".to_string()),
                 ),
             ),
             (
                 "tr".to_owned(),
                 FMacroSign::new(
                     "tr",
-                    ["a_source", "a_matches", "a_substitutions"],
+                    ["a_chars", "a_sub","a_source"],
                     Self::translate,
-                    Some("Translate characters".to_string()),
+                    Some("Translate characters. Usage similar to core util tr
+
+# Arguments
+
+- a_chars  : Matching characters
+- a_sub    : Substitute characters
+- a_source : Source text to apply translation
+
+# Example
+
+$assert(HellO_WOrld,$tr(-how,_HOW,hello-world))".to_string()),
                 ),
             ),
             (
                 "trim".to_owned(),
                 FMacroSign::new(
                     "trim",
-                    ["a_content"],
+                    ["a_text"],
                     Self::trim,
-                    Some("Trim text".to_string()),
+                    Some("Trim text. This removes leading and trailing newlines, tabs and spaces
+
+# Arguments
+
+- a_text : Text to trim
+
+# Example
+
+$assert(Middle,$trim(
+    Middle
+))".to_string()),
                 ),
             ),
             (
@@ -1478,7 +1604,17 @@ $assert(    ,$space(4))".to_string()),
                     "triml",
                     ["a_content"],
                     Self::triml,
-                    Some("Trim values by lines".to_string()),
+                    Some("Trim values by lines. Trim is applied to each lines
+
+# Arguments
+
+- a_text : Text to trim
+
+# Example
+
+$assert(Upper$nl()Middle$nl()Last,$triml(    Upper
+    Middle
+          Last))".to_string()),
                 ),
             ),
             (
@@ -1487,7 +1623,38 @@ $assert(    ,$space(4))".to_string()),
                     "trimla",
                     ["a_trim_option^","a_content"],
                     Self::trimla,
-                    Some("Triml with given amount".to_string()),
+                    Some("Triml with given amount
+
+- Trims by line but with given amount. 
+- If given integer it tries to trim blank characters as much as given value
+- min trims by minimal amount that can be applied to total lines
+- max acts same as triml
+- Tab character is calculated as a single character. Don't combine spaces and tabs for this macro
+
+# Arguments
+
+- a_trim_option : Trim behaviour [\"min\", \"max\", Unsigned integer] ( trimmed )
+
+# Example
+
+$trimla(min,$space(1)First
+$space(2)Second
+$space(3)Third)
+% ===
+% Equally strips one space
+% First
+%  Second
+%   Third
+
+
+$trimla(3,$space(2)First
+$space(3)Second
+$space(5)Third)
+% ===
+% Equally tries stripping 3 spaces
+% First
+% Second
+%   Third".to_string()),
                 ),
             ),
             (
@@ -1582,18 +1749,45 @@ $assert(wow cow,$demo(wow,cow))".to_string()),
                 "env".to_owned(),
                 FMacroSign::new(
                     "env",
-                    ["a_env_name"],
+                    ["a_env_name^"],
                     Self::get_env,
-                    Some("Get an environment variable".to_string()),
+                    Some(
+                        "Get an environment variable
+
+# Auth : ENV
+
+# Arguments
+
+- a_env_name : Environment variable name to get (trimmed)
+
+# Example
+
+$assert(/home/user/dir,$env(HOME))"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
                 "envset".to_owned(),
                 FMacroSign::new(
                     "envset",
-                    ["a_env_name", "a_env_value"],
+                    ["a_env_name^", "a_env_value"],
                     Self::set_env,
-                    Some("Set an environment variable".to_string()),
+                    Some(
+                        "Set an environment variable
+
+# Auth : ENV
+
+# Arguments
+
+- a_env_name  : Environment variable name to set (trimmed)
+- a_env_value : Value to set
+
+# Example
+
+$envset(HOME,/tmp)"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -1603,7 +1797,20 @@ $assert(wow cow,$demo(wow,cow))".to_string()),
                     ["a_path"],
                     Self::absolute_path,
                     Some(
-                        "Get an absolute path. This requires a path to be a real path.".to_string(),
+                        "Get an absolute path. This requires a path to be a real path.
+
+# Auth : FIN
+
+# Return : path
+
+# Arguments
+
+- a_path : Path to make it absolute
+
+# Example
+
+$assert(/home/user/cwd/test.md,$abs(test.md))"
+                            .to_string(),
                     ),
                 ),
             );
@@ -1613,7 +1820,24 @@ $assert(wow cow,$demo(wow,cow))".to_string()),
                     "syscmd",
                     ["a_command"],
                     Self::syscmd,
-                    Some("Execute an sysctem command".to_string()),
+                    Some(
+                        "Execute an sysctem command
+
+- Each system command is executed as subprocess of folloiwng platform procedures
+- Windows : cmd /C
+- *Nix    : sh -c
+
+# Auth : CMD
+
+# Arguments
+
+- a_command : Command to exectute
+
+# Example
+
+$assert(Linux,$syscmd(uname))"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -1622,7 +1846,20 @@ $assert(wow cow,$demo(wow,cow))".to_string()),
                     "tempin",
                     ESR,
                     Self::temp_include,
-                    Some("Include a temporary file".to_string()),
+                    Some(
+                        "Include a temporary file
+
+- Default temporary path is folloiwng
+- Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
+- *nix    : /tmp/rad.txt 
+
+# Auth: FIN
+
+# Example
+
+$tempin()"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -2667,41 +2904,45 @@ $assert(15,$count($litdir()))"
     ///
     /// $counter(name, type)
     fn change_counter(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let counter_name = trim!(&args[0]);
-            let counter_type = trim!(&args[1]);
-            // Crate new macro if non-existent
-            if !p.contains_macro(&counter_name, MacroType::Runtime) {
-                p.add_static_rules(&[(&counter_name, "0")])?;
-            }
-            let body = p
-                .get_runtime_macro_body(&counter_name)?
-                .parse::<isize>()
-                .map_err(|_| {
-                    RadError::UnallowedMacroExecution(
-                        "You cannot call counter on non-number macro values".to_string(),
-                    )
-                })?;
-            match counter_type.to_lowercase().as_ref() {
-                "plus" => {
-                    p.replace_macro(&counter_name, &(body + 1).to_string());
-                }
-                "minus" => {
-                    p.replace_macro(&counter_name, &(body - 1).to_string());
-                }
-                _ => {
-                    return Err(RadError::InvalidArgument(format!(
-                        "Given counter type is not valid \"{}\"",
-                        counter_type
-                    )))
-                }
-            }
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "counter requires two arguments".to_owned(),
-            ))
+        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        if args.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "counter requires an argument".to_owned(),
+            ));
         }
+        let counter_name = trim!(&args[0]);
+        let counter_type = if args.len() > 1 {
+            trim!(&args[1]).to_string()
+        } else {
+            "plus".to_string()
+        };
+        // Crate new macro if non-existent
+        if !p.contains_macro(&counter_name, MacroType::Runtime) {
+            p.add_static_rules(&[(&counter_name, "0")])?;
+        }
+        let body = p
+            .get_runtime_macro_body(&counter_name)?
+            .parse::<isize>()
+            .map_err(|_| {
+                RadError::UnallowedMacroExecution(
+                    "You cannot call counter on non-number macro values".to_string(),
+                )
+            })?;
+        match counter_type.to_lowercase().as_ref() {
+            "plus" => {
+                p.replace_macro(&counter_name, &(body + 1).to_string());
+            }
+            "minus" => {
+                p.replace_macro(&counter_name, &(body - 1).to_string());
+            }
+            _ => {
+                return Err(RadError::InvalidArgument(format!(
+                    "Given counter type is not valid \"{}\"",
+                    counter_type
+                )))
+            }
+        }
+        Ok(None)
     }
 
     /// Join an array
@@ -2802,7 +3043,7 @@ $assert(15,$count($litdir()))"
         if !Utils::is_granted("env", AuthType::ENV, p)? {
             return Ok(None);
         }
-        if let Ok(out) = std::env::var(args) {
+        if let Ok(out) = std::env::var(trim!(args).as_ref()) {
             Ok(Some(out))
         } else {
             if p.state.behaviour == ErrorBehaviour::Strict {
@@ -2825,10 +3066,10 @@ $assert(15,$count($litdir()))"
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = &args[0];
+            let name = trim!(&args[0]);
             let value = &args[1];
 
-            if p.state.behaviour == ErrorBehaviour::Strict && std::env::var(name).is_ok() {
+            if p.state.behaviour == ErrorBehaviour::Strict && std::env::var(name.as_ref()).is_ok() {
                 return Err(RadError::InvalidArgument(format!(
                     "You cannot override environment variable in strict mode. Failed to set \"{}\"",
                     name
@@ -3139,12 +3380,12 @@ $assert(15,$count($litdir()))"
     ///
     /// # Usage
     ///
-    /// $tr(Source,abc,ABC)
+    /// $tr(abc,ABC,Source)
     fn translate(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let mut source = args[0].clone();
-            let target = &args[1].chars().collect::<Vec<char>>();
-            let destination = &args[2].chars().collect::<Vec<char>>();
+            let mut source = args[2].clone();
+            let target = &args[0].chars().collect::<Vec<char>>();
+            let destination = &args[1].chars().collect::<Vec<char>>();
 
             if target.len() != destination.len() {
                 return Err(RadError::InvalidArgument(format!("Tr's replacment should have same length of texts while given \"{:?}\" and \"{:?}\"", target, destination)));
@@ -3391,78 +3632,6 @@ $assert(15,$count($litdir()))"
         }
     }
 
-    /// Strip from given text
-    ///
-    /// # Usage
-    ///
-    /// $strip(2,head,Text To extract)
-    /// $strip(2,tail,Text To extract)
-    fn strip(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let count = trim!(&args[0]).parse::<usize>().map_err(|_| {
-                RadError::InvalidArgument(format!(
-                    "strip requires positive integer number but got \"{}\"",
-                    &args[0]
-                ))
-            })?;
-            let variant = trim!(&args[1]);
-            let content = &args[2].chars().collect::<Vec<_>>();
-            let length = count.min(content.len());
-
-            match variant.to_lowercase().as_str() {
-                "head" => Ok(Some(content[length..].iter().collect())),
-                "tail" => Ok(Some(content[..content.len() - length].iter().collect())),
-                _ => {
-                    return Err(RadError::InvalidArgument(format!(
-                        "Strip reqruies either head or tail but given \"{}\"",
-                        variant
-                    )))
-                }
-            }
-        } else {
-            Err(RadError::InvalidArgument(
-                "strip requires three argument".to_owned(),
-            ))
-        }
-    }
-
-    /// Strip lines from given text
-    ///
-    /// # Usage
-    ///
-    /// $stripl(2,head,Text To extract)
-    /// $stripl(2,tail,Text To extract)
-    fn strip_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let count = trim!(&args[0]).parse::<usize>().map_err(|_| {
-                RadError::InvalidArgument(format!(
-                    "stripl requires positive integer number but got \"{}\"",
-                    &args[0]
-                ))
-            })?;
-            let variant = trim!(&args[1]);
-            let lines = Utils::full_lines(args[2].as_bytes())
-                .map(|line| line.unwrap())
-                .collect::<Vec<String>>();
-            let length = count.min(lines.len());
-
-            match variant.to_lowercase().as_str() {
-                "head" => Ok(Some(lines[length..].concat())),
-                "tail" => Ok(Some(lines[..lines.len() - length].concat())),
-                _ => {
-                    return Err(RadError::InvalidArgument(format!(
-                        "Stripl reqruies either head or tail but given \"{}\"",
-                        variant
-                    )))
-                }
-            }
-        } else {
-            Err(RadError::InvalidArgument(
-                "stripl requires two argument".to_owned(),
-            ))
-        }
-    }
-
     /// Sort array
     ///
     /// # Usage
@@ -3470,9 +3639,9 @@ $assert(15,$count($litdir()))"
     /// $sort(asec,1,2,3,4,5)
     fn sort_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let count = args[0].as_str();
+            let order_type = trim!(&args[0]);
             let content = &mut args[1].split(',').collect::<Vec<&str>>();
-            match count.to_lowercase().as_str() {
+            match order_type.to_lowercase().as_str() {
                 "asec" => content.sort_unstable(),
                 "desc" => {
                     content.sort_unstable();
@@ -3481,7 +3650,7 @@ $assert(15,$count($litdir()))"
                 _ => {
                     return Err(RadError::InvalidArgument(format!(
                         "Sort requires either asec or desc but given \"{}\"",
-                        count
+                        order_type
                     )))
                 }
             }
@@ -3501,9 +3670,9 @@ $assert(15,$count($litdir()))"
     /// $sortl(asec,Content)
     fn sort_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let count = args[0].as_str();
+            let order_type = trim!(&args[0]);
             let content = &mut args[1].lines().collect::<Vec<&str>>();
-            match count.to_lowercase().as_str() {
+            match order_type.to_lowercase().as_str() {
                 "asec" => content.sort_unstable(),
                 "desc" => {
                     content.sort_unstable();
@@ -3512,7 +3681,7 @@ $assert(15,$count($litdir()))"
                 _ => {
                     return Err(RadError::InvalidArgument(format!(
                         "Sortl requires either asec or desc but given \"{}\"",
-                        count
+                        order_type
                     )))
                 }
             }
