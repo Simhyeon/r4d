@@ -36,6 +36,8 @@ use std::process::Command;
 #[cfg(feature = "hook")]
 use std::str::FromStr;
 
+const ALIGN_TYPES: [&str; 3] = ["left", "right", "center"];
+
 lazy_static! {
     static ref CLRF_MATCH: Regex = Regex::new(r#"\r\n"#).unwrap();
     static ref CHOMP_MATCH: Regex = Regex::new(r#"\n\s*\n"#).expect("Failed to crate chomp regex");
@@ -89,6 +91,30 @@ $assert(5,$-(num))".to_string(),
                 ),
             ),
             (
+                "align".to_owned(),
+                FMacroSign::new(
+                    "align",
+                    ["a_type^","a_width^","a_fill^", "a_text"],
+                    Self::align,
+                    Some(
+                        "Align texts with character filler
+
+# Arguments
+
+- a_type  : Types of alignment [\"Left\", \"right\", \"center\"] ( trimmed )
+- a_width : Total width of aligned chunk [ Unsigned integer ] ( trimmed )
+- a_fill  : A character to fill ( trimmed )
+- a_text  : Text to align
+
+# Example
+
+$assert(Hello---,$align(left  ,8,-,Hello))
+$assert(---Hello,$align(right ,8,-,Hello))
+$assert(--Hello-,$align(center,8,-,Hello))".to_string(),
+                    ),
+                ),
+            ),
+            (
                 "append".to_owned(),
                 FMacroSign::new(
                     "append",
@@ -98,6 +124,7 @@ $assert(5,$-(num))".to_string(),
                         "Append contents to a macro. If macro doesn't exist, yields error
 
 # Arguments
+
 - a_macro_name : a macro name to append to ( trimmed )
 - a_content    : contents to be added
 
@@ -3481,6 +3508,96 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "Rename requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Ailgn texts
+    ///
+    /// # Usage
+    ///
+    /// $align(center,10,a,Content)
+    fn align(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 4) {
+            let align_type = trim!(&args[0]).to_lowercase();
+
+            if ALIGN_TYPES
+                .iter()
+                .filter(|&&x| x == align_type.as_str())
+                .count()
+                == 0
+            {
+                return Err(RadError::InvalidArgument(format!(
+                    "Align type should be among left, right or center but given {}",
+                    align_type
+                )));
+            }
+
+            let width = trim!(&args[1]).parse::<usize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "Align requires positive integer number as width but got \"{}\"",
+                    &args[1]
+                ))
+            })?;
+            let filler: &str = args[2].as_ref();
+            let text = &args[3];
+            let filler_char: String;
+
+            if filler.is_empty() {
+                return Err(RadError::InvalidArgument(
+                    "Filler cannot be empty".to_string(),
+                ));
+            }
+
+            let next_char = if filler == " " {
+                Some(' ')
+            } else {
+                filler.chars().next()
+            };
+
+            if let Some(ch) = next_char {
+                if ch == '\r' || ch == '\n' {
+                    return Err(RadError::InvalidArgument(
+                        "Filler cannot be a newline character".to_string(),
+                    ));
+                } else {
+                    filler_char = ch.to_string();
+                }
+            } else {
+                return Err(RadError::InvalidArgument(
+                    "Filler should be an valid utf8 character".to_string(),
+                ));
+            }
+
+            let text_length = text.chars().count();
+            if width < text_length {
+                return Err(RadError::InvalidArgument(
+                    "Width should be bigger than source texts".to_string(),
+                ));
+            }
+
+            let space_count = width - text_length;
+
+            let formatted = match align_type.as_str() {
+                "left" => format!("{0}{1}", text, &filler_char.repeat(space_count)),
+                "right" => format!("{1}{0}", text, &filler_char.repeat(space_count)),
+                "center" => {
+                    let right_sp = space_count / 2;
+                    let left_sp = space_count - right_sp;
+                    format!(
+                        "{1}{0}{2}",
+                        text,
+                        &filler_char.repeat(left_sp),
+                        &filler_char.repeat(right_sp)
+                    )
+                }
+                _ => unreachable!(),
+            };
+
+            Ok(Some(formatted))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Align requires four arguments".to_owned(),
             ))
         }
     }
