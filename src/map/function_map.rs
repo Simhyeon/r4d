@@ -3076,7 +3076,7 @@ $assert(15,$count($litdir()))"
                 )));
             }
 
-            std::env::set_var(name, value);
+            std::env::set_var(name.as_ref(), value);
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
