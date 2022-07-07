@@ -80,7 +80,7 @@ Evaluation : 1 + 2 = 3
 
 ### Install
 
-[Install rust related tools for build](https://www.rust-lang.org/tools/install)
+[Install rust toolchain for build](https://www.rust-lang.org/tools/install)
 
 I recommend using ```cargo install``` until I prepare a proper CD
 pipeline.
@@ -88,7 +88,11 @@ pipeline.
 Currently version 3.0 is preparing for release and can be downloaded with
 specific version flag.
 
-```cargo install r4d --git https://github.com/simhyeon/r4d --features binary,color,signature --locked --version 3.0.0-rc.4```
+```bash
+cargo install r4d --git https://github.com/simhyeon/r4d --features binary,color,signature --locked --version 3.0.0-rc.4
+```
+
+Or use crates.io registry,
 
 e.g.
 
@@ -140,37 +144,21 @@ processor.process_file(Path::new("input.txt"))?;
 processor.print_result()?;
 ```
 
-### Usage
+### [Detailed usage](./docs/usage.md)
 
-[Detailed usage](./docs/usage.md)
+### [Macro syntax](./docs/macro_syntax.md)
 
-### Syntax 
+### [Built-in macros](./docs/macro_indices.md)
 
-[Macro syntax](./docs/macro_syntax.md)
+### [About modes](./docs/modes.md)
 
-### Built-in macros
+### [Macro types](./docs/macro_types.md)
 
-[Macros](./docs/macro_indices.md)
+### [How to extend function macros](./docs/ext.md)
 
-### About various modes
+### [Extend processor with storage feature](./docs/storage.md)
 
-[Modes](./docs/modes.md)
-
-### Macro types
-
-[Types](./docs/macro_types.md)
-
-### How to extend function macros
-
-[extension](./docs/ext.md)
-
-### Extend processor with storage feature
-
-[Storage](./docs/storage.md)
-
-### How to debug
-
-[Debug](./docs/debug.md)
+### [How to debug](./docs/debug.md)
 
 ### Goal
 
@@ -180,4 +168,3 @@ R4d aims to be a modern alternative to m4 processor, which means
 - An explicit rule for macro definition and invocation
 - Enable combination of file stream and stdout
 - As expressive as current m4 macro processor
-- Easier binding to other environments

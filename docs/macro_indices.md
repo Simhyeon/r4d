@@ -1,3 +1,17 @@
+# NOTE
+
+Currently r4d is preparing 3.0 release and 3.0 has many hard breaking changes
+such as argument order change, macro removal, macro renames. Use rad's man flag
+if you want to see most updated information.
+
+```bash
+# This needs signature feature
+# Get all manuals
+rad --man 
+# Get specific manuals
+rad --man ifelse
+```
+
 ## Format
 
 If any permission is necessary, it is displayed as

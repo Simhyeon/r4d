@@ -176,10 +176,11 @@ Hello
 
 Trim input attribute ```=``` trims macro arguments by lines and also trim by
 chunk. This is useful when you want to use a multiline complex text as
-arguments but surplus blank spaces are unnecessary.
+arguments but surplus blank spaces are unnecessary. Trim inputs power is mostly
+centered on single argument mcros but other situations are also plausible.
 
-Trim input attribute applies triml & trim macro for the input. Though those
-trimming is applied as chunk not per arguments.
+Trim input can be applied to define macro and trimming is applied to macro
+body.
 
 ```
 % Needs trim output to remove newline that comes before "hello world"
@@ -194,6 +195,22 @@ hello world
 How are you?
 I'm fine, thanks. How's it going?
 yatti yatta
+```
+
+Since "trim input" trimes input not arguments, trimmed input can be different
+from expectation.
+
+e.g)
+```
+$macro_name=(
+	first,
+	second
+)
+===
+% Arguments are passed as 
+% first
+% 
+% second
 ```
 
 **Piping**

@@ -1,12 +1,35 @@
 ### TODO
 
 $todo_start()
-$h(rad)
-* [x] Apply new(1.62) clippy fix
-* [x] Ditch unnecessary "Some" arguments
-- This is tedious but better for user experience.
-* [x] Regex syntax change
-* [x] New macros
+* [ ] New macros
+	* [ ] Format macro would be useful
+		- Make it from scratch if possible.
+* [x] Improve macro ergonomics
+* [ ] Feature
+	* [ ] Edit in place with io operation
+* [ ] Documentation
+	* [x] Make documentation be complete
+	* [ ] Update macro\_indices.md
+* [x] Library
+	* [x] set both comment and macro char at the same time method
+* [ ] Bug fix
+	* [x] Some macro didn't processed literal properly
+	* [ ] Literal rule is bugged ( Nested literal rule doesn't work at all )
+	* [ ] Test logger's line number ( Because it looks like not so accurate )
+* [ ] Test
+	* [ ] Decide when to push to 3.0
+	* [ ] Test windows build
+	* [ ] Test multiple use cases
+$todo_end()
+
+### Changes
+
+* [ ] New macros
+	* [x] Escape blanks macro
+	* [x] Grep and grepl variants separation
+	* [x] Renamed arr to spilt
+	* [x] Removed sep macro because, join works the same
+	* [x] Removed queries macro
 	* [x] Regexpr
 	* [x] Unwrap
 	* [x] Find
@@ -21,52 +44,35 @@ $h(rad)
 	* [x] Number notation
 	* [x] letr, staticr
 	* [x] Counter macro
-* [x] Changed argument parsing behaviour frome lexor and arg parser
-	* [x] Regex pattern doesn't go well with string literal "\* *\" syntax
-	* [x] Should be represented as literal
-* [x] Make a manual option (With signature option)
-* [x] Manual to have default value as whole signatures
-* [x] Argument as trimmed_line '=' character
-* [x] Now define macro also detects trim and trim input attribute
-* [x] Actually, cnl is not so consistent : Just removed it, because frag_on_going was properly set
-* [x] Regex cache
-* [x] Find possible inconsistent \n chracter usage
-* [x] Improve description for real manual
-* [x] Trim performance with macro_rules
-* [ ] Make documentation be complete
-	- Make standard
-	- Abstract
-	- Arguments
-	- Return value
-	- Example
-* [ ] set both comment and macro char at the same time method
-* [ ] Improve macro ergonomics
+	* [x] Removed strip and stripl
+	* [x] Align texts
+* [ ] Macro ergonomics
+	* [x] Renamed unwrap to strip
+	* [x] Regex order change
+	* [x] Changed tr order
 	* [x] Newline can be repeated
 	* [x] Changed fileout's argument order 
 	* [-] Tempout truncate option : No, but temp_to and new processor will
 	delete temp file before writing contents
 	* [x] Halt with boolean arguments so that, halt is queued by default
-	* [x] Now let doesn't trim by default
 	* [x] For variant order change
-	* [x] Raw define methods let,static
+
+* [x] Apply new(1.62) clippy fix
+* [x] Ditch unnecessary "Some" arguments
+* [x] Changed argument parsing behaviour frome lexor and arg parser
+	* [x] Regex pattern doesn't go well with string literal "\* *\" syntax
+	* [x] Should be represented as literal
+* [x] Make a manual option (With signature option)
+* [x] New macro attribute trim_input '='
+* [x] Define macro respects trim_input
+* [x] Removed cnl
+* [x] Regex cache
+* [x] Find possible inconsistent \n chracter usage
+* [x] Trim performance with macro_rules
+* [x] Changed parse_chunk_args logic and ditched parse_chunk_body
 * [x] Queue is inconsistent (Queue execution timing was strange)
 * [x] On parse chunk body: Unterminated string was not appended to remainder
 * [x] Now comment can start in between with start type
-* [ ] Sort with descending option ( it should be breaking )
-* [ ] Format macro would be useful
-	- Make it from scratch if possible.
-* [ ] Literal rule is bugged
-* [ ] Define has some remaining new liens even if used with = attirbute
-Example
-```
-$define=(
-    long
-    =
-    $define^(able=ABLE)
-    $assert^($able(),ABLE)
-    $clear()
-)
-```
 
 * [x] Bug : Assert mode panicks on first error
 * [x] Bug : Erro rmessaged cascaded as much as nested level
@@ -74,14 +80,6 @@ $define=(
 * [x] Modifed lex_branch_end_frag_eval_result_error to not print error on itself
 * [x] Bug: Include containder had high priority over relay target 
 * [x] Bug: Fasssert set success as fail
-
-* [ ] Test logger's line number ( Because it looks like not so accurate )
-* [ ] Decide when to push to 3.0
-* [ ] Test windows build
-* [ ] Test multiple use cases
-* [ ] Update macro_indices.md
-
-$todo_end()
 
 ### Macro ergonomics
 

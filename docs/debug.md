@@ -1,6 +1,7 @@
 # TOC
 
 - [How to debug?](#how-to-debug)
+- [Log macro](#log-macro)
 - [Debug mode](#debug-mode)
 - [Example](#example)
 - [Logging](#logging)
@@ -10,9 +11,25 @@
 
 ### How to debug?
 
+### Log macro
+
+The easiest ways is to use log macro. Simply call a log macro with a value you
+want to check and logger will print the message for you.
+
+```r4d
+$counter(ct)
+$counter(ct)
+$define(check=$log(Counter at the time is : $ct()))
+$check()
+===
+% This is printed on console
+% log: Counter at the time is : 2
+%  --> test:4:2~~
+```
+
 #### Debug mode
 
-Simply start debug mode with ```-d``` or ```--debug``` flag.
+Start a debug mode with ```-d``` or ```--debug``` flag.
 
 I highly recommend using only file input for debugging because stdin doesn't
 work properly.

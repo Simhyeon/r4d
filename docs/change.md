@@ -1,19 +1,45 @@
 # 3.0.0-rc.4
 
-- CHG : Apply new(1.62) clippy fix
-- CHG : Ditch unnecessary "Some" arguments
-- CHG : Regex syntax change
-- CHG : Changed argument parsing behaviour frome lexor and arg parser
-- FET : manual flag
 - FET : New macros
-	- find
-	- findm
-	- regexpr
-- FET : New macro attribute
-- CHG : Now define macro also detects trim and trim input attribute
-- CHG : Removed cnl macro and fixed a newline bug
+	- Escape blanks 
+	- Grep && Grepl
+	- strip ( differnt from previous )
+	- Regexpr
+	- Input
+	- Temp
+	- Trimla ( Trim line amount )
+	- Indent ( Indent lines )
+	- read\_to read\_in
+	- join, joinl
+	- notat
+	- letr, staticr
+	- counter
+	- align
+	- Tab && space && empty
+- CHG : Macro ergonomics
+	- For variatns order changed backwards
+	- Static trims value
+	- Halt is queued by default
+	- Changed fileout's argument order
+	- Renamed arr to spilt
+	- Removed sep macro because
+	- Removed queries macro
+	- Removed strip and stripl
+	- Removed cnl
+- CHG : Changed argument parsing behaviour frome lexor and arg parser
 - CHG : Made formatter respect processor line ending
-- ERG : Improved descriptions
+- CHG : Now define macro also detects trim input attribute
+- CHG : Rad now deletes temp file before start
+- ERG : Improved descriptions a lot
+- ERG : Now comment can start in between line with any type
+- FET : METHOD > Set both comment and macro char at the same time
+- FET : New macro attribute "="
+- Bug : Assert mode panicked
+- Bug : Error message cascaded as much as nested level
+- Bug : Exit macro yieled error and broke from entier rad process
+- Bug : Include's containder had high priority over relay target 
+- Bug : Fasssert treated success as fail and vice versa
+
 
 # 3.0.0-rc.3
 
