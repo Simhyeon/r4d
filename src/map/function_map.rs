@@ -1871,7 +1871,24 @@ $tempin()"
                     "tempout",
                     ["a_content"],
                     Self::temp_out,
-                    Some("Write to a temporary file".to_string()),
+                    Some(
+                        "Write to a temporary file
+
+- Default temporary path is folloiwng
+- Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
+- *nix    : /tmp/rad.txt 
+
+# Auth: FOUT
+
+# Arguments
+
+- a_content : Content to write to temporary file
+
+# Example
+
+$temout(Content)"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -1880,7 +1897,22 @@ $tempin()"
                     "tempto",
                     ["a_filename^"],
                     Self::set_temp_target,
-                    Some("Change temporary file path".to_string()),
+                    Some(
+                        "Change temporary file path
+
+- This macro needs file out permission because it creates temporary file if non-existent
+
+# Auth: FOUT
+
+# Arguments
+
+- a_filename : New temporary file path ( trimmed )
+
+# Example
+
+$tempto(/new/path)"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -1889,7 +1921,18 @@ $tempin()"
                     "temp",
                     ESR,
                     Self::get_temp_path,
-                    Some("Get temp path".to_string()),
+                    Some(
+                        "Get temp path
+
+- Default temporary path is folloiwng
+- Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
+- *nix    : /tmp/rad.txt 
+
+# Example
+
+$assert(/tmp/rad.txt,$temp())"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -1898,7 +1941,24 @@ $tempin()"
                     "include",
                     ["a_filename^", "a_raw_mode^+?"],
                     Self::include,
-                    Some("Include a file".to_string()),
+                    Some(
+                        "Include a file
+
+- Include reads a whole chunk of file into a \"Reader\" and expands
+- Use readin or readto if you want buffered behaviour
+- If raw mode is enabled include doesn't expand any macros inside the file
+
+# AUTH : FIN
+
+# Arguments
+
+- a_filename : File name to read ( trimmed )
+- a_raw_mode : Whehter to escape the read. Default is false [boolean] ( trimmed )
+
+$include(file_path)
+$include(file_path, true)"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -1907,7 +1967,17 @@ $tempin()"
                     "fileout",
                     ["a_filename^", "a_truncate?^", "a_content"],
                     Self::file_out,
-                    Some("Write content to a file".to_string()),
+                    Some(
+                        "Write content to a file
+
+# Auth : FOUT
+
+# Arguments
+
+# Example
+"
+                        .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -1945,36 +2015,65 @@ $assert(15,$count($litdir()))"
                 "regcsv".to_owned(),
                 FMacroSign::new(
                     "regcsv",
-                    ["a_table_name", "a_table"],
+                    ["a_table_name^", "a_table"],
                     Self::cindex_register,
-                    Some("Register a csv table".to_string()),
+                    Some(
+                        "Register a csv table
+
+# Arguments
+
+- a_table_name : Table name to be registered ( trimmed )
+- a_table      : Csv data table
+
+# Example
+
+$regcsv(table1,a,b,c
+1,2,3)"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
                 "dropcsv".to_owned(),
                 FMacroSign::new(
                     "dropcsv",
-                    ["a_table_name"],
+                    ["a_table_name^"],
                     Self::cindex_drop,
-                    Some("Drop a csv table".to_string()),
+                    Some(
+                        "Drop a csv table
+
+# Arguments
+
+- a_table_name : A csv table name to drop ( trimmed )
+
+# Example
+
+$dropcsv(table1)"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
                 "query".to_owned(),
                 FMacroSign::new(
                     "query",
-                    ["a_query"],
+                    ["a_query^"],
                     Self::cindex_query,
-                    Some("Query a csv table".to_string()),
-                ),
-            );
-            map.insert(
-                "queries".to_owned(),
-                FMacroSign::new(
-                    "queries",
-                    ["a_queries"],
-                    Self::cindex_query_list,
-                    Some("Execute multiple queries".to_string()),
+                    Some(
+                        "Query a csv table
+
+- Syntax of the query resembles SQL
+- Refer cindex for detailed query syntax
+
+# Arguments
+
+- a_query : Query statement ( trimmed )
+
+# Example
+
+$query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
+                            .to_string(),
+                    ),
                 ),
             );
         }
@@ -4796,7 +4895,8 @@ $assert(15,$count($litdir()))"
         use cindex::ReaderOption;
 
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            if processor.indexer.contains_table(&args[0]) {
+            let table_name = trim!(&args[0]);
+            if processor.indexer.contains_table(&table_name) {
                 return Err(RadError::InvalidArgument(format!(
                     "Cannot register exsiting table : \"{}\"",
                     args[0]
@@ -4806,7 +4906,7 @@ $assert(15,$count($litdir()))"
             option.ignore_empty_row = true;
             processor
                 .indexer
-                .add_table_with_option(&args[0], args[1].as_bytes(), option)?;
+                .add_table_with_option(&table_name, args[1].as_bytes(), option)?;
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -4821,7 +4921,7 @@ $assert(15,$count($litdir()))"
     #[cfg(feature = "cindex")]
     fn cindex_drop(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            processor.indexer.drop_table(&args[0]);
+            processor.indexer.drop_table(&trim!(&args[0]));
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -4844,29 +4944,6 @@ $assert(15,$count($litdir()))"
         } else {
             Err(RadError::InvalidArgument(
                 "query requires an argument".to_owned(),
-            ))
-        }
-    }
-
-    /// Execute multiple query separated by colon(;)
-    ///
-    /// $queries(statment)
-    #[cfg(feature = "cindex")]
-    fn cindex_query_list(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let mut value = String::new();
-            for raw in args[0].split(';') {
-                if raw.is_empty() {
-                    continue;
-                }
-                processor
-                    .indexer
-                    .index_raw(&trim!(raw), OutOption::Value(&mut value))?;
-            }
-            Ok(Some(trim!(&value).to_string()))
-        } else {
-            Err(RadError::InvalidArgument(
-                "queries requires an argument".to_owned(),
             ))
         }
     }
