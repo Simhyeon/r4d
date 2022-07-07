@@ -2086,7 +2086,15 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
                     "time",
                     ESR,
                     Self::time,
-                    Some("Get current time".to_string()),
+                    Some(
+                        "Get current local time
+
+# Example
+
+% HH:mm:ss
+$time()"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -2095,16 +2103,15 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
                     "date",
                     ESR,
                     Self::date,
-                    Some("Get current date".to_string()),
-                ),
-            );
-            map.insert(
-                "tarray".to_owned(),
-                FMacroSign::new(
-                    "tarray",
-                    ["a_second^"],
-                    Self::tarray,
-                    Some("Get given time as array".to_string()),
+                    Some(
+                        "Get current local date without timezone
+
+# Example
+
+% yyyy-MM-dd
+$date()"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -2113,7 +2120,18 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
                     "hms",
                     ["a_second^"],
                     Self::hms,
-                    Some("Get given time in hh:mm:ss format".to_string()),
+                    Some(
+                        "Get given sesconds in hh:mm:ss format
+
+# Arguments
+
+- a_second : Seconds to convert
+
+# Example
+
+$assert(00:33:40,$hms(2020))"
+                            .to_string(),
+                    ),
                 ),
             );
         }
@@ -2123,18 +2141,44 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
                 "eval".to_owned(),
                 FMacroSign::new(
                     "eval",
-                    ["a_expression"],
+                    ["a_expr"],
                     Self::eval,
-                    Some("Evaluate a given expression".to_string()),
+                    Some(
+                        "Evaluate a given expression
+
+- This macro redirects expression to evalexpr crate
+
+# Arguments
+
+- a_expr : Expression to evaluate
+
+# Example
+
+$assert(3,$eval(1 + 2))"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
                 "evalk".to_owned(),
                 FMacroSign::new(
                     "evalk",
-                    ["a_expression"],
+                    ["a_expr"],
                     Self::eval_keep,
-                    Some("Evaluate an expression while keeping source texts".to_string()),
+                    Some(
+                        "Evaluate an expression while keeping source texts
+
+- This macro redirects expression to evalexpr crate
+
+# Arguments
+
+- a_expr : Expression to evaluate
+
+# Example
+
+$assert(1 + 2 = 3,$evalk(1 + 2 ))"
+                            .to_string(),
+                    ),
                 ),
             );
         }
@@ -2143,9 +2187,25 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
             "wrap".to_owned(),
             FMacroSign::new(
                 "wrap",
-                ["a_width^", "a_content"],
+                ["a_width^", "a_text"],
                 Self::wrap,
-                Some("Wrap texts by width".to_string()),
+                Some(
+                    "Wrap texts by width
+
+# Arguments
+
+- a_width : Width(chars) of given texts ( trimmed )
+- a_text  : Text to wrap
+
+# Example
+
+$assert(\\*Lorem ipsum
+dolor sit amet,
+consectetur
+adipiscing elit. In
+rhoncus*\\,$wrap(20,$lipsum(10)))"
+                        .to_string(),
+                ),
             ),
         );
 
@@ -2157,7 +2217,7 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
                     "hookon",
                     ["a_macro_type", "a_target_name"],
                     Self::hook_enable,
-                    Some("Enable hook".to_string()),
+                    Some("Enable hook which is enabled by library extension".to_string()),
                 ),
             );
             map.insert(
@@ -2179,7 +2239,18 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
                     "update",
                     ["a_text"],
                     Self::update_storage,
-                    Some("Update storage".to_string()),
+                    Some(
+                        "Update storage
+
+# Arguments
+
+- a_text : Text to update into a storage
+
+# Example
+
+$update(text to be pushed)"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -2188,7 +2259,14 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
                     "extract",
                     ESR,
                     Self::extract_storage,
-                    Some("Extract from storage".to_string()),
+                    Some(
+                        "Extract from storage
+
+# Example
+
+$extract()"
+                            .to_string(),
+                    ),
                 ),
             );
         }
@@ -2267,40 +2345,6 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
             "{}",
             chrono::offset::Local::now().format("%H:%M:%S")
         )))
-    }
-
-    /// Get formattted time from given second
-    ///
-    /// # Usage
-    ///
-    /// $tarray(HH:MM:SS)
-    #[cfg(feature = "chrono")]
-    fn tarray(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let seconds = trim!(&args[0]).parse::<usize>().map_err(|_| {
-                RadError::InvalidArgument(format!(
-                    "Could not convert given value \"{}\" into a number",
-                    args[0]
-                ))
-            })?;
-            let hour = seconds / 3600;
-            let minute = seconds % 3600 / 60;
-            let second = seconds % 3600 % 60;
-            let mut arr = second.to_string();
-            if minute != 0 {
-                arr.push(',');
-                arr.push_str(&minute.to_string());
-            }
-            if hour != 0 {
-                arr.push(',');
-                arr.push_str(&hour.to_string());
-            }
-            Ok(Some(arr))
-        } else {
-            Err(RadError::InvalidArgument(
-                "tarray requires an argument".to_owned(),
-            ))
-        }
     }
 
     /// Format time as hms
@@ -2496,8 +2540,8 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
     fn eval_keep(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             // This is the processed raw formula
-            let formula = trim!(&args[0]);
-            let result = format!("{} = {}", formula, evalexpr::eval(&formula)?);
+            let formula = &args[0];
+            let result = format!("{}= {}", formula, evalexpr::eval(formula)?);
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
@@ -3980,7 +4024,7 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
     ///
     /// $relay(type,argument)
     fn relay(args_src: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args: Vec<&str> = args_src.split(',').collect();
+        let args = ArgParser::new().args_to_vec(args_src, ',', GreedyState::Never);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "relay at least requires an argument".to_owned(),
@@ -3992,8 +4036,12 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
             WarningType::Security,
         )?;
 
-        let raw_type = trim!(args[0]);
-        let target = trim!(args.get(1).unwrap_or(&""));
+        let raw_type = trim!(&args[0]);
+        let target = if let Some(t) = args.get(1) {
+            trim!(t).to_string()
+        } else {
+            String::new()
+        };
         let relay_type = match raw_type.as_ref() {
             #[cfg(not(feature = "wasm"))]
             "temp" => {
@@ -4014,11 +4062,11 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
                     ));
                 }
                 let mut file_target = FileTarget::empty();
-                file_target.set_path(Path::new(target.as_ref()));
+                file_target.set_path(Path::new(&target));
                 RelayTarget::File(file_target)
             }
             "macro" => {
-                if args.len() == 1 {
+                if target.is_empty() {
                     return Err(RadError::InvalidArgument(
                         "relay requires second argument as macro name for macro relaying"
                             .to_owned(),
