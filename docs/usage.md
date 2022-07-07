@@ -107,9 +107,10 @@ rado force file_name.txt --read
 rado env
 ```
 
-**As a library**
+### Library 
 
 **Cargo.toml**
+
 ```toml
 [dependencies]
 r4d = { version = "*", features = ["full"] }
@@ -127,7 +128,9 @@ r4d = { version = "*", features = ["full"] }
 # signature - Enable signature map
 # hook      - Enable hook macro
 ```
+
 **rust file**
+
 ```rust
 use r4d::RadResult;
 use r4d::Processor;
