@@ -820,30 +820,6 @@ $assert(Lorem ipsum dolor,$lipsum(3))".to_string()),
                 ),
             ),
             (
-                "listdir".to_owned(),
-                FMacroSign::new(
-                    "listdir",
-                    ["a_path+", "a_absolute?^+", "a_delim+"],
-                    Self::list_directory_files,
-                    Some("List a directory's files as csv. 
-
-- A default path is a current working directory. 
-- A defualt delimiter is comma.
-
-# Auth : FIN
-
-# Arguments
-
-- a_path     : A directory path to list files (optional)
-- a_absolute : Whether to print files as absolute form [boolean] (trimmed, optional)
-- a_delim    : A delimiter to put between items (optional)
-
-# Example
-
-$assert(15,$count($litdir()))".to_string()),
-                ),
-            ),
-            (
                 "log".to_owned(),
                 FMacroSign::new(
                     "log",
@@ -1135,13 +1111,13 @@ $assert(Text,$-())".to_string()),
                 "pipeto".to_owned(),
                 FMacroSign::new(
                     "pipe",
-                    ["a_pipe_name", "a_value"],
+                    ["a_pipe_name^", "a_value"],
                     Self::pipe_to,
                     Some("Pipe a given value to a named pipe
 
 # Arguments
 
-- a_pipe_name : Name of pipe container
+- a_pipe_name : Name of pipe container ( trimmed )
 - a_value     : Value to pipe
 
 # Example
@@ -1261,8 +1237,8 @@ $assert(false,$find(greeting,greetings from world))".to_string()),
 
 # Arguments
 
-- a_macro_name : Macro to change name
-- a_new_name   : New macro name to apply
+- a_macro_name : Macro to change name ( trimmed )
+- a_new_name   : New macro name to apply ( trimmed )
 
 # Example
 
@@ -1277,7 +1253,18 @@ $assert($demo(),Test)".to_string()),
                     "repeat",
                     ["a_count^", "a_source"],
                     Self::repeat,
-                    Some("Repeat a given source by given counts".to_string()),
+                    Some("Repeat a given source by given counts
+
+# Arguments
+
+- a_count  : Counts of repetition [Unsigned integer] ( trimmed )
+- a_source : Source text to repeat
+
+# Example
+
+$assert(R4d
+R4d
+R4d,$repeat^(3,R4d$nl()))".to_string()),
                 ),
             ),
             (
@@ -1286,16 +1273,37 @@ $assert($demo(),Test)".to_string()),
                     "repl",
                     ["a_macro_name^", "a_new_value"],
                     Self::replace,
-                    Some("Replace a macro's contents with new values".to_string()),
+                    Some("Replace a macro's contents with new values
+
+# Arguments
+
+- a_macro_name : Macro name to replace
+- a_new_value  : New value to put
+
+# Example
+
+$define(demo=Demo)
+$assert(Demo,$demo())
+$repl(demo,DOMO)
+$assert(DOMO,$demo())".to_string()),
                 ),
             ),
             (
                 "sep".to_owned(),
                 FMacroSign::new(
                     "sep",
-                    ["separator", "a_array"],
+                    ["a_sep", "a_array"],
                     Self::separate_array,
-                    Some("Separate an array with seperator".to_string()),
+                    Some("Separate an array with seperator
+
+# Arguments
+
+- a_sep   : Separator to display
+- a_array : Array source to separate
+
+# Example
+
+$assert(3,$countl($sep($nl(),a,b,c)))".to_string()),
                 ),
             ),
             (
@@ -1304,7 +1312,21 @@ $assert($demo(),Test)".to_string()),
                     "source",
                     ["a_file^"],
                     Self::source_static_file,
-                    Some("Source a env file. Sourced file is eagerly expanded (As if it was static defined)".to_string()),
+                    Some("Source an env file. Sourced file is eagerly expanded (As if it was static defined)
+
+Syntax of source-able file is same with .env file
+
+e.g)
+demo=DEMO
+number=$eval(1+2)
+
+# Arguments
+
+- a_file : File to source ( trimmed )
+
+# Example
+
+$source(def.env)".to_string()),
                 ),
             ),
             (
@@ -1331,7 +1353,15 @@ $assert($demo(),Test)".to_string()),
                     "space",
                     ["a_amount?^"],
                     Self::space,
-                    Some("Print spaces".to_string()),
+                    Some("Print spaces
+
+# Arguments
+
+- a_amount : Amount of spaces
+
+# Example
+
+$assert(    ,$space(4))".to_string()),
                 ),
             ),
             (
@@ -1466,7 +1496,21 @@ $assert($demo(),Test)".to_string()),
                     "undef",
                     ["a_macro_name^"],
                     Self::undefine_call,
-                    Some("Undefine a macro".to_string()),
+                    Some("Undefine a macro
+
+- This undefines all macros that has a given name
+- Define macro cannot be undefined
+- Undef dodesn't yield error when macro doesn't exist
+
+# Arguments 
+
+- a_macro_name : Name of a macro to undefine
+
+# Example
+
+$define(test=Test)
+$undef(test)
+$fassert($test())".to_string()),
                 ),
             ),
             (
@@ -1475,7 +1519,15 @@ $assert($demo(),Test)".to_string()),
                     "unicode",
                     ["a_value^"],
                     Self::paste_unicode,
-                    Some("Create a unicode character from given hex number without prefix".to_string()),
+                    Some("Creates a unicode character from given hex number without prefix
+
+# Arguments
+
+- a_value : Value to convert to unicode character
+
+# Example
+
+$assert(☺,$unicode(263a))".to_string()),
                 ),
             ),
             (
@@ -1484,7 +1536,15 @@ $assert($demo(),Test)".to_string()),
                     "upper",
                     ["a_text"],
                     Self::capitalize,
-                    Some("Get a uppercase english text".to_string()),
+                    Some("Get a uppercase english text
+
+# Arguments
+
+- a_text: Text to transform
+
+# Example
+
+$assert(ABCDE,$upper(aBcDe))".to_string()),
                 ),
             ),
             // THis is simply a placeholder
@@ -1494,7 +1554,23 @@ $assert($demo(),Test)".to_string()),
                     "define",
                     ["a_define_statement"],
                     Self::define_type,
-                    Some("Define a macro".to_string()),
+                    Some("Define a macro
+
+# Arguments
+
+Define should follow handful of rules
+
+- Macro name, parameter name should start non number characters.
+- Consequent characters for macro names, parameter names can be underscore or any characters except special characters.
+- Parameters starts with comma and should be separated by whitespaces
+- Macro body starts with equal(=) characters
+
+# Example
+
+$define(test=Test)
+$define(demo,a_1 a_2=$a_1() $a_2())
+$assert($test(),Test)
+$assert(wow cow,$demo(wow,cow))".to_string()),
                 ),
             ),
         ]));
@@ -1592,6 +1668,33 @@ $assert($demo(),Test)".to_string()),
                     ["a_filename^", "a_truncate?^", "a_content"],
                     Self::file_out,
                     Some("Write content to a file".to_string()),
+                ),
+            );
+            map.insert(
+                "listdir".to_owned(),
+                FMacroSign::new(
+                    "listdir",
+                    ["a_path+", "a_absolute?^+", "a_delim+"],
+                    Self::list_directory_files,
+                    Some(
+                        "List a directory's files as csv. 
+
+- A default path is a current working directory. 
+- A defualt delimiter is comma.
+
+# Auth : FIN
+
+# Arguments
+
+- a_path     : A directory path to list files (optional)
+- a_absolute : Whether to print files as absolute form [boolean] (trimmed, optional)
+- a_delim    : A delimiter to put between items (optional)
+
+# Example
+
+$assert(15,$count($litdir()))"
+                            .to_string(),
+                    ),
                 ),
             );
         }
@@ -2679,7 +2782,9 @@ $assert($demo(),Test)".to_string()),
     /// $pipeto(Value)
     fn pipe_to(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            processor.state.add_pipe(Some(&args[0]), args[1].to_owned());
+            processor
+                .state
+                .add_pipe(Some(&trim!(&args[0])), args[1].to_owned());
         } else {
             return Err(RadError::InvalidArgument(
                 "pipeto requires two arguments".to_owned(),

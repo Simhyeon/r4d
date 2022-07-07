@@ -7,64 +7,88 @@ $h(rad)
 - This is tedious but better for user experience.
 * [x] Regex syntax change
 * [x] New macros
+	* [x] Regexpr
+	* [x] Unwrap
 	* [x] Find
 	* [x] Findm
-	* [x] File
+	* [x] Input
+	* [x] Temp
 	* [x] Trimla ( Trim line amount )
 	* [x] Indent ( Indent lines )
-	* [x] Tab && space
+	* [x] Tab && space && empty
+	* [x] read\_to read\_in
+	* [x] join, joinl
+	* [x] Number notation
+	* [x] letr, staticr
+	* [x] Counter macro
 * [x] Changed argument parsing behaviour frome lexor and arg parser
 	* [x] Regex pattern doesn't go well with string literal "\* *\" syntax
 	* [x] Should be represented as literal
 * [x] Make a manual option (With signature option)
 * [x] Manual to have default value as whole signatures
-* [x] Register regex
 * [x] Argument as trimmed_line '=' character
 * [x] Now define macro also detects trim and trim input attribute
 * [x] Actually, cnl is not so consistent : Just removed it, because frag_on_going was properly set
+* [x] Regex cache
 * [x] Find possible inconsistent \n chracter usage
 * [x] Improve description for real manual
-* [x] Newline can be repeated
-* [ ] Utils::trim doesn't have to make it a string. It is a waste of everything
-	make it return a reference
-	- I'm thinking that if Utils' trim is necessary at all?
+* [x] Trim performance with macro_rules
+* [ ] Make documentation be complete
+	- Make standard
+	- Abstract
+	- Arguments
+	- Return value
+	- Example
+* [ ] set both comment and macro char at the same time method
 * [ ] Improve macro ergonomics
-	* [ ] Tempout truncate option
-	* [ ] Halt with boolean arguments so that, halt is queued by default
-		- Queue is intended to work after outmost execution, but to fully support tag ergonimcs, I think simply deterring a macro execution until the current macro would be useful I guess
-* [x] Assert mode doesn't work, simply panicks on first error
-* [x] Queue is inconsistent
+	* [x] Newline can be repeated
+	* [x] Changed fileout's argument order 
+	* [-] Tempout truncate option : No, but temp_to and new processor will
+	delete temp file before writing contents
+	* [x] Halt with boolean arguments so that, halt is queued by default
+	* [x] Now let doesn't trim by default
+	* [x] For variant order change
+	* [x] Raw define methods let,static
+* [x] Queue is inconsistent (Queue execution timing was strange)
+* [x] On parse chunk body: Unterminated string was not appended to remainder
+* [x] Now comment can start in between with start type
+* [ ] Sort with descending option ( it should be breaking )
+* [ ] Format macro would be useful
+	- Make it from scratch if possible.
+* [ ] Literal rule is bugged
+* [ ] Define has some remaining new liens even if used with = attirbute
+Example
+```
+$define=(
+    long
+    =
+    $define^(able=ABLE)
+    $assert^($able(),ABLE)
+    $clear()
+)
+```
 
+* [x] Bug : Assert mode panicks on first error
+* [x] Bug : Erro rmessaged cascaded as much as nested level
+* [x] Bug : Exit yieled error and printed unreasonable erros when including multiple files
+* [x] Modifed lex_branch_end_frag_eval_result_error to not print error on itself
+* [x] Bug: Include containder had high priority over relay target 
+* [x] Bug: Fasssert set success as fail
+
+* [ ] Test logger's line number ( Because it looks like not so accurate )
 * [ ] Decide when to push to 3.0
 * [ ] Test windows build
 * [ ] Test multiple use cases
+* [ ] Update macro_indices.md
 
 $todo_end()
 
 ### Macro ergonomics
 
-- Relay warning is not so helpful? Only warn on start
-- Countl doesn't count empty trailing line
-- Let trims all arguments is this ok? won't this work like static macro?
-- How about trim_input macro to trim arguments separately? not entirely? -> Ok
-this is not technically possible, because, arguments separattion happens at
-macro invocation. Before the expansion, processor don't know if the arguments
-are separatable or not.
-
-- ENL and CNL(Removed one) doesn't work inside macro definition because macro
-body is expanded as a chunk not a lines iterator + also cnl is not checked on
-macro expansion
+- Countl doesn't count empty trailing line : Include this in documentation for clarity
+- Macro chain : This is much harder because many internal changes
 
 ### Imminent
-
-* [ ] Let macro leveas newline? what?
-	- More specifically consume newline doesn't affet inside macro arguments
-	- God damn...
-	- This is because body is parsed as chunk, the reason why body parse works
-	in chunk level is to make chunk(define body) literal. That every character
-	inside define is displayed as it is. Therefore, there are lines inside
-	definition body thus, no consume line. It's like invoking multiple macros
-	inside a single line.
 
 * [x] Empty name is not handled by error behaviours
 * [x] Forline what? -> Still utilizes $: syntax

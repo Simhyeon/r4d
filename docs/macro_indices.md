@@ -308,8 +308,8 @@ Fileout saves contents to a file. If truncate is false, non existent file
 argument is panic behaviour.
 
 ```
-$fileout(true,file_name.txt,Hello World)
-$fileout(false,file_name.txt,This is appended)
+$fileout(file_name.txt,true,Hello World)
+$fileout(file_name.txt,false,This is appended)
 ===
 ```
 
