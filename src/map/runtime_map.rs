@@ -134,14 +134,17 @@ impl RuntimeMacroMap {
         }
     }
 
-    pub fn rename(&mut self, name: &str, new_name: &str, hygiene_type: Hygiene) {
+    pub fn rename(&mut self, name: &str, new_name: &str, hygiene_type: Hygiene) -> bool {
         if hygiene_type == Hygiene::None {
             if let Some(mac) = self.macros.remove(name) {
                 self.macros.insert(new_name.to_string(), mac);
+                return true;
             }
         } else if let Some(mac) = self.volatile.remove(name) {
             self.volatile.insert(new_name.to_string(), mac);
+            return true;
         }
+        false
     }
 
     pub fn append_macro(&mut self, name: &str, target: &str, hygiene_type: Hygiene) {

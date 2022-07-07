@@ -253,9 +253,12 @@ impl DeterredMacroMap {
         self.macros.remove(name);
     }
 
-    pub fn rename(&mut self, name: &str, target: &str) {
-        let func = self.macros.remove(name).unwrap();
-        self.macros.insert(target.to_owned(), func);
+    pub fn rename(&mut self, name: &str, target: &str) -> bool {
+        if let Some(func) = self.macros.remove(name) {
+            self.macros.insert(target.to_owned(), func);
+            return true;
+        }
+        false
     }
 
     pub fn new_ext_macro(&mut self, ext: ExtMacroBuilder) {

@@ -189,9 +189,15 @@ impl MacroMap {
                 self.runtime.rename(macro_name, target_name, hygiene_type);
             }
             MacroType::Any => {
-                self.function.rename(macro_name, target_name);
-                self.runtime.rename(macro_name, target_name, hygiene_type);
-                self.deterred.rename(macro_name, target_name);
+                // Order is
+                // - runtime
+                // - deterred
+                // - function
+                if !self.runtime.rename(macro_name, target_name, hygiene_type)
+                    && !self.deterred.rename(macro_name, target_name)
+                {
+                    self.function.rename(macro_name, target_name);
+                }
             }
         }
     }
