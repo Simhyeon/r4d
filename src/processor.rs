@@ -454,6 +454,35 @@ impl<'processor> Processor<'processor> {
         Ok(self)
     }
 
+    /// Set custom characters
+    ///
+    /// Every character that consists of valid macro name cannot be a custom macro character.
+    /// Unallowed characters are ```[a-zA-Z1-9\\_\*\^\|\(\)=,]```
+    ///
+    /// ```rust
+    /// let proc = r4d::Processor::empty()
+    ///     .custom_chars('&', '%');
+    /// ```
+    pub fn custom_chars(mut self, macro_character: char, comment_char: char) -> RadResult<Self> {
+        if macro_character == comment_char {
+            return Err(RadError::UnallowedChar(
+                "Cannot set a same character for macro and comment".to_string(),
+            ));
+        }
+        if UNALLOWED_CHARS.is_match(&macro_character.to_string())
+            || UNALLOWED_CHARS.is_match(&comment_char.to_string())
+        {
+            return Err(RadError::UnallowedChar(format!(
+                "\"{}\" is not allowed",
+                macro_character
+            )));
+        } else {
+            self.state.macro_char.replace(macro_character);
+            self.state.comment_char.replace(comment_char);
+        }
+        Ok(self)
+    }
+
     /// Custom macro character
     ///
     /// Every character that consists of valid macro name cannot be a custom macro character.
