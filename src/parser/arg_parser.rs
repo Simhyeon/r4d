@@ -30,6 +30,11 @@ impl ArgParser {
         }
     }
 
+    /// Simply strip literal chunk
+    pub(crate) fn strip_literal(&mut self, args: &str) -> String {
+        self.args_to_vec(args, ',', GreedyState::Greedy)[0].to_owned()
+    }
+
     /// Check if given length is qualified for given raw arguments
     ///
     /// If length is qualified it returns vector of arguments
