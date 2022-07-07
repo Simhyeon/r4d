@@ -21,6 +21,7 @@ pub struct Lexor {
     macro_char: char,
     comment_char: Option<char>,
     consume_previous: bool,
+    consume_blank: bool,
 }
 
 impl Lexor {
@@ -39,8 +40,15 @@ impl Lexor {
             macro_char,
             comment_char,
             consume_previous: false,
+            consume_blank: false,
         }
     }
+
+    /// Consume following blank characters
+    pub fn consume_blank(&mut self) {
+        self.consume_blank = true;
+    }
+
     /// This sets inner rules
     pub fn set_inner(&mut self) {
         self.inner_parse = true;
@@ -56,6 +64,11 @@ impl Lexor {
 
     /// Validate the character
     pub fn lex(&mut self, ch: char) -> LexResult {
+        if self.consume_blank && Utils::is_blank_char(ch) {
+            return LexResult::Ignore;
+        } else if self.consume_blank {
+            self.consume_blank = false;
+        }
         // Literal related
         if self.start_literal(ch) || self.end_literal(ch) {
             self.previous_char.replace('0');
