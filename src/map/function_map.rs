@@ -66,14 +66,22 @@ impl FunctionMacroMap {
                 "-".to_owned(),
                 FMacroSign::new(
                     "-",
-                    ESR,
+                    ["a_pipe_name?^"],
                     Self::get_pipe,
                     Some(
                         "Get piped value. This truncates original value by default if not configured
 
+# Arguments
+
+- a_pipe_name : Name of pipe ( trimmed, optional )
+
 # Exmaple
 
-$:()".to_string(),
+$eval|(1+2)
+$assert(3,$-())
+$nassert(3,$-())
+$pipeto(num,5)
+$assert(5,$-(num))".to_string(),
                     ),
                 ),
             ),
@@ -150,7 +158,7 @@ $assert(a,b)".to_string()),
 # Arguments
 
 - a_macro_name   : Macro name to use as counter ( trimmed )
-- a_counter_type : Counter opration type [ plus, minus ]
+- a_counter_type : Counter opration type [ \"plus\", \"minus\" ]
 
 # Example
 
@@ -172,9 +180,11 @@ $assert($ct(),2)".to_string()),
                     Self::get_ceiling,
                     Some("Get ceiling of a number
 
+# Return : Signed integer
+
 # Arguments
 
-- a_number : Number to get a ceiling from ( trimmed )
+- a_number : Number to get a ceiling from [float] ( trimmed )
 
 # Example
 
@@ -248,6 +258,8 @@ $assert($countl($comp($lines())),3)".to_string()),
                     Self::count,
                     Some("Get counts of an array
 
+# Return : Unsigned integer
+
 # Arguments
 
 - a_array : An array to get counts from
@@ -264,6 +276,9 @@ $assert($count(a,b,c),3)".to_string()),
                     ["a_array"],
                     Self::count_word,
                     Some("Get count of words
+
+# Return : Unsigned integer
+
 # Arguments
 
 - a_array : An array to get word counts from
@@ -280,6 +295,8 @@ $assert($countw(hello world),2)".to_string()),
                     ["a_lines"],
                     Self::count_lines,
                     Some("Get counts of lines. This ignores empty line
+
+# Return : Unsigned integer
 
 # Arguments
 
@@ -336,7 +353,7 @@ $assert($first(),$empty())".to_string()),
 # Arguments
 
 - a_macro_name : Macro to append documentation
-- a_doc        : A document to append
+- a_doc        : Document to append
 
 # Example
 
@@ -378,6 +395,7 @@ b)".to_string()),
                     ESR,
                     Self::escape,
                     Some("Escape processing from the invocation.
+
 - NOTE : This flow control only sustains for the processing.
 
 # Example
@@ -392,6 +410,7 @@ $escape()".to_string()),
                     ESR,
                     Self::exit,
                     Some("Exit processing from invocation
+
 - NOTE : This flow control only sustains for the processing
 
 # Example
@@ -407,9 +426,11 @@ $exit()".to_string()),
                     Self::print_current_input,
                     Some("Print current file input.
 
+# Return : Path
+
 # Arguments
 
-- a_absolute : Whether to print input path as absolute
+- a_absolute : Whether to print input path as absolute [boolean] ( trimmed )
 
 # Example
 
@@ -421,18 +442,40 @@ $assert($input(true),/home/user/dir/test)".to_string()),
                 "find".to_owned(),
                 FMacroSign::new(
                     "find",
-                    ["a_match", "a_source"],
+                    ["a_expr", "a_source"],
                     Self::find_occurence,
-                    Some("Find an occurrence of expression from source. This return boolean value".to_string()),
+                    Some("Find an occurrence of expression from source. This return boolean value
+
+# Return : Boolean
+
+# Arguments
+
+- a_expr   : Expression to match
+- a_source : Source to match for
+
+# Example
+
+$assert(true,$find(^abc,abcde))".to_string()),
                 ),
             ),
             (
                 "findm".to_owned(),
                 FMacroSign::new(
                     "findm",
-                    ["a_match", "a_source"],
+                    ["a_expr", "a_source"],
                     Self::find_multiple_occurence,
-                    Some("Find occurrences of expression from source. This return 0 if there are no occurrences".to_string()),
+                    Some("Find occurrences of expression from source. This return 0 if there are no occurrences
+
+# Return : Unsigned integer
+
+# Arguments
+
+- a_expr   : Expression to match
+- a_source : Source to match for
+
+# Example
+
+$assert(2,$findm(o,hello world))".to_string()),
                 ),
             ),
             (
@@ -443,9 +486,11 @@ $assert($input(true),/home/user/dir/test)".to_string()),
                     Self::get_floor,
                     Some("Get floor integer from a given number
 
+# Return : Signed integer
+
 # Arguments
 
-- a_number : Number to get a floor from ( trimmed )
+- a_number : Number to get a floor from [float] ( trimmed )
 
 # Example
 
@@ -457,27 +502,54 @@ $assert($floor(-3.1),-4)".to_string()),
                 "fold".to_owned(),
                 FMacroSign::new(
                     "fold",
-                    ["a_content"],
+                    ["a_array"],
                     Self::fold,
-                    Some("Fold an array into a single value".to_string()),
+                    Some("Fold an array into a single value
+
+# Arguments 
+
+- a_array : An array to fold
+
+# Example
+
+$assert(abc,$fold(a,b,c))".to_string()),
                 ),
             ),
             (
                 "foldl".to_owned(),
                 FMacroSign::new(
                     "foldl",
-                    ["a_content"],
+                    ["a_lines"],
                     Self::fold_line,
-                    Some("Fold lines into a single value".to_string()),
+                    Some("Fold lines into a single value
+
+# Arguments 
+
+- a_lines : Lines to fold
+
+# Example
+
+$assert(abc,$foldl(a
+b
+c))".to_string()),
                 ),
             ),
             (
                 "grep".to_owned(),
                 FMacroSign::new(
                     "grep",
-                    ["a_regex", "a_content"],
+                    ["a_expr", "a_content"],
                     Self::grep,
-                    Some("Grep text from given content. This returns all lines that matches given expression".to_string()),
+                    Some("Grep text from given content. This returns all lines that matches given expression
+
+# Arguments
+
+- a_expr    : Regex expression to match
+- a_content : Content to get matches from
+
+# Example
+
+$assert(2,$countl($grep(Cargo,$syscmd(ls))))".to_string()),
                 ),
             ),
             (
@@ -487,7 +559,17 @@ $assert($floor(-3.1),-4)".to_string()),
                     ESR,
                     Self::halt_relay,
                     Some("Halt relaying
-- NOTE : Always use halt inside que or else text block includes halt macro will not be included inside relay target".to_string()),
+
+- NOTE : Halt is automatically queued by default. Feed boolean argument to configure this behaviour
+- $halt(false) == $halt()
+
+# Example
+
+$define(cont=)
+$relay(macro,cont)
+12345
+$halt()
+$assert(12345,$cont^())".to_string()),
                 ),
             ),
             (
@@ -496,16 +578,36 @@ $assert($floor(-3.1),-4)".to_string()),
                     "head",
                     ["a_count^", "a_content"],
                     Self::head,
-                    Some("Crop head texts from given content".to_string()),
+                    Some("Crop head texts from given content
+
+# Arguments
+
+- a_count   : Amount of characters to crop [unsigned integer] ( trimmed )
+- a_content : Text to crop from
+
+# Example
+
+$assert(Hello~,$head( 6 ,Hello~ World))".to_string()),
                 ),
             ),
             (
                 "headl".to_owned(),
                 FMacroSign::new(
                     "headl",
-                    ["a_count^", "a_content"],
+                    ["a_count^", "a_lines"],
                     Self::head_line,
-                    Some("Crop head texts but as lines from given content".to_string()),
+                    Some("Crop head texts but as lines from given content
+
+# Arguments
+
+- a_count   : Amount of lines to crop [unsigned integer] ( trimmed )
+- a_lines   : Lines to crop from
+
+# Example
+
+$assert(2,$countl($headl( 2 ,a
+b
+c)))".to_string()),
                 ),
             ),
             (
@@ -514,7 +616,20 @@ $assert($floor(-3.1),-4)".to_string()),
                     "hygiene",
                     ["a_hygiene?"],
                     Self::toggle_hygiene,
-                    Some("Toggle hygiene mode. This enables macro hygiene".to_string()),
+                    Some("Toggle hygiene mode. This enables macro hygiene.
+
+- On \"macro\" hygiene, every newly defined runtime macros are all cleared after first level macro invocation.
+
+# Arguments
+
+- a_hygiene : Whether to enable a macro hygiene mode [boolean] (trimmed)
+
+# Example
+
+$hygiene(true)
+$define(test=Test)
+% test macro is cleared and doesn't exsit
+$fassert($test())".to_string()),
                 ),
             ),
             (
@@ -523,7 +638,22 @@ $assert($floor(-3.1),-4)".to_string()),
                     "indent",
                     ["a_indenter", "a_lines"],
                     Self::indent_lines,
-                    Some("Indent lines with indenter".to_string()),
+                    Some("Indent lines with indenter
+
+# Arguments
+
+- a_indenter : Pattern to put before lines
+- a_lines    : Liens to prepend indenter
+
+# Example
+
+$assert(
+# First
+# Second
+# Third,
+$indent(# ,First
+Second
+Third))".to_string()),
                 ),
             ),
             (
@@ -532,7 +662,16 @@ $assert($floor(-3.1),-4)".to_string()),
                     "index",
                     ["a_index^", "a_array"],
                     Self::index_array,
-                    Some("Get an indexed value of an array".to_string()),
+                    Some("Get an indexed value from an array
+
+# Arguments
+
+- a_index : Index to get [Unsigned integer] ( trimmed )
+- a_array : Data source to index from
+
+# Example
+
+$assert(ef,$index(2,ab,cd,ef))".to_string()),
                 ),
             ),
             (
@@ -541,7 +680,17 @@ $assert($floor(-3.1),-4)".to_string()),
                     "import",
                     ["a_file^"],
                     Self::import_frozen_file,
-                    Some("Import a frozen file at runtime".to_string()),
+                    Some("Import a frozen file at runtime
+
+- Import always include the macros as non-volatile form, thus never cleared unless accessed as library
+
+# Arguments
+
+- a_file: File name to import from [path] (trimmed) 
+
+# Example
+
+$import(def.r4f)".to_string()),
                 ),
             ),
             (
@@ -550,16 +699,36 @@ $assert($floor(-3.1),-4)".to_string()),
                     "join",
                     ["a_sep","a_array"],
                     Self::join,
-                    Some("Join array into a single chunk".to_string()),
+                    Some("Join an array into a single chunk
+
+# Arguments
+
+- a_sep   : Separator used for joining
+- a_array : Source to array to join
+
+# Example
+
+$assert(a-b-c,$join(-,a,b,c))".to_string()),
                 ),
             ),
             (
                 "joinl".to_owned(),
                 FMacroSign::new(
                     "joinl",
-                    ["a_sep","a_text"],
+                    ["a_sep","a_lines"],
                     Self::joinl,
-                    Some("Join text lines into a single line".to_string()),
+                    Some("Join text lines into a single line
+
+# Arguments
+
+- a_sep   : Separator used for joining
+- a_lines : Source lines to join
+
+# Example
+
+$assert(a-b-c,$joinl(-,a
+b
+c))".to_string()),
                 ),
             ),
             (
@@ -568,7 +737,17 @@ $assert($floor(-3.1),-4)".to_string()),
                     "len",
                     ["a_string"],
                     Self::len,
-                    Some("Get a length of a text. This count utf8 characters not ascii.".to_string()),
+                    Some("Get a length of texts. This count utf8 characters not ascii.
+
+# Return : Unsigned integer
+
+# Arguments
+
+- a_string : Text to get length from
+
+# Example
+
+$assert($len(가나다),$len(ABC))".to_string()),
                 ),
             ),
             (
@@ -577,7 +756,24 @@ $assert($floor(-3.1),-4)".to_string()),
                     "let",
                     ["a_macro_name^", "a_value^"],
                     Self::bind_to_local,
-                    Some("Bind a local macro. Every local macro gets removed after outmost level macro expansion ends.".to_string()),
+                    Some("Bind a local macro. Every local macro gets removed after first level macro expansion ends.
+
+# Arguments
+
+- a_macro_name : Binding name to make ( trimmed )
+- a_value      : A value to bind to which is not trimmed ( trimmed )
+
+# Example
+
+$define(letr_test=
+    $let(lc,
+        --Bound Value--
+    )
+    $assert(1,$countl($lc()))
+)
+$letr_test()
+% Cannot access local macro outside the scope
+$fassert($lc())".to_string()),
                 ),
             ),
             (
@@ -586,7 +782,24 @@ $assert($floor(-3.1),-4)".to_string()),
                     "letr",
                     ["a_macro_name^", "a_value"],
                     Self::bind_to_local_raw,
-                    Some("Bind a local macro with raw value. Every local macro gets removed after outmost level macro expansion ends.".to_string()),
+                    Some("Bind a local macro with raw value. Every local macro gets removed after first level macro expansion ends.
+
+# Arguments
+
+- a_macro_name : Binding name to make ( trimmed )
+- a_value      : A value to bind to which is not trimmed
+
+# Example
+
+$define(letr_test=
+    $letr(lc,
+        --Bound Value--
+    )
+    $assert(3,$countl($lc()))
+)
+$letr_test()
+% Cannot access local macro outside the scope
+$fassert($lc())".to_string()),
                 ),
             ),
             (
@@ -595,7 +808,15 @@ $assert($floor(-3.1),-4)".to_string()),
                     "lipsum",
                     ["a_word_count^"],
                     Self::lipsum_words,
-                    Some("Create a placeholder text".to_string()),
+                    Some("Create a placeholder text. The order of placeholder is always same.
+
+# Arguments
+
+- a_word_count : Word counts of placeholder ( trimmed )
+
+# Example
+
+$assert(Lorem ipsum dolor,$lipsum(3))".to_string()),
                 ),
             ),
             (
@@ -604,16 +825,39 @@ $assert($floor(-3.1),-4)".to_string()),
                     "listdir",
                     ["a_path+", "a_absolute?^+", "a_delim+"],
                     Self::list_directory_files,
-                    Some("List a directory's files as csv. Default path is current working directory.".to_string()),
+                    Some("List a directory's files as csv. 
+
+- A default path is a current working directory. 
+- A defualt delimiter is comma.
+
+# Auth : FIN
+
+# Arguments
+
+- a_path     : A directory path to list files (optional)
+- a_absolute : Whether to print files as absolute form [boolean] (trimmed, optional)
+- a_delim    : A delimiter to put between items (optional)
+
+# Example
+
+$assert(15,$count($litdir()))".to_string()),
                 ),
             ),
             (
                 "log".to_owned(),
                 FMacroSign::new(
                     "log",
-                    ["a_log^"],
+                    ["a_msg"],
                     Self::log_message,
-                    Some("Log message to console".to_string()),
+                    Some("Log a message to console
+
+# Arguments
+
+- a_msg : Message to log to console
+
+# Example
+
+$log($value_i_want_to_check^())".to_string()),
                 ),
             ),
             (
@@ -622,7 +866,15 @@ $assert($floor(-3.1),-4)".to_string()),
                     "lower",
                     ["a_text"],
                     Self::lower,
-                    Some("Get lowercase english texts".to_string()),
+                    Some("Get lowercase english texts
+
+# Arguments
+
+- a_text: Text to transform
+
+# Example
+
+$assert(abcde,$lower(AbCdE))".to_string()),
                 ),
             ),
             (
@@ -631,7 +883,15 @@ $assert($floor(-3.1),-4)".to_string()),
                     "max",
                     ["a_array"],
                     Self::get_max,
-                    Some("Get max value from a given array".to_string()),
+                    Some("Get max value from a given array
+# Arguments
+
+- a_array : Array to get the highest order from
+
+# Example
+
+$assert(eIsBigger,$max(aIsSmall,cIsMiddle,eIsBigger))
+$assert(5,$max(1,2,3,4,5))".to_string()),
                 ),
             ),
             (
@@ -640,7 +900,16 @@ $assert($floor(-3.1),-4)".to_string()),
                     "min",
                     ["a_array"],
                     Self::get_min,
-                    Some("Get min value from a given array".to_string()),
+                    Some("Get min value from a given array
+
+ # Arguments
+
+- a_array : Array to get the lowest order from
+
+# Example
+
+$assert(aIsSmall,$min(aIsSmall,cIsMiddle,eIsBigger))
+$assert(1,$min(1,2,3,4,5))".to_string()),
                 ),
             ),
             (
@@ -649,7 +918,17 @@ $assert($floor(-3.1),-4)".to_string()),
                     "name",
                     ["a_path"],
                     Self::get_name,
-                    Some("Get a name from a given path including an extension".to_string()),
+                    Some("Get a name from a given path including an extension
+
+# Return : path
+
+# Arguments
+
+- a_path : Path to get a name from
+
+# Example
+
+$assert(auto.sh,$name(/path/to/file/auto.sh))".to_string()),
                 ),
             ),
             (
@@ -658,16 +937,38 @@ $assert($floor(-3.1),-4)".to_string()),
                     "nassert",
                     ["a_lvalue", "a_rvalue"],
                     Self::assert_ne,
-                    Some("Panics when lvalue is equal to rvalue".to_string()),
+                    Some("Compare left and right values. Panics if lvalue is \"equal\" to rvalue
+
+# Arguments
+
+- a_lvalue : Left  value
+- a_rvalue : Right value
+
+# Example
+
+$nassert(1,2)".to_string()),
                 ),
             ),
             (
                 "not".to_owned(),
                 FMacroSign::new(
                     "not",
-                    ["a_boolean"],
+                    ["a_boolean?^"],
                     Self::not,
-                    Some("Return a negated value of a given boolean".to_string()),
+                    Some("Return a negated value of a given boolean. Yield error when given value is not a boolean
+
+# Return : boolean
+
+# Arguments
+
+- a_boolean : Boolean value to negate [boolean] ( trimmed )
+
+# Example
+
+$assert(false,$not(true))
+$assert(true,$not(false))
+$assert(false,$not(1))
+$assert(true,$not(0))".to_string()),
                 ),
             ),
             (
@@ -676,7 +977,15 @@ $assert($floor(-3.1),-4)".to_string()),
                     "num",
                     ["a_text"],
                     Self::get_number,
-                    Some("Extract a number part from given text".to_string()),
+                    Some("Extract a number part from given text. If there are multiple numbers, only extract the first
+# Arguments
+
+- a_text : Text to extract number from
+
+# Example
+
+$assert(34,$num(34sec))
+$assert(30,$num(30k/h for 3 hours))".to_string()),
                 ),
             ),
             (
@@ -685,7 +994,13 @@ $assert($floor(-3.1),-4)".to_string()),
                     "nl",
                     ["a_count+^"],
                     Self::newline,
-                    Some("A platform specific newline. It's behaviour can be configured.".to_string()),
+                    Some("A platform specific newline. It's behaviour can be configured.
+
+# Example
+
+% This may not hold true if a newline is configured by a user
+$assert($nl(),
+)".to_string()),
                 ),
             ),
             (
@@ -695,7 +1010,17 @@ $assert($floor(-3.1),-4)".to_string()),
                     ["a_number^", "a_notation^"],
                     Self::change_notation,
                     Some("Chagne the notaion of a number
-- Notations : bin,oct,hex".to_string()),
+
+# Arguments
+
+- a_number   : A nuber to change notation
+- a_notation : A type of notation [\"bin\",\"oct\",\"hex\"] ( trimmed )
+
+# Example                        
+
+$assert(10111,$notat(23,bin))
+$assert(27,$notat(23,oct))
+$assert(17,$notat(23,hex))".to_string()),
                 ),
             ),
             (
@@ -704,7 +1029,15 @@ $assert($floor(-3.1),-4)".to_string()),
                     "panic",
                     ["a_msg"],
                     Self::manual_panic,
-                    Some("Panics manually with message".to_string()),
+                    Some("Panics manually with message
+
+# Arguments
+
+- a_msg : A message to print as error
+
+# Example
+
+$panic(This should not be reached)".to_string()),
                 ),
             ),
             (
@@ -714,17 +1047,45 @@ $assert($floor(-3.1),-4)".to_string()),
                     ["a_path"],
                     Self::get_parent,
                     Some("Get a parent from a given path. 
-- NOTE : This yields error if path is root and will return empty value not a none value if path is a single node.".to_string()),
+
+- NOTE : This yields error if path is root and will return empty value, not a none value if path is a single node.
+
+# Return : path
+
+# Arguments
+
+- a_path : A Path to extract parent from
+
+# Example 
+
+$fassert($parent(/))
+$assert($empty(),$parent(node))
+$assert(/first/second,$parent(/first/second/last.txt))".to_string()),
                 ),
             ),
             (
                 "path".to_owned(),
                 FMacroSign::new(
                     "path",
-                    ["a_paths^"],
+                    ["a_array^"],
                     Self::merge_path,
                     Some("Merge given paths
-- NOTE : This respects a platform path separator".to_string()),
+
+- This respects a platform path separator
+- Path with colliding separator cannot be merged. 
+    e.g) a/ + /b cannot be merged
+
+# Return : path
+
+# Arguments
+
+- a_array : Path array to merge
+
+# Example
+
+$assert(a/b,$path(a,b))
+$assert(/a/b,$path(/a,b))
+$assert(a/b,$path(a/,b))".to_string()),
                 ),
             ),
             (
@@ -734,7 +1095,22 @@ $assert($floor(-3.1),-4)".to_string()),
                     ["a_pause?^"],
                     Self::pause,
                     Some("Pause a macro expansion from invocation. Paused processor will only expand $pause(false)
-- NOTE : Pause is not a flow control but a processor state, thus the state will sustain for the whole processing.".to_string()),
+
+- NOTE : Pause is not a flow control but a processor state, thus the state will sustain for the whole processing.
+
+# Arguments
+
+- a_pause : Whether to pause or not [boolean] ( trimmed )
+
+# Example
+
+$counter(i,plus)
+$pause(true)
+$counter(i,plus)
+$pause(false)
+
+$nassert(2,$i())
+$assert(1,$i())".to_string()),
                 ),
             ),
             (
@@ -743,7 +1119,16 @@ $assert($floor(-3.1),-4)".to_string()),
                     "pipe",
                     ["a_value"],
                     Self::pipe,
-                    Some("Pipe a given value into an unnamed pipe".to_string()),
+                    Some("Pipe a given value into an unnamed pipe
+
+# Arguments 
+
+- a_value : A value to pipe
+
+# Example
+
+$pipe(Text)
+$assert(Text,$-())".to_string()),
                 ),
             ),
             (
@@ -752,7 +1137,17 @@ $assert($floor(-3.1),-4)".to_string()),
                     "pipe",
                     ["a_pipe_name", "a_value"],
                     Self::pipe_to,
-                    Some("Pipe a given value to a named pipe".to_string()),
+                    Some("Pipe a given value to a named pipe
+
+# Arguments
+
+- a_pipe_name : Name of pipe container
+- a_value     : Value to pipe
+
+# Example
+
+$pipeto(yum,YUM)
+$assert($-(yum),YUM)".to_string()),
                 ),
             ),
             (
@@ -761,16 +1156,40 @@ $assert($floor(-3.1),-4)".to_string()),
                     "prec",
                     ["a_number^", "a_precision^"],
                     Self::prec,
-                    Some("Convert a float number with a given precision".to_string()),
+                    Some("Convert a float number with a given precision
+
+# Return : Float
+
+# Arguments
+
+- a_number    : Number to process ( trimmed )
+- a_precision : Precision to apply to number ( trimmed )
+
+# Example
+
+$assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
                 ),
             ),
             (
                 "relay".to_owned(),
                 FMacroSign::new(
                     "relay",
-                    ["a_type^", "a_target^"],
+                    ["a_target_type^", "a_target^+"],
                     Self::relay,
-                    Some("Start relaying".to_string()),
+                    Some("Start relaying to target which redirects all following texts to relay target.
+
+# Auth : FOUT required for relay target \"file\" and \"temp\"
+
+# Arguments
+
+- a_target_type : A type of a relay target [\"macro\",\"file\", \"temp\"] (trimmed)
+- a_target      : Name of target. Ignored in temp type
+
+# Example
+
+$relay(file,out.md)$halt()
+$relay(macro,container)$halt()
+$relay(temp)$halt()".to_string()),
                 ),
             ),
             (
@@ -779,16 +1198,34 @@ $assert($floor(-3.1),-4)".to_string()),
                     "rev",
                     ["a_array"],
                     Self::reverse_array,
-                    Some("Reverse an order of an array".to_string()),
+                    Some("Reverse an order of an array
+
+# Arguments 
+
+- a_array : Array to reverse
+
+# Example
+
+$assert(\\*3,2,1*\\,$rev(1,2,3))".to_string()),
                 ),
             ),
             (
                 "regex".to_owned(),
                 FMacroSign::new(
                     "regex",
-                    ["a_expression", "a_substitution", "a_source"],
+                    ["a_expr", "a_sub", "a_source"],
                     Self::regex_sub,
-                    Some("Apply regular expression substitution to a source".to_string()),
+                    Some("Apply regular expression substitution to a source
+
+# Arguments
+
+- a_expr   : Regex expression to match
+- a_sub    : Text to substitute as
+- a_source : Sourec text to operate on
+
+# Example
+
+$assert(Hello Rust,$regex(World,Rust,Hello World))".to_string()),
                 ),
             ),
             (
@@ -798,7 +1235,20 @@ $assert($floor(-3.1),-4)".to_string()),
                     ["a_name", "a_expr"],
                     Self::register_expression,
                     Some("Register an regular expression
-- NOTE : Registered name will not be able to compiled into an expression directly".to_string()),
+
+- NOTE : Registered name will not be able to matches directly
+- Every regex operation creates regex cache, while registered expression will not be cached but saved permanently. Unregistered cache will be cleared if certain capacity reaches.
+
+# Arguments
+
+- a_name : Name of the regex expression. This is not trimmed
+- a_epxr : Expression to bind to
+
+# Example
+
+$regexpr(greeting,Hello World)
+$assert(true,$find(greeting,Hello World))
+$assert(false,$find(greeting,greetings from world))".to_string()),
                 ),
             ),
             (
@@ -807,7 +1257,18 @@ $assert($floor(-3.1),-4)".to_string()),
                     "rename",
                     ["a_macro_name^", "a_new_name^"],
                     Self::rename_call,
-                    Some("Rename a macro with new name".to_string()),
+                    Some("Rename a macro with a new name
+
+# Arguments
+
+- a_macro_name : Macro to change name
+- a_new_name   : New macro name to apply
+
+# Example
+
+$define(test=Test)
+$rename(test,demo)
+$assert($demo(),Test)".to_string()),
                 ),
             ),
             (
@@ -1341,9 +1802,13 @@ $assert($floor(-3.1),-4)".to_string()),
     ///
     /// * `name` - Source macro name to find
     /// * `target` - Target macro name to apply
-    pub fn rename(&mut self, name: &str, target: &str) {
-        let func = self.macros.remove(name).unwrap();
-        self.macros.insert(target.to_owned(), func);
+    pub fn rename(&mut self, name: &str, target: &str) -> bool {
+        if let Some(func) = self.macros.remove(name) {
+            self.macros.insert(target.to_owned(), func);
+            true
+        } else {
+            false
+        }
     }
 
     // ==========
@@ -1608,6 +2073,8 @@ $assert($floor(-3.1),-4)".to_string()),
     /// $not(expression)
     fn not(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            // No need to trim right now because is_arg_true trims already
+            // Of course, it returns cow so it doesn't create overhead anyway
             let args = &args[0];
             if let Ok(value) = Utils::is_arg_true(args) {
                 Ok(Some((!value).to_string()))
