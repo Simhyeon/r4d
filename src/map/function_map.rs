@@ -685,7 +685,7 @@ Third))".to_string()),
 
 # Arguments
 
-- a_index : Index to get [Unsigned integer] ( trimmed )
+- a_index : Index to get [Signed integer] ( trimmed )
 - a_array : Data source to index from
 
 # Example
@@ -3829,6 +3829,10 @@ $extract()"
         }
     }
 
+    // [1 2 3]
+    //  0 1 2
+    //  -3-2-1
+
     /// Index array
     ///
     /// # Usage
@@ -3836,23 +3840,37 @@ $extract()"
     /// $index(1,1,2,3,4,5)
     fn index_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let index = trim!(&args[0]).parse::<usize>().map_err(|_| {
+            let content = &mut args[1].split(',').collect::<Vec<&str>>();
+            let index = trim!(&args[0]).parse::<isize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
-                    "index requires positive integer number but got \"{}\"",
+                    "index requires to be an integer but got \"{}\"",
                     &args[0]
                 ))
             })?;
-            let content = &mut args[1].split(',').collect::<Vec<&str>>();
 
-            if content.len() <= index {
+            if index >= content.len() as isize || index < -(content.len() as isize) {
                 return Err(RadError::InvalidArgument(format!(
-                    "Index \"{}\" is bigger than content's length \"{}\"",
+                    "Index out of range. Given index is \"{}\" but array length is \"{}\"",
                     index,
                     content.len()
                 )));
             }
 
-            Ok(Some(content[index].to_owned()))
+            let final_index = if index < 0 {
+                content.len() + index as usize
+            } else {
+                index.max(0) as usize
+            };
+
+            if content.len() <= final_index {
+                return Err(RadError::InvalidArgument(format!(
+                    "Index out of range. Given index is \"{}\" but array length is \"{}\"",
+                    index,
+                    content.len()
+                )));
+            }
+
+            Ok(Some(content[final_index].to_owned()))
         } else {
             Err(RadError::InvalidArgument(
                 "index requires two argument".to_owned(),
