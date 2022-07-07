@@ -179,12 +179,12 @@ impl DeterredMacroMap {
                 ),
             ),
             (
-                "unwrap".to_owned(),
+                "unpack".to_owned(),
                 DMacroSign::new(
-                    "unwrap",
+                    "unpack",
                     ["a_literl_expr"],
-                    DeterredMacroMap::unwrap_expression,
-                    Some("Unwrap literal expression to expanded text".to_string()),
+                    DeterredMacroMap::unpack_expression,
+                    Some("Unpack literal expression to expanded text".to_string()),
                 ),
             ),
         ]));
@@ -582,7 +582,7 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $unwrap(\*expression*\)
-    fn unwrap_expression(
+    fn unpack_expression(
         args: &str,
         level: usize,
         processor: &mut Processor,
