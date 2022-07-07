@@ -86,6 +86,7 @@ pub(crate) struct ProcessorState {
     pub escape_newline: bool,  // This escapes right next newline
     pub queued: Vec<String>,
     pub regex_cache: RegexCache,
+    pub lexor_escape_blanks: bool,
 }
 
 impl ProcessorState {
@@ -114,6 +115,7 @@ impl ProcessorState {
             escape_newline: false,
             queued: vec![],
             regex_cache: RegexCache::new(),
+            lexor_escape_blanks: false,
         }
     }
 
@@ -1689,6 +1691,12 @@ impl<'processor> Processor<'processor> {
                 }
                 LexResult::EndFrag => {
                     self.lex_branch_end_frag(ch, frag, &mut remainder, lexor, level, caller)?;
+                    // Escape blank check is ok to be in here because
+                    // escape blanks can only invoked by macro ( for now at least )
+                    if self.state.lexor_escape_blanks {
+                        lexor.consume_blank();
+                        self.state.lexor_escape_blanks = false;
+                    }
                 }
                 // Remove fragment and set to remainder
                 LexResult::ExitFrag => {
