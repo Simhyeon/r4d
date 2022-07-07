@@ -25,8 +25,11 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
 use std::fmt::Write as _;
+#[cfg(not(feature = "wasm"))]
 use std::fs::OpenOptions;
-use std::io::{BufRead, Write};
+use std::io::BufRead;
+#[cfg(not(feature = "wasm"))]
+use std::io::Write;
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -2656,6 +2659,7 @@ $assert(15,$count($litdir()))"
     /// # Usage
     ///
     /// $include(path)
+    #[cfg(not(feature = "wasm"))]
     fn include(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("include", AuthType::FIN, processor)? {
             return Ok(None);
@@ -3039,6 +3043,7 @@ $assert(15,$count($litdir()))"
     /// # Usage
     ///
     /// $env(SHELL)
+    #[cfg(not(feature = "wasm"))]
     fn get_env(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("env", AuthType::ENV, p)? {
             return Ok(None);
@@ -3061,6 +3066,7 @@ $assert(15,$count($litdir()))"
     /// # Usage
     ///
     /// $envset(SHELL,value)
+    #[cfg(not(feature = "wasm"))]
     fn set_env(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("envset", AuthType::ENV, p)? {
             return Ok(None);
@@ -3472,6 +3478,7 @@ $assert(15,$count($litdir()))"
     /// # Usage
     ///
     /// $fileout(true,file_name,Content)
+    #[cfg(not(feature = "wasm"))]
     fn file_out(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("fileout", AuthType::FOUT, p)? {
             return Ok(None);
@@ -4603,6 +4610,7 @@ $assert(15,$count($litdir()))"
     /// List directory files
     ///
     /// $listdir(path, is_abs, delimiter)
+    #[cfg(not(feature = "wasm"))]
     fn list_directory_files(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("listdir", AuthType::FIN, processor)? {
             return Ok(None);
