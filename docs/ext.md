@@ -17,36 +17,62 @@ r4d = {version="*", features = ["template"]}
 use r4d::ExtMacroBuilder;
 use r4d::ext_template::*;
 use r4d::AuthType;
+use r4d::Processor;
+use r4d::RadResult;
 
 // ---
 // Processor creation precedes...
 // ---
 
+// DEMOS
 // Extend function macro
-processor.add_ext_macro(ExtMacroBuilder::new("macro_name")
-    .args(&["a1","b2"])
-	.desc("This macro do something awesome")
-    .function(function_template!(
-        let args = split_args!(2)?;
-        let result = format!("{} + {}", args[0], args[1]);
-        Ok(Some(result))
-)));
+processor.add_ext_macro(
+    ExtMacroBuilder::new("mac1")
+        .args(&["a_first", "a_second"])
+        .desc("Description comes here")
+        .function(function_template!(
+                // NOTE
+                // Function macro does not need to expand arguments
+                // Because it is already expanded
 
+                // NOTE
+                // On split_args macro,
+                // Function macro should give second argument as "false"
+                // If true, then it will not strip literal quotes
+                let args = split_args!(2,false)?;
+                let result = format!("{} + {}", args[0], args[1]);
+                Ok(Some(result))
+        )),
+);
 // Extend deterred macro
-processor.add_ext_macro(ExtMacroBuilder::new("macro_name")
-    .args(&["a1","b2"])
-	.desc("This macro do something awesome too")
-    .deterred(deterred_template!(
-        let args = split_args!(2)?;
-        let result = if expand!(&args[0])? == "doit" {
-            Some(format!("I did it -> {}", expand!(&args[1])?))
-        } else { None };
-        Ok(result)
-)));
+processor.add_ext_macro(
+    ExtMacroBuilder::new("mac2")
+        .args(&["a_first", "a_second"])
+        .desc("Description comes here")
+        .deterred(deterred_template!(
+                // NOTE
+                // Audit authentication
+                // Macro name, and required auth type
+                audit_auth!("mac2",AuthType::CMD);
 
-/// Optionally use audit_auth inside template macro for auth requirment.
-/// This will return error if given auth is not allowed
-audit_auth!("macro_name",AuthType::CMD);
+                // NOTE
+                // On split_args macro,
+                // Deterred macro should have second argument as "true"
+                // because deterred should not strip before expansion
+                let args = split_args!(2,true)?;
+
+                // NOTE
+                // expand_args macro should be only called on deterred macros
+                // because it expands arguments and also strip
+                let result = if expand_args!(&args[0])? == "doit" {
+
+                    // NOTE
+                    // You can expand normal expression with expand_args macro
+                    Some(format!("I did it -> {}", expand_args!(&args[1])?))
+                } else { None };
+                Ok(result)
+        )),
+);
 ```
 
 **More about codes**
@@ -72,23 +98,27 @@ pub(crate) type DFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResul
 }
 
 // split_args is  equivalent to
-processor.get_split_arguments("text,to,parse", args)
+processor.split_arguments("text,to,parse", args, false)
 
-// expand macro is equivalent to
-processor.expand_and_strip(level,"text_to_parse")
+// expand_args macro is equivalent to
+processor.expand(level,"text_to_parse", true)
+
+// expand_expr macro is equivalent to
+processor.expand(level,"text_to_parse", false)
 ```
 
 You can also simply send your function as argument instead of using template macros.
 
 ### Extend macros as binary with help of script.rs file
 
-You can also extend rad macros by manually editing script.rs file and compiling
-with ```template``` feature.
+You can also extend rad macros by manually editing script.rs file inside src
+directory.
 
 [Script file](../src/script.rs) doesn't do anything by default and actually
-doesn't get included.
+doesn't get included without template feature.
 
-You can modify the file and make it included by compiling with ```template``` feature.
+You can modify the file and make it included by compiling with ```template```
+feature.
 
 ```bash
 # You need to work in a local copy of a project e.g) git clone
