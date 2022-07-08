@@ -70,6 +70,26 @@ $define(name=NAME)
 $name(/home/path)
 ```
 
+Finally and the most important trait of local macro is that **local macro is not
+expanded**. 
+
+```
+$define(demo,a_boolean=$if($a_boolean(),It is true))
+$demo(\*$not(false)*\)
+===
+error: Invalid argument
+= If requires either true/false or zero/nonzero integer but given "$not(false)"
+ --> test:2:2~~
+```
+
+When "demo" was invked, it had bound ```\*$not(false)*\``` into an argument
+```a_boolean```. The binding is technically same with let syntax. Let expands
+the target expression and assign it to a macro.
+
+In this case, text ```$not(false)``` was bound to a local macro ```a_boolean```
+and inner macro ```if``` received it as a literal text not a expanded value of
+```true```.
+
 ## Text and operation
 
 Some macros are text macro which expands to text while some other operational

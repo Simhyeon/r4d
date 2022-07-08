@@ -3,12 +3,13 @@
 * [Macro definition](#macro-definition)
   * [Caveats](#caveats)
 * [Macro invocation](#macro-invocation)
+* [Literal rules](#literal-rules)
 * [Comments](#comments)
 * [Macro attributes](#macro-attributes)
 * [Errors](#errors)
 * [Break point](#break-point)
 
-#### Macro definition
+## Macro definition
 
 Definition syntax is similar to macro invocation but requires a specific form
 to sucessfully register the macro.
@@ -44,7 +45,7 @@ $define(v_name=Simon creek)
 $static(v_name,Simon creek)
 ```
 
-##### Caveats
+### Caveats
 
 **Define is not evaluated on declaration**
 
@@ -83,7 +84,7 @@ $print_counter_as_static()
 0
 ```
 
-#### Macro invocation
+## Macro invocation
 
 Prefix is a dollar sign($)
 ```
@@ -129,7 +130,124 @@ content includes unbalanced parentheses or commas, enclose the body with string
 literal with the syntax of ```\* TEXT GOES HERE *\```, by the way literal syntax
 inside macro body will printed as is. 
 
-### Comments
+## Literal rules
+
+Literal rules in r4d is unfortunately not straightforward at a first glance.
+General rules are followings
+
+- Literal text inside definition body is not stripped on execution
+- Literal text as an argument is expanded and then stripped
+	- Argument without macro enclosed with literal text is treated as is without
+	breaking argument length
+	- Argument with macro enclosed with literal text will treat the macro
+	invocation as normal text without it expanded
+
+In short, rad processes macros in given subprocesses.
+
+- Expand expression from arguments
+- Strip expanded arguments
+- Bind arguments to local macros
+- Expand a macro body
+
+See an examples to better understand literal rules
+
+### Macro body
+
+```r4d
+$define(test=\*$path(a,b)*\)
+$test()
+===
+% Macro body is not stripped
+\*$path(a,b)*\
+```
+
+### Literl inside arguments
+
+**Literal without macros**
+
+```r4d
+$static(p1,$path(\*a*\,b,c))
+$static(p2,$path(a,b,c))
+$assert($p1(),$p2())
+===
+% This holds true because \*a*\ is tripped to be a value of "a"
+% Thus path macro can process argument as if it was originally a "a,b,c"
+```
+
+**Literal with macros**
+
+```
+$static(p,a/b)
+$static(p1,$path(\*$p()*\,b,c))
+$static(p2,$path($p(),b,c))
+$logm(p1)
+$logm(p2)
+$assert($p1(),$p2())
+===
+% p1's argument was stripped but not expanded
+% log: $p()/b/c
+%  --> test:4:2
+%
+% log: a/b/b/c
+%  --> test:5:2 
+% Final result of p1 and p2 is same to end user
+```
+
+**Literal passed as arguments**
+
+```
+$define(demo,a_first=$if($a_first(),TRUE))
+$demo($not(false))
+$demo(\*$not(false)*\)
+===
+TRUE
+error: Invalid argument
+= If requires either true/false or zero/nonzero integer but given "$not(false)"
+ --> test:3:2~~
+```
+
+If the argument is passed as literal, local argument will be linked to stripped
+but non-expanded value. which is ```$not(false)``` in this case. Since local
+argument is not expanded, if receives strange value and execuion fails.
+
+To prevent this error, minimize literal usage if possible. When passing array
+use literal quote only when the values are constants. If you need to create a
+dynamically created array, wrap it inside a macro and use literal attribute.
+
+```r4d
+$define=(
+		arr_pass,
+		a_arr a_it=
+		$foreach=(
+			$:() + $a_it()$nl(),
+			$a_arr()
+		)
+)
+$static(array,a,b,c,d,e,f,g)
+$arr_pass^($array*(),@)
+===
+a + @
+b + @
+c + @
+d + @
+e + @
+f + @
+g + @
+```
+
+Simple process how this works
+
+- **arr_pass**
+	- Expand $array() -> ```a,b,c,d,e,f,g```
+	- Try stripping, but nothing to do anyway
+	- Wrap it inside literal (attirbute) -> ```\* a,b,c,d,e,f,g *\```
+	- Bind the wrapped value to an argument ```a_arr```
+- **foreach**
+	- Expand $a_arr() -> ```\* a,b,c,d,e,f,g *\```
+	- Strip a value -> ```a,b,c,d,e,f,g```
+	- Bind the value to an argument ```a_body``` ( Refer --man foreach )
+
+## Comments
 
 Comment is disabled by default because comment character can intefere with
 macro expansion and user expectance. You can enable comment mode with

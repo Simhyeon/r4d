@@ -1,21 +1,23 @@
 ### TODO
 
 $todo_start()
-* [ ] New macros
-	* [ ] Format macro would be useful
-		- Make it from scratch if possible.
-* [x] Improve macro ergonomics
+* [x] New macros
+* [ ] Improve macro ergonomics
+	* [x] Changed from to spread
+	* [x] Removed ieval because counter replaces it
+	* [ ] I changed queue to insert as no stripped. Is it desirable?
+* [ ] Library
+	* [ ] Possibly ditch strange caller variable
 * [ ] Feature
+	* [x] Make deterred macro works like other macros
 	* [ ] Edit in place with io operation
+	* [ ] Dry run would be cool, but is's hella difficult
 * [ ] Documentation
-	* [x] Make documentation be complete
 	* [ ] Update macro\_indices.md
-* [x] Library
-	* [x] set both comment and macro char at the same time method
 * [ ] Bug fix
-	* [x] Some macro didn't processed literal properly
 	* [ ] Literal rule is bugged ( Nested literal rule doesn't work at all )
 	* [ ] Test logger's line number ( Because it looks like not so accurate )
+	* [ ] Local macro was not expanded when given
 * [ ] Test
 	* [ ] Decide when to push to 3.0
 	* [ ] Test windows build
@@ -74,6 +76,7 @@ $todo_end()
 * [x] On parse chunk body: Unterminated string was not appended to remainder
 * [x] Now comment can start in between with start type
 
+* [x] Bug : Some macro didn't processed literal properly
 * [x] Bug : Assert mode panicks on first error
 * [x] Bug : Erro rmessaged cascaded as much as nested level
 * [x] Bug : Exit yieled error and printed unreasonable erros when including multiple files
