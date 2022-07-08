@@ -357,6 +357,7 @@ dependencies = [
 name = "r4d"
 version = "3.0.0-rc.4"
 dependencies = [
+ "atty",
  "bincode",
  "chrono",
  "cindex",
