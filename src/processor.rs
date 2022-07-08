@@ -1808,6 +1808,8 @@ impl<'processor> Processor<'processor> {
         let mut temp_level = level;
         while temp_level > 0 {
             if let Some(local) = self.map.local.get(&Utils::local_name(temp_level, name)) {
+                // IMPORTANT
+                // Local body should not be expanded
                 return Ok(Some(local.body.to_owned()));
             }
             temp_level -= 1;
@@ -2870,12 +2872,22 @@ impl<'processor> Processor<'processor> {
         Utils::is_arg_true(src)
     }
 
+    pub(crate) fn get_local_macro_body(&self, level: usize, macro_name: &str) -> RadResult<&str> {
+        let body = &self
+            .map
+            .local
+            .get(&Utils::local_name(level, macro_name))
+            .ok_or_else(|| RadError::InvalidMacroName("No such macro".to_string()))?
+            .body;
+        Ok(body)
+    }
+
     pub(crate) fn get_runtime_macro_body(&self, macro_name: &str) -> RadResult<&str> {
         let body = &self
             .map
             .runtime
             .get(macro_name, self.state.hygiene)
-            .unwrap()
+            .ok_or_else(|| RadError::InvalidMacroName("No such macro".to_string()))?
             .body;
         Ok(body)
     }
