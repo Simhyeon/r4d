@@ -62,26 +62,46 @@ $EB()".to_string()),
 
 # Example
 
-$assert(\\*$path(a,b,c)*\\,$exec(path,a,b,c))".to_string()),
+$assert($path(a,b,c),$exec(path,a,b,c))".to_string()),
                 ),
             ),
             (
                 "fassert".to_owned(),
                 DMacroSign::new(
                     "fassert",
-                    ["a_text"],
+                    ["a_expr"],
                     DeterredMacroMap::assert_fail,
-                    Some("Assert succeedes when text expansion yields error".to_string()),
+                    Some("Assert succeedes when text expansion yields error
+
+# Arguments
+
+- a_expr: Expression to audit
+
+# Example
+
+$fassert($eval(Text is not allowd))".to_string()),
                 ),
             ),
             (
                 "forby".to_owned(),
                 DMacroSign::new(
                     "forby",
-                    ["a_body", "a_sep","a_array"],
+                    ["a_body", "a_sep","a_text"],
                     DeterredMacroMap::forby,
                     Some(
-                        "Loop around text separated by separator.".to_string(),
+                        "Iterate around text separated by separator.
+
+Iterated value is bound to macro \":\"
+
+# Arguments
+
+- a_body : Body to be pasted as iterated item
+- a_sep  : Separator to split an ar
+- a_text : Text to split by separator
+
+# Example
+
+$assert(a+b+c+,$forby($:()+,-,a-b-c))".to_string(),
                     ),
                 ),
             ),
@@ -92,7 +112,18 @@ $assert(\\*$path(a,b,c)*\\,$exec(path,a,b,c))".to_string()),
                     ["a_body", "a_array"],
                     DeterredMacroMap::foreach,
                     Some(
-                        "Loop around given array.".to_string(),
+                        "Iterate around given array.
+
+Iterated value is bound to macro \":\"
+ 
+# Arguments
+
+- a_body  : Body to be pasted as iterated item
+- a_array : An array to iterate
+
+# Example
+
+$assert(a+b+c+,$foreach($:()+,a,b,c))".to_string(),
                     ),
                 ),
             ),
@@ -100,9 +131,20 @@ $assert(\\*$path(a,b,c)*\\,$exec(path,a,b,c))".to_string()),
                 "forline".to_owned(),
                 DMacroSign::new(
                     "forline",
-                    ["a_body","a_iterable"],
+                    ["a_body","a_lines"],
                     DeterredMacroMap::forline,
-                    Some("Loop around given lines separated by newline chraracter. Iterated value is bound to macro $:".to_string()),
+                    Some("Loop around given lines separated by newline chraracter. 
+
+Iterated value is bound to macro \":\"
+ 
+# Arguments
+
+- a_body  : Body to be pasted as iterated item
+- a_lines : Lines to iterate
+
+# Example
+
+$assert(a+b+c+,$forline($:()+,a$nl()b$nl()c))".to_string()),
                 ),
             ),
             (
@@ -111,27 +153,66 @@ $assert(\\*$path(a,b,c)*\\,$exec(path,a,b,c))".to_string()),
                     "forloop",
                     ["a_body","a_min^", "a_max^"],
                     DeterredMacroMap::forloop,
-                    Some("Loop around given range (min,max). Iterated value is bound to macro $:".to_string()),
+                    Some("Iterate around given range (min,max). 
+
+Iterated value is bound to macro \":\" 
+
+# Arguments
+
+- a_body : Body to be pasted as iterated item
+- a_min  : Start index ( trimmed )
+- a_max  : End index ( trimmed )
+
+# Example
+
+$assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
                 ),
             ),
             (
-                "from".to_owned(),
+                "spread".to_owned(),
                 DMacroSign::new(
-                    "from",
-                    ["a_macro_name", "a_csv_value"],
-                    Self::from_data,
-                    Some("Execute macro multiple times with given data chunk. Each csv line represent arguments for a macro".to_string()),
+                    "spread",
+                    ["a_macro_name^", "a_csv_value^"],
+                    Self::spread_data,
+                    Some("Execute macro multiple times with given data chunk. Each csv line represent arguments for a macro
+
+# Arguments
+
+- a_macro_name : Macro name to execute ( trimmed ) 
+- a_csv_value  : Arguments table ( trimmed )
+
+# Example
+
+$assert=(
+	text------
+	---text---
+	------text,
+	$spread=(
+		align,
+		left,10,-,text
+		center,10,-,text
+		right,10,-,text
+	)
+)".to_string()),
                 ),
             ),
             (
                 "if".to_owned(),
                 DMacroSign::new(
                     "if",
-                    ["a_boolean?^", "a_if_expr"],
+                    ["a_cond?^", "a_if_expr"],
                     DeterredMacroMap::if_cond,
                     Some(
-                        "Check condition and then execute the expression if the condition is true"
-                            .to_string(),
+                        "Check condition and then execute the expression if the condition is true
+
+# Arguments
+
+- a_cond    : Condition ( trimmed )
+- a_if_expr : Expression to expand if condition is true
+
+# Example
+
+$assert(I'm true,$if(true,I'm true))".to_string(),
                     ),
                 ),
             ),
@@ -139,11 +220,21 @@ $assert(\\*$path(a,b,c)*\\,$exec(path,a,b,c))".to_string()),
                 "ifelse".to_owned(),
                 DMacroSign::new(
                     "ifelse",
-                    ["a_boolean?^", "a_if_expr", "a_else_expr"],
+                    ["a_cond?^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifelse,
                     Some(
-                        "Check condition and execute different expressions by the condition"
-                            .to_string(),
+                        "Check condition and execute different expressions by the condition
+
+# Arguments
+
+- a_cond      : Condition ( trimmed )
+- a_if_expr   : Expression to expand if condition is true
+- a_else_expr : Expression to expand if condition is false
+
+# Example
+
+$assert(I'm true,$ifelse(true,I'm true,I'm false))
+$assert(I'm false,$ifelse(false,I'm true,I'm false))".to_string(),
                     ),
                 ),
             ),
@@ -153,7 +244,16 @@ $assert(\\*$path(a,b,c)*\\,$exec(path,a,b,c))".to_string()),
                     "ifdef",
                     ["a_macro_name^", "a_if_expr"],
                     DeterredMacroMap::ifdef,
-                    Some("Execute expression if macro is defined".to_string()),
+                    Some("Execute expression if macro is defined
+
+# Arguments
+
+- a_macro_name : Macro name to check ( trimmed )
+- a_if_expr    : Expression to expand if macro is defined
+
+# Example
+
+$assert(I'm defined,$ifdef(define,I'm defined))".to_string()),
                 ),
             ),
             (
@@ -162,20 +262,31 @@ $assert(\\*$path(a,b,c)*\\,$exec(path,a,b,c))".to_string()),
                     "ifdefel",
                     ["a_macro_name^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifdefel,
-                    Some("Execute expressions whether macro is defined or not".to_string()),
+                    Some("Execute expressions whether macro is defined or not
+
+# Arguments
+
+- a_macro_name : Macro name to check ( trimmed )
+- a_if_expr    : Expression to expand if macro is defined
+- a_else_epxr  : Expression to expand if macro is NOT defined
+
+# Example
+
+$assert(I'm defined,$ifdefel(define,I'm defined,I'm NOT defined))
+$assert(I'm NOT defined,$ifdefel(defuo,I'm defined,I'm NOT defined))".to_string()),
                 ),
             ),
             (
                 "logm".to_owned(),
                 DMacroSign::new(
                     "logm",
-                    ["a_macro_name"],
+                    ["a_macro_name^"],
                     Self::log_macro_info,
-                    Some("Log a macro information
+                    Some("Log a macro information. Either print macro body of local or runtime macros.
 
 # Arguments
 
-- a_msg : Macro name to log
+- a_macro_name : Macro name to log (trimmed)
 
 # Example
 
@@ -187,27 +298,63 @@ $logm(test)".to_string()),
                 "que".to_owned(),
                 DMacroSign::new(
                     "que",
-                    ["a_content"],
+                    ["a_expr"],
                     DeterredMacroMap::queue_content,
-                    Some("Que expressions. Queued expressions will be executed only when the outmost level macro expression ends.".to_string()),
+                    Some("Que expressions. Queued expressions are expanded when the macro finishes
+
+Use que macro when a macro does operations that do not return a string AND you need to make sure the operation should happen only after all string manipulation ended. Halt is queued by default.
+
+Que does not evalute inner contents and simply put expression into a queue.
+
+# Arguments
+
+- a_expr : Expression to queue
+
+# Example
+
+$que(halt(false))".to_string()),
                 ),
             ),
             (
                 "ifque".to_owned(),
                 DMacroSign::new(
                     "ifque",
-                    ["a_bool?", "a_content"],
+                    ["a_bool?^", "a_content"],
                     DeterredMacroMap::if_queue_content,
-                    Some("If true, then queue expressions".to_string()),
+                    Some("If true, then queue expressions
+
+Use que macro when a macro does operations that do not return a string AND you need to make sure the operation should happen only after all string manipulation ended. Halt is queued by default.
+
+Que does not evalute inner contents and simply put expression into a queue.
+
+# Arguments
+
+- a_bool : Conditino [boolean] ( trimmed )
+- a_expr : Expression to queue
+
+# Example
+
+$ifque(true,halt(false))".to_string()),
                 ),
             ),
             (
                 "readto".to_owned(),
                 DMacroSign::new(
                     "readto",
-                    ["a_from_file?^", "a_to_file?^"],
+                    ["a_from_file^", "a_to_file^"],
                     DeterredMacroMap::read_to,
-                    Some("Read from a file to a file".to_string()),
+                    Some("Read from a file and paste into a file
+
+Readto can be only executed on first level or say, readto cannot be used inside other macros
+
+# Arguments
+
+- a_from_file : File to read from ( trimmed )
+- a_to_file   : File to paste into ( trimmed )
+
+# Example
+
+$readto(from.txt,into.txt)".to_string()),
                 ),
             ),
             (
@@ -216,16 +363,34 @@ $logm(test)".to_string()),
                     "readin",
                     ["a_file?^"],
                     DeterredMacroMap::read_in,
-                    Some("Read from a file".to_string()),
+                    Some("Read from a file
+
+Readin can be only executed on first level or say, readin cannot be used inside other macros
+
+# Arguments
+
+- a_file : File to read from ( trimmed )
+
+# Example
+
+$readto(from.txt,into.txt)".to_string()),
                 ),
             ),
             (
                 "strip".to_owned(),
                 DMacroSign::new(
                     "strip",
-                    ["a_literl_expr"],
+                    ["a_literal_expr"],
                     DeterredMacroMap::strip_expression,
-                    Some("Strip literal expression and expand inner text".to_string()),
+                    Some("Strip inner expression and then expand 
+
+# Arguments
+
+- a_literal_expr : Expression to strip
+
+# Example
+
+$strip(\\*1,2,3*\\)".to_string()),
                 ),
             ),
         ]));
@@ -238,7 +403,21 @@ $logm(test)".to_string()),
                     "ifenv",
                     ["a_env_name^", "a_if_expr"],
                     DeterredMacroMap::ifenv,
-                    Some("Execute expression if environment variable is set".to_string()),
+                    Some(
+                        "Execute expression if environment variable is set
+
+# Auth : ENV
+
+# Arguments
+
+- a_env_name   : Environment variable ( trimmed )
+- a_if_expr    : Expression to expand if env exists
+
+# Example
+
+$assert(I'm alive,$ifenv(HOME,I'm alive))"
+                            .to_string(),
+                    ),
                 ),
             );
             map.insert(
@@ -248,24 +427,26 @@ $logm(test)".to_string()),
                     ["a_env_name^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifenvel,
                     Some(
-                        "Execute expression by whether environment variable is set or not"
+                        "Execute expression by whether environment variable is set or not
+
+# Auth : ENV
+
+# Arguments
+
+- a_env_name   : Environment variable ( trimmed )
+- a_if_expr    : Expression to expand if env exists
+- a_else_expr  : Expression to expand if env doesn't exist
+
+# Example
+
+$assert(I'm alive,$ifenvel(HOME,I'm alive,I'm dead))
+$assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                             .to_string(),
                     ),
                 ),
             );
         }
-        #[cfg(feature = "evalexpr")]
-        {
-            map.insert(
-                "ieval".to_owned(),
-                DMacroSign::new(
-                    "ieval",
-                    ["a_macro^", "a_expression"],
-                    Self::eval_inplace,
-                    Some("Evaluate expression in-place for macro.".to_string()),
-                ),
-            );
-        }
+        // Test method
         #[cfg(debug_assertions)]
         {
             map.insert(
@@ -477,7 +658,7 @@ $logm(test)".to_string()),
     /// $logm(mac)
     fn log_macro_info(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let macro_name = p.parse_and_strip(&mut ap, level, &trim!(&args))?;
+        let macro_name = p.parse_and_strip(&mut ap, level, &trim!(args))?;
         let body = if let Ok(body) = p.get_local_macro_body(level, &macro_name) {
             body.to_string()
         } else if let Ok(body) = p.get_runtime_macro_body(&macro_name) {
@@ -982,7 +1163,11 @@ $logm(test)".to_string()),
     /// 1,2,3
     /// 4,5,6
     /// )
-    fn from_data(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+    fn spread_data(
+        args: &str,
+        level: usize,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
@@ -990,10 +1175,10 @@ $logm(test)".to_string()),
             let macro_name = trim!(&args[0]);
             // Trimming data might be very costly operation
             // Plus, it is already trimmed by csv crate.
-            let macro_data = &args[1];
+            let macro_data = trim!(&args[1]);
 
             let result =
-                Formatter::csv_to_macros(&macro_name, macro_data, &processor.state.newline)?;
+                Formatter::csv_to_macros(&macro_name, &macro_data, &processor.state.newline)?;
 
             // TODO
             // This behaviour might can be improved
@@ -1030,43 +1215,6 @@ $logm(test)".to_string()),
         } else {
             Err(RadError::InvalidArgument(
                 "From requires two arguments".to_owned(),
-            ))
-        }
-    }
-
-    /// Evaluate in place
-    ///
-    /// # Usage
-    ///
-    /// $ieval(macro,expression)
-    #[cfg(feature = "evalexpr")]
-    fn eval_inplace(
-        args: &str,
-        level: usize,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-
-            // This is the processed raw formula
-            let macro_name = trim!(&args[0]);
-            if !processor.contains_macro(&macro_name, MacroType::Runtime) {
-                return Err(RadError::InvalidArgument(format!(
-                    "Macro \"{}\" doesn't exist",
-                    macro_name
-                )));
-            }
-
-            let expr = trim!(&args[1]);
-            let chunk = format!("$eval( ${}() {} )", macro_name, expr);
-            let result = processor.parse_and_strip(&mut ap, level, &chunk)?;
-
-            processor.replace_macro(&macro_name, &result);
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "Ieval requires two arguments".to_owned(),
             ))
         }
     }

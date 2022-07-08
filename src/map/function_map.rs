@@ -1575,7 +1575,7 @@ c))".to_string()),
 # Arguments
 
 - a_table_form : Table format [ \"github\", \"html\", \"wikitext\" ]
-- a_csv_value  : Value to convert to table
+- a_csv_value  : Value to convert to table ( trimmed )
 
 # Example
 
