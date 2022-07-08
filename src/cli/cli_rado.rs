@@ -261,7 +261,13 @@ impl RadoCli {
         let result = similar::TextDiff::from_lines(&source_content, &target_content);
         let mut log: String;
         // Color function reference
-        let mut colorfunc: ColorDisplayFunc;
+        let mut colorfunc: ColorDisplayFunc = None;
+        let is_stdout = atty::is(atty::Stream::Stdout);
+        if is_stdout {
+            colorfunc.replace(|string: &str, _| -> Box<dyn std::fmt::Display> {
+                Box::new(string.to_owned())
+            });
+        }
 
         // Print changes with color support
         for change in result.iter_all_changes() {
@@ -269,11 +275,15 @@ impl RadoCli {
             match change.tag() {
                 ChangeTag::Delete => {
                     log = format!("- {}", change);
-                    colorfunc.replace(Utils::red);
+                    if is_stdout {
+                        colorfunc.replace(Utils::red);
+                    }
                 }
                 ChangeTag::Insert => {
                     log = format!("+ {}", change);
-                    colorfunc.replace(Utils::green);
+                    if is_stdout {
+                        colorfunc.replace(Utils::green);
+                    }
                 }
                 ChangeTag::Equal => {
                     log = format!("  {}", change);
@@ -281,7 +291,7 @@ impl RadoCli {
             }
 
             if let Some(func) = colorfunc {
-                log = func(&log).to_string(); // Apply color
+                log = func(&log, !is_stdout).to_string(); // Apply color
             }
             write!(std::io::stdout(), "{}", log)?;
         }

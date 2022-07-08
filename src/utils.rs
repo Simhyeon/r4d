@@ -108,26 +108,32 @@ impl Utils {
         result
     }
 
-    pub fn green(string: &str) -> Box<dyn std::fmt::Display> {
+    pub fn green(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
-            return Box::new(string.green());
+            if !to_file {
+                return Box::new(string.green());
+            }
         }
         Box::new(string.to_owned())
     }
 
-    pub fn red(string: &str) -> Box<dyn std::fmt::Display> {
+    pub fn red(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
-            return Box::new(string.red());
+            if !to_file {
+                return Box::new(string.red());
+            }
         }
         Box::new(string.to_owned())
     }
 
-    pub fn yellow(string: &str) -> Box<dyn std::fmt::Display> {
+    pub fn yellow(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
-            return Box::new(string.yellow());
+            if !to_file {
+                return Box::new(string.yellow());
+            }
         }
         Box::new(string.to_owned())
     }

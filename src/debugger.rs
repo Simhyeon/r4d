@@ -99,7 +99,11 @@ impl Debugger {
         // TODO
         // This utilizes eprint variant which can yield not handled error
         // but it is generally ok because debugger is mostly self contained process
-        eprintln!("{} : {}", Utils::green(&format!("({})", &prompt)), log);
+        eprintln!(
+            "{} : {}",
+            Utils::green(&format!("({})", &prompt), false),
+            log
+        );
         eprint!(">> ");
 
         // Restore wrapping
@@ -181,13 +185,20 @@ impl Debugger {
             }
             if let Some(func) = colorfunc {
                 // Bind display to log
-                let log = func(&log);
+                let log = if logger.is_logging_to_file() {
+                    // No color
+                    Box::new(log)
+                } else {
+                    func(&log, false)
+                };
                 logger.elog_no_prompt(&log)?;
             } else {
                 logger.elog_no_prompt(&log)?;
             }
         }
 
+        std::fs::remove_file(DIFF_SOURCE_FILE)?;
+        std::fs::remove_file(DIFF_OUT_FILE)?;
         Ok(())
     }
 

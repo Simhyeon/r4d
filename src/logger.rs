@@ -178,7 +178,7 @@ impl<'logger> Logger<'logger> {
                     write!(
                         std::io::stderr(),
                         "{}: {} {} --> {}:{}:{}{}",
-                        Utils::green("log"),
+                        Utils::green("log", self.is_logging_to_file()),
                         log,
                         LINE_ENDING,
                         self.current_input,
@@ -223,7 +223,7 @@ impl<'logger> Logger<'logger> {
                     write!(
                         std::io::stderr(),
                         "{}: {} {} --> {}:{}:{}{}",
-                        Utils::red("error"),
+                        Utils::red("error", self.is_logging_to_file()),
                         log,
                         LINE_ENDING,
                         self.current_input,
@@ -289,7 +289,7 @@ impl<'logger> Logger<'logger> {
                     writeln!(
                         std::io::stderr(),
                         "{}: {} {} --> {}:{}:{}",
-                        Utils::yellow("warning"),
+                        Utils::yellow("warning", self.is_logging_to_file()),
                         log,
                         LINE_ENDING,
                         self.current_input,
@@ -335,7 +335,7 @@ impl<'logger> Logger<'logger> {
                     writeln!(
                         std::io::stderr(),
                         "{} -> {}:{}:{}",
-                        Utils::red("assert fail"),
+                        Utils::red("assert fail", self.is_logging_to_file()),
                         self.current_input,
                         self.last_line_number,
                         last_char
@@ -355,13 +355,17 @@ impl<'logger> Logger<'logger> {
 
     /// Print result of logging of warnings and errors
     pub fn print_result(&mut self) -> RadResult<()> {
+        let log_to_file = self.is_logging_to_file();
         if let Some(option) = &mut self.write_option {
             // There is either error or warning
-            let error_result =
-                format!("{}: found {} errors", Utils::red("error"), self.error_count);
+            let error_result = format!(
+                "{}: found {} errors",
+                Utils::red("error", log_to_file),
+                self.error_count
+            );
             let warning_result = format!(
                 "{}: found {} warnings",
-                Utils::yellow("warning"),
+                Utils::yellow("warning", log_to_file),
                 self.warning_count
             );
             let assert_result = format!(
@@ -369,7 +373,7 @@ impl<'logger> Logger<'logger> {
 {}
 SUCCESS : {}
 FAIL: {}",
-                Utils::green("Assert"),
+                Utils::green("Assert", log_to_file),
                 self.assert_success,
                 self.assert_fail
             );
@@ -426,6 +430,14 @@ FAIL: {}",
         }
     }
 
+    pub fn is_logging_to_file(&self) -> bool {
+        if let Some(WriteOption::File(_)) = &self.write_option {
+            true
+        } else {
+            false
+        }
+    }
+
     /// Log debug information
     #[cfg(feature = "debug")]
     pub fn dlog_print(&mut self, log: &str) -> RadResult<()> {
@@ -435,7 +447,10 @@ FAIL: {}",
                     write!(
                         std::io::stderr(),
                         "{}{}{}",
-                        Utils::green(&format!("{}:log", self.last_line_number)),
+                        Utils::green(
+                            &format!("{}:log", self.last_line_number),
+                            self.is_logging_to_file()
+                        ),
                         LINE_ENDING,
                         log
                     )?;
