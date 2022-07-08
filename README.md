@@ -160,6 +160,8 @@ processor.print_result()?;
 
 ### [How to debug](./docs/debug.md)
 
+### [Why there is a ghost newline?](./docs/newline_rules.md)
+
 ### Goal
 
 R4d aims to be a modern alternative to m4 processor, which means

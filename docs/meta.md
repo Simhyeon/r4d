@@ -1,29 +1,29 @@
 ### TODO
 
-* [ ] Bug fix : Define creates suplus lines 
-- I think this is because let or static doesn't set consume new line
-```
-$define=(macro,arg1 arg=
-$static(arg1,$arg1() is first)
-$static(arg2,$arg1() is second)
-)
-$logm(macro)
-$macro(1,2)
-```
+: ORDERED :
+* [x] Write about newlines
+* [ ] Go through macros and finalize macro name, argument names, order
+	* [x] I skimmed fast and fixed some typos, wrongly typed names, and missing traits
+	- Argument names are worthless ( It can changes a lot without burden )
+	- Macro name cannot be changed a lot...
+	- Order is also importtant
+	- Let's skim the final last and fix later
+* [ ] Skim every fin and fout related macros
+* [ ] I think I didn't check writeoption and error option
+* [ ] readto can be very suspicous
+	* [ ] Readto a file that is also an writeoption : HMM
+	* [ ] two file can be same
+	* [ ] Wait... is realy ok then?
 
 $todo_start()
-* [ ] Template crate and proc\_macros needs update because deterred macros'
-syntax changed a lot
-	* [ ] Also Change ext.md file
 * [ ] New macros
 * [ ] Improve macro ergonomics
-	* [ ] Breakpoint warning is somewhat stupid, no?
-	- Also update document if you happen to change it
 * [x] Included signature and color as default into a binary because man flag is critical
 * [x] Library
 * [ ] Feature
 	* [ ] Dry run would be cool, but is's hella difficult
 * [ ] Documentation
+	* [ ] macro\_indices.md
 	* [ ] change.md
 	* [x] modes.md
 	* [x] types.md
@@ -31,10 +31,8 @@ syntax changed a lot
 	* [x] Usage.md
 	* [x] syntax.md
 	* [x] ext.md : After template update
-	* [ ] macro\_indices.md
 * [ ] Bug fix
-	* [x] Literal rule is bugged ( Nested literal rule doesn't work at all )
-	* [x] Setting an error option resetted a logger entirely.. why I did that?
+	* [ ] Fixed consume newline waas not properly respected
 	* [ ] Debugger's "step" behaviour is very strange and it easily breaks
 	* [ ] Test logger's line number ( Because it looks like not so accurate )
 	* [ ] Local macro was not expanded when given
@@ -56,9 +54,13 @@ $todo_end()
 	* [x] Make deterred macro works like other macros
 	* [x] Rado : Edit in place with io operation
 * [x] Improve macro ergonomics
+	* [x] No Breakpoint warning
 	* [x] Changed from to spread
 	* [x] Removed ieval because counter replaces it
 	* [x] I changed queue to insert as no stripped.
+* [x] Bug fix
+	* [x] Literal rule is bugged ( Nested literal rule doesn't work at all )
+	* [x] Setting an error option resetted a logger entirely.. why I did that?
 
 ### Macro ergonomics
 
