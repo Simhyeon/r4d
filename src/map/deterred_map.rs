@@ -96,7 +96,7 @@ Iterated value is bound to macro \":\"
 # Arguments
 
 - a_body : Body to be pasted as iterated item
-- a_sep  : Separator to split an ar
+- a_sep  : Separator to split a text
 - a_text : Text to split by separator
 
 # Example
@@ -174,7 +174,7 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
                     "spread",
                     ["a_macro_name^", "a_csv_value^"],
                     Self::spread_data,
-                    Some("Execute macro multiple times with given data chunk. Each csv line represent arguments for a macro
+                    Some("Execute a macro multiple times with given data chunk. Each csv line represent arguments for a macro
 
 # Arguments
 
@@ -329,7 +329,7 @@ Que does not evalute inner contents and simply put expression into a queue.
 
 # Arguments
 
-- a_bool : Conditino [boolean] ( trimmed )
+- a_bool : Condition [boolean] ( trimmed )
 - a_expr : Expression to queue
 
 # Example
@@ -345,7 +345,7 @@ $ifque(true,halt(false))".to_string()),
                     DeterredMacroMap::read_to,
                     Some("Read from a file and paste into a file
 
-Readto can be only executed on first level or say, readto cannot be used inside other macros
+Readto can be only executed on first level therefore readto cannot be used inside other macros
 
 # Arguments
 
@@ -365,7 +365,7 @@ $readto(from.txt,into.txt)".to_string()),
                     DeterredMacroMap::read_in,
                     Some("Read from a file
 
-Readin can be only executed on first level or say, readin cannot be used inside other macros
+Readin can be only executed on first level therefore readin cannot be used inside other macros
 
 # Arguments
 
@@ -382,7 +382,7 @@ $readto(from.txt,into.txt)".to_string()),
                     "strip",
                     ["a_literal_expr"],
                     DeterredMacroMap::strip_expression,
-                    Some("Strip inner expression and then expand 
+                    Some("Strip literal expression and then expand 
 
 # Arguments
 
@@ -612,8 +612,8 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let mut sums = String::new();
 
             let body = &args[0];
-            let min_src = processor.parse_and_strip(&mut ap, level, &trim!(&args[1]))?;
-            let max_src = processor.parse_and_strip(&mut ap, level, &trim!(&args[2]))?;
+            let min_src = trim!(&processor.parse_and_strip(&mut ap, level, &args[1])?).to_string();
+            let max_src = trim!(&processor.parse_and_strip(&mut ap, level, &args[2])?).to_string();
 
             let min = if let Ok(num) = min_src.parse::<usize>() {
                 num
@@ -658,11 +658,11 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     /// $logm(mac)
     fn log_macro_info(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let macro_name = p.parse_and_strip(&mut ap, level, &trim!(args))?;
+        let macro_name = trim!(&p.parse_and_strip(&mut ap, level, args)?).to_string();
         let body = if let Ok(body) = p.get_local_macro_body(level, &macro_name) {
-            body.to_string()
+            trim!(body).to_string()
         } else if let Ok(body) = p.get_runtime_macro_body(&macro_name) {
-            body.to_string()
+            trim!(body).to_string()
         } else {
             return Err(RadError::InvalidArgument(format!(
                 "Macro \"{}\" doesn't exist",
@@ -685,7 +685,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let boolean = &processor.parse_and_strip(&mut ap, level, &args[0])?;
 
             // Given condition is true
-            let cond = Utils::is_arg_true(&trim!(boolean));
+            let cond = Utils::is_arg_true(boolean);
             if let Ok(cond) = cond {
                 if cond {
                     let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
@@ -719,7 +719,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let boolean = &processor.parse_and_strip(&mut ap, level, &args[0])?;
 
             // Given condition is true
-            let cond = Utils::is_arg_true(&trim!(boolean));
+            let cond = Utils::is_arg_true(boolean);
             if let Ok(cond) = cond {
                 if cond {
                     let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
@@ -752,7 +752,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
 
-            let name = processor.parse_and_strip(&mut ap, level, &trim!(&args[0]))?;
+            let name = trim!(&processor.parse_and_strip(&mut ap, level, &args[0])?).to_string();
 
             let boolean = processor.contains_macro(&name, MacroType::Any);
             // Return true or false by the definition
@@ -778,7 +778,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         if let Some(args) = ap.args_with_len(args, 3) {
             ap.set_strip(true);
 
-            let name = processor.parse_and_strip(&mut ap, level, &trim!(&args[0]))?;
+            let name = trim!(&processor.parse_and_strip(&mut ap, level, &args[0])?).to_string();
 
             let boolean = processor.contains_macro(&name, MacroType::Any);
             // Return true or false by the definition
@@ -810,7 +810,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
 
-            let name = processor.parse_and_strip(&mut ap, level, &trim!(&args[0]))?;
+            let name = trim!(&processor.parse_and_strip(&mut ap, level, &args[0])?).to_string();
 
             let boolean = std::env::var(name).is_ok();
 
@@ -841,7 +841,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         if let Some(args) = ap.args_with_len(args, 3) {
             ap.set_strip(true);
 
-            let name = processor.parse_and_strip(&mut ap, level, &trim!(&args[0]))?;
+            let name = trim!(&processor.parse_and_strip(&mut ap, level, &args[0])?).to_string();
 
             let boolean = std::env::var(name).is_ok();
 
@@ -1134,8 +1134,8 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             ap.set_strip(true);
 
             let macro_name =
-                &processor.parse_and_strip(&mut ap, level, trim!(&args[0]).as_ref())?;
-            if !processor.contains_macro(macro_name, MacroType::Any) {
+                trim!(&processor.parse_and_strip(&mut ap, level, &args[0])?).to_string();
+            if !processor.contains_macro(&macro_name, MacroType::Any) {
                 return Err(RadError::InvalidArgument(format!(
                     "Macro \"{}\" doesn't exist",
                     macro_name

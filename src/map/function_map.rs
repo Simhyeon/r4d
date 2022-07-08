@@ -32,6 +32,7 @@ use std::io::BufRead;
 use std::io::Write;
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
+#[cfg(not(feature = "wasm"))]
 use std::process::Command;
 #[cfg(feature = "hook")]
 use std::str::FromStr;
@@ -186,7 +187,7 @@ $assert(a,b)".to_string()),
 # Arguments
 
 - a_macro_name   : Macro name to use as counter ( trimmed )
-- a_counter_type : Counter opration type. Dfault is plus [ \"plus\", \"minus\" ]
+- a_counter_type : Counter opration type. Dfault is plus [ \"plus\", \"minus\" ] ( trimmed )
 
 # Example
 
@@ -278,13 +279,14 @@ $clear()".to_string()),
                     "comp",
                     ["a_content"],
                     Self::compress,
-                    Some("Apply both trim and chomp, or say compress content
+                    Some("Apply both trim and chomp (compress) content
 
 # Arguments
 
 - a_content : Content to compress
 
 # Example
+
 $staticr(lines,
     upper
     
@@ -339,7 +341,7 @@ $assert($countw(hello world),2)".to_string()),
                     "countl",
                     ["a_lines"],
                     Self::count_lines,
-                    Some("Get counts of lines. This ignores empty line
+                    Some("Get counts of lines.
 
 # Return : Unsigned integer
 
@@ -373,13 +375,13 @@ b)".to_string()),
                 "declare".to_owned(),
                 FMacroSign::new(
                     "declare",
-                    ["a_macro_names"],
+                    ["a_macro_names^"],
                     Self::declare,
                     Some("Declare multiple variables separated by commas
 
 # Arguments
 
-- a_macro_names: Macro names array
+- a_macro_names: Macro names array ( trimmed )
 
 # Example
 
@@ -391,13 +393,13 @@ $assert($first(),$empty())".to_string()),
                 "docu".to_owned(),
                 FMacroSign::new(
                     "docu",
-                    ["a_macro_name", "a_doc"],
+                    ["a_macro_name^", "a_doc"],
                     Self::document,
                     Some("Append documents(description) to a macro. You cannot directly retreive documentation from macros but by --man flag.
 
 # Arguments
 
-- a_macro_name : Macro to append documentation
+- a_macro_name : Macro to append documentation ( trimmed )
 - a_doc        : Document to append
 
 # Example
@@ -441,7 +443,7 @@ b)".to_string()),
                     Self::escape,
                     Some("Escape processing from the invocation.
 
-- NOTE : This flow control only sustains for the processing.
+- NOTE : This flow control only sustains for the input.
 
 # Example
 
@@ -456,7 +458,7 @@ $escape()".to_string()),
                     Self::exit,
                     Some("Exit processing from invocation
 
-- NOTE : This flow control only sustains for the processing
+- NOTE : This flow control only sustains for the input
 
 # Example
 
@@ -467,7 +469,7 @@ $exit()".to_string()),
                 "input".to_owned(),
                 FMacroSign::new(
                     "input",
-                    ["a_absolute?^"],
+                    ["a_absolute?^+"],
                     Self::print_current_input,
                     Some("Print current file input.
 
@@ -475,7 +477,7 @@ $exit()".to_string()),
 
 # Arguments
 
-- a_absolute : Whether to print input path as absolute [boolean] ( trimmed )
+- a_absolute : Whether to print input path as absolute default is false [boolean] ( trimmed, optional )
 
 # Example
 
@@ -489,7 +491,7 @@ $assert($input(true),/home/user/dir/test)".to_string()),
                     "find",
                     ["a_expr", "a_source"],
                     Self::find_occurence,
-                    Some("Find an occurrence of expression from source. This return boolean value
+                    Some("Find an occurrence of expression from source.
 
 # Return : Boolean
 
@@ -582,10 +584,10 @@ c))".to_string()),
             (
                 "grep".to_owned(),
                 FMacroSign::new(
-                    "grepl",
+                    "grep",
                     ["a_expr", "a_array"],
                     Self::grep_array,
-                    Some("Grep line from given array. This returns all items as array
+                    Some("Extract matched items from given array. This returns all items as array
 
 # Arguments
 
@@ -603,7 +605,7 @@ $assert(\\*a,b,c*\\,$grep([a-z],a,b,c,1,2))".to_string()),
                     "grepl",
                     ["a_expr", "a_lines"],
                     Self::grep_lines,
-                    Some("Grep line from given lines. This returns all lines that matches given expression
+                    Some("Extract matched lines from given lines. This returns all lines that matches given expression
 
 # Arguments
 
@@ -625,6 +627,7 @@ $assert(2,$countl($grepl(Cargo,$syscmd(ls))))".to_string()),
 
 - NOTE : Halt is automatically queued by default. Feed boolean argument to configure this behaviour
 - $halt(false) == $halt()
+- use $halt(true) to immediately halt
 
 # Example
 
@@ -677,7 +680,7 @@ c)))".to_string()),
                 "hygiene".to_owned(),
                 FMacroSign::new(
                     "hygiene",
-                    ["a_hygiene?"],
+                    ["a_hygiene?^"],
                     Self::toggle_hygiene,
                     Some("Toggle hygiene mode. This enables macro hygiene.
 
@@ -727,6 +730,9 @@ Third))".to_string()),
                     Self::index_array,
                     Some("Get an indexed value from an array
 
+- Positive integer works as normal index number
+- Negative integer works as index from end ( -1 == len -1 )
+
 # Arguments
 
 - a_index : Index to get [Signed integer] ( trimmed )
@@ -745,7 +751,7 @@ $assert(ef,$index(2,ab,cd,ef))".to_string()),
                     Self::import_frozen_file,
                     Some("Import a frozen file at runtime
 
-- Import always include the macros as non-volatile form, thus never cleared unless accessed as library
+- Import always include the macros as non-volatile form, thus never cleared unless accessed from library
 
 # Arguments
 
@@ -823,18 +829,18 @@ $assert($len(가나다),$len(ABC))".to_string()),
 
 # Arguments
 
-- a_macro_name : Binding name to make ( trimmed )
-- a_value      : A value to bind to which is not trimmed ( trimmed )
+- a_macro_name : Macro name to create ( trimmed )
+- a_value      : A value to bind to ( trimmed )
 
 # Example
 
-$define(letr_test=
+$define(let_test=
     $let(lc,
         --Bound Value--
     )
     $assert(1,$countl($lc()))
 )
-$letr_test()
+$let_test()
 % Cannot access local macro outside the scope
 $fassert($lc())".to_string()),
                 ),
@@ -923,9 +929,10 @@ $assert(abcde,$lower(AbCdE))".to_string()),
                     ["a_array"],
                     Self::get_max,
                     Some("Get max value from a given array
+
 # Arguments
 
-- a_array : Array to get the highest order from
+- a_array : Array to get the highest value from
 
 # Example
 
@@ -943,7 +950,7 @@ $assert(5,$max(1,2,3,4,5))".to_string()),
 
  # Arguments
 
-- a_array : Array to get the lowest order from
+- a_array : Array to get the lowest value from
 
 # Example
 
@@ -1017,6 +1024,7 @@ $assert(true,$not(0))".to_string()),
                     ["a_text"],
                     Self::get_number,
                     Some("Extract a number part from given text. If there are multiple numbers, only extract the first
+
 # Arguments
 
 - a_text : Text to extract number from
@@ -1033,7 +1041,7 @@ $assert(30,$num(30k/h for 3 hours))".to_string()),
                     "nl",
                     ["a_amount+^"],
                     Self::newline,
-                    Some("A platform specific newline. It's behaviour can be configured.
+                    Some("Print platform specific newlines. It's behaviour can be configured.
 
 # Arguments
 
@@ -1050,14 +1058,14 @@ $assert($nl(),
                 "notat".to_owned(),
                 FMacroSign::new(
                     "notat",
-                    ["a_number^", "a_notation^"],
+                    ["a_number^", "a_type^"],
                     Self::change_notation,
-                    Some("Chagne the notaion of a number
+                    Some("Chagne a notation of a number
 
 # Arguments
 
 - a_number   : A nuber to change notation
-- a_notation : A type of notation [\"bin\",\"oct\",\"hex\"] ( trimmed )
+- a_type     : A type of notation [\"bin\",\"oct\",\"hex\"] ( trimmed )
 
 # Example                        
 
@@ -1072,11 +1080,11 @@ $assert(17,$notat(23,hex))".to_string()),
                     "panic",
                     ["a_msg"],
                     Self::manual_panic,
-                    Some("Panics manually with message
+                    Some("Panics manually with a message
 
 # Arguments
 
-- a_msg : A message to print as error
+- a_msg : A message to print as an error
 
 # Example
 
@@ -1091,7 +1099,7 @@ $panic(This should not be reached)".to_string()),
                     Self::get_parent,
                     Some("Get a parent from a given path. 
 
-- NOTE : This yields error if path is root and will return empty value, not a none value if path is a single node.
+- NOTE : This yields an error if a path is root and will return an empty value, but not a none value if path is a single node.
 
 # Return : path
 
@@ -1122,7 +1130,7 @@ $assert(/first/second,$parent(/first/second/last.txt))".to_string()),
 
 # Arguments
 
-- a_array : Path array to merge
+- a_array : Path array to merge ( trimmed )
 
 # Example
 
@@ -1177,7 +1185,7 @@ $assert(Text,$-())".to_string()),
             (
                 "pipeto".to_owned(),
                 FMacroSign::new(
-                    "pipe",
+                    "pipeto",
                     ["a_pipe_name^", "a_value"],
                     Self::pipe_to,
                     Some("Pipe a given value to a named pipe
@@ -1217,7 +1225,7 @@ $assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
                 "relay".to_owned(),
                 FMacroSign::new(
                     "relay",
-                    ["a_target_type^", "a_target^+"],
+                    ["a_target_type^", "a_target^"],
                     Self::relay,
                     Some("Start relaying to target which redirects all following texts to relay target.
 
@@ -1226,7 +1234,7 @@ $assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
 # Arguments
 
 - a_target_type : A type of a relay target [\"macro\",\"file\", \"temp\"] (trimmed)
-- a_target      : Name of target. Ignored in temp type
+- a_target      : Name of target. Ignored in temp type ( trimmed )
 
 # Example
 
@@ -1264,7 +1272,7 @@ $assert(\\*3,2,1*\\,$rev(1,2,3))".to_string()),
 
 - a_expr   : Regex expression to match
 - a_sub    : Text to substitute as
-- a_source : Sourec text to operate on
+- a_source : Source text to operate on
 
 # Example
 
@@ -1344,7 +1352,7 @@ R4d,$repeat^(3,R4d$nl()))".to_string()),
 
 # Arguments
 
-- a_macro_name : Macro name to replace
+- a_macro_name : Macro name to replace ( trimmed )
 - a_new_value  : New value to put
 
 # Example
@@ -1388,7 +1396,7 @@ $source(def.env)".to_string()),
 
 # Arguments
 
-- a_sort_type : Sor type [\"asec\",\"desc\"] (trimmed)
+- a_sort_type : Sort type [\"asec\",\"desc\"] (trimmed)
 - a_array     : Array to sort
 
 # Example
@@ -1407,7 +1415,7 @@ $sort(asec,3,6,7,4,1,9,0))".to_string()),
 
 # Arguments
 
-- a_sort_type : Sor type [\"asec\",\"desc\"] (trimmed)
+- a_sort_type : Sort type [\"asec\",\"desc\"] (trimmed)
 - a_lines     : Lines to sort
 
 # Example
@@ -1491,15 +1499,15 @@ $assert(0 ,$stt())".to_string()),
                     Self::substring,
                     Some("Get a substring with indices. 
 
-- Out of range index is error
+- Out of range index is an error
 - Substring is calculated as char iterator not a byte iterator
-- this operation is technically same with string[start_index..end_index]
+- this operation is technically same with [start_index..end_index]
 
 # Arguments
 
 - a_start_index : Start substring index [Unsigned integer] (trimmed)
 - a_end_index   : End   substring index [Unsigned integer] (trimmed)
-- a_source      : Source text get substring from
+- a_source      : Source text get to a substring from
 
 # Example
 
@@ -1512,7 +1520,7 @@ $assert(def,$sub(3,5,abcdef))".to_string()),
                     "surr",
                     ["a_start_pair","a_end_pair","a_content"],
                     Self::surround_with_pair,
-                    Some("Surround given content with given pair
+                    Some("Surround given contents with a given pair
 
 # Arguments
 
@@ -1532,7 +1540,7 @@ $surr(<div>,</div>,dividivi dip))".to_string()),
                     "tab",
                     ["a_amount?^"],
                     Self::tab,
-                    Some("Print tab
+                    Some("Print tabs
 
 # Arguments
 
@@ -1591,7 +1599,7 @@ c))".to_string()),
 
 # Arguments
 
-- a_table_form : Table format [ \"github\", \"html\", \"wikitext\" ]
+- a_table_form : Table format [ \"github\", \"html\", \"wikitext\" ] ( trimmed )
 - a_csv_value  : Value to convert to table ( trimmed )
 
 # Example
@@ -1600,7 +1608,7 @@ $assert=(
 	|a|b|c|
 	|-|-|-|
 	|1|2|3|,$enl()
-	$table(github,a,b,c
+	$table(github,a,b,
 	1,2,3)
 )".to_string()),
                 ),
@@ -1666,12 +1674,12 @@ $assert(Upper$nl()Middle$nl()Last,$triml(    Upper
                 "trimla".to_owned(),
                 FMacroSign::new(
                     "trimla",
-                    ["a_trim_option^","a_content"],
+                    ["a_trim_option^","a_lines"],
                     Self::trimla,
                     Some("Triml with given amount
 
 - Trims by line but with given amount. 
-- If given integer it tries to trim blank characters as much as given value
+- If given integer, it will try to trim blank characters as much as given value
 - min trims by minimal amount that can be applied to total lines
 - max acts same as triml
 - Tab character is calculated as a single character. Don't combine spaces and tabs for this macro
@@ -1679,6 +1687,7 @@ $assert(Upper$nl()Middle$nl()Last,$triml(    Upper
 # Arguments
 
 - a_trim_option : Trim behaviour [\"min\", \"max\", Unsigned integer] ( trimmed )
+- a_lines       : Lines to trim
 
 # Example
 
@@ -1712,11 +1721,11 @@ $space(5)Third)
 
 - This undefines all macros that has a given name
 - Define macro cannot be undefined
-- Undef dodesn't yield error when macro doesn't exist
+- Undef doesn't yield error when a macro doesn't exist
 
 # Arguments 
 
-- a_macro_name : Name of a macro to undefine
+- a_macro_name : Name of a macro to undefine ( trimmed )
 
 # Example
 
@@ -1731,7 +1740,7 @@ $fassert($test())".to_string()),
                     "unicode",
                     ["a_value^"],
                     Self::paste_unicode,
-                    Some("Creates a unicode character from given hex number without prefix
+                    Some("Creates a unicode character from a hex number without prefix
 
 # Arguments
 
@@ -1748,7 +1757,7 @@ $assert(☺,$unicode(263a))".to_string()),
                     "upper",
                     ["a_text"],
                     Self::capitalize,
-                    Some("Get a uppercase english text
+                    Some("Get uppercase english texts
 
 # Arguments
 
@@ -1839,7 +1848,7 @@ $envset(HOME,/tmp)"
                 "abs".to_owned(),
                 FMacroSign::new(
                     "abs",
-                    ["a_path"],
+                    ["a_path^"],
                     Self::absolute_path,
                     Some(
                         "Get an absolute path. This requires a path to be a real path.
@@ -1850,7 +1859,7 @@ $envset(HOME,/tmp)"
 
 # Arguments
 
-- a_path : Path to make it absolute
+- a_path : Path to make it absolute ( trimmed )
 
 # Example
 
@@ -1942,7 +1951,7 @@ $temout(Content)"
                     Some(
                         "Change temporary file path
 
-- This macro needs file out permission because it creates temporary file if non-existent
+- This macro needs file out permission because it creates a temporary file if the file doesn't exist
 
 # Auth: FOUT
 
@@ -1997,7 +2006,7 @@ $assert(/tmp/rad.txt,$temp())"
 # Arguments
 
 - a_filename : File name to read ( trimmed )
-- a_raw_mode : Whehter to escape the read. Default is false [boolean] ( trimmed )
+- a_raw_mode : Whehter to escape the read. Default is false [boolean] ( trimmed,optional )
 
 $include(file_path)
 $include(file_path, true)"
@@ -2018,9 +2027,14 @@ $include(file_path, true)"
 
 # Arguments
 
-# Example
-"
-                        .to_string(),
+- a_filename : File name to write ( trimmed )
+- a_truncate : Whether to truncate before writing [boolean] ( trimmed )
+- a_content  : Content to write to the file
+
+# Example 
+
+$fileout(/tmp/some_file.txt,true,Hello World)"
+                            .to_string(),
                     ),
                 ),
             );
@@ -2028,7 +2042,7 @@ $include(file_path, true)"
                 "listdir".to_owned(),
                 FMacroSign::new(
                     "listdir",
-                    ["a_path+", "a_absolute?^+", "a_delim+"],
+                    ["a_path^+", "a_absolute?^+", "a_delim+"],
                     Self::list_directory_files,
                     Some(
                         "List a directory's files as csv. 
@@ -2040,13 +2054,15 @@ $include(file_path, true)"
 
 # Arguments
 
-- a_path     : A directory path to list files (optional)
+- a_path     : A directory path to list files (optional, trimmed)
 - a_absolute : Whether to print files as absolute form [boolean] (trimmed, optional)
 - a_delim    : A delimiter to put between items (optional)
 
 # Example
 
-$assert(15,$count($litdir()))"
+$assert(15,$count($listdir()))
+$listdir(/tmp,true)
+$listdir(/tmp,true,|)"
                             .to_string(),
                     ),
                 ),
@@ -2059,16 +2075,18 @@ $assert(15,$count($litdir()))"
                 "regcsv".to_owned(),
                 FMacroSign::new(
                     "regcsv",
-                    ["a_table_name^", "a_table"],
+                    ["a_table_name^", "a_table^"],
                     Self::cindex_register,
                     Some(
                         "Register a csv table
 
+- Query can be only applied to registered table.
+
 # Arguments
 
 - a_table_name : Table name to be registered ( trimmed )
-- a_table      : Csv data table
-
+- a_table      : Csv data table ( trimmed )
+ 
 # Example
 
 $regcsv(table1,a,b,c
@@ -2169,7 +2187,7 @@ $date()"
 
 # Arguments
 
-- a_second : Seconds to convert
+- a_second : Seconds to convert ( trimmed )
 
 # Example
 
@@ -2259,7 +2277,7 @@ rhoncus*\\,$wrap(20,$lipsum(10)))"
                 "hookon".to_owned(),
                 FMacroSign::new(
                     "hookon",
-                    ["a_macro_type", "a_target_name"],
+                    ["a_macro_type^", "a_target_name^"],
                     Self::hook_enable,
                     Some("Enable hook which is enabled by library extension".to_string()),
                 ),
@@ -2268,7 +2286,7 @@ rhoncus*\\,$wrap(20,$lipsum(10)))"
                 "hookoff".to_owned(),
                 FMacroSign::new(
                     "hookoff",
-                    ["a_macro_type", "a_target_name"],
+                    ["a_macro_type^", "a_target_name^"],
                     Self::hook_disable,
                     Some("Disable hook".to_string()),
                 ),
@@ -2704,10 +2722,10 @@ $extract()"
     /// )
     fn trimla(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let option = &args[0];
+            let option = trim!(&args[0]);
             let source = &args[1];
             let mut try_amount = None;
-            let min_amount = match option.as_str() {
+            let min_amount = match option.as_ref() {
                 "max" => None,
                 "min" => {
                     let mut min_amount = usize::MAX;
@@ -2853,9 +2871,9 @@ $extract()"
         }
         let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
         if !args.is_empty() {
-            let raw = trim!(&args[0]);
+            let naw_file = trim!(&args[0]);
             let mut raw_include = false;
-            let mut file_path = PathBuf::from(raw.as_ref());
+            let mut file_path = PathBuf::from(naw_file.as_ref());
 
             // if current input is not stdin and file path is relative
             // Create new file path that starts from current file path
@@ -3419,7 +3437,7 @@ $extract()"
         }
 
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let path = std::fs::canonicalize(p.get_current_dir()?.join(&args[0]))?
+            let path = std::fs::canonicalize(p.get_current_dir()?.join(trim!(&args[0]).as_ref()))?
                 .to_str()
                 .unwrap()
                 .to_owned();
@@ -3559,7 +3577,7 @@ $extract()"
                 ))
             })?;
             let filler: &str = args[2].as_ref();
-            let text = &args[3];
+            let text = trim!(&args[3]);
             let filler_char: String;
 
             if filler.is_empty() {
@@ -3630,10 +3648,10 @@ $extract()"
     /// $append(macro_name,Content)
     fn append(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = &args[0];
+            let name = trim!(&args[0]);
             let target = &args[1];
-            if processor.contains_macro(name, MacroType::Runtime) {
-                processor.append_macro(name, target);
+            if processor.contains_macro(&name, MacroType::Runtime) {
+                processor.append_macro(&name, target);
             } else {
                 processor.log_error(&format!("Macro \"{}\" doesn't exist", name))?;
             }
@@ -4567,11 +4585,11 @@ $extract()"
     /// $document(macro,content)
     fn document(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let macro_name = &args[0];
+            let macro_name = trim!(&args[0]);
             let content = &args[1];
 
             // If operation failed
-            if !processor.set_documentation(macro_name, content)
+            if !processor.set_documentation(&macro_name, content)
                 && processor.state.behaviour == ErrorBehaviour::Strict
             {
                 processor.log_error(&format!("No such macro \"{}\" to document", macro_name))?;
@@ -4911,22 +4929,26 @@ $extract()"
             ));
         }
 
-        let absolute = match Utils::is_arg_true(&args[0]) {
-            Ok(value) => value,
-            Err(_) => {
-                return Err(RadError::InvalidArgument(format!(
-                    "listdir's first argument should be a boolean value but given : \"{}\"",
-                    args[0]
-                )));
+        let absolute = if let Some(val) = args.get(1) {
+            match Utils::is_arg_true(val) {
+                Ok(value) => value,
+                Err(_) => {
+                    return Err(RadError::InvalidArgument(format!(
+                        "listdir's second argument should be a boolean value but given : \"{}\"",
+                        args[0]
+                    )));
+                }
             }
+        } else {
+            false
         };
 
         let path;
-        if let Some(val) = args.get(1) {
+        if let Some(val) = args.get(0) {
             path = if val.is_empty() {
                 processor.get_current_dir()?
             } else {
-                PathBuf::from(val)
+                PathBuf::from(trim!(val).as_ref())
             };
             if !path.exists() {
                 return Err(RadError::InvalidArgument(format!(
@@ -5015,9 +5037,9 @@ $extract()"
     #[cfg(feature = "hook")]
     fn hook_enable(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let hook_type = HookType::from_str(&args[0])?;
-            let index = &args[1];
-            processor.hook_map.switch_hook(hook_type, index, true)?;
+            let hook_type = HookType::from_str(&trim!(&args[0]))?;
+            let index = trim!(&args[1]);
+            processor.hook_map.switch_hook(hook_type, &index, true)?;
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -5034,9 +5056,9 @@ $extract()"
     #[cfg(feature = "hook")]
     fn hook_disable(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let hook_type = HookType::from_str(&args[0])?;
-            let index = &args[1];
-            processor.hook_map.switch_hook(hook_type, index, false)?;
+            let hook_type = HookType::from_str(&trim!(&args[0]))?;
+            let index = trim!(&args[1]);
+            processor.hook_map.switch_hook(hook_type, &index, false)?;
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -5113,9 +5135,11 @@ $extract()"
             }
             let mut option = ReaderOption::new();
             option.ignore_empty_row = true;
-            processor
-                .indexer
-                .add_table_with_option(&table_name, args[1].as_bytes(), option)?;
+            processor.indexer.add_table_with_option(
+                &table_name,
+                trim!(&args[1]).as_bytes(),
+                option,
+            )?;
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
