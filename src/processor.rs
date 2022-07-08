@@ -1525,39 +1525,7 @@ impl<'processor> Processor<'processor> {
                     }
                     Ok(ParseResult::FoundMacro(remainder))
                 } else {
-                    // Frag is empty
-                    // Print everything
-                    let mut remainder = remainder.as_str();
-
-                    // Consume a newline only when Macro execution was not "multiline".
-                    // e.g )
-                    // 1 define(test=a
-                    // b)
-                    // 2
-                    // !==
-                    // 1 2
-                    // ===
-                    // 1
-                    // 2
-                    if self.state.consume_newline {
-                        if remainder.ends_with("\r\n") {
-                            remainder = remainder.strip_suffix("\r\n").unwrap();
-                        } else if remainder.ends_with('\n') {
-                            remainder = remainder.strip_suffix('\n').unwrap();
-                        }
-                        self.state.consume_newline = false;
-                    }
-
-                    if self.state.escape_newline {
-                        if remainder.ends_with("\r\n") {
-                            remainder = remainder.strip_suffix("\r\n").unwrap();
-                        } else if remainder.ends_with('\n') {
-                            remainder = remainder.strip_suffix('\n').unwrap();
-                        }
-                        self.state.escape_newline = false;
-                    }
-
-                    Ok(ParseResult::Printable(remainder.to_string()))
+                    Ok(ParseResult::Printable(remainder))
                 }
             }
             // Nothing to print
@@ -1603,17 +1571,7 @@ impl<'processor> Processor<'processor> {
             // However it can detect self calling macros in some cases
             // parse_chunk_body needs this caller but, parse_chunk_args doesn't need because
             // this methods only parses arguments thus, infinite loop is unlikely to happen
-            let mut line_result = self.parse(&mut lexor, &mut frag, &line, level, caller)?;
-
-            // Escape new line
-            if self.state.escape_newline {
-                self.state.escape_newline = false;
-                if let Some(line) = line_result.strip_suffix("\r\n") {
-                    line_result = line.to_owned();
-                } else if let Some(line) = line_result.strip_suffix('\n') {
-                    line_result = line.to_owned();
-                };
-            }
+            let line_result = self.parse(&mut lexor, &mut frag, &line, level, caller)?;
             result.push_str(&line_result);
 
             self.logger.add_line_number();
@@ -1656,6 +1614,10 @@ impl<'processor> Processor<'processor> {
         }
 
         for ch in line.chars() {
+            // Escape new charater is not respected
+            if self.state.escape_newline {
+                self.state.escape_newline = false
+            }
             self.logger.add_char_number();
 
             let lex_result = lexor.lex(ch);
@@ -1732,6 +1694,24 @@ impl<'processor> Processor<'processor> {
                 } // End if let of macro name
             }
         } // End Character iteration
+
+        // Don't print if current was empty and consume_newline was set( No print was called )
+        if self.state.consume_newline && remainder.trim().is_empty() {
+            remainder.clear();
+            self.state.consume_newline = false;
+        } else if self.state.escape_newline {
+            if remainder.ends_with("\r\n") {
+                remainder = remainder.strip_suffix("\r\n").unwrap().to_string();
+            } else if remainder.ends_with('\n') {
+                remainder = remainder.strip_suffix('\n').unwrap().to_string();
+            }
+            self.state.escape_newline = false;
+        }
+
+        // Consume newline should be negated by the end of parse
+        if self.state.consume_newline {
+            self.state.consume_newline = false;
+        }
         Ok(remainder)
     }
 
@@ -2370,6 +2350,10 @@ impl<'processor> Processor<'processor> {
         // If content is none
         // Ignore new line after macro evaluation until any character
         if let Some(mut content) = content {
+            if content.is_empty() {
+                self.state.consume_newline = true;
+                return Ok(());
+            }
             // else it is ok to proceed.
             // thus it is safe to unwrap it
             if frag.trimmed {
