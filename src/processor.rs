@@ -405,7 +405,6 @@ impl<'processor> Processor<'processor> {
             .open(&target_file);
 
         if let Ok(file) = file {
-            self.logger = Logger::new();
             self.logger.set_write_option(Some(WriteOption::File(file)));
         } else {
             return Err(RadError::InvalidCommandOption(format!(
