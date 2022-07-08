@@ -1753,7 +1753,7 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<Option<String>> {
         // Increase level to represent nestedness
         let level = level + 1;
-        let (name, mut raw_args) = (&frag.name, frag.args);
+        let (name, mut raw_args) = (&frag.name, frag.args.clone());
 
         if frag.trim_input {
             raw_args = raw_args
