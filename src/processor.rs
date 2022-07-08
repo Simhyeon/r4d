@@ -2521,8 +2521,6 @@ impl<'processor> Processor<'processor> {
         self.map.local = backup.local_macro_map;
         self.logger.recover_lines(backup.logger_lines);
 
-        // Also recover env values
-        self.set_file_env(&self.state.current_input.to_string())?;
         Ok(())
     }
 
@@ -2574,20 +2572,8 @@ impl<'processor> Processor<'processor> {
             let input = ProcessInput::File(path);
             self.state.current_input = input.clone();
             self.logger.set_input(&input);
-            self.set_file_env(file)?;
             Ok(())
         }
-    }
-
-    /// Set some useful env values
-    fn set_file_env(&self, file: &str) -> RadResult<()> {
-        let path = Path::new(file);
-        std::env::set_var("RAD_FILE", file);
-        std::env::set_var(
-            "RAD_FILE_DIR",
-            std::fs::canonicalize(path)?.parent().unwrap(),
-        );
-        Ok(())
     }
 
     /// Set input as string not as &path
@@ -2596,7 +2582,6 @@ impl<'processor> Processor<'processor> {
     fn set_input_stdin(&mut self) -> RadResult<()> {
         self.state.current_input = ProcessInput::Stdin;
         self.logger.set_input(&ProcessInput::Stdin);
-        // Why no set_file_env like set_file?
         Ok(())
     }
 
