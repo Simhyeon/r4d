@@ -27,7 +27,7 @@ crate-type = ["cdylib","rlib"]
 [features]
 # For some reaons that I dont' know, clap cannot be enabled with dep: prefix
 basic = ["clap", "dep:filetime","rad_ext_template?/binary"]
-binary = ["clap","debug", "full", "dep:filetime", "rad_ext_template?/binary"]
+binary = ["clap","debug", "full", "dep:filetime", "rad_ext_template?/binary", "signature", "color"]
 full = [ "evalexpr", "chrono", "textwrap", "cindex"]
 
 debug = [ "dep:crossterm", "dep:similar" ]
@@ -62,6 +62,6 @@ console_error_panic_hook = { version = "0.1.7", optional = true}
 wee_alloc = { version = "0.4.5", optional = true }
 
 [package.metadata.deb]
-features = ["binary", "color", "signature"]
+features = ["binary"]
 maintainer = "Simon creek <simoncreek@tutanota.com>"
 copyright = "2022, Simon creek <simoncreek@tutanota.com>"
