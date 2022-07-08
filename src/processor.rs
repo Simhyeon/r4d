@@ -1753,21 +1753,19 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<Option<String>> {
         // Increase level to represent nestedness
         let level = level + 1;
-        let (name, raw_args) = (&frag.name, &frag.args);
+        let (name, mut raw_args) = (&frag.name, frag.args);
 
+        if frag.trim_input {
+            raw_args = raw_args
+                .lines()
+                .map(|l| l.trim())
+                .collect::<Vec<_>>()
+                .join(&self.state.newline);
+        }
         let args: String;
         // Preprocess only when macro is not a deterred macro
         if !self.map.is_deterred_macro(name) {
-            if frag.trim_input {
-                let new_args = raw_args
-                    .lines()
-                    .map(|l| l.trim())
-                    .collect::<Vec<_>>()
-                    .join(&self.state.newline);
-                args = self.parse_chunk_args(level, name, new_args.trim())?;
-            } else {
-                args = self.parse_chunk_args(level, name, raw_args)?;
-            };
+            args = self.parse_chunk_args(level, name, &raw_args)?;
             // This parses and processes arguments
             // and macro should be evaluated after
 
@@ -2673,6 +2671,15 @@ impl<'processor> Processor<'processor> {
             }
         };
         Ok(path)
+    }
+
+    pub fn parse_and_strip(
+        &mut self,
+        ap: &mut ArgParser,
+        level: usize,
+        src: &str,
+    ) -> RadResult<String> {
+        Ok(ap.strip(&self.parse_chunk_args(level, "", src)?))
     }
 
     /// Print error using a processor's error logger
