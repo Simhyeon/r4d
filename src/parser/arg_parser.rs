@@ -157,7 +157,7 @@ impl ArgParser {
         if self.previous.unwrap_or(' ') == ESCAPE_CHAR {
             self.no_previous = true;
         } else if let Some(&LIT_CHAR) = next {
-            if !self.strip_literal {
+            if !self.strip_literal || self.lit_count > 0 {
                 value.push(ch);
             }
             // if next is literal character and previous was not a escape character
