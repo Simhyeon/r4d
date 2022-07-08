@@ -4367,7 +4367,8 @@ $extract()"
     ///
     /// $log(This is a problem)
     fn log_message(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        p.log_message(args)?;
+        let args = ArgParser::new().strip_literal(args);
+        p.log_message(&args)?;
         Ok(None)
     }
 
