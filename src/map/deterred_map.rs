@@ -51,9 +51,18 @@ $EB()".to_string()),
                 "exec".to_owned(),
                 DMacroSign::new(
                     "exec",
-                    ["macro_name", "macro_args"],
+                    ["a_macro_name^", "a_macro_args"],
                     DeterredMacroMap::execute_macro,
-                    Some("Execute a macro with arguments".to_string()),
+                    Some("Execute a macro with arguments
+
+# Arguments
+
+- a_macro_name : Macro name to exectue ( trimmed )
+- a_macro_args : Arguments to be passed to a macro
+
+# Example
+
+$assert(\\*$path(a,b,c)*\\,$exec(path,a,b,c))".to_string()),
                 ),
             ),
             (
@@ -154,6 +163,24 @@ $EB()".to_string()),
                     ["a_macro_name^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifdefel,
                     Some("Execute expressions whether macro is defined or not".to_string()),
+                ),
+            ),
+            (
+                "logm".to_owned(),
+                DMacroSign::new(
+                    "logm",
+                    ["a_macro_name"],
+                    Self::log_macro_info,
+                    Some("Log a macro information
+
+# Arguments
+
+- a_msg : Macro name to log
+
+# Example
+
+$define(test=Test)
+$logm(test)".to_string()),
                 ),
             ),
             (
@@ -421,6 +448,28 @@ $EB()".to_string()),
                 "Forloop requires two argument".to_owned(),
             ))
         }
+    }
+
+    /// Log macro information
+    ///
+    /// # Usage
+    ///
+    /// $logm(mac)
+    fn log_macro_info(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
+        let args = ArgParser::new().strip_literal(args);
+        let macro_name = p.parse_chunk_args(level, "", &trim!(&args))?;
+        let body = if let Ok(body) = p.get_local_macro_body(level, &macro_name) {
+            body.to_string()
+        } else if let Ok(body) = p.get_runtime_macro_body(&macro_name) {
+            body.to_string()
+        } else {
+            return Err(RadError::InvalidArgument(format!(
+                "Macro \"{}\" doesn't exist",
+                &macro_name
+            )));
+        };
+        p.log_message(&body)?;
+        Ok(None)
     }
 
     /// Print content according to given condition
@@ -846,7 +895,7 @@ $EB()".to_string()),
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let macro_name = &processor.parse_chunk_args(level, "", &args[0])?;
+            let macro_name = &processor.parse_chunk_args(level, "", trim!(&args[0]).as_ref())?;
             if !processor.contains_macro(macro_name, MacroType::Any) {
                 return Err(RadError::InvalidArgument(format!(
                     "Macro \"{}\" doesn't exist",
