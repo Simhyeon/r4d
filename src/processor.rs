@@ -1357,7 +1357,6 @@ impl<'processor> Processor<'processor> {
                 // Only if debug switch is nextline
                 self.debugger.user_input_on_line(&frag, &mut self.logger)?;
             }
-            //let result = self.parse_line(&mut line_iter, &mut lexor, &mut frag)?;
             let result = match self.parse_line(&mut line_iter, &mut lexor, &mut frag) {
                 Ok(oo) => oo,
                 Err(err) => {
@@ -1503,7 +1502,7 @@ impl<'processor> Processor<'processor> {
             #[cfg(feature = "debug")]
             self.debugger.write_to_original(&line)?;
 
-            let remainder = self.parse(lexor, frag, &line, 0, MAIN_CALLER)?;
+            let remainder = self.parse_line_chunk(lexor, frag, &line, 0, MAIN_CALLER)?;
 
             // Clear local variable macros
             self.map.clear_local();
@@ -1571,7 +1570,7 @@ impl<'processor> Processor<'processor> {
             // However it can detect self calling macros in some cases
             // parse_chunk_body needs this caller but, parse_chunk_args doesn't need because
             // this methods only parses arguments thus, infinite loop is unlikely to happen
-            let line_result = self.parse(&mut lexor, &mut frag, &line, level, caller)?;
+            let line_result = self.parse_line_chunk(&mut lexor, &mut frag, &line, level, caller)?;
             result.push_str(&line_result);
 
             self.logger.add_line_number();
@@ -1591,7 +1590,7 @@ impl<'processor> Processor<'processor> {
     /// Parse a given line
     ///
     /// This calles lexor.lex to validate characters and decides next behaviour
-    fn parse(
+    fn parse_line_chunk(
         &mut self,
         lexor: &mut Lexor,
         frag: &mut MacroFragment,
@@ -1652,6 +1651,7 @@ impl<'processor> Processor<'processor> {
                 }
                 LexResult::EndFrag => {
                     self.lex_branch_end_frag(ch, frag, &mut remainder, lexor, level, caller)?;
+
                     // Escape blank check is ok to be in here because
                     // escape blanks can only invoked by macro ( for now at least )
                     if self.state.lexor_escape_blanks {
@@ -1679,6 +1679,8 @@ impl<'processor> Processor<'processor> {
                         self.get_comment_char(),
                         &self.state.comment_type,
                     );
+
+                    // Char marcro execute
                     self.lex_branch_end_invoke(
                         &mut hook_lexor,
                         &mut hook_frag,
@@ -2350,10 +2352,6 @@ impl<'processor> Processor<'processor> {
         // If content is none
         // Ignore new line after macro evaluation until any character
         if let Some(mut content) = content {
-            if content.is_empty() {
-                self.state.consume_newline = true;
-                return Ok(());
-            }
             // else it is ok to proceed.
             // thus it is safe to unwrap it
             if frag.trimmed {
@@ -2376,6 +2374,7 @@ impl<'processor> Processor<'processor> {
                     self.get_comment_char(),
                     &self.state.comment_type,
                 );
+                // Macro hook execute
                 self.lex_branch_end_invoke(
                     &mut hook_lexor,
                     &mut hook_frag,
