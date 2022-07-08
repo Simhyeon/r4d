@@ -25,6 +25,7 @@ use r4d::AuthType;
 // Extend function macro
 processor.add_ext_macro(ExtMacroBuilder::new("macro_name")
     .args(&["a1","b2"])
+	.desc("This macro do something awesome")
     .function(function_template!(
         let args = split_args!(2)?;
         let result = format!("{} + {}", args[0], args[1]);
@@ -34,6 +35,7 @@ processor.add_ext_macro(ExtMacroBuilder::new("macro_name")
 // Extend deterred macro
 processor.add_ext_macro(ExtMacroBuilder::new("macro_name")
     .args(&["a1","b2"])
+	.desc("This macro do something awesome too")
     .deterred(deterred_template!(
         let args = split_args!(2)?;
         let result = if expand!(&args[0])? == "doit" {
@@ -69,11 +71,11 @@ pub(crate) type DFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResul
     Your code
 }
 
-// split_args are equivalent to
+// split_args is  equivalent to
 processor.get_split_arguments("text,to,parse", args)
 
-// expand are equivalent to
-processor.expand(level,"text_to_parse")
+// expand macro is equivalent to
+processor.expand_and_strip(level,"text_to_parse")
 ```
 
 You can also simply send your function as argument instead of using template macros.
@@ -93,7 +95,7 @@ You can modify the file and make it included by compiling with ```template``` fe
 git clone https://github.com/simhyeon/r4d
 
 # Build within r4d procject
-cargo build --release --features binary,color,template
+cargo build --release --features binary,template
 
 # Built binary is located in "target/release" directory
 ```

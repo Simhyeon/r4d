@@ -2726,7 +2726,7 @@ impl<'processor> Processor<'processor> {
     /// let mut proc = r4d::Processor::new();
     /// proc.get_split_arguments(2, "a,b", false).expect("Failed to split arguments");
     /// ```
-    pub fn get_split_arguments(
+    pub fn split_arguments(
         &self,
         target_length: usize,
         source: &str,
