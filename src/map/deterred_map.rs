@@ -224,8 +224,8 @@ $logm(test)".to_string()),
                 DMacroSign::new(
                     "strip",
                     ["a_literl_expr"],
-                    DeterredMacroMap::unpack_expression,
-                    Some("Strip literal expression and expanded text".to_string()),
+                    DeterredMacroMap::strip_expression,
+                    Some("Strip literal expression and expand inner text".to_string()),
                 ),
             ),
         ]));
@@ -263,6 +263,18 @@ $logm(test)".to_string()),
                     ["a_macro^", "a_expression"],
                     Self::eval_inplace,
                     Some("Evaluate expression in-place for macro.".to_string()),
+                ),
+            );
+        }
+        #[cfg(debug_assertions)]
+        {
+            map.insert(
+                "test".to_owned(),
+                DMacroSign::new(
+                    "test",
+                    ESR,
+                    Self::test_logics,
+                    Some("Debugging".to_string()),
                 ),
             );
         }
@@ -318,18 +330,20 @@ $logm(test)".to_string()),
     ///
     /// $forby($:(),-,a-b-c)
     fn forby(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 3) {
+            ap.set_strip(true);
             let mut sums = String::new();
             let body = &args[0];
-            let sep = &processor.parse_chunk_args(level, "", &args[1])?;
-            let loopable = &processor.parse_chunk_args(level, "", &args[2])?;
+            let sep = &processor.parse_and_strip(&mut ap, level, &args[1])?;
+            let loopable = &processor.parse_and_strip(&mut ap, level, &args[2])?;
             for (count, value) in loopable.split(sep).enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 processor.add_new_local_macro(level, ":", value);
-                let result = processor.parse_chunk_args(level, "", body)?;
+                let result = &processor.parse_and_strip(&mut ap, level, body)?;
 
-                sums.push_str(&result);
+                sums.push_str(result);
             }
 
             // Clear local macro
@@ -349,18 +363,20 @@ $logm(test)".to_string()),
     ///
     /// $foreach($:(),a,b,c)
     fn foreach(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
             let mut sums = String::new();
             let body = &args[0];
-            let loopable = &processor.parse_chunk_args(level, "", &args[1])?;
+            let loopable = &processor.parse_and_strip(&mut ap, level, &args[1])?;
             for (count, value) in loopable.split(',').enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
 
                 processor.add_new_local_macro(level, ":", value);
-                let result = processor.parse_chunk_args(level, "", body)?;
+                let result = &processor.parse_and_strip(&mut ap, level, body)?;
 
-                sums.push_str(&result);
+                sums.push_str(result);
             }
 
             // Clear local macro
@@ -380,16 +396,18 @@ $logm(test)".to_string()),
     ///
     /// $forline($:(),Content)
     fn forline(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
             let mut sums = String::new();
             let body = &args[0];
-            let loopable = &processor.parse_chunk_args(level, "", &args[1])?;
+            let loopable = &processor.parse_and_strip(&mut ap, level, &args[1])?;
             let mut count = 1;
             for value in loopable.lines() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 processor.add_new_local_macro(level, ":", value);
-                let result = processor.parse_chunk_args(level, "", body)?;
+                let result = processor.parse_and_strip(&mut ap, level, body)?;
                 sums.push_str(&result);
                 count += 1;
             }
@@ -407,12 +425,14 @@ $logm(test)".to_string()),
     ///
     /// $forloop($:(),1,5)
     fn forloop(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 3) {
+            ap.set_strip(true);
             let mut sums = String::new();
 
             let body = &args[0];
-            let min_src = processor.parse_chunk_args(level, "", &trim!(&args[1]))?;
-            let max_src = processor.parse_chunk_args(level, "", &trim!(&args[2]))?;
+            let min_src = processor.parse_and_strip(&mut ap, level, &trim!(&args[1]))?;
+            let max_src = processor.parse_and_strip(&mut ap, level, &trim!(&args[2]))?;
 
             let min = if let Ok(num) = min_src.parse::<usize>() {
                 num
@@ -433,7 +453,7 @@ $logm(test)".to_string()),
             let mut result: String;
             for value in min..=max {
                 processor.add_new_local_macro(level, ":", &value.to_string());
-                result = processor.parse_chunk_args(level, "", body)?;
+                result = processor.parse_and_strip(&mut ap, level, body)?;
 
                 sums.push_str(&result);
                 result.clear();
@@ -456,8 +476,8 @@ $logm(test)".to_string()),
     ///
     /// $logm(mac)
     fn log_macro_info(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().strip_literal(args);
-        let macro_name = p.parse_chunk_args(level, "", &trim!(&args))?;
+        let mut ap = ArgParser::new();
+        let macro_name = p.parse_and_strip(&mut ap, level, &trim!(&args))?;
         let body = if let Ok(body) = p.get_local_macro_body(level, &macro_name) {
             body.to_string()
         } else if let Ok(body) = p.get_runtime_macro_body(&macro_name) {
@@ -478,14 +498,16 @@ $logm(test)".to_string()),
     ///
     /// $if(evaluation, ifstate)
     fn if_cond(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let boolean = &processor.parse_chunk_args(level, "", &args[0])?;
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+            let boolean = &processor.parse_and_strip(&mut ap, level, &args[0])?;
 
             // Given condition is true
             let cond = Utils::is_arg_true(&trim!(boolean));
             if let Ok(cond) = cond {
                 if cond {
-                    let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
+                    let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
                     return Ok(Some(if_expr));
                 }
             } else {
@@ -509,14 +531,17 @@ $logm(test)".to_string()),
     ///
     /// $ifelse(evaluation, \*ifstate*\, \*elsestate*\)
     fn ifelse(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let boolean = &processor.parse_chunk_args(level, "", &args[0])?;
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 3) {
+            ap.set_strip(true);
+
+            let boolean = &processor.parse_and_strip(&mut ap, level, &args[0])?;
 
             // Given condition is true
             let cond = Utils::is_arg_true(&trim!(boolean));
             if let Ok(cond) = cond {
                 if cond {
-                    let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
+                    let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
                     return Ok(Some(if_expr));
                 }
             } else {
@@ -527,7 +552,7 @@ $logm(test)".to_string()),
             }
 
             // Else state
-            let else_expr = processor.parse_chunk_args(level, "", &args[2])?;
+            let else_expr = processor.parse_and_strip(&mut ap, level, &args[2])?;
             Ok(Some(else_expr))
         } else {
             Err(RadError::InvalidArgument(
@@ -542,13 +567,16 @@ $logm(test)".to_string()),
     ///
     /// $ifdef(macro_name, expr)
     fn ifdef(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = processor.parse_chunk_args(level, "", &trim!(&args[0]))?;
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+
+            let name = processor.parse_and_strip(&mut ap, level, &trim!(&args[0]))?;
 
             let boolean = processor.contains_macro(&name, MacroType::Any);
             // Return true or false by the definition
             if boolean {
-                let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
+                let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
                 return Ok(Some(if_expr));
             }
             Ok(None)
@@ -565,16 +593,19 @@ $logm(test)".to_string()),
     ///
     /// $ifdefelse(macro_name,expr,expr2)
     fn ifdefel(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let name = processor.parse_chunk_args(level, "", &trim!(&args[0]))?;
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 3) {
+            ap.set_strip(true);
+
+            let name = processor.parse_and_strip(&mut ap, level, &trim!(&args[0]))?;
 
             let boolean = processor.contains_macro(&name, MacroType::Any);
             // Return true or false by the definition
             if boolean {
-                let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
+                let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
                 Ok(Some(if_expr))
             } else {
-                let else_expr = processor.parse_chunk_args(level, "", &args[2])?;
+                let else_expr = processor.parse_and_strip(&mut ap, level, &args[2])?;
                 Ok(Some(else_expr))
             }
         } else {
@@ -594,14 +625,17 @@ $logm(test)".to_string()),
         if !Utils::is_granted("ifenv", AuthType::ENV, processor)? {
             return Ok(None);
         }
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = processor.parse_chunk_args(level, "", &trim!(&args[0]))?;
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+
+            let name = processor.parse_and_strip(&mut ap, level, &trim!(&args[0]))?;
 
             let boolean = std::env::var(name).is_ok();
 
             // Return true or false by the definition
             if boolean {
-                let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
+                let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
                 return Ok(Some(if_expr));
             }
             Ok(None)
@@ -622,17 +656,20 @@ $logm(test)".to_string()),
         if !Utils::is_granted("ifenvel", AuthType::ENV, processor)? {
             return Ok(None);
         }
-        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
-            let name = processor.parse_chunk_args(level, "", &trim!(&args[0]))?;
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 3) {
+            ap.set_strip(true);
+
+            let name = processor.parse_and_strip(&mut ap, level, &trim!(&args[0]))?;
 
             let boolean = std::env::var(name).is_ok();
 
             // Return true or false by the definition
             if boolean {
-                let if_expr = processor.parse_chunk_args(level, "", &args[1])?;
+                let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
                 Ok(Some(if_expr))
             } else {
-                let else_expr = processor.parse_chunk_args(level, "", &args[2])?;
+                let else_expr = processor.parse_and_strip(&mut ap, level, &args[2])?;
                 Ok(Some(else_expr))
             }
         } else {
@@ -642,17 +679,19 @@ $logm(test)".to_string()),
         }
     }
 
-    /// Unwrap literal expression
+    /// Strip literal expression
+    ///
+    /// This strip expression and then expand it
     ///
     /// # Usage
     ///
-    /// $unwrap(\*expression*\)
-    fn unpack_expression(
+    /// $strip(\*expression*\)
+    fn strip_expression(
         args: &str,
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().strip_literal(args);
+        let args = ArgParser::new().strip(args);
         let result = processor.parse_chunk_args(level, "", &args)?;
 
         Ok(if result.is_empty() {
@@ -676,8 +715,9 @@ $logm(test)".to_string()),
     ) -> RadResult<Option<String>> {
         let backup = processor.state.behaviour;
         processor.state.behaviour = ErrorBehaviour::Assert;
-        let args = ArgParser::new().strip_literal(args);
-        let result = processor.parse_chunk_args(level, "", &args);
+
+        let mut ap = ArgParser::new().no_strip();
+        let result = processor.parse_and_strip(&mut ap, level, &args);
         processor.state.behaviour = backup;
         if result.is_err() {
             processor.track_assertion(true)?;
@@ -694,7 +734,6 @@ $logm(test)".to_string()),
     ///
     /// $que(Sentence to process)
     fn queue_content(args: &str, _: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().strip_literal(args);
         processor.insert_queue(&args);
         Ok(None)
     }
@@ -709,8 +748,10 @@ $logm(test)".to_string()),
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let boolean = &processor.parse_chunk_args(level, "", &args[0])?;
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+            let boolean = &processor.parse_and_strip(&mut ap, level, &args[0])?;
             let cond = Utils::is_arg_true(boolean)?;
             if cond {
                 processor.insert_queue(&args[1]);
@@ -754,12 +795,20 @@ $logm(test)".to_string()),
                 "Readto doesn't support nested buf read".to_string(),
             ));
         }
-        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        let mut ap = ArgParser::new().no_strip();
+        let args = ap.args_to_vec(args, ',', GreedyState::Never);
+        ap.set_strip(true);
         if args.len() >= 2 {
-            let file_path =
-                PathBuf::from(processor.parse_chunk_args(level, "", trim!(&args[0]).as_ref())?);
-            let to_path =
-                PathBuf::from(processor.parse_chunk_args(level, "", trim!(&args[1]).as_ref())?);
+            let file_path = PathBuf::from(processor.parse_and_strip(
+                &mut ap,
+                level,
+                trim!(&args[0]).as_ref(),
+            )?);
+            let to_path = PathBuf::from(processor.parse_and_strip(
+                &mut ap,
+                level,
+                trim!(&args[1]).as_ref(),
+            )?);
             let mut raw_include = false;
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
@@ -774,9 +823,9 @@ $logm(test)".to_string()),
 
                 // Optionally enable raw mode
                 if args.len() >= 3 {
-                    raw_include = Utils::is_arg_true(&processor.parse_chunk_args(
+                    raw_include = Utils::is_arg_true(&processor.parse_and_strip(
+                        &mut ap,
                         level,
-                        "",
                         trim!(&args[2]).as_ref(),
                     )?)?;
 
@@ -832,10 +881,15 @@ $logm(test)".to_string()),
                 "Readin doesn't support nested buf read".to_string(),
             ));
         }
+        let mut ap = ArgParser::new().no_strip();
         let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        ap.set_strip(true);
         if !args.is_empty() {
-            let file_path =
-                PathBuf::from(processor.parse_chunk_args(level, "", trim!(&args[0]).as_ref())?);
+            let file_path = PathBuf::from(processor.parse_and_strip(
+                &mut ap,
+                level,
+                trim!(&args[0]).as_ref(),
+            )?);
             let mut raw_include = false;
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
@@ -845,9 +899,9 @@ $logm(test)".to_string()),
 
                 // Optionally enable raw mode
                 if args.len() >= 2 {
-                    raw_include = Utils::is_arg_true(&processor.parse_chunk_args(
+                    raw_include = Utils::is_arg_true(&processor.parse_and_strip(
+                        &mut ap,
                         level,
-                        "",
                         trim!(&args[1]).as_ref(),
                     )?)?;
 
@@ -894,8 +948,12 @@ $logm(test)".to_string()),
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let macro_name = &processor.parse_chunk_args(level, "", trim!(&args[0]).as_ref())?;
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+
+            let macro_name =
+                &processor.parse_and_strip(&mut ap, level, trim!(&args[0]).as_ref())?;
             if !processor.contains_macro(macro_name, MacroType::Any) {
                 return Err(RadError::InvalidArgument(format!(
                     "Macro \"{}\" doesn't exist",
@@ -904,7 +962,7 @@ $logm(test)".to_string()),
             }
             let args = &args[1];
             let result =
-                processor.parse_chunk_args(level, "", &format!("${}({})", macro_name, args))?;
+                processor.parse_and_strip(&mut ap, level, &format!("${}({})", macro_name, args))?;
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
@@ -925,7 +983,10 @@ $logm(test)".to_string()),
     /// 4,5,6
     /// )
     fn from_data(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+
             let macro_name = trim!(&args[0]);
             // Trimming data might be very costly operation
             // Plus, it is already trimmed by csv crate.
@@ -949,7 +1010,7 @@ $logm(test)".to_string()),
             processor.set_debug(false);
 
             // Parse macros
-            let result = processor.parse_chunk_args(level, "", &result)?;
+            let result = processor.parse_and_strip(&mut ap, level, &result)?;
 
             // Set custom prompt log to indicate user thatn from macro doesn't support
             // debugging inside macro expansion
@@ -984,7 +1045,10 @@ $logm(test)".to_string()),
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+
             // This is the processed raw formula
             let macro_name = trim!(&args[0]);
             if !processor.contains_macro(&macro_name, MacroType::Runtime) {
@@ -996,7 +1060,7 @@ $logm(test)".to_string()),
 
             let expr = trim!(&args[1]);
             let chunk = format!("$eval( ${}() {} )", macro_name, expr);
-            let result = processor.parse_chunk_args(level, "", &chunk)?;
+            let result = processor.parse_and_strip(&mut ap, level, &chunk)?;
 
             processor.replace_macro(&macro_name, &result);
             Ok(None)
@@ -1007,6 +1071,24 @@ $logm(test)".to_string()),
         }
     }
 
+    #[allow(unused_variables)]
+    #[cfg(debug_assertions)]
+    fn test_logics(
+        args: &str,
+        level: usize,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().no_strip().args_with_len(args, 3) {
+            //processor.log_message(&args[0]);
+            //processor.log_message(&args[1]);
+            //processor.log_message(&args[2]);
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Insufficient argumetns for test".to_owned(),
+            ))
+        }
+    }
     // Keyword macros end
     // ----------
 }
