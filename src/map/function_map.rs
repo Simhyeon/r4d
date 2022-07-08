@@ -221,6 +221,23 @@ $assert($ceil(3.1),4)".to_string()),
                 ),
             ),
             (
+                "chars".to_owned(),
+                FMacroSign::new(
+                    "chars",
+                    ["a_text^"],
+                    Self::chars_array,
+                    Some("Get characters array from text
+
+# Arguments
+
+- a_text : Text to get chars array from ( trimmed )
+
+# Example
+
+$assert(\\*a,b,c,d,e*\\$chars(abcde))".to_string()),
+                ),
+            ),
+            (
                 "chomp".to_owned(),
                 FMacroSign::new(
                     "chomp",
@@ -4963,6 +4980,25 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "Unicode requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Get characters array
+    ///
+    /// $chars(abcde)
+    fn chars_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let arg = trim!(&args[0]);
+            let mut chars = arg.as_ref().chars().fold(String::new(), |mut acc, ch| {
+                write!(acc, "{},", ch).unwrap();
+                acc
+            });
+            chars.pop();
+            Ok(Some(chars))
+        } else {
+            Err(RadError::InvalidArgument(
+                "chars requires an argument".to_owned(),
             ))
         }
     }
