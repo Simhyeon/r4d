@@ -898,7 +898,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         processor.state.behaviour = ErrorBehaviour::Assert;
 
         let mut ap = ArgParser::new().no_strip();
-        let result = processor.parse_and_strip(&mut ap, level, &args);
+        let result = processor.parse_and_strip(&mut ap, level, args);
         processor.state.behaviour = backup;
         if result.is_err() {
             processor.track_assertion(true)?;
@@ -915,7 +915,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     ///
     /// $que(Sentence to process)
     fn queue_content(args: &str, _: usize, processor: &mut Processor) -> RadResult<Option<String>> {
-        processor.insert_queue(&args);
+        processor.insert_queue(args);
         Ok(None)
     }
 

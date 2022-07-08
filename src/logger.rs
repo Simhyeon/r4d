@@ -430,12 +430,9 @@ FAIL: {}",
         }
     }
 
+    /// Check if logger is logging to file or not
     pub fn is_logging_to_file(&self) -> bool {
-        if let Some(WriteOption::File(_)) = &self.write_option {
-            true
-        } else {
-            false
-        }
+        matches!(self.write_option, Some(WriteOption::File(_)))
     }
 
     /// Log debug information
