@@ -2602,14 +2602,6 @@ impl<'processor> Processor<'processor> {
         self.debugger.set_prompt_log(prompt);
     }
 
-    // End of miscellaenous methods
-    // </MISC>
-    // ----------
-
-    // ----------
-    // Function that is exposed for better end user's qualify of life
-    // <EXT>
-
     /// Set documentation for a macro
     ///
     /// This sets a description for a macro. This will fail silent if macro doesn't exist
@@ -2633,11 +2625,6 @@ impl<'processor> Processor<'processor> {
         }
     }
 
-    #[cfg(feature = "signature")]
-    pub(crate) fn get_macro_manual(&self, macro_name: &str) -> Option<String> {
-        self.map.get_signature(macro_name).map(|s| s.to_string())
-    }
-
     /// This returns canonicalized absolute path
     ///
     /// It fails when the parent path cannot be canonicalized
@@ -2657,13 +2644,6 @@ impl<'processor> Processor<'processor> {
         Ok(path)
     }
 
-    /// Expand chunk and strip quotes
-    ///
-    /// This is intended for end user
-    pub fn expand_and_strip(&mut self, level: usize, src: &str) -> RadResult<String> {
-        Ok(ArgParser::new().strip(&self.parse_chunk_args(level, "", src)?))
-    }
-
     /// Parse chunk and strip quotes
     ///
     /// This is for internal logic
@@ -2674,6 +2654,53 @@ impl<'processor> Processor<'processor> {
         src: &str,
     ) -> RadResult<String> {
         Ok(ap.strip(&self.parse_chunk_args(level, "", src)?))
+    }
+
+    /// Get a local macro's raw body
+    pub(crate) fn get_local_macro_body(&self, level: usize, macro_name: &str) -> RadResult<&str> {
+        let body = &self
+            .map
+            .local
+            .get(&Utils::local_name(level, macro_name))
+            .ok_or_else(|| RadError::InvalidMacroName("No such macro".to_string()))?
+            .body;
+        Ok(body)
+    }
+
+    /// Get a runtime macro's raw body
+    pub(crate) fn get_runtime_macro_body(&self, macro_name: &str) -> RadResult<&str> {
+        let body = &self
+            .map
+            .runtime
+            .get(macro_name, self.state.hygiene)
+            .ok_or_else(|| RadError::InvalidMacroName("No such macro".to_string()))?
+            .body;
+        Ok(body)
+    }
+
+    // End of miscellaenous methods
+    // </MISC>
+    // ----------
+
+    // ----------
+    // Function that is exposed for better end user's qualify of life
+    // <EXT>
+
+    #[cfg(feature = "signature")]
+    pub(crate) fn get_macro_manual(&self, macro_name: &str) -> Option<String> {
+        self.map.get_signature(macro_name).map(|s| s.to_string())
+    }
+
+    /// Expand chunk and strip quotes
+    ///
+    /// This is intended for end user
+    pub fn expand(&mut self, level: usize, src: &str, strip: bool) -> RadResult<String> {
+        let parsed = self.parse_chunk_args(level, "", src)?;
+        if strip {
+            Ok(ArgParser::new().strip(&parsed))
+        } else {
+            Ok(parsed)
+        }
     }
 
     /// Print error using a processor's error logger
@@ -2697,17 +2724,17 @@ impl<'processor> Processor<'processor> {
     ///
     /// ```rust
     /// let mut proc = r4d::Processor::new();
-    /// proc.get_split_arguments(2, "a,b").expect("Failed to split arguments");
+    /// proc.get_split_arguments(2, "a,b", false).expect("Failed to split arguments");
     /// ```
     pub fn get_split_arguments(
         &self,
         target_length: usize,
         source: &str,
+        no_strip: bool,
     ) -> RadResult<Vec<String>> {
-        if let Some(args) = ArgParser::new()
-            .no_strip()
-            .args_with_len(source, target_length)
-        {
+        let mut ap = ArgParser::new();
+        ap.set_strip(!no_strip);
+        if let Some(args) = ap.args_with_len(source, target_length) {
             Ok(args)
         } else {
             Err(RadError::InvalidArgument(
@@ -2864,26 +2891,6 @@ impl<'processor> Processor<'processor> {
     /// ```
     pub fn is_true(&self, src: &str) -> RadResult<bool> {
         Utils::is_arg_true(src)
-    }
-
-    pub(crate) fn get_local_macro_body(&self, level: usize, macro_name: &str) -> RadResult<&str> {
-        let body = &self
-            .map
-            .local
-            .get(&Utils::local_name(level, macro_name))
-            .ok_or_else(|| RadError::InvalidMacroName("No such macro".to_string()))?
-            .body;
-        Ok(body)
-    }
-
-    pub(crate) fn get_runtime_macro_body(&self, macro_name: &str) -> RadResult<&str> {
-        let body = &self
-            .map
-            .runtime
-            .get(macro_name, self.state.hygiene)
-            .ok_or_else(|| RadError::InvalidMacroName("No such macro".to_string()))?
-            .body;
-        Ok(body)
     }
 
     // </EXT>
