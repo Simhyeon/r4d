@@ -2724,12 +2724,12 @@ impl<'processor> Processor<'processor> {
     ///
     /// ```rust
     /// let mut proc = r4d::Processor::new();
-    /// proc.get_split_arguments(2, "a,b", false).expect("Failed to split arguments");
+    /// proc.split_arguments("a,b", 2,false).expect("Failed to split arguments");
     /// ```
     pub fn split_arguments(
         &self,
-        target_length: usize,
         source: &str,
+        target_length: usize,
         no_strip: bool,
     ) -> RadResult<Vec<String>> {
         let mut ap = ArgParser::new();
