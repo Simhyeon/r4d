@@ -56,6 +56,8 @@ Piping doesn't work because pipe creates unterminated bufstream. This is
 because debug mode opens stdin and tries to get content until eof, but there is
 no eof. Please submit an issue if you know how to curve this behaviour.
 
+You can set $BP() macro inside a file to set a breakpoint for debugging.
+
 ```bash
 # Debug mode
 rad -d

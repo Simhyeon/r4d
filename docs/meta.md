@@ -30,7 +30,7 @@ syntax changed a lot
 	* [x] debug.md
 	* [x] Usage.md
 	* [x] syntax.md
-	* [ ] ext.md : After template update
+	* [x] ext.md : After template update
 	* [ ] macro\_indices.md
 * [ ] Bug fix
 	* [x] Literal rule is bugged ( Nested literal rule doesn't work at all )

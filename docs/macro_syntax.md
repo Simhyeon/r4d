@@ -467,5 +467,3 @@ might be an indicator, which is represented tildes ```~~```.
 ```
 $BR()
 ```
-
-Using BR macro outside of debug mode is not an error but warning.
