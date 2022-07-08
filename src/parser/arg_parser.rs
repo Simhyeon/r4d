@@ -10,6 +10,7 @@ pub struct ArgParser {
     previous: Option<char>,
     lit_count: usize,
     no_previous: bool,
+    strip_literal: bool,
 }
 
 /// State indicates whether argument should be parsed greedily or not
@@ -27,11 +28,31 @@ impl ArgParser {
             previous: None,
             lit_count: 0,
             no_previous: false,
+            strip_literal: true,
         }
     }
 
+    // Reset variables
+    fn reset(&mut self) {
+        self.values.clear();
+        self.previous = None;
+        self.lit_count = 0;
+        self.no_previous = false;
+    }
+
+    /// Don't strip literals
+    pub(crate) fn no_strip(mut self) -> Self {
+        self.strip_literal = false;
+        self
+    }
+
+    /// Don't strip literals
+    pub(crate) fn set_strip(&mut self, strip_literal: bool) {
+        self.strip_literal = strip_literal;
+    }
+
     /// Simply strip literal chunk
-    pub(crate) fn strip_literal(&mut self, args: &str) -> String {
+    pub(crate) fn strip(&mut self, args: &str) -> String {
         self.args_to_vec(args, ',', GreedyState::Greedy)[0].to_owned()
     }
 
@@ -40,6 +61,7 @@ impl ArgParser {
     /// If length is qualified it returns vector of arguments
     /// if not, "None" is returned instead.
     pub(crate) fn args_with_len(&mut self, args: &str, length: usize) -> Option<Vec<String>> {
+        self.reset();
         let greedy_state = if length > 1 {
             GreedyState::Deterred(length - 1)
         } else {
@@ -62,6 +84,7 @@ impl ArgParser {
         delimiter: char,
         mut greedy_state: GreedyState,
     ) -> Vec<String> {
+        self.reset();
         let mut value = String::new();
         let mut arg_iter = arg_values.chars().peekable();
 
@@ -134,6 +157,9 @@ impl ArgParser {
         if self.previous.unwrap_or(' ') == ESCAPE_CHAR {
             self.no_previous = true;
         } else if let Some(&LIT_CHAR) = next {
+            if !self.strip_literal {
+                value.push(ch);
+            }
             // if next is literal character and previous was not a escape character
             // Do nothing
         } else {
@@ -160,6 +186,9 @@ impl ArgParser {
             // Simply ignore character and don't set previous
             else {
                 self.no_previous = true;
+                if !self.strip_literal {
+                    value.push(ch);
+                }
             }
         } else if let Some(&ch_next) = arg_iter.peek() {
             // Next is escape char and not inside lit_count
@@ -170,6 +199,10 @@ impl ArgParser {
                                  // Lit end was outter most one
                 if self.lit_count == 0 {
                     self.no_previous = true;
+                    if !self.strip_literal {
+                        value.push(LIT_CHAR);
+                        value.push(ESCAPE_CHAR);
+                    }
                 }
                 // Inside other literal rules
                 else {
