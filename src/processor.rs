@@ -2657,7 +2657,17 @@ impl<'processor> Processor<'processor> {
         Ok(path)
     }
 
-    pub fn parse_and_strip(
+    /// Expand chunk and strip quotes
+    ///
+    /// This is intended for end user
+    pub fn expand_and_strip(&mut self, level: usize, src: &str) -> RadResult<String> {
+        Ok(ArgParser::new().strip(&self.parse_chunk_args(level, "", src)?))
+    }
+
+    /// Parse chunk and strip quotes
+    ///
+    /// This is for internal logic
+    pub(crate) fn parse_and_strip(
         &mut self,
         ap: &mut ArgParser,
         level: usize,
@@ -2681,7 +2691,9 @@ impl<'processor> Processor<'processor> {
 
     /// Split arguments as vector
     ///
-    /// This is for internal macros logics
+    /// This is designed for end user
+    ///
+    /// This doesn't strip literal quotes from vector
     ///
     /// ```rust
     /// let mut proc = r4d::Processor::new();
@@ -2692,7 +2704,10 @@ impl<'processor> Processor<'processor> {
         target_length: usize,
         source: &str,
     ) -> RadResult<Vec<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(source, target_length) {
+        if let Some(args) = ArgParser::new()
+            .no_strip()
+            .args_with_len(source, target_length)
+        {
             Ok(args)
         } else {
             Err(RadError::InvalidArgument(
@@ -2731,18 +2746,6 @@ impl<'processor> Processor<'processor> {
         };
 
         Ok(variant)
-    }
-
-    /// Expand given text
-    ///
-    /// This exits for internal macro logic.
-    ///
-    /// ```rust
-    /// let mut proc = r4d::Processor::new();
-    /// proc.expand(0, "argument").expect("Failed to expand a macro argument");
-    /// ```
-    pub fn expand(&mut self, level: usize, source: impl AsRef<str>) -> RadResult<String> {
-        self.parse_chunk_args(level, MAIN_CALLER, source.as_ref())
     }
 
     /// Check if given macro exists
