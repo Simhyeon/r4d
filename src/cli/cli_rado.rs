@@ -64,6 +64,11 @@ impl RadoCli {
                     (&*RADO_DIR).display()
                 )?;
             }
+            Some(("replace", sub_m)) => {
+                if let Some(input) = sub_m.value_of("INPUT") {
+                    self.replace_file(Path::new(input))?;
+                }
+            }
             Some(("edit", sub_m)) => {
                 if let Some(input) = sub_m.value_of("INPUT") {
                     self.view_file(Path::new(input))?;
@@ -134,6 +139,14 @@ impl RadoCli {
                 .takes_value(true)
                 .global(true)
                 .help("Write to a file"))
+            .subcommand(App::new("replace")
+                .about("In replace a file")
+                .after_help("This creates cache file in temp directory's rado_repl.txt")
+                .arg(Arg::new("INPUT")
+                    .required(true)
+                    .help("INPUT source to execute processing")
+                )
+            )
             .subcommand(App::new("edit")
                 .about("Edit a file as raw")
                 .arg(Arg::new("INPUT")
@@ -193,6 +206,26 @@ impl RadoCli {
             );
         }
         app.get_matches()
+    }
+
+    fn replace_file(&self, file: &Path) -> RadResult<()> {
+        if file.exists() {
+            let file_string = file.display().to_string();
+            let mut rad_args = vec!["rad", file_string.as_ref()];
+            if !self.flag_arguments.is_empty() {
+                rad_args.extend(self.flag_arguments.iter().map(|s| s.as_str()));
+            }
+            let cached_path = std::env::temp_dir().join("rado_repl.txt");
+            let cached_string = cached_path.display().to_string();
+
+            rad_args.extend(vec!["-o", &cached_string].iter());
+            {
+                RadCli::new().parse_from(&rad_args)?;
+            }
+
+            std::fs::copy(cached_path, file)?;
+        }
+        Ok(())
     }
 
     fn view_file(&self, file: &Path) -> RadResult<()> {
