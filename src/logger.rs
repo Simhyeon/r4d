@@ -151,7 +151,7 @@ impl<'logger> Logger<'logger> {
 
     /// Try getting last character
     ///
-    /// This will have trailing ```->``` if caller macro and callee macro is in same line
+    /// This will have trailing ```~~``` if caller macro and callee macro is in same line
     fn try_get_last_char(&self) -> String {
         if self.chunked > 0 && self.line_number == 0 {
             format!("{}~~", self.last_char_number)
