@@ -1,24 +1,48 @@
 ### TODO
 
+* [ ] Bug fix : Define creates suplus lines 
+- I think this is because let or static doesn't set consume new line
+```
+$define=(macro,arg1 arg=
+$static(arg1,$arg1() is first)
+$static(arg2,$arg1() is second)
+)
+$logm(macro)
+$macro(1,2)
+```
+
 $todo_start()
-* [x] New macros
+* [ ] Template crate and proc\_macros needs update because deterred macros'
+syntax changed a lot
+	* [ ] Also Change ext.md file
+* [ ] New macros
 * [ ] Improve macro ergonomics
-	* [x] Changed from to spread
-	* [x] Removed ieval because counter replaces it
-	* [ ] I changed queue to insert as no stripped. Is it desirable?
-* [ ] Library
-	* [ ] Possibly ditch strange caller variable
+	* [ ] Breakpoint warning is somewhat stupid, no?
+	- Also update document if you happen to change it
+* [x] Included signature and color as default into a binary because man flag is critical
+* [x] Library
 * [ ] Feature
-	* [x] Make deterred macro works like other macros
-	* [ ] Edit in place with io operation
 	* [ ] Dry run would be cool, but is's hella difficult
 * [ ] Documentation
-	* [ ] Update macro\_indices.md
+	* [ ] change.md
+	* [x] modes.md
+	* [x] types.md
+	* [x] debug.md
+	* [x] Usage.md
+	* [x] syntax.md
+	* [ ] ext.md : After template update
+	* [ ] macro\_indices.md
 * [ ] Bug fix
-	* [ ] Literal rule is bugged ( Nested literal rule doesn't work at all )
+	* [x] Literal rule is bugged ( Nested literal rule doesn't work at all )
+	* [x] Setting an error option resetted a logger entirely.. why I did that?
+	* [ ] Debugger's "step" behaviour is very strange and it easily breaks
 	* [ ] Test logger's line number ( Because it looks like not so accurate )
 	* [ ] Local macro was not expanded when given
 * [ ] Test
+	* [ ] Test hook macro documentaion
+	* [ ] Go through all macros
+		- Check macro name consistency
+		- Check macro arguments name consistency + order consistency
 	* [ ] Decide when to push to 3.0
 	* [ ] Test windows build
 	* [ ] Test multiple use cases
@@ -26,63 +50,15 @@ $todo_end()
 
 ### Changes
 
-* [ ] New macros
-	* [x] Escape blanks macro
-	* [x] Grep and grepl variants separation
-	* [x] Renamed arr to spilt
-	* [x] Removed sep macro because, join works the same
-	* [x] Removed queries macro
-	* [x] Regexpr
-	* [x] Unwrap
-	* [x] Find
-	* [x] Findm
-	* [x] Input
-	* [x] Temp
-	* [x] Trimla ( Trim line amount )
-	* [x] Indent ( Indent lines )
-	* [x] Tab && space && empty
-	* [x] read\_to read\_in
-	* [x] join, joinl
-	* [x] Number notation
-	* [x] letr, staticr
-	* [x] Counter macro
-	* [x] Removed strip and stripl
-	* [x] Align texts
-* [ ] Macro ergonomics
-	* [x] Renamed unwrap to strip
-	* [x] Regex order change
-	* [x] Changed tr order
-	* [x] Newline can be repeated
-	* [x] Changed fileout's argument order 
-	* [-] Tempout truncate option : No, but temp_to and new processor will
-	delete temp file before writing contents
-	* [x] Halt with boolean arguments so that, halt is queued by default
-	* [x] For variant order change
-
-* [x] Apply new(1.62) clippy fix
-* [x] Ditch unnecessary "Some" arguments
-* [x] Changed argument parsing behaviour frome lexor and arg parser
-	* [x] Regex pattern doesn't go well with string literal "\* *\" syntax
-	* [x] Should be represented as literal
-* [x] Make a manual option (With signature option)
-* [x] New macro attribute trim_input '='
-* [x] Define macro respects trim_input
-* [x] Removed cnl
-* [x] Regex cache
-* [x] Find possible inconsistent \n chracter usage
-* [x] Trim performance with macro_rules
-* [x] Changed parse_chunk_args logic and ditched parse_chunk_body
-* [x] Queue is inconsistent (Queue execution timing was strange)
-* [x] On parse chunk body: Unterminated string was not appended to remainder
-* [x] Now comment can start in between with start type
-
-* [x] Bug : Some macro didn't processed literal properly
-* [x] Bug : Assert mode panicks on first error
-* [x] Bug : Erro rmessaged cascaded as much as nested level
-* [x] Bug : Exit yieled error and printed unreasonable erros when including multiple files
-* [x] Modifed lex_branch_end_frag_eval_result_error to not print error on itself
-* [x] Bug: Include containder had high priority over relay target 
-* [x] Bug: Fasssert set success as fail
+* [x] New macros
+	* [x] Chars iterator macro
+* [x] Feature
+	* [x] Make deterred macro works like other macros
+	* [x] Rado : Edit in place with io operation
+* [x] Improve macro ergonomics
+	* [x] Changed from to spread
+	* [x] Removed ieval because counter replaces it
+	* [x] I changed queue to insert as no stripped.
 
 ### Macro ergonomics
 
@@ -770,3 +746,64 @@ sources
 * [x] Easily extend with script.rs file
 * [x] Change from Vec<> into &[] if possible
 * [x] Docs.rs documentation
+
+---
+3.0.0-rc.4
+
+* [ ] New macros
+	* [x] Escape blanks macro
+	* [x] Grep and grepl variants separation
+	* [x] Renamed arr to spilt
+	* [x] Removed sep macro because, join works the same
+	* [x] Removed queries macro
+	* [x] Regexpr
+	* [x] Unwrap
+	* [x] Find
+	* [x] Findm
+	* [x] Input
+	* [x] Temp
+	* [x] Trimla ( Trim line amount )
+	* [x] Indent ( Indent lines )
+	* [x] Tab && space && empty
+	* [x] read\_to read\_in
+	* [x] join, joinl
+	* [x] Number notation
+	* [x] letr, staticr
+	* [x] Counter macro
+	* [x] Removed strip and stripl
+	* [x] Align texts
+* [ ] Macro ergonomics
+	* [x] Renamed unwrap to strip
+	* [x] Regex order change
+	* [x] Changed tr order
+	* [x] Newline can be repeated
+	* [x] Changed fileout's argument order 
+	* [-] Tempout truncate option : No, but temp_to and new processor will
+	delete temp file before writing contents
+	* [x] Halt with boolean arguments so that, halt is queued by default
+	* [x] For variant order change
+
+* [x] Apply new(1.62) clippy fix
+* [x] Ditch unnecessary "Some" arguments
+* [x] Changed argument parsing behaviour frome lexor and arg parser
+	* [x] Regex pattern doesn't go well with string literal "\* *\" syntax
+	* [x] Should be represented as literal
+* [x] Make a manual option (With signature option)
+* [x] New macro attribute trim_input '='
+* [x] Define macro respects trim_input
+* [x] Removed cnl
+* [x] Regex cache
+* [x] Find possible inconsistent \n chracter usage
+* [x] Trim performance with macro_rules
+* [x] Changed parse_chunk_args logic and ditched parse_chunk_body
+* [x] Queue is inconsistent (Queue execution timing was strange)
+* [x] On parse chunk body: Unterminated string was not appended to remainder
+* [x] Now comment can start in between with start type
+
+* [x] Bug : Some macro didn't processed literal properly
+* [x] Bug : Assert mode panicks on first error
+* [x] Bug : Erro rmessaged cascaded as much as nested level
+* [x] Bug : Exit yieled error and printed unreasonable erros when including multiple files
+* [x] Modifed lex_branch_end_frag_eval_result_error to not print error on itself
+* [x] Bug: Include containder had high priority over relay target 
+* [x] Bug: Fasssert set success as fail

@@ -93,6 +93,10 @@ rado read file_name.txt
 rado read file_name.txt -o other.txt
 rado read file_name.txt -o other.txt -- -a fin+env
 
+# Process in-place
+# Backup is saved in std's temporary directory not rado's temporary directory
+rado replace file_name.txt
+
 # Clear temporary files
 rado clear
 
@@ -127,6 +131,7 @@ r4d = { version = "*", features = ["full"] }
 # color     - Enable color prompt
 # signature - Enable signature map
 # hook      - Enable hook macro
+# template  - Enbale multiple template macros
 ```
 
 **rust file**

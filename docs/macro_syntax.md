@@ -102,24 +102,20 @@ My name is Simon Creek.
 
 Special macro ```$:()``` is used for iterated value.
 ```
-$foreach(\*John,Simon,Jane*\,Name : $:()
-)
-$forloop(5,10,$:()th
-)
+$foreach^(Name : $:()$nl(),John,Simon,Jane)
+$forloop^($:()th$nl(),5,10)
 ```
 converts to
 ```
 Name : John
 Name : Simon
 Name : Jane
-
 5th
 6th
 7th
 8th
 9th
 10th
-
 ```
 
 **NOTE**
@@ -127,20 +123,61 @@ Name : Jane
 An unbalanced parenthesis changes the behaviour of macro invocation and a
 non-escaped comma will change the number or content of arguments. If desirable
 content includes unbalanced parentheses or commas, enclose the body with string
-literal with the syntax of ```\* TEXT GOES HERE *\```, by the way literal syntax
-inside macro body will printed as is. 
+literal with the syntax of ```\* TEXT GOES HERE *\```. 
 
-## Literal rules
+## Literal quotes
+
+### Abstract
+
+Texts within literal quote ```\*  *\``` will not be expanded or treated as a
+macro syntax. Literal quote makes code fuzzy, sadly, but it is frequently used
+to give an array as a single chunk of argument. Literal quote was made to evade
+confusions as much as possible so the syntax has exotic expression on intent. (
+Unlike regular expressions like simple quotes or double quotes )
+
+**Simple usage of literal quote**
+
+```
+% Although in this case, prefer arguments order of "value" and then "array" so
+% that parser can greedily aggregates surplus commas as second arguments
+$define(get_array_n_value,a_arr a_src=$foreach($:() $a_src()$nl(),$a_arr()))
+$get_array_n_value^(\*1,2,3*\,-)
+===
+1 -
+2 -
+3 -
+```
+
+What would happen if array was given without literal quote?
+
+```
+$define(get_array_n_value,a_arr a_src=
+$logm(a_arr)
+$logm(a_src)
+$foreach($:() $a_src()$nl(),$a_arr()))
+$get_array_n_value^(1,2,3,-)
+===
+% Console output
+% log: 1
+%  --> test:6:2
+% log: 2,3,-
+%  --> test:8:2
+1 2,3,-
+```
+
+The result text is not what one would expect. Because parser thought first
+argument "1" was for ```a_arr``` and remainder for ```a_src```.
+
+### Literal expansion rules
 
 Literal rules in r4d is unfortunately not straightforward at a first glance.
 General rules are followings
 
 - Literal text inside definition body is not stripped on execution
 - Literal text as an argument is expanded and then stripped
-	- Argument without macro enclosed with literal text is treated as is without
-	breaking argument length
-	- Argument with macro enclosed with literal text will treat the macro
-	invocation as normal text without it expanded
+	- Arguments with only constants is treated as if it were not quoted
+	- Arguments with macro will not expand macro and return it as if it were
+	normal text 
 
 In short, rad processes macros in given subprocesses.
 
@@ -163,18 +200,18 @@ $test()
 
 ### Literl inside arguments
 
-**Literal without macros**
+**Literal arguments without macros**
 
 ```r4d
 $static(p1,$path(\*a*\,b,c))
 $static(p2,$path(a,b,c))
 $assert($p1(),$p2())
 ===
-% This holds true because \*a*\ is tripped to be a value of "a"
+% This holds true because \*a*\ is stripped to be a value of "a"
 % Thus path macro can process argument as if it was originally a "a,b,c"
 ```
 
-**Literal with macros**
+**Literal arguments with macros**
 
 ```
 $static(p,a/b)
@@ -190,10 +227,11 @@ $assert($p1(),$p2())
 %
 % log: a/b/b/c
 %  --> test:5:2 
-% Final result of p1 and p2 is same to end user
+% This holds anyway because assert has expanded each values
+% Thus final result of p1 and p2 is same to end user
 ```
 
-**Literal passed as arguments**
+**Literal passed as nested arguments**
 
 ```
 $define(demo,a_first=$if($a_first(),TRUE))
@@ -207,21 +245,22 @@ error: Invalid argument
 ```
 
 If the argument is passed as literal, local argument will be linked to stripped
-but non-expanded value. which is ```$not(false)``` in this case. Since local
-argument is not expanded, if receives strange value and execuion fails.
+but non-expanded value. which is ```$not(false)``` in this case. Since **local
+argument is not expanded**, if receives strange value and execution fails.
 
-To prevent this error, minimize literal usage if possible. When passing array
+To prevent this error, minimize literal usage if possible. When passing array,
 use literal quote only when the values are constants. If you need to create a
 dynamically created array, wrap it inside a macro and use literal attribute.
 
 ```r4d
 $define=(
-		arr_pass,
-		a_arr a_it=
-		$foreach=(
-			$:() + $a_it()$nl(),
-			$a_arr()
-		)
+    arr_pass,
+    a_arr a_it
+    =
+    $foreach=(
+        $:() + $a_it()$nl(),
+        $a_arr()
+    )
 )
 $static(array,a,b,c,d,e,f,g)
 $arr_pass^($array*(),@)
@@ -238,31 +277,58 @@ g + @
 Simple process how this works
 
 - **arr_pass**
-	- Expand $array() -> ```a,b,c,d,e,f,g```
-	- Try stripping, but nothing to do anyway
-	- Wrap it inside literal (attirbute) -> ```\* a,b,c,d,e,f,g *\```
-	- Bind the wrapped value to an argument ```a_arr```
+    - Expand $array() -> ```a,b,c,d,e,f,g```
+    - Try stripping, but nothing to do anyway
+    - Wrap it inside literal (attirbute) -> ```\* a,b,c,d,e,f,g *\```
+    - Bind the wrapped value to an argument ```a_arr```
 - **foreach**
-	- Expand $a_arr() -> ```\* a,b,c,d,e,f,g *\```
-	- Strip a value -> ```a,b,c,d,e,f,g```
-	- Bind the value to an argument ```a_body``` ( Refer --man foreach )
+    - Expand $a_arr() -> ```\* a,b,c,d,e,f,g *\```
+    - Strip a value -> ```a,b,c,d,e,f,g```
+    - Bind the value to an argument ```a_body``` ( Refer --man foreach )
+
+**Strip macro**
+
+And finally, for the last resort use strip macro with literal attribute. This
+is handy when you want to write a short macro expression and don't worth a
+hassle to create wrappers. But this makes codes a lot hard to read. There is no
+standard, so suit yourself.
+
+```
+% Assume arr_pass defined. 
+$arr_pass^($strip*(\*$split($space(),$lipsum(4))*\),@)
+===
+Lorem + @
+ipsum + @
+dolor + @
+sit + @
+```
+
+Strip macro strips out expression and then expand it. In other word, strip
+**constantize** given expression. This is the opposite behaviour of normal
+arguments expansion. Therefore following process happens in the demo.
+
+- Strip macro removes literal from input -> ```$split($space(),$lipsum(4))```
+- Expand given expression -> Lorem ipsum dolor sit
+- Wrap it inside literal (attirbute) -> ```\* Lorem ipsum dolor sit *\```
+- Bind the wrapped value to an argument ```a_arr```
 
 ## Comments
 
-Comment is disabled by default because comment character can intefere with
+Comment is disabled by default because a comment character can intefere with
 macro expansion and user expectance. You can enable comment mode with
 ```--comment``` flag.
 
 There are three types of comment mode. Those are none,start and any. None is
 the default and ```--comment``` is same with ```--comment start```.
-```--comment any``` enables comments for any positions.
+And finally ```--comment any``` enables comments for any positions.
 
 Default comment character is ```%```. If you have used LaTex before, it would
 be familar. This can be configured with builder method.
 
 ```
 % This is a valid comment on both start and any mode
-Prior content goes here  % This is only valid comment on any mode.
+	% Nested comment is better for reading in some cases
+Prior content goes here  % This is only valid comment on "any" mode.
 ```
 
 ### Macro attributes
@@ -274,10 +340,10 @@ whitespaces from output.
 
 ```
 $define(
-	test
-	=
-	Hello
-	World
+    test
+    =
+    Hello
+    World
 )
 $test()
 $test^()
@@ -295,9 +361,9 @@ Hello
 Trim input attribute ```=``` trims macro arguments by lines and also trim by
 chunk. This is useful when you want to use a multiline complex text as
 arguments but surplus blank spaces are unnecessary. Trim inputs power is mostly
-centered on single argument mcros but other situations are also plausible.
+centered on single argument macros but other situations are also plausible.
 
-Trim input can be applied to define macro and trimming is applied to macro
+Trim input can be applied to define macro and trimming will be applied to macro
 body.
 
 ```
@@ -315,14 +381,14 @@ I'm fine, thanks. How's it going?
 yatti yatta
 ```
 
-Since "trim input" trimes input not arguments, trimmed input can be different
+Since "trim input" trims input not arguments, trimmed input can be different
 from expectation.
 
 e.g)
 ```
 $macro_name=(
-	first,
-	second
+    first,
+    second
 )
 ===
 % Arguments are passed as 
@@ -333,9 +399,10 @@ $macro_name=(
 
 **Piping**
 
-Pipe attribute ```|``` saves macro output into temporary value. This is useful
-when you have to use mutlple macros for desired output which makes it hard to
-grasp the code and maintain them.
+Pipe attribute ```|``` saves macro output into a temporary container. This is
+useful when you use hygiene mode and needs a persistent container that is not
+volatile. Or simply you are just tired of defining container everytime you want
+to use. ( Though I recommend using named macro container for code readability )
 
 ```
 $define(test,a=$a())
@@ -350,49 +417,29 @@ I'm going to be used by a pipe macro
 \*I'll be requoted with literal*\
 ```
 
-A caveat with piped values
+**A caveat**
+
+Getting value from pipe truncates an original value. 
 
 ```
 $eval|("test" == "test")
 $define(result=$-())
 $result()
+% This time result will print nothing
 $result()
 ===
 true
 
 ```
 
-Result calls pipe macro not saves piped value into itself, thus using result
-second time will yield nothing.
-
 **Yield literal**
 
 Yield literal attribute ```*``` makes output printed as literal form. This is
 useful when you have to give an argument literal value but you need to pre
-process the data which means it cannot be marked as literal.
+process the data which means it cannot be marked as literal. In other words you
+can send dynamic content as quoted with help of yield literal attribute.
 
-```
-$define(array,content=$regex($content(), ,\*,*\))
-$foreach($array*(a b c),Iterated: $:
-)
-$foreach(\*$regex(a b c, ,\*,*\)*\,Iterated: $:
-)
-===
-Iterated: a
-Iterated: b
-Iterated: c
-
-warning: Unbalanced parenthesis detected.
- --> stdin:2:13
-Iterated: $regex(a b c
-Iterated:
-Iterated: \*
-Iterated: *\)
-
-warning: found 1 warnings
-% This is because foreach evaluate expression once more and "*\)" doesn't have
-matching "(" character.
-```
+Refer about [literal quotes](#literal-rules) to grasp possible usages.
 
 ### Errors
 
@@ -400,22 +447,9 @@ Every error is panicking by default(strict mode), to make programs more stable
 and expectable or because I'm too rusty person. You can disable strict mode
 with lenient option ```-l or --lenient``` or puge option ```-p or --purge```.
 
-```
-$define(test=Test)
-$tesT()
-$include($path(typo_in_name, index.md))
-===
-error: Failed to invoke a macro : "tesT"
- --> test:2:2
+Refer [modes](./modes.md) document for detailed error behaviours
 
-$tesT()
-error: Invalid argument
-= File path : "typo_in_name/index.md" doesn't exist
- --> test:3:2
-Processor panicked, exiting...
-```
-
-**Position of character is not accurate somtime**
+**Position of logs is not always accurate**
 
 Welp this is because, r4d doesn't construct AST and processes macros with
 stack. Thus position of characters can really vary.
@@ -424,7 +458,7 @@ Plus, macro expanded text can have totally different length, content from
 original text. Thus tracking thoses offsets are not worth the hassel needed.
 
 In conclusion, character in error or warning messages can be not correct but
-might be an indicator, which is represented as arrow ```->```.
+might be an indicator, which is represented tildes ```~~```.
 
 ### Break point
 
@@ -434,4 +468,4 @@ might be an indicator, which is represented as arrow ```->```.
 $BR()
 ```
 
-Using BR macro outside debug mode is not an error but warning.
+Using BR macro outside of debug mode is not an error but warning.

@@ -1,19 +1,18 @@
 # TOC
 
-- [How to debug?](#how-to-debug)
+- [How to debug](#how-to-debug)
 - [Log macro](#log-macro)
 - [Debug mode](#debug-mode)
 - [Example](#example)
 - [Logging](#logging)
 - [Diff](#diff)
 - [Assertion](#assertion)
-- [Env variables](#env-variables)
 
-### How to debug?
+### How to debug
 
 ### Log macro
 
-The easiest ways is to use log macro. Simply call a log macro with a value you
+The easiest way is to use a log macro. Simply call a log macro with a value you
 want to check and logger will print the message for you.
 
 ```r4d
@@ -27,6 +26,25 @@ $check()
 %  --> test:4:2~~
 ```
 
+Or you can use logm macro to print unexpanded body of a given macro. Function
+acro or deterred macro cannot be logged because it has no concept of body.
+
+```r4d
+$define(cont=)
+$append(cont,\*$path(a,b,c)*\)
+$append(cont,\*$evalk(1 + 2 )*\)
+$cont()
+% When user want to check the original body
+$logm(cont)
+===
+a/b/c
+1 + 2 = 3
+% Printed on console
+% log: $path(a,b,c)
+% $evalk(1 + 2)
+%  --> test:5:2
+```
+
 #### Debug mode
 
 Start a debug mode with ```-d``` or ```--debug``` flag.
@@ -38,19 +56,12 @@ Piping doesn't work because pipe creates unterminated bufstream. This is
 because debug mode opens stdin and tries to get content until eof, but there is
 no eof. Please submit an issue if you know how to curve this behaviour.
 
-Stdin requires EOF in the end. Which is Ctrl^D in linux and Ctrl^Z in windows.
-Type as much text as you want and press EOF to end input stream.
-
 ```bash
 # Debug mode
 rad -d
 rad --debug <FILE>
 
-# Log mod, which prints all macro invocation info into terminal
-# this will be explained later
-rad --log
-
-# Interactive mode, like a game you know.
+# Interactive mode
 # This disables text wrapping 
 rad --debug -i
 ===
@@ -66,7 +77,7 @@ rad --debug -i
 help       (h)     : Print this help
 next       (n,\n)  : Next line
 macro      (m)     : Next macro
-step       (s)     : Next macro including nested
+step       (s)     : Next macro including nested ( Currently very buggy don't use )
 until      (u)     : Next macro but before invocation
 continue   (c)     : Next break point
 clear      (cl)    : Clear terminal
@@ -170,14 +181,14 @@ You can save log to specific file with flag ```-e ErrorFile```.
 
 e.g.
 ```
-4:log
-Name    = "ifdef"
+5:log
+Name    = "evalk"
 Attr    =
 Greedy  : false
 Pipe    : false
 Literal : false
 Trimmed : false
-Args    = "define,Define is defined of course"
+Args    = "1 + 2 "
 ---
 ```
 
@@ -189,51 +200,67 @@ You can save diff to specific file with flag ```-e ErrorFile```.
 
 d.g.
 ```
-DIFF :
-- $define(author=SimonCreek)
+DIFF : 
+- $define(author=Simon Creek)
 - $define(title=R4d demo)
   ---
-- title : $title()
+- title  : $title()
 - author : $author()
-+ title : R4d demo
-+ author : SimonCreek
++ title  : R4d demo
++ author : Simon Creek
   ---
 - My name is $author() and I made r4d to make macros can be used within various
 - forms of texts. This article was written in $date() $time().
-+ My name is SimonCreek and I made r4d to make macros can be used within various
-+ forms of texts. This article was written in 2021-10-03 03:05:26.
-
-- $if($ifdef(test), This should be only printed when I'm testing not in release)
-
++ My name is Simon Creek and I made r4d to make macros can be used within various
++ forms of texts. This article was written in 2022-07-08 22:12:21.
+  
+- $ifdef(test, This should be only printed when I'm testing not in release)$dnl()
   This is some important table automatically formatted according to environment
   variable.
-
-- $table($env(TABLE_FORM),\*H1,H2,H3
-- a,b,c
-- d,e,f*\)
-+ |H1|H2|H3|
+  
+- $regcsv(addr,$include(addr.csv))$dnl()
+- id,first name,last name,address
+- 1,John,doe,AA 1234
+- 2,Janet,doner,BB 4566
+- 3,Hevay,jojo,CC 8790
+- $static(
+-     queried,
+-     $query(
+-         SELECT id,'first name',address 
+-         FROM addr where 'first name' = John
+-     )
+- )$dnl()
+- % Comments are disabled by default for better compatibility
+- % TABLE_FORM == github
+- $table($env(TABLE_FORM),$queried())
++ |1|John|AA 1234|
 + |-|-|-|
-+ |a|b|c|
-+ |d|e|f|
-
-- I'm out of idea and I need some texts, $lipsum(15)
-+ I'm out of idea and I need some texts, Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.
+  
+- $wrap(40,$lipsum(15))
++ Lorem ipsum dolor sit amet consectetur
++ adipiscing elit. In rhoncus sapien
++ iaculis sapien congue a
+  
+- Evaluation : $prec($eval( $num(0.1second) + $num(0.2sekunde)),2)
+- Evaluation : $evalk( 1 + 2 )
++ Evaluation : 0.30
++ Evaluation :  1 + 2 = 3
 ```
 
 #### Assertion
 
-Sometimes you want an assertion useful for debugging. R4d comes with several
-assertion macros as basic macro.
+Sometimes you want an assertion for debugging. R4d comes with several assertion
+macros.
 
 Basic usages are followed.
 
 ```
-% Every assertion panicks when fails
-% Pases when $test is same with Test
+% Every assertion yields error on fail
+% Passes when lvalue == rvalue
 $assert($test(),Test)
-% Pases when $test() is NOT same with Test
+% Passes when lvalue != rvalue
 $nassert($test(),Test)
-% Pases when inner argument panicks
+% Passes when inner expression panicks
 $fassert($eval(a + b))
 ```
 
@@ -257,13 +284,4 @@ error: found 5 errors
 Assert
 SUCCESS : 2
 FAIL: 3
-```
-
-#### Env variables
-
-Some usefule environment variables are defined for debugging purpose.
-
-```
-$env(RAD_FILE) % prints current processing file's name
-$env(RAD_FILE_DIR) % prints current processing file's directory path
 ```

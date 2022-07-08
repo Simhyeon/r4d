@@ -1,11 +1,9 @@
 ### Strict related modes
 
-There are various modes in processing 
-
-First of all processor can be either **strict, lenient or purge**.
+Processor's error behaviour can be either **strict, lenient or purge**.
 
 Default mode is strict mode. Within strict mode, certain behaviours is not
-allowed or acts differently.
+allowed. On strict mode,
 
 - Overriding environment variables is an error
 - Overriding existing macros is an error
@@ -33,17 +31,19 @@ $nono()
 ### Hygiene modes.
 
 By default processing is not hygienic which means that macro's behaviour can
-change according to external variants.
+change according to external variance.
 
 For example, following macro can fail according to inner macro's existence.
 
 ```
 $define(unsafe=$some_random_macro())
+$unsafe()
 ===
 % If some_random_macro exists if succeeds. If not, if fails.
 ```
 
-You can configure this behaviour through processor's method with following variants.
+You can configure this behaviour through processor's method with following
+variants.
 
 **Macro hygiene** mode set every further runtime modification as
 volatile(temporary). Within hygiene mode, runtime macros gets automatically
@@ -52,5 +52,5 @@ deleted after every macro call which resides in first level
 **Input hygiene** mode clears every volatile macro after per input. This is
 mostly useful in a context of library.
 
-**Aseptic** mode disables runtime macro defintion at all. You cannot define any
+**Aseptic** mode disables runtime macro defintion. You cannot define any
 runtime macro and only able to use pre-defined runtime macros.
