@@ -1,5 +1,5 @@
 use crate::consts::*;
-use crate::logger::{Logger, WarningType};
+use crate::logger::Logger;
 use crate::models::{DiffOption, MacroFragment, RadResult};
 use crate::utils::Utils;
 use crossterm::{terminal::ClearType, ExecutableCommand};
@@ -203,11 +203,7 @@ impl Debugger {
     }
 
     /// Process breakpoint
-    pub(crate) fn break_point(
-        &mut self,
-        frag: &mut MacroFragment,
-        logger: &mut Logger,
-    ) -> RadResult<()> {
+    pub(crate) fn break_point(&mut self, frag: &mut MacroFragment) -> RadResult<()> {
         if &frag.name == "BR" {
             if self.debug {
                 if let DebugSwitch::NextBreakPoint(name) = &self.debug_switch {

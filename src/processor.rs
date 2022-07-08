@@ -2281,7 +2281,7 @@ impl<'processor> Processor<'processor> {
 
             // If debug switch target is break point
             // Set switch to next line.
-            self.debugger.break_point(frag, &mut self.logger)?;
+            self.debugger.break_point(frag)?;
             // Break point is true , continue
             if frag.name.is_empty() {
                 self.state.consume_newline = true;
