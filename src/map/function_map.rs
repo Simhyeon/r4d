@@ -2424,9 +2424,9 @@ $extract()"
             let substitution = &args[1];
             let source = &args[2];
 
-            if trim!(match_expr).is_empty() {
+            if match_expr.is_empty() {
                 return Err(RadError::InvalidArgument(
-                    "Regex expressino cannot be a empty string".to_string(),
+                    "Regex expression cannot be a empty string".to_string(),
                 ));
             }
 
@@ -2481,9 +2481,9 @@ $extract()"
             let match_expr = &args[0];
             let source = &args[1];
 
-            if trim!(match_expr).is_empty() {
+            if match_expr.is_empty() {
                 return Err(RadError::InvalidArgument(
-                    "Regex expressino cannot be a empty string".to_string(),
+                    "Regex expression cannot be a empty string".to_string(),
                 ));
             }
 
@@ -2511,9 +2511,9 @@ $extract()"
             let match_expr = &args[0];
             let source = &args[1];
 
-            if trim!(match_expr).is_empty() {
+            if match_expr.is_empty() {
                 return Err(RadError::InvalidArgument(
-                    "Regex expressino cannot be a empty string".to_string(),
+                    "Regex expression cannot be a empty string".to_string(),
                 ));
             }
 
