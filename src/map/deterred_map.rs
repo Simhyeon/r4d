@@ -40,7 +40,7 @@ impl DeterredMacroMap {
                     "EB",
                     ESR,
                     DeterredMacroMap::escape_blanks,
-                    Some("Escape following all blanks until not. This can only be invoked at first level
+                    Some("Escape all following blanks until not. This can only be invoked at first level
 
 # Example
 
@@ -57,7 +57,7 @@ $EB()".to_string()),
 
 # Arguments
 
-- a_macro_name : Macro name to exectue ( trimmed )
+- a_macro_name : A macro name to exectue ( trimmed )
 - a_macro_args : Arguments to be passed to a macro
 
 # Example
@@ -95,8 +95,8 @@ Iterated value is bound to macro \":\"
 
 # Arguments
 
-- a_body : Body to be pasted as iterated item
-- a_sep  : Separator to split a text
+- a_body : A body to be pasted as iterated item
+- a_sep  : A separator to split a text
 - a_text : Text to split by separator
 
 # Example
@@ -114,11 +114,11 @@ $assert(a+b+c+,$forby($:()+,-,a-b-c))".to_string(),
                     Some(
                         "Iterate around given array.
 
-Iterated value is bound to macro \":\"
+An iterated value is bound to macro \":\"
  
 # Arguments
 
-- a_body  : Body to be pasted as iterated item
+- a_body  : A body to be pasted as iterated item
 - a_array : An array to iterate
 
 # Example
@@ -135,11 +135,11 @@ $assert(a+b+c+,$foreach($:()+,a,b,c))".to_string(),
                     DeterredMacroMap::forline,
                     Some("Loop around given lines separated by newline chraracter. 
 
-Iterated value is bound to macro \":\"
+An iterated value is bound to macro \":\"
  
 # Arguments
 
-- a_body  : Body to be pasted as iterated item
+- a_body  : A body to be pasted as iterated item
 - a_lines : Lines to iterate
 
 # Example
@@ -155,13 +155,13 @@ $assert(a+b+c+,$forline($:()+,a$nl()b$nl()c))".to_string()),
                     DeterredMacroMap::forloop,
                     Some("Iterate around given range (min,max). 
 
-Iterated value is bound to macro \":\" 
+An iterated value is bound to macro \":\" 
 
 # Arguments
 
-- a_body : Body to be pasted as iterated item
-- a_min  : Start index ( trimmed )
-- a_max  : End index ( trimmed )
+- a_body : A body to be pasted as iterated item
+- a_min  : A start index ( trimmed )
+- a_max  : A end index ( trimmed )
 
 # Example
 
@@ -178,7 +178,7 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
 
 # Arguments
 
-- a_macro_name : Macro name to execute ( trimmed ) 
+- a_macro_name : A macro name to execute ( trimmed ) 
 - a_csv_value  : Arguments table ( trimmed )
 
 # Example
@@ -207,8 +207,8 @@ $assert=(
 
 # Arguments
 
-- a_cond    : Condition ( trimmed )
-- a_if_expr : Expression to expand if condition is true
+- a_cond    : A condition ( trimmed )
+- a_if_expr : Expression to expand if the condition is true
 
 # Example
 
@@ -227,9 +227,9 @@ $assert(I'm true,$if(true,I'm true))".to_string(),
 
 # Arguments
 
-- a_cond      : Condition ( trimmed )
-- a_if_expr   : Expression to expand if condition is true
-- a_else_expr : Expression to expand if condition is false
+- a_cond      : A condition ( trimmed )
+- a_if_expr   : Expression to expand if the condition is true
+- a_else_expr : Expression to expand if the condition is false
 
 # Example
 
@@ -248,8 +248,8 @@ $assert(I'm false,$ifelse(false,I'm true,I'm false))".to_string(),
 
 # Arguments
 
-- a_macro_name : Macro name to check ( trimmed )
-- a_if_expr    : Expression to expand if macro is defined
+- a_macro_name : A macro name to check ( trimmed )
+- a_if_expr    : Expression to expand if the macro is defined
 
 # Example
 
@@ -266,9 +266,9 @@ $assert(I'm defined,$ifdef(define,I'm defined))".to_string()),
 
 # Arguments
 
-- a_macro_name : Macro name to check ( trimmed )
-- a_if_expr    : Expression to expand if macro is defined
-- a_else_epxr  : Expression to expand if macro is NOT defined
+- a_macro_name : A macro name to check ( trimmed )
+- a_if_expr    : Expression to expand if the macro is defined
+- a_else_epxr  : Expression to expand if the macro is NOT defined
 
 # Example
 
@@ -282,11 +282,11 @@ $assert(I'm NOT defined,$ifdefel(defuo,I'm defined,I'm NOT defined))".to_string(
                     "logm",
                     ["a_macro_name^"],
                     Self::log_macro_info,
-                    Some("Log a macro information. Either print macro body of local or runtime macros.
+                    Some("Log a macro information. Either print a macro body of local or runtime macros.
 
 # Arguments
 
-- a_macro_name : Macro name to log (trimmed)
+- a_macro_name : A macro name to log (trimmed)
 
 # Example
 
@@ -329,7 +329,7 @@ Que does not evalute inner contents and simply put expression into a queue.
 
 # Arguments
 
-- a_bool : Condition [boolean] ( trimmed )
+- a_bool : A condition [boolean] ( trimmed )
 - a_expr : Expression to queue
 
 # Example
@@ -349,8 +349,8 @@ Readto can be only executed on first level therefore readto cannot be used insid
 
 # Arguments
 
-- a_from_file : File to read from ( trimmed )
-- a_to_file   : File to paste into ( trimmed )
+- a_from_file : A file to read from ( trimmed )
+- a_to_file   : A file to paste into ( trimmed )
 
 # Example
 
@@ -369,7 +369,7 @@ Readin can be only executed on first level therefore readin cannot be used insid
 
 # Arguments
 
-- a_file : File to read from ( trimmed )
+- a_file : A file to read from ( trimmed )
 
 # Example
 
@@ -404,13 +404,13 @@ $strip(\\*1,2,3*\\)".to_string()),
                     ["a_env_name^", "a_if_expr"],
                     DeterredMacroMap::ifenv,
                     Some(
-                        "Execute expression if environment variable is set
+                        "Execute expression if an environment variable is set
 
 # Auth : ENV
 
 # Arguments
 
-- a_env_name   : Environment variable ( trimmed )
+- a_env_name   : An environment variable ( trimmed )
 - a_if_expr    : Expression to expand if env exists
 
 # Example
@@ -427,13 +427,13 @@ $assert(I'm alive,$ifenv(HOME,I'm alive))"
                     ["a_env_name^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifenvel,
                     Some(
-                        "Execute expression by whether environment variable is set or not
+                        "Execute expressions by whether environment variable is set or not
 
 # Auth : ENV
 
 # Arguments
 
-- a_env_name   : Environment variable ( trimmed )
+- a_env_name   : An environment variable ( trimmed )
 - a_if_expr    : Expression to expand if env exists
 - a_else_expr  : Expression to expand if env doesn't exist
 

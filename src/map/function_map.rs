@@ -79,7 +79,7 @@ impl FunctionMacroMap {
 
 # Arguments
 
-- a_pipe_name : Name of pipe ( trimmed, optional )
+- a_pipe_name : A name of pipe ( trimmed, optional )
 
 # Exmaple
 
@@ -122,7 +122,7 @@ $assert(--Hello-,$align(center,8,-,Hello))".to_string(),
                     ["a_macro_name^", "a_content"],
                     Self::append,
                     Some(
-                        "Append contents to a macro. If macro doesn't exist, yields error
+                        "Append contents to a macro. If the macro doesn't exist, yields error
 
 # Arguments
 
@@ -147,7 +147,7 @@ $assert($container(),Before After)".to_string(),
 
 # Arguments
 
-- a_sep  : Separator
+- a_sep  : A separator string
 - a_text : Text to spilt
 
 # Example
@@ -182,12 +182,15 @@ $assert(a,b)".to_string()),
                     "counter",
                     ["a_macro_name^","a_counter_type^+"],
                     Self::change_counter,
-                    Some("Increae/decrease counter macro. Counter's value should be a number and can be negative. 
+                    Some("Increae/decrease counter macro. 
+
+- Counter macro is automatically defined if the macro doesn't exist
+- Counter's value should be a number and can be negative. 
 
 # Arguments
 
-- a_macro_name   : Macro name to use as counter ( trimmed )
-- a_counter_type : Counter opration type. Dfault is plus [ \"plus\", \"minus\" ] ( trimmed )
+- a_macro_name   : A macro name to use as counter ( trimmed )
+- a_counter_type : A counter opration type. Dfault is plus [ \"plus\", \"minus\" ] ( trimmed )
 
 # Example
 
@@ -213,7 +216,7 @@ $assert($ct(),2)".to_string()),
 
 # Arguments
 
-- a_number : Number to get a ceiling from [float] ( trimmed )
+- a_number : A number to get a ceiling from [float] ( trimmed )
 
 # Example
 
@@ -227,11 +230,11 @@ $assert($ceil(3.1),4)".to_string()),
                     "chars",
                     ["a_text^"],
                     Self::chars_array,
-                    Some("Get characters array from text
+                    Some("Get a characters array from text
 
 # Arguments
 
-- a_text : Text to get chars array from ( trimmed )
+- a_text : Text to get a chars array from ( trimmed )
 
 # Example
 
@@ -266,7 +269,7 @@ $assert($countl($chomp($lines())),3)".to_string()),
                     "clear",
                     ESR,
                     Self::clear,
-                    Some("Clear volatile macros. This macro is intended to be used when hygiene mode is enabled and user wants to clear volatile on right away without waiting.
+                    Some("Clear volatile macros. This macro is intended to be used when hygiene mode is enabled and user wants to clear volatiles immediately without waiting.
 
 # Example
 
@@ -279,7 +282,7 @@ $clear()".to_string()),
                     "comp",
                     ["a_content"],
                     Self::compress,
-                    Some("Apply both trim and chomp (compress) content
+                    Some("Apply both trim and chomp (compress) to contents
 
 # Arguments
 
@@ -362,7 +365,9 @@ $assert(3,$countl(1
                     "dnl",
                     ESR,
                     Self::deny_newline,
-                    Some("Deny next newline. This technically squashes following two consequent line_ending into a single one
+                    Some("Deny a next newline. This technically squashes following two consequent line_ending into a single one
+
+- dnl doesn't deny right next newlie but a newline after a newline.
 
 # Example
 
@@ -399,8 +404,8 @@ $assert($first(),$empty())".to_string()),
 
 # Arguments
 
-- a_macro_name : Macro to append documentation ( trimmed )
-- a_doc        : Document to append
+- a_macro_name : A macro to append documentation ( trimmed )
+- a_doc        : Documents to append
 
 # Example
 
@@ -414,11 +419,11 @@ $docu(test,This is test macro)".to_string()),
                     "empty",
                     ESR,
                     Self::print_empty,
-                    Some("Print nothing. Used for semantic formatting.
+                    Some("Print empty string. Used for semantic formatting.
 
 # Example
 
-$assert( ,$empty())".to_string()),
+$assert(,$empty())".to_string()),
                 ),
             ),
             (
@@ -427,7 +432,7 @@ $assert( ,$empty())".to_string()),
                     "enl",
                     ESR,
                     Self::escape_newline,
-                    Some("Escape following new line
+                    Some("Escape a following newline
 
 # Example
 
@@ -456,7 +461,7 @@ $escape()".to_string()),
                     "exit",
                     ESR,
                     Self::exit,
-                    Some("Exit processing from invocation
+                    Some("Exit processing from the invocation
 
 - NOTE : This flow control only sustains for the input
 
@@ -471,13 +476,13 @@ $exit()".to_string()),
                     "input",
                     ["a_absolute?^+"],
                     Self::print_current_input,
-                    Some("Print current file input.
+                    Some("Print a current file input.
 
 # Return : Path
 
 # Arguments
 
-- a_absolute : Whether to print input path as absolute default is false [boolean] ( trimmed, optional )
+- a_absolute : Whether to print an input path as absolute. Default is false [boolean] ( trimmed, optional )
 
 # Example
 
@@ -491,13 +496,13 @@ $assert($input(true),/home/user/dir/test)".to_string()),
                     "find",
                     ["a_expr", "a_source"],
                     Self::find_occurence,
-                    Some("Find an occurrence of expression from source.
+                    Some("Check an occurrence of expression from source.
 
 # Return : Boolean
 
 # Arguments
 
-- a_expr   : Expression to match
+- a_expr   : An expression to match
 - a_source : Source to match for
 
 # Example
@@ -511,13 +516,13 @@ $assert(true,$find(^abc,abcde))".to_string()),
                     "findm",
                     ["a_expr", "a_source"],
                     Self::find_multiple_occurence,
-                    Some("Find occurrences of expression from source. This return 0 if there are no occurrences
+                    Some("Get occurrences of expression from source. This returns 0 if there are no occurrences.
 
 # Return : Unsigned integer
 
 # Arguments
 
-- a_expr   : Expression to match
+- a_expr   : An expression to match
 - a_source : Source to match for
 
 # Example
@@ -531,13 +536,13 @@ $assert(2,$findm(o,hello world))".to_string()),
                     "floor",
                     ["a_number^"],
                     Self::get_floor,
-                    Some("Get floor integer from a given number
+                    Some("Get a floor integer from a given number
 
 # Return : Signed integer
 
 # Arguments
 
-- a_number : Number to get a floor from [float] ( trimmed )
+- a_number : A number to get a floor from [float] ( trimmed )
 
 # Example
 
@@ -591,8 +596,8 @@ c))".to_string()),
 
 # Arguments
 
-- a_expr  : Regex expression to match
-- a_lines : Array to get matches from
+- a_expr  : A regex expression to match
+- a_lines : An array to get matches from
 
 # Example
 
@@ -609,7 +614,7 @@ $assert(\\*a,b,c*\\,$grep([a-z],a,b,c,1,2))".to_string()),
 
 # Arguments
 
-- a_expr  : Regex expression to match
+- a_expr  : A regex expression to match
 - a_lines : Lines to get matches from
 
 # Example
@@ -625,7 +630,7 @@ $assert(2,$countl($grepl(Cargo,$syscmd(ls))))".to_string()),
                     Self::halt_relay,
                     Some("Halt relaying
 
-- NOTE : Halt is automatically queued by default. Feed boolean argument to configure this behaviour
+- NOTE : Halt is automatically queued by default. Feed an optional argument to configure this behaviour
 - $halt(false) == $halt()
 - use $halt(true) to immediately halt
 
@@ -684,11 +689,11 @@ c)))".to_string()),
                     Self::toggle_hygiene,
                     Some("Toggle hygiene mode. This enables macro hygiene.
 
-- On \"macro\" hygiene, every newly defined runtime macros are all cleared after first level macro invocation.
+- On \"macro\" hygiene, every newly defined runtime macro is cleared after a first level macro invocation.
 
 # Arguments
 
-- a_hygiene : Whether to enable a macro hygiene mode [boolean] (trimmed)
+- a_hygiene : Whether to enable macro hygiene mode [boolean] (trimmed)
 
 # Example
 
@@ -708,8 +713,8 @@ $fassert($test())".to_string()),
 
 # Arguments
 
-- a_indenter : Pattern to put before lines
-- a_lines    : Liens to prepend indenter
+- a_indenter : An expression to put before lines
+- a_lines    : Lines to prepend indenter
 
 # Example
 
@@ -730,12 +735,12 @@ Third))".to_string()),
                     Self::index_array,
                     Some("Get an indexed value from an array
 
-- Positive integer works as normal index number
-- Negative integer works as index from end ( -1 == len -1 )
+- A positive integer works as a normal index number
+- A negative integer works as an index from end ( -1 == len -1 )
 
 # Arguments
 
-- a_index : Index to get [Signed integer] ( trimmed )
+- a_index : An index to get [Signed integer] ( trimmed )
 - a_array : Data source to index from
 
 # Example
@@ -755,7 +760,7 @@ $assert(ef,$index(2,ab,cd,ef))".to_string()),
 
 # Arguments
 
-- a_file: File name to import from [path] (trimmed) 
+- a_file: A file name to import from [path] (trimmed) 
 
 # Example
 
@@ -772,7 +777,7 @@ $import(def.r4f)".to_string()),
 
 # Arguments
 
-- a_sep   : Separator used for joining
+- a_sep   : A separator used for joining
 - a_array : Source to array to join
 
 # Example
@@ -790,7 +795,7 @@ $assert(a-b-c,$join(-,a,b,c))".to_string()),
 
 # Arguments
 
-- a_sep   : Separator used for joining
+- a_sep   : A separator used for joining
 - a_lines : Source lines to join
 
 # Example
@@ -806,7 +811,7 @@ c))".to_string()),
                     "len",
                     ["a_string"],
                     Self::len,
-                    Some("Get a length of texts. This count utf8 characters not ascii.
+                    Some("Get a length of text. This counts utf8 characters not ascii.
 
 # Return : Unsigned integer
 
@@ -825,11 +830,11 @@ $assert($len(가나다),$len(ABC))".to_string()),
                     "let",
                     ["a_macro_name^", "a_value^"],
                     Self::bind_to_local,
-                    Some("Bind a local macro. Every local macro gets removed after first level macro expansion ends.
+                    Some("Bind a local macro. Every local macro gets removed after a first level macro expansion ends.
 
 # Arguments
 
-- a_macro_name : Macro name to create ( trimmed )
+- a_macro_name : A macro name to create ( trimmed )
 - a_value      : A value to bind to ( trimmed )
 
 # Example
@@ -851,11 +856,11 @@ $fassert($lc())".to_string()),
                     "letr",
                     ["a_macro_name^", "a_value"],
                     Self::bind_to_local_raw,
-                    Some("Bind a local macro with raw value. Every local macro gets removed after first level macro expansion ends.
+                    Some("Bind a local macro with raw value. Every local macro gets removed after a first level macro expansion ends.
 
 # Arguments
 
-- a_macro_name : Binding name to make ( trimmed )
+- a_macro_name : A macro name to make ( trimmed )
 - a_value      : A value to bind to which is not trimmed
 
 # Example
@@ -877,7 +882,7 @@ $fassert($lc())".to_string()),
                     "lipsum",
                     ["a_word_count^"],
                     Self::lipsum_words,
-                    Some("Create a placeholder text. The order of placeholder is always same.
+                    Some("Create placeholder text. The order of placeholder is always same.
 
 # Arguments
 
@@ -898,7 +903,7 @@ $assert(Lorem ipsum dolor,$lipsum(3))".to_string()),
 
 # Arguments
 
-- a_msg : Message to log to console
+- a_msg : A message to log to console
 
 # Example
 
@@ -911,7 +916,7 @@ $log($value_i_want_to_check^())".to_string()),
                     "lower",
                     ["a_text"],
                     Self::lower,
-                    Some("Get lowercase english texts
+                    Some("Get lowercase english text
 
 # Arguments
 
@@ -928,11 +933,11 @@ $assert(abcde,$lower(AbCdE))".to_string()),
                     "max",
                     ["a_array"],
                     Self::get_max,
-                    Some("Get max value from a given array
+                    Some("Get a max value from a given array
 
 # Arguments
 
-- a_array : Array to get the highest value from
+- a_array : An array to get the highest value from
 
 # Example
 
@@ -946,11 +951,11 @@ $assert(5,$max(1,2,3,4,5))".to_string()),
                     "min",
                     ["a_array"],
                     Self::get_min,
-                    Some("Get min value from a given array
+                    Some("Get a min value from a given array
 
  # Arguments
 
-- a_array : Array to get the lowest value from
+- a_array : An array to get the lowest value from
 
 # Example
 
@@ -970,7 +975,7 @@ $assert(1,$min(1,2,3,4,5))".to_string()),
 
 # Arguments
 
-- a_path : Path to get a name from
+- a_path : A path to get a name from
 
 # Example
 
@@ -983,12 +988,12 @@ $assert(auto.sh,$name(/path/to/file/auto.sh))".to_string()),
                     "nassert",
                     ["a_lvalue", "a_rvalue"],
                     Self::assert_ne,
-                    Some("Compare left and right values. Panics if lvalue is \"equal\" to rvalue
+                    Some("Compare left and right values. Panics if values are equal
 
 # Arguments
 
-- a_lvalue : Left  value
-- a_rvalue : Right value
+- a_lvalue : A left  value
+- a_rvalue : A right value
 
 # Example
 
@@ -1001,13 +1006,13 @@ $nassert(1,2)".to_string()),
                     "not",
                     ["a_boolean?^"],
                     Self::not,
-                    Some("Return a negated value of a given boolean. Yield error when given value is not a boolean
+                    Some("Returns a negated value of a given boolean. Yields error when a given value is not a boolean
 
 # Return : boolean
 
 # Arguments
 
-- a_boolean : Boolean value to negate [boolean] ( trimmed )
+- a_boolean : A boolean value to negate [boolean] ( trimmed )
 
 # Example
 
@@ -1023,7 +1028,7 @@ $assert(true,$not(0))".to_string()),
                     "num",
                     ["a_text"],
                     Self::get_number,
-                    Some("Extract a number part from given text. If there are multiple numbers, only extract the first
+                    Some("Extract number parts from given text. If there are multiple numbers, only extract the first
 
 # Arguments
 
@@ -1041,7 +1046,7 @@ $assert(30,$num(30k/h for 3 hours))".to_string()),
                     "nl",
                     ["a_amount+^"],
                     Self::newline,
-                    Some("Print platform specific newlines. It's behaviour can be configured.
+                    Some("Print platform specific newlines. Its behaviour can be configured.
 
 # Arguments
 
@@ -1060,11 +1065,11 @@ $assert($nl(),
                     "notat",
                     ["a_number^", "a_type^"],
                     Self::change_notation,
-                    Some("Chagne a notation of a number
+                    Some("Chagne notation of a number
 
 # Arguments
 
-- a_number   : A nuber to change notation
+- a_number   : A number to change notation
 - a_type     : A type of notation [\"bin\",\"oct\",\"hex\"] ( trimmed )
 
 # Example                        
@@ -1099,7 +1104,7 @@ $panic(This should not be reached)".to_string()),
                     Self::get_parent,
                     Some("Get a parent from a given path. 
 
-- NOTE : This yields an error if a path is root and will return an empty value, but not a none value if path is a single node.
+- NOTE : This yields an error if a path is a root and will return an empty value, but not a none value if a path is a single node.
 
 # Return : path
 
@@ -1123,14 +1128,14 @@ $assert(/first/second,$parent(/first/second/last.txt))".to_string()),
                     Some("Merge given paths
 
 - This respects a platform path separator
-- Path with colliding separator cannot be merged. 
+- Paths with colliding separator cannot be merged. 
     e.g) a/ + /b cannot be merged
 
 # Return : path
 
 # Arguments
 
-- a_array : Path array to merge ( trimmed )
+- a_array : A path array to merge ( trimmed )
 
 # Example
 
@@ -1147,7 +1152,7 @@ $assert(a/b,$path(a/,b))".to_string()),
                     Self::pause,
                     Some("Pause a macro expansion from invocation. Paused processor will only expand $pause(false)
 
-- NOTE : Pause is not a flow control but a processor state, thus the state will sustain for the whole processing.
+- NOTE : Pause is not flow control but a processor state, thus the state will sustain for the whole processing.
 
 # Arguments
 
@@ -1192,8 +1197,8 @@ $assert(Text,$-())".to_string()),
 
 # Arguments
 
-- a_pipe_name : Name of pipe container ( trimmed )
-- a_value     : Value to pipe
+- a_pipe_name : A name of pipe container ( trimmed )
+- a_value     : A value to pipe
 
 # Example
 
@@ -1207,14 +1212,14 @@ $assert($-(yum),YUM)".to_string()),
                     "prec",
                     ["a_number^", "a_precision^"],
                     Self::prec,
-                    Some("Convert a float number with a given precision
+                    Some("Convert a float number with given precision
 
 # Return : Float
 
 # Arguments
 
-- a_number    : Number to process ( trimmed )
-- a_precision : Precision to apply to number ( trimmed )
+- a_number    : A number to process ( trimmed )
+- a_precision : A precision number to apply to number ( trimmed )
 
 # Example
 
@@ -1227,14 +1232,14 @@ $assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
                     "relay",
                     ["a_target_type^", "a_target^"],
                     Self::relay,
-                    Some("Start relaying to target which redirects all following texts to relay target.
+                    Some("Start relaying to a target. Relay redirects all following text to the relay target.
 
-# Auth : FOUT required for relay target \"file\" and \"temp\"
+# Auth : FOUT is required for relay target \"file\" and \"temp\"
 
 # Arguments
 
 - a_target_type : A type of a relay target [\"macro\",\"file\", \"temp\"] (trimmed)
-- a_target      : Name of target. Ignored in temp type ( trimmed )
+- a_target      : A name of a target. Ignored in temp type ( trimmed )
 
 # Example
 
@@ -1249,7 +1254,7 @@ $relay(temp)$halt()".to_string()),
                     "rev",
                     ["a_array"],
                     Self::reverse_array,
-                    Some("Reverse an order of an array
+                    Some("Reverse order of an array
 
 # Arguments 
 
@@ -1266,11 +1271,11 @@ $assert(\\*3,2,1*\\,$rev(1,2,3))".to_string()),
                     "regex",
                     ["a_expr", "a_sub", "a_source"],
                     Self::regex_sub,
-                    Some("Apply regular expression substitution to a source
+                    Some("Apply a regular expression substitution to a source
 
 # Arguments
 
-- a_expr   : Regex expression to match
+- a_expr   : A regex expression to match
 - a_sub    : Text to substitute as
 - a_source : Source text to operate on
 
@@ -1285,15 +1290,15 @@ $assert(Hello Rust,$regex(World,Rust,Hello World))".to_string()),
                     "regexpr",
                     ["a_name", "a_expr"],
                     Self::register_expression,
-                    Some("Register an regular expression
+                    Some("Register a regular expression
 
-- NOTE : Registered name will not be able to matches directly
-- Every regex operation creates regex cache, while registered expression will not be cached but saved permanently. Unregistered cache will be cleared if certain capacity reaches.
+- NOTE : A registered name will not be able to be matched directly
+- Every regex operation creates regex cache, while registered expression will not be cached but saved permanently. Unregistered caches will be cleared if certain capacity reaches.
 
 # Arguments
 
-- a_name : Name of the regex expression. This is not trimmed
-- a_epxr : Expression to bind to
+- a_name : A name of the regex expression. This is not trimmed
+- a_epxr : An expression to bind to
 
 # Example
 
@@ -1312,8 +1317,8 @@ $assert(false,$find(greeting,greetings from world))".to_string()),
 
 # Arguments
 
-- a_macro_name : Macro to change name ( trimmed )
-- a_new_name   : New macro name to apply ( trimmed )
+- a_macro_name : A macro to change name ( trimmed )
+- a_new_name   : A new macro name to apply ( trimmed )
 
 # Example
 
@@ -1328,7 +1333,7 @@ $assert($demo(),Test)".to_string()),
                     "repeat",
                     ["a_count^", "a_source"],
                     Self::repeat,
-                    Some("Repeat a given source by given counts
+                    Some("Repeat given source by given counts
 
 # Arguments
 
@@ -1352,8 +1357,8 @@ R4d,$repeat^(3,R4d$nl()))".to_string()),
 
 # Arguments
 
-- a_macro_name : Macro name to replace ( trimmed )
-- a_new_value  : New value to put
+- a_macro_name : A macro name to replace ( trimmed )
+- a_new_value  : A new value to put
 
 # Example
 
@@ -1369,7 +1374,7 @@ $assert(DOMO,$demo())".to_string()),
                     "source",
                     ["a_file^"],
                     Self::source_static_file,
-                    Some("Source an env file. Sourced file is eagerly expanded (As if it was static defined)
+                    Some("Source an env file. The sourced file is eagerly expanded (As if it was static defined)
 
 Syntax of source-able file is same with .env file
 
@@ -1379,7 +1384,7 @@ number=$eval(1+2)
 
 # Arguments
 
-- a_file : File to source ( trimmed )
+- a_file : A file to source ( trimmed )
 
 # Example
 
@@ -1396,8 +1401,8 @@ $source(def.env)".to_string()),
 
 # Arguments
 
-- a_sort_type : Sort type [\"asec\",\"desc\"] (trimmed)
-- a_array     : Array to sort
+- a_sort_type : A sort type [\"asec\",\"desc\"] (trimmed)
+- a_array     : An array to sort
 
 # Example
 
@@ -1415,7 +1420,7 @@ $sort(asec,3,6,7,4,1,9,0))".to_string()),
 
 # Arguments
 
-- a_sort_type : Sort type [\"asec\",\"desc\"] (trimmed)
+- a_sort_type : A sort type [\"asec\",\"desc\"] (trimmed)
 - a_lines     : Lines to sort
 
 # Example
@@ -1449,12 +1454,12 @@ $assert(    ,$space(4))".to_string()),
                     "static",
                     ["a_macro_name^", "a_expr^"],
                     Self::define_static,
-                    Some("Create a static macro. Static macro is eagerly expanded unlike define
+                    Some("Create a static macro. A static macro is eagerly expanded unlike define
 
 # Arguments
 
-- a_macro_name : Macro to create ( trimmed )
-- a_expr       : Expression to bind to ( trimmed )
+- a_macro_name : A macro to create ( trimmed )
+- a_expr       : An expression to bind to ( trimmed )
 
 # Example
 
@@ -1473,12 +1478,12 @@ $assert(0,$stt())".to_string()),
                     "staticr",
                     ["a_macro_name^", "a_value"],
                     Self::define_static_raw,
-                    Some("Create a static macro with raw value. Static macro is eagerly expanded unlike define
+                    Some("Create a static macro with raw value. A static macro is eagerly expanded unlike define
 
 # Arguments
 
-- a_macro_name : Macro to create ( trimmed )
-- a_expr       : Expression to bind to which is not trimmed
+- a_macro_name : A macro to create ( trimmed )
+- a_expr       : An expression to bind to which is not trimmed
 
 # Example
 
@@ -1500,13 +1505,13 @@ $assert(0 ,$stt())".to_string()),
                     Some("Get a substring with indices. 
 
 - Out of range index is an error
-- Substring is calculated as char iterator not a byte iterator
+- A substring is calculated as char iterator not a byte iterator
 - this operation is technically same with [start_index..end_index]
 
 # Arguments
 
-- a_start_index : Start substring index [Unsigned integer] (trimmed)
-- a_end_index   : End   substring index [Unsigned integer] (trimmed)
+- a_start_index : A start substring index [Unsigned integer] (trimmed)
+- a_end_index   : A end   substring index [Unsigned integer] (trimmed)
 - a_source      : Source text get to a substring from
 
 # Example
@@ -1524,8 +1529,8 @@ $assert(def,$sub(3,5,abcdef))".to_string()),
 
 # Arguments
 
-- a_start_pair : Start pair
-- a_end_pair   : End pair
+- a_start_pair : A start pair
+- a_end_pair   : A end pair
 - a_content    : Text to surround with
 
 # Example
@@ -1599,8 +1604,8 @@ c))".to_string()),
 
 # Arguments
 
-- a_table_form : Table format [ \"github\", \"html\", \"wikitext\" ] ( trimmed )
-- a_csv_value  : Value to convert to table ( trimmed )
+- a_table_form : A table format [ \"github\", \"html\", \"wikitext\" ] ( trimmed )
+- a_csv_value  : A value to convert to table ( trimmed )
 
 # Example
 
@@ -1679,14 +1684,14 @@ $assert(Upper$nl()Middle$nl()Last,$triml(    Upper
                     Some("Triml with given amount
 
 - Trims by line but with given amount. 
-- If given integer, it will try to trim blank characters as much as given value
+- If given an integer, it will try to trim blank characters as much as given amount
 - min trims by minimal amount that can be applied to total lines
 - max acts same as triml
-- Tab character is calculated as a single character. Don't combine spaces and tabs for this macro
+- Tab character is treated as a single character. Don't combine spaces and tabs for this macro
 
 # Arguments
 
-- a_trim_option : Trim behaviour [\"min\", \"max\", Unsigned integer] ( trimmed )
+- a_trim_option : A trim behaviour [\"min\", \"max\", Unsigned integer] ( trimmed )
 - a_lines       : Lines to trim
 
 # Example
@@ -1720,12 +1725,12 @@ $space(5)Third)
                     Some("Undefine a macro
 
 - This undefines all macros that has a given name
-- Define macro cannot be undefined
+- \"Define\" macro cannot be undefined
 - Undef doesn't yield error when a macro doesn't exist
 
 # Arguments 
 
-- a_macro_name : Name of a macro to undefine ( trimmed )
+- a_macro_name : A name of a macro to undefine ( trimmed )
 
 # Example
 
@@ -1744,7 +1749,7 @@ $fassert($test())".to_string()),
 
 # Arguments
 
-- a_value : Value to convert to unicode character
+- a_value : A value to convert to a unicode character
 
 # Example
 
@@ -1757,7 +1762,7 @@ $assert(☺,$unicode(263a))".to_string()),
                     "upper",
                     ["a_text"],
                     Self::capitalize,
-                    Some("Get uppercase english texts
+                    Some("Get uppercase english text
 
 # Arguments
 
@@ -1812,7 +1817,7 @@ $assert(wow cow,$demo(wow,cow))".to_string()),
 
 # Arguments
 
-- a_env_name : Environment variable name to get (trimmed)
+- a_env_name : An environment variable name to get (trimmed)
 
 # Example
 
@@ -1834,8 +1839,8 @@ $assert(/home/user/dir,$env(HOME))"
 
 # Arguments
 
-- a_env_name  : Environment variable name to set (trimmed)
-- a_env_value : Value to set
+- a_env_name  : An environment variable name to set (trimmed)
+- a_env_value : A value to set
 
 # Example
 
@@ -1859,7 +1864,7 @@ $envset(HOME,/tmp)"
 
 # Arguments
 
-- a_path : Path to make it absolute ( trimmed )
+- a_path : A path to make it absolute ( trimmed )
 
 # Example
 
@@ -1875,7 +1880,7 @@ $assert(/home/user/cwd/test.md,$abs(test.md))"
                     ["a_command"],
                     Self::syscmd,
                     Some(
-                        "Execute an sysctem command
+                        "Execute a sysctem command
 
 - Each system command is executed as subprocess of folloiwng platform procedures
 - Windows : cmd /C
@@ -1885,7 +1890,7 @@ $assert(/home/user/cwd/test.md,$abs(test.md))"
 
 # Arguments
 
-- a_command : Command to exectute
+- a_command : A command to exectute
 
 # Example
 
@@ -1903,7 +1908,7 @@ $assert(Linux,$syscmd(uname))"
                     Some(
                         "Include a temporary file
 
-- Default temporary path is folloiwng
+- A default temporary path is folloiwng
 - Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
 - *nix    : /tmp/rad.txt 
 
@@ -1925,7 +1930,7 @@ $tempin()"
                     Some(
                         "Write to a temporary file
 
-- Default temporary path is folloiwng
+- A default temporary path is folloiwng
 - Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
 - *nix    : /tmp/rad.txt 
 
@@ -1933,7 +1938,7 @@ $tempin()"
 
 # Arguments
 
-- a_content : Content to write to temporary file
+- a_content : Content to write to a temporary file
 
 # Example
 
@@ -1949,15 +1954,15 @@ $temout(Content)"
                     ["a_filename^"],
                     Self::set_temp_target,
                     Some(
-                        "Change temporary file path
+                        "Change a temporary file path
 
-- This macro needs file out permission because it creates a temporary file if the file doesn't exist
+- This macro needs FOUT permission because it creates a temporary file if the file doesn't exist
 
 # Auth: FOUT
 
 # Arguments
 
-- a_filename : New temporary file path ( trimmed )
+- a_filename : A new temporary file path ( trimmed )
 
 # Example
 
@@ -1973,9 +1978,9 @@ $tempto(/new/path)"
                     ESR,
                     Self::get_temp_path,
                     Some(
-                        "Get temp path
+                        "Get a temporary file path
 
-- Default temporary path is folloiwng
+- A default temporary path is folloiwng
 - Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
 - *nix    : /tmp/rad.txt 
 
@@ -2005,8 +2010,8 @@ $assert(/tmp/rad.txt,$temp())"
 
 # Arguments
 
-- a_filename : File name to read ( trimmed )
-- a_raw_mode : Whehter to escape the read. Default is false [boolean] ( trimmed,optional )
+- a_filename : A file name to read ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed,optional )
 
 $include(file_path)
 $include(file_path, true)"
@@ -2027,7 +2032,7 @@ $include(file_path, true)"
 
 # Arguments
 
-- a_filename : File name to write ( trimmed )
+- a_filename : A file name to write ( trimmed )
 - a_truncate : Whether to truncate before writing [boolean] ( trimmed )
 - a_content  : Content to write to the file
 
@@ -2075,17 +2080,17 @@ $listdir(/tmp,true,|)"
                 "regcsv".to_owned(),
                 FMacroSign::new(
                     "regcsv",
-                    ["a_table_name^", "a_table^"],
+                    ["a_table_name^", "a_data^"],
                     Self::cindex_register,
                     Some(
                         "Register a csv table
 
-- Query can be only applied to registered table.
+- Querying can be only applied to registered table.
 
 # Arguments
 
-- a_table_name : Table name to be registered ( trimmed )
-- a_table      : Csv data table ( trimmed )
+- a_table_name : A table name to be registered ( trimmed )
+- a_data       : Csv data ( trimmed )
  
 # Example
 
@@ -2129,7 +2134,7 @@ $dropcsv(table1)"
 
 # Arguments
 
-- a_query : Query statement ( trimmed )
+- a_query : A query statement ( trimmed )
 
 # Example
 
@@ -2212,7 +2217,7 @@ $assert(00:33:40,$hms(2020))"
 
 # Arguments
 
-- a_expr : Expression to evaluate
+- a_expr : An expression to evaluate
 
 # Example
 
@@ -2228,13 +2233,13 @@ $assert(3,$eval(1 + 2))"
                     ["a_expr"],
                     Self::eval_keep,
                     Some(
-                        "Evaluate an expression while keeping source texts
+                        "Evaluate an expression while keeping source text
 
-- This macro redirects expression to evalexpr crate
+- This macro redirects an expression to evalexpr crate
 
 # Arguments
 
-- a_expr : Expression to evaluate
+- a_expr : An expression to evaluate
 
 # Example
 
@@ -2252,11 +2257,11 @@ $assert(1 + 2 = 3,$evalk(1 + 2 ))"
                 ["a_width^", "a_text"],
                 Self::wrap,
                 Some(
-                    "Wrap texts by width
+                    "Wrap text by width
 
 # Arguments
 
-- a_width : Width(chars) of given texts ( trimmed )
+- a_width : A width(chars) of given texts ( trimmed )
 - a_text  : Text to wrap
 
 # Example
@@ -2302,7 +2307,7 @@ rhoncus*\\,$wrap(20,$lipsum(10)))"
                     ["a_text"],
                     Self::update_storage,
                     Some(
-                        "Update storage
+                        "Update a storage
 
 # Arguments
 
@@ -2322,7 +2327,7 @@ $update(text to be pushed)"
                     ESR,
                     Self::extract_storage,
                     Some(
-                        "Extract from storage
+                        "Extract from a storage
 
 # Example
 
