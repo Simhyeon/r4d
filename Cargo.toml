@@ -31,7 +31,7 @@ binary = ["clap","debug", "full", "dep:filetime", "rad_ext_template?/binary"]
 full = [ "evalexpr", "chrono", "textwrap", "cindex"]
 
 debug = [ "dep:crossterm", "dep:similar" ]
-color = [ "dep:colored" ]
+color = [ "dep:colored", "dep:atty" ]
 hook = []
 signature = ["dep:serde_json"]
 wasm = ["dep:wasm-bindgen", "dep:console_error_panic_hook", "dep:wee_alloc"]
@@ -54,7 +54,7 @@ similar = { version = "2.0.0", optional = true}
 textwrap = { version = "0.14.2", optional = true}
 cindex = {version = "0.5.1", optional = true}
 rad_ext_template = { version="0.2.0", optional = true}
-atty = "0.2.14"
+atty = { version = "0.2.14", optional = true}
 
 # Wasm related dependencies
 wasm-bindgen = { version = "0.2.74", optional = true}
