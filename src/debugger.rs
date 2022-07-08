@@ -220,9 +220,6 @@ impl Debugger {
                 frag.clear();
                 return Ok(());
             }
-
-            // Warning
-            logger.wlog("Breakpoint in non debug mode", WarningType::Sanity)?;
             frag.clear();
         }
 
