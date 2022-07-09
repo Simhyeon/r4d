@@ -516,7 +516,7 @@ $assert($input(true),/home/user/dir/test)".to_string()),
 # Arguments
 
 - a_value : Value to qualify ( trimmed )
-- a_type  : Type of qualification [\"uint\",\"int\",\"float\"] ( trimmed )
+- a_type  : Type of qualification [\"uint\",\"int\",\"float\",\"bool\"] ( trimmed )
 
 # Example
 
@@ -528,7 +528,9 @@ $assert(true,$istype( -1,  int))
 $assert(false,$istype( 0.1,int))
 $assert(true,$istype( -0.1,float))
 $assert(true,$istype( -0,  float))
-$assert(true,$istype(  0,  float))".to_string()),
+$assert(true,$istype(  0,  float))
+$assert(true,$istype(  0,  bool))
+$assert(true,$istype(  1,  bool))".to_string()),
                 ),
             ),
             (
@@ -4944,7 +4946,7 @@ $extract()"
         }
     }
 
-    /// is_type : Qualify a value
+    /// istype : Qualify a value
     ///
     /// # Usage
     ///
@@ -4957,6 +4959,7 @@ $extract()"
                 "uint" => value.parse::<usize>().is_ok(),
                 "int" => value.parse::<isize>().is_ok(),
                 "float" => value.parse::<f64>().is_ok(),
+                "bool" => Utils::is_arg_true(&value).is_ok(),
                 _ => {
                     return Err(RadError::InvalidArgument(format!(
                         "Given type \"{}\" is not valid",
