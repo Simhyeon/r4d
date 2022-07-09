@@ -2634,11 +2634,11 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Get a local macro's raw body
-    pub(crate) fn get_local_macro_body(&self, level: usize, macro_name: &str) -> RadResult<&str> {
+    pub(crate) fn get_local_macro_body(&self, macro_name: &str) -> RadResult<&str> {
         let body = &self
             .map
             .local
-            .get(&Utils::local_name(level, macro_name))
+            .get(macro_name)
             .ok_or_else(|| RadError::InvalidMacroName("No such macro".to_string()))?
             .body;
         Ok(body)
@@ -2767,6 +2767,32 @@ impl<'processor> Processor<'processor> {
             .contains_macro(macro_name, macro_type, self.state.hygiene)
     }
 
+    /// Check if given local macro exists
+    ///
+    /// This exits for internal macro logic.
+    ///
+    /// # Return
+    ///
+    /// - Return a local_name if exists
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// let level = 2;
+    /// if !proc.contains_local_macro("name", 2) {
+    ///     proc.print_error("Error").expect("Failed to write error");
+    /// }
+    /// ```
+    pub fn contains_local_macro(&self, mut level: usize, macro_name: &str) -> Option<String> {
+        while level > 0 {
+            let local_name = Utils::local_name(level, macro_name);
+            if self.map.contains_local_macro(&local_name) {
+                return Some(local_name);
+            }
+            level -= 1;
+        }
+        None
+    }
+
     /// Try undefine a macro
     ///
     /// This exits for internal macro logic.
@@ -2813,7 +2839,7 @@ impl<'processor> Processor<'processor> {
         self.map.append(macro_name, target, self.state.hygiene);
     }
 
-    /// Replace macro's content
+    /// Append content into a local macro
     ///
     /// This exits for internal macro logic.
     ///
@@ -2822,6 +2848,23 @@ impl<'processor> Processor<'processor> {
     /// ```rust
     /// let mut proc = r4d::Processor::new();
     /// if proc.contains_macro("name", r4d::MacroType::Runtime) {
+    ///     proc.append_local_macro("name", "added text");
+    /// }
+    /// ```
+    pub fn append_local_macro(&mut self, macro_name: &str, target: &str) {
+        self.map.append_local(macro_name, target);
+    }
+
+    /// Replace macro's content
+    ///
+    /// This exits for internal macro logic.
+    ///
+    /// This will do nothing if macro doesn't exist
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// let level = 2
+    /// if proc.contains_local_macro("name", level) {
     ///     proc.replace_macro("name", "new macro content");
     /// }
     /// ```
