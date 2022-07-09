@@ -35,6 +35,37 @@ impl DeterredMacroMap {
     pub fn new() -> Self {
         let mut map = HashMap::from_iter(IntoIterator::into_iter([
             (
+                "append".to_owned(),
+                DMacroSign::new(
+                    "append",
+                    ["a_macro_name^", "a_content","a_trailer+"],
+                    Self::append,
+                    Some(
+                        "Append contents to a macro. If the macro doesn't exist, yields error
+
+- If given a \"trailer\", the macro checks if target macro has a trailer and append if not.
+- If a macro body is empty, trailer is not appended
+
+# Arguments
+
+- a_macro_name : a macro name to append to ( trimmed )
+- a_content    : contents to be added
+- a_trailer    : A trailer to append before content ( Optional ) 
+
+# Example
+
+$define(container=Before)
+$append(container,$space()After)
+$assert($container(),Before After)
+
+$define(arr=)
+$append(arr,first,$comma())
+$append(arr,second,$comma())
+$assert($arr(),first,second)".to_string(),
+                    ),
+                ),
+            ),
+            (
                 "EB".to_owned(),
                 DMacroSign::new(
                     "EB",
@@ -515,6 +546,60 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     // ----------
     // Keyword Macros start
 
+    /// Append content to a macro
+    ///
+    /// Only runtime macros can be appended.
+    ///
+    /// # Usage
+    ///
+    /// $append(macro_name,Content,tailer)
+    fn append(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        let mut ap = ArgParser::new().no_strip();
+        let args = ap.args_to_vec(args, ',', GreedyState::Never);
+        ap.set_strip(true);
+        if args.len() >= 2 {
+            let name = processor.parse_and_strip(&mut ap, level, trim!(&args[0]).as_ref())?;
+            let target = processor.parse_and_strip(&mut ap, level, &args[1])?;
+            let mut trailer = None;
+
+            if args.len() >= 3 {
+                trailer = Some(processor.parse_and_strip(&mut ap, level, &args[2])?);
+            }
+
+            if let Some(name) = processor.contains_local_macro(level, &name) {
+                if let Some(tt) = trailer {
+                    let body = processor.get_local_macro_body(&name)?;
+                    if !body.ends_with(&tt) && !body.is_empty() {
+                        processor.append_local_macro(&name, &format!("{}{}", tt, target));
+                        return Ok(None);
+                    }
+                }
+                processor.append_local_macro(&name, &target);
+            } else if processor.contains_macro(&name, MacroType::Runtime) {
+                // Append to runtime
+                if let Some(tt) = trailer {
+                    let body = processor.get_runtime_macro_body(&name)?;
+                    if !body.ends_with(&tt) && !body.is_empty() {
+                        processor.append_macro(&name, &format!("{}{}", tt, target));
+                        return Ok(None);
+                    }
+                }
+                processor.append_macro(&name, &target);
+            } else {
+                return Err(RadError::InvalidArgument(format!(
+                    "Macro \"{}\" doesn't exist",
+                    name
+                )));
+            }
+
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Append at least requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     /// Loop around given values which is separated by given separator
     ///
     /// # Usage
@@ -563,7 +648,6 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             for (count, value) in loopable.split(',').enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
-
                 processor.add_new_local_macro(level, ":", value);
                 let result = &processor.parse_and_strip(&mut ap, level, body)?;
 
@@ -669,7 +753,8 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     fn log_macro_info(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
         let macro_name = trim!(&p.parse_and_strip(&mut ap, level, args)?).to_string();
-        let body = if let Ok(body) = p.get_local_macro_body(level, &macro_name) {
+        let body = if let Ok(body) = p.get_local_macro_body(&Utils::local_name(level, &macro_name))
+        {
             trim!(body).to_string()
         } else if let Ok(body) = p.get_runtime_macro_body(&macro_name) {
             trim!(body).to_string()
