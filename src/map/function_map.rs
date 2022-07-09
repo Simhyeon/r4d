@@ -41,9 +41,10 @@ const ALIGN_TYPES: [&str; 3] = ["left", "right", "center"];
 
 lazy_static! {
     static ref CLRF_MATCH: Regex = Regex::new(r#"\r\n"#).unwrap();
-    static ref CHOMP_MATCH: Regex = Regex::new(r#"\n\s*\n"#).expect("Failed to crate chomp regex");
+    static ref CHOMP_MATCH: Regex = Regex::new(r#"\n\s*\n"#).expect("Failed to create chomp regex");
     // Thanks stack overflow! SRC : https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers
-    static ref NUM_MATCH: Regex = Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to crate number regex");
+    static ref NUM_MATCH: Regex = Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to create number regex");
+    static ref TWO_NL_MATCH: Regex = Regex::new(r#"\n\s*\n"#).expect("Failed to create tow nl regex");
 }
 
 pub(crate) type FunctionMacroType = fn(&str, &mut Processor) -> RadResult<Option<String>>;
@@ -153,6 +154,27 @@ $assert($container(),Before After)".to_string(),
 # Example
 
 $assert(\\*a,b,c*\\,$split(/,a/b/c))".to_string()),
+                ),
+            ),
+            (
+                "squash".to_owned(),
+                FMacroSign::new(
+                    "squash",
+                    ["a_text"],
+                    Self::squash,
+                    Some("Squash text by trimming all empty newlines
+
+# Arguments
+
+- a_text : Text to squash
+
+# Example
+
+$assert(a$nl()b,$squash(
+a
+
+b
+))".to_string()),
                 ),
             ),
             (
@@ -3023,6 +3045,24 @@ $extract()"
     /// Placeholder for define
     fn define_type(_: &str, _: &mut Processor) -> RadResult<Option<String>> {
         Ok(None)
+    }
+
+    /// Squash
+    ///
+    /// # Usage
+    ///
+    /// $squash(/,a/b/c)
+    fn squash(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let text = trim!(&args[0]);
+            let new_text = TWO_NL_MATCH.replace_all(&text, &p.state.newline);
+
+            Ok(Some(new_text.to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Squash requires an argument".to_owned(),
+            ))
+        }
     }
 
     /// Split
