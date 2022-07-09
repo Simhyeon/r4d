@@ -347,7 +347,7 @@ impl<'cli> RadCli<'cli> {
                 .short('s')
                 .long("silent")
                 .takes_value(true)
-                .default_missing_value("none")
+                .default_missing_value("any")
                 .value_name("WARNING TYPE")
                 .help("Supress warnings (security|sanity|any)"))
             .arg(Arg::new("purge")
