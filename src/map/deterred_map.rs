@@ -46,6 +46,8 @@ impl DeterredMacroMap {
 - If given a \"trailer\", the macro checks if target macro has a trailer and append if not.
 - If a macro body is empty, trailer is not appended
 
+# NOT deterred
+
 # Arguments
 
 - a_macro_name : a macro name to append to ( trimmed )
@@ -73,6 +75,8 @@ $assert($arr(),first,second)".to_string(),
                     DeterredMacroMap::escape_blanks,
                     Some("Escape all following blanks until not. This can only be invoked at first level
 
+# NOT deterred
+
 # Example
 
 $EB()".to_string()),
@@ -85,6 +89,8 @@ $EB()".to_string()),
                     ["a_macro_name^", "a_macro_args"],
                     DeterredMacroMap::execute_macro,
                     Some("Execute a macro with arguments
+
+# NOT deterred
 
 # Arguments
 
@@ -103,6 +109,8 @@ $assert($path(a,b,c),$exec(path,a,b,c))".to_string()),
                     ["a_expr"],
                     DeterredMacroMap::assert_fail,
                     Some("Assert succeedes when text expansion yields error
+
+# NOT deterred
 
 # Arguments
 
@@ -123,6 +131,12 @@ $fassert($eval(Text is not allowd))".to_string()),
                         "Iterate around text separated by separator.
 
 Iterated value is bound to macro \":\"
+
+# Expansion order
+
+1. a_sep  : Expanded on time
+2. a_text : Expanded on time
+3. a_body : Split text by separator, and expanded by per item.
 
 # Arguments
 
@@ -147,6 +161,11 @@ $assert(a+b+c+,$forby($:()+,-,a-b-c))".to_string(),
 
 An iterated value is bound to macro \":\"
  
+# Expansion order
+
+1. a_array : Expanded on time
+2. a_body : Split array by comma, and expanded by per item.
+
 # Arguments
 
 - a_body  : A body to be pasted as iterated item
@@ -168,6 +187,11 @@ $assert(a+b+c+,$foreach($:()+,a,b,c))".to_string(),
 
 An iterated value is bound to macro \":\"
  
+# Expansion order
+
+1. a_lines : Expanded on time
+2. a_body  : Split lines by newline, and expanded by per item.
+
 # Arguments
 
 - a_body  : A body to be pasted as iterated item
@@ -188,6 +212,13 @@ $assert(a+b+c+,$forline($:()+,a$nl()b$nl()c))".to_string()),
 
 An iterated value is bound to macro \":\" 
 
+# Expansion order
+
+
+1. a_min  : Expanded on time
+2. a_max  : Expanded on time
+3. a_body : Creates a range of numbers from min+max pair, and expanded by per item.
+
 # Arguments
 
 - a_body : A body to be pasted as iterated item
@@ -206,6 +237,8 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
                     ["a_macro_name^", "a_csv_value^"],
                     Self::spread_data,
                     Some("Execute a macro multiple times with given data chunk. Each csv line represent arguments for a macro
+
+# NOT Deterred
 
 # Arguments
 
@@ -236,6 +269,11 @@ $assert=(
                     Some(
                         "Check condition and then execute the expression if the condition is true
 
+# Expansion order
+
+1. a_cond    : Expanded on time
+2. a_if_expr : Only when a_cond is true
+
 # Arguments
 
 - a_cond    : A condition ( trimmed )
@@ -255,6 +293,12 @@ $assert(I'm true,$if(true,I'm true))".to_string(),
                     DeterredMacroMap::ifelse,
                     Some(
                         "Check condition and execute different expressions by the condition
+
+# Expansion order
+
+1. a_cond      : Expanded on time
+2. a_if_expr   : Only when a_cond is true
+3. a_else_expr : Only when a_cond is false
 
 # Arguments
 
@@ -277,6 +321,11 @@ $assert(I'm false,$ifelse(false,I'm true,I'm false))".to_string(),
                     DeterredMacroMap::ifdef,
                     Some("Execute expression if macro is defined
 
+# Expansion order
+
+1. a_macro_name : Expanded on time
+2. a_if_expr    : Only when a_macro_name is defined
+
 # Arguments
 
 - a_macro_name : A macro name to check ( trimmed )
@@ -294,6 +343,12 @@ $assert(I'm defined,$ifdef(define,I'm defined))".to_string()),
                     ["a_macro_name^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifdefel,
                     Some("Execute expressions whether macro is defined or not
+
+# Expansion order
+
+1. a_macro_name : Expanded on time
+2. a_if_expr    : Only when a_macro_name is defined
+3. a_else_expr  : Only when a_macro_name is NOT defined
 
 # Arguments
 
@@ -314,6 +369,8 @@ $assert(I'm NOT defined,$ifdefel(defuo,I'm defined,I'm NOT defined))".to_string(
                     ["a_macro_name^"],
                     Self::log_macro_info,
                     Some("Log a macro information. Either print a macro body of local or runtime macros.
+
+# NOT deterred
 
 # Arguments
 
@@ -337,6 +394,8 @@ Use que macro when a macro does operations that do not return a string AND you n
 
 Que does not evalute inner contents and simply put expression into a queue.
 
+# NO expansion at all
+
 # Arguments
 
 - a_expr : Expression to queue
@@ -358,6 +417,11 @@ Use que macro when a macro does operations that do not return a string AND you n
 
 Que does not evalute inner contents and simply put expression into a queue.
 
+# Expansion order
+
+1. a_bool : Expanded on time
+2. a_expr : NEVER expanded
+
 # Arguments
 
 - a_bool : A condition [boolean] ( trimmed )
@@ -375,6 +439,10 @@ $ifque(true,halt(false))".to_string()),
                     ["a_literal_expr"],
                     DeterredMacroMap::strip_expression,
                     Some("Strip literal expression and then expand 
+
+# Expansion order
+
+1. a_literal_expr : After a pair of quote was striped
 
 # Arguments
 
@@ -402,6 +470,8 @@ Readto can be only executed on first level therefore readto cannot be used insid
 
 # Auth : FIN + FOUT
 
+# NOT deterred
+
 # Arguments
 
 - a_from_file : A file to read from ( trimmed )
@@ -427,6 +497,8 @@ Readin can be only executed on first level therefore readin cannot be used insid
 
 # Auth : FIN
 
+# NOT deterred
+
 # Arguments
 
 - a_file : A file to read from ( trimmed )
@@ -448,6 +520,11 @@ $readto(from.txt,into.txt)"
                         "Execute expression if an environment variable is set
 
 # Auth : ENV
+
+# Expansion order
+
+1. a_env_name : Expanded on time
+2. a_if_expr  : Only when env_name is defined
 
 # Arguments
 
@@ -472,6 +549,13 @@ $assert(I'm alive,$ifenv(HOME,I'm alive))"
 
 # Auth : ENV
 
+# Expansion order
+
+1. a_env_name   : Expanded on time
+2. a_if_expr    : Only when env_name is defined
+3. a_else_expr  : Only when env_name is NOT defined
+
+
 # Arguments
 
 - a_env_name   : An environment variable ( trimmed )
@@ -484,19 +568,6 @@ $assert(I'm alive,$ifenvel(HOME,I'm alive,I'm dead))
 $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                             .to_string(),
                     ),
-                ),
-            );
-        }
-        // Test method
-        #[cfg(debug_assertions)]
-        {
-            map.insert(
-                "test".to_owned(),
-                DMacroSign::new(
-                    "test",
-                    ESR,
-                    Self::test_logics,
-                    Some("Debugging".to_string()),
                 ),
             );
         }
@@ -548,7 +619,9 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
 
     /// Append content to a macro
     ///
-    /// Only runtime macros can be appended.
+    /// This is deterred because it needs level for local macro indexing
+    ///
+    /// Runtime + local macros can be appended.
     ///
     /// # Usage
     ///
@@ -1153,6 +1226,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     /// # Usage
     ///
     /// $readin(file_a)
+    #[cfg(not(feature = "wasm"))]
     fn read_in(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("readin", AuthType::FIN, processor)? {
             return Ok(None);
@@ -1235,13 +1309,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
 
             let macro_name =
                 trim!(&processor.parse_and_strip(&mut ap, level, &args[0])?).to_string();
-            if !processor.contains_macro(&macro_name, MacroType::Any) {
-                return Err(RadError::InvalidArgument(format!(
-                    "Macro \"{}\" doesn't exist",
-                    macro_name
-                )));
-            }
-            let args = &args[1];
+            let args = processor.parse_and_strip(&mut ap, level, &args[1])?;
             let result =
                 processor.parse_and_strip(&mut ap, level, &format!("${}({})", macro_name, args))?;
             Ok(Some(result))
@@ -1272,10 +1340,10 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
 
-            let macro_name = trim!(&args[0]);
-            // Trimming data might be very costly operation
-            // Plus, it is already trimmed by csv crate.
-            let macro_data = trim!(&args[1]);
+            let expanded_name = &processor.parse_and_strip(&mut ap, level, &args[0])?;
+            let expanded_data = &processor.parse_and_strip(&mut ap, level, &args[1])?;
+            let macro_name = trim!(expanded_data);
+            let macro_data = trim!(expanded_data);
 
             let result =
                 Formatter::csv_to_macros(&macro_name, &macro_data, &processor.state.newline)?;
@@ -1321,6 +1389,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
 
     #[allow(unused_variables)]
     #[cfg(debug_assertions)]
+    #[allow(dead_code)]
     fn test_logics(
         args: &str,
         level: usize,
