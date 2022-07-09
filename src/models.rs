@@ -128,6 +128,10 @@ impl MacroMap {
         self.deterred.contains(name)
     }
 
+    pub fn contains_local_macro(&self, macro_name: &str) -> bool {
+        self.local.contains_key(macro_name)
+    }
+
     pub fn contains_macro(
         &self,
         macro_name: &str,
@@ -209,6 +213,12 @@ impl MacroMap {
                     self.function.rename(macro_name, target_name);
                 }
             }
+        }
+    }
+
+    pub fn append_local(&mut self, name: &str, target: &str) {
+        if let Some(loc) = self.local.get_mut(name) {
+            loc.body.push_str(target);
         }
     }
 
