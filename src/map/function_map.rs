@@ -4425,7 +4425,7 @@ $extract()"
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let path = &std::env::temp_dir().join(trim!(&args[0]).as_ref());
-            Utils::check_file_sanity(processor, &path)?;
+            Utils::check_file_sanity(processor, path)?;
             processor.set_temp_file(path)?;
             Ok(None)
         } else {

@@ -2469,7 +2469,7 @@ impl<'processor> Processor<'processor> {
     #[cfg(not(feature = "wasm"))]
     /// Get temp file's path
     pub(crate) fn get_temp_path(&self) -> &Path {
-        &self.state.temp_target.name()
+        self.state.temp_target.name()
     }
 
     #[cfg(not(feature = "wasm"))]
