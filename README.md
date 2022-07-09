@@ -89,7 +89,7 @@ Currently version 3.0 is preparing for release and can be downloaded with
 specific version flag.
 
 ```bash
-cargo install r4d --git https://github.com/simhyeon/r4d --features binary --locked --version 3.0.0-rc.4
+cargo install r4d --git https://github.com/simhyeon/r4d --features binary --locked --version 3.0.0-rc.5
 ```
 
 Or use crates.io registry,
