@@ -2,9 +2,10 @@ use crate::auth::{AuthState, AuthType};
 use crate::error::RadError;
 use crate::logger::WarningType;
 use crate::models::{ProcessInput, RadResult, RelayTarget};
-use crate::Processor;
+use crate::{Processor, WriteOption};
 use lazy_static::lazy_static;
 use regex::Regex;
+use std::ffi::OsStr;
 use std::io::BufRead;
 use std::path::Path;
 
@@ -239,8 +240,28 @@ impl Utils {
         Ok(())
     }
 
-    pub(crate) fn check_include_sanity(processor: &Processor, canonic: &Path) -> RadResult<()> {
-        // Rules 1
+    /// This checks if a file is safely modifiable
+    ///
+    /// File operation can be nested and somtimes logically implausible. Such as referencing self,
+    /// or referencing parent file is would cause infinite loop
+    ///
+    /// Alos, opening processor's out option and err option would be impossible from the start,
+    /// while creating a hard to read error message.
+    ///
+    /// Unallowed files are followed
+    ///
+    /// - Current input
+    /// - Input that is saved in stack
+    /// - File that is being relayed to
+    /// - Processor's out option
+    /// - Processor's err option
+    ///
+    /// # Argument
+    ///
+    /// - processor : Processor to get multiple files from
+    /// - canoic    : Real absolute path to evaluate ( If not this possibly panicks )
+    pub(crate) fn check_file_sanity(processor: &Processor, canonic: &Path) -> RadResult<()> {
+        // Rule 1
         // You cannot include self
         if let ProcessInput::File(path) = &processor.state.current_input {
             if path.canonicalize()? == canonic {
@@ -251,23 +272,48 @@ impl Utils {
             }
         }
 
-        // Rules 1.5
+        // Rule 2
         // Field is in input stack
         // This unwraps is mostly ok ( I guess )
         if processor.state.input_stack.contains(canonic) {
             return Err(RadError::UnallowedMacroExecution(format!(
                 "Processing self is not allowed : \"{}\"",
-                &canonic.file_name().unwrap().to_string_lossy()
+                &canonic
+                    .file_name()
+                    .unwrap_or_else(|| OsStr::new("input_file"))
+                    .to_string_lossy()
             )));
         }
 
-        // Rules 2
+        // Rule 3
         // You cannot include file that is being relayed
-        if let Some(RelayTarget::File(target)) = &processor.state.relay.last() {
-            if target.path.canonicalize()? == canonic {
+        if let Some(RelayTarget::File(file)) = &processor.state.relay.last() {
+            if file.path() == canonic {
                 return Err(RadError::UnallowedMacroExecution(format!(
                     "Processing relay target while relaying to the file is not allowed : \"{}\"",
-                    &target.path.display()
+                    &file.name().display()
+                )));
+            }
+        }
+
+        // Rule 4
+        // You cannot include processor's out file
+        if let WriteOption::File(target) = &processor.write_option {
+            if target.path() == canonic {
+                return Err(RadError::UnallowedMacroExecution(format!(
+                    "Cannot include out file : \"{}\"",
+                    &target.name().display()
+                )));
+            }
+        }
+
+        // Rule 5
+        // You cannot include processor's error file
+        if let Some(WriteOption::File(target)) = &processor.get_logger_write_option() {
+            if target.path() == canonic {
+                return Err(RadError::UnallowedMacroExecution(format!(
+                    "Cannot include error file : \"{}\"",
+                    &target.name().display()
                 )));
             }
         }
