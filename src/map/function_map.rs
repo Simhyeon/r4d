@@ -1956,6 +1956,7 @@ $temout(Content)"
                     Some(
                         "Change a temporary file path
 
+- NOTE : A temporary file name is merged to a temporary directory. You cannot set a temporary file outside of a temporary directory.
 - This macro needs FOUT permission because it creates a temporary file if the file doesn't exist
 
 # Auth: FOUT
@@ -2876,18 +2877,9 @@ $extract()"
         }
         let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
         if !args.is_empty() {
-            let naw_file = trim!(&args[0]);
+            let raw_file = trim!(&args[0]);
             let mut raw_include = false;
-            let mut file_path = PathBuf::from(naw_file.as_ref());
-
-            // if current input is not stdin and file path is relative
-            // Create new file path that starts from current file path
-            if let ProcessInput::File(path) = &processor.state.current_input {
-                if file_path.is_relative() {
-                    // It is ok get parent because any path that has a length can return parent
-                    file_path = path.parent().unwrap().join(file_path);
-                }
-            }
+            let file_path = PathBuf::from(raw_file.as_ref());
 
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
@@ -3764,7 +3756,7 @@ $extract()"
     ///
     /// # Usage
     ///
-    /// $fileout(true,file_name,Content)
+    /// $fileout(file_name,true,Content)
     #[cfg(not(feature = "wasm"))]
     fn file_out(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("fileout", AuthType::FOUT, p)? {
@@ -3775,19 +3767,30 @@ $extract()"
             let truncate = trim!(&args[1]);
             let content = &args[2];
             if let Ok(truncate) = Utils::is_arg_true(&truncate) {
-                let file = std::env::current_dir()?.join(file_name.as_ref());
+                // This doesn't use canonicalize, because fileout can write file to non-existent
+                // file. Thus canonicalize can possibly yield error
+                let path = std::env::current_dir()?.join(file_name.as_ref());
+                if path.exists() && !path.is_file() {
+                    return Err(RadError::InvalidArgument(format!(
+                        "Failed to write \"{}\". Fileout cannot write to a directory",
+                        path.display()
+                    )));
+                }
+                if path.exists() {
+                    Utils::check_file_sanity(p, &path)?;
+                }
                 let mut target_file = if truncate {
                     OpenOptions::new()
                         .create(true)
                         .write(true)
                         .truncate(true)
-                        .open(file)?
+                        .open(path)?
                 } else {
-                    if !file.is_file() {
-                        return Err(RadError::InvalidArgument(format!("Failed to read \"{}\". Fileout without truncate option needs exsiting file",file.display())));
+                    if !path.exists() {
+                        return Err(RadError::InvalidArgument(format!("Failed to write \"{}\". Fileout without truncate option needs exsiting non-directory file",path.display())));
                     }
 
-                    OpenOptions::new().append(true).open(file)?
+                    OpenOptions::new().append(true).open(path)?
                 };
                 target_file.write_all(content.as_bytes())?;
                 Ok(None)
@@ -4311,6 +4314,8 @@ $extract()"
 
     /// Set temporary file
     ///
+    /// This forcefully merge paths
+    ///
     /// # Usage
     ///
     /// $tempto(file_name)
@@ -4320,7 +4325,9 @@ $extract()"
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            processor.set_temp_file(&std::env::temp_dir().join(trim!(&args[0]).as_ref()))?;
+            let path = &std::env::temp_dir().join(trim!(&args[0]).as_ref());
+            Utils::check_file_sanity(processor, &path)?;
+            processor.set_temp_file(path)?;
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(

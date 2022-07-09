@@ -990,6 +990,12 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                 level,
                 trim!(&args[1]).as_ref(),
             )?);
+            if file_path == to_path {
+                return Err(RadError::InvalidArgument(format!(
+                    "readto cannot read from and into a same file \"{}\"",
+                    file_path.display()
+                )));
+            }
             let mut raw_include = false;
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
