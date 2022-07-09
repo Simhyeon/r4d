@@ -338,45 +338,6 @@ $ifque(true,halt(false))".to_string()),
                 ),
             ),
             (
-                "readto".to_owned(),
-                DMacroSign::new(
-                    "readto",
-                    ["a_from_file^", "a_to_file^"],
-                    DeterredMacroMap::read_to,
-                    Some("Read from a file and paste into a file
-
-Readto can be only executed on first level therefore readto cannot be used inside other macros
-
-# Arguments
-
-- a_from_file : A file to read from ( trimmed )
-- a_to_file   : A file to paste into ( trimmed )
-
-# Example
-
-$readto(from.txt,into.txt)".to_string()),
-                ),
-            ),
-            (
-                "readin".to_owned(),
-                DMacroSign::new(
-                    "readin",
-                    ["a_file?^"],
-                    DeterredMacroMap::read_in,
-                    Some("Read from a file
-
-Readin can be only executed on first level therefore readin cannot be used inside other macros
-
-# Arguments
-
-- a_file : A file to read from ( trimmed )
-
-# Example
-
-$readto(from.txt,into.txt)".to_string()),
-                ),
-            ),
-            (
                 "strip".to_owned(),
                 DMacroSign::new(
                     "strip",
@@ -397,6 +358,55 @@ $strip(\\*1,2,3*\\)".to_string()),
         // Auth realted macros should be segregated from wasm target
         #[cfg(not(feature = "wasm"))]
         {
+            map.insert(
+                "readto".to_owned(),
+                DMacroSign::new(
+                    "readto",
+                    ["a_from_file^", "a_to_file^"],
+                    DeterredMacroMap::read_to,
+                    Some(
+                        "Read from a file and paste into a file
+
+Readto can be only executed on first level therefore readto cannot be used inside other macros
+
+# Auth : FIN + FOUT
+
+# Arguments
+
+- a_from_file : A file to read from ( trimmed )
+- a_to_file   : A file to paste into ( trimmed )
+
+# Example
+
+$readto(from.txt,into.txt)"
+                            .to_string(),
+                    ),
+                ),
+            );
+            map.insert(
+                "readin".to_owned(),
+                DMacroSign::new(
+                    "readin",
+                    ["a_file?^"],
+                    DeterredMacroMap::read_in,
+                    Some(
+                        "Read from a file
+
+Readin can be only executed on first level therefore readin cannot be used inside other macros
+
+# Auth : FIN
+
+# Arguments
+
+- a_file : A file to read from ( trimmed )
+
+# Example
+
+$readto(from.txt,into.txt)"
+                            .to_string(),
+                    ),
+                ),
+            );
             map.insert(
                 "ifenv".to_owned(),
                 DMacroSign::new(
