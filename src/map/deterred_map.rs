@@ -826,9 +826,8 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     fn log_macro_info(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
         let macro_name = trim!(&p.parse_and_strip(&mut ap, level, args)?).to_string();
-        let body = if let Ok(body) = p.get_local_macro_body(&Utils::local_name(level, &macro_name))
-        {
-            trim!(body).to_string()
+        let body = if let Some(name) = p.contains_local_macro(level, &macro_name) {
+            trim!(p.get_local_macro_body(&name)?).to_string()
         } else if let Ok(body) = p.get_runtime_macro_body(&macro_name) {
             trim!(body).to_string()
         } else {
@@ -1342,7 +1341,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
 
             let expanded_name = &processor.parse_and_strip(&mut ap, level, &args[0])?;
             let expanded_data = &processor.parse_and_strip(&mut ap, level, &args[1])?;
-            let macro_name = trim!(expanded_data);
+            let macro_name = trim!(expanded_name);
             let macro_data = trim!(expanded_data);
 
             let result =
