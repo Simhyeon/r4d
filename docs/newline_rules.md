@@ -6,7 +6,7 @@ simply spam trim attribute to make it expectable. And welp it is totally a sane
 thing to do. However newlines within rad processing have **consistent rules**,
 although those are often overlooked.
 
-## Macro's return value : ( "Empty" is either really empty or "NONE" ! )
+## Macro's return value is either nothing or a value with empty content
 
 Think of a macro as a function. ( Though it really is ) Macro gets arguments
 and processes body with given information and finally returns a value. Actually
@@ -40,7 +40,7 @@ value with empty texts. Therefore it leaves an empty string or an empty line in
 its place. Consequently **runtime macros never return "no value"** but at least
 return an empty value.
 
-## Hidden newline character ( Newline is a pesky character )
+## Hidden newline character at the end of a line
 
 You might encounter a case like this
 

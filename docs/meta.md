@@ -2,21 +2,19 @@
 
 : ORDERED :
 * [x] Write about newlines
-* [ ] Go through macros and finalize macro name, argument names, order
+* [x] Go through macros and finalize macro name, argument names, order
 	* [x] I skimmed fast and fixed some typos, wrongly typed names, and missing traits
-	- Argument names are worthless ( It can changes a lot without burden )
-	- Macro name cannot be changed a lot...
-	- Order is also importtant
-	- Let's skim the final last and fix later
 * [ ] Skim every fin and fout related macros
 * [ ] I think I didn't check writeoption and error option
 * [ ] readto can be very suspicous
+	* [ ] test fileout's new path collision mechanics
 	* [ ] Readto a file that is also an writeoption : HMM
 	* [ ] two file can be same
 	* [ ] Wait... is realy ok then?
 
 $todo_start()
 * [ ] New macros
+	* [ ] Squash macro?
 * [ ] Improve macro ergonomics
 * [x] Included signature and color as default into a binary because man flag is critical
 * [x] Library
@@ -32,7 +30,7 @@ $todo_start()
 	* [x] syntax.md
 	* [x] ext.md : After template update
 * [ ] Bug fix
-	* [ ] Fixed consume newline waas not properly respected
+	* [x] Fixed consume newline waas not properly respected
 	* [ ] Debugger's "step" behaviour is very strange and it easily breaks
 	* [ ] Test logger's line number ( Because it looks like not so accurate )
 	* [ ] Local macro was not expanded when given
