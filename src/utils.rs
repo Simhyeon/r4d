@@ -301,7 +301,7 @@ impl Utils {
         if let WriteOption::File(target) = &processor.write_option {
             if target.path() == canonic {
                 return Err(RadError::UnallowedMacroExecution(format!(
-                    "Cannot include out file : \"{}\"",
+                    "Cannot process an out file : \"{}\"",
                     &target.name().display()
                 )));
             }
@@ -312,7 +312,7 @@ impl Utils {
         if let Some(WriteOption::File(target)) = &processor.get_logger_write_option() {
             if target.path() == canonic {
                 return Err(RadError::UnallowedMacroExecution(format!(
-                    "Cannot include error file : \"{}\"",
+                    "Cannot process an error file : \"{}\"",
                     &target.name().display()
                 )));
             }
