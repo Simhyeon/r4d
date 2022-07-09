@@ -504,6 +504,34 @@ $assert($input(true),/home/user/dir/test)".to_string()),
                 ),
             ),
             (
+                "istype".to_owned(),
+                FMacroSign::new(
+                    "istype",
+                    ["a_value^","a_type^"],
+                    Self::qualify_value,
+                    Some("Check if a given value is a type
+
+# Return : Boolean
+
+# Arguments
+
+- a_value : Value to qualify ( trimmed )
+- a_type  : Type of qualification [\"uint\",\"int\",\"float\"] ( trimmed )
+
+# Example
+
+$assert(true,$istype(  0,  uint))
+$assert(false,$istype(-1,  uint))
+$assert(true,$istype(  0,  int))
+$assert(false,$istype(-0.1,uint))
+$assert(true,$istype( -1,  int))
+$assert(false,$istype( 0.1,int))
+$assert(true,$istype( -0.1,float))
+$assert(true,$istype( -0,  float))
+$assert(true,$istype(  0,  float))".to_string()),
+                ),
+            ),
+            (
                 "find".to_owned(),
                 FMacroSign::new(
                     "find",
@@ -4913,6 +4941,32 @@ $extract()"
             Err(RadError::InvalidArgument(
                 "Replace requires two arguments".to_owned(),
             ))
+        }
+    }
+
+    /// is_type : Qualify a value
+    ///
+    /// # Usage
+    ///
+    /// $istype(value,type)
+    fn qualify_value(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let value = trim!(&args[0]);
+            let qtype = trim!(&args[1]);
+            let qualified = match qtype.to_lowercase().as_str() {
+                "uint" => value.parse::<usize>().is_ok(),
+                "int" => value.parse::<isize>().is_ok(),
+                "float" => value.parse::<f64>().is_ok(),
+                _ => {
+                    return Err(RadError::InvalidArgument(format!(
+                        "Given type \"{}\" is not valid",
+                        &qtype
+                    )));
+                }
+            };
+            Ok(Some(qualified.to_string()))
+        } else {
+            Err(RadError::InvalidArgument("istype two arguments".to_owned()))
         }
     }
 
