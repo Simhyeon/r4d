@@ -12,6 +12,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 
 /// Genenric result type for every rad operations
@@ -27,11 +28,20 @@ pub type RadResult<T> = Result<T, RadError>;
 /// - Terminal   : Print to terminal
 /// - Discard    : Do nothing
 pub enum WriteOption<'a> {
-    File(File),
+    File(FileTarget),
     Variable(&'a mut String),
     Return,
     Terminal,
     Discard,
+}
+
+impl<'a> WriteOption<'a> {
+    pub fn file(path: &Path, open_option: OpenOptions) -> RadResult<Self> {
+        let file = open_option.open(path).map_err(|_| {
+            RadError::InvalidFile(format!("Cannot set write option to {}", path.display()))
+        })?;
+        Ok(Self::File(FileTarget::from_file(path, file)?))
+    }
 }
 
 /// Local macro
@@ -723,34 +733,60 @@ pub enum MacroType {
 
 #[derive(Debug)]
 pub struct FileTarget {
-    pub(crate) path: PathBuf,
-    pub(crate) file: Option<File>,
+    /// Representaion
+    repr: PathBuf,
+    /// Real path
+    absolute_path: PathBuf,
+    file: File,
 }
 
 impl std::fmt::Display for FileTarget {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.path.display())
+        write!(f, "{}", self.repr.display())
     }
 }
 
 impl FileTarget {
-    pub fn empty() -> Self {
-        Self {
-            path: PathBuf::new(),
-            file: None,
-        }
+    /// Get absolute path
+    pub fn path(&self) -> &Path {
+        &self.absolute_path
     }
 
-    pub fn set_path(&mut self, path: &Path) {
-        self.path = path.to_owned();
-        self.file = Some(
-            std::fs::OpenOptions::new()
-                .create(true)
-                .write(true)
-                .truncate(true)
-                .open(path)
-                .unwrap(),
-        );
+    /// Get representation path
+    pub fn name(&self) -> &Path {
+        &self.repr
+    }
+
+    /// Get inner file struct
+    pub fn inner(&mut self) -> &mut File {
+        &mut self.file
+    }
+
+    /// Create an instance with file
+    pub fn from_file(path: &Path, file: File) -> RadResult<Self> {
+        Ok(Self {
+            repr: path.to_owned(),
+            absolute_path: path.canonicalize()?,
+            file,
+        })
+    }
+
+    /// Creat an instance with trucate option
+    pub fn with_truncate(path: &Path) -> RadResult<Self> {
+        let repr_path = path.to_owned();
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(&repr_path)
+            .map_err(|_| {
+                RadError::InvalidFile(format!("File \"{}\" cannot be opened", repr_path.display()))
+            })?;
+        Ok(Self {
+            repr: repr_path,
+            absolute_path: path.canonicalize()?,
+            file,
+        })
     }
 }
 

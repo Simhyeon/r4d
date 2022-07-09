@@ -106,7 +106,7 @@ impl ProcessorState {
             comment_type: CommentType::None,
             sandbox: false,
             #[cfg(not(feature = "wasm"))]
-            temp_target: FileTarget::empty(),
+            temp_target: FileTarget::with_truncate(&std::env::temp_dir().join("rad.txt")).unwrap(),
             comment_char: None,
             macro_char: None,
             flow_control: FlowControl::None,
@@ -125,7 +125,8 @@ impl ProcessorState {
         if path.exists() {
             std::fs::remove_file(path)?;
         }
-        self.temp_target.set_path(path);
+        let new_target = FileTarget::with_truncate(path)?;
+        self.temp_target = new_target;
         Ok(())
     }
 
@@ -246,7 +247,7 @@ impl ProcessorState {
 pub struct Processor<'processor> {
     map: MacroMap,
     define_parser: DefineParser,
-    write_option: WriteOption<'processor>,
+    pub(crate) write_option: WriteOption<'processor>,
     cache_file: Option<File>,
     logger: Logger<'processor>,
     cache: String,
@@ -314,15 +315,6 @@ impl<'processor> Processor<'processor> {
         #[allow(unused_mut)] // Mut is required on feature codes
         let mut state = ProcessorState::new();
 
-        // You cannot use filesystem in wasm target
-        // Since, temp_dir is always present it can't fail, therefore unwrap is safe
-        #[cfg(not(feature = "wasm"))]
-        {
-            state
-                .set_temp_target(&std::env::temp_dir().join("rad.txt"))
-                .unwrap();
-        }
-
         let mut logger = Logger::new();
         logger.set_write_option(Some(WriteOption::Terminal));
 
@@ -360,14 +352,14 @@ impl<'processor> Processor<'processor> {
     ///     .expect("Failed to open a file");
     /// ```
     pub fn write_to_file<P: AsRef<Path>>(mut self, target_file: P) -> RadResult<Self> {
-        let file = OpenOptions::new()
+        let open_option = OpenOptions::new()
             .create(true)
             .write(true)
             .truncate(true)
-            .open(&target_file);
+            .to_owned();
 
-        if let Ok(file) = file {
-            self.write_option = WriteOption::File(file);
+        if let Ok(option) = WriteOption::file(target_file.as_ref(), open_option) {
+            self.write_option = option;
         } else {
             return Err(RadError::InvalidCommandOption(format!(
                 "Could not create file \"{}\"",
@@ -402,10 +394,10 @@ impl<'processor> Processor<'processor> {
             .create(true)
             .write(true)
             .truncate(true)
-            .open(&target_file);
+            .to_owned();
 
-        if let Ok(file) = file {
-            self.logger.set_write_option(Some(WriteOption::File(file)));
+        if let Ok(file) = WriteOption::file(target_file.as_ref(), file) {
+            self.logger.set_write_option(Some(file));
         } else {
             return Err(RadError::InvalidCommandOption(format!(
                 "Could not create file \"{}\"",
@@ -2002,11 +1994,7 @@ impl<'processor> Processor<'processor> {
                 // NOTE
                 // Pracically this cannot be set in wasm target because multiple code barriers
                 // yet panic can theorically happen.
-                target
-                    .file
-                    .as_mut()
-                    .unwrap()
-                    .write_all(content.as_bytes())?;
+                target.inner().write_all(content.as_bytes())?;
             }
             #[cfg(not(feature = "wasm"))]
             RelayTarget::Temp => {
@@ -2016,7 +2004,7 @@ impl<'processor> Processor<'processor> {
             }
             RelayTarget::None => {
                 match &mut self.write_option {
-                    WriteOption::File(f) => f.write_all(content.as_bytes())?,
+                    WriteOption::File(f) => f.inner().write_all(content.as_bytes())?,
                     WriteOption::Terminal => std::io::stdout().write_all(content.as_bytes())?,
                     WriteOption::Variable(var) => var.push_str(content),
                     WriteOption::Return => self.cache.push_str(content),
@@ -2422,6 +2410,11 @@ impl<'processor> Processor<'processor> {
     // ----------
     // Start of miscellaenous methods
     // <MISC>
+
+    pub(crate) fn get_logger_write_option(&self) -> Option<&WriteOption> {
+        self.logger.write_option.as_ref()
+    }
+
     /// Get comment chararacter
     ///
     /// This will return custom character if existent
@@ -2476,13 +2469,13 @@ impl<'processor> Processor<'processor> {
     #[cfg(not(feature = "wasm"))]
     /// Get temp file's path
     pub(crate) fn get_temp_path(&self) -> &Path {
-        &self.state.temp_target.path
+        &self.state.temp_target.name()
     }
 
     #[cfg(not(feature = "wasm"))]
     /// Get temp file's "file" struct
     pub(crate) fn get_temp_file(&mut self) -> Option<&mut File> {
-        self.state.temp_target.file.as_mut()
+        Some(self.state.temp_target.inner())
     }
 
     /// Backup information of current file before processing sandboxed input
@@ -2551,6 +2544,7 @@ impl<'processor> Processor<'processor> {
             )))
         } else {
             let path = PathBuf::from(file);
+            // Input stack should always guarantee that path is canonicalized
             self.state.input_stack.insert(path.canonicalize()?);
             let input = ProcessInput::File(path);
             self.state.current_input = input.clone();

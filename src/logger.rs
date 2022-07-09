@@ -25,7 +25,7 @@ pub(crate) struct Logger<'logger> {
     last_line_number: usize,
     last_char_number: usize,
     current_input: ProcessInput,
-    write_option: Option<WriteOption<'logger>>,
+    pub(crate) write_option: Option<WriteOption<'logger>>,
     error_count: usize,
     warning_count: usize,
     assert_success: usize,
@@ -166,7 +166,7 @@ impl<'logger> Logger<'logger> {
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(
+                    file.inner().write_all(
                         format!(
                             "Log : {} -> {}:{}:{}{}",
                             log, self.current_input, self.last_line_number, last_char, LINE_ENDING
@@ -211,7 +211,7 @@ impl<'logger> Logger<'logger> {
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(
+                    file.inner().write_all(
                         format!(
                             "error : {} -> {}:{}:{}{}",
                             log, self.current_input, self.last_line_number, last_char, LINE_ENDING
@@ -250,7 +250,7 @@ impl<'logger> Logger<'logger> {
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(log.to_string().as_bytes())?;
+                    file.inner().write_all(log.to_string().as_bytes())?;
                 }
                 WriteOption::Terminal => {
                     write!(std::io::stderr(), "{}", log)?;
@@ -277,7 +277,7 @@ impl<'logger> Logger<'logger> {
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(
+                    file.inner().write_all(
                         format!(
                             "warning : {} -> {}:{}:{}{}",
                             log, self.current_input, self.last_line_number, last_char, LINE_ENDING
@@ -323,7 +323,7 @@ impl<'logger> Logger<'logger> {
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
-                    file.write_all(
+                    file.inner().write_all(
                         format!(
                             "assert fail -> {}:{}:{}{}",
                             self.current_input, self.last_line_number, last_char, LINE_ENDING
@@ -380,13 +380,13 @@ FAIL: {}",
             match option {
                 WriteOption::File(file) => {
                     if self.error_count > 0 {
-                        file.write_all(error_result.as_bytes())?;
+                        file.inner().write_all(error_result.as_bytes())?;
                     }
                     if self.warning_count > 0 {
-                        file.write_all(warning_result.as_bytes())?;
+                        file.inner().write_all(warning_result.as_bytes())?;
                     }
                     if self.assert {
-                        file.write_all(assert_result.as_bytes())?;
+                        file.inner().write_all(assert_result.as_bytes())?;
                     }
                 }
                 WriteOption::Terminal => {
@@ -453,7 +453,7 @@ FAIL: {}",
                     )?;
                 }
                 WriteOption::File(file) => {
-                    file.write_all(
+                    file.inner().write_all(
                         format!("{}:log{}{}", self.last_line_number, LINE_ENDING, log).as_bytes(),
                     )?;
                 }

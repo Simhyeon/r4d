@@ -993,11 +993,11 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let mut raw_include = false;
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
-                Utils::check_include_sanity(processor, &canonic)?;
+                Utils::check_file_sanity(processor, &canonic)?;
 
                 // Check path sanity if to_path exists
                 if to_path.exists() {
-                    Utils::check_include_sanity(processor, &to_path.canonicalize()?)?;
+                    Utils::check_file_sanity(processor, &to_path.canonicalize()?)?;
                 }
                 // Set sandbox after error checking or it will act starngely
                 processor.set_sandbox(true);
@@ -1017,8 +1017,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                     }
                 }
 
-                let mut file_target = FileTarget::empty();
-                file_target.set_path(&to_path);
+                let file_target = FileTarget::with_truncate(&to_path)?;
                 processor.state.relay.push(RelayTarget::File(file_target));
 
                 // Create chunk
@@ -1074,7 +1073,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let mut raw_include = false;
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
-                Utils::check_include_sanity(processor, &canonic)?;
+                Utils::check_file_sanity(processor, &canonic)?;
                 // Set sandbox after error checking or it will act starngely
                 processor.set_sandbox(true);
 

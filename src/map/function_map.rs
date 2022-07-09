@@ -2892,7 +2892,7 @@ $extract()"
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
 
-                Utils::check_include_sanity(processor, &canonic)?;
+                Utils::check_file_sanity(processor, &canonic)?;
                 // Set sandbox after error checking or it will act starngely
                 processor.set_sandbox(true);
 
@@ -4250,8 +4250,7 @@ $extract()"
                         "relay requires second argument as file name for file relaying".to_owned(),
                     ));
                 }
-                let mut file_target = FileTarget::empty();
-                file_target.set_path(Path::new(&target));
+                let file_target = FileTarget::with_truncate(Path::new(&target))?;
                 RelayTarget::File(file_target)
             }
             "macro" => {
