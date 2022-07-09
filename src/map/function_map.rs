@@ -117,28 +117,6 @@ $assert(--Hello-,$align(center,8,-,Hello))".to_string(),
                 ),
             ),
             (
-                "append".to_owned(),
-                FMacroSign::new(
-                    "append",
-                    ["a_macro_name^", "a_content"],
-                    Self::append,
-                    Some(
-                        "Append contents to a macro. If the macro doesn't exist, yields error
-
-# Arguments
-
-- a_macro_name : a macro name to append to ( trimmed )
-- a_content    : contents to be added
-
-# Example
-
-$define(container=Before)
-$append(container,$space()After)
-$assert($container(),Before After)".to_string(),
-                    ),
-                ),
-            ),
-            (
                 "split".to_owned(),
                 FMacroSign::new(
                     "spilt",
@@ -196,6 +174,19 @@ b
 $assert(1,1)
 % Fails
 $assert(a,b)".to_string()),
+                ),
+            ),
+            (
+                "comma".to_owned(),
+                FMacroSign::new(
+                    "comma",
+                    ESR,
+                    Self::print_comma,
+                    Some("Print a comma
+
+# Example
+
+$assert(\\*,*\\,$comma())".to_string()),
                 ),
             ),
             (
@@ -1566,7 +1557,7 @@ $surr(<div>,</div>,dividivi dip))".to_string()),
                 FMacroSign::new(
                     "tab",
                     ["a_amount?^"],
-                    Self::tab,
+                    Self::print_tab,
                     Some("Print tabs
 
 # Arguments
@@ -2225,6 +2216,31 @@ $assert(00:33:40,$hms(2020))"
                 ),
             );
         }
+        #[cfg(not(feature = "wasm"))]
+        #[cfg(feature = "chrono")]
+        {
+            map.insert(
+                "ftime".to_owned(),
+                FMacroSign::new(
+                    "ftime",
+                    ["a_file"],
+                    Self::get_file_time,
+                    Some(
+                        "Get a file's last modified time.
+
+# Arguments
+
+- a_file : A file to get last modified time ( trimmed )
+
+# Example
+
+$ftime(some_file.txt)
+% 2022-07-07 19:07:06"
+                            .to_string(),
+                    ),
+                ),
+            );
+        }
         #[cfg(feature = "evalexpr")]
         {
             map.insert(
@@ -2531,6 +2547,35 @@ $extract()"
                 }
                 Ok(Some(path.display().to_string()))
             }
+        }
+    }
+
+    /// Get a last modified time from a file
+    ///
+    /// # Usage
+    ///
+    /// $ftime(file_name.txt)
+    #[cfg(not(feature = "wasm"))]
+    #[cfg(feature = "chrono")]
+    fn get_file_time(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("ftime", AuthType::FIN, processor)? {
+            return Ok(None);
+        }
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let file = trim!(&args[0]);
+            let path = Path::new(file.as_ref());
+            if !path.exists() {
+                return Err(RadError::InvalidArgument(format!(
+                    "Cannot get a filetime from a non-existent file : \"{}\"",
+                    path.display()
+                )));
+            }
+            let time: chrono::DateTime<chrono::Utc> = std::fs::metadata(path)?.modified()?.into();
+            Ok(Some(time.format("%Y-%m-%d %H:%m:%S").to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "ftime requires an argument".to_owned(),
+            ))
         }
     }
 
@@ -3366,7 +3411,7 @@ $extract()"
     /// # Usage
     ///
     /// $tab()
-    fn tab(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+    fn print_tab(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         let count = if !args.is_empty() {
             trim!(args)
                 .parse::<usize>()
@@ -3376,6 +3421,15 @@ $extract()"
         };
 
         Ok(Some("\t".repeat(count)))
+    }
+
+    /// Print a literal comma
+    ///
+    /// # Usage
+    ///
+    /// $comma()
+    fn print_comma(_: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        Ok(Some(",".to_string()))
     }
 
     /// Yield spaces
@@ -3672,31 +3726,6 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "Align requires four arguments".to_owned(),
-            ))
-        }
-    }
-
-    /// Append content to a macro
-    ///
-    /// Only runtime macros can be appended.
-    ///
-    /// # Usage
-    ///
-    /// $append(macro_name,Content)
-    fn append(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let name = trim!(&args[0]);
-            let target = &args[1];
-            if processor.contains_macro(&name, MacroType::Runtime) {
-                processor.append_macro(&name, target);
-            } else {
-                processor.log_error(&format!("Macro \"{}\" doesn't exist", name))?;
-            }
-
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "Append requires two arguments".to_owned(),
             ))
         }
     }
