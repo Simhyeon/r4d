@@ -645,10 +645,16 @@ impl std::fmt::Display for ProcessInput {
 /// Standards of behaviour
 #[derive(PartialEq, Clone, Copy)]
 pub enum ErrorBehaviour {
+    /// Every error is a panic
     Strict,
+    /// Every error is pasted as is
     Lenient,
+    /// Every error is purged
     Purge,
+    /// Special behaviour of assertion
     Assert,
+    /// Special behaviour of panic
+    Interrupt,
 }
 
 #[derive(Clone)]

@@ -2192,6 +2192,7 @@ impl<'processor> Processor<'processor> {
         if let Err(err) = self.add_rule(frag) {
             self.log_error(&err.to_string())?;
             match self.state.behaviour {
+                ErrorBehaviour::Interrupt => return Err(err),
                 ErrorBehaviour::Assert => return Err(RadError::AssertFail),
                 // Re-throw error
                 // It is not captured in cli but it can be handled by library user.
@@ -2233,7 +2234,7 @@ impl<'processor> Processor<'processor> {
             // Handle empty name error
             match self.state.behaviour {
                 ErrorBehaviour::Assert => return Err(RadError::AssertFail),
-                ErrorBehaviour::Strict => return Err(err), // Error
+                ErrorBehaviour::Strict | ErrorBehaviour::Interrupt => return Err(err), // Error
                 ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
                 ErrorBehaviour::Purge => (),
             }
@@ -2298,11 +2299,8 @@ impl<'processor> Processor<'processor> {
         frag: &MacroFragment,
         remainder: &mut String,
     ) -> RadResult<()> {
-        if self.state.error_cache.is_none() {
-            self.log_error(&error.to_string())?;
-            self.state.error_cache.replace(error);
-        }
         match self.state.behaviour {
+            ErrorBehaviour::Interrupt => return Err(error),
             ErrorBehaviour::Assert => return Err(RadError::AssertFail),
             // Re-throw error
             // It is not captured in cli but it can be handled by library user.
@@ -2316,6 +2314,13 @@ impl<'processor> Processor<'processor> {
             ErrorBehaviour::Purge => (),
             ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
         }
+
+        // Print error only if error cache is empty
+        if self.state.error_cache.is_none() {
+            self.log_error(&error.to_string())?;
+            self.state.error_cache.replace(error);
+        }
+
         Ok(())
     }
 

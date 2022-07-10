@@ -3412,7 +3412,8 @@ $extract()"
     }
 
     /// Trigger panic
-    fn manual_panic(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+    fn manual_panic(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        p.state.behaviour = ErrorBehaviour::Interrupt;
         Err(RadError::ManualPanic(args.to_string()))
     }
 
