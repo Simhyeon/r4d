@@ -832,6 +832,11 @@ impl RegexCache {
         }
     }
 
+    /// Check if cache contains a key
+    pub fn contains(&self, name: &str) -> bool {
+        self.cache.contains_key(name)
+    }
+
     /// Register a regex
     ///
     /// Registered regex is not cleared

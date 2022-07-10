@@ -1349,7 +1349,7 @@ impl<'processor> Processor<'processor> {
                 // Only if debug switch is nextline
                 self.debugger.user_input_on_line(&frag, &mut self.logger)?;
             }
-            let result = match self.parse_line(&mut line_iter, &mut lexor, &mut frag) {
+            let result = match self.process_line(&mut line_iter, &mut lexor, &mut frag) {
                 Ok(oo) => oo,
                 Err(err) => {
                     return Err(err);
@@ -1464,7 +1464,7 @@ impl<'processor> Processor<'processor> {
     ///
     /// This parses given input as line by line with an iterator of lines including trailing new
     /// line chracter.
-    fn parse_line(
+    fn process_line(
         &mut self,
         lines: &mut impl std::iter::Iterator<Item = std::io::Result<String>>,
         lexor: &mut Lexor,
@@ -1494,7 +1494,7 @@ impl<'processor> Processor<'processor> {
             #[cfg(feature = "debug")]
             self.debugger.write_to_original(&line)?;
 
-            let remainder = self.parse_line_chunk(lexor, frag, &line, 0, MAIN_CALLER)?;
+            let remainder = self.parse_line(lexor, frag, &line, 0, MAIN_CALLER)?;
 
             // Clear local variable macros
             self.map.clear_local();
@@ -1562,7 +1562,7 @@ impl<'processor> Processor<'processor> {
             // However it can detect self calling macros in some cases
             // parse_chunk_body needs this caller but, parse_chunk_args doesn't need because
             // this methods only parses arguments thus, infinite loop is unlikely to happen
-            let line_result = self.parse_line_chunk(&mut lexor, &mut frag, &line, level, caller)?;
+            let line_result = self.parse_line(&mut lexor, &mut frag, &line, level, caller)?;
             result.push_str(&line_result);
 
             self.logger.add_line_number();
@@ -1582,7 +1582,7 @@ impl<'processor> Processor<'processor> {
     /// Parse a given line
     ///
     /// This calles lexor.lex to validate characters and decides next behaviour
-    fn parse_line_chunk(
+    fn parse_line(
         &mut self,
         lexor: &mut Lexor,
         frag: &mut MacroFragment,
@@ -2344,6 +2344,9 @@ impl<'processor> Processor<'processor> {
             // thus it is safe to unwrap it
             if frag.trimmed {
                 content = trim!(&content).to_string();
+                if content.is_empty() {
+                    self.state.consume_newline = true;
+                }
             }
             if frag.yield_literal {
                 content = format!("\\*{}*\\", content);
@@ -2666,6 +2669,19 @@ impl<'processor> Processor<'processor> {
     #[cfg(feature = "signature")]
     pub(crate) fn get_macro_manual(&self, macro_name: &str) -> Option<String> {
         self.map.get_signature(macro_name).map(|s| s.to_string())
+    }
+
+    /// Try getting a regex or newly compile
+    ///
+    /// # Return
+    ///
+    /// this returns reference to a existing or compiled regex
+    pub fn try_get_or_insert_regex(&mut self, expression: &str) -> RadResult<&Regex> {
+        if self.state.regex_cache.contains(expression) {
+            Ok(self.state.regex_cache.get(expression).unwrap())
+        } else {
+            self.state.regex_cache.append(expression)
+        }
     }
 
     /// Expand chunk and strip quotes

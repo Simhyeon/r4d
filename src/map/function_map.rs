@@ -2539,17 +2539,8 @@ $extract()"
                 ));
             }
 
-            match p.state.regex_cache.get(match_expr) {
-                Some(reg) => Ok(Some(reg.replace_all(source, substitution).to_string())),
-                None => {
-                    let result = p
-                        .state
-                        .regex_cache
-                        .append(match_expr)?
-                        .replace_all(source, substitution);
-                    Ok(Some(result.to_string()))
-                }
-            }
+            let reg = p.try_get_or_insert_regex(match_expr)?;
+            Ok(Some(reg.replace_all(source, substitution).to_string()))
         } else {
             Err(RadError::InvalidArgument(
                 "Regex sub requires three arguments".to_owned(),
@@ -2625,13 +2616,8 @@ $extract()"
                 ));
             }
 
-            match p.state.regex_cache.get(match_expr) {
-                Some(reg) => Ok(Some(reg.is_match(source).to_string())),
-                None => {
-                    let result = p.state.regex_cache.append(match_expr)?.is_match(source);
-                    Ok(Some(result.to_string()))
-                }
-            }
+            let reg = p.try_get_or_insert_regex(match_expr)?;
+            Ok(Some(reg.is_match(source).to_string()))
         } else {
             Err(RadError::InvalidArgument(
                 "find requires two arguments".to_owned(),
@@ -2655,18 +2641,8 @@ $extract()"
                 ));
             }
 
-            match p.state.regex_cache.get(match_expr) {
-                Some(reg) => Ok(Some(reg.find_iter(source).count().to_string())),
-                None => {
-                    let result = p
-                        .state
-                        .regex_cache
-                        .append(match_expr)?
-                        .find_iter(source)
-                        .count();
-                    Ok(Some(result.to_string()))
-                }
-            }
+            let reg = p.try_get_or_insert_regex(match_expr)?;
+            Ok(Some(reg.find_iter(source).count().to_string()))
         } else {
             Err(RadError::InvalidArgument(
                 "findm requires two arguments".to_owned(),
@@ -4198,10 +4174,7 @@ $extract()"
     fn grep_array(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let expr = &args[0];
-            let reg = match p.state.regex_cache.get(expr) {
-                Some(reg) => reg,
-                None => p.state.regex_cache.append(expr)?,
-            };
+            let reg = p.try_get_or_insert_regex(expr)?;
             let content = args[1].split(',').collect::<Vec<_>>();
             let grepped = content
                 .iter()
@@ -4225,10 +4198,7 @@ $extract()"
     fn grep_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let expr = &args[0];
-            let reg = match p.state.regex_cache.get(expr) {
-                Some(reg) => reg,
-                None => p.state.regex_cache.append(expr)?,
-            };
+            let reg = p.try_get_or_insert_regex(expr)?;
             let content = args[1].lines();
             let grepped = content
                 .filter(|l| reg.is_match(l))
