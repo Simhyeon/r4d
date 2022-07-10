@@ -117,6 +117,27 @@ $assert(--Hello-,$align(center,8,-,Hello))".to_string(),
                 ),
             ),
             (
+                "cmp".to_owned(),
+                FMacroSign::new(
+                    "cmp",
+                    ["a_lvalue", "a_rvalue"],
+                    Self::compare_values,
+                    Some("Check if given values are same
+
+# Return : Boolean
+
+# Arguments
+
+- a_lvalue : A left value to compare
+- a_rvalue : A right value to cmpare
+
+# Example
+
+$assert(false,$cmp(a,b))
+$assert(true,$cmp(23,23))".to_string()),
+                ),
+            ),
+            (
                 "split".to_owned(),
                 FMacroSign::new(
                     "spilt",
@@ -195,10 +216,10 @@ $assert(\\*,*\\,$comma())".to_string()),
                     "counter",
                     ["a_macro_name^","a_counter_type^+"],
                     Self::change_counter,
-                    Some("Increae/decrease counter macro. 
+                    Some("Increae/decrease counter macro.
 
 - Counter macro is automatically defined if the macro doesn't exist
-- Counter's value should be a number and can be negative. 
+- Counter's value should be a number and can be negative.
 
 # Arguments
 
@@ -305,7 +326,7 @@ $clear()".to_string()),
 
 $staticr(lines,
     upper
-    
+
 
     down
 )
@@ -504,6 +525,26 @@ $assert($input(true),/home/user/dir/test)".to_string()),
                 ),
             ),
             (
+                "isempty".to_owned(),
+                FMacroSign::new(
+                    "isempty",
+                    ["a_value"],
+                    Self::is_empty,
+                    Some("Check if a given value is empty
+
+# Return : Boolean
+
+# Arguments
+
+- a_value : Value to qualify
+
+# Example
+
+$assert(true,$isempty())
+$assert(false,$isempty( ))".to_string()),
+                ),
+            ),
+            (
                 "istype".to_owned(),
                 FMacroSign::new(
                     "istype",
@@ -601,7 +642,7 @@ $assert($floor(-3.1),-4)".to_string()),
                     Self::fold,
                     Some("Fold an array into a single value
 
-# Arguments 
+# Arguments
 
 - a_array : An array to fold
 
@@ -618,7 +659,7 @@ $assert(abc,$fold(a,b,c))".to_string()),
                     Self::fold_line,
                     Some("Fold lines into a single value
 
-# Arguments 
+# Arguments
 
 - a_lines : Lines to fold
 
@@ -803,7 +844,7 @@ $assert(ef,$index(2,ab,cd,ef))".to_string()),
 
 # Arguments
 
-- a_file: A file name to import from [path] (trimmed) 
+- a_file: A file name to import from [path] (trimmed)
 
 # Example
 
@@ -1115,7 +1156,7 @@ $assert($nl(),
 - a_number   : A number to change notation
 - a_type     : A type of notation [\"bin\",\"oct\",\"hex\"] ( trimmed )
 
-# Example                        
+# Example
 
 $assert(10111,$notat(23,bin))
 $assert(27,$notat(23,oct))
@@ -1145,7 +1186,7 @@ $panic(This should not be reached)".to_string()),
                     "parent",
                     ["a_path"],
                     Self::get_parent,
-                    Some("Get a parent from a given path. 
+                    Some("Get a parent from a given path.
 
 - NOTE : This yields an error if a path is a root and will return an empty value, but not a none value if a path is a single node.
 
@@ -1155,7 +1196,7 @@ $panic(This should not be reached)".to_string()),
 
 - a_path : A Path to extract parent from
 
-# Example 
+# Example
 
 $fassert($parent(/))
 $assert($empty(),$parent(node))
@@ -1171,7 +1212,7 @@ $assert(/first/second,$parent(/first/second/last.txt))".to_string()),
                     Some("Merge given paths
 
 - This respects a platform path separator
-- Paths with colliding separator cannot be merged. 
+- Paths with colliding separator cannot be merged.
     e.g) a/ + /b cannot be merged
 
 # Return : path
@@ -1220,7 +1261,7 @@ $assert(1,$i())".to_string()),
                     Self::pipe,
                     Some("Pipe a given value into an unnamed pipe
 
-# Arguments 
+# Arguments
 
 - a_value : A value to pipe
 
@@ -1299,7 +1340,7 @@ $relay(temp)$halt()".to_string()),
                     Self::reverse_array,
                     Some("Reverse order of an array
 
-# Arguments 
+# Arguments
 
 - a_array : Array to reverse
 
@@ -1545,7 +1586,7 @@ $assert(0 ,$stt())".to_string()),
                     "sub",
                     ["a_start_index^", "a_end_index^", "a_source"],
                     Self::substring,
-                    Some("Get a substring with indices. 
+                    Some("Get a substring with indices.
 
 - Out of range index is an error
 - A substring is calculated as char iterator not a byte iterator
@@ -1653,11 +1694,11 @@ c))".to_string()),
 # Example
 
 $assert=(
-	|a|b|c|
-	|-|-|-|
-	|1|2|3|,$enl()
-	$table(github,a,b,
-	1,2,3)
+    |a|b|c|
+    |-|-|-|
+    |1|2|3|,$enl()
+    $table(github,a,b,
+    1,2,3)
 )".to_string()),
                 ),
             ),
@@ -1726,7 +1767,7 @@ $assert(Upper$nl()Middle$nl()Last,$triml(    Upper
                     Self::trimla,
                     Some("Triml with given amount
 
-- Trims by line but with given amount. 
+- Trims by line but with given amount.
 - If given an integer, it will try to trim blank characters as much as given amount
 - min trims by minimal amount that can be applied to total lines
 - max acts same as triml
@@ -1771,7 +1812,7 @@ $space(5)Third)
 - \"Define\" macro cannot be undefined
 - Undef doesn't yield error when a macro doesn't exist
 
-# Arguments 
+# Arguments
 
 - a_macro_name : A name of a macro to undefine ( trimmed )
 
@@ -1953,7 +1994,7 @@ $assert(Linux,$syscmd(uname))"
 
 - A default temporary path is folloiwng
 - Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
-- *nix    : /tmp/rad.txt 
+- *nix    : /tmp/rad.txt
 
 # Auth: FIN
 
@@ -1975,7 +2016,7 @@ $tempin()"
 
 - A default temporary path is folloiwng
 - Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
-- *nix    : /tmp/rad.txt 
+- *nix    : /tmp/rad.txt
 
 # Auth: FOUT
 
@@ -2026,7 +2067,7 @@ $tempto(/new/path)"
 
 - A default temporary path is folloiwng
 - Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
-- *nix    : /tmp/rad.txt 
+- *nix    : /tmp/rad.txt
 
 # Auth: FIN
 
@@ -2080,7 +2121,7 @@ $include(file_path, true)"
 - a_truncate : Whether to truncate before writing [boolean] ( trimmed )
 - a_content  : Content to write to the file
 
-# Example 
+# Example
 
 $fileout(/tmp/some_file.txt,true,Hello World)"
                             .to_string(),
@@ -2094,9 +2135,9 @@ $fileout(/tmp/some_file.txt,true,Hello World)"
                     ["a_path^+", "a_absolute?^+", "a_delim+"],
                     Self::list_directory_files,
                     Some(
-                        "List a directory's files as csv. 
+                        "List a directory's files as csv.
 
-- A default path is a current working directory. 
+- A default path is a current working directory.
 - A defualt delimiter is comma.
 
 # Auth : FIN
@@ -2135,7 +2176,7 @@ $listdir(/tmp,true,|)"
 
 - a_table_name : A table name to be registered ( trimmed )
 - a_data       : Csv data ( trimmed )
- 
+
 # Example
 
 $regcsv(table1,a,b,c
@@ -3877,7 +3918,7 @@ $extract()"
             }
         } else {
             Err(RadError::InvalidArgument(
-                "Fileout requires three argument".to_owned(),
+                "Fileout requires three arguments".to_owned(),
             ))
         }
     }
@@ -3901,7 +3942,7 @@ $extract()"
             Ok(Some(content[0..length].iter().collect()))
         } else {
             Err(RadError::InvalidArgument(
-                "head requires two argument".to_owned(),
+                "head requires two arguments".to_owned(),
             ))
         }
     }
@@ -3927,7 +3968,7 @@ $extract()"
             Ok(Some(lines[0..length].concat()))
         } else {
             Err(RadError::InvalidArgument(
-                "headl requires two argument".to_owned(),
+                "headl requires two arguments".to_owned(),
             ))
         }
     }
@@ -3955,7 +3996,7 @@ $extract()"
             ))
         } else {
             Err(RadError::InvalidArgument(
-                "tail requires two argument".to_owned(),
+                "tail requires two arguments".to_owned(),
             ))
         }
     }
@@ -3999,7 +4040,7 @@ $extract()"
             Ok(Some(lines[lines.len() - length..lines.len()].concat()))
         } else {
             Err(RadError::InvalidArgument(
-                "taill requires two argument".to_owned(),
+                "taill requires two arguments".to_owned(),
             ))
         }
     }
@@ -4030,7 +4071,7 @@ $extract()"
             Ok(Some(content.join(",")))
         } else {
             Err(RadError::InvalidArgument(
-                "sort requires two argument".to_owned(),
+                "sort requires two arguments".to_owned(),
             ))
         }
     }
@@ -4061,7 +4102,7 @@ $extract()"
             Ok(Some(content.join(&p.state.newline)))
         } else {
             Err(RadError::InvalidArgument(
-                "sortl requires two argument".to_owned(),
+                "sortl requires two arguments".to_owned(),
             ))
         }
     }
@@ -4110,7 +4151,7 @@ $extract()"
             Ok(Some(content[final_index].to_owned()))
         } else {
             Err(RadError::InvalidArgument(
-                "index requires two argument".to_owned(),
+                "index requires two arguments".to_owned(),
             ))
         }
     }
@@ -4161,7 +4202,7 @@ $extract()"
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
-                "regexpr requires two argument".to_owned(),
+                "regexpr requires two arguments".to_owned(),
             ))
         }
     }
@@ -4185,7 +4226,7 @@ $extract()"
             Ok(Some(grepped))
         } else {
             Err(RadError::InvalidArgument(
-                "grep requires two argument".to_owned(),
+                "grep requires two arguments".to_owned(),
             ))
         }
     }
@@ -4207,7 +4248,7 @@ $extract()"
             Ok(Some(grepped))
         } else {
             Err(RadError::InvalidArgument(
-                "grepl requires two argument".to_owned(),
+                "grepl requires two arguments".to_owned(),
             ))
         }
     }
@@ -4678,7 +4719,7 @@ $extract()"
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
-                "Docu requires two argument".to_owned(),
+                "Docu requires two arguments".to_owned(),
             ))
         }
     }
@@ -4698,7 +4739,7 @@ $extract()"
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
-                "Let requires two argument".to_owned(),
+                "Let requires two arguments".to_owned(),
             ))
         }
     }
@@ -4718,7 +4759,7 @@ $extract()"
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
-                "Letr requires two argument".to_owned(),
+                "Letr requires two arguments".to_owned(),
             ))
         }
     }
@@ -4816,7 +4857,7 @@ $extract()"
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
-                "Static requires two argument".to_owned(),
+                "Static requires two arguments".to_owned(),
             ))
         }
     }
@@ -4854,7 +4895,7 @@ $extract()"
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
-                "Staticr requires two argument".to_owned(),
+                "Staticr requires two arguments".to_owned(),
             ))
         }
     }
@@ -4916,6 +4957,39 @@ $extract()"
         }
     }
 
+    /// cmp : cmopare values
+    ///
+    /// # Usage
+    ///
+    /// $cmp(lvalue, rvalue)
+    fn compare_values(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let lvalue = &args[0];
+            let rvalue = &args[1];
+            Ok(Some(lvalue.eq(rvalue).to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "cmp requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// isempty : Check if value is empty
+    ///
+    /// # Usage
+    ///
+    /// $isempty(value)
+    fn is_empty(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let value = &args[0];
+            Ok(Some(value.is_empty().to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "isempty requires an argument".to_owned(),
+            ))
+        }
+    }
+
     /// istype : Qualify a value
     ///
     /// # Usage
@@ -4939,7 +5013,9 @@ $extract()"
             };
             Ok(Some(qualified.to_string()))
         } else {
-            Err(RadError::InvalidArgument("istype two arguments".to_owned()))
+            Err(RadError::InvalidArgument(
+                "istype requires two arguments".to_owned(),
+            ))
         }
     }
 
