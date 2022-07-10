@@ -1993,7 +1993,7 @@ impl<'processor> Processor<'processor> {
             RelayTarget::File(target) => {
                 // NOTE
                 // Pracically this cannot be set in wasm target because multiple code barriers
-                // yet panic can theorically happen.
+                // yet panic can theoreoically happen.
                 target.inner().write_all(content.as_bytes())?;
             }
             #[cfg(not(feature = "wasm"))]
