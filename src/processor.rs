@@ -1763,17 +1763,6 @@ impl<'processor> Processor<'processor> {
             }
         }
 
-        // Possibly inifinite loop so warn user
-        if caller == name {
-            self.log_warning(
-                &format!(
-                    "Calling self, which is \"{}\", can possibly trigger infinite loop. This is also occured when argument's name is equal to macro's name.",
-                    name,
-                ),
-                WarningType::Sanity,
-            )?;
-        }
-
         // Find local macro
         // The macro can be  the one defined in parent macro
         let mut temp_level = level;
@@ -1790,6 +1779,17 @@ impl<'processor> Processor<'processor> {
         // runtime macro comes before function macro so that
         // user can override it
         if self.map.runtime.contains(name, self.state.hygiene) {
+            // Possibly inifinite loop so warn user
+            if caller == name {
+                self.log_warning(
+                    &format!(
+                        "Calling self, which is \"{}\", can possibly trigger infinite loop. This is also occured when argument's name is equal to macro's name.",
+                        name,
+                    ),
+                    WarningType::Sanity,
+                )?;
+            }
+
             // Prevent invocation if relaying to
             if let Some(RelayTarget::Macro(mac)) = &self.state.relay.last() {
                 if mac == name {
