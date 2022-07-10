@@ -67,7 +67,7 @@ impl std::fmt::Display for RadError {
                 txt, atype
             ),
             Self::StrictPanic(err) => format!("Strict error\n= {}", err),
-            Self::ManualPanic(txt) => format!("Panic triggered with message\n= {}", txt),
+            Self::ManualPanic(txt) => format!("Panic triggered with message\n^^^ {} ^^^", txt),
             Self::StorageError(txt) => format!("Storage error with message\n= {0}", txt),
             #[cfg(feature = "cindex")]
             Self::CIndexError(err) => err.to_string(),
