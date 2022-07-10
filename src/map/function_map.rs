@@ -1977,6 +1977,29 @@ $assert(/home/user/cwd/test.md,$abs(test.md))"
                 ),
             );
             map.insert(
+                "grepf".to_owned(),
+                FMacroSign::new(
+                    "grepf",
+                    ["a_expr", "a_file^"],
+                    Self::grep_file,
+                    Some(
+                        "Extract matched lines from given file. This returns all items as lines
+
+- NOTE : The grep operation is executed on per line
+
+# Arguments
+
+- a_expr  : A regex expression to match
+- a_lines : A file get matches from
+
+# Example
+
+$countl($grepf(file.txt))"
+                            .to_string(),
+                    ),
+                ),
+            );
+            map.insert(
                 "syscmd".to_owned(),
                 FMacroSign::new(
                     "syscmd",
@@ -4273,11 +4296,11 @@ $extract()"
         }
     }
 
-    /// Grep
+    /// Grepl
     ///
     /// # Usage
     ///
-    /// $grep(EXPR,CONTENT)
+    /// $grepl(EXPR,CONTENT)
     fn grep_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let expr = &args[0];
@@ -4291,6 +4314,50 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "grepl requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Grepf
+    ///
+    /// # Usage
+    ///
+    /// $grepf(EXPR,CONTENT)
+    fn grep_file(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("grepf", AuthType::FIN, p)? {
+            return Ok(None);
+        }
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let file = trim!(&args[1]);
+            let path = Path::new(file.as_ref());
+
+            if path.exists() {
+                let canonic = path.canonicalize()?;
+                Utils::check_file_sanity(p, &canonic)?;
+            } else {
+                return Err(RadError::InvalidArgument(format!(
+                    "grepf requires a real file to read from but \"{}\" doesn't exist",
+                    file
+                )));
+            };
+
+            let expr = &args[0];
+            let reg = p.try_get_or_insert_regex(expr)?;
+            let file_stream = std::fs::File::open(path)?;
+            let reader = std::io::BufReader::new(file_stream);
+
+            let mut vec = vec![];
+            for line in reader.lines() {
+                let line = line?;
+                if reg.is_match(&line) {
+                    vec.push(line);
+                }
+            }
+
+            Ok(Some(vec.join(&p.state.newline)))
+        } else {
+            Err(RadError::InvalidArgument(
+                "grep requires two arguments".to_owned(),
             ))
         }
     }
