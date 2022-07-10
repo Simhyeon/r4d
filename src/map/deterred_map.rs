@@ -154,7 +154,7 @@ $assert(a+b+c+,$forby($:()+,-,a-b-c))".to_string(),
                 "foreach".to_owned(),
                 DMacroSign::new(
                     "foreach",
-                    ["a_body", "a_array"],
+                    ["a_body", "a_array^"],
                     DeterredMacroMap::foreach,
                     Some(
                         "Iterate around given array.
@@ -169,7 +169,7 @@ An iterated value is bound to macro \":\"
 # Arguments
 
 - a_body  : A body to be pasted as iterated item
-- a_array : An array to iterate
+- a_array : An array to iterate ( trimmed )
 
 # Example
 
@@ -178,10 +178,10 @@ $assert(a+b+c+,$foreach($:()+,a,b,c))".to_string(),
                 ),
             ),
             (
-                "forline".to_owned(),
+                "forline^".to_owned(),
                 DMacroSign::new(
                     "forline",
-                    ["a_body","a_lines"],
+                    ["a_body","a_lines^"],
                     DeterredMacroMap::forline,
                     Some("Loop around given lines separated by newline chraracter. 
 
@@ -190,7 +190,7 @@ An iterated value is bound to macro \":\"
 # Expansion order
 
 1. a_lines : Expanded on time
-2. a_body  : Split lines by newline, and expanded by per item.
+2. a_body  : Split lines by newline, and expanded by per item. ( trimmed )
 
 # Arguments
 
@@ -717,8 +717,9 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             ap.set_strip(true);
             let mut sums = String::new();
             let body = &args[0];
-            let loopable = &processor.parse_and_strip(&mut ap, level, &args[1])?;
-            for (count, value) in loopable.split(',').enumerate() {
+            let loop_src = processor.parse_and_strip(&mut ap, level, &args[1])?;
+            let loopable = trim!(&loop_src);
+            for (count, value) in loopable.as_ref().split(',').enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 processor.add_new_local_macro(level, ":", value);
@@ -749,7 +750,8 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             ap.set_strip(true);
             let mut sums = String::new();
             let body = &args[0];
-            let loopable = &processor.parse_and_strip(&mut ap, level, &args[1])?;
+            let loop_src = processor.parse_and_strip(&mut ap, level, &args[1])?;
+            let loopable = trim!(&loop_src);
             let mut count = 1;
             for value in loopable.lines() {
                 // This overrides value
