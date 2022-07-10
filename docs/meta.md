@@ -1,11 +1,12 @@
 ### TODO
 
+* [ ] StrictError is not helpful...?
+* [ ] Is log error maro useful?
 * [ ] Consider merging documentaion into a single file index with multiple subindex links
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
-    - This needs to implement cow maniuplation and I'm... ok maybe later
-* [ ] trim attribute to set consume newline ( By converting it into a None ) if trimmed output is empty
-* [ ] Refactor code base
-    * [ ] Regex try\_and\_get\_cache
+    - This needs to implement cow manipulation and I'm... ok maybe later
+* [x] Refactor code base
+    * [x] Regex try\_and\_get\_cache
 
 : ORDERED :
 1. [x] Include deterred attributes on arguments
@@ -49,16 +50,20 @@ $todo_end()
 
 ### Changes
 
+* [x] Trim output now consume new line if result is empty
 * [x] Included signature and color as default into a binary because man flag is
 critical
 * [x] Now, silent's default value is any
 * [x] New macros
+    * [x] cmp
+    * [x] ssplit
     * [x] istype
-    * [x] Ftime
-    * [x] Comma
-    * [x] Append with trailer
-    * [x] Chars iterator macro
-    * [x] Squash macro
+    * [x] isempty
+    * [x] ftime
+    * [x] comma
+    * [x] append with trailer
+    * [x] chars
+    * [x] squash
 * [x] Feature
     * [x] Make deterred macro works like other macros
     * [x] Rado : Edit in place with io operation

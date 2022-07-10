@@ -1,4 +1,4 @@
-# NOTE
+**NOTE**
 
 Currently r4d is preparing 3.0 release and 3.0 has many hard breaking changes
 such as argument order change, macro removal, macro renames. Use rad's man flag
@@ -6,9 +6,12 @@ if you want to see most updated information.
 
 ```bash
 # This needs signature feature
+# Signature feature is included in binary but not in basic
+
 # Get all manuals
-rad --man 
-# Get specific manuals
+rad --man
+
+# Get a specific manual
 rad --man ifelse
 ```
 
@@ -31,135 +34,327 @@ Evaluated text goes here
 Expanded text from macro // This is a demonstration comment and not a real comment
 ```
 
-## Function(default) macros
+## Table of conents
 
-All macros are case sensitive and should come with dollar sign prefix.
+For assertion macros refer [debug part](./debug.md)
 
-For assertion macros refer [debug part](./debug.md) 
+### Macros 
 
 * [define](#define)
 * [declare](#declare)
+* [static, staticr](#static)
+* [let, letr](#let)
 * [undef](#undef)
+* [docu](#docu)
 * [rename](#rename)
 * [repl](#repl)
 * [append](#append)
-* [pause](#pause-macro)
-* [include](#include)
-* [import](#import)
-* [source](#source)
-* [temp](#tempin-tempout-tempto)
-* [relay,halt](#relay-halt)
-* [fileout](#fileout)
-* [env](#env)
-* [envset](#envset)
-* [ifenv](#ifenv-deterred-macro)
-* [ifenvel](#ifenvel-deterred-macro)
-* [path](#path)
-* [abs](#abs)
-* [name](#name)
-* [parent](#parent)
-* [listdir](#listdir)
-* [let](#let-macro)
-* [Static](#static-macro)
-* [pipe](#pipe)
-* [Repeat](#repeat)
-* [arr](#arr)
-* [sep](#sep-macro)
-* [foreach](#foreach-deterred-macro)
-* [forline](#forline-deterred-macro)
-* [forloop](#forloop-deterred-macro)
+* [counter](#counter)
+
+### Text
+
+<!-- Formatting -->
+* [upper](#upper)
+* [lower](#lower)
+* [wrap](#wrap)
+* [repeat](#repeat)
+* [surr](#surr)
+* [tr](#tr)
+* [align](#align)
+* [table](#table)
+<!-- Extraction -->
+* [num](#num)
+* [sub](#sub)
+* [head, headl](#head)
+* [tail, taill](#tail)
+<!-- Text creation -->
+* [lipsum](#lipsum)
+* [unicode](#unicode)
+<!-- Meta information -->
+* [len](#len)
+* [countw](#countw)
+
+### Array
+
+<!-- Array creation -->
+* [spilt](#spilt)
+* [chars](#chars)
+<!-- Array indexing -->
 * [min](#min)
 * [max](#max)
-* [ceil](#ceil)
-* [floor](#floor)
-* [prec](#prec)
-* [cap](#cap)
-* [low](#low)
-* [num](#num)
-* [rev](#rev)
-* [eval](#eval)
-* [ieval](#eval--deterred-macro)
-* [if](#if--deterred-macro)
-* [ifelse](#ifelse--deterred-macro)
-* [ifdef](#ifdef--deterred-macro)
-* [ifdefel](#ifdefel--deterred-macro)
-* [not](#not)
-* [syscmd](#syscmd)
-* [sub](#sub)
-* [head](#head)
-* [tail](#tail)
-* [strip](#strip)
-* [grep](#grep)
 * [index](#index)
+<!-- Array modification -->
 * [sort](#sort)
+* [rev](#rev)
+<!-- Array transformation -->
+* [join](#join)
 * [fold](#fold)
+<!-- Array meta data -->
 * [count](#count)
-* [tr](#tr)
-* [len](#len)
-* [regex](#regex)
+
+### Lines
+
+<!-- Lines modification -->
+* [sortl](#sortl)
+* [indent](#indent)
+<!-- Lines transformation -->
+* [joinl](#joinl)
+* [foldl](#foldl)
+<!-- Lines meta data -->
+* [countl](#countl)
+
+### Number
+
+<!-- Number modification  -->
+* [floor](#floor)
+* [ceil](#ceil)
+* [prec](#prec)
+* [notat](#notat)
+<!-- Number combination -->
+* [eval](#eval)
+* [evalk](#evalk)
+
+### Qualification
+
+* [not](#not)
+* [cmp](#cmp)
+* [isempty](#isempty)
+* [istype](#istype)
+
+### Conditional
+
+* [if](#if)
+* [ifelse](#ifelse)
+* [ifdef](#ifdef)
+* [ifdefel](#ifdefel)
+* [ifenv](#ifenv)
+* [ifenvel](#ifenvel)
+
+### Loop
+
+* [forby](#forby)
+* [foreach](#foreach)
+* [forline](#forline)
+* [forloop](#forloop)
+
+### Files
+
+* [listdir](#listdir)
+* [fileout](#fileout)
+* [include](#include)
+* [source](#source)
+* [import](#import)
+* [readin](#readin)
+* [readto](#readto)
+* [tempin](#tempin)
+* [tempout](#tempout)
+* [tempto](#tempto)
+
+### Path manipulation
+
+* [name](#name)
+* [parent](#parent)
+* [path](#path)
+* [abs](#abs)
+* [input](#input)
+* [temp](#temp)
+
+### Space manipulation
+
+* [trim](#trim)
+* [triml](#triml)
+* [trimla](#trimla)
+* [chomp](#chomp)
+* [comp](#comp)
+* [squash](#squash)
+* [EB](#EB)
+* [dnl](#dnl)
+* [enl](#enl)
+
+### Piping
+
+* [pipe](#pipe)
+* [pipeto](#pipeto)
+* [-](#-)
+
+### Semantics
+
+* [empty](#empty)
+* [space](#space)
+* [tab](#tab)
+* [nl](#nl)
+* [comma](#comma)
+
+### Regex 
+
 * [find](#find)
 * [findm](#findm)
-* [trim, chomp, comp, triml](#trim-chomp-comp-triml)
-* [wrap](#wrap)
-* [nl](#nl)
-* [enl](#enl)
-* [dnl](#dnl)
-* [lipsum](#lipsum)
-* [time, date](#time-date)
-* [from](#from--deterred-macro)
-* [table](#table)
+* [grep](#grep)
+* [grepl](#grepl)
+* [grepf](#grepf)
+* [regex](#regex)
+* [regexpr](#regexpr)
+
+### Time
+
+* [time](#time)
+* [date](#date)
+* [hms](#hms)
+* [ftime](#ftime)
+
+### Expansion
+
+* [exec](#exec)
+* [spread](#spread)
+
+## Environment variable
+
+* [env](#env)
+* [envset](#envset)
+
+### Querying
+
+* [regcsv](#regcsv)
+* [query](#query)
+* [dropcsv](#dropcsv)
+
+### Operational
+
+* [panic](#panic)
+* [relay](#relay)
+* [halt](#halt)
+* [exit](#exit)
+* [pause](#pause)
+* [escape](#escape)
+* [clear](#clear)
+* [hygiene](#hygiene)
+
+### Storage
+
 * [update](#update)
 * [extract](#extract)
-* [regcsv](#regcsv)
-* [dropcsv](#dropcsv)
-* [query](#query)
-* [flowcontrol](#flowcontrol)
-* [panic](#panic)
-* [Clear](#clear)
-* [Hygiene](#hygiene)
 
-### define
+### Special macros
 
-Define creates a runtime macro. This macro is actually not a macro but special
-function. Define cannot be renamed or undefined. Define macro cannot be
-overriden too.
+* [syscmd](#syscmd)
+* [que](#que)
+* [ifque](#ifque)
+* [strip](#strip)
+
+### Debugging
+
+* [log](#log)
+* [logm](#logm)
+
+## Indices
+
+### Macros
+
+#### define
+
+Define creates a runtime macro. Define cannot be renamed, undefined or
+overriden.
+
+Refer [Macro syntax](./macro_syntax.md) for detailed usage
 
 ```
-$define(name,a1 a2="$a1(),$a2()")
+$define(name,a1 a2=$a1() + $a2())
 ===
-% Define doesn't print new line if it is a single input in the line
 ```
 
-### declare
+#### declare
 
-You can simply declare a macro or macros without defining its body.
+You can simply declare macros without defining its body.
 
-This is useful when you simply need a macro to be defined so that ifdef or
-ifdefel can be used with.
+This is useful when you simply need macros to be defined so that other macros
+can utilizie them.
 
 ```
-$declare(name)
-$declare(n1 n2 n3)
-$ifdef(name,I'm defined)
+$declare(n0)
+$declare(n1,n2,n3)
+$ifdef(n0,I'm defined)
 $ifdef(n3,I'm also defined)
 ===
 I'm defined
 I'm also defined
 ```
 
-### undef
+#### static
 
-Undef can undefine every macros but ```define```.
+Statically binds an expression that persists for the whole processing. Static
+is useful when you don't need dynamic evaluation but statically bound value.
+Because definition is evaluated on every call which might not be necessarily
+efficient or not be an intended behaviour.
+
+"Static" trims bound value by default. Use **staticr** variant if you don't want
+such behaviour.
+
+```
+$pipe(I'm piped)
+$define(dyn=$-())
+$static(stt,$-())
+$stt()
+$dyn()
+===
+I'm piped
+warning: Empty pipe
+ --> demo:2~~:2
+warning: found 1 warnings
+```
+
+#### let
+
+Creates a new local macro. This macro is automatically clared after evalution
+of the macro.
+
+Local macro is scope specific, thus cannot be accessed from outside.
+
+"Let" trims bound value by default. Use **letr** variant if you don't want such
+behaviour.
+
+```
+$define(let_test=
+    $let(lc,
+        ^^^ Bound Value ^^^
+    )
+    $lc()
+)
+$let_test^()
+$lc()
+===
+^^^ Bound Value ^^^
+error: Invalid macro name
+= No such macro name : "lc"
+ --> demo:8:2
+error: Strict error
+= Every error is panicking in strict mode
+ --> demo:8:2
+=== Processor panicked ===
+```
+
+#### undef
+
+Undefine a macro. Undefine removes all the macros that has a same name.
 
 ```
 $undef(name)
 ===
-% Undef doesn't print new line if it is a single input in the line
 ```
 
-### rename
+#### docu
 
-Rename can change the name of the macro but ```define```.
+Docu adds documentation for a given macro. Appended description can be accessed
+with rad binary's --man flag.
+
+```
+$define(test=)
+$docu(test,This is a test macro)
+===
+```
+
+#### rename
+
+Rename a macro.
 
 ```
 $rename(len,length)
@@ -168,19 +363,23 @@ $length(I'm long)
 8
 ```
 
-### repl
+#### repl
 
-Replace contents of the runtime macro.
+Replace contents of a runtime macro. Changing a content. While redefining a
+macro is prohibited in strict mode, but replacing a contents is allowed.
 
 ```
 $define(before=BEFORE)
 $repl(before,AFTER)
 $before()
+===
+AFTER
 ```
 
-### append
+#### append
 
-Append append given string into the macro. Only runtime macro can be appended.
+Appends given string into a macro. Only a runtime or a local macro can be
+appended.
 
 ```
 $define(test=TEST)
@@ -190,7 +389,130 @@ $test()
 TEST CASE
 ```
 
-### pause
+You can give an optional argument to set a trailer. If the macro does not end
+with trailer, trailer is automatically added beforehand.
+
+```
+$define(arr=)
+$append(arr,v1,$comma())
+$append(arr,v2,$comma())
+$append(arr,v3,$comma())
+$arr()
+===
+v1,v2,v3
+```
+
+#### counter
+
+Modify a macro content by 1. A macro should be number. If a macro doesn't exit,
+it is automatically created.
+
+```
+$counter(ct)
+$counter(ct)
+$counter(ct)
+$ct()
+===
+v1,v2,v3
+```
+
+### Text
+
+#### upper
+
+Get upper class english text.
+
+```
+$upper(abcde)
+===
+ABCDE
+```
+
+#### lower
+
+Get lower class english text.
+
+```
+$lower(ABCDE)
+===
+abcde
+```
+
+#### wrap
+
+wrap sets given text's width. This uses amazing library of
+[textwrap](https://crates.io/crates/textwrap). Wrap supports UTF-8 characters.
+
+```
+$wrap(20,$lipsum(10))
+===
+Lorem ipsum dolor
+sit amet consectetur
+adipiscing elit. In
+rhoncus
+```
+
+#### Repeat
+
+Repeat given content for given times
+```
+$repeat^(3,Content to be repeated
+)
+===
+Content to be repeated
+Content to be repeated
+Content to be repeated
+```
+
+#### surr
+
+Surround text with given pair 
+
+```
+$surr()
+```
+
+### Array
+
+### Lines
+
+### Number
+
+### Qualification
+
+### Conditional
+
+### Loop
+
+### Files
+
+### Path manipulation
+
+### Space manipulation
+
+### Piping
+
+### Semantics
+
+### Regex
+
+### Time
+
+### Expansion
+
+### Environment variable
+
+### Querying
+
+### Operational
+
+### Storage
+
+### Special
+
+### Debugging
+
+#### pause
 
 Pause literally pauses every macro execution except pause macro. Even define is
 not evaluated
@@ -209,7 +531,7 @@ $eval(1 + 2)
 3
 ```
 
-### include
+#### include
 
 AUTH : FIN
 
@@ -218,7 +540,7 @@ contents are all expanded.
 
 Include macro reads a whole file's contents into a single string. This is an
 intended behaviour so that nested include macro inside definition can respect
-order of expressions. 
+order of expressions.
 
 ```
 $include(src/content.rs)
@@ -245,7 +567,7 @@ $include(file_name.txt,true)
 This internally invokes $escape(true) before include and $escape(false) after
 invocation.
 
-### import
+#### import
 
 Import frozen file with given path.
 
@@ -254,7 +576,7 @@ $import(ext_lib.r4f)
 ===
 ```
 
-### source
+#### source
 
 Source env styled static definitions. Source files are expanded on read.
 
@@ -270,7 +592,7 @@ ctime=$time()
 name=Simon Creek
 ```
 
-### tempin, tempout, tempto
+#### tempin, tempout, tempto
 
 AUTH : FIN or FOUT
 
@@ -290,7 +612,7 @@ Hello world
 {"name":"simon creek"}
 ```
 
-### relay halt
+#### relay halt
 
 Relay macro sends all following texts into relay target
 
@@ -298,7 +620,7 @@ Relay is implemented as stack. Thus nested relaying can be properly handled.
 
 ```
 % Available relay targets are
-% - temp 
+% - temp
 % - file
 % - macro
 $relay(temp)
@@ -314,7 +636,7 @@ halt stops relaying
 $halt()
 ```
 
-### fileout
+#### fileout
 
 AUTH : FOUT
 
@@ -327,7 +649,7 @@ $fileout(file_name.txt,false,This is appended)
 ===
 ```
 
-### env
+#### env
 
 AUTH : ENV
 
@@ -340,7 +662,7 @@ $env(HOME)
 /home/simoncreek
 ```
 
-### envset
+#### envset
 
 AUTH : ENV
 
@@ -360,32 +682,32 @@ error: Invalid argument
 === Processor panicked ===
 ```
 
-### ifenv (deterred macro)
+#### ifenv (deterred macro)
 
 AUTH: ENV
 
 If environment variable is defined, execute expression
 
 ```
-$ifenv(HOME,$env(HOME)) 
+$ifenv(HOME,$env(HOME))
 ===
 /home/username
 ```
 
-### ifenvel (deterred macro)
+#### ifenvel (deterred macro)
 
 AUTH: ENV
 
 If environment variable is defined, execute expression else execute another expression
 
 ```
-$ifenvel(HOME,$env(HOME),No home is defined) 
+$ifenvel(HOME,$env(HOME),No home is defined)
 ===
 % Home is most likely always defined
 /home/username
 ```
 
-### path
+#### path
 
 Join elements into a path.
 
@@ -397,7 +719,7 @@ $paths(a,b,c)
 a/b/c
 ```
 
-### abs
+#### abs
 
 AUTH : FIN
 
@@ -415,7 +737,7 @@ error: Standard IO error
 === Processor panicked ===
 ```
 
-### name
+#### name
 
 Get file name(last part) from input
 
@@ -425,7 +747,7 @@ $name(/home/test/Documents/info.txt)
 info.txt
 ```
 
-### parent
+#### parent
 
 Get parent path from input
 
@@ -435,7 +757,7 @@ $parent(/home/test/Documents/info.txt)
 /home/test/Documents
 ```
 
-### listdir
+#### listdir
 
 AUTH : FIN
 
@@ -451,45 +773,9 @@ $listdir(false)
 src,diff.out,.git,.gitignore,Cargo.lock,README.md,docs,test,auto.sh,wasm,diff.src,Cargo.toml,target,pkg
 ```
 
-### let
+#### pipe
 
-Declares a new local macro. This macro is automatically clared after evalution
-of the macro.
-
-```
-$define(test,a\_src a\_content=
-$let+(source,$path(cache,$a\_src()))
-$fileout(false,$source(),$a\_content())
-)
-$test+(temp,Hello World)
-===
-% Now ./cache/temp file contains string "Hello World"
-% cannot reference "source" macro after macro execution
-```
-
-### static
-
-Statically binds an expression that persists for the whole processing. Static
-is useful when you don't need dynamic evaluation but statically bound value.
-Because definition is evaluated on every call which might not be necessarily
-efficient or not be an intended behaviour.
-
-```
-$define(test=$time())
-$test()
-$static(test=$time())
-$test()
-===
-17:08:39 % This will yield different result according to time.
-17:08:39 % This will always yield same result
-```
-
-Though, time will most likely print same thing for a single document
-processing. Other operations might need consistent bound values.
-
-### pipe
-
-Pipe macro simply saves value to pipe. $-() returns piped value 
+Pipe macro simply saves value to pipe. $-() returns piped value
 $-*() returns piped value in literal form.
 
 In addition to normal pipes. You can use named pipe with arguments.
@@ -504,19 +790,7 @@ Value
 vallllue
 ```
 
-### Repeat
-
-Repeat given content for given times
-```
-$repeat(3,Content to be repeated
-)
-===
-Content to be repeated
-Content to be repeated
-Content to be repeated
-
-```
-### arr
+#### arr
 
 Create comma separated array from given value. You can set custom delimiter as
 second argument(default is single whitespace). You can also filter array with
@@ -532,7 +806,7 @@ auto.sh,Cargo.lock,Cargo.toml,oush
 auto.sh
 ```
 
-### sep
+#### sep
 
 Separate an array with given separator.
 
@@ -542,7 +816,7 @@ $sep(|,1,2,3,4,5)
 1|2|3|4|5
 ```
 
-### foreach (deterred macro)
+#### foreach (deterred macro)
 
 Loop around given value. Value is separated with commas. Thus values should be
 always escaped. Iterated values are references with ```$:()```.
@@ -557,7 +831,7 @@ Value: c
 
 ```
 
-### forline (deterred macro)
+#### forline (deterred macro)
 
 Loop around given lines. Value is separated with newline.Iterated values are
 references with ```$:()```.
@@ -574,7 +848,7 @@ Value: c
 
 ```
 
-### forloop (deterred macro)
+#### forloop (deterred macro)
 
 Loop around given range. Value is separated with commas. Iterated values are
 references with ```$:()```.
@@ -592,7 +866,7 @@ Number: 5
 
 ```
 
-### max
+#### max
 
 Get the biggest number from given array.
 
@@ -602,7 +876,7 @@ $max(1,2,3,4,5)
 5
 ```
 
-### min
+#### min
 
 Get the smallest number from given array.
 
@@ -612,7 +886,7 @@ $min(1,2,3,4,5)
 1
 ```
 
-### ceil
+#### ceil
 
 Get ceiling from given number
 
@@ -622,7 +896,7 @@ $ceil(1.56)
 2
 ```
 
-### floor
+#### floor
 
 Get floor from given number
 
@@ -632,7 +906,7 @@ $floor(1.56)
 1
 ```
 
-### prec
+#### prec
 
 Format number with precision
 
@@ -642,7 +916,7 @@ $prec($eval(0.1 + 0.2),2)
 0.30
 ```
 
-### cap
+#### cap
 
 Capitalize given text
 
@@ -652,7 +926,7 @@ $cap(abcde)
 ABCDE
 ```
 
-### low
+#### low
 
 Lower given text
 
@@ -662,7 +936,7 @@ $low(ABCDE)
 abcde
 ```
 
-### num
+#### num
 
 Extract number from given text
 
@@ -674,7 +948,7 @@ $eval($num(1km/s) + $num(3km/s))
 4
 ```
 
-### rev
+#### rev
 
 Reverse an array
 
@@ -684,7 +958,7 @@ $rev(1,2,3,4,5)
 5,4,3,2,1
 ```
 
-### eval
+#### eval
 
 Eval evaluates expression. This macro(function) uses rust's evalexpr crate
 [crate link](https://crates.io/crates/evalexpr). Therefore argument formula
@@ -702,7 +976,7 @@ $evalk( 1 + 2 )
 1 + 2 = 3
 ```
 
-### ieval (deterred macro)
+#### ieval (deterred macro)
 
 Eval in place. This executes $eval( GIVEN EXPRESSION ) and substitute given
 macro with the result.
@@ -715,7 +989,7 @@ $counter()
 2
 ```
 
-### if (deterred macro)
+#### if (deterred macro)
 
 If gets a condition and prints if given value is true
 
@@ -730,7 +1004,7 @@ $if(false,False)
 TRUE
 ```
 
-### ifelse (deterred macro)
+#### ifelse (deterred macro)
 
 Ifelse gets two branches and print out one according to given condition.
 
@@ -746,7 +1020,7 @@ I'm true
 I'm false
 ```
 
-### ifdef (deterred macro)
+#### ifdef (deterred macro)
 
 If macro is defined then execute given expression.
 
@@ -759,7 +1033,7 @@ $ifdef(some,Not defined)
 Defined
 ```
 
-### not
+#### not
 
 Not negates given boolean value.
 
@@ -775,7 +1049,7 @@ false
 true
 ```
 
-### syscmd
+#### syscmd
 
 AUTH : CMD
 
@@ -783,7 +1057,7 @@ Call system command, on unix system macro calls given command directly. While
 windows call are mediated through ```cmd /C``` call.
 
 ```
-$syscmd(uname -a) 
+$syscmd(uname -a)
 $syscmd(ver)
 ===
 Linux
@@ -792,7 +1066,7 @@ Microsoft Windows [Version 10......]
 
 ```
 
-### sub
+#### sub
 
 Sub gets substring from given input range. You can give empty value. This is technically same with rust's syntax ```[min..max]```. Also supports utf8 characters.
 
@@ -806,7 +1080,7 @@ $sub(,6,123456789)
 123456
 ```
 
-### head
+#### head
 
 Get head parts of given value.
 
@@ -825,7 +1099,7 @@ aaaaa
 bbbbb
 ```
 
-### tail
+#### tail
 
 Get tail parts of given value.
 
@@ -844,7 +1118,7 @@ ccccc
 eeeee
 ```
 
-### strip
+#### strip
 
 Get stripped remainder from given value.
 
@@ -869,7 +1143,7 @@ aaaaa
 bbbbb
 ```
 
-### grep
+#### grep
 
 Grab matching lines from given value.
 
@@ -888,7 +1162,7 @@ HelLo woRlD
 heLLO WOrld
 ```
 
-### index
+#### index
 
 Get indexed value from given array.
 
@@ -899,7 +1173,7 @@ $index($idx(),long,array,with,texts,separated,with,columns)
 with
 ```
 
-### sort
+#### sort
 
 sort given value
 
@@ -918,7 +1192,7 @@ bhcChicken
 abcde
 ```
 
-### fold
+#### fold
 
 Fold separated value into non-separated single value.
 
@@ -936,7 +1210,7 @@ HelloWorldWithoutSpace
 LinesSeparatedByNewline characters
 ```
 
-### count
+#### count
 
 Count given values.
 
@@ -960,7 +1234,7 @@ g)
 7
 ```
 
-### tr
+#### tr
 
 Tr translate characters to other characters. Utf8 characters work.
 
@@ -970,7 +1244,7 @@ $tr(Given String,iSg,aOs)
 Gaven Otrans
 ```
 
-### len
+#### len
 
 Return the length of given string. This operation takes O(n) not like
 traditional O(1) from rust' string data. This is because len returns length of
@@ -994,7 +1268,7 @@ $len(我们刚才从图书馆来了)
 10
 ```
 
-### regex
+#### regex
 
 Regex substitution. This use [regex crate](https://crates.io/crates/regex).
 
@@ -1009,7 +1283,7 @@ Hello rust
 Hello World
 ```
 
-### find
+#### find
 
 Find match from source. This return boolean.
 
@@ -1022,7 +1296,7 @@ $find(^\\* \[ \],* [ ] Todo)
 true
 ```
 
-### findm
+#### findm
 
 Find multiple occurrences from source. This return integer. If none found, this
 will return 0.
@@ -1035,7 +1309,7 @@ $findm(Oops,Hello world)
 0
 ```
 
-### trim, chomp, comp, triml
+#### trim, chomp, comp, triml
 
 ```Trim``` removes preceding and trailing new lines, tabs and whitespaces from
 given input. ```Chomp``` removes duplicate newlines from given input ( or say
@@ -1087,9 +1361,9 @@ DOWN
 
 ```
 $triml(
-	1 2 3
-  a b c 
- 	 가 나 다 
+    1 2 3
+  a b c
+      가 나 다
 )
 ===
 1 2 3
@@ -1097,22 +1371,7 @@ a b c
 가 나 다
 ```
 
-### wrap
-
-wrap sets given text's width. This uses amazing library of
-[textwrap](https://crates.io/crates/textwrap). Wrap supports UTF-8 characters.
-
-```
-$wrap(20,$lipsum(10))
-===
-Lorem ipsum
-dolor sit amet,
-consectetur
-adipiscing elit,
-sed do.
-```
-
-### nl
+#### nl
 
 Simply print out "newline" characters. This newline respects formatter's
 newline. Which is ```\r\n``` for windows and a ```\n``` in *nix systems by
@@ -1125,7 +1384,7 @@ $nl()
 % This is useful when you want to construct an output in one-liner
 ```
 
-### enl
+#### enl
 
 Escapes right next newline
 
@@ -1136,7 +1395,7 @@ After
 Before After
 ```
 
-### dnl
+#### dnl
 
 Deny newline after macro execution. This have no effect if next following line
 is not empty line.
@@ -1149,7 +1408,7 @@ Yatti yatta
 Yatti yatta
 ```
 
-### lipsum
+#### lipsum
 
 Lipsum creates a placehoder with given word counts.
 
@@ -1159,7 +1418,7 @@ $lipsum(5)
 Lorem ipsum dolor sit amet.
 ```
 
-### time, date
+#### time, date
 
 Time and date prints current local time and date. This requires features
 "chrono".
@@ -1172,7 +1431,7 @@ $date()
 2021-08-20
 ```
 
-### hms
+#### hms
 
 Format second into hh:mm:ss
 
@@ -1182,7 +1441,7 @@ $hms(10500)
 02:55:00
 ```
 
-### from (deterred macro)
+#### from (deterred macro)
 
 From creates formatted macro invocations with given csv values. The given macro
 name doesn't need dollar sign prefix.
@@ -1203,7 +1462,7 @@ NOTE
 Former syntax required data as first parameter, however it was such an pain to
 always quote values, thus I found second value as csv was much more ergonomic.
 
-### table
+#### table
 
 Table creates a formatted table from given csv values. Currently supported
 formats are ```github```, ```wikitext``` and ```html```. This macro doesn't
@@ -1241,7 +1500,7 @@ $table(html,\*a,b,c
 <table><thead><tr><td>a</td><td>b</td><td>c</td></tr></thead><tbody><tr><td>1</td><td>2</td><td>3</td></tr><tr><td>4</td><td>5</td><td>6</td></tr></tbody></table>
 ```
 
-### update
+#### update
 
 Update storage with given arguments
 
@@ -1250,7 +1509,7 @@ $update(arg1, arg2)
 ===
 ```
 
-### extract
+#### extract
 
 Extract storage content.
 
@@ -1259,7 +1518,7 @@ $extract()
 ===
 ```
 
-### regcsv
+#### regcsv
 
 feature: cindex
 
@@ -1271,7 +1530,7 @@ $regcsv+(table_name,a,b,c
 ===
 ```
 
-### dropcsv
+#### dropcsv
 
 feature: cindex
 
@@ -1282,7 +1541,7 @@ $dropcsv(table_name)
 ===
 ```
 
-### query
+#### query
 
 feature: cindex
 
@@ -1298,7 +1557,7 @@ a
 1
 ```
 
-### flowcontrol
+#### flowcontrol
 
 ```exit``` and ```escape``` changes flow of the processor behaviour. However
 these flow control doesn't mean direct exit. Rather a signal to processor so
@@ -1333,7 +1592,7 @@ $exit()
 Escape simply escapes all texts after macro call. Which is similar to pause but
 you cannot revert the escape. Simply said, escape is one way around macro.
 
-### panic
+#### panic
 
 ```
 Before
@@ -1346,7 +1605,7 @@ error: Panic triggered with message
 === Processor panicked ===
 ```
 
-### Clear
+#### Clear
 
 Clear volatile macros. Volatile macros are macros that defined in hygiene mode.
 
@@ -1355,7 +1614,7 @@ $clear()
 ===
 ```
 
-### Hygiene
+#### Hygiene
 
 Toggles hygiene's macro mode. Within hygiene mode runtime macros are volatile and
 newly defined macros is removed when macro invocation ends.
