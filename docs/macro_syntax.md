@@ -175,9 +175,9 @@ General rules are followings
 
 - Literal text inside definition body is not stripped on execution
 - Literal text as an argument is expanded and then stripped
-	- Arguments with only constants is treated as if it were not quoted
-	- Arguments with macro will not expand macro and return it as if it were
-	normal text 
+    - Arguments with only constants is treated as if it were not quoted
+    - Arguments with macro will not expand macro and return it as if it were
+    normal text 
 
 In short, rad processes macros in given subprocesses.
 
@@ -327,7 +327,7 @@ be familar. This can be configured with builder method.
 
 ```
 % This is a valid comment on both start and any mode
-	% Nested comment is better for reading in some cases
+    % Nested comment is better for reading in some cases
 Prior content goes here  % This is only valid comment on "any" mode.
 ```
 
