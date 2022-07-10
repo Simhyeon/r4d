@@ -8,6 +8,7 @@ impl std::error::Error for RadError {}
 /// R4d's error type
 #[derive(Debug)]
 pub enum RadError {
+    Interrupt,
     HookMacroFail(String),
     InvalidConversion(String),
     UnallowedChar(String),
@@ -42,6 +43,7 @@ pub enum RadError {
 impl std::fmt::Display for RadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
+            Self::Interrupt => String::from("Process Interrupted"),
             Self::HookMacroFail(txt) => format!("Hook macro error \n= {}", txt),
             Self::InvalidConversion(txt) => format!("Invalid conversion \n= {}", txt),
             Self::UnallowedChar(txt) => format!("Unallowed character \n= {}", txt),
