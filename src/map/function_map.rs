@@ -122,7 +122,10 @@ $assert(--Hello-,$align(center,8,-,Hello))".to_string(),
                     "cmp",
                     ["a_lvalue", "a_rvalue"],
                     Self::compare_values,
-                    Some("Check if given values are same
+                    Some("Compares left value and right value
+
+- This returns true if lvalue is \"bigger\" than rvalue
+- This returns false if lvalue is \"smaller or equal\" to rvalue
 
 # Return : Boolean
 
@@ -135,6 +138,27 @@ $assert(--Hello-,$align(center,8,-,Hello))".to_string(),
 
 $assert(false,$cmp(a,b))
 $assert(true,$cmp(23,23))".to_string()),
+                ),
+            ),
+            (
+                "eq".to_owned(),
+                FMacroSign::new(
+                    "eq",
+                    ["a_lvalue", "a_rvalue"],
+                    Self::are_values_equal,
+                    Some("Check if given values are same
+
+# Return : Boolean
+
+# Arguments
+
+- a_lvalue : A left value to compare
+- a_rvalue : A right value to cmpare
+
+# Example
+
+$assert(false,$eq(a,b))
+$assert(true,$eq(23,23))".to_string()),
                 ),
             ),
             (
@@ -5086,12 +5110,29 @@ $extract()"
         }
     }
 
-    /// cmp : cmopare values
+    /// cmp : is lvalue bigger than rvalue
     ///
     /// # Usage
     ///
     /// $cmp(lvalue, rvalue)
     fn compare_values(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let lvalue = &args[0];
+            let rvalue = &args[1];
+            Ok(Some((lvalue > rvalue).to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "cmp requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// eq : are values equal
+    ///
+    /// # Usage
+    ///
+    /// $eq(lvalue, rvalue)
+    fn are_values_equal(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let lvalue = &args[0];
             let rvalue = &args[1];
