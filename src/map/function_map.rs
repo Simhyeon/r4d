@@ -594,6 +594,26 @@ $assert(true,$istype(  1,  bool))".to_string()),
                 ),
             ),
             (
+                "iszero".to_owned(),
+                FMacroSign::new(
+                    "iszero",
+                    ["a_value^"],
+                    Self::is_zero,
+                    Some("Check if a given value is a zero
+
+# Return : Boolean
+
+# Arguments
+
+- a_value : Value to qualify
+
+# Example
+
+$assert(true,$iszero(0))
+$assert(false,$iszero(1))".to_string()),
+                ),
+            ),
+            (
                 "find".to_owned(),
                 FMacroSign::new(
                     "find",
@@ -5095,6 +5115,22 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "isempty requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// iszero : Check if value is zero
+    ///
+    /// # Usage
+    ///
+    /// $iszero(value)
+    fn is_zero(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let value = trim!(&args[0]);
+            Ok(Some(value.as_ref().eq("0").to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "iszero requires an argument".to_owned(),
             ))
         }
     }
