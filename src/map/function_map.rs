@@ -156,6 +156,25 @@ $assert(\\*a,b,c*\\,$split(/,a/b/c))".to_string()),
                 ),
             ),
             (
+                "ssplit".to_owned(),
+                FMacroSign::new(
+                    "sspilt",
+                    ["a_text^"],
+                    Self::space_split,
+                    Some("Split text with space separator into an array
+
+- This macro split text by one or more blank characters ( space, tab, newline )
+
+# Arguments
+
+- a_text : Text to spilt ( trimmed )
+
+# Example
+
+$assert(6,$count($ssplit(I have  some    spaces   in between)))".to_string()),
+                ),
+            ),
+            (
                 "squash".to_owned(),
                 FMacroSign::new(
                     "squash",
@@ -3176,6 +3195,28 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "Split requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Ssplit
+    ///
+    /// # Usage
+    ///
+    /// $ssplit(a/b/c)
+    fn space_split(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let text = trim!(&args[0]);
+
+            let mut result = text.split_whitespace().fold(String::new(), |mut acc, v| {
+                write!(acc, "{},", v).unwrap();
+                acc
+            });
+            result.pop();
+            Ok(Some(result))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Ssplit requires an argument".to_owned(),
             ))
         }
     }
