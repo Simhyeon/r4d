@@ -1,17 +1,18 @@
 ### R4d (Rad)
 
-R4d is a text oriented macro prosessor aims to be an alternative to m4 macro
-processor.
+R4d is a text oriented macro prosessor that is modern, expressive, and easy to
+use.
 
 [Changes](./docs/change.md)
 
 [3.0 Changes](./docs/3_0.md)
 
-### Note
+### Table of conents
 
-Because crates.io's readme is tied to version. There might be undocumented
-readme changes. Please use [github](https://github.com/simhyeon/r4d) for
-latest information.
+* [Demo](#demo)
+* [Install](#install)
+* [Simple usage](#simple-usage)
+* [Documentation](#documentation)
 
 ### Demo
 
@@ -86,10 +87,11 @@ I recommend using ```cargo install``` until I prepare a proper CD
 pipeline.
 
 Currently version 3.0 is preparing for release and can be downloaded with
-specific version flag.
+a specific version flag.
 
 ```bash
-cargo install r4d --git https://github.com/simhyeon/r4d --features binary --locked --version 3.0.0-rc.5
+cargo install r4d --git https://github.com/simhyeon/r4d \ 
+--features binary --locked --version 3.0.0-rc.5
 ```
 
 Or use crates.io registry,
@@ -113,10 +115,11 @@ cargo install r4d --features basic --locked
 
 **Binary**
 
-There are two binaries each **rad** and **rado**. Rad is a main processor and
-rado is a open+edit binary.
+There are two binaries of each **rad** and **rado**. Rad is a main processor
+and rado is a open+edit binary.
 
 ```
+# rad
 # Read from a file and print to stdout 
 rad input_file.txt
 # Read from standard input and print to a file
@@ -124,6 +127,7 @@ printf '...text...' | rad -o out_file.txt
 # Get a simple manual for a macro
 rad --man ifdef
 
+# rado
 # Edit a source file
 rado edit file_name.txt
 # Read a processed file
@@ -144,6 +148,10 @@ processor.process_file(Path::new("input.txt"))?;
 processor.print_result()?;
 ```
 
+## Documentation
+
+I'm yet to setup a dedicated domain for a mdbook.
+
 ### [Detailed usage](./docs/usage.md)
 
 ### [Macro syntax](./docs/macro_syntax.md)
@@ -156,17 +164,10 @@ processor.print_result()?;
 
 ### [How to extend function macros](./docs/ext.md)
 
-### [Extend processor with storage feature](./docs/storage.md)
+### [Extend a processor with storage feature](./docs/storage.md)
 
 ### [How to debug](./docs/debug.md)
 
-### [Why there is a ghost newline?](./docs/newline_rules.md)
+### [Understadning surplus newlines](./docs/newline_rules.md)
 
-### Goal
-
-R4d aims to be a modern alternative to m4 processor, which means
-
-- No trivial m4 quotes
-- An explicit rule for macro definition and invocation
-- Enable combination of file stream and stdout
-- As expressive as current m4 macro processor
+### [R4d internal logics](./docs/r4d_internal.md)

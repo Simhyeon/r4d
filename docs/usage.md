@@ -58,7 +58,7 @@ rad --comment any
 -D, --discard         # Discard all output
 
 # Freeze(zip to binary) rules to a single file
-# Frozen file is a bincode file thus, theoritically faster in reading
+# Frozen file is a bincode file thus, theoreoitically faster in reading
 rad test -f frozen.r4f
 # Melt a file and use in processing
 rad test -m frozen.r4f

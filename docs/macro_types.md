@@ -19,8 +19,11 @@ can also extend function macros with r4d's library interface. [How to
 extend](./ext.md)
 
 There is a special type of function macro that is called deterred macro.
-Arguments of function macros are eagerly expanded whil deterred macro interrupt
-such expansion and can control the entire behaviour. 
+Arguments of function macros are eagerly expanded while deterred macro
+interrupt such expansion and can control the entire behaviour. 
+
+Not every macro that markded as deterred deters an argument expansion. If you
+want to know the exact order of expansion refer a manual with ```--man``` flag.
 
 ## Local and global
 

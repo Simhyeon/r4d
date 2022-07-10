@@ -1,64 +1,80 @@
 ### TODO
 
+* [ ] Consider merging documentaion into a single file index with multiple subindex links
+* [ ] Argument parsing to return a slice of values not a string would be good I guess?
+    - This needs to implement cow maniuplation and I'm... ok maybe later
+* [ ] trim attribute to set consume newline ( By converting it into a None ) if trimmed output is empty
+* [ ] Refactor code base
+    * [ ] Regex try\_and\_get\_cache
+
 : ORDERED :
-* [x] Write about newlines
-* [x] Go through macros and finalize macro name, argument names, order
-	* [x] I skimmed fast and fixed some typos, wrongly typed names, and missing traits
-* [ ] Skim every fin and fout related macros
-* [ ] I think I didn't check writeoption and error option
-* [ ] readto can be very suspicous
-	* [ ] test fileout's new path collision mechanics
-	* [ ] Readto a file that is also an writeoption : HMM
-	* [ ] two file can be same
-	* [ ] Wait... is realy ok then?
+1. [x] Include deterred attributes on arguments
+1. [x] Write about r4d internals fo organize information
+1. [ ] Update blog contents
+1. [ ] Update macro\_indices
+    - This is necessary to finalize the behaviours of macros and for finally
+    fix the order of macro arguments and macro names
+
+2. [ ] Debugger step behaviour
+    - This might take some times
+2. [ ] Push as 3.0.0-rc.5
+
+3. [ ] Update r4d version in gdengine
+    - Fix all breaking changes
+    - Add new features that I think are necessary
+3. Push stable 3.0 version
+
+**Some big todos**
+
+- Pretty print
 
 $todo_start()
 * [ ] New macros
-	* [ ] Squash macro?
-* [ ] Improve macro ergonomics
-* [x] Included signature and color as default into a binary because man flag is critical
+* [x] Macro ergonomics
 * [x] Library
 * [ ] Feature
-	* [ ] Dry run would be cool, but is's hella difficult
+    * [ ] Dry run would be cool, but is's hella difficult
+    * [ ] Improve logger's character number
 * [ ] Documentation
-	* [ ] macro\_indices.md
-	* [ ] change.md
-	* [x] modes.md
-	* [x] types.md
-	* [x] debug.md
-	* [x] Usage.md
-	* [x] syntax.md
-	* [x] ext.md : After template update
+    * [ ] macro\_indices.md
+    * [ ] change.md
 * [ ] Bug fix
-	* [x] Fixed consume newline waas not properly respected
-	* [ ] Debugger's "step" behaviour is very strange and it easily breaks
-	* [ ] Test logger's line number ( Because it looks like not so accurate )
-	* [ ] Local macro was not expanded when given
+    * [ ] Debugger's "step" behaviour is very strange and it easily breaks
 * [ ] Test
-	* [ ] Test hook macro documentaion
-	* [ ] Go through all macros
-		- Check macro name consistency
-		- Check macro arguments name consistency + order consistency
-	* [ ] Decide when to push to 3.0
-	* [ ] Test windows build
-	* [ ] Test multiple use cases
+    * [ ] Test hook macro documentaion
+    * [ ] Decide when to push to 3.0
+    * [ ] Test windows build
+    * [ ] Test multiple use cases
 $todo_end()
 
 ### Changes
 
+* [x] Included signature and color as default into a binary because man flag is
+critical
+* [x] Now, silent's default value is any
 * [x] New macros
-	* [x] Chars iterator macro
+    * [x] istype
+    * [x] Ftime
+    * [x] Comma
+    * [x] Append with trailer
+    * [x] Chars iterator macro
+    * [x] Squash macro
 * [x] Feature
-	* [x] Make deterred macro works like other macros
-	* [x] Rado : Edit in place with io operation
+    * [x] Make deterred macro works like other macros
+    * [x] Rado : Edit in place with io operation
 * [x] Improve macro ergonomics
-	* [x] No Breakpoint warning
-	* [x] Changed from to spread
-	* [x] Removed ieval because counter replaces it
-	* [x] I changed queue to insert as no stripped.
+    * [x] Enable logm to print any local macros
+    * [x] Append now also appends to local macro
+    * [x] APpend is now a deterred macro
+    * [x] No Breakpoint warning
+    * [x] Changed from to spread
+    * [x] Removed ieval because counter replaces it
+    * [x] I changed queue to insert as no stripped.
 * [x] Bug fix
-	* [x] Literal rule is bugged ( Nested literal rule doesn't work at all )
-	* [x] Setting an error option resetted a logger entirely.. why I did that?
+    * [x] Literal rule is bugged ( Nested literal rule doesn't work at all )
+    * [x] Setting an error option resetted a logger entirely.. why I did that?
+    * [x] File operation was able to write to self
+    * [x] Fixed consume newline waas not properly respected
 
 ### Macro ergonomics
 
@@ -69,9 +85,9 @@ $todo_end()
 
 * [x] Empty name is not handled by error behaviours
 * [x] Forline what? -> Still utilizes $: syntax
-* [x] Multiline query is not working in cindex... It's you again? 
+* [x] Multiline query is not working in cindex... It's you again?
 * [x] I found a huge bug... How come I did not know this?
-	* [x] Non-printing macro removed newline while there are texts to print
+    * [x] Non-printing macro removed newline while there are texts to print
 * [x] Enl does same thing with dnl... what? This is strange
 * [x] New macro cnl
 * [x] In-built documentation for function and deterred macro
@@ -90,9 +106,9 @@ $todo_end()
 - [x] Consider macro execution order : Check
 - [x] Current behaviour interprets input as string if given input doesn't exist which is not ideal : Check
 - [ ] Clippy compatible : Check
-	- Changed method name : from_... variant
-	- I changed many len() == 0 and len() != 0 codes... Keep in mind that it
-	can happen , you know the stupid errors
+    - Changed method name : from_... variant
+    - I changed many len() == 0 and len() != 0 codes... Keep in mind that it
+    can happen , you know the stupid errors
 
 ### TODOs
 
@@ -104,9 +120,9 @@ $todo_end()
 * [x] Consider ditching evalresult at all
 * [x] Make error message consistent
 * [x] Changed error behaviours a little bit
-	* [x] Removed panic error because it was confusing and not helpful
-	* [x] Made strict error much more simple and combined log_error with
-	helpful error debuggings
+    * [x] Removed panic error because it was confusing and not helpful
+    * [x] Made strict error much more simple and combined log_error with
+    helpful error debuggings
 * [x] Rearranged project structure because cli has two binaries
 * [x] Import macro : Read .r4f file
 * [x] Source macro : Read sh like macros as runtime macro
@@ -114,10 +130,10 @@ $todo_end()
 * [x] Rado env subcommand
 
 * [x] New macro in indices.md
-	* [x] Listdir
-	* [x] import
-	* [x] source
-	* [x] cnl
+    * [x] Listdir
+    * [x] import
+    * [x] source
+    * [x] cnl
 * [x] Rado documentation
 
 * Current order of execution is followed. Should this change?
@@ -125,11 +141,11 @@ $todo_end()
     - Local bound macro
     - Runtime macro
     - Function macro
-	* For example, Local should come first?
+    * For example, Local should come first?
 
 * [ ] Include as namespace
-	- Enabling macro usage such as std:include()
-	- This may not worth, but maybe useful.
+    - Enabling macro usage such as std:include()
+    - This may not worth, but maybe useful.
 
 * [ ] Better debugger + Ditch crossterm
 - Current implementation is dependent on processor.
@@ -144,7 +160,7 @@ $todo_end()
 - Utilize regex engine for fast parsing especially, define parsing. Possibly
 whole parsing process, meh I don't think I can... Focus on define parsing.
 - Refactor codes into multiple chunks of functions for better readability
-- Use faster hashmap 
+- Use faster hashmap
 - Currently lexing copies all chars into a versatile vector which may not
 be the best idea. A bettter idea is to iterate and add slice from source.
 But it is true that such implementation is more trivial to maintain and
@@ -154,13 +170,13 @@ extend with arguable performance boost.
 * [ ] Warn about operational macros + document something
 
 * [x] Rad-wrapper binary
-	- Read as processed
-	- Edit ad raw
+    - Read as processed
+    - Edit ad raw
 
 * [ ] Make much more smaller binary file available as basic feature
-	- Opt-lvel has huge effet (2.2M -> 1.8M)
-	- codegen-units = 1 has a 0.1M gain ( increase compile time but it's small anyway )
-	- upx is a holy banger (1.7M -> 500K ... Just wow...)
+    - Opt-lvel has huge effet (2.2M -> 1.8M)
+    - codegen-units = 1 has a 0.1M gain ( increase compile time but it's small anyway )
+    - upx is a holy banger (1.7M -> 500K ... Just wow...)
 
 ## Delayed, paused or stopped
 
@@ -175,7 +191,7 @@ complexity for ls, pwd support are outrageous.
 
 * [-] Custom keyword macro
 - Every macro can be used as basic macro
-- And I could not achieve what i wanted because I wanted optional parsing, which is hard to add as interface. 
+- And I could not achieve what i wanted because I wanted optional parsing, which is hard to add as interface.
 - However, to thin of combining if and function is actually impossible in plain programming languages. Of course there are no reasons why not for r4d? But I don't think it is very indeed a demand
 
 * [-] Define regional macro -> Is it necessary? Or is it desirable?
@@ -202,9 +218,9 @@ Following is such hard to do cleanly, deterred
 ### NOTE
 
 1. About dnl and enl inside body
-	- ENL or DNL doesn't work inside macro body because dnl is evaluated on every "line".
-	- ENL is evaluated on "NONE" Cursor which menas enl is not evalued properly
-	inside body. where lexor's cursor never goes to NONE state.
+    - ENL or DNL doesn't work inside macro body because dnl is evaluated on every "line".
+    - ENL is evaluated on "NONE" Cursor which menas enl is not evalued properly
+    inside body. where lexor's cursor never goes to NONE state.
 
 ### How macro parsing works?
 
@@ -251,42 +267,42 @@ basic macro is as simple as creating function and insert a new hashmap item.
 * [x] Redirect refactor with relay and hold macro
 
 * [x] Possibly some mathematics related macros
-	* [x] Min
-	* [x] Max
-	* [x] Ceil
-	* [x] Floor
-	* [x] Precision ( Floating number )
+    * [x] Min
+    * [x] Max
+    * [x] Ceil
+    * [x] Floor
+    * [x] Precision ( Floating number )
 * [x] Some more text processing
-	* [x] Cap -> captialize
-	* [x] Low -> lower
-	* [x] Num -> strip number part from given text
-	* [x] Rev -> Reverse an array
-	* [x] Eval with original formula support
-	* [x] tarray & hms
+    * [x] Cap -> captialize
+    * [x] Low -> lower
+    * [x] Num -> strip number part from given text
+    * [x] Rev -> Reverse an array
+    * [x] Eval with original formula support
+    * [x] tarray & hms
 
 
 * [x] New basic macros
-	- head
-	- headl
-	- tail
-	- taill
-	- strip
-	- stripl
-	- Grep  ( Only print matched lines )
-	- Index ( Get indexed value from array )
-	- Sort  ( Sort array by values )
-	- Sortl ( Sort lines by values )
-	- Fold  ( Fold new lines to single line )
-	- Foldl
-	- Count ( Get count of array )
-	- Countw( Get count of array )
-	- Countl( Get count of lines )
+    - head
+    - headl
+    - tail
+    - taill
+    - strip
+    - stripl
+    - Grep  ( Only print matched lines )
+    - Index ( Get indexed value from array )
+    - Sort  ( Sort array by values )
+    - Sortl ( Sort lines by values )
+    - Fold  ( Fold new lines to single line )
+    - Foldl
+    - Count ( Get count of array )
+    - Countw( Get count of array )
+    - Countl( Get count of lines )
 
 * [x] Storage function
-	* [x] update
-	* [x] extract
+    * [x] update
+    * [x] extract
 * [x] New default macros
-	* [x] Sep macro (keyword)
+    * [x] Sep macro (keyword)
 * [x] Indexing macros with "cindex" crate
 * [x] Named pipe ( in a hashmap )
 * [x] Pipe truncate option as builder pattern
@@ -296,12 +312,12 @@ basic macro is as simple as creating function and insert a new hashmap item.
 * [x] DNL Macro
 * [x] New basic macro
     * [x] Triml -> Trim line by line
-	* [x] Wrap : But with additonal packages
-	- Though I beleve it worth
+    * [x] Wrap : But with additonal packages
+    - Though I beleve it worth
     * [x] Panic macro
-	* [x] Flow control macros
-		* [x] Escape
-		* [x] Exit
+    * [x] Flow control macros
+        * [x] Escape
+        * [x] Exit
 
 * [x] Improve signature ergonomics
 
@@ -348,13 +364,13 @@ undesired changes and not so desirable to end user usage.
 * [x] Deprecating global in favor keyword macro ```static```
 * [x] Deprecating bind in favor keyword macro ```let```
 * [x] Declare macros
-* [x] Custom special character 
+* [x] Custom special character
 * [x] Comment type addition
 * [x] Fixed a bug where assert result was not printed when there was no error at all.
 
 * [x] Hook macro for macro and character
 * [x] Hook macro should be temporarily disabled for specific cases
-* [x] Static custom rules 
+* [x] Static custom rules
 
 * [x] Diff only changed option
 * [x] Bug: Fixed default comment behaviour
@@ -363,13 +379,13 @@ undesired changes and not so desirable to end user usage.
 
 * [x] Comment rule
 * [x] New basic macros
-	* [x] Ifenvel
-	* [x] ifdefel
-	* [x] abs
-	* [x] arr
-	* [x] envset
+    * [x] Ifenvel
+    * [x] ifdefel
+    * [x] abs
+    * [x] arr
+    * [x] envset
 * [x] Newline consistency in chomp macro
-* [x] Fixed a bug where unterminated macro was not properly evaluated 
+* [x] Fixed a bug where unterminated macro was not properly evaluated
 
 * [x] Merged into a single macro path becuase paths is redundant
 * [x] Assert, nassert, fassert
@@ -394,11 +410,11 @@ undesired changes and not so desirable to end user usage.
 * [x] Changed paths syntax
 * [x] Overriding is prohibited in strict mode
 * [x] Make strict by default
-- Make lenient option rather 
+- Make lenient option rather
 - Also apply to documents -> Not yet
 * [x] Basic macro changes
-	* [x] Make ifdef work as if and if else
-	* [x] Make ifenv macro also as if and ifelse
+    * [x] Make ifdef work as if and if else
+    * [x] Make ifenv macro also as if and ifelse
 * [x] New replace macro
 * [x] Changed several cli options
 
@@ -418,14 +434,14 @@ undesired changes and not so desirable to end user usage.
 * [x] Remove unnecessary hashamp clone
 * [x] Make some macros a speical type
     * [x] Make if,ifelse,foreach,foloop as a keyword macro such as pause and define
-	* [x] Create new struct keyword maps
+    * [x] Create new struct keyword maps
 * [x] Refactor sandbox environment
 * [x] Add not macro
 
 * [x] Make error messages much more accurate for various situations.
 * [x] Add a diff tool for debugging
-	* [x] Set diff original and diff processed when necessary
-	* [x] Print diff in result if certain option was given => Diff option
+    * [x] Set diff original and diff processed when necessary
+    * [x] Print diff in result if certain option was given => Diff option
 * [x] Add conflicts with option for more ergonomic options
 
 * [x] Segrate some structs into separate files
@@ -475,7 +491,7 @@ means it succeeded evaluation
 * [x] Make chunk_line chunk_char for more detailed debuggin and error logging
 - Also parse_chunk calls freeze_number which makes error debugging hard to watch
 - This was actually not so hard, surprisingly
-* [x] Make interactive flag which toggles text wrapping 
+* [x] Make interactive flag which toggles text wrapping
 * [x] Make BR as not an error but a warning
 * [x] Non printing macro do print empty space in debug mode
 - $BR() evaluates to newline character fixed it
@@ -485,10 +501,10 @@ means it succeeded evaluation
 * [x] Add debugger
   * [x] Lines option
   * [x] log option
-  - Log every evaluation 
+  - Log every evaluation
   * [x] Debug command
     * [x] print, help
-	* [x] step 
+    * [x] step
   * [x] Breakpoint
 
 * [x] If, ifelse is not so friendly with deterred macro
@@ -504,8 +520,8 @@ which menat consequent blank characters created more arguments
   * [x] Make processor option setting more ergonomic with builder pattern
   * [x] Make code DRY -> Kinda done
     * [x] Processor -> parse method is too long
-	* [x] lexor parts -> Actually this part is fine
-	* [x] Arg parser is disastrous -> Little bit better
+    * [x] lexor parts -> Actually this part is fine
+    * [x] Arg parser is disastrous -> Little bit better
   * [x] Optional dependencies
   * [x] Only disclose necessary modules and structs
 
@@ -585,13 +601,13 @@ string without saving to designated space.
 I googled a lot and shamlessly copied from stackoverflow, I Felt real needs to
 learn rust much more.
 
-* [x] Made defnition line is deleted 
+* [x] Made defnition line is deleted
 
-* [x] Enable user to override basic macro 
+* [x] Enable user to override basic macro
 * [x] Currently local macro is not released which is a bad idea as a final output.
 * [x] Currently local macro is not perperly constructed when same macro invoked in single call
 Using usize type level is not a bad idea, however it should be definite where
-to add number and not 
+to add number and not
 
 * [x] Read from file option
 * [x] Output option
@@ -600,24 +616,24 @@ to add number and not
   * [x] print out non macro text
   * [ ] Print remainder from lines that contains macro definition
     * [x] Complete register logic
-	  * [x] parse define macro's arguments
-	* [x] Complete invoke logic
-	  * [x] Basic macro works for now
-	  * [x] Single macro in single line works
-	  * [x] Single macro in multiple lines
-	  * [x] Multiple macro in multiple lines
-	  * [x] Multiple macro in multiple fragmented lines
-	  * [x] Make custom macro works
-		- Invocation should be also another 
-		- Thus "MacroMap"'s evaluation logic should be located in processor not
-		in Macromap itself
-	  * [x] Make nested invocation work
-		* [x] When definition includes nestedness -> This is evaluated on
-		invocation
-		* [x] When invocation includes nestedness -> This is evaluated with
-		method name "evaluate"
+      * [x] parse define macro's arguments
+    * [x] Complete invoke logic
+      * [x] Basic macro works for now
+      * [x] Single macro in single line works
+      * [x] Single macro in multiple lines
+      * [x] Multiple macro in multiple lines
+      * [x] Multiple macro in multiple fragmented lines
+      * [x] Make custom macro works
+        - Invocation should be also another
+        - Thus "MacroMap"'s evaluation logic should be located in processor not
+        in Macromap itself
+      * [x] Make nested invocation work
+        * [x] When definition includes nestedness -> This is evaluated on
+        invocation
+        * [x] When invocation includes nestedness -> This is evaluated with
+        method name "evaluate"
   * [x] Print evaluated macro substitution
-  * [x] Print failed macro  
+  * [x] Print failed macro
   * [x] Print a line which as multiple macros in a line
   * [x] Print a nested macro substitution
 
@@ -628,14 +644,14 @@ to add number and not
   * [x] Pause macro option
   * [x] Write to temp file /tmp %TEMP%
   * [x] Literal attribute -> $test\(Literal text\)
-  * [x] Make pipe rule 
+  * [x] Make pipe rule
   * [x] Len
   * [x] Rename macro
   * [x] Csv table html format
   * [x] Define append (appdef)
   * [x] Text format
     * [x] CSV macro
-  	* [x] Data macro from data
+    * [x] Data macro from data
       * [x] csv to markdown table
       * [x] csv to wikitext table
   * [x] Syscmd macro
@@ -671,8 +687,8 @@ choice
 * [x] Enable lib user to change write option on the way
 * [x] Queue
 * [x] Separte warning into two types
-	* [x] System + program warning ( About security )
-	* [x] Processing warning ( About execution sanity )
+    * [x] System + program warning ( About security )
+    * [x] Processing warning ( About execution sanity )
 * [x] Merge fragmented option into single enum
 
 From 2.0
@@ -682,7 +698,7 @@ From 2.0
 * [x] Greedy as default behaviour and cannot be disabled becausew hy not
 * [x] Removed closure rule
 * [x] Pipe truncate as default
-* [x] Made distinction between function macro and deterred macro much more consistent 
+* [x] Made distinction between function macro and deterred macro much more consistent
 * [x] Procedural macro for extension macro
 * [x] Move deterred macros into function macros if possible
 * [x] Hygienic processing
@@ -703,38 +719,38 @@ For 2.1.2
 * [x] Exec command
 * [x] inplace eval
 * [x] For loop nested mechanics with $:() macro
-	* [x] This is breaking changes... Thus should be configured as feature until 3.0 release
+    * [x] This is breaking changes... Thus should be configured as feature until 3.0 release
 * [x] Relocated function macros to deterred macro
 
 ---
 For 2.1.3
 * [x] Hid unnecessary extra features from users
 * [x] ExtMacroBuilder's export has been feature gated by storage. What?
-	- Now it's independently exported.
+    - Now it's independently exported.
 * [x] Ditch avoidable dependencies
-	* [x] Thiserror
-	* [x] Csv
-	* [x] Lipsum
+    * [x] Thiserror
+    * [x] Csv
+    * [x] Lipsum
 * [x] Remove features for better maintainability
-	* [x] Storage
+    * [x] Storage
 
 ---
 After 2.1.4
 
 * [x] Rado
-	* [x] Clap template
-	* [x] Clap options
-		* [x] Diff subcommand
-		* [x] Edit subcommand
-			* [x] Basics
-			* [x] Make default rad_editor variant.
-		* [x] Read subcommand rad,execute option
-		* [x] Sync subcommand
-			- Possibly rename later
-		* [x] force subcommand
-			* [x] read flag
-		* [x] -o out option
-		* [x] arguments option
+    * [x] Clap template
+    * [x] Clap options
+        * [x] Diff subcommand
+        * [x] Edit subcommand
+            * [x] Basics
+            * [x] Make default rad_editor variant.
+        * [x] Read subcommand rad,execute option
+        * [x] Sync subcommand
+            - Possibly rename later
+        * [x] force subcommand
+            * [x] read flag
+        * [x] -o out option
+        * [x] arguments option
 
 ---
 3.0.0-rc.2
@@ -751,43 +767,43 @@ sources
 3.0.0-rc.4
 
 * [ ] New macros
-	* [x] Escape blanks macro
-	* [x] Grep and grepl variants separation
-	* [x] Renamed arr to spilt
-	* [x] Removed sep macro because, join works the same
-	* [x] Removed queries macro
-	* [x] Regexpr
-	* [x] Unwrap
-	* [x] Find
-	* [x] Findm
-	* [x] Input
-	* [x] Temp
-	* [x] Trimla ( Trim line amount )
-	* [x] Indent ( Indent lines )
-	* [x] Tab && space && empty
-	* [x] read\_to read\_in
-	* [x] join, joinl
-	* [x] Number notation
-	* [x] letr, staticr
-	* [x] Counter macro
-	* [x] Removed strip and stripl
-	* [x] Align texts
+    * [x] Escape blanks macro
+    * [x] Grep and grepl variants separation
+    * [x] Renamed arr to spilt
+    * [x] Removed sep macro because, join works the same
+    * [x] Removed queries macro
+    * [x] Regexpr
+    * [x] Unwrap
+    * [x] Find
+    * [x] Findm
+    * [x] Input
+    * [x] Temp
+    * [x] Trimla ( Trim line amount )
+    * [x] Indent ( Indent lines )
+    * [x] Tab && space && empty
+    * [x] read\_to read\_in
+    * [x] join, joinl
+    * [x] Number notation
+    * [x] letr, staticr
+    * [x] Counter macro
+    * [x] Removed strip and stripl
+    * [x] Align texts
 * [ ] Macro ergonomics
-	* [x] Renamed unwrap to strip
-	* [x] Regex order change
-	* [x] Changed tr order
-	* [x] Newline can be repeated
-	* [x] Changed fileout's argument order 
-	* [-] Tempout truncate option : No, but temp_to and new processor will
-	delete temp file before writing contents
-	* [x] Halt with boolean arguments so that, halt is queued by default
-	* [x] For variant order change
+    * [x] Renamed unwrap to strip
+    * [x] Regex order change
+    * [x] Changed tr order
+    * [x] Newline can be repeated
+    * [x] Changed fileout's argument order
+    * [-] Tempout truncate option : No, but temp_to and new processor will
+    delete temp file before writing contents
+    * [x] Halt with boolean arguments so that, halt is queued by default
+    * [x] For variant order change
 
 * [x] Apply new(1.62) clippy fix
 * [x] Ditch unnecessary "Some" arguments
 * [x] Changed argument parsing behaviour frome lexor and arg parser
-	* [x] Regex pattern doesn't go well with string literal "\* *\" syntax
-	* [x] Should be represented as literal
+    * [x] Regex pattern doesn't go well with string literal "\* *\" syntax
+    * [x] Should be represented as literal
 * [x] Make a manual option (With signature option)
 * [x] New macro attribute trim_input '='
 * [x] Define macro respects trim_input
@@ -805,5 +821,5 @@ sources
 * [x] Bug : Erro rmessaged cascaded as much as nested level
 * [x] Bug : Exit yieled error and printed unreasonable erros when including multiple files
 * [x] Modifed lex_branch_end_frag_eval_result_error to not print error on itself
-* [x] Bug: Include containder had high priority over relay target 
+* [x] Bug: Include containder had high priority over relay target
 * [x] Bug: Fasssert set success as fail
