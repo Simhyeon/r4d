@@ -156,8 +156,6 @@ I'm yet to setup a dedicated domain for a mdbook.
 
 ### [Macro syntax](./docs/macro_syntax.md)
 
-### [Built-in macros](./docs/macro_indices.md)
-
 ### [About modes](./docs/modes.md)
 
 ### [Macro types](./docs/macro_types.md)
