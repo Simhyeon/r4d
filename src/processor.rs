@@ -2299,6 +2299,18 @@ impl<'processor> Processor<'processor> {
         frag: &MacroFragment,
         remainder: &mut String,
     ) -> RadResult<()> {
+        // This value is required because
+        // error is not copiable,
+        let mut replace_error = false;
+
+        // NOTE IMPORTANT
+        // This should come before behaviour logics
+        // Print error only if error cache is empty
+        if self.state.error_cache.is_none() {
+            self.log_error(&error.to_string())?;
+            replace_error = true;
+        }
+
         match self.state.behaviour {
             ErrorBehaviour::Interrupt => return Err(error),
             ErrorBehaviour::Assert => return Err(RadError::AssertFail),
@@ -2315,9 +2327,7 @@ impl<'processor> Processor<'processor> {
             ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
         }
 
-        // Print error only if error cache is empty
-        if self.state.error_cache.is_none() {
-            self.log_error(&error.to_string())?;
+        if replace_error {
             self.state.error_cache.replace(error);
         }
 
