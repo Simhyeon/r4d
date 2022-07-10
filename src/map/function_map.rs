@@ -136,8 +136,8 @@ $assert(--Hello-,$align(center,8,-,Hello))".to_string(),
 
 # Example
 
-$assert(false,$cmp(a,b))
-$assert(true,$cmp(23,23))".to_string()),
+$assert(true,$cmp(c,b))
+$assert(false,$cmp(text,text))".to_string()),
                 ),
             ),
             (
