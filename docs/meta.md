@@ -1,7 +1,20 @@
 ### TODO
 
-* [ ] StrictError is not helpful...?
-* [ ] Is log error maro useful?
+* [ ] Debugger step behaviour
+    * [ ] Don't panick but don't works
+        * [ ] print arg
+        * [ ] print span
+    * [ ] Step works with macro defintion but... it has rarely any usage
+
+    - The direct cause of panic is that line cache's value changes for unknown reason
+    - The reason why debugger tries to index unknown entry is not obvious, but
+      has a high probability that inner macro expansion doesn't set
+      line\_number properly
+    - Because, on step, debugger is going through arguments but the line
+      increases from the line where outer macro was invoked
+    - Ok it is 100% correct, line number is broken... This is like line\_number problem
+
+* [ ] Is log error macro useful?
 * [ ] Consider merging documentaion into a single file index with multiple subindex links
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
     - This needs to implement cow manipulation and I'm... ok maybe later
@@ -9,15 +22,11 @@
     * [x] Regex try\_and\_get\_cache
 
 : ORDERED :
-1. [x] Include deterred attributes on arguments
-1. [x] Write about r4d internals fo organize information
-1. [ ] Update blog contents
 1. [ ] Update macro\_indices
     - This is necessary to finalize the behaviours of macros and for finally
     fix the order of macro arguments and macro names
 
 2. [ ] Debugger step behaviour
-    - This might take some times
 2. [ ] Push as 3.0.0-rc.5
 
 3. [ ] Update r4d version in gdengine
@@ -30,17 +39,17 @@
 - Pretty print
 
 $todo_start()
-* [ ] New macros
+* [x] New macros
 * [x] Macro ergonomics
 * [x] Library
 * [ ] Feature
+    * [ ] Refactor debugger
     * [ ] Dry run would be cool, but is's hella difficult
     * [ ] Improve logger's character number
 * [ ] Documentation
     * [ ] macro\_indices.md
     * [ ] change.md
-* [ ] Bug fix
-    * [ ] Debugger's "step" behaviour is very strange and it easily breaks
+* [x] Bug fix
 * [ ] Test
     * [ ] Test hook macro documentaion
     * [ ] Decide when to push to 3.0
@@ -50,6 +59,7 @@ $todo_end()
 
 ### Changes
 
+* [x] Now foreach and forline should get data as trimmed?
 * [x] Trim output now consume new line if result is empty
 * [x] Included signature and color as default into a binary because man flag is
 critical
@@ -58,6 +68,7 @@ critical
     * [x] cmp
     * [x] ssplit
     * [x] istype
+    * [x] iszero
     * [x] isempty
     * [x] ftime
     * [x] comma

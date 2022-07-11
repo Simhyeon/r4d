@@ -7,7 +7,7 @@ use crate::error::RadError;
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};
 use crate::lexor::*;
-use crate::logger::{Logger, LoggerLines, WarningType};
+use crate::logger::{Logger, WarningType};
 #[cfg(feature = "debug")]
 use crate::models::DiffOption;
 #[cfg(not(feature = "wasm"))]
@@ -624,7 +624,7 @@ impl<'processor> Processor<'processor> {
     /// ```
     pub fn assert(mut self, assert: bool) -> Self {
         if assert {
-            self.logger.assert();
+            self.logger.set_assert();
             self.state.behaviour = ErrorBehaviour::Purge; // Default is purge
             self.write_option = WriteOption::Discard;
         }
@@ -963,8 +963,7 @@ impl<'processor> Processor<'processor> {
             self.map.clear_runtime_macros(true);
         }
 
-        // Set logger's variable to fresh state to prevent confusion on line numbers
-        self.logger.reset_everything();
+        self.logger.stop_last_tracker();
 
         if self.state.input_stack.len() == 1 {
             // Warn unterminated relaying
@@ -1470,7 +1469,7 @@ impl<'processor> Processor<'processor> {
         lexor: &mut Lexor,
         frag: &mut MacroFragment,
     ) -> RadResult<ParseResult> {
-        self.logger.add_line_number();
+        self.logger.inc_line_number();
         if let Some(line) = lines.next() {
             let line = line?;
 
@@ -1536,7 +1535,7 @@ impl<'processor> Processor<'processor> {
         );
         let mut frag = MacroFragment::new();
         let mut result = String::new();
-        let backup = self.logger.backup_lines();
+        self.logger.start_new_tracker();
 
         for line in Utils::full_lines(chunk.as_bytes()) {
             let line = line?;
@@ -1558,7 +1557,7 @@ impl<'processor> Processor<'processor> {
             result.push_str(&frag.whole_string);
         }
 
-        self.logger.recover_lines(backup);
+        self.logger.stop_last_tracker();
         Ok(result)
     } // parse_chunk end
 
@@ -1578,8 +1577,8 @@ impl<'processor> Processor<'processor> {
         lexor.set_inner();
         let mut frag = MacroFragment::new();
         let mut result = String::new();
-        let backup = self.logger.backup_lines();
-        self.logger.set_chunk(true);
+        self.logger.start_new_tracker();
+        self.logger.set_milestone(true);
         for line in Utils::full_lines(chunk.as_bytes()) {
             let line = line?;
 
@@ -1599,7 +1598,7 @@ impl<'processor> Processor<'processor> {
             let line_result = self.parse_line(&mut lexor, &mut frag, &line, level, caller)?;
             result.push_str(&line_result);
 
-            self.logger.add_line_number();
+            self.logger.inc_line_number();
         }
 
         // If unexpanded texts remains
@@ -1608,8 +1607,8 @@ impl<'processor> Processor<'processor> {
             result.push_str(&frag.whole_string);
         }
 
-        self.logger.set_chunk(false);
-        self.logger.recover_lines(backup);
+        self.logger.set_milestone(false);
+        self.logger.stop_last_tracker();
         Ok(result)
     } // parse_chunk_lines end
 
@@ -1626,7 +1625,7 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<String> {
         // Initiate values
         // Reset character number
-        self.logger.reset_char_number();
+        // self.logger.reset_char_number();
         // Local values
         let mut remainder = String::new();
 
@@ -1638,12 +1637,14 @@ impl<'processor> Processor<'processor> {
             return Ok(String::new());
         }
 
+        let previous_track_count = self.logger.get_track_count();
+
         for ch in line.chars() {
             // Escape new charater is not respected
             if self.state.escape_newline {
                 self.state.escape_newline = false
             }
-            self.logger.add_char_number();
+            self.logger.inc_char_number();
 
             let lex_result = lexor.lex(ch);
             // Either add character to remainder or fragments
@@ -1690,7 +1691,6 @@ impl<'processor> Processor<'processor> {
                     self.lex_branch_exit_frag(ch, frag, &mut remainder);
                 }
             }
-
             // Character hook macro evaluation
             // This only works on plain texts with level 0
             #[cfg(feature = "hook")]
@@ -1722,6 +1722,10 @@ impl<'processor> Processor<'processor> {
                 } // End if let of macro name
             }
         } // End Character iteration
+
+        if previous_track_count != self.logger.get_track_count() {
+            self.logger.merge_track();
+        }
 
         // Don't print if current was empty and consume_newline was set( No print was called )
         if self.state.consume_newline && remainder.trim().is_empty() {
@@ -1782,18 +1786,11 @@ impl<'processor> Processor<'processor> {
                 frag.processed_args = args.clone();
             }
         } else {
-            // Even if deterred macro should
-            // respect input_trim
-            if frag.trim_input {
-                args = raw_args
-                    .lines()
-                    .map(|l| l.trim())
-                    .collect::<Vec<_>>()
-                    .join(&self.state.newline)
-                    .trim()
-                    .to_string();
-            } else {
-                args = raw_args.to_string();
+            args = raw_args;
+            #[cfg(feature = "debug")]
+            {
+                frag.processed_args =
+                    String::from("It is impossible to retrieve args from deterred macro")
             }
         }
 
@@ -1913,14 +1910,14 @@ impl<'processor> Processor<'processor> {
             self.map.add_local_macro(level + 1, arg_type, &args[idx]);
         }
 
-        let backup = self.logger.backup_lines();
+        self.logger.start_new_tracker();
 
         // Process the rule body
         // NOTE
         // Previously, this was parse_chunk_body
         let result = self.parse_chunk_body(level, name, &rule.body)?;
 
-        self.logger.recover_lines(backup);
+        self.logger.stop_last_tracker();
 
         // Clear lower locals to prevent local collisions
         self.map.clear_lower_locals(level);
@@ -2122,7 +2119,7 @@ impl<'processor> Processor<'processor> {
         // THis is necessary because whole string should be whole anyway
         frag.whole_string.push(ch);
         // Freeze needed for logging
-        self.logger.freeze_number();
+        self.logger.append_track();
         // If paused, then reset lexor context to remove cost
         if self.state.paused {
             lexor.reset();
@@ -2133,7 +2130,7 @@ impl<'processor> Processor<'processor> {
 
     fn lex_branch_add_to_remainder(&mut self, ch: char, remainder: &mut String) -> RadResult<()> {
         if !self.checker.check(ch) && !self.state.paused {
-            self.logger.freeze_number();
+            self.logger.append_track();
             self.log_warning("Unbalanced parenthesis detected.", WarningType::Sanity)?;
         }
         remainder.push(ch);
@@ -2150,7 +2147,7 @@ impl<'processor> Processor<'processor> {
         match cursor {
             Cursor::Name => {
                 if frag.name.is_empty() {
-                    self.logger.freeze_number();
+                    self.logger.append_track();
                 }
                 match ch {
                     '|' => frag.pipe = true,
@@ -2315,6 +2312,7 @@ impl<'processor> Processor<'processor> {
                 )?;
             }
         }
+
         // Clear fragment regardless of success
         frag.clear();
 
@@ -2525,12 +2523,11 @@ impl<'processor> Processor<'processor> {
 
     /// Backup information of current file before processing sandboxed input
     ///
-    /// This backup current input source, declared local macros, logger lines information
+    /// This backup current input source, declared local macros
     fn backup(&self) -> SandboxBackup {
         SandboxBackup {
             current_input: self.state.current_input.clone(),
             local_macro_map: self.map.local.clone(),
-            logger_lines: self.logger.backup_lines(),
         }
     }
 
@@ -2540,7 +2537,7 @@ impl<'processor> Processor<'processor> {
         self.logger.set_input(&backup.current_input);
         self.state.current_input = backup.current_input;
         self.map.local = backup.local_macro_map;
-        self.logger.recover_lines(backup.logger_lines);
+        self.logger.stop_last_tracker();
 
         Ok(())
     }
@@ -2990,5 +2987,4 @@ enum ParseResult {
 struct SandboxBackup {
     current_input: ProcessInput,
     local_macro_map: HashMap<String, LocalMacro>,
-    logger_lines: LoggerLines,
 }

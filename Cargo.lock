@@ -375,6 +375,7 @@ dependencies = [
  "serde_json",
  "similar",
  "textwrap",
+ "tracks",
  "wasm-bindgen",
  "wee_alloc",
 ]
@@ -534,6 +535,10 @@ dependencies = [
  "wasi",
  "winapi",
 ]
+
+[[package]]
+name = "tracks"
+version = "0.1.0"
 
 [[package]]
 name = "unicode-linebreak"
