@@ -1492,7 +1492,7 @@ impl<'processor> Processor<'processor> {
 
             // Save to original
             #[cfg(feature = "debug")]
-            self.debugger.write_to_original(&line)?;
+            self.debugger.write_diff_original(&line)?;
 
             let remainder = self.parse_line(lexor, frag, &line, 0, MAIN_CALLER)?;
 
@@ -1527,6 +1527,40 @@ impl<'processor> Processor<'processor> {
             Ok(ParseResult::Eoi)
         }
     } // parse_line end
+
+    fn parse_chunk_body(&mut self, level: usize, caller: &str, chunk: &str) -> RadResult<String> {
+        let mut lexor = Lexor::new(
+            self.get_macro_char(),
+            self.get_comment_char(),
+            &self.state.comment_type,
+        );
+        let mut frag = MacroFragment::new();
+        let mut result = String::new();
+        let backup = self.logger.backup_lines();
+
+        for line in Utils::full_lines(chunk.as_bytes()) {
+            let line = line?;
+
+            // Deny newline
+            if self.state.deny_newline {
+                self.state.deny_newline = false;
+                if line == "\n" || line == "\r\n" {
+                    continue;
+                }
+            }
+
+            let line_result = self.parse_line(&mut lexor, &mut frag, &line, level, caller)?;
+            result.push_str(&line_result);
+        }
+
+        // Frag has not been cleared which means unterminated string has been not picked up yet.
+        if !frag.is_empty() {
+            result.push_str(&frag.whole_string);
+        }
+
+        self.logger.recover_lines(backup);
+        Ok(result)
+    } // parse_chunk end
 
     /// Parse chunk args by separating it into lines which implements BufRead
     pub(crate) fn parse_chunk_args(
@@ -1879,10 +1913,14 @@ impl<'processor> Processor<'processor> {
             self.map.add_local_macro(level + 1, arg_type, &args[idx]);
         }
 
+        let backup = self.logger.backup_lines();
+
         // Process the rule body
         // NOTE
         // Previously, this was parse_chunk_body
-        let result = self.parse_chunk_args(level, name, &rule.body)?;
+        let result = self.parse_chunk_body(level, name, &rule.body)?;
+
+        self.logger.recover_lines(backup);
 
         // Clear lower locals to prevent local collisions
         self.map.clear_lower_locals(level);
@@ -1969,7 +2007,7 @@ impl<'processor> Processor<'processor> {
 
         // Save to "source" file for debuggin
         #[cfg(feature = "debug")]
-        self.debugger.write_to_processed(content)?;
+        self.debugger.write_diff_processed(content)?;
 
         match self
             .state

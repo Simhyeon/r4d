@@ -15,7 +15,7 @@ pub(crate) struct Debugger {
     pub(crate) log: bool,
     pub(crate) debug_switch: DebugSwitch,
     pub(crate) line_number: usize,
-    // This is a global line number storage for various deubbing usages
+    // This is a global line number storage for various debugging usages
     // This is a bit bloaty, but debugging needs functionality over efficiency
     pub(crate) line_caches: HashMap<usize, String>,
     pub(crate) do_yield_diff: bool,
@@ -333,12 +333,9 @@ impl Debugger {
         // Stop by lines if debug option is lines
         if self.debug {
             // Only when debugswitch is nextline
-            if let DebugSwitch::NextLine = self.debug_switch {
-                // Continue;
-            } else {
-                return Ok(()); // Return early
+            if DebugSwitch::NextLine == self.debug_switch {
+                self.user_input_prompt(frag, "line", logger)?;
             }
-            self.user_input_prompt(frag, "line", logger)?;
         }
         Ok(())
     }
@@ -350,12 +347,8 @@ impl Debugger {
         logger: &mut Logger,
     ) -> RadResult<()> {
         // Stop by lines if debug option is lines
-        if self.debug {
-            match &self.debug_switch {
-                &DebugSwitch::UntilMacro => (),
-                _ => return Ok(()),
-            }
-            self.user_input_prompt(frag, "until", logger)?;
+        if self.debug && self.debug_switch == DebugSwitch::UntilMacro {
+            self.user_input_prompt(frag, &(String::from("until:") + &frag.name), logger)?;
         }
         Ok(())
     }
@@ -367,11 +360,10 @@ impl Debugger {
         logger: &mut Logger,
     ) -> RadResult<()> {
         // Stop by lines if debug option is lines
-        if self.debug {
-            match &self.debug_switch {
-                &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => (),
-                _ => return Ok(()),
-            }
+        if self.debug
+            && (self.debug_switch == DebugSwitch::NextMacro
+                || self.debug_switch == DebugSwitch::StepMacro)
+        {
             self.user_input_prompt(frag, &frag.name, logger)?;
         }
         Ok(())
@@ -384,13 +376,7 @@ impl Debugger {
         logger: &mut Logger,
     ) -> RadResult<()> {
         // Stop by lines if debug option is lines
-        if self.debug {
-            if let &DebugSwitch::StepMacro = &self.debug_switch {
-                // Continue;
-            } else {
-                return Ok(()); // Return early
-            }
-
+        if self.debug && DebugSwitch::StepMacro == self.debug_switch {
             self.user_input_prompt(frag, &frag.name, logger)?;
         }
         Ok(())
@@ -557,7 +543,7 @@ impl Debugger {
     }
 
     // Save original content to a file for diff check
-    pub fn write_to_original(&mut self, content: &str) -> RadResult<()> {
+    pub fn write_diff_original(&mut self, content: &str) -> RadResult<()> {
         if self.do_yield_diff {
             self.diff_original
                 .as_ref()
@@ -568,7 +554,7 @@ impl Debugger {
     }
 
     // Save processed content to a file for diff check
-    pub fn write_to_processed(&mut self, content: &str) -> RadResult<()> {
+    pub fn write_diff_processed(&mut self, content: &str) -> RadResult<()> {
         if self.do_yield_diff {
             self.diff_processed
                 .as_ref()
@@ -584,6 +570,7 @@ impl Debugger {
 }
 
 /// Debug switch(state) that indicates what debugging behaviours are intended for next branch
+#[derive(PartialEq)]
 pub enum DebugSwitch {
     UntilMacro,
     NextLine,
