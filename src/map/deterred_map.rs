@@ -178,7 +178,7 @@ $assert(a+b+c+,$foreach($:()+,a,b,c))".to_string(),
                 ),
             ),
             (
-                "forline^".to_owned(),
+                "forline".to_owned(),
                 DMacroSign::new(
                     "forline",
                     ["a_body","a_lines^"],
