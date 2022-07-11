@@ -7,13 +7,13 @@ use crate::utils::Utils;
 use crate::{consts::*, RadError};
 use std::fmt::Write;
 use std::io::Write as _;
-use tracks::Tracker;
+use tracks::{Track, Tracker};
 
 /// Logger that controls logging
 pub(crate) struct Logger<'logger> {
     suppresion_type: WarningType,
     current_input: ProcessInput,
-    tracker_stack: NestedTracker,
+    pub(crate) tracker_stack: NestedTracker,
     pub(crate) write_option: Option<WriteOption<'logger>>,
     error_count: usize,
     warning_count: usize,
@@ -55,17 +55,11 @@ impl<'logger> Logger<'logger> {
         self.suppresion_type = warning_type;
     }
 
-    pub fn set_milestone(&mut self, switch: bool) {
-        if switch {
-            self.tracker_stack.tracker_mut().set_milestone(());
-        } else {
-            self.tracker_stack.tracker_mut().connect_track();
-        }
-    }
-
     pub fn set_write_option(&mut self, write_option: Option<WriteOption<'logger>>) {
         self.write_option = write_option;
     }
+
+    // ----Tracker methods----
 
     pub fn start_new_tracker(&mut self) {
         self.tracker_stack.increase_level();
@@ -88,7 +82,6 @@ impl<'logger> Logger<'logger> {
     /// Increase line number
     pub fn inc_line_number(&mut self) {
         self.tracker_stack.tracker_mut().forward_line();
-        println!("LINE NUMBER : {:#?}", self.tracker_stack.tracker());
     }
     /// Increase char number
     pub fn inc_char_number(&mut self) {
@@ -98,36 +91,26 @@ impl<'logger> Logger<'logger> {
     /// Add new tracks inside tracker
     pub fn append_track(&mut self) {
         self.tracker_stack.tracker_mut().set_milestone(());
-        println!("^^^ Cached");
     }
 
     /// Merge last tracks
     pub fn merge_track(&mut self) {
-        self.tracker_stack.tracker_mut().set_milestone(());
-        println!("^^^ Merged");
-        println!("{:#?}", self.tracker_stack);
+        self.tracker_stack.tracker_mut().connect_track();
     }
 
-    fn get_last_char(&self) -> String {
-        self.tracker_stack
-            .tracker()
-            .get_full_track()
-            .char_index
-            .to_string()
-    }
-
-    fn get_last_line(&self) -> String {
-        self.tracker_stack
-            .tracker()
-            .get_full_track()
-            .line_index
-            .to_string()
+    fn get_last_track(&self) -> Track<()> {
+        let mut out_track = Track::new(());
+        for tracker in &self.tracker_stack.stack {
+            out_track.line_index += tracker.get_distance().line_index;
+            out_track.char_index = tracker.get_distance().char_index;
+        }
+        out_track
     }
 
     /// Log message
     pub fn log(&mut self, log: &str) -> RadResult<()> {
-        let last_line = self.get_last_line();
-        let last_char = self.get_last_char();
+        let track = self.get_last_track();
+        let (last_line, last_char) = (track.line_index, track.char_index);
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
@@ -167,14 +150,13 @@ impl<'logger> Logger<'logger> {
 
     /// Log error
     pub fn elog(&mut self, log: &str) -> RadResult<()> {
-        println!("{:#?}", self.tracker_stack);
         self.error_count += 1;
 
         if self.assert {
             return Ok(());
         }
-        let last_line = self.get_last_line();
-        let last_char = self.get_last_char();
+        let track = self.get_last_track();
+        let (last_line, last_char) = (track.line_index, track.char_index);
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
@@ -240,8 +222,8 @@ impl<'logger> Logger<'logger> {
         if self.assert {
             return Ok(());
         }
-        let last_line = self.get_last_line();
-        let last_char = self.get_last_char();
+        let track = self.get_last_track();
+        let (last_line, last_char) = (track.line_index, track.char_index);
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
@@ -261,7 +243,7 @@ impl<'logger> Logger<'logger> {
                         log,
                         LINE_ENDING,
                         self.current_input,
-                        self.get_last_line(),
+                        last_line,
                         last_char
                     )?;
                 }
@@ -286,8 +268,8 @@ impl<'logger> Logger<'logger> {
             return Ok(());
         }
         self.assert_fail += 1;
-        let last_line = self.get_last_line();
-        let last_char = self.get_last_char();
+        let track = self.get_last_track();
+        let (last_line, last_char) = (track.line_index, track.char_index);
 
         if let Some(option) = &mut self.write_option {
             match option {
@@ -306,7 +288,7 @@ impl<'logger> Logger<'logger> {
                         "{} -> {}:{}:{}",
                         Utils::red("assert fail", self.is_logging_to_file()),
                         self.current_input,
-                        self.get_last_line(),
+                        last_line,
                         last_char
                     )?;
                 }
@@ -458,13 +440,26 @@ impl std::str::FromStr for WarningType {
 
 #[derive(Debug)]
 pub struct NestedTracker {
-    stack: Vec<Tracker<()>>,
+    pub(crate) stack: Vec<Tracker<()>>,
 }
 
 impl NestedTracker {
     pub fn new() -> Self {
         Self { stack: vec![] }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.stack.is_empty()
+    }
+
+    pub fn count(&self) -> usize {
+        self.stack.len()
+    }
+
+    pub fn previous_tracker(&self) -> &Tracker<()> {
+        &self.stack[self.stack.len() - 2]
+    }
+
     pub fn tracker(&self) -> &Tracker<()> {
         self.stack.last().unwrap()
     }

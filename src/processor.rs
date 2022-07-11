@@ -1578,7 +1578,6 @@ impl<'processor> Processor<'processor> {
         let mut frag = MacroFragment::new();
         let mut result = String::new();
         self.logger.start_new_tracker();
-        self.logger.set_milestone(true);
         for line in Utils::full_lines(chunk.as_bytes()) {
             let line = line?;
 
@@ -1607,7 +1606,6 @@ impl<'processor> Processor<'processor> {
             result.push_str(&frag.whole_string);
         }
 
-        self.logger.set_milestone(false);
         self.logger.stop_last_tracker();
         Ok(result)
     } // parse_chunk_lines end
@@ -1723,7 +1721,7 @@ impl<'processor> Processor<'processor> {
             }
         } // End Character iteration
 
-        if previous_track_count != self.logger.get_track_count() {
+        if previous_track_count != self.logger.get_track_count() && frag.is_empty() {
             self.logger.merge_track();
         }
 
@@ -2132,6 +2130,7 @@ impl<'processor> Processor<'processor> {
         if !self.checker.check(ch) && !self.state.paused {
             self.logger.append_track();
             self.log_warning("Unbalanced parenthesis detected.", WarningType::Sanity)?;
+            self.logger.merge_track();
         }
         remainder.push(ch);
 
