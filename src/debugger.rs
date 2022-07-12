@@ -156,7 +156,7 @@ impl Debugger {
         let mut colorfunc: Option<ColorDisplayFunc>;
 
         // Print header
-        logger.elog_no_prompt(format!("{0}DIFF : {0}", LINE_ENDING))?;
+        logger.elog_no_line(format!("{0}DIFF : {0}", LINE_ENDING))?;
 
         // Print changes with color support
         for change in result.iter_all_changes() {
@@ -191,9 +191,9 @@ impl Debugger {
                 } else {
                     func(&log, false)
                 };
-                logger.elog_no_prompt(&log)?;
+                logger.elog_no_line(&log)?;
             } else {
-                logger.elog_no_prompt(&log)?;
+                logger.elog_no_line(&log)?;
             }
         }
 
@@ -289,7 +289,7 @@ impl Debugger {
             match &self.debug_switch {
                 &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => self
                     .line_caches
-                    .get(&logger.get_first_track().line_index)
+                    .get(&logger.get_last_line())
                     .unwrap()
                     .to_owned(),
                 _ => self.line_caches.get(&self.line_number).unwrap().to_owned(),
@@ -467,7 +467,7 @@ impl Debugger {
             // Current line number
             "line" | "l" => match &self.debug_switch {
                 DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                    *log = logger.get_first_track().line_index.to_string();
+                    *log = logger.get_last_line().to_string();
                 }
                 _ => {
                     *log = self.line_number.to_string();
@@ -476,9 +476,7 @@ impl Debugger {
             // Span of codes,macro chunk
             "span" | "s" => {
                 let mut line_number = match &self.debug_switch {
-                    &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => {
-                        logger.get_first_track().line_index
-                    }
+                    &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => logger.get_last_line(),
                     _ => self.line_number,
                 };
 
@@ -503,7 +501,7 @@ impl Debugger {
                 DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
                     *log = self
                         .line_caches
-                        .get(&logger.get_first_track().line_index)
+                        .get(&logger.get_last_line())
                         .unwrap()
                         .to_owned();
                 }

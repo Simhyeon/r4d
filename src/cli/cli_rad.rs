@@ -36,6 +36,11 @@ impl<'cli> Default for RadCli<'cli> {
 
 impl<'cli> RadCli<'cli> {
     pub fn print_error(&mut self, error: &str) -> RadResult<()> {
+        self.processor.print_error_no_line(error)?;
+        Ok(())
+    }
+
+    pub fn print_error_with_line(&mut self, error: &str) -> RadResult<()> {
         self.processor.print_error(error)?;
         Ok(())
     }

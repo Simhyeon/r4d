@@ -72,10 +72,6 @@ impl<'logger> Logger<'logger> {
         self.tracker_stack.decrease_level();
     }
 
-    pub fn get_track_count(&self) -> usize {
-        self.tracker_stack.tracker().get_track_counts()
-    }
-
     /// Set file's logging information and reset state
     pub fn set_input(&mut self, input: &ProcessInput) {
         self.current_input = input.clone();
@@ -112,6 +108,16 @@ impl<'logger> Logger<'logger> {
         out_track
     }
 
+    #[cfg(feature = "debug")]
+    pub fn get_last_line(&self) -> usize {
+        let mut last_line = 0;
+        for tracker in &self.tracker_stack.stack {
+            let distance = tracker.get_distance();
+            last_line += distance.line_index;
+        }
+        last_line
+    }
+
     fn construct_log_position(&self) -> RadResult<String> {
         let track = self.get_first_track();
         let (last_line, last_char) = (track.line_index, track.char_index);
@@ -129,17 +135,46 @@ impl<'logger> Logger<'logger> {
             TrackType::Body(name) | TrackType::Argument(name) => {
                 write!(
                     position,
-                    " >> (MACRO = {}):{}:{}{}",
+                    " >> (MACRO = {}):{}:{}",
                     name,
                     last_distance.line_index + 1, // THis is because inner tracks starts from line "0"
                     last_distance.char_index,
-                    LINE_ENDING
                 )?;
             }
-            _ => position.push_str(LINE_ENDING),
+            _ => (),
         }
 
         Ok(position)
+    }
+
+    fn write_formatted_log_msg_without_line(
+        &mut self,
+        prompt: &str,
+        log_msg: &str,
+        #[cfg(feature = "clap")] color_func: ColorDisplayFunc,
+    ) -> RadResult<()> {
+        let log_pos = self.construct_log_position()?;
+        if let Some(option) = &mut self.write_option {
+            match option {
+                WriteOption::File(file) => {
+                    file.inner()
+                        .write_all(format!("{} : {}{}", prompt, log_msg, LINE_ENDING).as_bytes())?;
+                }
+                WriteOption::Terminal => {
+                    let mut prompt = prompt.to_string();
+                    #[cfg(feature = "clap")]
+                    {
+                        prompt = color_func(&prompt, self.is_logging_to_file()).to_string();
+                    }
+                    write!(std::io::stderr(), "{}: {}{}", prompt, log_msg, LINE_ENDING)?;
+                }
+                WriteOption::Variable(var) => {
+                    write!(var, "{} : {}{}", prompt, log_msg, LINE_ENDING)?;
+                }
+                WriteOption::Discard | WriteOption::Return => (),
+            } // Match end
+        }
+        Ok(())
     }
 
     fn write_formatted_log_msg(
@@ -153,7 +188,8 @@ impl<'logger> Logger<'logger> {
             match option {
                 WriteOption::File(file) => {
                     file.inner().write_all(
-                        format!("{} : {} -> {}", prompt, log_msg, log_pos,).as_bytes(),
+                        format!("{} : {} -> {}{}", prompt, log_msg, log_pos, LINE_ENDING)
+                            .as_bytes(),
                     )?;
                 }
                 WriteOption::Terminal => {
@@ -164,15 +200,20 @@ impl<'logger> Logger<'logger> {
                     }
                     write!(
                         std::io::stderr(),
-                        "{}: {} {} --> {}",
+                        "{}: {} {} --> {}{}",
                         prompt,
                         log_msg,
                         LINE_ENDING,
-                        log_pos
+                        log_pos,
+                        LINE_ENDING
                     )?;
                 }
                 WriteOption::Variable(var) => {
-                    write!(var, "{} : {} -> {}", prompt, log_msg, log_pos)?;
+                    write!(
+                        var,
+                        "{} : {} -> {}{}",
+                        prompt, log_msg, log_pos, LINE_ENDING
+                    )?;
                 }
                 WriteOption::Discard | WriteOption::Return => (),
             } // Match end
@@ -197,9 +238,6 @@ impl<'logger> Logger<'logger> {
         if self.assert {
             return Ok(());
         }
-        if std::env::var("PRINT_STACK").is_ok() {
-            println!("{:#?}", self.tracker_stack)
-        }
         self.write_formatted_log_msg(
             "error",
             log_msg,
@@ -208,20 +246,18 @@ impl<'logger> Logger<'logger> {
         )
     }
 
-    #[cfg(feature = "debug")]
-    pub fn elog_no_prompt(&mut self, log: impl std::fmt::Display) -> RadResult<()> {
-        if let Some(option) = &mut self.write_option {
-            match option {
-                WriteOption::File(file) => {
-                    file.inner().write_all(log.to_string().as_bytes())?;
-                }
-                WriteOption::Terminal => {
-                    write!(std::io::stderr(), "{}", log)?;
-                }
-                WriteOption::Variable(var) => var.push_str(&log.to_string()),
-                WriteOption::Discard | WriteOption::Return => (),
-            } // match end
+    pub fn elog_no_line(&mut self, log_msg: impl std::fmt::Display) -> RadResult<()> {
+        self.error_count += 1;
+
+        if self.assert {
+            return Ok(());
         }
+        self.write_formatted_log_msg_without_line(
+            "error",
+            &log_msg.to_string(),
+            #[cfg(feature = "clap")]
+            Utils::red,
+        )?;
         Ok(())
     }
 
@@ -246,7 +282,7 @@ impl<'logger> Logger<'logger> {
     }
 
     /// Log warning within line
-    pub fn wlog_line(&mut self, log_msg: &str, warning_type: WarningType) -> RadResult<()> {
+    pub fn wlog_no_line(&mut self, log_msg: &str, warning_type: WarningType) -> RadResult<()> {
         if self.suppresion_type == WarningType::Any || self.suppresion_type == warning_type {
             return Ok(());
         }
@@ -256,26 +292,13 @@ impl<'logger> Logger<'logger> {
         if self.assert {
             return Ok(());
         }
-        if let Some(option) = &mut self.write_option {
-            match option {
-                WriteOption::File(file) => {
-                    file.inner()
-                        .write_all(format!("warning: {}{}", log_msg, LINE_ENDING).as_bytes())?;
-                }
-                WriteOption::Terminal => {
-                    let mut prompt = "warning".to_string();
-                    #[cfg(feature = "clap")]
-                    {
-                        prompt = Utils::yellow(&prompt, false).to_string();
-                    }
-                    write!(std::io::stderr(), "{}: {}{}", prompt, log_msg, LINE_ENDING)?;
-                }
-                WriteOption::Variable(var) => {
-                    var.push_str(&format!("warning: {}{}", LINE_ENDING, LINE_ENDING))
-                }
-                WriteOption::Discard | WriteOption::Return => (),
-            }; // match end
-        }
+
+        self.write_formatted_log_msg_without_line(
+            "warning",
+            log_msg,
+            #[cfg(feature = "clap")]
+            Utils::yellow,
+        )?;
 
         Ok(())
     }

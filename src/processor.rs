@@ -932,7 +932,7 @@ impl<'processor> Processor<'processor> {
         if let Some(status) = self.state.auth_flags.get_status_string() {
             let mut status_with_header = String::from("Permission granted");
             status_with_header.push_str(&status);
-            self.log_warning_line(&status_with_header, WarningType::Security)?;
+            self.log_warning_no_line(&status_with_header, WarningType::Security)?;
         }
         Ok(())
     }
@@ -973,8 +973,12 @@ impl<'processor> Processor<'processor> {
             // Warn flow control
             match self.state.flow_control {
                 FlowControl::None => (),
-                FlowControl::Exit => self.log_warning("Process exited.", WarningType::Sanity)?,
-                FlowControl::Escape => self.log_warning("Process escaped.", WarningType::Sanity)?,
+                FlowControl::Exit => self
+                    .logger
+                    .wlog_no_line("Process exited.", WarningType::Sanity)?,
+                FlowControl::Escape => self
+                    .logger
+                    .wlog_no_line("Process escaped.", WarningType::Sanity)?,
             }
         }
 
@@ -1667,7 +1671,7 @@ impl<'processor> Processor<'processor> {
                     // This restart frags
                     remainder.push_str(&frag.whole_string);
                     frag.clear();
-                    frag.is_processed;
+                    frag.is_processed = true;
                     frag.whole_string.push(self.get_macro_char());
                 }
                 LexResult::EmptyName => {
@@ -2079,7 +2083,7 @@ impl<'processor> Processor<'processor> {
                 frag.whole_string.push(ch);
                 remainder.push_str(&frag.whole_string);
                 frag.clear();
-                frag.is_processed;
+                frag.is_processed = true;
             }
             // Simply push if none or arg
             Cursor::None => {
@@ -2110,7 +2114,7 @@ impl<'processor> Processor<'processor> {
             lexor.reset();
             remainder.push_str(&frag.whole_string);
             frag.clear();
-            frag.is_processed;
+            frag.is_processed = true;
         }
 
         Ok(())
@@ -2132,7 +2136,7 @@ impl<'processor> Processor<'processor> {
             lexor.reset();
             remainder.push_str(&frag.whole_string);
             frag.clear();
-            frag.is_processed;
+            frag.is_processed = true;
         }
     }
 
@@ -2200,7 +2204,7 @@ impl<'processor> Processor<'processor> {
             // Within aseptic circumstances you cannot define runtime macros
             if self.state.hygiene == Hygiene::Aseptic {
                 frag.clear();
-                frag.is_processed;
+                frag.is_processed = true;
                 self.state.consume_newline = true;
                 let err = RadError::StrictPanic(format!(
                     "Cannot register a macro : \"{}\" in aseptic mode",
@@ -2288,7 +2292,7 @@ impl<'processor> Processor<'processor> {
 
             // Clear fragment regardless
             frag.clear();
-            frag.is_processed;
+            frag.is_processed = true;
         }
 
         // Debug
@@ -2303,6 +2307,9 @@ impl<'processor> Processor<'processor> {
             self.debugger.break_point(frag)?;
             // Break point is true , continue
             if frag.name.is_empty() {
+                // Clear fragment regardless of success
+                frag.clear();
+                frag.is_processed = true;
                 self.state.consume_newline = true;
                 return Ok(());
             }
@@ -2455,7 +2462,7 @@ impl<'processor> Processor<'processor> {
         frag.whole_string.push(ch);
         remainder.push_str(&frag.whole_string);
         frag.clear();
-        frag.is_processed;
+        frag.is_processed = true;
     }
 
     // </LEX>
@@ -2585,12 +2592,12 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Log warning
-    pub(crate) fn log_warning_line(
+    pub(crate) fn log_warning_no_line(
         &mut self,
         log: &str,
         warning_type: WarningType,
     ) -> RadResult<()> {
-        self.logger.wlog_line(log, warning_type)?;
+        self.logger.wlog_no_line(log, warning_type)?;
         Ok(())
     }
 
@@ -2758,6 +2765,17 @@ impl<'processor> Processor<'processor> {
         } else {
             Ok(parsed)
         }
+    }
+
+    /// Print error using a processor's error logger wihtout line information
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// proc.print_error_no_line("Error occured").expect("Failed to write error");
+    /// ```
+    pub fn print_error_no_line(&mut self, error: &str) -> RadResult<()> {
+        self.logger.elog_no_line(error)?;
+        Ok(())
     }
 
     /// Print error using a processor's error logger
