@@ -932,7 +932,7 @@ impl<'processor> Processor<'processor> {
         if let Some(status) = self.state.auth_flags.get_status_string() {
             let mut status_with_header = String::from("Permission granted");
             status_with_header.push_str(&status);
-            self.log_warning(&status_with_header, WarningType::Security)?;
+            self.log_warning_line(&status_with_header, WarningType::Security)?;
         }
         Ok(())
     }
@@ -964,8 +964,6 @@ impl<'processor> Processor<'processor> {
             self.map.clear_runtime_macros(true);
         }
 
-        self.logger.stop_last_tracker();
-
         if self.state.input_stack.len() == 1 {
             // Warn unterminated relaying
             if !self.state.relay.is_empty() {
@@ -983,6 +981,7 @@ impl<'processor> Processor<'processor> {
         // Clear input stack
         // This is necessary because operation can be contiguous
         self.state.input_stack.clear();
+        self.logger.stop_last_tracker();
 
         if self.cache.is_empty() {
             Ok(None)
@@ -1349,6 +1348,7 @@ impl<'processor> Processor<'processor> {
                 // Only if debug switch is nextline
                 self.debugger.user_input_on_line(&frag, &mut self.logger)?;
             }
+
             let result = match self.process_line(&mut line_iter, &mut lexor, &mut frag) {
                 Ok(oo) => oo,
                 Err(err) => {
@@ -1470,8 +1470,8 @@ impl<'processor> Processor<'processor> {
         lexor: &mut Lexor,
         frag: &mut MacroFragment,
     ) -> RadResult<ParseResult> {
-        self.logger.inc_line_number();
         if let Some(line) = lines.next() {
+            self.logger.inc_line_number();
             let line = line?;
 
             // Deny newline
@@ -1583,7 +1583,7 @@ impl<'processor> Processor<'processor> {
         let mut frag = MacroFragment::new();
         let mut result = String::new();
         self.logger
-            .start_new_tracker(TrackType::Argumnet(frag.name.to_owned()));
+            .start_new_tracker(TrackType::Argument(caller.to_owned()));
         for line in Utils::full_lines(chunk.as_bytes()) {
             let line = line?;
 
@@ -1724,12 +1724,12 @@ impl<'processor> Processor<'processor> {
                     }
                 } // End if let of macro name
             }
-        } // End Character iteration
 
-        if frag.is_processed {
-            self.logger.merge_track();
-            frag.is_processed = false;
-        }
+            if frag.is_processed {
+                self.logger.merge_track();
+                frag.is_processed = false;
+            }
+        } // End Character iteration
 
         // Don't print if current was empty and consume_newline was set( No print was called )
         if self.state.consume_newline && remainder.trim().is_empty() {
@@ -2581,6 +2581,16 @@ impl<'processor> Processor<'processor> {
     /// Log error
     pub(crate) fn log_error(&mut self, log: &str) -> RadResult<()> {
         self.logger.elog(log)?;
+        Ok(())
+    }
+
+    /// Log warning
+    pub(crate) fn log_warning_line(
+        &mut self,
+        log: &str,
+        warning_type: WarningType,
+    ) -> RadResult<()> {
+        self.logger.wlog_line(log, warning_type)?;
         Ok(())
     }
 
