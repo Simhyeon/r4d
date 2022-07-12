@@ -15,21 +15,16 @@ pub(crate) struct Logger<'logger> {
     current_input: ProcessInput,
     pub(crate) tracker_stack: TrackerStack,
     pub(crate) write_option: Option<WriteOption<'logger>>,
-    error_count: usize,
-    warning_count: usize,
-    assert_success: usize,
-    assert_fail: usize,
     pub(crate) assert: bool,
+    stat: LoggerStat,
 }
 
-/// TODO
-/// Apply this struct to Logger struct
+#[derive(Default)]
 pub struct LoggerStat {
     error_count: usize,
     warning_count: usize,
     assert_success: usize,
     assert_fail: usize,
-    pub(crate) assert: bool,
 }
 
 impl<'logger> Logger<'logger> {
@@ -39,11 +34,8 @@ impl<'logger> Logger<'logger> {
             current_input: ProcessInput::Stdin,
             write_option: None,
             tracker_stack: TrackerStack::new(),
-            error_count: 0,
-            warning_count: 0,
-            assert_success: 0,
-            assert_fail: 0,
             assert: false,
+            stat: LoggerStat::default(),
         }
     }
 
@@ -153,7 +145,6 @@ impl<'logger> Logger<'logger> {
         log_msg: &str,
         #[cfg(feature = "clap")] color_func: ColorDisplayFunc,
     ) -> RadResult<()> {
-        let log_pos = self.construct_log_position()?;
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
@@ -233,7 +224,7 @@ impl<'logger> Logger<'logger> {
 
     /// Log error
     pub fn elog(&mut self, log_msg: &str) -> RadResult<()> {
-        self.error_count += 1;
+        self.stat.error_count += 1;
 
         if self.assert {
             return Ok(());
@@ -247,7 +238,7 @@ impl<'logger> Logger<'logger> {
     }
 
     pub fn elog_no_line(&mut self, log_msg: impl std::fmt::Display) -> RadResult<()> {
-        self.error_count += 1;
+        self.stat.error_count += 1;
 
         if self.assert {
             return Ok(());
@@ -267,7 +258,7 @@ impl<'logger> Logger<'logger> {
             return Ok(());
         }
 
-        self.warning_count += 1;
+        self.stat.warning_count += 1;
 
         if self.assert {
             return Ok(());
@@ -287,7 +278,7 @@ impl<'logger> Logger<'logger> {
             return Ok(());
         }
 
-        self.warning_count += 1;
+        self.stat.warning_count += 1;
 
         if self.assert {
             return Ok(());
@@ -306,10 +297,10 @@ impl<'logger> Logger<'logger> {
     /// Assertion log
     pub fn alog(&mut self, success: bool) -> RadResult<()> {
         if success {
-            self.assert_success += 1;
+            self.stat.assert_success += 1;
             return Ok(());
         }
-        self.assert_fail += 1;
+        self.stat.assert_fail += 1;
         self.write_formatted_log_msg(
             "assert fail",
             "",
@@ -326,12 +317,12 @@ impl<'logger> Logger<'logger> {
             let error_result = format!(
                 "{}: found {} errors",
                 Utils::red("error", log_to_file),
-                self.error_count
+                self.stat.error_count
             );
             let warning_result = format!(
                 "{}: found {} warnings",
                 Utils::yellow("warning", log_to_file),
-                self.warning_count
+                self.stat.warning_count
             );
             let assert_result = format!(
                 "
@@ -339,15 +330,15 @@ impl<'logger> Logger<'logger> {
 SUCCESS : {}
 FAIL: {}",
                 Utils::green("Assert", log_to_file),
-                self.assert_success,
-                self.assert_fail
+                self.stat.assert_success,
+                self.stat.assert_fail
             );
             match option {
                 WriteOption::File(file) => {
-                    if self.error_count > 0 {
+                    if self.stat.error_count > 0 {
                         file.inner().write_all(error_result.as_bytes())?;
                     }
-                    if self.warning_count > 0 {
+                    if self.stat.warning_count > 0 {
                         file.inner().write_all(warning_result.as_bytes())?;
                     }
                     if self.assert {
@@ -355,10 +346,10 @@ FAIL: {}",
                     }
                 }
                 WriteOption::Terminal => {
-                    if self.error_count > 0 {
+                    if self.stat.error_count > 0 {
                         writeln!(std::io::stderr(), "{}", error_result)?;
                     }
-                    if self.warning_count > 0 {
+                    if self.stat.warning_count > 0 {
                         writeln!(std::io::stderr(), "{}", warning_result)?;
                     }
                     if self.assert {
@@ -388,7 +379,7 @@ FAIL: {}",
     #[cfg(feature = "debug")]
     pub fn dlog_print(&mut self, log: &str) -> RadResult<()> {
         let track = self.get_first_track();
-        let (last_line, last_char) = (track.line_index, track.char_index);
+        let last_line = track.line_index;
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::Terminal => {
@@ -458,18 +449,6 @@ pub struct TrackerStack {
 impl TrackerStack {
     pub fn new() -> Self {
         Self { stack: vec![] }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.stack.is_empty()
-    }
-
-    pub fn count(&self) -> usize {
-        self.stack.len()
-    }
-
-    pub fn previous_tracker(&self) -> &Tracker<TrackType> {
-        &self.stack[self.stack.len() - 2]
     }
 
     pub fn tracker(&self) -> &Tracker<TrackType> {
