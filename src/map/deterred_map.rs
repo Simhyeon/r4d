@@ -829,9 +829,9 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         let mut ap = ArgParser::new();
         let macro_name = trim!(&p.parse_and_strip(&mut ap, level, args)?).to_string();
         let body = if let Some(name) = p.contains_local_macro(level, &macro_name) {
-            trim!(p.get_local_macro_body(&name)?).to_string()
+            p.get_local_macro_body(&name)?.to_string()
         } else if let Ok(body) = p.get_runtime_macro_body(&macro_name) {
-            trim!(body).to_string()
+            body.to_string()
         } else {
             return Err(RadError::InvalidArgument(format!(
                 "Macro \"{}\" doesn't exist",
