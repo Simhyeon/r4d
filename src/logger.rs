@@ -1,6 +1,6 @@
 //! # Logger
 //!
-//! Logger handles all kinds of logging logics. Such log can be warning, error or debug logs.
+//! Logger handles all kinds of logging logics&&. Such log can be warning, error or debug logs.
 
 use crate::models::{ProcessInput, RadResult, WriteOption};
 use crate::utils::Utils;
@@ -103,17 +103,17 @@ impl<'logger> Logger<'logger> {
         self.tracker_stack.tracker_mut().connect_track();
     }
 
-    fn get_last_track(&self) -> Track<()> {
+    /// Get first track
+    fn get_first_track(&self) -> Track<()> {
         let mut out_track = Track::new(());
-        for tracker in &self.tracker_stack.stack {
-            out_track.line_index += tracker.get_distance().line_index;
-            out_track.char_index = tracker.get_distance().char_index;
-        }
+        let tracker = self.tracker_stack.stack.first().unwrap();
+        out_track.line_index += tracker.get_distance().line_index;
+        out_track.char_index = tracker.get_distance().char_index;
         out_track
     }
 
     fn construct_log_position(&self) -> RadResult<String> {
-        let track = self.get_last_track();
+        let track = self.get_first_track();
         let (last_line, last_char) = (track.line_index, track.char_index);
 
         // Set last position first,
@@ -125,14 +125,18 @@ impl<'logger> Logger<'logger> {
 
         // Then append current macro's position which is the direct source of an error
         let last_distance = self.tracker_stack.tracker().get_distance();
-        if let TrackType::Body(macro_name) = &last_distance.milestone {
-            write!(
-                position,
-                " >> (MACRO = {}):{}:{}{}",
-                macro_name, last_distance.line_index, last_distance.char_index, LINE_ENDING
-            )?;
-        } else {
-            position.push_str(LINE_ENDING);
+        match &last_distance.milestone {
+            TrackType::Body(name) | TrackType::Argument(name) => {
+                write!(
+                    position,
+                    " >> (MACRO = {}):{}:{}{}",
+                    name,
+                    last_distance.line_index + 1, // THis is because inner tracks starts from line "0"
+                    last_distance.char_index,
+                    LINE_ENDING
+                )?;
+            }
+            _ => position.push_str(LINE_ENDING),
         }
 
         Ok(position)
@@ -241,6 +245,41 @@ impl<'logger> Logger<'logger> {
         )
     }
 
+    /// Log warning within line
+    pub fn wlog_line(&mut self, log_msg: &str, warning_type: WarningType) -> RadResult<()> {
+        if self.suppresion_type == WarningType::Any || self.suppresion_type == warning_type {
+            return Ok(());
+        }
+
+        self.warning_count += 1;
+
+        if self.assert {
+            return Ok(());
+        }
+        if let Some(option) = &mut self.write_option {
+            match option {
+                WriteOption::File(file) => {
+                    file.inner()
+                        .write_all(format!("warning: {}{}", log_msg, LINE_ENDING).as_bytes())?;
+                }
+                WriteOption::Terminal => {
+                    let mut prompt = "warning".to_string();
+                    #[cfg(feature = "clap")]
+                    {
+                        prompt = Utils::yellow(&prompt, false).to_string();
+                    }
+                    write!(std::io::stderr(), "{}: {}{}", prompt, log_msg, LINE_ENDING)?;
+                }
+                WriteOption::Variable(var) => {
+                    var.push_str(&format!("warning: {}{}", LINE_ENDING, LINE_ENDING))
+                }
+                WriteOption::Discard | WriteOption::Return => (),
+            }; // match end
+        }
+
+        Ok(())
+    }
+
     /// Assertion log
     pub fn alog(&mut self, success: bool) -> RadResult<()> {
         if success {
@@ -325,7 +364,7 @@ FAIL: {}",
     /// Log debug information
     #[cfg(feature = "debug")]
     pub fn dlog_print(&mut self, log: &str) -> RadResult<()> {
-        let track = self.get_last_track();
+        let track = self.get_first_track();
         let (last_line, last_char) = (track.line_index, track.char_index);
         if let Some(option) = &mut self.write_option {
             match option {
@@ -432,6 +471,6 @@ impl TrackerStack {
 pub enum TrackType {
     Record(String),
     Input(String),
-    Argumnet(String),
+    Argument(String),
     Body(String),
 }
