@@ -261,7 +261,7 @@ impl RadoCli {
         let result = similar::TextDiff::from_lines(&source_content, &target_content);
         let mut log: String;
         // Color function reference
-        let mut colorfunc: ColorDisplayFunc = None;
+        let mut colorfunc: Option<ColorDisplayFunc> = None;
         let is_stdout = atty::is(atty::Stream::Stdout);
         if is_stdout {
             colorfunc.replace(|string: &str, _| -> Box<dyn std::fmt::Display> {

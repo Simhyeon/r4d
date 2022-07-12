@@ -104,7 +104,7 @@ impl<'logger> Logger<'logger> {
     }
 
     /// Get first track
-    fn get_first_track(&self) -> Track<()> {
+    pub fn get_first_track(&self) -> Track<()> {
         let mut out_track = Track::new(());
         let tracker = self.tracker_stack.stack.first().unwrap();
         out_track.line_index += tracker.get_distance().line_index;

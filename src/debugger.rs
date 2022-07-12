@@ -153,7 +153,7 @@ impl Debugger {
 
         let mut log: String;
         // Color function reference
-        let mut colorfunc: ColorDisplayFunc;
+        let mut colorfunc: Option<ColorDisplayFunc>;
 
         // Print header
         logger.elog_no_prompt(format!("{0}DIFF : {0}", LINE_ENDING))?;
@@ -289,7 +289,7 @@ impl Debugger {
             match &self.debug_switch {
                 &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => self
                     .line_caches
-                    .get(&logger.get_abs_last_line())
+                    .get(&logger.get_first_track().line_index)
                     .unwrap()
                     .to_owned(),
                 _ => self.line_caches.get(&self.line_number).unwrap().to_owned(),
@@ -467,7 +467,7 @@ impl Debugger {
             // Current line number
             "line" | "l" => match &self.debug_switch {
                 DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                    *log = logger.get_abs_last_line().to_string();
+                    *log = logger.get_first_track().line_index.to_string();
                 }
                 _ => {
                     *log = self.line_number.to_string();
@@ -476,7 +476,9 @@ impl Debugger {
             // Span of codes,macro chunk
             "span" | "s" => {
                 let mut line_number = match &self.debug_switch {
-                    &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => logger.get_abs_line(),
+                    &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => {
+                        logger.get_first_track().line_index
+                    }
                     _ => self.line_number,
                 };
 
@@ -501,7 +503,7 @@ impl Debugger {
                 DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
                     *log = self
                         .line_caches
-                        .get(&logger.get_abs_last_line())
+                        .get(&logger.get_first_track().line_index)
                         .unwrap()
                         .to_owned();
                 }
