@@ -7,6 +7,7 @@ use crate::error::RadError;
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};
 use crate::lexor::*;
+use crate::logger::TrackType;
 use crate::logger::{Logger, WarningType};
 #[cfg(feature = "debug")]
 use crate::models::DiffOption;
@@ -1535,7 +1536,8 @@ impl<'processor> Processor<'processor> {
         );
         let mut frag = MacroFragment::new();
         let mut result = String::new();
-        self.logger.start_new_tracker();
+        self.logger
+            .start_new_tracker(TrackType::Body(caller.to_string()));
 
         for line in Utils::full_lines(chunk.as_bytes()) {
             let line = line?;
@@ -1549,6 +1551,9 @@ impl<'processor> Processor<'processor> {
             }
 
             let line_result = self.parse_line(&mut lexor, &mut frag, &line, level, caller)?;
+            // Increase line number
+            self.logger.inc_line_number();
+
             result.push_str(&line_result);
         }
 
@@ -1577,7 +1582,8 @@ impl<'processor> Processor<'processor> {
         lexor.set_inner();
         let mut frag = MacroFragment::new();
         let mut result = String::new();
-        self.logger.start_new_tracker();
+        self.logger
+            .start_new_tracker(TrackType::Argumnet(frag.name.to_owned()));
         for line in Utils::full_lines(chunk.as_bytes()) {
             let line = line?;
 
@@ -1635,8 +1641,6 @@ impl<'processor> Processor<'processor> {
             return Ok(String::new());
         }
 
-        let previous_track_count = self.logger.get_track_count();
-
         for ch in line.chars() {
             // Escape new charater is not respected
             if self.state.escape_newline {
@@ -1663,6 +1667,7 @@ impl<'processor> Processor<'processor> {
                     // This restart frags
                     remainder.push_str(&frag.whole_string);
                     frag.clear();
+                    frag.is_processed;
                     frag.whole_string.push(self.get_macro_char());
                 }
                 LexResult::EmptyName => {
@@ -1721,8 +1726,9 @@ impl<'processor> Processor<'processor> {
             }
         } // End Character iteration
 
-        if previous_track_count != self.logger.get_track_count() && frag.is_empty() {
+        if frag.is_processed {
             self.logger.merge_track();
+            frag.is_processed = false;
         }
 
         // Don't print if current was empty and consume_newline was set( No print was called )
@@ -1908,14 +1914,10 @@ impl<'processor> Processor<'processor> {
             self.map.add_local_macro(level + 1, arg_type, &args[idx]);
         }
 
-        self.logger.start_new_tracker();
-
         // Process the rule body
         // NOTE
         // Previously, this was parse_chunk_body
         let result = self.parse_chunk_body(level, name, &rule.body)?;
-
-        self.logger.stop_last_tracker();
 
         // Clear lower locals to prevent local collisions
         self.map.clear_lower_locals(level);
@@ -1949,6 +1951,10 @@ impl<'processor> Processor<'processor> {
                     mac_name
                 ));
                 return Err(err);
+            }
+
+            if std::env::var("PRINT_DEFINE_BODY").is_ok() {
+                dbg!(&body);
             }
 
             if frag.trim_input {
@@ -2057,6 +2063,7 @@ impl<'processor> Processor<'processor> {
         remainder.push_str(&frag.whole_string);
         remainder.push_str(&self.state.newline);
         frag.clear();
+        frag.is_processed = true;
     }
     fn lex_branch_literal(
         &mut self,
@@ -2072,6 +2079,7 @@ impl<'processor> Processor<'processor> {
                 frag.whole_string.push(ch);
                 remainder.push_str(&frag.whole_string);
                 frag.clear();
+                frag.is_processed;
             }
             // Simply push if none or arg
             Cursor::None => {
@@ -2102,6 +2110,7 @@ impl<'processor> Processor<'processor> {
             lexor.reset();
             remainder.push_str(&frag.whole_string);
             frag.clear();
+            frag.is_processed;
         }
 
         Ok(())
@@ -2117,18 +2126,20 @@ impl<'processor> Processor<'processor> {
         // THis is necessary because whole string should be whole anyway
         frag.whole_string.push(ch);
         // Freeze needed for logging
-        self.logger.append_track();
+        self.logger.append_track(String::from("empty name"));
         // If paused, then reset lexor context to remove cost
         if self.state.paused {
             lexor.reset();
             remainder.push_str(&frag.whole_string);
             frag.clear();
+            frag.is_processed;
         }
     }
 
     fn lex_branch_add_to_remainder(&mut self, ch: char, remainder: &mut String) -> RadResult<()> {
         if !self.checker.check(ch) && !self.state.paused {
-            self.logger.append_track();
+            self.logger
+                .append_track(String::from("Unbalanced parenthesis"));
             self.log_warning("Unbalanced parenthesis detected.", WarningType::Sanity)?;
             self.logger.merge_track();
         }
@@ -2146,7 +2157,7 @@ impl<'processor> Processor<'processor> {
         match cursor {
             Cursor::Name => {
                 if frag.name.is_empty() {
-                    self.logger.append_track();
+                    self.logger.append_track(String::from("Macro start"));
                 }
                 match ch {
                     '|' => frag.pipe = true,
@@ -2189,6 +2200,7 @@ impl<'processor> Processor<'processor> {
             // Within aseptic circumstances you cannot define runtime macros
             if self.state.hygiene == Hygiene::Aseptic {
                 frag.clear();
+                frag.is_processed;
                 self.state.consume_newline = true;
                 let err = RadError::StrictPanic(format!(
                     "Cannot register a macro : \"{}\" in aseptic mode",
@@ -2246,6 +2258,7 @@ impl<'processor> Processor<'processor> {
         self.check_debug_macro(frag, level)?;
 
         frag.clear();
+        frag.is_processed = true;
         Ok(())
     }
 
@@ -2275,6 +2288,7 @@ impl<'processor> Processor<'processor> {
 
             // Clear fragment regardless
             frag.clear();
+            frag.is_processed;
         }
 
         // Debug
@@ -2314,6 +2328,7 @@ impl<'processor> Processor<'processor> {
 
         // Clear fragment regardless of success
         frag.clear();
+        frag.is_processed = true;
 
         // Execute queues
         // Execute queued object
@@ -2440,6 +2455,7 @@ impl<'processor> Processor<'processor> {
         frag.whole_string.push(ch);
         remainder.push_str(&frag.whole_string);
         frag.clear();
+        frag.is_processed;
     }
 
     // </LEX>
