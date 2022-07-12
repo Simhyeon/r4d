@@ -404,6 +404,9 @@ pub(crate) struct MacroFragment {
     pub yield_literal: bool,
     pub trim_input: bool,
     pub trimmed: bool,
+
+    // Status varaible
+    pub is_processed: bool,
 }
 
 impl MacroFragment {
@@ -419,6 +422,8 @@ impl MacroFragment {
             yield_literal: false,
             trim_input: false,
             trimmed: false,
+
+            is_processed: false,
         }
     }
 
