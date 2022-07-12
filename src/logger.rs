@@ -13,7 +13,7 @@ use tracks::{Track, Tracker};
 pub(crate) struct Logger<'logger> {
     suppresion_type: WarningType,
     current_input: ProcessInput,
-    pub(crate) tracker_stack: NestedTracker,
+    pub(crate) tracker_stack: TrackerStack,
     pub(crate) write_option: Option<WriteOption<'logger>>,
     error_count: usize,
     warning_count: usize,
@@ -38,7 +38,7 @@ impl<'logger> Logger<'logger> {
             suppresion_type: WarningType::None,
             current_input: ProcessInput::Stdin,
             write_option: None,
-            tracker_stack: NestedTracker::new(),
+            tracker_stack: TrackerStack::new(),
             error_count: 0,
             warning_count: 0,
             assert_success: 0,
@@ -61,8 +61,11 @@ impl<'logger> Logger<'logger> {
 
     // ----Tracker methods----
 
-    pub fn start_new_tracker(&mut self) {
-        self.tracker_stack.increase_level();
+    /// Create new tracker instance
+    ///
+    /// This creates a context of tracking
+    pub fn start_new_tracker(&mut self, track_type: TrackType) {
+        self.tracker_stack.increase_level(track_type);
     }
 
     pub fn stop_last_tracker(&mut self) {
@@ -76,7 +79,7 @@ impl<'logger> Logger<'logger> {
     /// Set file's logging information and reset state
     pub fn set_input(&mut self, input: &ProcessInput) {
         self.current_input = input.clone();
-        self.tracker_stack.increase_level();
+        self.start_new_tracker(TrackType::Input(self.current_input.to_string()));
     }
 
     /// Increase line number
@@ -89,8 +92,10 @@ impl<'logger> Logger<'logger> {
     }
 
     /// Add new tracks inside tracker
-    pub fn append_track(&mut self) {
-        self.tracker_stack.tracker_mut().set_milestone(());
+    pub fn append_track(&mut self, record: String) {
+        self.tracker_stack
+            .tracker_mut()
+            .set_milestone(TrackType::Record(record));
     }
 
     /// Merge last tracks
@@ -107,40 +112,63 @@ impl<'logger> Logger<'logger> {
         out_track
     }
 
-    /// Log message
-    pub fn log(&mut self, log: &str) -> RadResult<()> {
+    fn construct_log_position(&self) -> RadResult<String> {
         let track = self.get_last_track();
         let (last_line, last_char) = (track.line_index, track.char_index);
+
+        // Set last position first,
+        // which is the first trigger macro's position
+        let mut position = format!(
+            "[INPUT = {}]:{}:{}",
+            self.current_input, last_line, last_char
+        );
+
+        // Then append current macro's position which is the direct source of an error
+        let last_distance = self.tracker_stack.tracker().get_distance();
+        if let TrackType::Body(macro_name) = &last_distance.milestone {
+            write!(
+                position,
+                " >> (MACRO = {}):{}:{}{}",
+                macro_name, last_distance.line_index, last_distance.char_index, LINE_ENDING
+            )?;
+        } else {
+            position.push_str(LINE_ENDING);
+        }
+
+        Ok(position)
+    }
+
+    fn write_formatted_log_msg(
+        &mut self,
+        prompt: &str,
+        log_msg: &str,
+        #[cfg(feature = "clap")] color_func: ColorDisplayFunc,
+    ) -> RadResult<()> {
+        let log_pos = self.construct_log_position()?;
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
                     file.inner().write_all(
-                        format!(
-                            "Log : {} -> {}:{}:{}{}",
-                            log, self.current_input, last_line, last_char, LINE_ENDING
-                        )
-                        .as_bytes(),
+                        format!("{} : {} -> {}", prompt, log_msg, log_pos,).as_bytes(),
                     )?;
                 }
                 WriteOption::Terminal => {
+                    let mut prompt = prompt.to_string();
+                    #[cfg(feature = "clap")]
+                    {
+                        prompt = color_func(&prompt, self.is_logging_to_file()).to_string();
+                    }
                     write!(
                         std::io::stderr(),
-                        "{}: {} {} --> {}:{}:{}{}",
-                        Utils::green("log", self.is_logging_to_file()),
-                        log,
+                        "{}: {} {} --> {}",
+                        prompt,
+                        log_msg,
                         LINE_ENDING,
-                        self.current_input,
-                        last_line,
-                        last_char,
-                        LINE_ENDING
+                        log_pos
                     )?;
                 }
                 WriteOption::Variable(var) => {
-                    write!(
-                        var,
-                        "log : {} -> {}:{}:{}{}",
-                        log, self.current_input, last_line, last_char, LINE_ENDING
-                    )?;
+                    write!(var, "{} : {} -> {}", prompt, log_msg, log_pos)?;
                 }
                 WriteOption::Discard | WriteOption::Return => (),
             } // Match end
@@ -148,50 +176,32 @@ impl<'logger> Logger<'logger> {
         Ok(())
     }
 
+    /// Log message
+    pub fn log(&mut self, log_msg: &str) -> RadResult<()> {
+        self.write_formatted_log_msg(
+            "log",
+            log_msg,
+            #[cfg(feature = "clap")]
+            Utils::green,
+        )
+    }
+
     /// Log error
-    pub fn elog(&mut self, log: &str) -> RadResult<()> {
+    pub fn elog(&mut self, log_msg: &str) -> RadResult<()> {
         self.error_count += 1;
 
         if self.assert {
             return Ok(());
         }
-        let track = self.get_last_track();
-        let (last_line, last_char) = (track.line_index, track.char_index);
-        if let Some(option) = &mut self.write_option {
-            match option {
-                WriteOption::File(file) => {
-                    file.inner().write_all(
-                        format!(
-                            "error : {} -> {}:{}:{}{}",
-                            log, self.current_input, last_line, last_char, LINE_ENDING
-                        )
-                        .as_bytes(),
-                    )?;
-                }
-                WriteOption::Terminal => {
-                    write!(
-                        std::io::stderr(),
-                        "{}: {} {} --> {}:{}:{}{}",
-                        Utils::red("error", self.is_logging_to_file()),
-                        log,
-                        LINE_ENDING,
-                        self.current_input,
-                        last_line,
-                        last_char,
-                        LINE_ENDING
-                    )?;
-                }
-                WriteOption::Variable(var) => {
-                    write!(
-                        var,
-                        "error : {} -> {}:{}:{}{}",
-                        log, self.current_input, last_line, last_char, LINE_ENDING
-                    )?;
-                }
-                WriteOption::Discard | WriteOption::Return => (),
-            } // Match end
+        if std::env::var("PRINT_STACK").is_ok() {
+            println!("{:#?}", self.tracker_stack)
         }
-        Ok(())
+        self.write_formatted_log_msg(
+            "error",
+            log_msg,
+            #[cfg(feature = "clap")]
+            Utils::red,
+        )
     }
 
     #[cfg(feature = "debug")]
@@ -212,7 +222,7 @@ impl<'logger> Logger<'logger> {
     }
 
     /// Log warning
-    pub fn wlog(&mut self, log: &str, warning_type: WarningType) -> RadResult<()> {
+    pub fn wlog(&mut self, log_msg: &str, warning_type: WarningType) -> RadResult<()> {
         if self.suppresion_type == WarningType::Any || self.suppresion_type == warning_type {
             return Ok(());
         }
@@ -222,43 +232,13 @@ impl<'logger> Logger<'logger> {
         if self.assert {
             return Ok(());
         }
-        let track = self.get_last_track();
-        let (last_line, last_char) = (track.line_index, track.char_index);
-        if let Some(option) = &mut self.write_option {
-            match option {
-                WriteOption::File(file) => {
-                    file.inner().write_all(
-                        format!(
-                            "warning : {} -> {}:{}:{}{}",
-                            log, self.current_input, last_line, last_char, LINE_ENDING
-                        )
-                        .as_bytes(),
-                    )?;
-                }
-                WriteOption::Terminal => {
-                    writeln!(
-                        std::io::stderr(),
-                        "{}: {} {} --> {}:{}:{}",
-                        Utils::yellow("warning", self.is_logging_to_file()),
-                        log,
-                        LINE_ENDING,
-                        self.current_input,
-                        last_line,
-                        last_char
-                    )?;
-                }
-                WriteOption::Variable(var) => {
-                    write!(
-                        var,
-                        "error : {} -> {}:{}:{}{}",
-                        log, self.current_input, last_line, last_char, LINE_ENDING
-                    )?;
-                }
-                WriteOption::Discard | WriteOption::Return => (),
-            } // match end
-        }
 
-        Ok(())
+        self.write_formatted_log_msg(
+            "warning",
+            log_msg,
+            #[cfg(feature = "clap")]
+            Utils::yellow,
+        )
     }
 
     /// Assertion log
@@ -268,40 +248,12 @@ impl<'logger> Logger<'logger> {
             return Ok(());
         }
         self.assert_fail += 1;
-        let track = self.get_last_track();
-        let (last_line, last_char) = (track.line_index, track.char_index);
-
-        if let Some(option) = &mut self.write_option {
-            match option {
-                WriteOption::File(file) => {
-                    file.inner().write_all(
-                        format!(
-                            "assert fail -> {}:{}:{}{}",
-                            self.current_input, last_line, last_char, LINE_ENDING
-                        )
-                        .as_bytes(),
-                    )?;
-                }
-                WriteOption::Terminal => {
-                    writeln!(
-                        std::io::stderr(),
-                        "{} -> {}:{}:{}",
-                        Utils::red("assert fail", self.is_logging_to_file()),
-                        self.current_input,
-                        last_line,
-                        last_char
-                    )?;
-                }
-                WriteOption::Variable(var) => write!(
-                    var,
-                    "assert fail -> {}:{}:{}{}",
-                    self.current_input, last_line, last_char, LINE_ENDING
-                )?,
-                WriteOption::Discard | WriteOption::Return => (),
-            } // match end
-        }
-
-        Ok(())
+        self.write_formatted_log_msg(
+            "assert fail",
+            "",
+            #[cfg(feature = "clap")]
+            Utils::red,
+        )
     }
 
     /// Print result of logging of warnings and errors
@@ -373,24 +325,22 @@ FAIL: {}",
     /// Log debug information
     #[cfg(feature = "debug")]
     pub fn dlog_print(&mut self, log: &str) -> RadResult<()> {
+        let track = self.get_last_track();
+        let (last_line, last_char) = (track.line_index, track.char_index);
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::Terminal => {
                     write!(
                         std::io::stderr(),
                         "{}{}{}",
-                        Utils::green(
-                            &format!("{}:log", self.get_last_line()),
-                            self.is_logging_to_file()
-                        ),
+                        Utils::green(&format!("{}:log", last_line), self.is_logging_to_file()),
                         LINE_ENDING,
                         log
                     )?;
                 }
                 WriteOption::File(file) => {
-                    file.inner().write_all(
-                        format!("{}:log{}{}", self.get_last_line(), LINE_ENDING, log).as_bytes(),
-                    )?;
+                    file.inner()
+                        .write_all(format!("{}:log{}{}", last_line, LINE_ENDING, log).as_bytes())?;
                 }
                 _ => (),
             }
@@ -439,11 +389,11 @@ impl std::str::FromStr for WarningType {
 }
 
 #[derive(Debug)]
-pub struct NestedTracker {
-    pub(crate) stack: Vec<Tracker<()>>,
+pub struct TrackerStack {
+    pub(crate) stack: Vec<Tracker<TrackType>>,
 }
 
-impl NestedTracker {
+impl TrackerStack {
     pub fn new() -> Self {
         Self { stack: vec![] }
     }
@@ -456,24 +406,32 @@ impl NestedTracker {
         self.stack.len()
     }
 
-    pub fn previous_tracker(&self) -> &Tracker<()> {
+    pub fn previous_tracker(&self) -> &Tracker<TrackType> {
         &self.stack[self.stack.len() - 2]
     }
 
-    pub fn tracker(&self) -> &Tracker<()> {
+    pub fn tracker(&self) -> &Tracker<TrackType> {
         self.stack.last().unwrap()
     }
 
-    pub fn tracker_mut(&mut self) -> &mut Tracker<()> {
+    pub fn tracker_mut(&mut self) -> &mut Tracker<TrackType> {
         self.stack.last_mut().unwrap()
     }
 
-    pub fn increase_level(&mut self) {
-        let tracker = Tracker::new(());
+    pub fn increase_level(&mut self, track_type: TrackType) {
+        let tracker = Tracker::new(track_type);
         self.stack.push(tracker);
     }
 
     pub fn decrease_level(&mut self) {
         self.stack.pop();
     }
+}
+
+#[derive(Debug)]
+pub enum TrackType {
+    Record(String),
+    Input(String),
+    Argumnet(String),
+    Body(String),
 }
