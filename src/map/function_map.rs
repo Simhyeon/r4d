@@ -1058,6 +1058,25 @@ $log($value_i_want_to_check^())".to_string()),
                 ),
             ),
             (
+                "loge".to_owned(),
+                FMacroSign::new(
+                    "loge",
+                    ["a_msg"],
+                    Self::log_error_message,
+                    Some("Log an message to console
+
+- This prints error in non-breaing way. Even in strict mode, this doesn't occur a panick.
+
+# Arguments
+
+- a_msg : An error message to log to console
+
+# Example
+
+$loge(This should not be reached)".to_string()),
+                ),
+            ),
+            (
                 "lower".to_owned(),
                 FMacroSign::new(
                     "lower",
@@ -4678,6 +4697,17 @@ $extract()"
     fn log_message(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().strip(args);
         p.log_message(&args)?;
+        Ok(None)
+    }
+
+    /// Log error message
+    ///
+    /// # Usage
+    ///
+    /// $loge(This is a problem)
+    fn log_error_message(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        let args = ArgParser::new().strip(args);
+        p.print_error(&args)?;
         Ok(None)
     }
 
