@@ -61,24 +61,28 @@ Sub-ranging tracks do work ( with high possibility of panicking though ), but
 the current problem is that. Parse chunks args should create a new track with 0
 value.
 
-* [ ] Find about Restart resuls' fag manipuation
-* [ ] I put frag.is_processed everywhere, I need to check those are necessary
-* [ ] Currently logger uses constant LINE_ENDING, is this ok?
-    - Since this is not formatted to output. It is theoritically ok, but might not what user would expect
+* [x] Check is processed consistency
+    * [x] Empty name : THis doesn't print erorr but simply panick
+    * [x] Comment exit
+    * [x] Exit frag
+    * [x] Restart : char number is broken
+* [ ] I put frag.is processed everywhere, I need to check those are necessary
+* [x] Currently logger uses constant LINE_ENDING, is this ok?
+    - Since this is not formatted to output. It is theoritically ok, but might
+      not what user would expect
 * [x] A bug... is that currently, define always consumes newlines... what? No
   it was just that, logm consumed result... like wtf.
 
-* [ ] Sane behaviour of erros are mostly look ok, but erros from detecting is
-  not handled yet. Such as
-  - Empty name
-  - Invaild Syntax
-  - name restart
-
-* [ ] Strict error code with line numbers are tedious. Can it be changed?
+* [x] Strict error code with line numbers are tedious. Can it be changed?
+* [x] Logger struct
+* [ ] Clear processor's re-export of logger methods
 
 # Debugger
 
 * [x] M command works
 * [x] N command works
-* [x] Step doesn't fail!!! Nice. But it prints current line. Which is not that
-  always best prompt
+
+* [ ] I need log command for real
+
+* [ ] Consinder if m and step macro should change so that it works more likely
+  a gdb command

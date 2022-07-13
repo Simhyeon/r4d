@@ -1,37 +1,19 @@
 ### TODO
 
-* [ ] Debugger step behaviour
-    * [ ] Don't panick but don't works
-        * [ ] print arg
-        * [ ] print span
-    * [ ] Step works with macro defintion but... it has rarely any usage
-
-    - The direct cause of panic is that line cache's value changes for unknown reason
-    - The reason why debugger tries to index unknown entry is not obvious, but
-      has a high probability that inner macro expansion doesn't set
-      line\_number properly
-    - Because, on step, debugger is going through arguments but the line
-      increases from the line where outer macro was invoked
-    - Ok it is 100% correct, line number is broken... This is like line\_number problem
-
-* [ ] Is log error macro useful?
-* [ ] Consider merging documentaion into a single file index with multiple subindex links
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
     - This needs to implement cow manipulation and I'm... ok maybe later
-* [x] Refactor code base
-    * [x] Regex try\_and\_get\_cache
 
 : ORDERED :
-1. [ ] Update macro\_indices
-    - This is necessary to finalize the behaviours of macros and for finally
-    fix the order of macro arguments and macro names
+1. [x] Debugger step behaviour
+1. [x] Push Trexter on crates.io
+1. [x] Take care about feature collisions
+1. [ ] Push as 3.0.0-rc.5
 
-2. [ ] Debugger step behaviour
-2. [ ] Push as 3.0.0-rc.5
-
-3. [ ] Update r4d version in gdengine
+2. [ ] Update r4d version in gdengine
     - Fix all breaking changes
     - Add new features that I think are necessary
+
+3. [ ] Clear re-export of logger methods
 3. Push stable 3.0 version
 
 **Some big todos**
@@ -42,14 +24,16 @@ $todo_start()
 * [x] New macros
 * [x] Macro ergonomics
 * [x] Library
-* [ ] Feature
-    * [ ] Refactor debugger
-    * [ ] Dry run would be cool, but is's hella difficult
-    * [ ] Improve logger's character number
-* [ ] Documentation
-    * [ ] macro\_indices.md
-    * [ ] change.md
 * [x] Bug fix
+* [ ] Feature
+    * [x] Refactor logger
+    * [ ] Refactor debugger
+        * [ ] Execute sentence
+        * [ ] Log macro support
+            * [ ] For this, debugger should get a reference of processor which is doable?
+    * [ ] Dry run would be cool, but is's hella difficult
+* [ ] Documentation
+    * [ ] change.md
 * [ ] Test
     * [ ] Test hook macro documentaion
     * [ ] Decide when to push to 3.0
@@ -65,6 +49,7 @@ $todo_end()
 critical
 * [x] Now, silent's default value is any
 * [x] New macros
+    * [x] loge
     * [x] cmp
     * [x] ssplit
     * [x] istype
