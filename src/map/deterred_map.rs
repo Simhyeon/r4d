@@ -1374,7 +1374,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                 processor.set_debug(original);
                 match processor.get_debug_switch() {
                     DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                        processor.set_prompt_log("\"From macro\"")
+                        processor.set_prompt("\"From macro\"")
                     }
                     _ => (),
                 }

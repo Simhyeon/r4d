@@ -2316,6 +2316,7 @@ impl<'processor> Processor<'processor> {
                 frag.clear();
                 frag.is_processed = true;
                 self.state.consume_newline = true;
+                self.debugger.set_prompt("\"BR\"");
                 return Ok(());
             }
         }
@@ -2654,8 +2655,8 @@ impl<'processor> Processor<'processor> {
 
     /// Set custom prompt log
     #[cfg(feature = "debug")]
-    pub(crate) fn set_prompt_log(&mut self, prompt: &str) {
-        self.debugger.set_prompt_log(prompt);
+    pub(crate) fn set_prompt(&mut self, prompt: &str) {
+        self.debugger.set_prompt(prompt);
     }
 
     /// Set documentation for a macro

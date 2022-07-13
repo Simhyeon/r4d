@@ -559,7 +559,7 @@ impl Debugger {
         Ok(())
     }
 
-    pub fn set_prompt_log(&mut self, prompt: &str) {
+    pub fn set_prompt(&mut self, prompt: &str) {
         self.prompt_log.replace(prompt.to_owned());
     }
 }
