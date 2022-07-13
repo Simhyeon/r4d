@@ -79,6 +79,7 @@ impl<'cli> RadCli<'cli> {
         self.parse_options(args);
 
         // Build processor
+        #[allow(unused_mut)]
         let mut processor = Processor::new()
             .set_comment_type(CommentType::from_str(
                 if args.occurrences_of("comment") == 0 {

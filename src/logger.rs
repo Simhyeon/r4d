@@ -152,6 +152,7 @@ impl<'logger> Logger<'logger> {
                         .write_all(format!("{} : {}{}", prompt, log_msg, LINE_ENDING).as_bytes())?;
                 }
                 WriteOption::Terminal => {
+                    #[allow(unused_mut)]
                     let mut prompt = prompt.to_string();
                     #[cfg(feature = "color")]
                     {
@@ -184,6 +185,7 @@ impl<'logger> Logger<'logger> {
                     )?;
                 }
                 WriteOption::Terminal => {
+                    #[allow(unused_mut)]
                     let mut prompt = prompt.to_string();
                     #[cfg(feature = "color")]
                     {

@@ -206,7 +206,7 @@ impl Utils {
         }
     }
 
-    #[cfg(feature = "clap")]
+    #[cfg(feature = "basic")]
     pub(crate) fn subprocess(args: &[&str]) -> RadResult<()> {
         use std::io::Write;
         use std::process::Stdio;

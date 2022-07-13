@@ -114,6 +114,7 @@ impl RadoCli {
 
     fn args_builder(&self) -> clap::ArgMatches {
         use clap::{App, Arg};
+        #[allow(unused_mut)]
         let mut app = App::new("rado")
             .version("0.1.0")
             .author("Simon creek <simoncreek@tutanota.com>")
