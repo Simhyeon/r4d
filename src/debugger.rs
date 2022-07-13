@@ -475,7 +475,7 @@ impl Debugger {
             // Span of codes,macro chunk
             "span" | "s" => {
                 let mut line_number = match &self.debug_switch {
-                    &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => logger_line,
+                    &DebugSwitch::NextMacro => logger_line,
                     _ => self.line_number,
                 };
 
