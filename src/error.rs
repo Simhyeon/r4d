@@ -30,7 +30,7 @@ pub enum RadError {
     UnsupportedTableFormat(String),
     BincodeError(String),
     PermissionDenied(String, AuthType),
-    StrictPanic(String),
+    StrictPanic,
     ManualPanic(String),
     StorageError(String),
     #[cfg(feature = "cindex")]
@@ -68,7 +68,7 @@ impl std::fmt::Display for RadError {
                 "Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.",
                 txt, atype
             ),
-            Self::StrictPanic(err) => format!("Strict error\n= {}", err),
+            Self::StrictPanic => "Every error is panicking in strict mode".to_string(),
             Self::ManualPanic(txt) => format!("Panic triggered with message\n^^^ {} ^^^", txt),
             Self::StorageError(txt) => format!("Storage error with message\n= {0}", txt),
             #[cfg(feature = "cindex")]

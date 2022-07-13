@@ -1078,12 +1078,13 @@ impl<'processor> Processor<'processor> {
     /// ```
     pub fn add_runtime_rules(&mut self, rules: &[(impl AsRef<str>, &str, &str)]) -> RadResult<()> {
         if self.state.hygiene == Hygiene::Aseptic {
-            let err = RadError::StrictPanic(format!(
+            let err = RadError::UnallowedMacroExecution(format!(
                 "Cannot register macros : \"{:?}\" in aseptic mode",
                 rules.iter().map(|(s, _, _)| s.as_ref()).collect::<Vec<_>>()
             ));
             if self.state.behaviour == ErrorBehaviour::Strict {
-                return Err(err);
+                self.log_error(&err.to_string())?;
+                return Err(RadError::StrictPanic);
             } else {
                 self.log_warning(&err.to_string(), WarningType::Security)?;
             }
@@ -1132,13 +1133,15 @@ impl<'processor> Processor<'processor> {
         rules: &[(impl AsRef<str>, impl AsRef<str>)],
     ) -> RadResult<()> {
         if self.state.hygiene == Hygiene::Aseptic {
-            let err = RadError::StrictPanic(format!(
+            let err = RadError::UnallowedMacroExecution(format!(
                 "Cannot register macros : \"{:?}\" in aseptic mode",
                 rules.iter().map(|(s, _)| s.as_ref()).collect::<Vec<_>>()
             ));
-            self.log_strict(&err.to_string(), WarningType::Security)?;
             if self.state.behaviour == ErrorBehaviour::Strict {
+                self.log_error(&err.to_string())?;
                 return Err(err);
+            } else {
+                self.log_warning(&err.to_string(), WarningType::Sanity)?;
             }
         }
         for (name, body) in rules {
@@ -1955,11 +1958,12 @@ impl<'processor> Processor<'processor> {
                 } else {
                     frag.args.split('=').collect::<Vec<&str>>()[0]
                 };
-                let err = RadError::StrictPanic(format!(
+                let err = RadError::UnallowedMacroExecution(format!(
                     "Can't override exsiting macro : \"{}\"",
                     mac_name
                 ));
-                return Err(err);
+                self.log_error(&err.to_string())?;
+                return Err(RadError::StrictPanic);
             }
 
             if std::env::var("PRINT_DEFINE_BODY").is_ok() {
@@ -2211,12 +2215,13 @@ impl<'processor> Processor<'processor> {
                 frag.clear();
                 frag.is_processed = true;
                 self.state.consume_newline = true;
-                let err = RadError::StrictPanic(format!(
+                let err = RadError::UnallowedMacroExecution(format!(
                     "Cannot register a macro : \"{}\" in aseptic mode",
                     frag.name
                 ));
                 if self.state.behaviour == ErrorBehaviour::Strict {
-                    return Err(err);
+                    self.log_error(&err.to_string())?;
+                    return Err(RadError::StrictPanic);
                 } else {
                     self.log_warning(&err.to_string(), WarningType::Security)?;
                 }
@@ -2252,9 +2257,7 @@ impl<'processor> Processor<'processor> {
                 // Re-throw error
                 // It is not captured in cli but it can be handled by library user.
                 ErrorBehaviour::Strict => {
-                    return Err(RadError::StrictPanic(
-                        "Every error is panicking in strict mode".to_string(),
-                    ));
+                    return Err(RadError::StrictPanic);
                 }
                 // If purge mode is set, don't print anything
                 // and don't print error
@@ -2286,11 +2289,14 @@ impl<'processor> Processor<'processor> {
         if frag.name.is_empty() {
             let err =
                 RadError::InvalidMacroName("Cannot invoke a macro with empty name".to_string());
+            self.log_error(&err.to_string())?;
 
             // Handle empty name error
             match self.state.behaviour {
                 ErrorBehaviour::Assert => return Err(RadError::AssertFail),
-                ErrorBehaviour::Strict | ErrorBehaviour::Interrupt => return Err(err), // Error
+                ErrorBehaviour::Strict | ErrorBehaviour::Interrupt => {
+                    return Err(RadError::StrictPanic);
+                } // Error
                 ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
                 ErrorBehaviour::Purge => (),
             }
@@ -2373,9 +2379,7 @@ impl<'processor> Processor<'processor> {
             // Re-throw error
             // It is not captured in cli but it can be handled by library user.
             ErrorBehaviour::Strict => {
-                return Err(RadError::StrictPanic(
-                    "Every error is panicking in strict mode".to_string(),
-                ));
+                return Err(RadError::StrictPanic);
             }
             // If purge mode is set, don't print anything
             // and don't print error
@@ -2572,16 +2576,6 @@ impl<'processor> Processor<'processor> {
 
     pub(crate) fn track_assertion(&mut self, success: bool) -> RadResult<()> {
         self.logger.alog(success)?;
-        Ok(())
-    }
-
-    /// This prints error if strict mode else print warning
-    pub(crate) fn log_strict(&mut self, log: &str, warning_type: WarningType) -> RadResult<()> {
-        if self.state.behaviour == ErrorBehaviour::Strict {
-            self.logger.elog(log)?;
-        } else {
-            self.logger.wlog(log, warning_type)?;
-        }
         Ok(())
     }
 
