@@ -1653,10 +1653,17 @@ impl<'processor> Processor<'processor> {
             return Ok(String::new());
         }
 
-        for ch in line.chars() {
+        let mut ch_iter = line.chars().peekable();
+
+        while let Some(ch) = ch_iter.next() {
             // Escape new charater is not respected
             if self.state.escape_newline {
-                self.state.escape_newline = false
+                if ch == '\r' && ch_iter.peek().unwrap_or(&'0') == &'\n' {
+                    continue;
+                } else if ch == '\n' {
+                    self.state.escape_newline = false;
+                    continue;
+                }
             }
             self.logger.inc_char_number();
 
@@ -1741,7 +1748,7 @@ impl<'processor> Processor<'processor> {
                 self.logger.merge_track();
                 frag.is_processed = false;
             }
-        } // End Character iteration
+        }
 
         // Don't print if current was empty and consume_newline was set( No print was called )
         if self.state.consume_newline && remainder.trim().is_empty() {
