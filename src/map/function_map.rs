@@ -1063,9 +1063,9 @@ $log($value_i_want_to_check^())".to_string()),
                     "loge",
                     ["a_msg"],
                     Self::log_error_message,
-                    Some("Log an message to console
+                    Some("Log an error message to console
 
-- This prints error in non-breaing way. Even in strict mode, this doesn't occur a panick.
+- This prints error in non-breaking manner. Even in strict mode, this doesn't occur a panick.
 
 # Arguments
 
