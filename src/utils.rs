@@ -109,6 +109,7 @@ impl Utils {
         result
     }
 
+    #[allow(unused_variables)]
     pub fn green(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
@@ -119,6 +120,7 @@ impl Utils {
         Box::new(string.to_owned())
     }
 
+    #[allow(unused_variables)]
     pub fn red(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]
@@ -129,6 +131,7 @@ impl Utils {
         Box::new(string.to_owned())
     }
 
+    #[allow(unused_variables)]
     pub fn yellow(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
             #[cfg(feature = "color")]

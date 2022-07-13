@@ -92,11 +92,11 @@ pub use processor::Processor;
 mod script;
 
 // Binary option
-#[cfg(feature = "clap")]
+#[cfg(feature = "basic")]
 mod cli;
-#[cfg(feature = "clap")]
+#[cfg(feature = "basic")]
 pub use cli::RadCli;
-#[cfg(feature = "clap")]
+#[cfg(feature = "basic")]
 pub use cli::RadoCli;
 
 // Re-export macro

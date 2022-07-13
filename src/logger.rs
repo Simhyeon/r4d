@@ -7,7 +7,7 @@ use crate::utils::Utils;
 use crate::{consts::*, RadError};
 use std::fmt::Write;
 use std::io::Write as _;
-use tracks::{Track, Tracker};
+use trexter::{Track, Tracker};
 
 /// Logger that controls logging
 pub(crate) struct Logger<'logger> {
@@ -83,7 +83,7 @@ impl<'logger> Logger<'logger> {
     pub fn append_track(&mut self, record: String) {
         self.tracker_stack
             .tracker_mut()
-            .set_milestone(TrackType::Record(record));
+            .new_track(TrackType::Record(record));
     }
 
     /// Merge last tracks
@@ -143,7 +143,7 @@ impl<'logger> Logger<'logger> {
         &mut self,
         prompt: &str,
         log_msg: &str,
-        #[cfg(feature = "clap")] color_func: ColorDisplayFunc,
+        #[cfg(feature = "color")] color_func: ColorDisplayFunc,
     ) -> RadResult<()> {
         if let Some(option) = &mut self.write_option {
             match option {
@@ -153,7 +153,7 @@ impl<'logger> Logger<'logger> {
                 }
                 WriteOption::Terminal => {
                     let mut prompt = prompt.to_string();
-                    #[cfg(feature = "clap")]
+                    #[cfg(feature = "color")]
                     {
                         prompt = color_func(&prompt, self.is_logging_to_file()).to_string();
                     }
@@ -172,7 +172,7 @@ impl<'logger> Logger<'logger> {
         &mut self,
         prompt: &str,
         log_msg: &str,
-        #[cfg(feature = "clap")] color_func: ColorDisplayFunc,
+        #[cfg(feature = "color")] color_func: ColorDisplayFunc,
     ) -> RadResult<()> {
         let log_pos = self.construct_log_position()?;
         if let Some(option) = &mut self.write_option {
@@ -185,7 +185,7 @@ impl<'logger> Logger<'logger> {
                 }
                 WriteOption::Terminal => {
                     let mut prompt = prompt.to_string();
-                    #[cfg(feature = "clap")]
+                    #[cfg(feature = "color")]
                     {
                         prompt = color_func(&prompt, self.is_logging_to_file()).to_string();
                     }
@@ -217,7 +217,7 @@ impl<'logger> Logger<'logger> {
         self.write_formatted_log_msg(
             "log",
             log_msg,
-            #[cfg(feature = "clap")]
+            #[cfg(feature = "color")]
             Utils::green,
         )
     }
@@ -232,7 +232,7 @@ impl<'logger> Logger<'logger> {
         self.write_formatted_log_msg(
             "error",
             log_msg,
-            #[cfg(feature = "clap")]
+            #[cfg(feature = "color")]
             Utils::red,
         )
     }
@@ -246,7 +246,7 @@ impl<'logger> Logger<'logger> {
         self.write_formatted_log_msg_without_line(
             "error",
             &log_msg.to_string(),
-            #[cfg(feature = "clap")]
+            #[cfg(feature = "color")]
             Utils::red,
         )?;
         Ok(())
@@ -267,7 +267,7 @@ impl<'logger> Logger<'logger> {
         self.write_formatted_log_msg(
             "warning",
             log_msg,
-            #[cfg(feature = "clap")]
+            #[cfg(feature = "color")]
             Utils::yellow,
         )
     }
@@ -287,7 +287,7 @@ impl<'logger> Logger<'logger> {
         self.write_formatted_log_msg_without_line(
             "warning",
             log_msg,
-            #[cfg(feature = "clap")]
+            #[cfg(feature = "color")]
             Utils::yellow,
         )?;
 
@@ -304,7 +304,7 @@ impl<'logger> Logger<'logger> {
         self.write_formatted_log_msg(
             "assert fail",
             "",
-            #[cfg(feature = "clap")]
+            #[cfg(feature = "color")]
             Utils::red,
         )
     }

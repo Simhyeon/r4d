@@ -4,8 +4,6 @@ use crate::{RadCli, RadError};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use crate::consts::ColorDisplayFunc;
-
 lazy_static::lazy_static! {
     pub static ref RADO_DIR: std::path::PathBuf = std::env::temp_dir().join("rado");
 }
@@ -243,6 +241,8 @@ impl RadoCli {
 
     #[cfg(feature = "debug")]
     fn show_diff(&self, file: &str, force: bool) -> RadResult<()> {
+        #[cfg(feature = "color")]
+        use crate::consts::ColorDisplayFunc;
         use similar::ChangeTag;
 
         let temp_file = self.get_temp_path(file)?;
@@ -261,28 +261,44 @@ impl RadoCli {
         let result = similar::TextDiff::from_lines(&source_content, &target_content);
         let mut log: String;
         // Color function reference
-        let mut colorfunc: Option<ColorDisplayFunc> = None;
-        let is_stdout = atty::is(atty::Stream::Stdout);
-        if is_stdout {
-            colorfunc.replace(|string: &str, _| -> Box<dyn std::fmt::Display> {
-                Box::new(string.to_owned())
-            });
+        #[cfg(feature = "color")]
+        let mut colorfunc: Option<ColorDisplayFunc>;
+        #[cfg(feature = "color")]
+        let is_stdout: bool;
+        #[cfg(feature = "color")]
+        {
+            colorfunc = None;
+            is_stdout = atty::is(atty::Stream::Stdout);
+            if is_stdout {
+                colorfunc.replace(|string: &str, _| -> Box<dyn std::fmt::Display> {
+                    Box::new(string.to_owned())
+                });
+            }
         }
 
         // Print changes with color support
         for change in result.iter_all_changes() {
-            colorfunc = None;
+            #[cfg(feature = "color")]
+            {
+                colorfunc = None;
+            }
             match change.tag() {
                 ChangeTag::Delete => {
                     log = format!("- {}", change);
-                    if is_stdout {
-                        colorfunc.replace(Utils::red);
+                    #[cfg(feature = "color")]
+                    {
+                        if is_stdout {
+                            colorfunc.replace(Utils::red);
+                        }
                     }
                 }
                 ChangeTag::Insert => {
                     log = format!("+ {}", change);
-                    if is_stdout {
-                        colorfunc.replace(Utils::green);
+                    #[cfg(feature = "color")]
+                    {
+                        if is_stdout {
+                            colorfunc.replace(Utils::green);
+                        }
                     }
                 }
                 ChangeTag::Equal => {
@@ -290,8 +306,11 @@ impl RadoCli {
                 }
             }
 
-            if let Some(func) = colorfunc {
-                log = func(&log, !is_stdout).to_string(); // Apply color
+            #[cfg(feature = "color")]
+            {
+                if let Some(func) = colorfunc {
+                    log = func(&log, !is_stdout).to_string(); // Apply color
+                }
             }
             write!(std::io::stdout(), "{}", log)?;
         }

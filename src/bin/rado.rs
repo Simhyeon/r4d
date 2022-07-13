@@ -7,7 +7,7 @@ pub fn main() -> RadResult<()> {
     colored::control::set_override(true);
 
     // Command line parse
-    #[cfg(feature = "clap")]
+    #[cfg(feature = "basic")]
     {
         use r4d::RadoCli;
         use std::io::Write;

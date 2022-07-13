@@ -1,5 +1,3 @@
-#[cfg(feature = "clap")]
-use r4d::RadCli;
 use r4d::RadResult;
 
 pub fn main() -> RadResult<()> {
@@ -9,8 +7,9 @@ pub fn main() -> RadResult<()> {
     colored::control::set_override(true);
 
     // Command line parse
-    #[cfg(feature = "clap")]
+    #[cfg(feature = "basic")]
     {
+        use r4d::RadCli;
         use std::io::Write;
         let mut cli = RadCli::new();
         if let Err(err) = cli.parse() {

@@ -1,4 +1,4 @@
-use crate::consts::*;
+use crate::consts::{DIFF_OUT_FILE, DIFF_SOURCE_FILE, LINE_ENDING, RDB_HELP};
 use crate::logger::Logger;
 use crate::models::{DiffOption, MacroFragment, RadResult};
 use crate::utils::Utils;
@@ -143,6 +143,9 @@ impl Debugger {
 
     /// Print differences of original and processed
     pub fn yield_diff(&self, logger: &mut Logger) -> RadResult<()> {
+        #[cfg(feature = "color")]
+        use crate::consts::ColorDisplayFunc;
+
         if !self.do_yield_diff {
             return Ok(());
         }
@@ -153,6 +156,7 @@ impl Debugger {
 
         let mut log: String;
         // Color function reference
+        #[cfg(feature = "color")]
         let mut colorfunc: Option<ColorDisplayFunc>;
 
         // Print header
@@ -160,15 +164,24 @@ impl Debugger {
 
         // Print changes with color support
         for change in result.iter_all_changes() {
-            colorfunc = None;
+            #[cfg(feature = "color")]
+            {
+                colorfunc = None;
+            }
             match change.tag() {
                 ChangeTag::Delete => {
                     log = format!("- {}", change);
-                    colorfunc.replace(Utils::red);
+                    #[cfg(feature = "color")]
+                    {
+                        colorfunc.replace(Utils::red);
+                    }
                 }
                 ChangeTag::Insert => {
                     log = format!("+ {}", change);
-                    colorfunc.replace(Utils::green);
+                    #[cfg(feature = "color")]
+                    {
+                        colorfunc.replace(Utils::green);
+                    }
                 }
                 ChangeTag::Equal => {
                     if !self.diff_only_change {
@@ -183,6 +196,7 @@ impl Debugger {
                     }
                 }
             }
+            #[cfg(feature = "color")]
             if let Some(func) = colorfunc {
                 // Bind display to log
                 let log = if logger.is_logging_to_file() {
@@ -195,6 +209,9 @@ impl Debugger {
             } else {
                 logger.elog_no_line(&log)?;
             }
+
+            #[cfg(not(feature = "color"))]
+            logger.elog_no_line(&log)?;
         }
 
         std::fs::remove_file(DIFF_SOURCE_FILE)?;

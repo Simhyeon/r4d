@@ -5,7 +5,5 @@
 
 mod cli_rad;
 mod cli_rado;
-#[cfg(feature = "clap")]
 pub use cli_rad::RadCli;
-#[cfg(feature = "clap")]
 pub use cli_rado::RadoCli;
