@@ -1340,8 +1340,10 @@ impl<'processor> Processor<'processor> {
         let mut cont = if use_container { Some(container) } else { None };
 
         #[cfg(feature = "debug")]
-        self.debugger
-            .user_input_on_start(&self.state.current_input.to_string(), &mut self.logger)?;
+        self.debugger.user_input_on_start(
+            &self.state.current_input.to_string(),
+            self.logger.get_last_line(),
+        )?;
 
         loop {
             #[cfg(feature = "debug")]
@@ -1350,7 +1352,8 @@ impl<'processor> Processor<'processor> {
                 // Update line cache
                 self.debugger.add_line_cache(line);
                 // Only if debug switch is nextline
-                self.debugger.user_input_on_line(&frag, &mut self.logger)?;
+                self.debugger
+                    .user_input_on_line(&frag, self.logger.get_last_line())?;
             }
 
             let result = match self.process_line(&mut line_iter, &mut lexor, &mut frag) {
@@ -1445,9 +1448,11 @@ impl<'processor> Processor<'processor> {
         // Stop and wait for input
         // Only on main level macro
         if level == 0 {
-            self.debugger.user_input_on_macro(frag, &mut self.logger)?;
+            self.debugger
+                .user_input_on_macro(frag, self.logger.get_last_line())?;
         } else {
-            self.debugger.user_input_on_step(frag, &mut self.logger)?;
+            self.debugger
+                .user_input_on_step(frag, self.logger.get_last_line())?;
         }
 
         // Clear line_caches
@@ -2105,7 +2110,7 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<()> {
         #[cfg(feature = "debug")]
         self.debugger
-            .user_input_before_macro(frag, &mut self.logger)?;
+            .user_input_before_macro(frag, self.logger.get_last_line())?;
 
         frag.whole_string.push(ch);
 

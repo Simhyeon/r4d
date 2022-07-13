@@ -260,7 +260,7 @@ impl Debugger {
     pub(crate) fn user_input_on_start(
         &mut self,
         current_input: &str,
-        logger: &mut Logger,
+        logger_line: usize,
     ) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
@@ -270,7 +270,7 @@ impl Debugger {
                 "Default is next. Ctrl + c to exit.".to_owned()
             };
 
-            self.command_loop(&mut log, current_input, None, logger)?;
+            self.command_loop(&mut log, current_input, None, logger_line)?;
         }
         Ok(())
     }
@@ -280,23 +280,21 @@ impl Debugger {
         &mut self,
         frag: &MacroFragment,
         initial_prompt: &str,
-        logger: &mut Logger,
+        logger_line: usize,
     ) -> RadResult<()> {
         // Respect custom prompt log if it exists
         let mut log = if let Some(pl) = self.prompt_log.take() {
             pl
         } else {
             match &self.debug_switch {
-                &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => self
-                    .line_caches
-                    .get(&logger.get_last_line())
-                    .unwrap()
-                    .to_owned(),
+                &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => {
+                    self.line_caches.get(&logger_line).unwrap().to_owned()
+                }
                 _ => self.line_caches.get(&self.line_number).unwrap().to_owned(),
             }
         };
 
-        self.command_loop(&mut log, initial_prompt, Some(frag), logger)?;
+        self.command_loop(&mut log, initial_prompt, Some(frag), logger_line)?;
         Ok(())
     }
 
@@ -306,7 +304,7 @@ impl Debugger {
         log: &mut String,
         prompt: &str,
         frag: Option<&MacroFragment>,
-        logger: &mut Logger,
+        logger_line: usize,
     ) -> RadResult<()> {
         let mut do_continue = true;
         while do_continue {
@@ -316,7 +314,7 @@ impl Debugger {
             // Strip newline
             let input = input.lines().next().unwrap();
 
-            do_continue = self.parse_debug_command_and_continue(input, frag, log, logger)?;
+            do_continue = self.parse_debug_command_and_continue(input, frag, log, logger_line)?;
         }
 
         Ok(())
@@ -328,13 +326,13 @@ impl Debugger {
     pub fn user_input_on_line(
         &mut self,
         frag: &MacroFragment,
-        logger: &mut Logger,
+        logger_line: usize,
     ) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug {
             // Only when debugswitch is nextline
             if DebugSwitch::NextLine == self.debug_switch {
-                self.user_input_prompt(frag, "line", logger)?;
+                self.user_input_prompt(frag, "line", logger_line)?;
             }
         }
         Ok(())
@@ -344,11 +342,11 @@ impl Debugger {
     pub fn user_input_before_macro(
         &mut self,
         frag: &MacroFragment,
-        logger: &mut Logger,
+        logger_line: usize,
     ) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug && self.debug_switch == DebugSwitch::UntilMacro {
-            self.user_input_prompt(frag, &(String::from("until:") + &frag.name), logger)?;
+            self.user_input_prompt(frag, &(String::from("until:") + &frag.name), logger_line)?;
         }
         Ok(())
     }
@@ -357,14 +355,14 @@ impl Debugger {
     pub fn user_input_on_macro(
         &mut self,
         frag: &MacroFragment,
-        logger: &mut Logger,
+        logger_line: usize,
     ) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug
             && (self.debug_switch == DebugSwitch::NextMacro
                 || self.debug_switch == DebugSwitch::StepMacro)
         {
-            self.user_input_prompt(frag, &frag.name, logger)?;
+            self.user_input_prompt(frag, &frag.name, logger_line)?;
         }
         Ok(())
     }
@@ -373,11 +371,11 @@ impl Debugger {
     pub fn user_input_on_step(
         &mut self,
         frag: &MacroFragment,
-        logger: &mut Logger,
+        logger_line: usize,
     ) -> RadResult<()> {
         // Stop by lines if debug option is lines
         if self.debug && DebugSwitch::StepMacro == self.debug_switch {
-            self.user_input_prompt(frag, &frag.name, logger)?;
+            self.user_input_prompt(frag, &frag.name, logger_line)?;
         }
         Ok(())
     }
@@ -388,7 +386,7 @@ impl Debugger {
         command_input: &str,
         frag: Option<&MacroFragment>,
         log: &mut String,
-        logger: &mut Logger,
+        logger_line: usize,
     ) -> RadResult<bool> {
         let command_input: Vec<&str> = command_input.split(' ').collect();
         let command = command_input[0];
@@ -431,9 +429,10 @@ impl Debugger {
             // Print "variable"
             "p" | "print" => {
                 if let Some(frag) = frag {
-                    self.check_command_print(log, command_args, frag, logger);
+                    self.check_command_print(log, command_args, frag, logger_line);
                 } else {
                     // No fragment which means it is the start of file
+                    // or maybe in static line
                     return Ok(false);
                 }
                 // Get user input again
@@ -457,7 +456,7 @@ impl Debugger {
         log: &mut String,
         command_args: &str,
         frag: &MacroFragment,
-        logger: &mut Logger,
+        logger_line: usize,
     ) {
         match command_args.to_lowercase().as_str() {
             // Only name
@@ -467,7 +466,7 @@ impl Debugger {
             // Current line number
             "line" | "l" => match &self.debug_switch {
                 DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                    *log = logger.get_last_line().to_string();
+                    *log = logger_line.to_string();
                 }
                 _ => {
                     *log = self.line_number.to_string();
@@ -476,7 +475,7 @@ impl Debugger {
             // Span of codes,macro chunk
             "span" | "s" => {
                 let mut line_number = match &self.debug_switch {
-                    &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => logger.get_last_line(),
+                    &DebugSwitch::NextMacro | &DebugSwitch::StepMacro => logger_line,
                     _ => self.line_number,
                 };
 
@@ -499,11 +498,7 @@ impl Debugger {
             // Current line text
             "text" | "t" => match &self.debug_switch {
                 DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                    *log = self
-                        .line_caches
-                        .get(&logger.get_last_line())
-                        .unwrap()
-                        .to_owned();
+                    *log = self.line_caches.get(&logger_line).unwrap().to_owned();
                 }
                 _ => {
                     *log = self.line_caches.get(&self.line_number).unwrap().to_owned();
