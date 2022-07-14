@@ -1,6 +1,6 @@
 //! # Logger
 //!
-//! Logger handles all kinds of logging logics&&. Such log can be warning, error or debug logs.
+//! Logger handles all kinds of logging logics&&&. Such log can be warning, error or debug logs.
 
 use crate::models::{ProcessInput, RadResult, WriteOption};
 use crate::utils::Utils;
@@ -125,6 +125,27 @@ impl<'logger> Logger<'logger> {
     }
 
     fn construct_log_position(&self) -> RadResult<String> {
+        #[cfg(debug_assertions)]
+        if std::env::var("DEBUG_TRACE").is_ok() {
+            eprintln!("{:#?}", self.tracker_stack);
+        }
+        if std::env::var("RAD_BACKTRACE").is_ok() {
+            let mut track_iter = self.tracker_stack.stack.iter();
+            let input = track_iter.next().unwrap().get_distance();
+            let mut trace = format!(
+                "[INPUT = {}]:{}:{}",
+                self.current_input, input.line_index, input.char_index
+            );
+            for track in track_iter {
+                let dist = track.get_distance();
+                write!(
+                    trace,
+                    " >> ({}):{}:{}",
+                    dist.milestone, dist.line_index, dist.char_index
+                )?;
+            }
+            return Ok(trace);
+        }
         let track = self.get_current_input_track();
         let (last_line, last_char) = (track.line_index, track.char_index);
 
@@ -244,9 +265,6 @@ impl<'logger> Logger<'logger> {
 
         if self.assert {
             return Ok(());
-        }
-        if std::env::var("PRINT_STACK").is_ok() {
-            eprintln!("{:#?}", self.tracker_stack);
         }
         self.write_formatted_log_msg(
             "error",
@@ -494,4 +512,15 @@ pub enum TrackType {
     Input(String),
     Argument(String),
     Body(String),
+}
+
+impl std::fmt::Display for TrackType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Record(cont) => write!(f, "RECORD = {}", cont),
+            Self::Input(cont) => write!(f, "INPUT = {}", cont),
+            Self::Argument(cont) => write!(f, "MACRO = {}", cont),
+            Self::Body(cont) => write!(f, "MACRO = {}", cont),
+        }
+    }
 }
