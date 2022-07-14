@@ -1,19 +1,19 @@
 # Index
 
-### [Detailed usage](./docs/usage.md)
+### [Detailed usage](usage.md)
 
-### [Macro syntax](./docs/macro_syntax.md)
+### [Macro syntax](macro_syntax.md)
 
-### [About modes](./docs/modes.md)
+### [About modes](modes.md)
 
-### [Macro types](./docs/macro_types.md)
+### [Macro types](macro_types.md)
 
-### [How to extend function macros](./docs/ext.md)
+### [How to extend function macros](ext.md)
 
-### [Extend a processor with storage feature](./docs/storage.md)
+### [Extend a processor with storage feature](storage.md)
 
-### [How to debug](./docs/debug.md)
+### [How to debug](debug.md)
 
-### [Understadning surplus newlines](./docs/newline_rules.md)
+### [Understadning surplus newlines](newline_rules.md)
 
-### [R4d internal logics](./docs/r4d_internal.md)
+### [R4d internal logics](r4d_internal.md)
