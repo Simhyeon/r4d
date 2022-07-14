@@ -75,14 +75,10 @@ value.
 
 * [x] Strict error code with line numbers are tedious. Can it be changed?
 * [x] Logger struct
+
 * [ ] Clear processor's re-export of logger methods
 
 # Debugger
 
 * [x] M command works
 * [x] N command works
-
-* [ ] I need log command for real
-
-* [ ] Consinder if m and step macro should change so that it works more likely
-  a gdb command

@@ -1,7 +1,5 @@
 ### TODO
 
-*  [ ] Option of stack tracing would be useful. Because current impl is simple
-   and powerful, but sometimes you want to see the whole picture.
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
     - This needs to implement cow manipulation and I'm... ok maybe later
 
@@ -30,11 +28,8 @@ $todo_start()
 * [ ] Feature
     * [x] Refactor logger
     * [x] New logger features
-        * [ ] Stack tracing
-    * [ ] Refactor debugger
-        * [ ] Execute sentence
-        * [ ] Log macro support
-            * [ ] For this, debugger should get a reference of processor which is doable?
+        * [x] RAD_BACKTRACE option
+    * [x] Refactor debugger
     * [ ] Dry run would be cool, but is's hella difficult
 * [ ] Documentation
     * [ ] change.md
@@ -86,77 +81,6 @@ critical
 
 - Countl doesn't count empty trailing line : Include this in documentation for clarity
 - Macro chain : This is much harder because many internal changes
-
-### Imminent
-
-* [x] Empty name is not handled by error behaviours
-* [x] Forline what? -> Still utilizes $: syntax
-* [x] Multiline query is not working in cindex... It's you again?
-* [x] I found a huge bug... How come I did not know this?
-    * [x] Non-printing macro removed newline while there are texts to print
-* [x] Enl does same thing with dnl... what? This is strange
-* [x] New macro cnl
-* [x] In-built documentation for function and deterred macro
-
-* [ ] Escape rule is somewhat bugged?
-- ```\* \* *\ Doesn't yield anything```
-
-### 3.0
-
-- [ ] Test on windows
-- [x] Documentation for all macros
-- [x] Remove 'for_macro' feature : Check
-- [x] Remove unused compatibility feature : Check
-- [x] Change library name : Check
-- [x] Rado binary : Check
-- [x] Consider macro execution order : Check
-- [x] Current behaviour interprets input as string if given input doesn't exist which is not ideal : Check
-- [ ] Clippy compatible : Check
-    - Changed method name : from_... variant
-    - I changed many len() == 0 and len() != 0 codes... Keep in mind that it
-    can happen , you know the stupid errors
-
-### TODOs
-
-* [x] Unicode macro would be impressively useful e.g. ) $unicode(2212)
-* [x] Dcsv update > This has no effect in r4d but just forwarded dcsv version.
-* [x] Fixed cindex bugs
-* [x] Strict level set should be single entry...
-* [x] KMacroSign should be renamed to DMacroSign
-* [x] Consider ditching evalresult at all
-* [x] Make error message consistent
-* [x] Changed error behaviours a little bit
-    * [x] Removed panic error because it was confusing and not helpful
-    * [x] Made strict error much more simple and combined log_error with
-    helpful error debuggings
-* [x] Rearranged project structure because cli has two binaries
-* [x] Import macro : Read .r4f file
-* [x] Source macro : Read sh like macros as runtime macro
-* [x] listdir macro : List directory contents
-* [x] Rado env subcommand
-
-* [x] New macro in indices.md
-    * [x] Listdir
-    * [x] import
-    * [x] source
-    * [x] cnl
-* [x] Rado documentation
-
-* Current order of execution is followed. Should this change?
-    - Deterred macro
-    - Local bound macro
-    - Runtime macro
-    - Function macro
-    * For example, Local should come first?
-
-* [ ] Include as namespace
-    - Enabling macro usage such as std:include()
-    - This may not worth, but maybe useful.
-
-* [ ] Better debugger + Ditch crossterm
-- Current implementation is dependent on processor.
-- However I want to make debugger also gets information from processor
-- Create separate program called rad-dbg ( dbg )
 
 #### Hard+misc ones
 
