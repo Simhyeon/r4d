@@ -162,6 +162,25 @@ $assert(true,$eq(23,23))".to_string()),
                 ),
             ),
             (
+                "slice".to_owned(),
+                FMacroSign::new(
+                    "slice",
+                    ["a_min^", "a_max^", "a_array"],
+                    Self::slice,
+                    Some("Get a slice from an aray
+
+# Arguments
+
+- a_min   : A start index ( trimmed )
+- a_max   : A end index ( trimmed )
+- a_array : An array to process
+
+# Example
+
+".to_string()),
+                ),
+            ),
+            (
                 "split".to_owned(),
                 FMacroSign::new(
                     "spilt",
@@ -4280,6 +4299,43 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "index requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Get a sliced array
+    ///
+    /// # Usage
+    ///
+    /// $slice(1,2,1,2,3,4,5)
+    fn slice(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
+            let mut min: Option<usize> = None;
+            let mut max: Option<usize> = None;
+
+            let start_src = trim!(&args[0]);
+            let end_src = trim!(&args[1]);
+
+            if let Ok(num) = start_src.parse::<usize>() {
+                min.replace(num);
+            } else if !start_src.is_empty() {
+                return Err(RadError::InvalidArgument(format!("Silce's min value should be non zero positive integer or empty value but given \"{}\"", start_src)));
+            }
+
+            if let Ok(num) = end_src.parse::<usize>() {
+                max.replace(num);
+            } else if !end_src.is_empty() {
+                return Err(RadError::InvalidArgument(format!("Slice's max value should be non zero positive integer or empty value but given \"{}\"", end_src)));
+            }
+
+            let content = &args[2].split(',').collect::<Vec<_>>();
+
+            Ok(Some(
+                content[min.unwrap_or(0)..=max.unwrap_or(content.len() - 1)].join(","),
+            ))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Slice requires three arguments".to_owned(),
             ))
         }
     }
