@@ -4,13 +4,13 @@ These internals are all based on 3.0 version.
 
 # Table of Contents
 
-[R4d recursively finds and expands
+- [R4d recursively finds and expands
 macros](#r4d-recursively-finds-and-expands-macros)
-[Nature of macro types](#nature-of-macro-types)
-[Runtime macro](#Runtime-macro)
-[Function macro](#function-macro)
-[Deterred macro](#deterred-macro)
-[Errors](#errors)
+- [Nature of macro types](#nature-of-macro-types)
+- [Runtime macro](#Runtime-macro)
+- [Function macro](#function-macro)
+- [Deterred macro](#deterred-macro)
+- [Errors](#errors)
 		
 
 # R4d recursively finds and expands macros
