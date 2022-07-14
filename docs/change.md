@@ -1,3 +1,44 @@
+# 3.0.0-rc.5
+
+**rad**
+
+- CHANGE : Changed from's name to spread
+- CHANGE : Deterred macros' expansion order is not consistent with function macros
+- CHANGE : Removed ieval because counter replaces it
+- CHANGE : Signature and color is included default into a binary feature
+- ERGO : Append can get optional trailer argument
+- ERGO : Append now also appends to local macro
+- ERGO : Enable logm to print any local macros
+- ERGO : No Breakpoint warning
+- ERGO : Now foreach and forline get data as trimmed
+- ERGO : Queue to be insert as no stripped.
+- ERGO : Silent flag's default value is "any"
+- ERGO : Trim output now consumes new line if result is empty
+- FET : New macros
+    - chars
+    - cmp
+    - comma
+    - ftime
+    - isempty
+    - istype
+    - iszero
+    - loge
+    - slice
+    - squash
+    - ssplit
+
+- Bug fix
+    - Nested literal rule was not properly stripped
+    - Setting an error option resetted a logger entirely
+    - File operation was able to write to self
+    - Fixed consume newline was not properly respected
+
+**rado**
+
+- Edit in place flag
+
+
+
 # 3.0.0-rc.4
 
 - FET : New macros

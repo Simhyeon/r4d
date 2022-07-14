@@ -1,5 +1,7 @@
 ### TODO
 
+*  [ ] Option of stack tracing would be useful. Because current impl is simple
+   and powerful, but sometimes you want to see the whole picture.
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
     - This needs to implement cow manipulation and I'm... ok maybe later
 
@@ -27,6 +29,8 @@ $todo_start()
 * [x] Bug fix
 * [ ] Feature
     * [x] Refactor logger
+    * [x] New logger features
+        * [ ] Stack tracing
     * [ ] Refactor debugger
         * [ ] Execute sentence
         * [ ] Log macro support
@@ -49,6 +53,7 @@ $todo_end()
 critical
 * [x] Now, silent's default value is any
 * [x] New macros
+    * [x] slice
     * [x] loge
     * [x] cmp
     * [x] ssplit
@@ -824,3 +829,12 @@ sources
 * [x] Modifed lex_branch_end_frag_eval_result_error to not print error on itself
 * [x] Bug: Include containder had high priority over relay target
 * [x] Bug: Fasssert set success as fail
+
+* [x] Line number is strange on include. Although this persists
+* [x] Enl inside macro body doesn't work... why?. Now it works
+
+* [-] Logger doesn't work in nested context
+    - I don't know but... it works now? how come...
+* [-] Unbalanced parenthesis warning is repeated for no reason. This was
+  because I was using it as content.
+
