@@ -177,7 +177,7 @@ $assert(true,$eq(23,23))".to_string()),
 
 # Example
 
-".to_string()),
+$assert(\\*2,3*\\,$slice(1,2,\\*1,2,3,4,5,6*\\))".to_string()),
                 ),
             ),
             (
