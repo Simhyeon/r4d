@@ -2,6 +2,8 @@
 
 **rad**
 
+- CHANGE : Refactored logger logics with crate trexter
+- CHANGE : Solved debugging regression in terms of functionality
 - CHANGE : Changed from's name to spread
 - CHANGE : Deterred macros' expansion order is not consistent with function macros
 - CHANGE : Removed ieval because counter replaces it
