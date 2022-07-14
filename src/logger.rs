@@ -91,11 +91,25 @@ impl<'logger> Logger<'logger> {
         self.tracker_stack.tracker_mut().connect_track();
     }
 
+    pub fn get_current_input_track(&self) -> Track<()> {
+        let mut out_track = Track::new(());
+        for tracker in self.tracker_stack.stack.iter().rev() {
+            if let TrackType::Input(_) = tracker.get_distance().milestone {
+                out_track.line_index = tracker.get_distance().line_index;
+                out_track.char_index = tracker.get_distance().char_index;
+
+                // Only get the latet input information
+                break;
+            }
+        }
+        out_track
+    }
+
     /// Get first track
     pub fn get_first_track(&self) -> Track<()> {
         let mut out_track = Track::new(());
         let tracker = self.tracker_stack.stack.first().unwrap();
-        out_track.line_index += tracker.get_distance().line_index;
+        out_track.line_index = tracker.get_distance().line_index;
         out_track.char_index = tracker.get_distance().char_index;
         out_track
     }
@@ -111,7 +125,7 @@ impl<'logger> Logger<'logger> {
     }
 
     fn construct_log_position(&self) -> RadResult<String> {
-        let track = self.get_first_track();
+        let track = self.get_current_input_track();
         let (last_line, last_char) = (track.line_index, track.char_index);
 
         // Set last position first,
@@ -230,6 +244,9 @@ impl<'logger> Logger<'logger> {
 
         if self.assert {
             return Ok(());
+        }
+        if std::env::var("PRINT_STACK").is_ok() {
+            eprintln!("{:#?}", self.tracker_stack);
         }
         self.write_formatted_log_msg(
             "error",
