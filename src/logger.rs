@@ -91,6 +91,7 @@ impl<'logger> Logger<'logger> {
         self.tracker_stack.tracker_mut().connect_track();
     }
 
+    /// Get current input track without generic milestone
     pub fn get_current_input_track(&self) -> Track<()> {
         let mut out_track = Track::new(());
         for tracker in self.tracker_stack.stack.iter().rev() {
@@ -106,6 +107,7 @@ impl<'logger> Logger<'logger> {
     }
 
     /// Get first track
+    #[cfg(feature = "debug")]
     pub fn get_first_track(&self) -> Track<()> {
         let mut out_track = Track::new(());
         let tracker = self.tracker_stack.stack.first().unwrap();
