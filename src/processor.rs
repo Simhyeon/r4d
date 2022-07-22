@@ -1250,6 +1250,8 @@ impl<'processor> Processor<'processor> {
         use std::io::Read;
         let stdin = io::stdin();
 
+        self.set_input_stdin()?;
+
         // Early return if debug
         // This read whole chunk of string
         #[cfg(feature = "debug")]

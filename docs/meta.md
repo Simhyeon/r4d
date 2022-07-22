@@ -3,6 +3,9 @@
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
     - This needs to implement cow manipulation and I'm... ok maybe later
 
+* [ ] Cmp is ambiguous, Change it to better name
+* [ ] Stdin yields error on tracker\_mut : logger : 496
+
 : ORDERED :
 1. [x] Debugger step behaviour
 1. [x] Push Trexter on crates.io
