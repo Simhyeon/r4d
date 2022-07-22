@@ -3,9 +3,6 @@
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
     - This needs to implement cow manipulation and I'm... ok maybe later
 
-* [ ] Cmp is ambiguous, Change it to better name
-* [ ] Stdin yields error on tracker\_mut : logger : 496
-
 : ORDERED :
 1. [x] Debugger step behaviour
 1. [x] Push Trexter on crates.io
@@ -45,40 +42,8 @@ $todo_end()
 
 ### Changes
 
-* [x] Now foreach and forline should get data as trimmed?
-* [x] Trim output now consume new line if result is empty
-* [x] Included signature and color as default into a binary because man flag is
-critical
-* [x] Now, silent's default value is any
-* [x] New macros
-    * [x] slice
-    * [x] loge
-    * [x] cmp
-    * [x] ssplit
-    * [x] istype
-    * [x] iszero
-    * [x] isempty
-    * [x] ftime
-    * [x] comma
-    * [x] append with trailer
-    * [x] chars
-    * [x] squash
-* [x] Feature
-    * [x] Make deterred macro works like other macros
-    * [x] Rado : Edit in place with io operation
-* [x] Improve macro ergonomics
-    * [x] Enable logm to print any local macros
-    * [x] Append now also appends to local macro
-    * [x] APpend is now a deterred macro
-    * [x] No Breakpoint warning
-    * [x] Changed from to spread
-    * [x] Removed ieval because counter replaces it
-    * [x] I changed queue to insert as no stripped.
-* [x] Bug fix
-    * [x] Literal rule is bugged ( Nested literal rule doesn't work at all )
-    * [x] Setting an error option resetted a logger entirely.. why I did that?
-    * [x] File operation was able to write to self
-    * [x] Fixed consume newline waas not properly respected
+* [x] Stdin yields error because input was not set
+* [x] Cmp is ambiguous, Change it to better name with useful variants
 
 ### Macro ergonomics
 
@@ -764,4 +729,39 @@ sources
     - I don't know but... it works now? how come...
 * [-] Unbalanced parenthesis warning is repeated for no reason. This was
   because I was using it as content.
+
+* [x] Now foreach and forline should get data as trimmed?
+* [x] Trim output now consume new line if result is empty
+* [x] Included signature and color as default into a binary because man flag is
+critical
+* [x] Now, silent's default value is any
+* [x] New macros
+    * [x] slice
+    * [x] loge
+    * [x] cmp
+    * [x] ssplit
+    * [x] istype
+    * [x] iszero
+    * [x] isempty
+    * [x] ftime
+    * [x] comma
+    * [x] append with trailer
+    * [x] chars
+    * [x] squash
+* [x] Feature
+    * [x] Make deterred macro works like other macros
+    * [x] Rado : Edit in place with io operation
+* [x] Improve macro ergonomics
+    * [x] Enable logm to print any local macros
+    * [x] Append now also appends to local macro
+    * [x] APpend is now a deterred macro
+    * [x] No Breakpoint warning
+    * [x] Changed from to spread
+    * [x] Removed ieval because counter replaces it
+    * [x] I changed queue to insert as no stripped.
+* [x] Bug fix
+    * [x] Literal rule is bugged ( Nested literal rule doesn't work at all )
+    * [x] Setting an error option resetted a logger entirely.. why I did that?
+    * [x] File operation was able to write to self
+    * [x] Fixed consume newline waas not properly respected
 
