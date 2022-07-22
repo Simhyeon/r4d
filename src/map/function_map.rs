@@ -117,27 +117,45 @@ $assert(--Hello-,$align(center,8,-,Hello))".to_string(),
                 ),
             ),
             (
-                "cmp".to_owned(),
+                "gt".to_owned(),
                 FMacroSign::new(
-                    "cmp",
+                    "gt",
                     ["a_lvalue", "a_rvalue"],
-                    Self::compare_values,
-                    Some("Compares left value and right value
-
-- This returns true if lvalue is \"bigger\" than rvalue
-- This returns false if lvalue is \"smaller or equal\" to rvalue
+                    Self::greater_than,
+                    Some("Check if lvalue is greater than rvalue
 
 # Return : Boolean
 
 # Arguments
 
 - a_lvalue : A left value to compare
-- a_rvalue : A right value to cmpare
+- a_rvalue : A right value to compare
 
 # Example
 
-$assert(true,$cmp(c,b))
-$assert(false,$cmp(text,text))".to_string()),
+$assert(true,$gt(c,b))
+$assert(false,$gt(text,text))".to_string()),
+                ),
+            ),
+            (
+                "gte".to_owned(),
+                FMacroSign::new(
+                    "gte",
+                    ["a_lvalue", "a_rvalue"],
+                    Self::greater_than_or_equal,
+                    Some("Check if lvalue is greater than or equal to rvalue
+
+# Return : Boolean
+
+# Arguments
+
+- a_lvalue : A left value to compare
+- a_rvalue : A right value to compare
+
+# Example
+
+$assert(true,$gte(c,b))
+$assert(true,$gte(text,text))".to_string()),
                 ),
             ),
             (
@@ -1110,6 +1128,48 @@ $loge(This should not be reached)".to_string()),
 # Example
 
 $assert(abcde,$lower(AbCdE))".to_string()),
+                ),
+            ),
+            (
+                "lt".to_owned(),
+                FMacroSign::new(
+                    "lt",
+                    ["a_lvalue", "a_rvalue"],
+                    Self::less_than,
+                    Some("Check if lvalue is less than rvalue
+
+# Return : Boolean
+
+# Arguments
+
+- a_lvalue : A left value to compare
+- a_rvalue : A right value to compare
+
+# Example
+
+$assert(false,$lt(c,b))
+$assert(false,$lt(text,text))".to_string()),
+                ),
+            ),
+            (
+                "lte".to_owned(),
+                FMacroSign::new(
+                    "lte",
+                    ["a_lvalue", "a_rvalue"],
+                    Self::less_than_or_equal,
+                    Some("Check if lvalue is less than or equal to rvalue
+
+# Return : Boolean
+
+# Arguments
+
+- a_lvalue : A left value to compare
+- a_rvalue : A right value to compare
+
+# Example
+
+$assert(true,$lte(b,c))
+$assert(true,$lte(text,text))".to_string()),
                 ),
             ),
             (
@@ -2455,7 +2515,8 @@ $ftime(some_file.txt)
 
 # Example
 
-$assert(3,$eval(1 + 2))"
+$assert(3,$eval(1 + 2))
+$assert(true,$eval(\"string\" == \"string\"))"
                             .to_string(),
                     ),
                 ),
@@ -5196,19 +5257,70 @@ $extract()"
         }
     }
 
-    /// cmp : is lvalue bigger than rvalue
+    /// gt : is lvalue bigger than rvalue
     ///
     /// # Usage
     ///
-    /// $cmp(lvalue, rvalue)
-    fn compare_values(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+    /// $gt(lvalue, rvalue)
+    fn greater_than(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let lvalue = &args[0];
             let rvalue = &args[1];
             Ok(Some((lvalue > rvalue).to_string()))
         } else {
             Err(RadError::InvalidArgument(
-                "cmp requires two arguments".to_owned(),
+                "gt requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// gte : is lvalue bigger than or equal to rvalue
+    ///
+    /// # Usage
+    ///
+    /// $gte(lvalue, rvalue)
+    fn greater_than_or_equal(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let lvalue = &args[0];
+            let rvalue = &args[1];
+            Ok(Some((lvalue >= rvalue).to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "gte requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// lt : is lvalue less than rvalue
+    ///
+    /// # Usage
+    ///
+    /// $lt(lvalue, rvalue)
+    fn less_than(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let lvalue = &args[0];
+            let rvalue = &args[1];
+            Ok(Some((lvalue < rvalue).to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "lt requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// lte : is lvalue less than or equal to rvalue
+    ///
+    /// # Usage
+    ///
+    /// $lte(lvalue, rvalue)
+    fn less_than_or_equal(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let lvalue = &args[0];
+            let rvalue = &args[1];
+            Ok(Some((lvalue <= rvalue).to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "lte requires two arguments".to_owned(),
             ))
         }
     }
