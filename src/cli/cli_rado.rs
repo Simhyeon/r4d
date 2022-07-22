@@ -62,6 +62,11 @@ impl RadoCli {
                     (&*RADO_DIR).display()
                 )?;
             }
+            Some(("compile", sub_m)) => {
+                if let Some(input) = sub_m.value_of("INPUT") {
+                    self.compile_file(Path::new(input))?;
+                }
+            }
             Some(("replace", sub_m)) => {
                 if let Some(input) = sub_m.value_of("INPUT") {
                     self.replace_file(Path::new(input))?;
@@ -159,18 +164,25 @@ impl RadoCli {
             .subcommand(App::new("env")
                 .about("Print env information")
             )
+            .subcommand(App::new("compile")
+                .about("Compile a file")
+                .arg(Arg::new("INPUT")
+                    .required(true)
+                    .help("File name to compile")
+                )
+            )
             .subcommand(App::new("read")
                 .about("Read a file")
                 .arg(Arg::new("INPUT")
                     .required(true)
-                    .help("INPUT name to read from temp directory")
+                    .help("File name to read from temp directory")
                 )
             )
             .subcommand(App::new("force")
                 .about("Force update a file")
                 .arg(Arg::new("INPUT")
                     .required(true)
-                    .help("INPUT name to force update")
+                    .help("File name to force update")
                 )
                 .arg(Arg::new("read")
                     .short('r')
@@ -182,7 +194,7 @@ impl RadoCli {
                 .about("Sync file's timestamp")
                 .arg(Arg::new("INPUT")
                     .required(true)
-                    .help("INPUT name to sync")
+                    .help("File name to sync")
                 )
             );
 
@@ -194,7 +206,7 @@ impl RadoCli {
                     .arg(
                         Arg::new("INPUT")
                             .required(true)
-                            .help("INPUT name to read from temp directory"),
+                            .help("File name to read from temp directory"),
                     )
                     .arg(
                         Arg::new("force")
@@ -205,6 +217,18 @@ impl RadoCli {
             );
         }
         app.get_matches()
+    }
+
+    fn compile_file(&self, file: &Path) -> RadResult<()> {
+        if file.exists() {
+            let file_string = file.display().to_string();
+            let mut rad_args = vec!["rad", file_string.as_ref(), "--compile"];
+            if !self.flag_arguments.is_empty() {
+                rad_args.extend(self.flag_arguments.iter().map(|s| s.as_str()));
+            }
+            RadCli::new().parse_from(&rad_args)?;
+        }
+        Ok(())
     }
 
     fn replace_file(&self, file: &Path) -> RadResult<()> {

@@ -662,6 +662,17 @@ pub enum ErrorBehaviour {
     Interrupt,
 }
 
+/// Type of processing
+#[derive(PartialEq, Clone, Copy)]
+pub enum ProcessType {
+    /// Expand every macros
+    Expand,
+    /// Inlin every macros
+    Compile,
+    /// Freeze definitions
+    Freeze,
+}
+
 #[derive(Clone)]
 /// Builder struct for extension macros
 ///

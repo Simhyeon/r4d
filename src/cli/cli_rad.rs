@@ -163,6 +163,14 @@ impl<'cli> RadCli<'cli> {
 
         // ========
         // Main options
+
+        // Process type related state changes
+        if args.value_of("freeze").is_some() {
+            self.processor.set_freeze_mode();
+        } else if args.value_of("compile").is_some() {
+            self.processor.set_compile_mode();
+        }
+
         // print permission
         self.processor.print_permission()?;
 

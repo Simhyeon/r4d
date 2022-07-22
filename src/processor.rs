@@ -13,6 +13,7 @@ use crate::logger::{Logger, WarningType};
 use crate::models::DiffOption;
 #[cfg(not(feature = "wasm"))]
 use crate::models::FileTarget;
+use crate::models::ProcessType;
 use crate::models::RegexCache;
 #[cfg(feature = "signature")]
 use crate::models::SignatureType;
@@ -73,6 +74,7 @@ pub(crate) struct ProcessorState {
     pub relay: Vec<RelayTarget>,
     pub sandbox: bool,
     pub behaviour: ErrorBehaviour,
+    pub process_type: ProcessType,
     pub comment_type: CommentType,
     // Temp target needs to save both path and file
     // because file doesn't necessarily have path.
@@ -104,6 +106,7 @@ impl ProcessorState {
             hygiene: Hygiene::None,
             relay: vec![],
             behaviour: ErrorBehaviour::Strict,
+            process_type: ProcessType::Expand,
             comment_type: CommentType::None,
             sandbox: false,
             #[cfg(not(feature = "wasm"))]
@@ -862,6 +865,19 @@ impl<'processor> Processor<'processor> {
             self.map.clear_runtime_macros(true);
         }
         self.state.hygiene = hygiene;
+    }
+
+    /// Set to compile mode
+    pub fn set_compile_mode(&mut self) {
+        self.write_option = WriteOption::Discard;
+        self.state.process_type = ProcessType::Compile;
+    }
+
+    /// Set to freeze mode
+    pub fn set_freeze_mode(&mut self) {
+        self.write_option = WriteOption::Discard;
+        self.state.process_type = ProcessType::Freeze;
+        self.state.auth_flags.clear();
     }
 
     /// Clear volatile macros
@@ -1811,7 +1827,22 @@ impl<'processor> Processor<'processor> {
                 frag.processed_args = args.clone();
             }
         } else {
+            // Is deterred macro
+
+            // Deterred macro is not allowed in freeze mode
+            if self.state.process_type == ProcessType::Freeze {
+                self.log_warning(
+                    "Deterred macro is not expanded in freeze mode.",
+                    WarningType::Sanity,
+                )?;
+                frag.clear();
+                return Ok(None);
+            }
+
+            // Set raw args as literal
             args = raw_args;
+
+            // Set processed_args some helpful message
             #[cfg(feature = "debug")]
             {
                 frag.processed_args =
@@ -2235,6 +2266,15 @@ impl<'processor> Processor<'processor> {
                     self.log_warning(&err.to_string(), WarningType::Security)?;
                 }
             } else {
+                if level != 0 && self.state.process_type == ProcessType::Freeze {
+                    self.log_warning(
+                        "Only first level define is allowed in freeze mode",
+                        WarningType::Sanity,
+                    )?;
+                    frag.clear();
+                    remainder.clear();
+                    return Ok(());
+                }
                 self.lex_branch_end_frag_define(
                     frag,
                     remainder,

@@ -49,6 +49,10 @@ impl AuthFlags {
             None
         }
     }
+
+    pub fn clear(&mut self) {
+        self.auths.clear();
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
