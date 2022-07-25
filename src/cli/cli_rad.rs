@@ -7,11 +7,11 @@ use crate::common::SignatureType;
 #[cfg(feature = "signature")]
 use crate::consts::LINE_ENDING;
 use crate::logger::WarningType;
-use crate::processor::Processor;
 #[cfg(feature = "template")]
 use crate::script;
 #[cfg(feature = "debug")]
 use crate::utils::Utils;
+use crate::Processor;
 use crate::{Hygiene, RadError, RadResult};
 #[cfg(feature = "signature")]
 use std::fmt::Write as _;

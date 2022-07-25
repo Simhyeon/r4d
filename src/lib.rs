@@ -51,7 +51,7 @@
 
 mod error;
 mod package;
-mod processor;
+mod process;
 
 mod parser;
 pub(crate) use parser::DefineParser;
@@ -86,7 +86,7 @@ pub use extension::ExtMacroBuilder;
 #[cfg(feature = "hook")]
 pub use hookmap::HookType;
 pub use logger::WarningType;
-pub use processor::Processor;
+pub use process::Processor;
 pub use storage::{RadStorage, StorageOutput, StorageResult};
 
 // Optional

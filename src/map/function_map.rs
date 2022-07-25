@@ -12,9 +12,9 @@ use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
-use crate::processor::Processor;
 use crate::trim;
 use crate::utils::Utils;
+use crate::Processor;
 use crate::{ArgParser, GreedyState};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;

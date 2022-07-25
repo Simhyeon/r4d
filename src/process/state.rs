@@ -1,0 +1,106 @@
+use crate::auth::AuthFlags;
+use crate::common::{
+    CommentType, ErrorBehaviour, FlowControl, Hygiene, ProcessInput, ProcessType, RegexCache,
+    RelayTarget,
+};
+#[cfg(not(feature = "wasm"))]
+use crate::common::{FileTarget, RadResult};
+use crate::consts::LINE_ENDING;
+use crate::RadError;
+use std::collections::{HashMap, HashSet};
+#[cfg(not(feature = "wasm"))]
+use std::path::Path;
+use std::path::PathBuf;
+
+pub(crate) struct ProcessorState {
+    // Current_input is either "stdin" or currently being read file's name thus it should not be a
+    // path derivative
+    pub auth_flags: AuthFlags,
+    pub current_input: ProcessInput,
+    pub input_stack: HashSet<PathBuf>,
+    pub newline: String,
+    pub paused: bool,
+    pub error_cache: Option<RadError>,
+    // This is reserved for hygienic execution
+    pub hygiene: Hygiene,
+    pub pipe_truncate: bool,
+    pub pipe_map: HashMap<String, String>,
+    pub relay: Vec<RelayTarget>,
+    pub sandbox: bool,
+    pub behaviour: ErrorBehaviour,
+    pub process_type: ProcessType,
+    pub comment_type: CommentType,
+    // Temp target needs to save both path and file
+    // because file doesn't necessarily have path.
+    // Especially in unix, this is not so an unique case
+    #[cfg(not(feature = "wasm"))]
+    pub temp_target: FileTarget,
+    pub comment_char: Option<char>,
+    pub macro_char: Option<char>,
+    pub flow_control: FlowControl,
+    pub deny_newline: bool,    // This deny next-next newline
+    pub consume_newline: bool, // This consumes newline if the line was only empty
+    pub escape_newline: bool,  // This escapes right next newline
+    pub queued: Vec<String>,
+    pub regex_cache: RegexCache,
+    pub lexor_escape_blanks: bool,
+}
+
+impl ProcessorState {
+    pub fn new() -> Self {
+        Self {
+            current_input: ProcessInput::Stdin,
+            input_stack: HashSet::new(),
+            auth_flags: AuthFlags::new(),
+            newline: LINE_ENDING.to_owned(),
+            pipe_truncate: true,
+            pipe_map: HashMap::new(),
+            paused: false,
+            error_cache: None,
+            hygiene: Hygiene::None,
+            relay: vec![],
+            behaviour: ErrorBehaviour::Strict,
+            process_type: ProcessType::Expand,
+            comment_type: CommentType::None,
+            sandbox: false,
+            #[cfg(not(feature = "wasm"))]
+            temp_target: FileTarget::with_truncate(&std::env::temp_dir().join("rad.txt")).unwrap(),
+            comment_char: None,
+            macro_char: None,
+            flow_control: FlowControl::None,
+            deny_newline: false,
+            consume_newline: false,
+            escape_newline: false,
+            queued: vec![],
+            regex_cache: RegexCache::new(),
+            lexor_escape_blanks: false,
+        }
+    }
+
+    #[cfg(not(feature = "wasm"))]
+    /// Internal method for setting temp target
+    pub(crate) fn set_temp_target(&mut self, path: &Path) -> RadResult<()> {
+        if path.exists() {
+            std::fs::remove_file(path)?;
+        }
+        let new_target = FileTarget::with_truncate(path)?;
+        self.temp_target = new_target;
+        Ok(())
+    }
+
+    pub fn add_pipe(&mut self, name: Option<&str>, value: String) {
+        if let Some(name) = name {
+            self.pipe_map.insert(name.to_owned(), value);
+        } else {
+            self.pipe_map.insert("-".to_owned(), value);
+        }
+    }
+
+    pub fn get_pipe(&mut self, key: &str) -> Option<String> {
+        if self.pipe_truncate {
+            self.pipe_map.remove(key)
+        } else {
+            self.pipe_map.get(key).map(|s| s.to_owned())
+        }
+    }
+}
