@@ -66,6 +66,7 @@ textwrap = { version = "0.14.2", optional = true}
 wasm-bindgen = { version = "0.2.74", optional = true}
 console_error_panic_hook = { version = "0.1.7", optional = true}
 wee_alloc = { version = "0.4.5", optional = true }
+flate2 = "1.0.24"
 
 [package.metadata.deb]
 features = ["binary"]
