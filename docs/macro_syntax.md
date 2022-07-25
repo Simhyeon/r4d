@@ -356,6 +356,21 @@ Hello
         World
 ```
 
+One important feature of trim output attribute is that it **converts empty
+string into None**. You can refer detailed logics in a
+[doc](./newline_rules.md)
+
+Therefore following example works
+
+```
+$define(none_if_empty=$ifdefel(test,DEFINED,$empty()))
+$none_if_empty^() % => "None"
+$define(test=)
+$none_if_empty()  % => DEFINED
+===
+DEFINED
+```
+
 **Trim input**
 
 Trim input attribute ```=``` trims macro arguments by lines and also trim by
