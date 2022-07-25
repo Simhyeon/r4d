@@ -357,7 +357,7 @@ Hello
 ```
 
 One important feature of trim output attribute is that it **converts empty
-string into None**. You can refer detailed logics in a
+string into None**. You can refer why such feature is special in a
 [doc](./newline_rules.md)
 
 Therefore following example works
@@ -463,17 +463,6 @@ and expectable or because I'm too rusty person. You can disable strict mode
 with lenient option ```-l or --lenient``` or puge option ```-p or --purge```.
 
 Refer [modes](./modes.md) document for detailed error behaviours
-
-**Position of logs is not always accurate**
-
-Welp this is because, r4d doesn't construct AST and processes macros with
-stack. Thus position of characters can really vary.
-
-Plus, macro expanded text can have totally different length, content from
-original text. Thus tracking thoses offsets are not worth the hassel needed.
-
-In conclusion, character in error or warning messages can be not correct but
-might be an indicator, which is represented tildes ```~~```.
 
 ### Break point
 

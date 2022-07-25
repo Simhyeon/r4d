@@ -111,6 +111,13 @@ rado sync file_name.txt
 rado force file_name.txt
 rado force file_name.txt --read
 
+# Package file into a packaged script
+rado package file_name.txt
+
+# Execute a file wihtout using path variation
+rado execute file_name.r4d
+rado execute bin.r4c
+
 # Print out all environment variables
 rado env
 ```
@@ -165,19 +172,19 @@ let mut processor = Processor::new()
     .aseptic(true)                                       // Enable aseptic mode
     .hygiene(Hygiene::Macro)                             // Enable hygiene mode
     .pipe_truncate(false)                                // Disable pipe truncate
-    .write_to_file(Path::new("out.txt"))?          // default is stdout
-    .error_to_file(Path::new("err.txt"))?          // default is stderr
+    .write_to_file(Path::new("out.txt"))?                // default is stdout
+    .error_to_file(Path::new("err.txt"))?                // default is stderr
     .unix_new_line(true)                                 // use unix new line for formatting
     .discard(true)                                       // discard all output
-    .melt_files(&[Path::new("source.r4d")])?          // Read runtime macros from frozen
+    .melt_files(&[Path::new("source.r4d")])?             // Read runtime macros from frozen
     // Permission
-    .allow(&[AuthType::ENV])                    // Grant permission of authtypes
-    .allow_with_warning(&[AuthType::CMD])       // Grant permission of authypes with warning enabled
+    .allow(&[AuthType::ENV])                             // Grant permission of authtypes
+    .allow_with_warning(&[AuthType::CMD])                // Grant permission of authypes with warning enabled
     // Debugging options
     .debug(true)                                         // Turn on debug mode
     .log(true)                                           // Use logging to terminal
     .diff(DiffOption::All)?                              // Print diff in final result
-    .interactive(true);                                   // Use interactive mode
+    .interactive(true);                                  // Use interactive mode
 
 // Comment char and macro char cannot be same
 // Unallowed pattern for the characters are [a-zA-Z1-9\\_\*\^\|\(\)=,]

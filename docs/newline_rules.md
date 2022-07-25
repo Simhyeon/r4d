@@ -10,7 +10,7 @@ although those are often overlooked.
 
 Think of a macro as a function. ( Though it really is ) Macro gets arguments
 and processes body with given information and finally returns a value. Actually
-every acro returns a rust type of ```Result<Option<String>>```. Now any
+every macro returns a rust type of ```Result<Option<String>>```. Now any
 rustaceans would know the meaning of the title, but for those who are not, this
 means macro returns a real text value or nothing. 
 
@@ -39,6 +39,9 @@ would return nothing. However ```my_define``` returns an empty string. A real
 value with empty texts. Therefore it leaves an empty string or an empty line in
 its place. Consequently **runtime macros never return "no value"** but at least
 return an empty value.
+
+Although you can change this behaviour with help of trim output macro
+attribute. Refer, [docs](./macro_syntax.md) for detailed usage.
 
 ## Hidden newline character at the end of a line
 
@@ -92,4 +95,4 @@ Every line has a newline character in it's end. You just don't know because our
 smart text editor handles newlines as if it were not there. Even the substitued
 line had newline character after the last character ```\\n```. It is hard to
 write simply null terminated string without trailing newline in text editor. (
-And I'm not sure if it is even possible)
+And I'm not sure if it is even possible in some editors)
