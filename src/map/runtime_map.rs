@@ -9,10 +9,11 @@ pub struct RuntimeMacro {
     pub args: Vec<String>,
     pub body: String,
     pub desc: Option<String>,
+    pub is_static: bool,
 }
 
 impl RuntimeMacro {
-    pub fn new(name: &str, args: &str, body: &str) -> Self {
+    pub fn new(name: &str, args: &str, body: &str, is_static: bool) -> Self {
         // Empty args are no args
         let mut args: Vec<String> = args
             .split_whitespace()
@@ -27,6 +28,7 @@ impl RuntimeMacro {
             args,
             body: body.to_owned(),
             desc: None,
+            is_static,
         }
     }
 }
@@ -46,8 +48,13 @@ impl std::fmt::Display for RuntimeMacro {
 #[cfg(feature = "signature")]
 impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
     fn from(mac: &RuntimeMacro) -> Self {
+        let variant = if mac.is_static {
+            crate::sigmap::MacroVariant::Static
+        } else {
+            crate::sigmap::MacroVariant::Runtime
+        };
         Self {
-            variant: crate::sigmap::MacroVariant::Runtime,
+            variant,
             name: mac.name.to_owned(),
             args: mac.args.to_owned(),
             expr: mac.to_string(),

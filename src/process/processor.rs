@@ -1050,6 +1050,7 @@ impl<'processor> Processor<'processor> {
                         .collect::<Vec<String>>(),
                     body: body.to_string(),
                     desc: None,
+                    is_static: false,
                 },
             );
         }
@@ -1102,6 +1103,7 @@ impl<'processor> Processor<'processor> {
                     args: vec![],
                     body: body.as_ref().to_owned(),
                     desc: None,
+                    is_static: true,
                 },
             );
         }
@@ -1905,6 +1907,11 @@ impl<'processor> Processor<'processor> {
             .get(name, self.state.hygiene)
             .unwrap()
             .clone();
+
+        // If static macro, return body without expansion
+        if rule.is_static {
+            return Ok(Some(rule.body));
+        }
 
         let arg_types = &rule.args;
         // Set variable to local macros

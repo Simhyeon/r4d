@@ -113,7 +113,7 @@ impl MacroMap {
         hygiene_type: Hygiene,
     ) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
-        let mac = RuntimeMacro::new(&trim!(name), &trim!(args), body);
+        let mac = RuntimeMacro::new(&trim!(name), &trim!(args), body, false);
         self.runtime.new_macro(name, mac, hygiene_type);
         Ok(())
     }

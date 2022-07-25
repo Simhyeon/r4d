@@ -36,6 +36,7 @@ pub enum MacroVariant {
     Deterred,
     Function,
     Runtime,
+    Static,
 }
 
 /// Macro signature
