@@ -51,7 +51,7 @@ impl AuthFlags {
     }
 
     pub fn clear(&mut self) {
-        self.auths.clear();
+        *self = Self::new();
     }
 }
 
