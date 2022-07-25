@@ -1,13 +1,7 @@
 ### TODO
 
-* [ ] Currently static macro is simply registered as runtime macro... Is it
-  respected behaviour or what?
-
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
     - This needs to implement cow manipulation and I'm... ok maybe later
-
-* [ ] Some documentaion is weak, especialy some deterred macros
-* [ ] Try formatting documentation within 80 characters
 
 : ORDERED :
 1. [ ] Update r4d version in gdengine
@@ -28,7 +22,6 @@ $todo_start()
     * [x] New logger features
         * [x] RAD_BACKTRACE option
     * [x] Refactor debugger
-    * [ ] Dry run would be cool, but is's hella difficult
 * [ ] Documentation
     * [ ] change.md
 * [ ] Test
@@ -47,6 +40,11 @@ $todo_end()
     - Add new "set\_freeze\_mode" method
     - Freeze reuses out option
 * [x] FET : Packaging
+* [x] Documentation : 80 char cap for description + if variant refactor
+* [x] Changed module name into common, relocated many common variants into
+  separate ones
+* [x] Now static macro is not expanded
+* [x] Feature : Dry run
 
 ### Macro ergonomics
 

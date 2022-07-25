@@ -2,6 +2,7 @@
 
 - [How to debug](#how-to-debug)
 - [Log macro](#log-macro)
+- [Dry run](#dry-run)
 - [Debug mode](#debug-mode)
 - [Example](#example)
 - [Logging](#logging)
@@ -43,6 +44,32 @@ a/b/c
 % log: $path(a,b,c)
 % $evalk(1 + 2)
 %  --> test:5:2
+```
+
+### Dry run
+
+You can dry run macros for checking if macro expressions are mostly in sane
+shape. In dry run mode, every function macro is silently ignored and processor
+checks macro's body on declaration. Also every invalid macro name error will be
+interpreted as warning because function macro is not expanded.
+
+Dry run with ```--dryrun``` flag.
+
+```r4d
+% Typo in local macro usage
+$define(Test,a_1 a_2=$a1() $a2() $fileout(Insufficient arguments))
+% Typo in macro name
+$test()
+===
+warning: Invalid macro name
+= No such macro name : "a1"
+ --> [INPUT = demo]:1:2 >> (MACRO = Test):1:2
+warning: Invalid macro name
+= No such macro name : "a2"
+ --> [INPUT = demo]:1:2 >> (MACRO = Test):1:8
+warning: Invalid macro name
+= No such macro name : "test"
+ --> [INPUT = demo]:2:2
 ```
 
 #### Debug mode

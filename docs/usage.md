@@ -52,6 +52,7 @@ rad --comment any
     --log             # Print all macro invocation logs
 -i                    # Start debug mode as interactive, this makes stdout unwrapped
     --diff            # Show diff result between source and processed result
+    --dryrun          # Dry run macros
 
 # Other flags
 -n                    # Always use unix newline (default is '\r\n' in windows platform)
@@ -62,6 +63,9 @@ rad --comment any
 rad test -f -o frozen.r4f
 # Melt a file and use in processing
 rad test -m frozen.r4f
+
+# Package into a single file
+rad test --package -o bin.r4c
 
 # Print signature information into file
 rad --signature sig.json
