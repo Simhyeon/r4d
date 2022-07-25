@@ -62,9 +62,9 @@ impl RadoCli {
                     (&*RADO_DIR).display()
                 )?;
             }
-            Some(("compile", sub_m)) => {
+            Some(("package", sub_m)) => {
                 if let Some(input) = sub_m.value_of("INPUT") {
-                    self.compile_file(Path::new(input))?;
+                    self.package_file(Path::new(input))?;
                 }
             }
             Some(("execute", sub_m)) => {
@@ -135,7 +135,7 @@ impl RadoCli {
     rado edit <FILE>
     rado force <FILE>
     rado execute <FILE>
-    rado compile <FILE>
+    rado package <FILE>
     rado diff <FILE>
     rado sync <FILE>")
             .arg(Arg::new("argument")
@@ -171,11 +171,11 @@ impl RadoCli {
             .subcommand(App::new("env")
                 .about("Print env information")
             )
-            .subcommand(App::new("compile")
-                .about("Compile a file")
+            .subcommand(App::new("package")
+                .about("Package into a file")
                 .arg(Arg::new("INPUT")
                     .required(true)
-                    .help("File name to compile")
+                    .help("File name to package")
                 )
             )
             .subcommand(App::new("execute")
@@ -245,11 +245,11 @@ impl RadoCli {
         Ok(())
     }
 
-    fn compile_file(&self, file: &Path) -> RadResult<()> {
+    fn package_file(&self, file: &Path) -> RadResult<()> {
         if file.exists() {
             let file_string = file.display().to_string();
             let out_string = file.with_extension("r4c").display().to_string();
-            let mut rad_args = vec!["rad", file_string.as_ref(), "--compile", "-o", &out_string];
+            let mut rad_args = vec!["rad", file_string.as_ref(), "--package", "-o", &out_string];
             if !self.flag_arguments.is_empty() {
                 rad_args.extend(self.flag_arguments.iter().map(|s| s.as_str()));
             }

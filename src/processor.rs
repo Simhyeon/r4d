@@ -1,5 +1,4 @@
 use crate::auth::{AuthFlags, AuthState, AuthType};
-use crate::compile::StaticScript;
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
@@ -24,6 +23,7 @@ use crate::models::{
     WriteOption,
 };
 use crate::models::{RadStorage, StorageOutput};
+use crate::package::StaticScript;
 use crate::runtime_map::RuntimeMacro;
 #[cfg(feature = "signature")]
 use crate::sigmap::SignatureMap;
@@ -817,7 +817,7 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    pub fn compile_sources<T: AsRef<Path>>(
+    pub fn package_sources<T: AsRef<Path>>(
         &self,
         sources: &[T],
         out_file: Option<T>,
@@ -833,7 +833,7 @@ impl<'processor> Processor<'processor> {
         } else {
             PathBuf::from("out.r4c")
         };
-        static_script.compile(Some(&path))?;
+        static_script.package(Some(&path))?;
         Ok(())
     }
 
@@ -1366,7 +1366,7 @@ impl<'processor> Processor<'processor> {
         let mut reader = BufReader::new(file_stream);
         let mut source = vec![];
         reader.read_to_end(&mut source)?;
-        let static_script = StaticScript::decompile(source)?;
+        let static_script = StaticScript::unpack(source)?;
         let mut reader = BufReader::new(&static_script.body[..]);
         self.melt_literal(&static_script.header[..])?;
         self.process_buffer(&mut reader, backup, false)?;
@@ -1873,7 +1873,6 @@ impl<'processor> Processor<'processor> {
         }
         let args: String;
         // Preprocess only when macro is not a deterred macro
-        // Even deterred macro is "expanded" on compile mode
         if !self.map.is_deterred_macro(name) {
             args = self.parse_chunk_args(level, name, &raw_args)?;
             // This parses and processes arguments

@@ -132,14 +132,14 @@ impl<'cli> RadCli<'cli> {
             return Ok(());
         }
 
-        if args.is_present("compile") {
+        if args.is_present("package") {
             if let Some(sources) = args.values_of("INPUT") {
                 let sources = sources.into_iter().map(Path::new).collect::<Vec<_>>();
                 processor
-                    .compile_sources(&sources, self.write_to_file.as_ref().map(|p| p.as_ref()))?;
+                    .package_sources(&sources, self.write_to_file.as_ref().map(|p| p.as_ref()))?;
             } else {
                 return Err(RadError::InvalidCommandOption(
-                    "No compile sources were given.".to_string(),
+                    "No sources were given for packaging.".to_string(),
                 ));
             }
             return Ok(());
@@ -477,9 +477,9 @@ impl<'cli> RadCli<'cli> {
                 .short('f')
                 .long("freeze")
                 .help("Freeze macros into a single file"))
-            .arg(Arg::new("compile")
-                .long("compile")
-                .help("Compile macros into a single static file"));
+            .arg(Arg::new("package")
+                .long("package")
+                .help("Package sources into a single static file"));
 
         #[cfg(feature = "signature")]
         let app = app

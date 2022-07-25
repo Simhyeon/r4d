@@ -17,7 +17,7 @@ impl StaticScript {
         Ok(Self { header, body })
     }
 
-    pub fn decompile(source: Vec<u8>) -> RadResult<Self> {
+    pub fn unpack(source: Vec<u8>) -> RadResult<Self> {
         let mut decompressed = Vec::new();
         let mut decoder = GzDecoder::new(&source[..]);
         decoder.read_to_end(&mut decompressed).unwrap();
@@ -25,7 +25,7 @@ impl StaticScript {
         Ok(object)
     }
 
-    pub fn compile(&mut self, file: Option<&std::path::Path>) -> RadResult<Vec<u8>> {
+    pub fn package(&mut self, file: Option<&std::path::Path>) -> RadResult<Vec<u8>> {
         let serialized = bincode::serialize(&self).unwrap();
         let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
         encoder.write_all(&serialized).unwrap();
