@@ -41,9 +41,10 @@ impl DeterredMacroMap {
                     ["a_macro_name^", "a_content","a_trailer+"],
                     Self::append,
                     Some(
-                        "Append contents to a macro. If the macro doesn't exist, yields error
+"Append contents to a macro. If the macro doesn't exist, yields error
 
-- If given a \"trailer\", the macro checks if target macro has a trailer and append if not.
+- If given a \"trailer\", the macro checks if target macro has a trailer and 
+append if not.
 - If a macro body is empty, trailer is not appended
 
 # NOT deterred
@@ -73,7 +74,8 @@ $assert($arr(),first,second)".to_string(),
                     "EB",
                     ESR,
                     DeterredMacroMap::escape_blanks,
-                    Some("Escape all following blanks until not. This can only be invoked at first level
+                    Some(
+"Escape all following blanks until not. This can only be invoked at first level
 
 # NOT deterred
 
@@ -108,13 +110,13 @@ $assert($path(a,b,c),$exec(path,a,b,c))".to_string()),
                     "fassert",
                     ["a_expr"],
                     DeterredMacroMap::assert_fail,
-                    Some("Assert succeedes when text expansion yields error
+                    Some("Assert succeeds when text expansion yields error
 
 # NOT deterred
 
 # Arguments
 
-- a_expr: Expression to audit
+- a_expr: An expression to audit
 
 # Example
 
@@ -183,7 +185,8 @@ $assert(a+b+c+,$foreach($:()+,a,b,c))".to_string(),
                     "forline",
                     ["a_body","a_lines^"],
                     DeterredMacroMap::forline,
-                    Some("Loop around given lines separated by newline chraracter. 
+                    Some(
+"Loop around given lines separated by newline chraracter. 
 
 An iterated value is bound to macro \":\"
  
@@ -217,7 +220,8 @@ An iterated value is bound to macro \":\"
 
 1. a_min  : Expanded on time
 2. a_max  : Expanded on time
-3. a_body : Creates a range of numbers from min+max pair, and expanded by per item.
+3. a_body : Creates a range of numbers from min+max pair, and expanded by per 
+item.
 
 # Arguments
 
@@ -236,7 +240,9 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
                     "spread",
                     ["a_macro_name^", "a_csv_value^"],
                     Self::spread_data,
-                    Some("Execute a macro multiple times with given data chunk. Each csv line represent arguments for a macro
+                    Some(
+"Execute a macro multiple times with given data chunk. Each csv line represents 
+an argument for a macro
 
 # NOT Deterred
 
@@ -267,7 +273,7 @@ $assert=(
                     ["a_cond?^", "a_if_expr"],
                     DeterredMacroMap::if_cond,
                     Some(
-                        "Check condition and then execute the expression if the condition is true
+"Check condition and then execute an expression if the condition is true
 
 # Expansion order
 
@@ -276,8 +282,8 @@ $assert=(
 
 # Arguments
 
-- a_cond    : A condition ( trimmed )
-- a_if_expr : Expression to expand if the condition is true
+- a_cond    : A condition to audit ( trimmed )
+- a_if_expr : An expression to expand if the condition is true
 
 # Example
 
@@ -292,7 +298,7 @@ $assert(I'm true,$if(true,I'm true))".to_string(),
                     ["a_cond?^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifelse,
                     Some(
-                        "Check condition and execute different expressions by the condition
+"Check condition and execute a different expression by the condition
 
 # Expansion order
 
@@ -302,9 +308,9 @@ $assert(I'm true,$if(true,I'm true))".to_string(),
 
 # Arguments
 
-- a_cond      : A condition ( trimmed )
-- a_if_expr   : Expression to expand if the condition is true
-- a_else_expr : Expression to expand if the condition is false
+- a_cond      : A condition to audit ( trimmed )
+- a_if_expr   : An expression to expand if the condition is \"true\"
+- a_else_expr : An expression to expand if the condition is \"false\"
 
 # Example
 
@@ -319,7 +325,7 @@ $assert(I'm false,$ifelse(false,I'm true,I'm false))".to_string(),
                     "ifdef",
                     ["a_macro_name^", "a_if_expr"],
                     DeterredMacroMap::ifdef,
-                    Some("Execute expression if macro is defined
+                    Some("Execute an expression if macro is defined
 
 # Expansion order
 
@@ -329,7 +335,7 @@ $assert(I'm false,$ifelse(false,I'm true,I'm false))".to_string(),
 # Arguments
 
 - a_macro_name : A macro name to check ( trimmed )
-- a_if_expr    : Expression to expand if the macro is defined
+- a_if_expr    : An expression to expand if the macro is defined
 
 # Example
 
@@ -342,7 +348,8 @@ $assert(I'm defined,$ifdef(define,I'm defined))".to_string()),
                     "ifdefel",
                     ["a_macro_name^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifdefel,
-                    Some("Execute expressions whether macro is defined or not
+                    Some(
+"Execute an expression by whether macro is defined or not
 
 # Expansion order
 
@@ -353,8 +360,8 @@ $assert(I'm defined,$ifdef(define,I'm defined))".to_string()),
 # Arguments
 
 - a_macro_name : A macro name to check ( trimmed )
-- a_if_expr    : Expression to expand if the macro is defined
-- a_else_epxr  : Expression to expand if the macro is NOT defined
+- a_if_expr    : An expression to expand if the macro is defined
+- a_else_epxr  : An expression to expand if the macro is NOT defined
 
 # Example
 
@@ -368,7 +375,9 @@ $assert(I'm NOT defined,$ifdefel(defuo,I'm defined,I'm NOT defined))".to_string(
                     "logm",
                     ["a_macro_name^"],
                     Self::log_macro_info,
-                    Some("Log a macro information. Either print a macro body of local or runtime macros.
+                    Some(
+"Log a macro information. Either print a macro body of a local or a runtime 
+macro.
 
 # NOT deterred
 
@@ -388,9 +397,12 @@ $logm(test)".to_string()),
                     "que",
                     ["a_expr"],
                     DeterredMacroMap::queue_content,
-                    Some("Que expressions. Queued expressions are expanded when the macro finishes
+                    Some(
+"Que an expression. Queued expressions are expanded when the macro finishes
 
-Use que macro when a macro does operations that do not return a string AND you need to make sure the operation should happen only after all string manipulation ended. Halt is queued by default.
+Use a que macro when macros do operations that do not return a string AND you 
+need to make sure the operation should happen only after all string manipulation 
+ended. Halt is queued by default.
 
 Que does not evalute inner contents and simply put expression into a queue.
 
@@ -398,7 +410,7 @@ Que does not evalute inner contents and simply put expression into a queue.
 
 # Arguments
 
-- a_expr : Expression to queue
+- a_expr : An expression to queue
 
 # Example
 
@@ -413,7 +425,9 @@ $que(halt(false))".to_string()),
                     DeterredMacroMap::if_queue_content,
                     Some("If true, then queue expressions
 
-Use que macro when a macro does operations that do not return a string AND you need to make sure the operation should happen only after all string manipulation ended. Halt is queued by default.
+Use a que macro when macros do operations that do not return a string AND you 
+need to make sure the operation should happen only after all string manipulation 
+ended. Halt is queued by default.
 
 Que does not evalute inner contents and simply put expression into a queue.
 
@@ -425,7 +439,7 @@ Que does not evalute inner contents and simply put expression into a queue.
 # Arguments
 
 - a_bool : A condition [boolean] ( trimmed )
-- a_expr : Expression to queue
+- a_expr : An expression to queue
 
 # Example
 
@@ -446,7 +460,7 @@ $ifque(true,halt(false))".to_string()),
 
 # Arguments
 
-- a_literal_expr : Expression to strip
+- a_literal_expr : An expression to strip
 
 # Example
 
@@ -466,7 +480,8 @@ $strip(\\*1,2,3*\\)".to_string()),
                     Some(
                         "Read from a file and paste into a file
 
-Readto can be only executed on first level therefore readto cannot be used inside other macros
+Readto can be only executed on first level therefore readto cannot be used 
+inside other macros
 
 # Auth : FIN + FOUT
 
@@ -493,7 +508,8 @@ $readto(from.txt,into.txt)"
                     Some(
                         "Read from a file
 
-Readin can be only executed on first level therefore readin cannot be used inside other macros
+Readin can be only executed on first level therefore readin cannot be used 
+inside other macros
 
 # Auth : FIN
 
@@ -517,7 +533,7 @@ $readto(from.txt,into.txt)"
                     ["a_env_name^", "a_if_expr"],
                     DeterredMacroMap::ifenv,
                     Some(
-                        "Execute expression if an environment variable is set
+                        "Execute an expression if an environment variable is set
 
 # Auth : ENV
 
@@ -528,8 +544,8 @@ $readto(from.txt,into.txt)"
 
 # Arguments
 
-- a_env_name   : An environment variable ( trimmed )
-- a_if_expr    : Expression to expand if env exists
+- a_env_name   : An environment variable to check ( trimmed )
+- a_if_expr    : An expression to expand if env exists
 
 # Example
 
@@ -545,7 +561,7 @@ $assert(I'm alive,$ifenv(HOME,I'm alive))"
                     ["a_env_name^", "a_if_expr", "a_else_expr"],
                     DeterredMacroMap::ifenvel,
                     Some(
-                        "Execute expressions by whether environment variable is set or not
+                        "Execute an expression by whether environment variable is set or not
 
 # Auth : ENV
 
@@ -558,9 +574,9 @@ $assert(I'm alive,$ifenv(HOME,I'm alive))"
 
 # Arguments
 
-- a_env_name   : An environment variable ( trimmed )
-- a_if_expr    : Expression to expand if env exists
-- a_else_expr  : Expression to expand if env doesn't exist
+- a_env_name   : An environment variable to check ( trimmed )
+- a_if_expr    : An expression to expand if env exists
+- a_else_expr  : An expression to expand if env doesn't exist
 
 # Example
 

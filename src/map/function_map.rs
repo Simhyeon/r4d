@@ -1,7 +1,7 @@
 //! # Function macro module
 //!
-//! Function macro module includes struct and methods related to function macros which are technically function
-//! pointers.
+//! Function macro module includes struct and methods related to function macros
+//! which are technically function pointers.
 
 use crate::auth::AuthType;
 use crate::consts::{ESR, LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER};
@@ -76,7 +76,8 @@ impl FunctionMacroMap {
                     ["a_pipe_name?^"],
                     Self::get_pipe,
                     Some(
-                        "Get piped value. This truncates original value by default if not configured
+"Get a piped value. This truncates an original value by default if not 
+configured other
 
 # Arguments
 
@@ -304,7 +305,7 @@ $assert(\\*,*\\,$comma())".to_string()),
 # Arguments
 
 - a_macro_name   : A macro name to use as counter ( trimmed )
-- a_counter_type : A counter opration type. Dfault is plus [ \"plus\", \"minus\" ] ( trimmed )
+- a_counter_type : A counter opration type. Default is plus [ \"plus\", \"minus\" ] ( trimmed )
 
 # Example
 
@@ -383,7 +384,9 @@ $assert($countl($chomp($lines())),3)".to_string()),
                     "clear",
                     ESR,
                     Self::clear,
-                    Some("Clear volatile macros. This macro is intended to be used when hygiene mode is enabled and user wants to clear volatiles immediately without waiting.
+                    Some(
+"Clear volatile macros. This macro is intended to be used when hygiene mode is 
+enabled and user wants to clear volatiles immediately without waiting.
 
 # Example
 
@@ -479,7 +482,9 @@ $assert(3,$countl(1
                     "dnl",
                     ESR,
                     Self::deny_newline,
-                    Some("Deny a next newline. This technically squashes following two consequent line_ending into a single one
+                    Some(
+"Deny a next newline. This technically squashes following two consequent 
+line_ending into a single one
 
 - dnl doesn't deny right next newlie but a newline after a newline.
 
@@ -514,7 +519,9 @@ $assert($first(),$empty())".to_string()),
                     "docu",
                     ["a_macro_name^", "a_doc"],
                     Self::document,
-                    Some("Append documents(description) to a macro. You cannot directly retreive documentation from macros but by --man flag.
+                    Some(
+"Append documents(description) to a macro. You cannot directly retreive 
+documentation from macros but by --man flag.
 
 # Arguments
 
@@ -596,7 +603,7 @@ $exit()".to_string()),
 
 # Arguments
 
-- a_absolute : Whether to print an input path as absolute. Default is false [boolean] ( trimmed, optional )
+- a_absolute : Whether to print an input path as absolute. Default is false. [boolean] ( trimmed, optional )
 
 # Example
 
@@ -700,7 +707,9 @@ $assert(true,$find(^abc,abcde))".to_string()),
                     "findm",
                     ["a_expr", "a_source"],
                     Self::find_multiple_occurence,
-                    Some("Get occurrences of expression from source. This returns 0 if there are no occurrences.
+                    Some(
+"Get occurrences of expression from source. This returns 0 if there are no 
+occurrences.
 
 # Return : Unsigned integer
 
@@ -776,7 +785,8 @@ c))".to_string()),
                     "grep",
                     ["a_expr", "a_array"],
                     Self::grep_array,
-                    Some("Extract matched items from given array. This returns all items as array
+                    Some(
+"Extract matched items from given array. This returns all items as array
 
 # Arguments
 
@@ -794,7 +804,9 @@ $assert(\\*a,b,c*\\,$grep([a-z],a,b,c,1,2))".to_string()),
                     "grepl",
                     ["a_expr", "a_lines"],
                     Self::grep_lines,
-                    Some("Extract matched lines from given lines. This returns all lines that matches given expression
+                    Some(
+"Extract matched lines from given lines. This returns all lines that matches 
+a given expression
 
 # Arguments
 
@@ -814,7 +826,8 @@ $assert(2,$countl($grepl(Cargo,$syscmd(ls))))".to_string()),
                     Self::halt_relay,
                     Some("Halt relaying
 
-- NOTE : Halt is automatically queued by default. Feed an optional argument to configure this behaviour
+- NOTE : Halt is automatically queued by default. Feed an optional argument to 
+configure this behaviour
 - $halt(false) == $halt()
 - use $halt(true) to immediately halt
 
@@ -873,7 +886,8 @@ c)))".to_string()),
                     Self::toggle_hygiene,
                     Some("Toggle hygiene mode. This enables macro hygiene.
 
-- On \"macro\" hygiene, every newly defined runtime macro is cleared after a first level macro invocation.
+- On \"macro\" hygiene, every newly defined runtime macro is cleared after a 
+first level macro invocation.
 
 # Arguments
 
@@ -940,7 +954,8 @@ $assert(ef,$index(2,ab,cd,ef))".to_string()),
                     Self::import_frozen_file,
                     Some("Import a frozen file at runtime
 
-- Import always include the macros as non-volatile form, thus never cleared unless accessed from library
+- Import always include the macros as non-volatile form, thus never cleared 
+unless accessed from library
 
 # Arguments
 
@@ -1014,7 +1029,8 @@ $assert($len(가나다),$len(ABC))".to_string()),
                     "let",
                     ["a_macro_name^", "a_value^"],
                     Self::bind_to_local,
-                    Some("Bind a local macro. Every local macro gets removed after a first level macro expansion ends.
+                    Some(
+"Bind a local macro. Every local macro gets removed after a macro expansion ends
 
 # Arguments
 
@@ -1040,7 +1056,9 @@ $fassert($lc())".to_string()),
                     "letr",
                     ["a_macro_name^", "a_value"],
                     Self::bind_to_local_raw,
-                    Some("Bind a local macro with raw value. Every local macro gets removed after a first level macro expansion ends.
+                    Some(
+"Bind a local macro with raw value. Every local macro gets removed after a macro 
+expansion ends.
 
 # Arguments
 
@@ -1102,7 +1120,8 @@ $log($value_i_want_to_check^())".to_string()),
                     Self::log_error_message,
                     Some("Log an error message to console
 
-- This prints error in non-breaking manner. Even in strict mode, this doesn't occur a panick.
+- This prints error in non-breaking manner. Even in strict mode, this doesn't 
+trigger a panic.
 
 # Arguments
 
@@ -1251,7 +1270,9 @@ $nassert(1,2)".to_string()),
                     "not",
                     ["a_boolean?^"],
                     Self::not,
-                    Some("Returns a negated value of a given boolean. Yields error when a given value is not a boolean
+                    Some(
+"Returns a negated value of a given boolean. Yields error when a given value is 
+not a boolean
 
 # Return : boolean
 
@@ -1273,7 +1294,9 @@ $assert(true,$not(0))".to_string()),
                     "num",
                     ["a_text"],
                     Self::get_number,
-                    Some("Extract number parts from given text. If there are multiple numbers, only extract the first
+                    Some(
+"Extract number parts from given text. If there are multiple numbers, only 
+extract the first
 
 # Arguments
 
@@ -1291,7 +1314,8 @@ $assert(30,$num(30k/h for 3 hours))".to_string()),
                     "nl",
                     ["a_amount+^"],
                     Self::newline,
-                    Some("Print platform specific newlines. Its behaviour can be configured.
+                    Some(
+"Print platform specific newlines. Its behaviour can be configured.
 
 # Arguments
 
@@ -1349,7 +1373,8 @@ $panic(This should not be reached)".to_string()),
                     Self::get_parent,
                     Some("Get a parent from a given path.
 
-- NOTE : This yields an error if a path is a root and will return an empty value, but not a none value if a path is a single node.
+- NOTE : This yields an error if a path is a root and will return an empty 
+value, but not a none value if a path is a single node.
 
 # Return : path
 
@@ -1395,9 +1420,12 @@ $assert(a/b,$path(a/,b))".to_string()),
                     "pause",
                     ["a_pause?^"],
                     Self::pause,
-                    Some("Pause a macro expansion from invocation. Paused processor will only expand $pause(false)
+                    Some(
+"Pause macro expansions from the invocation. Paused processor will only expand 
+$pause(false)
 
-- NOTE : Pause is not flow control but a processor state, thus the state will sustain for the whole processing.
+- NOTE : Pause is not flow control but a processor state, thus the state will 
+sustain for the whole processing.
 
 # Arguments
 
@@ -1477,7 +1505,9 @@ $assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
                     "relay",
                     ["a_target_type^", "a_target^"],
                     Self::relay,
-                    Some("Start relaying to a target. Relay redirects all following text to the relay target.
+                    Some(
+"Start relaying to a target. Relay redirects all following text to the relay 
+target.
 
 # Auth : FOUT is required for relay target \"file\" and \"temp\"
 
@@ -1538,7 +1568,9 @@ $assert(Hello Rust,$regex(World,Rust,Hello World))".to_string()),
                     Some("Register a regular expression
 
 - NOTE : A registered name will not be able to be matched directly
-- Every regex operation creates regex cache, while registered expression will not be cached but saved permanently. Unregistered caches will be cleared if certain capacity reaches.
+- Every regex operation creates regex cache, while registered expression will 
+not be cached but saved permanently. Unregistered caches will be cleared if 
+certain capacity reaches.
 
 # Arguments
 
@@ -1619,7 +1651,9 @@ $assert(DOMO,$demo())".to_string()),
                     "source",
                     ["a_file^"],
                     Self::source_static_file,
-                    Some("Source an env file. The sourced file is eagerly expanded (As if it was static defined)
+                    Some(
+"Source an env file. The sourced file is eagerly expanded (As if it was static 
+defined)
 
 Syntax of source-able file is same with .env file
 
@@ -1699,7 +1733,8 @@ $assert(    ,$space(4))".to_string()),
                     "static",
                     ["a_macro_name^", "a_expr^"],
                     Self::define_static,
-                    Some("Create a static macro. A static macro is eagerly expanded unlike define
+                    Some(
+"Create a static macro. A static macro is eagerly expanded unlike define
 
 # Arguments
 
@@ -1723,7 +1758,9 @@ $assert(0,$stt())".to_string()),
                     "staticr",
                     ["a_macro_name^", "a_value"],
                     Self::define_static_raw,
-                    Some("Create a static macro with raw value. A static macro is eagerly expanded unlike define
+                    Some(
+"Create a static macro with raw value. A static macro is eagerly expanded unlike 
+define
 
 # Arguments
 
@@ -1845,7 +1882,8 @@ c))".to_string()),
                     "table",
                     ["a_table_form^", "a_csv_value^"],
                     Self::table,
-                    Some("Construct a formatted table. Available table forms are \"github,html,wikitext\"
+                    Some(
+"Construct a formatted table. Available table forms are \"github,html,wikitext\"
 
 # Arguments
 
@@ -1888,7 +1926,8 @@ $assert(HellO_WOrld,$tr(-how,_HOW,hello-world))".to_string()),
                     "trim",
                     ["a_text"],
                     Self::trim,
-                    Some("Trim text. This removes leading and trailing newlines, tabs and spaces
+                    Some(
+"Trim text. This removes leading and trailing newlines, tabs and spaces
 
 # Arguments
 
@@ -1929,10 +1968,12 @@ $assert(Upper$nl()Middle$nl()Last,$triml(    Upper
                     Some("Triml with given amount
 
 - Trims by line but with given amount.
-- If given an integer, it will try to trim blank characters as much as given amount
+- If given an integer, it will try to trim blank characters as much as given 
+amount
 - min trims by minimal amount that can be applied to total lines
 - max acts same as triml
-- Tab character is treated as a single character. Don't combine spaces and tabs for this macro
+- Tab character is treated as a single character. Don't combine spaces and tabs 
+for this macro
 
 # Arguments
 
@@ -2032,7 +2073,8 @@ $assert(ABCDE,$upper(aBcDe))".to_string()),
 Define should follow handful of rules
 
 - Macro name, parameter name should start non number characters.
-- Consequent characters for macro names, parameter names can be underscore or any characters except special characters.
+- Consequent characters for macro names, parameter names can be underscore or 
+any characters except special characters.
 - Parameters starts with comma and should be separated by whitespaces
 - Macro body starts with equal(=) characters
 
@@ -2224,8 +2266,10 @@ $temout(Content)"
                     Some(
                         "Change a temporary file path
 
-- NOTE : A temporary file name is merged to a temporary directory. You cannot set a temporary file outside of a temporary directory.
-- This macro needs FOUT permission because it creates a temporary file if the file doesn't exist
+- NOTE : A temporary file name is merged to a temporary directory. You cannot 
+set a temporary file outside of a temporary directory.
+- This macro needs FOUT permission because it creates a temporary file if the 
+file doesn't exist
 
 # Auth: FOUT
 
@@ -2280,7 +2324,7 @@ $assert(/tmp/rad.txt,$temp())"
 # Arguments
 
 - a_filename : A file name to read ( trimmed )
-- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed,optional )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
 
 $include(file_path)
 $include(file_path, true)"
