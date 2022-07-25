@@ -12,7 +12,7 @@ use crate::processor::Processor;
 use crate::script;
 #[cfg(feature = "debug")]
 use crate::utils::Utils;
-use crate::{RadError, RadResult};
+use crate::{Hygiene, RadError, RadResult};
 #[cfg(feature = "signature")]
 use std::fmt::Write as _;
 use std::io::Read;
@@ -100,6 +100,10 @@ impl<'cli> RadCli<'cli> {
             .melt_files(&self.rules)?
             .discard(args.is_present("discard"));
 
+        // Early return-able procedures
+        // - Help
+        // - Compile
+
         // Help command
         #[cfg(feature = "signature")]
         if let Some(name) = args.value_of("manual") {
@@ -127,6 +131,19 @@ impl<'cli> RadCli<'cli> {
             }
             return Ok(());
         }
+
+        if args.is_present("compile") {
+            if let Some(sources) = args.values_of("INPUT") {
+                let sources = sources.into_iter().map(Path::new).collect::<Vec<_>>();
+                processor
+                    .compile_sources(&sources, self.write_to_file.as_ref().map(|p| p.as_ref()))?;
+            } else {
+                eprintln!("No input sources to compile.")
+            }
+            return Ok(());
+        }
+
+        // Compile command
 
         if let Some(file) = self.write_to_file.as_ref() {
             processor = processor.write_to_file(file)?;
@@ -167,8 +184,6 @@ impl<'cli> RadCli<'cli> {
         // Process type related state changes
         if args.value_of("freeze").is_some() {
             self.processor.set_freeze_mode();
-        } else if args.value_of("compile").is_some() {
-            self.processor.set_compile_mode();
         }
 
         // print permission
@@ -200,7 +215,19 @@ impl<'cli> RadCli<'cli> {
                 } else {
                     let src_as_file = Path::new(src);
                     if src_as_file.exists() {
-                        match self.processor.process_file(src_as_file) {
+                        // If file extension is .r4c extract from it
+                        let result = if src_as_file.extension().unwrap_or_default() == "r4c"
+                            || args.is_present("script")
+                        {
+                            self.processor.set_hygiene(Hygiene::Input);
+                            let result = self.processor.process_static_script(src_as_file);
+                            self.processor.toggle_hygiene(false);
+                            result
+                        } else {
+                            self.processor.process_file(src_as_file)
+                        };
+
+                        match result {
                             // Exit is a sane behaviour and should not exit from whole process
                             Ok(_) => {
                                 self.processor.reset_flow_control();
@@ -339,6 +366,9 @@ impl<'cli> RadCli<'cli> {
             .arg(Arg::new("literal")
                 .long("literal")
                 .help("Don't interpret input source as file"))
+            .arg(Arg::new("script")
+                .long("script")
+                .help("Interpret source files as scripts"))
             .arg(Arg::new("out")
                 .short('o')
                 .long("out")
@@ -434,7 +464,10 @@ impl<'cli> RadCli<'cli> {
                 .long("freeze")
                 .takes_value(true)
                 .value_name("FILE")
-                .help("Freeze macros into a single file"));
+                .help("Freeze macros into a single file"))
+            .arg(Arg::new("compile")
+                .long("compile")
+                .help("Compile macros into a single static file"));
 
         #[cfg(feature = "signature")]
         let app = app
