@@ -191,6 +191,8 @@ impl<'cli> RadCli<'cli> {
                 ));
             }
             self.processor.set_freeze_mode();
+        } else if args.is_present("dryrun") {
+            self.processor.set_dry_mode();
         }
 
         // print permission
@@ -477,6 +479,9 @@ impl<'cli> RadCli<'cli> {
                 .short('f')
                 .long("freeze")
                 .help("Freeze macros into a single file"))
+            .arg(Arg::new("dryrun")
+                .long("dryrun")
+                .help("Dry run macros"))
             .arg(Arg::new("package")
                 .long("package")
                 .help("Package sources into a single static file"));

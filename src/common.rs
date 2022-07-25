@@ -47,7 +47,7 @@ impl LocalMacro {
 }
 
 /// Macro framgent that processor saves fragmented information of the mcaro invocation
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct MacroFragment {
     pub whole_string: String,
     pub name: String,
@@ -263,6 +263,8 @@ pub enum ProcessType {
     Expand,
     /// Freeze definitions
     Freeze,
+    /// Dry run mode
+    Dry,
 }
 
 /// Types of a macros

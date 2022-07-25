@@ -793,6 +793,13 @@ impl<'processor> Processor<'processor> {
         self.state.hygiene = hygiene;
     }
 
+    /// Set to dry run mode
+    pub fn set_dry_mode(&mut self) {
+        self.write_option = WriteOption::Discard;
+        self.state.process_type = ProcessType::Dry;
+        self.state.auth_flags.clear();
+    }
+
     /// Set to freeze mode
     pub fn set_freeze_mode(&mut self) {
         self.write_option = WriteOption::Discard;
@@ -1171,11 +1178,12 @@ impl<'processor> Processor<'processor> {
     ///     .expect("Failed to process a string");
     /// ```
     pub fn process_string(&mut self, content: &str) -> RadResult<Option<String>> {
-        // Set name as string
-        self.set_input_stdin()?;
-
+        self.logger
+            .start_new_tracker(TrackType::Input("String".to_string()));
         let mut reader = content.as_bytes();
         self.process_buffer(&mut reader, None, false)?;
+
+        // This method stops last tracker, thus explicit one is not needed
         self.organize_and_clear_cache()
     }
 
@@ -1408,11 +1416,7 @@ impl<'processor> Processor<'processor> {
     // <DEBUG>
 
     /// Check if given macro is local macro or not
-    ///
-    /// This is used when step debug command is to be executed.
-    /// Without chekcing locality, step will go inside local binding macros
-    #[cfg(feature = "debug")]
-    fn is_local(&self, mut level: usize, name: &str) -> bool {
+    fn is_local_macro(&self, mut level: usize, name: &str) -> bool {
         while level > 0 {
             if self.map.local.contains_key(&Utils::local_name(level, name)) {
                 return true;
@@ -1781,7 +1785,7 @@ impl<'processor> Processor<'processor> {
         }
         let args: String;
         // Preprocess only when macro is not a deterred macro
-        if !self.map.is_deterred_macro(name) {
+        if !self.map.is_deterred_macro(name) || self.state.process_type == ProcessType::Dry {
             args = self.parse_chunk_args(level, name, &raw_args)?;
             // This parses and processes arguments
             // and macro should be evaluated after
@@ -1862,6 +1866,11 @@ impl<'processor> Processor<'processor> {
         // Find deterred macro
         else if self.map.is_deterred_macro(name) {
             if let Some(func) = self.map.deterred.get_deterred_macro(name) {
+                // On dry run, macro is not expanded but only checks if found macro exists
+                if self.state.process_type == ProcessType::Dry {
+                    return Ok(None);
+                }
+
                 let final_result = func(&args, level, self)?;
                 // TODO
                 // Make parse logic consistent, not defined by delarator
@@ -1872,6 +1881,11 @@ impl<'processor> Processor<'processor> {
 
         // Find function macro
         if self.map.function.contains(name) {
+            // On dry run, macro is not expanded but only checks if found macro exists
+            if self.state.process_type == ProcessType::Dry {
+                return Ok(None);
+            }
+
             // Func always exists, because contains succeeded.
             let func = self.map.function.get_func(name).unwrap();
             //let final_result = func(&args, self)?;
@@ -1886,7 +1900,16 @@ impl<'processor> Processor<'processor> {
         // No macros found to evaluate
         else {
             let err = RadError::InvalidMacroName(format!("No such macro name : \"{}\"", &name));
-            Err(err)
+
+            // On Dry mode, invalid macro name is not an error but a warning.
+            // Because macros are not expanded, it is unsure if it is an error or not, thus rad
+            // simply prints warning
+            if self.state.process_type == ProcessType::Dry {
+                self.log_warning(&err.to_string(), WarningType::Sanity)?;
+                Ok(None)
+            } else {
+                Err(err)
+            }
         }
     }
 
@@ -1976,10 +1999,6 @@ impl<'processor> Processor<'processor> {
                 return Err(RadError::StrictPanic);
             }
 
-            if std::env::var("PRINT_DEFINE_BODY").is_ok() {
-                dbg!(&body);
-            }
-
             if frag.trim_input {
                 body = trim!(&body
                     .lines()
@@ -1991,6 +2010,18 @@ impl<'processor> Processor<'processor> {
 
             self.map
                 .register_runtime(&name, &args, &body, self.state.hygiene)?;
+
+            // Dry run if such mode is set
+            if self.state.process_type == ProcessType::Dry {
+                let err = RadError::InvalidArgument(format!("Macro \"{}\" has invalid body", name));
+                let res = self
+                    .process_string(&format!("${}({})", name, args))
+                    .map_err(|_| &err);
+
+                if res.is_err() {
+                    self.log_warning(&err.to_string(), WarningType::Sanity)?;
+                }
+            }
         } else {
             let name = if frag.args.contains(',') {
                 frag.args.split(',').collect::<Vec<&str>>()[0]
@@ -2284,6 +2315,7 @@ impl<'processor> Processor<'processor> {
                 ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
             }
         }
+        // Set states
         self.state.consume_newline = true;
         #[cfg(feature = "debug")]
         self.check_debug_macro(frag, level)?;
@@ -2422,7 +2454,7 @@ impl<'processor> Processor<'processor> {
         // Debug command after macro evaluation
         // This goes to last line and print last line
         #[cfg(feature = "debug")]
-        if !self.is_local(level + 1, &frag.name) {
+        if !self.is_local_macro(level + 1, &frag.name) {
             // Only when macro is not a local macro
             self.check_debug_macro(frag, level)?;
         }
