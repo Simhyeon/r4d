@@ -49,6 +49,7 @@
 //! page](https://github.com/simhyeon/r4d/blob/master/docs/usage.md) or in
 //! [Processor](crate::Processor)
 
+mod compile;
 mod error;
 mod processor;
 
