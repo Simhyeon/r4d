@@ -1,4 +1,5 @@
 use crate::auth::{AuthFlags, AuthState, AuthType};
+use crate::compile::StaticScript;
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
@@ -37,7 +38,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
-use std::io::{self, BufReader, Write};
+use std::io::{self, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 
 lazy_static! {
@@ -715,26 +716,6 @@ impl<'processor> Processor<'processor> {
 
         Ok(self)
     }
-
-    // This is not included in docs.rs documentation becuase... is it necessary?
-    // I don't really remember when this method was added at the first time.
-    /// Melt rule as literal input source, or say from byte array
-    ///
-    /// This always melt file into non-volatile form, which means hygiene doesn't affect melted
-    /// macros.
-    ///
-    /// ```rust
-    /// let source = b"Some frozen macro definition";
-    /// let proc = r4d::Processor::empty()
-    ///     .rule_literal(source);
-    /// ```
-    pub fn rule_literal(mut self, literal: &[u8]) -> RadResult<Self> {
-        let mut rule_file = RuleFile::new(None);
-        rule_file.melt_literal(literal)?;
-        self.map.runtime.extend_map(rule_file.rules, Hygiene::None);
-        Ok(self)
-    }
-
     /// Open authorization of processor
     ///
     /// Some macros require authorization be granted by user. There are several authorization types
@@ -817,6 +798,45 @@ impl<'processor> Processor<'processor> {
     // <PROCESS>
     //
 
+    // This is not included in docs.rs documentation becuase... is it necessary?
+    // I don't really remember when this method was added at the first time.
+    /// Melt rule as literal input source, or say from byte array
+    ///
+    /// This always melt file into non-volatile form, which means hygiene doesn't affect melted
+    /// macros.
+    ///
+    /// ```rust
+    /// let source = b"Some frozen macro definition";
+    /// let proc = r4d::Processor::empty();
+    /// proc.melt_literal(source);
+    /// ```
+    pub fn melt_literal(&mut self, literal: &[u8]) -> RadResult<()> {
+        let mut rule_file = RuleFile::new(None);
+        rule_file.melt_literal(literal)?;
+        self.map.runtime.extend_map(rule_file.rules, Hygiene::None);
+        Ok(())
+    }
+
+    pub fn compile_sources<T: AsRef<Path>>(
+        &self,
+        sources: &[T],
+        out_file: Option<T>,
+    ) -> RadResult<()> {
+        let mut body = Vec::new();
+        for file in sources {
+            body.extend(std::fs::read(file)?);
+        }
+
+        let mut static_script = StaticScript::new(self, body)?;
+        let path = if let Some(file) = out_file {
+            file.as_ref().to_owned()
+        } else {
+            PathBuf::from("out.r4c")
+        };
+        static_script.compile(Some(&path))?;
+        Ok(())
+    }
+
     /// Import(melt) a frozen file
     ///
     /// This always melt file into non-volatile form
@@ -865,12 +885,6 @@ impl<'processor> Processor<'processor> {
             self.map.clear_runtime_macros(true);
         }
         self.state.hygiene = hygiene;
-    }
-
-    /// Set to compile mode
-    pub fn set_compile_mode(&mut self) {
-        self.write_option = WriteOption::Discard;
-        self.state.process_type = ProcessType::Compile;
     }
 
     /// Set to freeze mode
@@ -1053,6 +1067,12 @@ impl<'processor> Processor<'processor> {
         // File path validity is checked by freeze method
         RuleFile::new(Some(self.map.runtime.macros.clone())).freeze(path.as_ref())?;
         Ok(())
+    }
+
+    /// Serialize rule files into a bincode
+    pub fn serialize_rules(&self) -> RadResult<Vec<u8>> {
+        // File path validity is checked by freeze method
+        RuleFile::new(Some(self.map.runtime.macros.clone())).serialize()
     }
 
     /// Add a new macro as an extension
@@ -1312,6 +1332,43 @@ impl<'processor> Processor<'processor> {
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
+        self.process_buffer(&mut reader, backup, false)?;
+        self.organize_and_clear_cache()
+    }
+
+    /// Process contents from a static script
+    ///
+    /// ```no_run
+    /// use std::path::Path;
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.process_static_script(Path::new("source.r4c"))
+    ///     .expect("Failed to process a script");
+    /// ```
+    pub fn process_static_script(&mut self, path: impl AsRef<Path>) -> RadResult<Option<String>> {
+        if path.as_ref().is_dir() {
+            return Err(RadError::InvalidFile(format!(
+                "File \"{}\" is not a readable file",
+                path.as_ref().display()
+            )));
+        }
+
+        // Sandboxed environment, backup
+        let backup = if self.state.sandbox {
+            Some(self.backup())
+        } else {
+            None
+        };
+
+        // Set file as name of given path
+        self.set_file(path.as_ref().to_str().unwrap())?;
+
+        let file_stream = File::open(path)?;
+        let mut reader = BufReader::new(file_stream);
+        let mut source = vec![];
+        reader.read_to_end(&mut source)?;
+        let static_script = StaticScript::decompile(source)?;
+        let mut reader = BufReader::new(&static_script.body[..]);
+        self.melt_literal(&static_script.header[..])?;
         self.process_buffer(&mut reader, backup, false)?;
         self.organize_and_clear_cache()
     }
@@ -1816,6 +1873,7 @@ impl<'processor> Processor<'processor> {
         }
         let args: String;
         // Preprocess only when macro is not a deterred macro
+        // Even deterred macro is "expanded" on compile mode
         if !self.map.is_deterred_macro(name) {
             args = self.parse_chunk_args(level, name, &raw_args)?;
             // This parses and processes arguments
