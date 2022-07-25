@@ -1,3 +1,21 @@
+# 3.0.0-rc.6
+
+**rad**
+
+-  BUG : Stdin input panicked
+-  CHG : MOdule changes
+-  CHG : Now static macro is not expanded
+-  ERG : Ditched cmp and added multiple comparision macros
+-  ERG : Now documentation has 80 caps on description.
+-  FET : Dry run
+-  FET : Freeze flag refactored
+-  FET : Packaging flag
+
+**rado**
+
+- FET : Package subcommand
+- FET : Execute subcommand
+
 # 3.0.0-rc.5
 
 **rad**
@@ -38,8 +56,6 @@
 **rado**
 
 - Edit in place flag
-
-
 
 # 3.0.0-rc.4
 

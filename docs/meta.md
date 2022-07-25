@@ -17,13 +17,8 @@ $todo_start()
 * [x] Macro ergonomics
 * [x] Library
 * [x] Bug fix
-* [ ] Feature
-    * [x] Refactor logger
-    * [x] New logger features
-        * [x] RAD_BACKTRACE option
-    * [x] Refactor debugger
-* [ ] Documentation
-    * [ ] change.md
+* [x] Feature
+* [x] Documentation
 * [ ] Test
     * [ ] Test hook macro documentaion
     * [ ] Decide when to push to 3.0
@@ -32,19 +27,6 @@ $todo_start()
 $todo_end()
 
 ### Changes
-
-* [x] BUG : Stdin yields error because input was not set
-* [x] ERGO : Cmp is ambiguous, Change it to better name with useful variants
-* [x] FET : Freeze refactor
-    - Disable non-declare macros in freezing mode. ( Define or static )
-    - Add new "set\_freeze\_mode" method
-    - Freeze reuses out option
-* [x] FET : Packaging
-* [x] Documentation : 80 char cap for description + if variant refactor
-* [x] Changed module name into common, relocated many common variants into
-  separate ones
-* [x] Now static macro is not expanded
-* [x] Feature : Dry run
 
 ### Macro ergonomics
 
@@ -64,13 +46,6 @@ whole parsing process, meh I don't think I can... Focus on define parsing.
 be the best idea. A bettter idea is to iterate and add slice from source.
 But it is true that such implementation is more trivial to maintain and
 extend with arguable performance boost.
-
-* [ ] Error handling, execution security
-* [ ] Warn about operational macros + document something
-
-* [x] Rad-wrapper binary
-    - Read as processed
-    - Edit ad raw
 
 * [ ] Make much more smaller binary file available as basic feature
     - Opt-lvel has huge effet (2.2M -> 1.8M)
@@ -766,3 +741,15 @@ critical
     * [x] File operation was able to write to self
     * [x] Fixed consume newline waas not properly respected
 
+* [x] BUG : Stdin yields error because input was not set
+* [x] ERGO : Cmp is ambiguous, Change it to better name with useful variants
+* [x] FET : Freeze refactor
+    - Disable non-declare macros in freezing mode. ( Define or static )
+    - Add new "set\_freeze\_mode" method
+    - Freeze reuses out option
+* [x] FET : Packaging
+* [x] Documentation : 80 char cap for description + if variant refactor
+* [x] Changed module name into common, relocated many common variants into
+  separate ones
+* [x] Now static macro is not expanded
+* [x] Feature : Dry run
