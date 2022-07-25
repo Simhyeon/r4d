@@ -1,5 +1,7 @@
 pub mod deterred_map;
 pub mod function_map;
+mod macro_map;
+pub(crate) use macro_map::MacroMap;
 #[cfg(feature = "hook")]
 pub mod hookmap;
 pub mod runtime_map;

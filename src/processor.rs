@@ -3,29 +3,29 @@ use crate::auth::{AuthFlags, AuthState, AuthType};
 use crate::common::DiffOption;
 #[cfg(not(feature = "wasm"))]
 use crate::common::FileTarget;
-use crate::common::ProcessType;
-use crate::common::RegexCache;
 #[cfg(feature = "signature")]
 use crate::common::SignatureType;
 use crate::common::{
-    CommentType, ErrorBehaviour, ExtMacroBuilder, ExtMacroType, FlowControl, Hygiene, LocalMacro,
-    MacroFragment, MacroMap, MacroType, ProcessInput, RadStorage, RelayTarget, RuleFile,
-    StorageOutput, UnbalancedChecker, WriteOption,
+    CommentType, ErrorBehaviour, FlowControl, Hygiene, LocalMacro, MacroFragment, MacroType,
+    ProcessInput, ProcessType, RegexCache, RelayTarget, RuleFile, UnbalancedChecker, WriteOption,
 };
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
 use crate::error::RadError;
+use crate::extension::{ExtMacroBuilder, ExtMacroType};
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};
 use crate::lexor::*;
 use crate::logger::TrackType;
 use crate::logger::{Logger, WarningType};
+use crate::map::MacroMap;
 use crate::package::StaticScript;
 use crate::runtime_map::RuntimeMacro;
 #[cfg(feature = "signature")]
 use crate::sigmap::SignatureMap;
+use crate::storage::{RadStorage, StorageOutput};
 use crate::trim;
 use crate::utils::Utils;
 use crate::DefineParser;

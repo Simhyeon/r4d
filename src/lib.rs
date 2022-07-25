@@ -71,20 +71,23 @@ pub(crate) mod common;
 pub(crate) mod consts;
 #[cfg(feature = "debug")]
 pub(crate) mod debugger;
+pub(crate) mod extension;
 pub(crate) mod formatter;
 pub(crate) mod lexor;
 pub(crate) mod logger;
+pub(crate) mod storage;
 #[macro_use]
 pub(crate) mod utils;
 
 pub use auth::AuthType;
-pub use common::{CommentType, DiffOption, Hygiene, RadResult, WriteOption};
-pub use common::{ExtMacroBuilder, MacroType, RadStorage, StorageOutput, StorageResult};
+pub use common::{CommentType, DiffOption, Hygiene, MacroType, RadResult, WriteOption};
 pub use error::RadError;
+pub use extension::ExtMacroBuilder;
 #[cfg(feature = "hook")]
 pub use hookmap::HookType;
 pub use logger::WarningType;
 pub use processor::Processor;
+pub use storage::{RadStorage, StorageOutput, StorageResult};
 
 // Optional
 

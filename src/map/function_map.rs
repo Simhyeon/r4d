@@ -4,13 +4,10 @@
 //! which are technically function pointers.
 
 use crate::auth::AuthType;
-use crate::common::MacroType;
-use crate::common::{
-    ErrorBehaviour, ExtMacroBody, ExtMacroBuilder, FlowControl, ProcessInput, RadResult,
-    RelayTarget,
-};
+use crate::common::{ErrorBehaviour, FlowControl, MacroType, ProcessInput, RadResult, RelayTarget};
 use crate::consts::{ESR, LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER};
 use crate::error::RadError;
+use crate::extension::{ExtMacroBody, ExtMacroBuilder};
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;

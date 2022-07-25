@@ -1,8 +1,6 @@
-use crate::common::{
-    ErrorBehaviour, ExtMacroBody, ExtMacroBuilder, FileTarget, FlowControl, MacroType, RadResult,
-    RelayTarget,
-};
+use crate::common::{ErrorBehaviour, FileTarget, FlowControl, MacroType, RadResult, RelayTarget};
 use crate::consts::ESR;
+use crate::extension::{ExtMacroBody, ExtMacroBuilder};
 use crate::formatter::Formatter;
 use crate::parser::GreedyState;
 use crate::trim;
