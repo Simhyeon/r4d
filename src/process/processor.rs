@@ -6,7 +6,7 @@ use crate::common::DiffOption;
 use crate::common::SignatureType;
 use crate::common::{
     CommentType, ErrorBehaviour, FlowControl, Hygiene, LocalMacro, MacroFragment, MacroType,
-    ProcessInput, ProcessType, RelayTarget, RuleFile, UnbalancedChecker, WriteOption,
+    ProcessInput, ProcessType, RelayTarget, WriteOption,
 };
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
@@ -34,6 +34,7 @@ use crate::{ArgParser, GreedyState};
 use cindex::Indexer;
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufReader, Read, Write};
@@ -2585,6 +2586,7 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// Log assertion message
     pub(crate) fn track_assertion(&mut self, success: bool) -> RadResult<()> {
         self.logger.alog(success)?;
         Ok(())
@@ -2596,13 +2598,13 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    /// Log error
+    /// Log error message
     pub(crate) fn log_error(&mut self, log: &str) -> RadResult<()> {
         self.logger.elog(log)?;
         Ok(())
     }
 
-    /// Log warning
+    /// Log warning message without line number
     pub(crate) fn log_warning_no_line(
         &mut self,
         log: &str,
@@ -2612,7 +2614,7 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    /// Log warning
+    /// Log warning message
     pub(crate) fn log_warning(&mut self, log: &str, warning_type: WarningType) -> RadResult<()> {
         self.logger.wlog(log, warning_type)?;
         Ok(())
@@ -2647,6 +2649,7 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// Check if processor has debug mode enabled
     #[cfg(feature = "debug")]
     pub(crate) fn is_debug(&self) -> bool {
         self.debugger.debug
@@ -2748,6 +2751,7 @@ impl<'processor> Processor<'processor> {
     // Function that is exposed for better end user's qualify of life
     // <EXT>
 
+    /// Get a macro manual string
     #[cfg(feature = "signature")]
     pub(crate) fn get_macro_manual(&self, macro_name: &str) -> Option<String> {
         self.map.get_signature(macro_name).map(|s| s.to_string())
@@ -3026,6 +3030,7 @@ impl<'processor> Processor<'processor> {
     // ----------
 }
 
+/// Result of a parsing logic
 #[derive(Debug)]
 enum ParseResult {
     FoundMacro(String),
@@ -3041,4 +3046,111 @@ enum ParseResult {
 struct SandboxBackup {
     current_input: ProcessInput,
     local_macro_map: HashMap<String, LocalMacro>,
+}
+
+/// Struct designed to check unbalanced parenthesis
+pub(crate) struct UnbalancedChecker {
+    paren: usize,
+}
+
+impl UnbalancedChecker {
+    /// Create an empty checker
+    pub fn new() -> Self {
+        Self { paren: 0 }
+    }
+
+    /// Main logic for checking
+    pub fn check(&mut self, ch: char) -> bool {
+        match ch {
+            '(' => self.paren += 1,
+            ')' => {
+                if self.paren > 0 {
+                    self.paren -= 1;
+                } else {
+                    return false;
+                }
+            }
+            _ => {
+                return true;
+            }
+        }
+        true
+    }
+}
+
+/// Readable, writeable struct that holds information of runtime macros
+#[derive(Serialize, Deserialize)]
+pub struct RuleFile {
+    pub rules: HashMap<String, RuntimeMacro>,
+}
+
+impl RuleFile {
+    /// Create an empty rule file from runtime macros
+    pub fn new(rules: Option<HashMap<String, RuntimeMacro>>) -> Self {
+        if let Some(content) = rules {
+            Self { rules: content }
+        } else {
+            Self {
+                rules: HashMap::new(),
+            }
+        }
+    }
+
+    /// Read from rule file and make it into hash map
+    pub fn melt(&mut self, path: &Path) -> RadResult<()> {
+        Utils::is_real_path(path)?;
+        let result = bincode::deserialize::<Self>(&std::fs::read(path)?);
+        if let Err(err) = result {
+            Err(RadError::BincodeError(format!(
+                "Failed to melt the file : {} \n {}",
+                path.display(),
+                err
+            )))
+        } else {
+            self.rules.extend(result.unwrap().rules.into_iter());
+            Ok(())
+        }
+    }
+
+    /// Melt from byte array not a file
+    pub fn melt_literal(&mut self, literal: &[u8]) -> RadResult<()> {
+        let result = bincode::deserialize::<Self>(literal);
+        if let Ok(rule_file) = result {
+            self.rules.extend(rule_file.rules.into_iter());
+            Ok(())
+        } else {
+            Err(RadError::BincodeError(
+                "Failed to melt the literal value".to_string(),
+            ))
+        }
+    }
+
+    /// Convert runtime rules into a single binary file
+    pub(crate) fn freeze(&self, path: &std::path::Path) -> RadResult<()> {
+        let result = bincode::serialize(self);
+        if result.is_err() {
+            Err(RadError::BincodeError(format!(
+                "Failed to freeze to a file : {}",
+                path.display()
+            )))
+        } else if std::fs::write(path, result.unwrap()).is_err() {
+            Err(RadError::InvalidArgument(format!(
+                "Failed to create a file : {}",
+                path.display()
+            )))
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Serialize a rule file into a byte array
+    pub(crate) fn serialize(&self) -> RadResult<Vec<u8>> {
+        let result = bincode::serialize(self);
+        if result.is_err() {
+            return Err(RadError::BincodeError(
+                "Failed to serialize a rule".to_string(),
+            ));
+        }
+        Ok(result.unwrap())
+    }
 }

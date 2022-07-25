@@ -1,9 +1,4 @@
 use crate::error::RadError;
-use crate::runtime_map::RuntimeMacro;
-use crate::utils::Utils;
-use regex::Regex;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
@@ -48,107 +43,6 @@ pub struct LocalMacro {
 impl LocalMacro {
     pub fn new(level: usize, name: String, body: String) -> Self {
         Self { level, name, body }
-    }
-}
-
-/// Struct designed to check unbalanced parenthesis
-pub(crate) struct UnbalancedChecker {
-    paren: usize,
-}
-
-impl UnbalancedChecker {
-    pub fn new() -> Self {
-        Self { paren: 0 }
-    }
-    pub fn check(&mut self, ch: char) -> bool {
-        match ch {
-            '(' => self.paren += 1,
-            ')' => {
-                if self.paren > 0 {
-                    self.paren -= 1;
-                } else {
-                    return false;
-                }
-            }
-            _ => {
-                return true;
-            }
-        }
-        true
-    }
-}
-
-/// Readable, writeable struct that holds information of runtime macros
-#[derive(Serialize, Deserialize)]
-pub struct RuleFile {
-    pub rules: HashMap<String, RuntimeMacro>,
-}
-
-impl RuleFile {
-    pub fn new(rules: Option<HashMap<String, RuntimeMacro>>) -> Self {
-        if let Some(content) = rules {
-            Self { rules: content }
-        } else {
-            Self {
-                rules: HashMap::new(),
-            }
-        }
-    }
-
-    /// Read from rule file and make it into hash map
-    pub fn melt(&mut self, path: &Path) -> RadResult<()> {
-        Utils::is_real_path(path)?;
-        let result = bincode::deserialize::<Self>(&std::fs::read(path)?);
-        if let Err(err) = result {
-            Err(RadError::BincodeError(format!(
-                "Failed to melt the file : {} \n {}",
-                path.display(),
-                err
-            )))
-        } else {
-            self.rules.extend(result.unwrap().rules.into_iter());
-            Ok(())
-        }
-    }
-
-    pub fn melt_literal(&mut self, literal: &[u8]) -> RadResult<()> {
-        let result = bincode::deserialize::<Self>(literal);
-        if let Ok(rule_file) = result {
-            self.rules.extend(rule_file.rules.into_iter());
-            Ok(())
-        } else {
-            Err(RadError::BincodeError(
-                "Failed to melt the literal value".to_string(),
-            ))
-        }
-    }
-
-    /// Convert runtime rules into a single binary file
-    pub(crate) fn freeze(&self, path: &std::path::Path) -> RadResult<()> {
-        let result = bincode::serialize(self);
-        if result.is_err() {
-            Err(RadError::BincodeError(format!(
-                "Failed to freeze to a file : {}",
-                path.display()
-            )))
-        } else if std::fs::write(path, result.unwrap()).is_err() {
-            Err(RadError::InvalidArgument(format!(
-                "Failed to create a file : {}",
-                path.display()
-            )))
-        } else {
-            Ok(())
-        }
-    }
-
-    pub(crate) fn serialize(&self) -> RadResult<Vec<u8>> {
-        let result = bincode::serialize(self);
-        if result.is_err() {
-            return Err(RadError::BincodeError(
-                "Failed to serialize a rule".to_string(),
-            ));
-        }
-        Ok(result.unwrap())
     }
 }
 
@@ -294,6 +188,7 @@ pub enum FlowControl {
     Exit,
 }
 
+/// Signature type
 #[cfg(feature = "signature")]
 pub enum SignatureType {
     All,
@@ -320,6 +215,7 @@ impl SignatureType {
     }
 }
 
+/// Target of relaying
 #[derive(Debug)]
 pub enum RelayTarget {
     None,
@@ -329,6 +225,7 @@ pub enum RelayTarget {
     Temp,
 }
 
+/// Process input variant
 #[derive(Clone, Debug, PartialEq)]
 pub enum ProcessInput {
     Stdin,
@@ -451,50 +348,4 @@ pub enum Hygiene {
     Input,
     /// No runtime definition or invocation at all.
     Aseptic,
-}
-
-/// Cache for regex compilation
-pub(crate) struct RegexCache {
-    cache: HashMap<String, Regex>,
-    register: HashMap<String, Regex>,
-}
-
-impl RegexCache {
-    pub fn new() -> Self {
-        Self {
-            cache: HashMap::new(),
-            register: HashMap::new(),
-        }
-    }
-
-    /// Check if cache contains a key
-    pub fn contains(&self, name: &str) -> bool {
-        self.cache.contains_key(name)
-    }
-
-    /// Register a regex
-    ///
-    /// Registered regex is not cleared
-    pub fn register(&mut self, name: &str, source: &str) -> RadResult<()> {
-        self.cache.insert(name.to_string(), Regex::new(source)?);
-        Ok(())
-    }
-
-    /// Append a regex to cache
-    pub fn append(&mut self, src: &str) -> RadResult<&Regex> {
-        // Set hard capacity of 100
-        if self.cache.len() > 100 {
-            self.cache.clear();
-        }
-        self.cache.insert(src.to_string(), Regex::new(src)?);
-        Ok(self.get(src).unwrap())
-    }
-
-    pub fn get(&self, src: &str) -> Option<&Regex> {
-        if self.register.get(src).is_some() {
-            self.register.get(src)
-        } else {
-            self.cache.get(src)
-        }
-    }
 }

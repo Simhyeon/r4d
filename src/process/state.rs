@@ -1,12 +1,12 @@
 use crate::auth::AuthFlags;
 use crate::common::{
-    CommentType, ErrorBehaviour, FlowControl, Hygiene, ProcessInput, ProcessType, RegexCache,
-    RelayTarget,
+    CommentType, ErrorBehaviour, FlowControl, Hygiene, ProcessInput, ProcessType, RelayTarget,
 };
 #[cfg(not(feature = "wasm"))]
 use crate::common::{FileTarget, RadResult};
 use crate::consts::LINE_ENDING;
 use crate::RadError;
+use regex::Regex;
 use std::collections::{HashMap, HashSet};
 #[cfg(not(feature = "wasm"))]
 use std::path::Path;
@@ -101,6 +101,52 @@ impl ProcessorState {
             self.pipe_map.remove(key)
         } else {
             self.pipe_map.get(key).map(|s| s.to_owned())
+        }
+    }
+}
+
+/// Cache for regex compilation
+pub(crate) struct RegexCache {
+    cache: HashMap<String, Regex>,
+    register: HashMap<String, Regex>,
+}
+
+impl RegexCache {
+    pub fn new() -> Self {
+        Self {
+            cache: HashMap::new(),
+            register: HashMap::new(),
+        }
+    }
+
+    /// Check if cache contains a key
+    pub fn contains(&self, name: &str) -> bool {
+        self.cache.contains_key(name)
+    }
+
+    /// Register a regex
+    ///
+    /// Registered regex is not cleared
+    pub fn register(&mut self, name: &str, source: &str) -> RadResult<()> {
+        self.cache.insert(name.to_string(), Regex::new(source)?);
+        Ok(())
+    }
+
+    /// Append a regex to cache
+    pub fn append(&mut self, src: &str) -> RadResult<&Regex> {
+        // Set hard capacity of 100
+        if self.cache.len() > 100 {
+            self.cache.clear();
+        }
+        self.cache.insert(src.to_string(), Regex::new(src)?);
+        Ok(self.get(src).unwrap())
+    }
+
+    pub fn get(&self, src: &str) -> Option<&Regex> {
+        if self.register.get(src).is_some() {
+            self.register.get(src)
+        } else {
+            self.cache.get(src)
         }
     }
 }
