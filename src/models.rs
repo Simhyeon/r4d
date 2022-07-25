@@ -386,6 +386,16 @@ impl RuleFile {
             Ok(())
         }
     }
+
+    pub(crate) fn serialize(&self) -> RadResult<Vec<u8>> {
+        let result = bincode::serialize(self);
+        if result.is_err() {
+            return Err(RadError::BincodeError(
+                "Failed to serialize a rule".to_string(),
+            ));
+        }
+        Ok(result.unwrap())
+    }
 }
 
 /// Macro framgent that processor saves fragmented information of the mcaro invocation
@@ -663,12 +673,10 @@ pub enum ErrorBehaviour {
 }
 
 /// Type of processing
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum ProcessType {
     /// Expand every macros
     Expand,
-    /// Inlin every macros
-    Compile,
     /// Freeze definitions
     Freeze,
 }
