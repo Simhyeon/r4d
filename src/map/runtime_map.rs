@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use crate::models::Hygiene;
 
 /// Runtime macro
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct RuntimeMacro {
     pub name: String,
     pub args: Vec<String>,
@@ -57,7 +57,7 @@ impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct RuntimeMacroMap {
     pub(crate) macros: HashMap<String, RuntimeMacro>,
     pub(crate) volatile: HashMap<String, RuntimeMacro>,
