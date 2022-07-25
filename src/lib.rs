@@ -49,8 +49,8 @@
 //! page](https://github.com/simhyeon/r4d/blob/master/docs/usage.md) or in
 //! [Processor](crate::Processor)
 
-mod package;
 mod error;
+mod package;
 mod processor;
 
 mod parser;
@@ -67,23 +67,23 @@ pub(crate) use map::runtime_map;
 pub(crate) use map::sigmap;
 
 pub(crate) mod auth;
+pub(crate) mod common;
 pub(crate) mod consts;
 #[cfg(feature = "debug")]
 pub(crate) mod debugger;
 pub(crate) mod formatter;
 pub(crate) mod lexor;
 pub(crate) mod logger;
-pub(crate) mod models;
 #[macro_use]
 pub(crate) mod utils;
 
 pub use auth::AuthType;
+pub use common::{CommentType, DiffOption, Hygiene, RadResult, WriteOption};
+pub use common::{ExtMacroBuilder, MacroType, RadStorage, StorageOutput, StorageResult};
 pub use error::RadError;
 #[cfg(feature = "hook")]
 pub use hookmap::HookType;
 pub use logger::WarningType;
-pub use models::{CommentType, DiffOption, Hygiene, RadResult, WriteOption};
-pub use models::{ExtMacroBuilder, MacroType, RadStorage, StorageOutput, StorageResult};
 pub use processor::Processor;
 
 // Optional

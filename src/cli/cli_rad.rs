@@ -1,12 +1,12 @@
 use crate::auth::AuthType;
+use crate::common::CommentType;
+#[cfg(feature = "debug")]
+use crate::common::DiffOption;
+#[cfg(feature = "signature")]
+use crate::common::SignatureType;
 #[cfg(feature = "signature")]
 use crate::consts::LINE_ENDING;
 use crate::logger::WarningType;
-use crate::models::CommentType;
-#[cfg(feature = "debug")]
-use crate::models::DiffOption;
-#[cfg(feature = "signature")]
-use crate::models::SignatureType;
 use crate::processor::Processor;
 #[cfg(feature = "template")]
 use crate::script;

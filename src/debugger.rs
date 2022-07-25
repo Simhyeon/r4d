@@ -1,6 +1,6 @@
+use crate::common::{DiffOption, MacroFragment, RadResult};
 use crate::consts::{DIFF_OUT_FILE, DIFF_SOURCE_FILE, LINE_ENDING, RDB_HELP};
 use crate::logger::Logger;
-use crate::models::{DiffOption, MacroFragment, RadResult};
 use crate::utils::Utils;
 use crossterm::{terminal::ClearType, ExecutableCommand};
 use similar::ChangeTag;

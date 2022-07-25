@@ -1,5 +1,18 @@
 use crate::auth::{AuthFlags, AuthState, AuthType};
 #[cfg(feature = "debug")]
+use crate::common::DiffOption;
+#[cfg(not(feature = "wasm"))]
+use crate::common::FileTarget;
+use crate::common::ProcessType;
+use crate::common::RegexCache;
+#[cfg(feature = "signature")]
+use crate::common::SignatureType;
+use crate::common::{
+    CommentType, ErrorBehaviour, ExtMacroBuilder, ExtMacroType, FlowControl, Hygiene, LocalMacro,
+    MacroFragment, MacroMap, MacroType, ProcessInput, RadStorage, RelayTarget, RuleFile,
+    StorageOutput, UnbalancedChecker, WriteOption,
+};
+#[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
@@ -9,20 +22,6 @@ use crate::hookmap::{HookMap, HookType};
 use crate::lexor::*;
 use crate::logger::TrackType;
 use crate::logger::{Logger, WarningType};
-#[cfg(feature = "debug")]
-use crate::models::DiffOption;
-#[cfg(not(feature = "wasm"))]
-use crate::models::FileTarget;
-use crate::models::ProcessType;
-use crate::models::RegexCache;
-#[cfg(feature = "signature")]
-use crate::models::SignatureType;
-use crate::models::{
-    CommentType, ErrorBehaviour, ExtMacroBuilder, ExtMacroType, FlowControl, Hygiene, LocalMacro,
-    MacroFragment, MacroMap, MacroType, ProcessInput, RelayTarget, RuleFile, UnbalancedChecker,
-    WriteOption,
-};
-use crate::models::{RadStorage, StorageOutput};
 use crate::package::StaticScript;
 use crate::runtime_map::RuntimeMacro;
 #[cfg(feature = "signature")]

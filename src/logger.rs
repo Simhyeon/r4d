@@ -2,7 +2,7 @@
 //!
 //! Logger handles all kinds of logging logics&&&. Such log can be warning, error or debug logs.
 
-use crate::models::{ProcessInput, RadResult, WriteOption};
+use crate::common::{ProcessInput, RadResult, WriteOption};
 use crate::utils::Utils;
 use crate::{consts::*, RadError};
 use std::fmt::Write;

@@ -7,8 +7,8 @@
 //! Lexor carries lexor cursor(state) and validates if given character is valid and whether the
 //! character should be saved as a fragment of macro.
 
+use crate::common::CommentType;
 use crate::consts::*;
-use crate::models::CommentType;
 use crate::utils::Utils;
 
 /// Struct that validated a given character

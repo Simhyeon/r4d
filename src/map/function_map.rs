@@ -4,17 +4,17 @@
 //! which are technically function pointers.
 
 use crate::auth::AuthType;
+use crate::common::MacroType;
+use crate::common::{
+    ErrorBehaviour, ExtMacroBody, ExtMacroBuilder, FlowControl, ProcessInput, RadResult,
+    RelayTarget,
+};
 use crate::consts::{ESR, LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER};
 use crate::error::RadError;
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
-use crate::models::MacroType;
-use crate::models::{
-    ErrorBehaviour, ExtMacroBody, ExtMacroBuilder, FlowControl, ProcessInput, RadResult,
-    RelayTarget,
-};
 use crate::processor::Processor;
 use crate::trim;
 use crate::utils::Utils;
@@ -4687,7 +4687,7 @@ $extract()"
             }
             #[cfg(not(feature = "wasm"))]
             "file" => {
-                use crate::models::FileTarget;
+                use crate::common::FileTarget;
                 if !Utils::is_granted("relay", AuthType::FOUT, p)? {
                     return Ok(None);
                 }

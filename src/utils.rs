@@ -1,7 +1,7 @@
 use crate::auth::{AuthState, AuthType};
+use crate::common::{ProcessInput, RadResult, RelayTarget};
 use crate::error::RadError;
 use crate::logger::WarningType;
-use crate::models::{ProcessInput, RadResult, RelayTarget};
 use crate::{Processor, WriteOption};
 use lazy_static::lazy_static;
 use regex::Regex;
