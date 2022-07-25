@@ -1,19 +1,17 @@
 ### TODO
 
+* [ ] Currently static macro is simply registered as runtime macro... Is it
+  respected behaviour or what?
+
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
     - This needs to implement cow manipulation and I'm... ok maybe later
 
+* [ ] Some documentaion is weak, especialy some deterred macros
+* [ ] Try formatting documentation within 80 characters
+
 : ORDERED :
-1. [x] Debugger step behaviour
-1. [x] Push Trexter on crates.io
-1. [x] Take care about feature collisions
-1. [ ] Push as 3.0.0-rc.5
-
-2. [ ] Update r4d version in gdengine
-    - Fix all breaking changes
-    - Add new features that I think are necessary
-
-3. [ ] Clear re-export of logger methods
+1. [ ] Update r4d version in gdengine
+2. [ ] Clear re-exports of logger methods
 3. Push stable 3.0 version
 
 **Some big todos**
@@ -42,8 +40,13 @@ $todo_end()
 
 ### Changes
 
-* [x] Stdin yields error because input was not set
-* [x] Cmp is ambiguous, Change it to better name with useful variants
+* [x] BUG : Stdin yields error because input was not set
+* [x] ERGO : Cmp is ambiguous, Change it to better name with useful variants
+* [x] FET : Freeze refactor
+    - Disable non-declare macros in freezing mode. ( Define or static )
+    - Add new "set\_freeze\_mode" method
+    - Freeze reuses out option
+* [x] FET : Packaging
 
 ### Macro ergonomics
 

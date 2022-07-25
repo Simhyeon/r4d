@@ -8,6 +8,8 @@
 
 ### [Macro types](macro_types.md)
 
+### [Macro files manipulation](code_manipulation.md)
+
 ### [How to extend function macros](ext.md)
 
 ### [Extend a processor with storage feature](storage.md)
