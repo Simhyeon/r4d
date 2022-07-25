@@ -1951,7 +1951,12 @@ impl<'processor> Processor<'processor> {
                         .len(),
                     arg_types.len()
                 ));
-                return Err(err);
+                if self.state.process_type == ProcessType::Dry {
+                    self.log_warning(&err.to_string(), WarningType::Sanity)?;
+                    return Ok(None);
+                } else {
+                    return Err(err);
+                }
             };
 
         for (idx, arg_type) in arg_types.iter().enumerate() {
