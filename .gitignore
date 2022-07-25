@@ -8,4 +8,5 @@ wasm
 pkg
 cache.txt
 err.txt
-file.r4f
+lib.r4f
+compiled.r4c
