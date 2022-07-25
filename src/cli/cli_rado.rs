@@ -67,6 +67,11 @@ impl RadoCli {
                     self.compile_file(Path::new(input))?;
                 }
             }
+            Some(("execute", sub_m)) => {
+                if let Some(input) = sub_m.value_of("INPUT") {
+                    self.execute(Path::new(input))?;
+                }
+            }
             Some(("replace", sub_m)) => {
                 if let Some(input) = sub_m.value_of("INPUT") {
                     self.replace_file(Path::new(input))?;
@@ -129,6 +134,8 @@ impl RadoCli {
     rado read <FILE> -- arguments
     rado edit <FILE>
     rado force <FILE>
+    rado execute <FILE>
+    rado compile <FILE>
     rado diff <FILE>
     rado sync <FILE>")
             .arg(Arg::new("argument")
@@ -169,6 +176,13 @@ impl RadoCli {
                 .arg(Arg::new("INPUT")
                     .required(true)
                     .help("File name to compile")
+                )
+            )
+            .subcommand(App::new("execute")
+                .about("Execute a file")
+                .arg(Arg::new("INPUT")
+                    .required(true)
+                    .help("File name to execute")
                 )
             )
             .subcommand(App::new("read")
@@ -219,10 +233,23 @@ impl RadoCli {
         app.get_matches()
     }
 
+    fn execute(&self, file: &Path) -> RadResult<()> {
+        if file.exists() {
+            let file_string = file.display().to_string();
+            let mut rad_args = vec!["rad", file_string.as_ref()];
+            if !self.flag_arguments.is_empty() {
+                rad_args.extend(self.flag_arguments.iter().map(|s| s.as_str()));
+            }
+            RadCli::new().parse_from(&rad_args)?;
+        }
+        Ok(())
+    }
+
     fn compile_file(&self, file: &Path) -> RadResult<()> {
         if file.exists() {
             let file_string = file.display().to_string();
-            let mut rad_args = vec!["rad", file_string.as_ref(), "--compile"];
+            let out_string = file.with_extension("r4c").display().to_string();
+            let mut rad_args = vec!["rad", file_string.as_ref(), "--compile", "-o", &out_string];
             if !self.flag_arguments.is_empty() {
                 rad_args.extend(self.flag_arguments.iter().map(|s| s.as_str()));
             }
