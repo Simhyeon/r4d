@@ -2015,7 +2015,7 @@ impl<'processor> Processor<'processor> {
             if self.state.process_type == ProcessType::Dry {
                 let err = RadError::InvalidArgument(format!("Macro \"{}\" has invalid body", name));
                 let res = self
-                    .process_string(&format!("${}({})", name, args))
+                    .process_string(&format!("${}({})", name, args.replace(' ', ",")))
                     .map_err(|_| &err);
 
                 if res.is_err() {
