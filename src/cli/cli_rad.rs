@@ -369,7 +369,7 @@ impl<'cli> RadCli<'cli> {
     echo <STDIN_TEXT | rad 
     echo <STDIN_TEXT> | rad --combination <FILE> --diff
     rad <FILE> --debug --log --interactive
-    rad <FILE> -f <RULE_FILE> --discard -n --silent")
+    rad <FILE> --freeze -o <RULE_FILE> --discard -n --silent")
             .arg(Arg::new("INPUT")
                 .multiple_values(true)
                 .help("INPUT source to execute processing"))
