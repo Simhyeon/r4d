@@ -138,7 +138,9 @@ impl<'cli> RadCli<'cli> {
                 processor
                     .compile_sources(&sources, self.write_to_file.as_ref().map(|p| p.as_ref()))?;
             } else {
-                eprintln!("No input sources to compile.")
+                return Err(RadError::InvalidCommandOption(
+                    "No compile sources were given.".to_string(),
+                ));
             }
             return Ok(());
         }
@@ -182,7 +184,12 @@ impl<'cli> RadCli<'cli> {
         // Main options
 
         // Process type related state changes
-        if args.value_of("freeze").is_some() {
+        if args.is_present("freeze") {
+            if self.write_to_file.is_none() {
+                return Err(RadError::InvalidCommandOption(
+                    "Freeze options needs an out file to write into".to_string(),
+                ));
+            }
             self.processor.set_freeze_mode();
         }
 
@@ -260,8 +267,15 @@ impl<'cli> RadCli<'cli> {
         self.processor.print_result()?;
 
         // Freeze to a rule file if such option was given
-        if let Some(file) = args.value_of("freeze") {
-            self.processor.freeze_to_file(Path::new(file))?;
+        if args.is_present("freeze") {
+            match &self.write_to_file {
+                Some(file) => self.processor.freeze_to_file(file)?,
+                None => {
+                    return Err(RadError::InvalidCommandOption(
+                        "Freeze options needs an out file to write into".to_string(),
+                    ))
+                }
+            }
         }
         Ok(())
     }
@@ -462,8 +476,6 @@ impl<'cli> RadCli<'cli> {
             .arg(Arg::new("freeze")
                 .short('f')
                 .long("freeze")
-                .takes_value(true)
-                .value_name("FILE")
                 .help("Freeze macros into a single file"))
             .arg(Arg::new("compile")
                 .long("compile")
