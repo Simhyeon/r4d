@@ -1288,7 +1288,7 @@ Hello World
 Find match from source. This return boolean.
 
 ```
-% Use \\* because \* will occur literal chunk
+% Use \\* because \* will trigger literal chunk
 % But use \[ to include literal [ since \ doesn't do anything without following
 % asterisk
 $find(^\\* \[ \],* [ ] Todo)

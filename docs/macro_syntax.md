@@ -27,17 +27,17 @@ and following characters should be either alphanumeric or underscore.
 **Second argument** (Before equal sign)
 
 Second argument is macro's arguments. Macro argument also follows same rule
-of naming. Multiple arguments can be declared and should be **separated by a
-whitespace.**
+of naming. Multiple arguments can be declared and should be **separated by
+whitespaces.**
 
 **Third argument** (After equal sign)
 
 Third argument is a macro body. Any text can be included in the macro body
-while an unbalanced parenthesis will prevent processor's work. Currently there
-is no way to include unbalanced parenthesis inside definition body. 
+while an unbalanced parenthesis will prematurely. Currently there is no way to
+include unbalanced parenthesis inside definition body. 
 
 You can also simply bind the value without giving arguments. Which is mostly
-similar to static macro.
+similar to static macro. But defined body is always evaluated.
 
 ```
 $define(v_name=Simon creek)
@@ -66,11 +66,28 @@ KALM
 % After calm is defined, it prints out without error
 ```
 
+You can check some easy mistakes with ```dryrun``` flag. Dryrun flag audits
+simple errors on macro declaration.
+
+```
+% Ran with rad --dryrun
+$define(panik,kalm=$calm())
+$define(bonk=$fout(path.txt))
+===
+warning: Invalid macro name
+= No such macro name : "calm"
+ --> [INPUT = test]:1:2 >> (MACRO = panik):1:2
+warning: Invalid macro name
+= No such macro name : "fout"
+ --> [INPUT = test]:1:2 >> (MACRO = bonk):1:2
+warning: found 2 warnings
+```
+
 **Define is evaluated on every call**
 
 Because defined macro is evaluated on every invocation. This may not be a
 desired behaviour. Use static macro if you want statically bound value. Static
-macro eagerly evaluates arguments and assign the processed value to a macro.
+macro eagerly evaluates arguments and assigns the processed value to a macro.
 
 ```
 $define(counter=0)
@@ -83,6 +100,10 @@ $print_counter_as_static()
 00000
 0
 ```
+
+Also, static macro is not evaluated on invocation thus a "static". Most of time
+it doesn't matter. But theoretically static macro is faster than defined
+macro.
 
 ## Macro invocation
 
@@ -183,6 +204,7 @@ In short, rad processes macros in given subprocesses.
 
 - Expand expression from arguments
 - Strip expanded arguments
+- Split arguments according to macro's arguments
 - Bind arguments to local macros
 - Expand a macro body
 
@@ -244,7 +266,7 @@ error: Invalid argument
  --> test:3:2~~
 ```
 
-If the argument is passed as literal, local argument will be linked to stripped
+If an argument is passed as literal, local argument will be linked to stripped
 but non-expanded value. which is ```$not(false)``` in this case. Since **local
 argument is not expanded**, if receives strange value and execution fails.
 
@@ -452,7 +474,9 @@ true
 Yield literal attribute ```*``` makes output printed as literal form. This is
 useful when you have to give an argument literal value but you need to pre
 process the data which means it cannot be marked as literal. In other words you
-can send dynamic content as quoted with help of yield literal attribute.
+can send dynamic content as quoted with help of yield literal attribute. Use
+yield literal when you manipulate complex texts that can possibly include
+unbalanced parenthesis or commas.
 
 Refer about [literal quotes](#literal-rules) to grasp possible usages.
 
@@ -470,4 +494,18 @@ Refer [modes](./modes.md) document for detailed error behaviours
 
 ```
 $BR()
+```
+
+### Escape blanks
+
+```EB``` is reserved for blank escape opeartion. After ```EB``` is invoked
+every blank spaces are escaped.
+
+```r4d
+BEFORE$EB()
+
+
+AFTER
+===
+BEFOREAFTER
 ```

@@ -68,7 +68,7 @@ value.
     * [x] Restart : char number is broken
 * [ ] I put frag.is processed everywhere, I need to check those are necessary
 * [x] Currently logger uses constant LINE_ENDING, is this ok?
-    - Since this is not formatted to output. It is theoritically ok, but might
+    - Since this is not formatted to output. It is theoretically ok, but might
       not what user would expect
 * [x] A bug... is that currently, define always consumes newlines... what? No
   it was just that, logm consumed result... like wtf.

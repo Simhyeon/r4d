@@ -99,6 +99,8 @@ Or use crates.io registry,
 e.g.
 
 ```bash
+# Currently stable version is 2.0
+
 # Binary with full macros support
 cargo install r4d --features binary --locked
 
@@ -116,7 +118,7 @@ cargo install r4d --features basic --locked
 **Binary**
 
 There are two binaries of each **rad** and **rado**. Rad is a main processor
-and rado is a open+edit binary.
+and rado is a wrapper binary.
 
 ```
 # rad
@@ -142,7 +144,7 @@ use r4d::RadError;
 use r4d::Processor;
 
 let processor = Processor::new()
-    .write_to_file(Some(PathBuf::from("cache.txt")))?;
+    .write_to_file(PathBuf::from("cache.txt"))?;
 
 processor.process_file(Path::new("input.txt"))?;
 processor.print_result()?;

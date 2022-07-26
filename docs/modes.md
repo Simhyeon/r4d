@@ -30,7 +30,7 @@ $nono()
 
 ### Hygiene modes.
 
-By default processing is not hygienic which means that macro's behaviour can
+By default processing is not hygienic, which means that macro's behaviour can
 change according to external variance.
 
 For example, following macro can fail according to inner macro's existence.
@@ -39,7 +39,7 @@ For example, following macro can fail according to inner macro's existence.
 $define(unsafe=$some_random_macro())
 $unsafe()
 ===
-% If some_random_macro exists if succeeds. If not, if fails.
+% If some_random_macro exists it succeeds. If not, if fails.
 ```
 
 You can configure this behaviour through processor's method with following

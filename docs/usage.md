@@ -12,10 +12,10 @@ rad input_file.txt -o out_file.txt
 rad input_file.txt
 
 # Read from standard input and print to file
-printf '...text...' | rad -o out_file.txt
+printf 'text' | rad -o out_file.txt
 
 # Read from stdin and print to stdout 
-printf '...text...' | rad 
+printf 'text' | rad 
 
 # Print simple manual
 rad --man 
@@ -59,13 +59,13 @@ rad --comment any
 -D, --discard         # Discard all output
 
 # Freeze(zip to binary) rules to a single file
-# Frozen file is a bincode file thus, theoreoitically faster in reading
-rad test -f -o frozen.r4f
+# Frozen file is a bincode file thus, theoretically faster in reading
+rad test --freeze --out frozen.r4f
 # Melt a file and use in processing
-rad test -m frozen.r4f
+rad test --melt frozen.r4f
 
 # Package into a single file
-rad test --package -o bin.r4c
+rad test --package --out bin.r4c
 
 # Print signature information into file
 rad --signature sig.json
