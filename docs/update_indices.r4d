@@ -1,6 +1,6 @@
 $define(get_name,a_text=$index^(1,$split(:,$a_text())))
 % No need to replace whitespace because function name never has whitespaces
-$define(make_toc,a_item=[$a_item()](#$a_item()))
+$define(make_toc,a_item=* [$a_item()](#$a_item()))
 
 $define=(make_header,
     a_chunk=
@@ -13,17 +13,24 @@ $define=(make_header,
         )
     )
     $let(macro_name,$index(1,$split^(:,$t_line())))
-    ## $macro_name()
+    ### $macro_name()
+)
+
+$define=(markify,
+    a_man=
+    $sep($until(>>,$a_man()))
+    >>
+    $after(>>,$a_man())
 )
 
 $static(function_names,$grepf(Macro Name.*,macro.man))
-$dump(docs/macro_indices.md)
-$relay(file,docs/macro_indices.md)
+$dump(macro_indices.md)
+$relay(file,macro_indices.md)
 # TOC
 $forline=(
     $make_toc($get_name($:())),
     $function_names()
 )
 
-$forby($make_header($:^())$nl()$:(),----,$include*(macro.man,true))
+$forby($make_header($:^())$nl()$markify($:()),----,$include*(macro.man,true))
 $halt()
