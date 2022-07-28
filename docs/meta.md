@@ -2,16 +2,22 @@
 
 * [x] Somehow container relaying priority was wrong ..?
 * [x] Include call inside macro calls are not espcted behaviour
-* [ ] Rad backtrace prints tragne inside forby macro
+* [ ] Consider implementing arrays
+* [ ] Rad backtrace prints strangely inside forby macro
 * [ ] New macro
     * [x] Dump
     * [x] indexl : Index line
-    * [ ] Capture : $capture(expr,count,src)
+    * [x] Sep : Separate
+    * [ ] until : No example
+    * [ ] after : No example yet
+    * [ ] Capture : $capture(expr,count,src) : Possibly with regex pattern?
 * [x] Now relay and read to doesn't truncate a file
 * [x] Now raw include doesn't pause but escape : More efficient + can handle
   possible breaking rad codes
+
 * [ ] Grep which only finds the first one only
 * [ ] Warn readin when relay is on. For sanity reason
+
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
     - This needs to implement cow manipulation and I'm... ok maybe later
 

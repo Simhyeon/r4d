@@ -146,6 +146,8 @@
 * [upper](#upper)
 * [wrap](#wrap)
 
+# Macros
+
 ### -
 Macro Type  : Function
 
