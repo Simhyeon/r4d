@@ -20,7 +20,9 @@
         - Require
         - Strict
         - Comment
-    - splitc **rado**
+    - splitc 
+
+**rado**
 
 - FET : Package subcommand
 - FET : Execute subcommand
