@@ -3,13 +3,14 @@ use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
 use crate::formatter::Formatter;
 use crate::parser::GreedyState;
-use crate::trim;
 use crate::utils::Utils;
 use crate::ArgParser;
-use crate::Processor;
-use crate::{AuthType, RadError};
+#[cfg(not(feature = "wasm"))]
+use crate::AuthType;
+use crate::{trim, Processor, RadError};
 use std::collections::HashMap;
 use std::iter::FromIterator;
+#[cfg(not(feature = "wasm"))]
 use std::path::PathBuf;
 
 pub(crate) type DFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResult<Option<String>>;
@@ -249,14 +250,14 @@ an argument for a macro
 # Example
 
 $assert=(
-	text------
-	---text---
-	------text,
+	text******
+	***text***
+	******text,
 	$spread=(
 		align,
-		left,10,-,text
-		center,10,-,text
-		right,10,-,text
+		left,10,*,text
+		center,10,*,text
+		right,10,*,text
 	)
 )".to_string()),
                 ),
@@ -470,7 +471,7 @@ $strip(\\*1,2,3*\\)".to_string()),
                 "readto".to_owned(),
                 DMacroSign::new(
                     "readto",
-                    ["a_from_file^", "a_to_file^"],
+                    ["a_from_file^", "a_to_file^", "a_raw_mode?+^"],
                     DeterredMacroMap::read_to,
                     Some(
                         "Read from a file and paste into a file
@@ -486,6 +487,7 @@ inside other macros
 
 - a_from_file : A file to read from ( trimmed )
 - a_to_file   : A file to paste into ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
 
 # Example
 
@@ -498,7 +500,7 @@ $readto(from.txt,into.txt)"
                 "readin".to_owned(),
                 DMacroSign::new(
                     "readin",
-                    ["a_file?^"],
+                    ["a_file?^", "a_raw_mode^+?"],
                     DeterredMacroMap::read_in,
                     Some(
                         "Read from a file
@@ -513,6 +515,7 @@ inside other macros
 # Arguments
 
 - a_file : A file to read from ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
 
 # Example
 
@@ -697,7 +700,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let body = &args[0];
             let sep = &processor.parse_and_strip(&mut ap, level, &args[1])?;
             let loopable = &processor.parse_and_strip(&mut ap, level, &args[2])?;
-            for (count, value) in loopable.split(sep).enumerate() {
+            for (count, value) in loopable.split_terminator(sep).enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 processor.add_new_local_macro(level, ":", value);
@@ -1144,6 +1147,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     /// # Usage
     ///
     /// $readto(file_a,file_b)
+    #[cfg(not(feature = "wasm"))]
     fn read_to(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         // Needs both permission
         if !Utils::is_granted("readto", AuthType::FIN, processor)?
@@ -1199,11 +1203,11 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                     // You don't have to backup pause state because include wouldn't be triggered
                     // at the first place, if paused was true
                     if raw_include {
-                        processor.state.paused = true;
+                        processor.state.flow_control = FlowControl::Escape;
                     }
                 }
 
-                let file_target = FileTarget::with_truncate(&to_path)?;
+                let file_target = FileTarget::from_path(&to_path)?;
                 processor.state.relay.push(RelayTarget::File(file_target));
 
                 // Create chunk
@@ -1214,7 +1218,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                     processor.reset_flow_control();
                 }
                 if raw_include {
-                    processor.state.paused = false; // Recover paused state
+                    processor.state.flow_control = FlowControl::None; // Recover state
                 }
                 processor.set_sandbox(false);
                 processor.state.input_stack.remove(&canonic); // Collect stack
@@ -1275,7 +1279,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                     // You don't have to backup pause state because include wouldn't be triggered
                     // at the first place, if paused was true
                     if raw_include {
-                        processor.state.paused = true;
+                        processor.state.flow_control = FlowControl::Escape;
                     }
                 }
 
@@ -1287,20 +1291,20 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                     processor.reset_flow_control();
                 }
                 if raw_include {
-                    processor.state.paused = false; // Recover paused state
+                    processor.state.flow_control = FlowControl::None;
                 }
                 processor.set_sandbox(false);
                 processor.state.input_stack.remove(&canonic); // Collect stack
                 Ok(chunk)
             } else {
                 Err(RadError::InvalidArgument(format!(
-                    "readto cannot read non-file \"{}\"",
+                    "readin cannot read non-file \"{}\"",
                     file_path.display()
                 )))
             }
         } else {
             Err(RadError::InvalidArgument(
-                "readto requires two argument".to_owned(),
+                "readin requires an argument".to_owned(),
             ))
         }
     }
