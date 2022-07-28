@@ -37,11 +37,9 @@ use std::str::FromStr;
 const ALIGN_TYPES: [&str; 3] = ["left", "right", "center"];
 
 lazy_static! {
-    static ref CLRF_MATCH: Regex = Regex::new(r#"\r\n"#).unwrap();
-    static ref CHOMP_MATCH: Regex = Regex::new(r#"\n\s*\n"#).expect("Failed to create chomp regex");
     // Thanks stack overflow! SRC : https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers
     static ref NUM_MATCH: Regex = Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to create number regex");
-    static ref TWO_NL_MATCH: Regex = Regex::new(r#"\n\s*\n"#).expect("Failed to create tow nl regex");
+    static ref TWO_NL_MATCH: Regex = Regex::new(r#"(\n|\r\n)\s*(\n|\r\n)"#).expect("Failed to create tow nl regex");
 }
 
 pub(crate) type FunctionMacroType = fn(&str, &mut Processor) -> RadResult<Option<String>>;
@@ -108,9 +106,9 @@ $assert(5,$-(num))".to_string(),
 
 # Example
 
-$assert(Hello---,$align(left  ,8,-,Hello))
-$assert(---Hello,$align(right ,8,-,Hello))
-$assert(--Hello-,$align(center,8,-,Hello))".to_string(),
+$assert(Hello***,$align(left  ,8,*,Hello))
+$assert(***Hello,$align(right ,8,*,Hello))
+$assert(**Hello*,$align(center,8,*,Hello))".to_string(),
                     ),
                 ),
             ),
@@ -175,6 +173,26 @@ $assert(true,$gte(text,text))".to_string()),
 
 $assert(false,$eq(a,b))
 $assert(true,$eq(23,23))".to_string()),
+                ),
+            ),
+            (
+                "sep".to_owned(),
+                FMacroSign::new(
+                    "sep",
+                    ["a_content"],
+                    Self::separate,
+                    Some("Separate content
+
+# Arguments
+
+- a_content : Content to separate
+
+# Example
+
+$assert(4,$countl($sep(
+1
+2
+)))".to_string()),
                 ),
             ),
             (
@@ -529,6 +547,25 @@ documentation from macros but by --man flag.
 
 $define(test=)
 $docu(test,This is test macro)".to_string()),
+                ),
+            ),
+            (
+                "dump".to_owned(),
+                FMacroSign::new(
+                    "dump",
+                    ["a_file_name^"],
+                    Self::dump_file_content,
+                    Some(
+"Dump(truncate) given files' content
+
+# Arguments
+
+- a_file_name: File's name to dump ( trimmed )
+
+# Example
+
+$dump(file.txt)
+$assert($empty(),$include(file.txt))".to_string()),
                 ),
             ),
             (
@@ -941,6 +978,27 @@ Third))".to_string()),
 # Example
 
 $assert(ef,$index(2,ab,cd,ef))".to_string()),
+                ),
+            ),
+            (
+                "indexl".to_owned(),
+                FMacroSign::new(
+                    "indexl",
+                    ["a_index^", "a_lines"],
+                    Self::index_lines,
+                    Some("Get an indexed line from lines
+
+- A positive integer works as a normal index number
+- A negative integer works as an index from end ( -1 == len -1 )
+
+# Arguments
+
+- a_index : An index to get [Signed integer] ( trimmed )
+- a_liens : Lines to index from
+
+# Example
+
+$assert(line 2,$indexl(1,line 1$nl()line 2$nl()))".to_string()),
                 ),
             ),
             (
@@ -2824,11 +2882,7 @@ $extract()"
             ProcessInput::File(path) => {
                 let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
                 if !args.is_empty() && !trim!(&args[0]).is_empty() {
-                    let print_absolute = trim!(&args[0]).parse::<bool>().map_err(|_| {
-                        RadError::InvalidArgument(
-                            "Input's argument should be a boolean value".to_string(),
-                        )
-                    })?;
+                    let print_absolute = Utils::is_arg_true(trim!(&args[0]).as_ref())?;
                     if print_absolute {
                         return Ok(Some(path.canonicalize()?.display().to_string()));
                     }
@@ -3136,10 +3190,8 @@ $extract()"
     fn chomp(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let source = &args[0];
-            // First convert all '\r\n' into '\n' and reformat it into current newline characters
-            let lf_converted = &*CLRF_MATCH.replace_all(source, "\n");
-            let chomp_result = &*CHOMP_MATCH
-                .replace_all(lf_converted, format!("{0}{0}", &processor.state.newline));
+            let chomp_result =
+                &*TWO_NL_MATCH.replace_all(source, &processor.state.newline.repeat(2));
 
             Ok(Some(chomp_result.to_string()))
         } else {
@@ -3235,7 +3287,7 @@ $extract()"
                     // You don't have to backup pause state because include wouldn't be triggered
                     // at the first place, if paused was true
                     if raw_include {
-                        processor.state.paused = true;
+                        processor.state.flow_control = FlowControl::Escape;
                     }
                 }
 
@@ -3247,7 +3299,7 @@ $extract()"
                     processor.reset_flow_control();
                 }
                 if raw_include {
-                    processor.state.paused = false; // Recover paused state
+                    processor.state.flow_control = FlowControl::None;
                 }
                 processor.set_sandbox(false);
                 processor.state.input_stack.remove(&canonic); // Collect stack
@@ -3393,10 +3445,12 @@ $extract()"
             let sep = &args[0];
             let text = &args[1];
 
-            let mut result = text.split(sep).fold(String::new(), |mut acc, v| {
-                write!(acc, "{},", v).unwrap();
-                acc
-            });
+            let mut result = text
+                .split_terminator(sep)
+                .fold(String::new(), |mut acc, v| {
+                    write!(acc, "{},", v).unwrap();
+                    acc
+                });
             result.pop();
             Ok(Some(result))
         } else {
@@ -4405,6 +4459,75 @@ $extract()"
         }
     }
 
+    /// Index lines
+    ///
+    /// # Usage
+    ///
+    /// $indexl(1,1$nl()2$nl())
+    fn index_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let content = &mut args[1].lines().collect::<Vec<_>>();
+            let index = trim!(&args[0]).parse::<isize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "indexl requires to be an integer but got \"{}\"",
+                    &args[0]
+                ))
+            })?;
+
+            if index >= content.len() as isize || index < -(content.len() as isize) {
+                return Err(RadError::InvalidArgument(format!(
+                    "indexl out of range. Given index is \"{}\" but array length is \"{}\"",
+                    index,
+                    content.len()
+                )));
+            }
+
+            let final_index = if index < 0 {
+                content.len() + index as usize
+            } else {
+                index.max(0) as usize
+            };
+
+            if content.len() <= final_index {
+                return Err(RadError::InvalidArgument(format!(
+                    "Index out of range. Given index is \"{}\" but array length is \"{}\"",
+                    index,
+                    content.len()
+                )));
+            }
+
+            Ok(Some(content[final_index].to_owned()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "indexl requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Separate content
+    ///
+    /// # Usage
+    ///
+    /// $sep(1$nl()2$nl())
+    fn separate(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let content = &args[0];
+            let mut separated = vec![];
+            let mut iter = content.lines().peekable();
+            while let Some(line) = iter.next() {
+                separated.push(line);
+                if !line.is_empty() && !iter.peek().unwrap_or(&"0").is_empty() {
+                    separated.push("");
+                }
+            }
+            Ok(Some(separated.join(&p.state.newline)))
+        } else {
+            Err(RadError::InvalidArgument(
+                "sep requires an argument".to_owned(),
+            ))
+        }
+    }
+
     /// Get a sliced array
     ///
     /// # Usage
@@ -4693,7 +4816,7 @@ $extract()"
                         "relay requires second argument as file name for file relaying".to_owned(),
                     ));
                 }
-                let file_target = FileTarget::with_truncate(Path::new(&target))?;
+                let file_target = FileTarget::from_path(Path::new(&target))?;
                 RelayTarget::File(file_target)
             }
             "macro" => {
@@ -4732,11 +4855,7 @@ $extract()"
             let halt_immediate = if args[0].is_empty() {
                 false
             } else {
-                trim!(&args[0]).parse::<bool>().map_err(|_| {
-                    RadError::InvalidArgument(
-                        "Halt's argument should be a boolean value".to_string(),
-                    )
-                })?
+                Utils::is_arg_true(trim!(&args[0]).as_ref())?
             };
             if halt_immediate {
                 // This remove last element from stack
@@ -5038,6 +5157,35 @@ $extract()"
         // Add runtime rules
         processor.add_runtime_rules(&runtime_rules)?;
         Ok(None)
+    }
+
+    /// Dump a file
+    ///
+    /// # Usage
+    ///
+    /// $dump(macro,content)
+    fn dump_file_content(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let name = trim!(&args[0]);
+            let file_name = Path::new(name.as_ref());
+
+            if !file_name.is_file() {
+                return Err(RadError::InvalidArgument(format!(
+                    "Dump requires an file to dump but given \"{}\"",
+                    file_name.display()
+                )));
+            }
+
+            {
+                std::fs::File::create(file_name)?;
+            }
+
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Dump requires an file".to_owned(),
+            ))
+        }
     }
 
     /// Document a macro
