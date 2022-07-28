@@ -89,6 +89,24 @@ $assert(5,$-(num))".to_string(),
                 ),
             ),
             (
+                "after".to_owned(),
+                FMacroSign::new(
+                    "after",
+                    ["a_pattern", "a_content"],
+                    Self::get_slice_after,
+                    Some("Get a substring after a pattern
+
+# Arguments
+
+- a_pattern : A pattern to find
+- a_content : A content to get a sub string
+
+# Example
+
+".to_string()),
+                ),
+            ),
+            (
                 "align".to_owned(),
                 FMacroSign::new(
                     "align",
@@ -2095,6 +2113,24 @@ $fassert($test())".to_string()),
 # Example
 
 $assert(☺,$unicode(263a))".to_string()),
+                ),
+            ),
+            (
+                "until".to_owned(),
+                FMacroSign::new(
+                    "until",
+                    ["a_pattern", "a_content"],
+                    Self::get_slice_until,
+                    Some("Get a substring unitl a pattern
+
+# Arguments
+
+- a_pattern : A pattern to find
+- a_content : A content to get a sub string
+
+# Example
+
+".to_string()),
                 ),
             ),
             (
@@ -4138,6 +4174,65 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "Sub requires three arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Get a substring(indexed) until a pattern
+    ///
+    /// # Usage
+    ///
+    /// $until(pattern,Content)
+    fn get_slice_until(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let pattern = &args[0];
+
+            if pattern.is_empty() {
+                return Err(RadError::InvalidArgument(
+                    "Empty value is not allowed in until".to_owned(),
+                ));
+            }
+            let source = &args[1];
+
+            let index = source.find(pattern);
+            if let Some(index) = index {
+                Ok(Some(source[0..index].to_owned()))
+            } else {
+                Ok(Some(source.to_owned()))
+            }
+        } else {
+            Err(RadError::InvalidArgument(
+                "until requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Get a substring(indexed) until a pattern
+    ///
+    /// # Usage
+    ///
+    /// $after(pattern,Content)
+    fn get_slice_after(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let pattern = &args[0];
+            let offset = pattern.len();
+
+            if pattern.is_empty() {
+                return Err(RadError::InvalidArgument(
+                    "Empty value is not allowed in after".to_owned(),
+                ));
+            }
+            let source = &args[1];
+
+            let index = source.find(pattern);
+            if let Some(index) = index {
+                Ok(Some(source[index + offset..].to_owned()))
+            } else {
+                Ok(Some(source.to_owned()))
+            }
+        } else {
+            Err(RadError::InvalidArgument(
+                "after requires two arguments".to_owned(),
             ))
         }
     }
