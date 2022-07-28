@@ -2049,14 +2049,10 @@ impl<'processor> Processor<'processor> {
             return Ok(());
         }
 
-        // Save to container if it has value then return
-        // **IMPORTANT**
-        // However this doesn't have priority over relaying
+        // Save to container
         if let Some(cont) = container.as_mut() {
-            if self.state.relay.is_empty() {
-                cont.push_str(content);
-                return Ok(());
-            }
+            cont.push_str(content);
+            return Ok(());
         }
 
         // Redirect to cache if set
