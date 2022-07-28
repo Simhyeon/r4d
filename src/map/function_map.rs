@@ -39,6 +39,7 @@ const ALIGN_TYPES: [&str; 3] = ["left", "right", "center"];
 lazy_static! {
     // Thanks stack overflow! SRC : https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers
     static ref NUM_MATCH: Regex = Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to create number regex");
+    static ref LINE_MATCH : Regex = Regex::new("\n").expect("Failed to create line match regex");
     static ref TWO_NL_MATCH: Regex = Regex::new(r#"(\n|\r\n)\s*(\n|\r\n)"#).expect("Failed to create tow nl regex");
 }
 
@@ -248,6 +249,25 @@ $assert(\\*2,3*\\,$slice(1,2,\\*1,2,3,4,5,6*\\))".to_string()),
 # Example
 
 $assert(\\*a,b,c*\\,$split(/,a/b/c))".to_string()),
+                ),
+            ),
+            (
+                "splitc".to_owned(),
+                FMacroSign::new(
+                    "spilt",
+                    ["a_sep", "a_index","a_text"],
+                    Self::split_and_cut,
+                    Some("Split text and cut from splitted array
+
+# Arguments
+
+- a_sep    : A separator string
+- a_index  : An index to cut out
+- a_text   : Text to spilt
+
+# Example
+
+$assert(b,$splitc(/,-2,a/b/c))".to_string()),
                 ),
             ),
             (
@@ -3496,7 +3516,53 @@ $extract()"
         }
     }
 
-    /// Ssplit
+    /// Split and cut
+    ///
+    /// # Usage
+    ///
+    /// $splitc(/,a/b/c)
+    fn split_and_cut(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
+            let sep = &args[0];
+            let split = &mut args[2].split_terminator(sep);
+            let len = split.clone().count();
+
+            let index = trim!(&args[1]).parse::<isize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "splitc requires an index to be a integer type but got \"{}\"",
+                    &args[0]
+                ))
+            })?;
+
+            if index >= len as isize || index < -(len as isize) {
+                return Err(RadError::InvalidArgument(format!(
+                    "Index out of range. Given index is \"{}\" but array length is \"{}\"",
+                    index, len
+                )));
+            }
+
+            let final_index = if index < 0 {
+                (len as isize + index) as usize
+            } else {
+                index.max(0) as usize
+            };
+
+            if len <= final_index {
+                return Err(RadError::InvalidArgument(format!(
+                    "Index out of range. Given index is \"{}\" but array length is \"{}\"",
+                    index, len
+                )));
+            }
+            let result = split.nth(final_index).unwrap().to_string();
+            Ok(Some(result))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Splitc requires three arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Split whitespaces
     ///
     /// # Usage
     ///
@@ -4843,8 +4909,8 @@ $extract()"
     /// $countl(CONTENT goes here)
     fn count_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let line_count = &args[0].lines().count();
-            Ok(Some(line_count.to_string()))
+            let line_count = LINE_MATCH.find_iter(&args[0]).count();
+            return Ok(Some(line_count.to_string()));
         } else {
             Err(RadError::InvalidArgument(
                 "countl requires an argument".to_owned(),
