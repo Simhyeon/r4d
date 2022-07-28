@@ -645,12 +645,13 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         let args = ap.args_to_vec(args, ',', GreedyState::Never);
         ap.set_strip(true);
         if args.len() >= 2 {
-            let name = processor.parse_and_strip(&mut ap, level, trim!(&args[0]).as_ref())?;
-            let target = processor.parse_and_strip(&mut ap, level, &args[1])?;
+            let name =
+                processor.parse_and_strip(&mut ap, level, "append", trim!(&args[0]).as_ref())?;
+            let target = processor.parse_and_strip(&mut ap, level, "append", &args[1])?;
             let mut trailer = None;
 
             if args.len() >= 3 {
-                trailer = Some(processor.parse_and_strip(&mut ap, level, &args[2])?);
+                trailer = Some(processor.parse_and_strip(&mut ap, level, "append", &args[2])?);
             }
 
             if let Some(name) = processor.contains_local_macro(level, &name) {
@@ -698,13 +699,13 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             ap.set_strip(true);
             let mut sums = String::new();
             let body = &args[0];
-            let sep = &processor.parse_and_strip(&mut ap, level, &args[1])?;
-            let loopable = &processor.parse_and_strip(&mut ap, level, &args[2])?;
+            let sep = &processor.parse_and_strip(&mut ap, level, "forby", &args[1])?;
+            let loopable = &processor.parse_and_strip(&mut ap, level, "forby", &args[2])?;
             for (count, value) in loopable.split_terminator(sep).enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 processor.add_new_local_macro(level, ":", value);
-                let result = &processor.parse_and_strip(&mut ap, level, body)?;
+                let result = &processor.parse_and_strip(&mut ap, level, "forby", body)?;
 
                 sums.push_str(result);
             }
@@ -731,13 +732,13 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             ap.set_strip(true);
             let mut sums = String::new();
             let body = &args[0];
-            let loop_src = processor.parse_and_strip(&mut ap, level, &args[1])?;
+            let loop_src = processor.parse_and_strip(&mut ap, level, "foreach", &args[1])?;
             let loopable = trim!(&loop_src);
             for (count, value) in loopable.as_ref().split(',').enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 processor.add_new_local_macro(level, ":", value);
-                let result = &processor.parse_and_strip(&mut ap, level, body)?;
+                let result = &processor.parse_and_strip(&mut ap, level, "foreach", body)?;
 
                 sums.push_str(result);
             }
@@ -764,14 +765,14 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             ap.set_strip(true);
             let mut sums = String::new();
             let body = &args[0];
-            let loop_src = processor.parse_and_strip(&mut ap, level, &args[1])?;
+            let loop_src = processor.parse_and_strip(&mut ap, level, "forline", &args[1])?;
             let loopable = trim!(&loop_src);
             let mut count = 1;
             for value in loopable.lines() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 processor.add_new_local_macro(level, ":", value);
-                let result = processor.parse_and_strip(&mut ap, level, body)?;
+                let result = processor.parse_and_strip(&mut ap, level, "forline", body)?;
                 sums.push_str(&result);
                 count += 1;
             }
@@ -795,8 +796,10 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let mut sums = String::new();
 
             let body = &args[0];
-            let min_src = trim!(&processor.parse_and_strip(&mut ap, level, &args[1])?).to_string();
-            let max_src = trim!(&processor.parse_and_strip(&mut ap, level, &args[2])?).to_string();
+            let min_src =
+                trim!(&processor.parse_and_strip(&mut ap, level, "forloop", &args[1])?).to_string();
+            let max_src =
+                trim!(&processor.parse_and_strip(&mut ap, level, "forloop", &args[2])?).to_string();
 
             let min = if let Ok(num) = min_src.parse::<usize>() {
                 num
@@ -817,7 +820,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let mut result: String;
             for value in min..=max {
                 processor.add_new_local_macro(level, ":", &value.to_string());
-                result = processor.parse_and_strip(&mut ap, level, body)?;
+                result = processor.parse_and_strip(&mut ap, level, "forloop", body)?;
 
                 sums.push_str(&result);
                 result.clear();
@@ -841,7 +844,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     /// $logm(mac)
     fn log_macro_info(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let macro_name = trim!(&p.parse_and_strip(&mut ap, level, args)?).to_string();
+        let macro_name = trim!(&p.parse_and_strip(&mut ap, level, "logm", args)?).to_string();
         let body = if let Some(name) = p.contains_local_macro(level, &macro_name) {
             p.get_local_macro_body(&name)?.to_string()
         } else if let Ok(body) = p.get_runtime_macro_body(&macro_name) {
@@ -865,13 +868,13 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
-            let boolean = &processor.parse_and_strip(&mut ap, level, &args[0])?;
+            let boolean = &processor.parse_and_strip(&mut ap, level, "if", &args[0])?;
 
             // Given condition is true
             let cond = Utils::is_arg_true(boolean);
             if let Ok(cond) = cond {
                 if cond {
-                    let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
+                    let if_expr = processor.parse_and_strip(&mut ap, level, "if", &args[1])?;
                     return Ok(Some(if_expr));
                 }
             } else {
@@ -899,13 +902,13 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         if let Some(args) = ap.args_with_len(args, 3) {
             ap.set_strip(true);
 
-            let boolean = &processor.parse_and_strip(&mut ap, level, &args[0])?;
+            let boolean = &processor.parse_and_strip(&mut ap, level, "ifelse", &args[0])?;
 
             // Given condition is true
             let cond = Utils::is_arg_true(boolean);
             if let Ok(cond) = cond {
                 if cond {
-                    let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
+                    let if_expr = processor.parse_and_strip(&mut ap, level, "ifelse", &args[1])?;
                     return Ok(Some(if_expr));
                 }
             } else {
@@ -916,7 +919,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             }
 
             // Else state
-            let else_expr = processor.parse_and_strip(&mut ap, level, &args[2])?;
+            let else_expr = processor.parse_and_strip(&mut ap, level, "ifelse", &args[2])?;
             Ok(Some(else_expr))
         } else {
             Err(RadError::InvalidArgument(
@@ -935,12 +938,13 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
 
-            let name = trim!(&processor.parse_and_strip(&mut ap, level, &args[0])?).to_string();
+            let name =
+                trim!(&processor.parse_and_strip(&mut ap, level, "ifdef", &args[0])?).to_string();
 
             let boolean = processor.contains_macro(&name, MacroType::Any);
             // Return true or false by the definition
             if boolean {
-                let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
+                let if_expr = processor.parse_and_strip(&mut ap, level, "ifdef", &args[1])?;
                 return Ok(Some(if_expr));
             }
             Ok(None)
@@ -955,21 +959,22 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     ///
     /// # Usage
     ///
-    /// $ifdefelse(macro_name,expr,expr2)
+    /// $ifdefel(macro_name,expr,expr2)
     fn ifdefel(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 3) {
             ap.set_strip(true);
 
-            let name = trim!(&processor.parse_and_strip(&mut ap, level, &args[0])?).to_string();
+            let name =
+                trim!(&processor.parse_and_strip(&mut ap, level, "ifdefel", &args[0])?).to_string();
 
             let boolean = processor.contains_macro(&name, MacroType::Any);
             // Return true or false by the definition
             if boolean {
-                let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
+                let if_expr = processor.parse_and_strip(&mut ap, level, "ifdefel", &args[1])?;
                 Ok(Some(if_expr))
             } else {
-                let else_expr = processor.parse_and_strip(&mut ap, level, &args[2])?;
+                let else_expr = processor.parse_and_strip(&mut ap, level, "ifdefel", &args[2])?;
                 Ok(Some(else_expr))
             }
         } else {
@@ -993,13 +998,14 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
 
-            let name = trim!(&processor.parse_and_strip(&mut ap, level, &args[0])?).to_string();
+            let name =
+                trim!(&processor.parse_and_strip(&mut ap, level, "ifenv", &args[0])?).to_string();
 
             let boolean = std::env::var(name).is_ok();
 
             // Return true or false by the definition
             if boolean {
-                let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
+                let if_expr = processor.parse_and_strip(&mut ap, level, "ifenv", &args[1])?;
                 return Ok(Some(if_expr));
             }
             Ok(None)
@@ -1024,16 +1030,17 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         if let Some(args) = ap.args_with_len(args, 3) {
             ap.set_strip(true);
 
-            let name = trim!(&processor.parse_and_strip(&mut ap, level, &args[0])?).to_string();
+            let name =
+                trim!(&processor.parse_and_strip(&mut ap, level, "ifenvel", &args[0])?).to_string();
 
             let boolean = std::env::var(name).is_ok();
 
             // Return true or false by the definition
             if boolean {
-                let if_expr = processor.parse_and_strip(&mut ap, level, &args[1])?;
+                let if_expr = processor.parse_and_strip(&mut ap, level, "ifenvel", &args[1])?;
                 Ok(Some(if_expr))
             } else {
-                let else_expr = processor.parse_and_strip(&mut ap, level, &args[2])?;
+                let else_expr = processor.parse_and_strip(&mut ap, level, "ifenvel", &args[2])?;
                 Ok(Some(else_expr))
             }
         } else {
@@ -1081,7 +1088,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         processor.state.behaviour = ErrorBehaviour::Assert;
 
         let mut ap = ArgParser::new().no_strip();
-        let result = processor.parse_and_strip(&mut ap, level, args);
+        let result = processor.parse_and_strip(&mut ap, level, "fassert", args);
         processor.state.behaviour = backup;
         if result.is_err() {
             processor.track_assertion(true)?;
@@ -1115,7 +1122,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
-            let boolean = &processor.parse_and_strip(&mut ap, level, &args[0])?;
+            let boolean = &processor.parse_and_strip(&mut ap, level, "ifque", &args[0])?;
             let cond = Utils::is_arg_true(boolean)?;
             if cond {
                 processor.insert_queue(&args[1]);
@@ -1167,11 +1174,13 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let file_path = PathBuf::from(processor.parse_and_strip(
                 &mut ap,
                 level,
+                "readto",
                 trim!(&args[0]).as_ref(),
             )?);
             let to_path = PathBuf::from(processor.parse_and_strip(
                 &mut ap,
                 level,
+                "readto",
                 trim!(&args[1]).as_ref(),
             )?);
             if file_path == to_path {
@@ -1197,6 +1206,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                     raw_include = Utils::is_arg_true(&processor.parse_and_strip(
                         &mut ap,
                         level,
+                        "readto",
                         trim!(&args[2]).as_ref(),
                     )?)?;
 
@@ -1244,6 +1254,8 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     /// $readin(file_a)
     #[cfg(not(feature = "wasm"))]
     fn read_in(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        use crate::WarningType;
+
         if !Utils::is_granted("readin", AuthType::FIN, processor)? {
             return Ok(None);
         }
@@ -1259,6 +1271,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let file_path = PathBuf::from(processor.parse_and_strip(
                 &mut ap,
                 level,
+                "readin",
                 trim!(&args[0]).as_ref(),
             )?);
             let mut raw_include = false;
@@ -1273,6 +1286,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                     raw_include = Utils::is_arg_true(&processor.parse_and_strip(
                         &mut ap,
                         level,
+                        "readin",
                         trim!(&args[1]).as_ref(),
                     )?)?;
 
@@ -1281,6 +1295,13 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                     if raw_include {
                         processor.state.flow_control = FlowControl::Escape;
                     }
+                }
+
+                if let Some(relay) = processor.state.relay.last() {
+                    processor.log_warning(
+                        &format!("Read file's content will be relayed to \"{:?}\"", relay),
+                        WarningType::Sanity,
+                    )?;
                 }
 
                 // Create chunk
@@ -1324,10 +1345,14 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             ap.set_strip(true);
 
             let macro_name =
-                trim!(&processor.parse_and_strip(&mut ap, level, &args[0])?).to_string();
-            let args = processor.parse_and_strip(&mut ap, level, &args[1])?;
-            let result =
-                processor.parse_and_strip(&mut ap, level, &format!("${}({})", macro_name, args))?;
+                trim!(&processor.parse_and_strip(&mut ap, level, "exec", &args[0])?).to_string();
+            let args = processor.parse_and_strip(&mut ap, level, "exec", &args[1])?;
+            let result = processor.parse_and_strip(
+                &mut ap,
+                level,
+                "exec",
+                &format!("${}({})", macro_name, args),
+            )?;
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
@@ -1356,8 +1381,8 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
 
-            let expanded_name = &processor.parse_and_strip(&mut ap, level, &args[0])?;
-            let expanded_data = &processor.parse_and_strip(&mut ap, level, &args[1])?;
+            let expanded_name = &processor.parse_and_strip(&mut ap, level, "spread", &args[0])?;
+            let expanded_data = &processor.parse_and_strip(&mut ap, level, "spread", &args[1])?;
             let macro_name = trim!(expanded_name);
             let macro_data = trim!(expanded_data);
 
@@ -1379,7 +1404,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             processor.set_debug(false);
 
             // Parse macros
-            let result = processor.parse_and_strip(&mut ap, level, &result)?;
+            let result = processor.parse_and_strip(&mut ap, level, "spread", &result)?;
 
             // Set custom prompt log to indicate user thatn from macro doesn't support
             // debugging inside macro expansion
