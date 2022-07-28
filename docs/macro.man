@@ -54,6 +54,23 @@ Description >>
 
 ----
 Macro Type  : Function
+Macro Name  : after
+Arguments   : ["a_pattern", "a_content"]
+Usage       : $after(a_pattern,a_content)
+Description >> 
+    Get a substring after a pattern
+    
+    # Arguments
+    
+    - a_pattern : A pattern to find
+    - a_content : A content to get a sub string
+    
+    # Example
+    
+    $assert(하세요,$after(안녕,안녕하세요))
+
+----
+Macro Type  : Function
 Macro Name  : align
 Arguments   : ["a_type^", "a_width^", "a_fill^", "a_text"]
 Usage       : $align(a_type^,a_width^,a_fill^,a_text)
@@ -2213,6 +2230,25 @@ Description >>
 
 ----
 Macro Type  : Function
+Macro Name  : sep
+Arguments   : ["a_content"]
+Usage       : $sep(a_content)
+Description >> 
+    Separate content
+    
+    # Arguments
+    
+    - a_content : Content to separate
+    
+    # Example
+    
+    $assert(4,$countl($sep(
+    1
+    2
+    )))
+
+----
+Macro Type  : Function
 Macro Name  : slice
 Arguments   : ["a_min^", "a_max^", "a_array"]
 Usage       : $slice(a_min^,a_max^,a_array)
@@ -2342,15 +2378,15 @@ Description >>
     # Example
     
     $assert=(
-    	text******
-    	***text***
-    	******text,
-    	$spread=(
-    		align,
-    		left,10,*,text
-    		center,10,*,text
-    		right,10,*,text
-    	)
+        text******
+        ***text***
+        ******text,
+        $spread=(
+            align,
+            left,10,*,text
+            center,10,*,text
+            right,10,*,text
+        )
     )
 
 ----
@@ -2823,6 +2859,23 @@ Description >>
     # Example
     
     $assert(☺,$unicode(263a))
+
+----
+Macro Type  : Function
+Macro Name  : until
+Arguments   : ["a_pattern", "a_content"]
+Usage       : $until(a_pattern,a_content)
+Description >> 
+    Get a substring unitl a pattern
+    
+    # Arguments
+    
+    - a_pattern : A pattern to find
+    - a_content : A content to get a sub string
+    
+    # Example
+    
+    $assert(안녕하,$until(세,안녕하세요))
 
 ----
 Macro Type  : Function

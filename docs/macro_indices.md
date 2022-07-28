@@ -3,6 +3,7 @@
 * [-](#-)
 * [EB](#EB)
 * [abs](#abs)
+* [after](#after)
 * [align](#align)
 * [append](#append)
 * [assert](#assert)
@@ -112,6 +113,7 @@
 * [repeat](#repeat)
 * [repl](#repl)
 * [rev](#rev)
+* [sep](#sep)
 * [slice](#slice)
 * [sort](#sort)
 * [sortl](#sortl)
@@ -142,6 +144,7 @@
 * [trimla](#trimla)
 * [undef](#undef)
 * [unicode](#unicode)
+* [until](#until)
 * [update](#update)
 * [upper](#upper)
 * [wrap](#wrap)
@@ -225,6 +228,31 @@ Description
     # Example
     
     $assert(/home/user/cwd/test.md,$abs(test.md))
+
+### after
+
+Macro Type  : Function
+
+Macro Name  : after
+
+Arguments   : ["a_pattern", "a_content"]
+
+Usage       : $after(a_pattern,a_content)
+
+Description 
+
+>>
+ 
+    Get a substring after a pattern
+    
+    # Arguments
+    
+    - a_pattern : A pattern to find
+    - a_content : A content to get a sub string
+    
+    # Example
+    
+    $assert(하세요,$after(안녕,안녕하세요))
 
 ### align
 
@@ -3257,6 +3285,33 @@ Description
     
     $assert(3,2,1,$rev(1,2,3))
 
+### sep
+
+Macro Type  : Function
+
+Macro Name  : sep
+
+Arguments   : ["a_content"]
+
+Usage       : $sep(a_content)
+
+Description 
+
+>>
+ 
+    Separate content
+    
+    # Arguments
+    
+    - a_content : Content to separate
+    
+    # Example
+    
+    $assert(4,$countl($sep(
+    1
+    2
+    )))
+
 ### slice
 
 Macro Type  : Function
@@ -3444,15 +3499,15 @@ Description
     # Example
     
     $assert=(
-    	text******
-    	***text***
-    	******text,
-    	$spread=(
-    		align,
-    		left,10,*,text
-    		center,10,*,text
-    		right,10,*,text
-    	)
+        text******
+        ***text***
+        ******text,
+        $spread=(
+            align,
+            left,10,*,text
+            center,10,*,text
+            right,10,*,text
+        )
     )
 
 ### squash
@@ -4109,6 +4164,31 @@ Description
     # Example
     
     $assert(☺,$unicode(263a))
+
+### until
+
+Macro Type  : Function
+
+Macro Name  : until
+
+Arguments   : ["a_pattern", "a_content"]
+
+Usage       : $until(a_pattern,a_content)
+
+Description 
+
+>>
+ 
+    Get a substring unitl a pattern
+    
+    # Arguments
+    
+    - a_pattern : A pattern to find
+    - a_content : A content to get a sub string
+    
+    # Example
+    
+    $assert(안녕하,$until(세,안녕하세요))
 
 ### update
 

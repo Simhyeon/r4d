@@ -2,6 +2,9 @@
 
 * [x] Somehow container relaying priority was wrong ..?
 * [x] Include call inside macro calls are not espcted behaviour
+* [ ] Macro for mode check    : For sanity
+* [ ] Macro for auth check    : For sanity
+* [ ] Macro for comment check : For sanity
 * [ ] Consider implementing arrays
 * [ ] Rad backtrace prints strangely inside forby macro
 * [ ] New macro
