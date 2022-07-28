@@ -1,31 +1,15 @@
 ### TODO
 
-* [x] Somehow container relaying priority was wrong ..?
-* [x] Include call inside macro calls are not espcted behaviour
-* [x] now index variants don't allocate into a separate vector but use iterator
-  directly in cost of O(n) time complexity
-* [ ] Consider implementing arrays
-* [ ] Rad backtrace prints strangely inside forby macro
-* [ ] New macro
-    * [x] Dump
-    * [x] indexl : Index line
-    * [x] Sep : Separate
-    * [x] until
-    * [x] after
-    * [x] Meta-processing related
-        * [x] Require
-        * [x] Strict
-        * [x] Comment
-    * [x] splitc : Maybe this can replace until or after?
-        - No actually not, because splitc's user should know the exact form
-        while until and after never fails thus enable dynamic input.
-    * [ ] Capture : $capture(expr,count,src) : Possibly with regex pattern?
-        * [ ] Regxm macro? Which applies macro to captured groups?
-* [x] Now relay and read to doesn't truncate a file
-* [x] Now raw include doesn't pause but escape : More efficient + can handle
-  possible breaking rad codes
+* [x] Rad backtrace prints strangely for deterred  macro
+    * [-] This fix should also affect template crate.... damn it. Actually no,
+      but keep in mind that user configured deterred macro doesn't set macro
+      name properly without template related update.
+* [x] Warn readin when relay is on. For sanity reason
 
-* [ ] Warn readin when relay is on. For sanity reason
+* [ ] Capture : $capture(expr,count,src) : Possibly with regex pattern?
+    * [ ] Regxm macro? Which applies macro to captured groups?
+
+* [ ] Consider implementing arrays
 
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
     - This needs to implement cow manipulation and I'm... ok maybe later
@@ -54,6 +38,28 @@ $todo_start()
 $todo_end()
 
 ### Changes
+
+* [x] Now relay and read to doesn't truncate a file
+* [x] Now raw include doesn't pause but escape : More efficient + can handle
+  possible breaking rad codes
+* [x] Somehow container relaying priority was wrong ..?
+* [x] Include call inside macro calls are not espcted behaviour
+* [x] now index variants don't allocate into a separate vector but use iterator
+  directly in cost of O(n) time complexity
+
+* [x] New macro
+    * [x] Dump
+    * [x] indexl : Index line
+    * [x] Sep : Separate
+    * [x] until
+    * [x] after
+    * [x] Meta-processing related
+        * [x] Require
+        * [x] Strict
+        * [x] Comment
+    * [x] splitc : Maybe this can replace until or after?
+        - No actually not, because splitc's user should know the exact form
+        while until and after never fails thus enable dynamic input.
 
 ### Macro ergonomics
 

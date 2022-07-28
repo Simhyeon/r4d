@@ -2,16 +2,25 @@
 
 **rad**
 
--  BUG : Stdin input panicked
--  CHG : MOdule changes
--  CHG : Now static macro is not expanded
--  ERG : Ditched cmp and added multiple comparision macros
--  ERG : Now documentation has 80 caps on description.
--  FET : Dry run
--  FET : Freeze flag refactored
--  FET : Packaging flag
-
-**rado**
+- BUG : Stdin input panicked
+- CHG : MOdule changes
+- CHG : Now static macro is not expanded
+- ERG : Ditched cmp and added multiple comparision macros
+- ERG : Now documentation has 80 caps on description.
+- FET : Dry run
+- FET : Freeze flag refactored
+- FET : Packaging flag
+- FET New macros
+    - Dump
+    - indexl
+    - Sep
+    - until
+    - after
+    - Meta-processing related
+        - Require
+        - Strict
+        - Comment
+    - splitc **rado**
 
 - FET : Package subcommand
 - FET : Execute subcommand
@@ -60,31 +69,31 @@
 # 3.0.0-rc.4
 
 - FET : New macros
-	- Escape blanks 
-	- Grep && Grepl
-	- strip ( differnt from previous )
-	- Regexpr
-	- Input
-	- Temp
-	- Trimla ( Trim line amount )
-	- Indent ( Indent lines )
-	- read\_to read\_in
-	- join, joinl
-	- notat
-	- letr, staticr
-	- counter
-	- align
-	- Tab && space && empty
+    - Escape blanks
+    - Grep && Grepl
+    - strip ( differnt from previous )
+    - Regexpr
+    - Input
+    - Temp
+    - Trimla ( Trim line amount )
+    - Indent ( Indent lines )
+    - read\_to read\_in
+    - join, joinl
+    - notat
+    - letr, staticr
+    - counter
+    - align
+    - Tab && space && empty
 - CHG : Macro ergonomics
-	- For variatns order changed backwards
-	- Static trims value
-	- Halt is queued by default
-	- Changed fileout's argument order
-	- Renamed arr to spilt
-	- Removed sep macro because
-	- Removed queries macro
-	- Removed strip and stripl
-	- Removed cnl
+    - For variatns order changed backwards
+    - Static trims value
+    - Halt is queued by default
+    - Changed fileout's argument order
+    - Renamed arr to spilt
+    - Removed sep macro because
+    - Removed queries macro
+    - Removed strip and stripl
+    - Removed cnl
 - CHG : Changed argument parsing behaviour frome lexor and arg parser
 - CHG : Made formatter respect processor line ending
 - CHG : Now define macro also detects trim input attribute
@@ -96,7 +105,7 @@
 - Bug : Assert mode panicked
 - Bug : Error message cascaded as much as nested level
 - Bug : Exit macro yieled error and broke from entier rad process
-- Bug : Include's containder had high priority over relay target 
+- Bug : Include's containder had high priority over relay target
 - Bug : Fasssert treated success as fail and vice versa
 
 
@@ -114,8 +123,8 @@
 - FET : Manual flag
 - FET : RegexCache for better regex performance
 - FET : New macros
-	- Find
-	- FIndm
+    - Find
+    - FIndm
 
 # 3.0.0-rc.2
 
@@ -147,11 +156,11 @@ which will be removed in 3.0
 - BugFix : Hid unnecessary extra features from users
 - BugFix : ExtMacroBuilder's export has been feature gated by storage,
 - Ergono : Ditched avoidable dependencies
-	- Thiserror
-	- Csv
-	- Lipsum
+    - Thiserror
+    - Csv
+    - Lipsum
 - Ergono : Remove feature gates for better maintainability
-	- Storage
+    - Storage
 
 # 2.1.2
 
