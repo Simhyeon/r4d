@@ -250,15 +250,15 @@ an argument for a macro
 # Example
 
 $assert=(
-	text******
-	***text***
-	******text,
-	$spread=(
-		align,
-		left,10,*,text
-		center,10,*,text
-		right,10,*,text
-	)
+    text******
+    ***text***
+    ******text,
+    $spread=(
+        align,
+        left,10,*,text
+        center,10,*,text
+        right,10,*,text
+    )
 )".to_string()),
                 ),
             ),
