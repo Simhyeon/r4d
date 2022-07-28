@@ -2761,9 +2761,10 @@ impl<'processor> Processor<'processor> {
         &mut self,
         ap: &mut ArgParser,
         level: usize,
+        caller: &str,
         src: &str,
     ) -> RadResult<String> {
-        Ok(ap.strip(&self.parse_chunk_args(level, "", src)?))
+        Ok(ap.strip(&self.parse_chunk_args(level, caller, src)?))
     }
 
     /// Get a local macro's raw body
