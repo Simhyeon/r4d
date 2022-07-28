@@ -103,7 +103,7 @@ $assert(5,$-(num))".to_string(),
 
 # Example
 
-".to_string()),
+$assert(하세요,$after(안녕,안녕하세요))".to_string()),
                 ),
             ),
             (
@@ -2130,7 +2130,7 @@ $assert(☺,$unicode(263a))".to_string()),
 
 # Example
 
-".to_string()),
+$assert(안녕하,$until(세,안녕하세요))".to_string()),
                 ),
             ),
             (
