@@ -1,152 +1,3 @@
-# TOC
-
-[-](#-)
-[EB](#EB)
-[abs](#abs)
-[align](#align)
-[append](#append)
-[assert](#assert)
-[ceil](#ceil)
-[chars](#chars)
-[chomp](#chomp)
-[clear](#clear)
-[comma](#comma)
-[comp](#comp)
-[count](#count)
-[counter](#counter)
-[countl](#countl)
-[countw](#countw)
-[date](#date)
-[declare](#declare)
-[define](#define)
-[dnl](#dnl)
-[docu](#docu)
-[dropcsv](#dropcsv)
-[dump](#dump)
-[empty](#empty)
-[enl](#enl)
-[env](#env)
-[envset](#envset)
-[eq](#eq)
-[escape](#escape)
-[eval](#eval)
-[evalk](#evalk)
-[exec](#exec)
-[exit](#exit)
-[extract](#extract)
-[fassert](#fassert)
-[fileout](#fileout)
-[find](#find)
-[findm](#findm)
-[floor](#floor)
-[fold](#fold)
-[foldl](#foldl)
-[forby](#forby)
-[foreach](#foreach)
-[forline](#forline)
-[forloop](#forloop)
-[ftime](#ftime)
-[grep](#grep)
-[grepf](#grepf)
-[grepl](#grepl)
-[gt](#gt)
-[gte](#gte)
-[halt](#halt)
-[head](#head)
-[headl](#headl)
-[hms](#hms)
-[hygiene](#hygiene)
-[if](#if)
-[ifdef](#ifdef)
-[ifdefel](#ifdefel)
-[ifelse](#ifelse)
-[ifenv](#ifenv)
-[ifenvel](#ifenvel)
-[ifque](#ifque)
-[import](#import)
-[include](#include)
-[indent](#indent)
-[index](#index)
-[indexl](#indexl)
-[input](#input)
-[isempty](#isempty)
-[istype](#istype)
-[iszero](#iszero)
-[join](#join)
-[joinl](#joinl)
-[len](#len)
-[let](#let)
-[letr](#letr)
-[lipsum](#lipsum)
-[listdir](#listdir)
-[log](#log)
-[loge](#loge)
-[logm](#logm)
-[lower](#lower)
-[lt](#lt)
-[lte](#lte)
-[max](#max)
-[min](#min)
-[name](#name)
-[nassert](#nassert)
-[nl](#nl)
-[not](#not)
-[notat](#notat)
-[num](#num)
-[panic](#panic)
-[parent](#parent)
-[path](#path)
-[pause](#pause)
-[pipe](#pipe)
-[pipeto](#pipeto)
-[prec](#prec)
-[que](#que)
-[query](#query)
-[readin](#readin)
-[readto](#readto)
-[regcsv](#regcsv)
-[regex](#regex)
-[regexpr](#regexpr)
-[relay](#relay)
-[rename](#rename)
-[repeat](#repeat)
-[repl](#repl)
-[rev](#rev)
-[slice](#slice)
-[sort](#sort)
-[sortl](#sortl)
-[source](#source)
-[space](#space)
-[spilt](#spilt)
-[spread](#spread)
-[squash](#squash)
-[sspilt](#sspilt)
-[static](#static)
-[staticr](#staticr)
-[strip](#strip)
-[sub](#sub)
-[surr](#surr)
-[syscmd](#syscmd)
-[tab](#tab)
-[table](#table)
-[tail](#tail)
-[taill](#taill)
-[temp](#temp)
-[tempin](#tempin)
-[tempout](#tempout)
-[tempto](#tempto)
-[time](#time)
-[tr](#tr)
-[trim](#trim)
-[triml](#triml)
-[trimla](#trimla)
-[undef](#undef)
-[unicode](#unicode)
-[update](#update)
-[upper](#upper)
-[wrap](#wrap)
-
-## -
 Macro Type  : Function
 Macro Name  : -
 Arguments   : ["a_pipe_name?^"]
@@ -167,8 +18,7 @@ Description >>
     $pipeto(num,5)
     $assert(5,$-(num))
 
-## EB
-
+----
 Macro Type  : Deterred
 Macro Name  : EB
 Arguments   : []
@@ -182,8 +32,7 @@ Description >>
     
     $EB()
 
-## abs
-
+----
 Macro Type  : Function
 Macro Name  : abs
 Arguments   : ["a_path^"]
@@ -203,8 +52,7 @@ Description >>
     
     $assert(/home/user/cwd/test.md,$abs(test.md))
 
-## align
-
+----
 Macro Type  : Function
 Macro Name  : align
 Arguments   : ["a_type^", "a_width^", "a_fill^", "a_text"]
@@ -225,8 +73,7 @@ Description >>
     $assert(***Hello,$align(right ,8,*,Hello))
     $assert(**Hello*,$align(center,8,*,Hello))
 
-## append
-
+----
 Macro Type  : Deterred
 Macro Name  : append
 Arguments   : ["a_macro_name^", "a_content", "a_trailer+"]
@@ -257,8 +104,7 @@ Description >>
     $append(arr,second,$comma())
     $assert($arr(),first,second)
 
-## assert
-
+----
 Macro Type  : Function
 Macro Name  : assert
 Arguments   : ["a_lvalue", "a_rvalue"]
@@ -278,8 +124,7 @@ Description >>
     % Fails
     $assert(a,b)
 
-## ceil
-
+----
 Macro Type  : Function
 Macro Name  : ceil
 Arguments   : ["a_number^"]
@@ -298,8 +143,7 @@ Description >>
     $assert($ceil(0.9),1)
     $assert($ceil(3.1),4)
 
-## chars
-
+----
 Macro Type  : Function
 Macro Name  : chars
 Arguments   : ["a_text^"]
@@ -313,10 +157,9 @@ Description >>
     
     # Example
     
-    $assert(a,b,c,d,e$chars(abcde))
+    $assert(\*a,b,c,d,e*\$chars(abcde))
 
-## chomp
-
+----
 Macro Type  : Function
 Macro Name  : chomp
 Arguments   : ["a_content"]
@@ -337,8 +180,7 @@ Description >>
     $assert($countl($lines()),4)
     $assert($countl($chomp($lines())),3)
 
-## clear
-
+----
 Macro Type  : Function
 Macro Name  : clear
 Arguments   : []
@@ -351,8 +193,7 @@ Description >>
     
     $clear()
 
-## comma
-
+----
 Macro Type  : Function
 Macro Name  : comma
 Arguments   : []
@@ -362,10 +203,9 @@ Description >>
     
     # Example
     
-    $assert(,,$comma())
+    $assert(\*,*\,$comma())
 
-## comp
-
+----
 Macro Type  : Function
 Macro Name  : comp
 Arguments   : ["a_content"]
@@ -388,8 +228,7 @@ Description >>
     $assert($countl($lines()),5)
     $assert($countl($comp($lines())),3)
 
-## count
-
+----
 Macro Type  : Function
 Macro Name  : count
 Arguments   : ["a_array"]
@@ -407,8 +246,7 @@ Description >>
     
     $assert($count(a,b,c),3)
 
-## counter
-
+----
 Macro Type  : Function
 Macro Name  : counter
 Arguments   : ["a_macro_name^", "a_counter_type^+"]
@@ -435,8 +273,7 @@ Description >>
     $counter(ct,minus)
     $assert($ct(),2)
 
-## countl
-
+----
 Macro Type  : Function
 Macro Name  : countl
 Arguments   : ["a_lines"]
@@ -456,8 +293,7 @@ Description >>
     2
     3))
 
-## countw
-
+----
 Macro Type  : Function
 Macro Name  : countw
 Arguments   : ["a_array"]
@@ -475,8 +311,7 @@ Description >>
     
     $assert($countw(hello world),2)
 
-## date
-
+----
 Macro Type  : Function
 Macro Name  : date
 Arguments   : []
@@ -489,8 +324,7 @@ Description >>
     % yyyy-MM-dd
     $date()
 
-## declare
-
+----
 Macro Type  : Function
 Macro Name  : declare
 Arguments   : ["a_macro_names^"]
@@ -507,8 +341,7 @@ Description >>
     $declare(first,second)
     $assert($first(),$empty())
 
-## define
-
+----
 Macro Type  : Function
 Macro Name  : define
 Arguments   : ["a_define_statement"]
@@ -533,8 +366,7 @@ Description >>
     $assert($test(),Test)
     $assert(wow cow,$demo(wow,cow))
 
-## dnl
-
+----
 Macro Type  : Function
 Macro Name  : dnl
 Arguments   : []
@@ -551,8 +383,7 @@ Description >>
     
     b)
 
-## docu
-
+----
 Macro Type  : Function
 Macro Name  : docu
 Arguments   : ["a_macro_name^", "a_doc"]
@@ -571,8 +402,7 @@ Description >>
     $define(test=)
     $docu(test,This is test macro)
 
-## dropcsv
-
+----
 Macro Type  : Function
 Macro Name  : dropcsv
 Arguments   : ["a_table_name^"]
@@ -588,8 +418,7 @@ Description >>
     
     $dropcsv(table1)
 
-## dump
-
+----
 Macro Type  : Function
 Macro Name  : dump
 Arguments   : ["a_file_name^"]
@@ -606,8 +435,7 @@ Description >>
     $dump(file.txt)
     $assert($empty(),$include(file.txt))
 
-## empty
-
+----
 Macro Type  : Function
 Macro Name  : empty
 Arguments   : []
@@ -619,8 +447,7 @@ Description >>
     
     $assert(,$empty())
 
-## enl
-
+----
 Macro Type  : Function
 Macro Name  : enl
 Arguments   : []
@@ -633,8 +460,7 @@ Description >>
     $assert(ab,a$enl()
     b)
 
-## env
-
+----
 Macro Type  : Function
 Macro Name  : env
 Arguments   : ["a_env_name^"]
@@ -652,8 +478,7 @@ Description >>
     
     $assert(/home/user/dir,$env(HOME))
 
-## envset
-
+----
 Macro Type  : Function
 Macro Name  : envset
 Arguments   : ["a_env_name^", "a_env_value"]
@@ -672,8 +497,7 @@ Description >>
     
     $envset(HOME,/tmp)
 
-## eq
-
+----
 Macro Type  : Function
 Macro Name  : eq
 Arguments   : ["a_lvalue", "a_rvalue"]
@@ -693,8 +517,7 @@ Description >>
     $assert(false,$eq(a,b))
     $assert(true,$eq(23,23))
 
-## escape
-
+----
 Macro Type  : Function
 Macro Name  : escape
 Arguments   : []
@@ -708,8 +531,7 @@ Description >>
     
     $escape()
 
-## eval
-
+----
 Macro Type  : Function
 Macro Name  : eval
 Arguments   : ["a_expr"]
@@ -728,8 +550,7 @@ Description >>
     $assert(3,$eval(1 + 2))
     $assert(true,$eval("string" == "string"))
 
-## evalk
-
+----
 Macro Type  : Function
 Macro Name  : evalk
 Arguments   : ["a_expr"]
@@ -747,8 +568,7 @@ Description >>
     
     $assert(1 + 2 = 3,$evalk(1 + 2 ))
 
-## exec
-
+----
 Macro Type  : Deterred
 Macro Name  : exec
 Arguments   : ["a_macro_name^", "a_macro_args"]
@@ -767,8 +587,7 @@ Description >>
     
     $assert($path(a,b,c),$exec(path,a,b,c))
 
-## exit
-
+----
 Macro Type  : Function
 Macro Name  : exit
 Arguments   : []
@@ -782,8 +601,7 @@ Description >>
     
     $exit()
 
-## extract
-
+----
 Macro Type  : Function
 Macro Name  : extract
 Arguments   : []
@@ -795,8 +613,7 @@ Description >>
     
     $extract()
 
-## fassert
-
+----
 Macro Type  : Deterred
 Macro Name  : fassert
 Arguments   : ["a_expr"]
@@ -814,8 +631,7 @@ Description >>
     
     $fassert($eval(Text is not allowd))
 
-## fileout
-
+----
 Macro Type  : Function
 Macro Name  : fileout
 Arguments   : ["a_filename^", "a_truncate?^", "a_content"]
@@ -835,8 +651,7 @@ Description >>
     
     $fileout(/tmp/some_file.txt,true,Hello World)
 
-## find
-
+----
 Macro Type  : Function
 Macro Name  : find
 Arguments   : ["a_expr", "a_source"]
@@ -855,8 +670,7 @@ Description >>
     
     $assert(true,$find(^abc,abcde))
 
-## findm
-
+----
 Macro Type  : Function
 Macro Name  : findm
 Arguments   : ["a_expr", "a_source"]
@@ -876,8 +690,7 @@ Description >>
     
     $assert(2,$findm(o,hello world))
 
-## floor
-
+----
 Macro Type  : Function
 Macro Name  : floor
 Arguments   : ["a_number^"]
@@ -896,8 +709,7 @@ Description >>
     $assert($floor( 1.9),1)
     $assert($floor(-3.1),-4)
 
-## fold
-
+----
 Macro Type  : Function
 Macro Name  : fold
 Arguments   : ["a_array"]
@@ -913,8 +725,7 @@ Description >>
     
     $assert(abc,$fold(a,b,c))
 
-## foldl
-
+----
 Macro Type  : Function
 Macro Name  : foldl
 Arguments   : ["a_lines"]
@@ -932,8 +743,7 @@ Description >>
     b
     c))
 
-## forby
-
+----
 Macro Type  : Deterred
 Macro Name  : forby
 Arguments   : ["a_body", "a_sep", "a_text"]
@@ -959,8 +769,7 @@ Description >>
     
     $assert(a+b+c+,$forby($:()+,-,a-b-c))
 
-## foreach
-
+----
 Macro Type  : Deterred
 Macro Name  : foreach
 Arguments   : ["a_body", "a_array^"]
@@ -984,8 +793,7 @@ Description >>
     
     $assert(a+b+c+,$foreach($:()+,a,b,c))
 
-## forline
-
+----
 Macro Type  : Deterred
 Macro Name  : forline
 Arguments   : ["a_body", "a_lines^"]
@@ -1009,8 +817,7 @@ Description >>
     
     $assert(a+b+c+,$forline($:()+,a$nl()b$nl()c))
 
-## forloop
-
+----
 Macro Type  : Deterred
 Macro Name  : forloop
 Arguments   : ["a_body", "a_min^", "a_max^"]
@@ -1038,8 +845,7 @@ Description >>
     
     $assert(1+2+3+,$forloop($:()+,1,3))
 
-## ftime
-
+----
 Macro Type  : Function
 Macro Name  : ftime
 Arguments   : ["a_file"]
@@ -1056,8 +862,7 @@ Description >>
     $ftime(some_file.txt)
     % 2022-07-07 19:07:06
 
-## grep
-
+----
 Macro Type  : Function
 Macro Name  : grep
 Arguments   : ["a_expr", "a_array"]
@@ -1072,10 +877,9 @@ Description >>
     
     # Example
     
-    $assert(a,b,c,$grep([a-z],a,b,c,1,2))
+    $assert(\*a,b,c*\,$grep([a-z],a,b,c,1,2))
 
-## grepf
-
+----
 Macro Type  : Function
 Macro Name  : grepf
 Arguments   : ["a_expr", "a_file^"]
@@ -1094,8 +898,7 @@ Description >>
     
     $countl($grepf(file.txt))
 
-## grepl
-
+----
 Macro Type  : Function
 Macro Name  : grepl
 Arguments   : ["a_expr", "a_lines"]
@@ -1113,8 +916,7 @@ Description >>
     
     $assert(2,$countl($grepl(Cargo,$syscmd(ls))))
 
-## gt
-
+----
 Macro Type  : Function
 Macro Name  : gt
 Arguments   : ["a_lvalue", "a_rvalue"]
@@ -1134,8 +936,7 @@ Description >>
     $assert(true,$gt(c,b))
     $assert(false,$gt(text,text))
 
-## gte
-
+----
 Macro Type  : Function
 Macro Name  : gte
 Arguments   : ["a_lvalue", "a_rvalue"]
@@ -1155,8 +956,7 @@ Description >>
     $assert(true,$gte(c,b))
     $assert(true,$gte(text,text))
 
-## halt
-
+----
 Macro Type  : Function
 Macro Name  : halt
 Arguments   : []
@@ -1177,8 +977,7 @@ Description >>
     $halt()
     $assert(12345,$cont^())
 
-## head
-
+----
 Macro Type  : Function
 Macro Name  : head
 Arguments   : ["a_count^", "a_content"]
@@ -1195,8 +994,7 @@ Description >>
     
     $assert(Hello~,$head( 6 ,Hello~ World))
 
-## headl
-
+----
 Macro Type  : Function
 Macro Name  : headl
 Arguments   : ["a_count^", "a_lines"]
@@ -1215,8 +1013,7 @@ Description >>
     b
     c)))
 
-## hms
-
+----
 Macro Type  : Function
 Macro Name  : hms
 Arguments   : ["a_second^"]
@@ -1232,8 +1029,7 @@ Description >>
     
     $assert(00:33:40,$hms(2020))
 
-## hygiene
-
+----
 Macro Type  : Function
 Macro Name  : hygiene
 Arguments   : ["a_hygiene?^"]
@@ -1255,8 +1051,7 @@ Description >>
     % test macro is cleared and doesn't exsit
     $fassert($test())
 
-## if
-
+----
 Macro Type  : Deterred
 Macro Name  : if
 Arguments   : ["a_cond?^", "a_if_expr"]
@@ -1278,8 +1073,7 @@ Description >>
     
     $assert(I'm true,$if(true,I'm true))
 
-## ifdef
-
+----
 Macro Type  : Deterred
 Macro Name  : ifdef
 Arguments   : ["a_macro_name^", "a_if_expr"]
@@ -1301,8 +1095,7 @@ Description >>
     
     $assert(I'm defined,$ifdef(define,I'm defined))
 
-## ifdefel
-
+----
 Macro Type  : Deterred
 Macro Name  : ifdefel
 Arguments   : ["a_macro_name^", "a_if_expr", "a_else_expr"]
@@ -1327,8 +1120,7 @@ Description >>
     $assert(I'm defined,$ifdefel(define,I'm defined,I'm NOT defined))
     $assert(I'm NOT defined,$ifdefel(defuo,I'm defined,I'm NOT defined))
 
-## ifelse
-
+----
 Macro Type  : Deterred
 Macro Name  : ifelse
 Arguments   : ["a_cond?^", "a_if_expr", "a_else_expr"]
@@ -1353,8 +1145,7 @@ Description >>
     $assert(I'm true,$ifelse(true,I'm true,I'm false))
     $assert(I'm false,$ifelse(false,I'm true,I'm false))
 
-## ifenv
-
+----
 Macro Type  : Deterred
 Macro Name  : ifenv
 Arguments   : ["a_env_name^", "a_if_expr"]
@@ -1378,8 +1169,7 @@ Description >>
     
     $assert(I'm alive,$ifenv(HOME,I'm alive))
 
-## ifenvel
-
+----
 Macro Type  : Deterred
 Macro Name  : ifenvel
 Arguments   : ["a_env_name^", "a_if_expr", "a_else_expr"]
@@ -1407,8 +1197,7 @@ Description >>
     $assert(I'm alive,$ifenvel(HOME,I'm alive,I'm dead))
     $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))
 
-## ifque
-
+----
 Macro Type  : Deterred
 Macro Name  : ifque
 Arguments   : ["a_bool?^", "a_content"]
@@ -1436,8 +1225,7 @@ Description >>
     
     $ifque(true,halt(false))
 
-## import
-
+----
 Macro Type  : Function
 Macro Name  : import
 Arguments   : ["a_file^"]
@@ -1456,8 +1244,7 @@ Description >>
     
     $import(def.r4f)
 
-## include
-
+----
 Macro Type  : Function
 Macro Name  : include
 Arguments   : ["a_filename^", "a_raw_mode^+?"]
@@ -1479,8 +1266,7 @@ Description >>
     $include(file_path)
     $include(file_path, true)
 
-## indent
-
+----
 Macro Type  : Function
 Macro Name  : indent
 Arguments   : ["a_indenter", "a_lines"]
@@ -1503,8 +1289,7 @@ Description >>
     Second
     Third))
 
-## index
-
+----
 Macro Type  : Function
 Macro Name  : index
 Arguments   : ["a_index^", "a_array"]
@@ -1524,8 +1309,7 @@ Description >>
     
     $assert(ef,$index(2,ab,cd,ef))
 
-## indexl
-
+----
 Macro Type  : Function
 Macro Name  : indexl
 Arguments   : ["a_index^", "a_lines"]
@@ -1545,8 +1329,7 @@ Description >>
     
     $assert(line 2,$indexl(1,line 1$nl()line 2$nl()))
 
-## input
-
+----
 Macro Type  : Function
 Macro Name  : input
 Arguments   : ["a_absolute?^+"]
@@ -1565,8 +1348,7 @@ Description >>
     $assert($input(),test)
     $assert($input(true),/home/user/dir/test)
 
-## isempty
-
+----
 Macro Type  : Function
 Macro Name  : isempty
 Arguments   : ["a_value"]
@@ -1585,8 +1367,7 @@ Description >>
     $assert(true,$isempty())
     $assert(false,$isempty( ))
 
-## istype
-
+----
 Macro Type  : Function
 Macro Name  : istype
 Arguments   : ["a_value^", "a_type^"]
@@ -1615,8 +1396,7 @@ Description >>
     $assert(true,$istype(  0,  bool))
     $assert(true,$istype(  1,  bool))
 
-## iszero
-
+----
 Macro Type  : Function
 Macro Name  : iszero
 Arguments   : ["a_value^"]
@@ -1635,8 +1415,7 @@ Description >>
     $assert(true,$iszero(0))
     $assert(false,$iszero(1))
 
-## join
-
+----
 Macro Type  : Function
 Macro Name  : join
 Arguments   : ["a_sep", "a_array"]
@@ -1653,8 +1432,7 @@ Description >>
     
     $assert(a-b-c,$join(-,a,b,c))
 
-## joinl
-
+----
 Macro Type  : Function
 Macro Name  : joinl
 Arguments   : ["a_sep", "a_lines"]
@@ -1673,8 +1451,7 @@ Description >>
     b
     c))
 
-## len
-
+----
 Macro Type  : Function
 Macro Name  : len
 Arguments   : ["a_string"]
@@ -1692,8 +1469,7 @@ Description >>
     
     $assert($len(가나다),$len(ABC))
 
-## let
-
+----
 Macro Type  : Function
 Macro Name  : let
 Arguments   : ["a_macro_name^", "a_value^"]
@@ -1718,8 +1494,7 @@ Description >>
     % Cannot access local macro outside the scope
     $fassert($lc())
 
-## letr
-
+----
 Macro Type  : Function
 Macro Name  : letr
 Arguments   : ["a_macro_name^", "a_value"]
@@ -1745,8 +1520,7 @@ Description >>
     % Cannot access local macro outside the scope
     $fassert($lc())
 
-## lipsum
-
+----
 Macro Type  : Function
 Macro Name  : lipsum
 Arguments   : ["a_word_count^"]
@@ -1762,8 +1536,7 @@ Description >>
     
     $assert(Lorem ipsum dolor,$lipsum(3))
 
-## listdir
-
+----
 Macro Type  : Function
 Macro Name  : listdir
 Arguments   : ["a_path^+", "a_absolute?^+", "a_delim+"]
@@ -1788,8 +1561,7 @@ Description >>
     $listdir(/tmp,true)
     $listdir(/tmp,true,|)
 
-## log
-
+----
 Macro Type  : Function
 Macro Name  : log
 Arguments   : ["a_msg"]
@@ -1805,8 +1577,7 @@ Description >>
     
     $log($value_i_want_to_check^())
 
-## loge
-
+----
 Macro Type  : Function
 Macro Name  : loge
 Arguments   : ["a_msg"]
@@ -1825,8 +1596,7 @@ Description >>
     
     $loge(This should not be reached)
 
-## logm
-
+----
 Macro Type  : Deterred
 Macro Name  : logm
 Arguments   : ["a_macro_name^"]
@@ -1846,8 +1616,7 @@ Description >>
     $define(test=Test)
     $logm(test)
 
-## lower
-
+----
 Macro Type  : Function
 Macro Name  : lower
 Arguments   : ["a_text"]
@@ -1863,8 +1632,7 @@ Description >>
     
     $assert(abcde,$lower(AbCdE))
 
-## lt
-
+----
 Macro Type  : Function
 Macro Name  : lt
 Arguments   : ["a_lvalue", "a_rvalue"]
@@ -1884,8 +1652,7 @@ Description >>
     $assert(false,$lt(c,b))
     $assert(false,$lt(text,text))
 
-## lte
-
+----
 Macro Type  : Function
 Macro Name  : lte
 Arguments   : ["a_lvalue", "a_rvalue"]
@@ -1905,8 +1672,7 @@ Description >>
     $assert(true,$lte(b,c))
     $assert(true,$lte(text,text))
 
-## max
-
+----
 Macro Type  : Function
 Macro Name  : max
 Arguments   : ["a_array"]
@@ -1923,8 +1689,7 @@ Description >>
     $assert(eIsBigger,$max(aIsSmall,cIsMiddle,eIsBigger))
     $assert(5,$max(1,2,3,4,5))
 
-## min
-
+----
 Macro Type  : Function
 Macro Name  : min
 Arguments   : ["a_array"]
@@ -1941,8 +1706,7 @@ Description >>
     $assert(aIsSmall,$min(aIsSmall,cIsMiddle,eIsBigger))
     $assert(1,$min(1,2,3,4,5))
 
-## name
-
+----
 Macro Type  : Function
 Macro Name  : name
 Arguments   : ["a_path"]
@@ -1960,8 +1724,7 @@ Description >>
     
     $assert(auto.sh,$name(/path/to/file/auto.sh))
 
-## nassert
-
+----
 Macro Type  : Function
 Macro Name  : nassert
 Arguments   : ["a_lvalue", "a_rvalue"]
@@ -1978,8 +1741,7 @@ Description >>
     
     $nassert(1,2)
 
-## nl
-
+----
 Macro Type  : Function
 Macro Name  : nl
 Arguments   : ["a_amount+^"]
@@ -1997,8 +1759,7 @@ Description >>
     $assert($nl(),
     )
 
-## not
-
+----
 Macro Type  : Function
 Macro Name  : not
 Arguments   : ["a_boolean?^"]
@@ -2020,8 +1781,7 @@ Description >>
     $assert(false,$not(1))
     $assert(true,$not(0))
 
-## notat
-
+----
 Macro Type  : Function
 Macro Name  : notat
 Arguments   : ["a_number^", "a_type^"]
@@ -2040,8 +1800,7 @@ Description >>
     $assert(27,$notat(23,oct))
     $assert(17,$notat(23,hex))
 
-## num
-
+----
 Macro Type  : Function
 Macro Name  : num
 Arguments   : ["a_text"]
@@ -2059,8 +1818,7 @@ Description >>
     $assert(34,$num(34sec))
     $assert(30,$num(30k/h for 3 hours))
 
-## panic
-
+----
 Macro Type  : Function
 Macro Name  : panic
 Arguments   : ["a_msg"]
@@ -2076,8 +1834,7 @@ Description >>
     
     $panic(This should not be reached)
 
-## parent
-
+----
 Macro Type  : Function
 Macro Name  : parent
 Arguments   : ["a_path"]
@@ -2100,8 +1857,7 @@ Description >>
     $assert($empty(),$parent(node))
     $assert(/first/second,$parent(/first/second/last.txt))
 
-## path
-
+----
 Macro Type  : Function
 Macro Name  : path
 Arguments   : ["a_array^"]
@@ -2125,8 +1881,7 @@ Description >>
     $assert(/a/b,$path(/a,b))
     $assert(a/b,$path(a/,b))
 
-## pause
-
+----
 Macro Type  : Function
 Macro Name  : pause
 Arguments   : ["a_pause?^"]
@@ -2152,8 +1907,7 @@ Description >>
     $nassert(2,$i())
     $assert(1,$i())
 
-## pipe
-
+----
 Macro Type  : Function
 Macro Name  : pipe
 Arguments   : ["a_value"]
@@ -2170,8 +1924,7 @@ Description >>
     $pipe(Text)
     $assert(Text,$-())
 
-## pipeto
-
+----
 Macro Type  : Function
 Macro Name  : pipeto
 Arguments   : ["a_pipe_name^", "a_value"]
@@ -2189,8 +1942,7 @@ Description >>
     $pipeto(yum,YUM)
     $assert($-(yum),YUM)
 
-## prec
-
+----
 Macro Type  : Function
 Macro Name  : prec
 Arguments   : ["a_number^", "a_precision^"]
@@ -2209,8 +1961,7 @@ Description >>
     
     $assert(0.30,$prec($eval(0.1 + 0.2),2))
 
-## que
-
+----
 Macro Type  : Deterred
 Macro Name  : que
 Arguments   : ["a_expr"]
@@ -2234,8 +1985,7 @@ Description >>
     
     $que(halt(false))
 
-## query
-
+----
 Macro Type  : Function
 Macro Name  : query
 Arguments   : ["a_query^"]
@@ -2254,8 +2004,7 @@ Description >>
     
     $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)
 
-## readin
-
+----
 Macro Type  : Deterred
 Macro Name  : readin
 Arguments   : ["a_file?^", "a_raw_mode^+?"]
@@ -2279,8 +2028,7 @@ Description >>
     
     $readto(from.txt,into.txt)
 
-## readto
-
+----
 Macro Type  : Deterred
 Macro Name  : readto
 Arguments   : ["a_from_file^", "a_to_file^", "a_raw_mode?+^"]
@@ -2305,8 +2053,7 @@ Description >>
     
     $readto(from.txt,into.txt)
 
-## regcsv
-
+----
 Macro Type  : Function
 Macro Name  : regcsv
 Arguments   : ["a_table_name^", "a_data^"]
@@ -2326,8 +2073,7 @@ Description >>
     $regcsv(table1,a,b,c
     1,2,3)
 
-## regex
-
+----
 Macro Type  : Function
 Macro Name  : regex
 Arguments   : ["a_expr", "a_sub", "a_source"]
@@ -2345,8 +2091,7 @@ Description >>
     
     $assert(Hello Rust,$regex(World,Rust,Hello World))
 
-## regexpr
-
+----
 Macro Type  : Function
 Macro Name  : regexpr
 Arguments   : ["a_name", "a_expr"]
@@ -2370,8 +2115,7 @@ Description >>
     $assert(true,$find(greeting,Hello World))
     $assert(false,$find(greeting,greetings from world))
 
-## relay
-
+----
 Macro Type  : Function
 Macro Name  : relay
 Arguments   : ["a_target_type^", "a_target^"]
@@ -2393,8 +2137,7 @@ Description >>
     $relay(macro,container)$halt()
     $relay(temp)$halt()
 
-## rename
-
+----
 Macro Type  : Function
 Macro Name  : rename
 Arguments   : ["a_macro_name^", "a_new_name^"]
@@ -2413,8 +2156,7 @@ Description >>
     $rename(test,demo)
     $assert($demo(),Test)
 
-## repeat
-
+----
 Macro Type  : Function
 Macro Name  : repeat
 Arguments   : ["a_count^", "a_source"]
@@ -2433,8 +2175,7 @@ Description >>
     R4d
     R4d,$repeat^(3,R4d$nl()))
 
-## repl
-
+----
 Macro Type  : Function
 Macro Name  : repl
 Arguments   : ["a_macro_name^", "a_new_value"]
@@ -2454,8 +2195,7 @@ Description >>
     $repl(demo,DOMO)
     $assert(DOMO,$demo())
 
-## rev
-
+----
 Macro Type  : Function
 Macro Name  : rev
 Arguments   : ["a_array"]
@@ -2469,10 +2209,9 @@ Description >>
     
     # Example
     
-    $assert(3,2,1,$rev(1,2,3))
+    $assert(\*3,2,1*\,$rev(1,2,3))
 
-## slice
-
+----
 Macro Type  : Function
 Macro Name  : slice
 Arguments   : ["a_min^", "a_max^", "a_array"]
@@ -2488,10 +2227,9 @@ Description >>
     
     # Example
     
-    $assert(2,3,$slice(1,2,1,2,3,4,5,6))
+    $assert(\*2,3*\,$slice(1,2,\*1,2,3,4,5,6*\))
 
-## sort
-
+----
 Macro Type  : Function
 Macro Name  : sort
 Arguments   : ["a_sort_type^", "a_array"]
@@ -2506,11 +2244,10 @@ Description >>
     
     # Example
     
-    $assert(0,1,3,4,6,7,9,$enl()
+    $assert(\*0,1,3,4,6,7,9*\,$enl()
     $sort(asec,3,6,7,4,1,9,0))
 
-## sortl
-
+----
 Macro Type  : Function
 Macro Name  : sortl
 Arguments   : ["a_sort_type^", "a_lines"]
@@ -2530,8 +2267,7 @@ Description >>
     d
     c))
 
-## source
-
+----
 Macro Type  : Function
 Macro Name  : source
 Arguments   : ["a_file^"]
@@ -2554,8 +2290,7 @@ Description >>
     
     $source(def.env)
 
-## space
-
+----
 Macro Type  : Function
 Macro Name  : space
 Arguments   : ["a_amount?^"]
@@ -2571,8 +2306,7 @@ Description >>
     
     $assert(    ,$space(4))
 
-## spilt
-
+----
 Macro Type  : Function
 Macro Name  : spilt
 Arguments   : ["a_sep", "a_text"]
@@ -2587,10 +2321,9 @@ Description >>
     
     # Example
     
-    $assert(a,b,c,$split(/,a/b/c))
+    $assert(\*a,b,c*\,$split(/,a/b/c))
 
-## spread
-
+----
 Macro Type  : Deterred
 Macro Name  : spread
 Arguments   : ["a_macro_name^", "a_csv_value^"]
@@ -2620,8 +2353,7 @@ Description >>
     	)
     )
 
-## squash
-
+----
 Macro Type  : Function
 Macro Name  : squash
 Arguments   : ["a_text"]
@@ -2641,8 +2373,7 @@ Description >>
     b
     ))
 
-## sspilt
-
+----
 Macro Type  : Function
 Macro Name  : sspilt
 Arguments   : ["a_text^"]
@@ -2660,8 +2391,7 @@ Description >>
     
     $assert(6,$count($ssplit(I have  some    spaces   in between)))
 
-## static
-
+----
 Macro Type  : Function
 Macro Name  : static
 Arguments   : ["a_macro_name^", "a_expr^"]
@@ -2684,8 +2414,7 @@ Description >>
     $assert(2,$ddf())
     $assert(0,$stt())
 
-## staticr
-
+----
 Macro Type  : Function
 Macro Name  : staticr
 Arguments   : ["a_macro_name^", "a_value"]
@@ -2709,8 +2438,7 @@ Description >>
     $assert(2,$ddf())
     $assert(0 ,$stt())
 
-## strip
-
+----
 Macro Type  : Deterred
 Macro Name  : strip
 Arguments   : ["a_literal_expr"]
@@ -2728,10 +2456,9 @@ Description >>
     
     # Example
     
-    $strip(1,2,3)
+    $strip(\*1,2,3*\)
 
-## sub
-
+----
 Macro Type  : Function
 Macro Name  : sub
 Arguments   : ["a_start_index^", "a_end_index^", "a_source"]
@@ -2753,8 +2480,7 @@ Description >>
     
     $assert(def,$sub(3,5,abcdef))
 
-## surr
-
+----
 Macro Type  : Function
 Macro Name  : surr
 Arguments   : ["a_start_pair", "a_end_pair", "a_content"]
@@ -2773,8 +2499,7 @@ Description >>
     $assert(<div>dividivi dip</div>,$enl()
     $surr(<div>,</div>,dividivi dip))
 
-## syscmd
-
+----
 Macro Type  : Function
 Macro Name  : syscmd
 Arguments   : ["a_command"]
@@ -2796,8 +2521,7 @@ Description >>
     
     $assert(Linux,$syscmd(uname))
 
-## tab
-
+----
 Macro Type  : Function
 Macro Name  : tab
 Arguments   : ["a_amount?^"]
@@ -2813,8 +2537,7 @@ Description >>
     
     $tab(2)
 
-## table
-
+----
 Macro Type  : Function
 Macro Name  : table
 Arguments   : ["a_table_form^", "a_csv_value^"]
@@ -2837,8 +2560,7 @@ Description >>
         1,2,3)
     )
 
-## tail
-
+----
 Macro Type  : Function
 Macro Name  : tail
 Arguments   : ["a_count^", "a_content"]
@@ -2855,8 +2577,7 @@ Description >>
     
     $assert(World,$tail( 5 ,Hello~ World))
 
-## taill
-
+----
 Macro Type  : Function
 Macro Name  : taill
 Arguments   : ["a_count^", "a_content"]
@@ -2875,8 +2596,7 @@ Description >>
     b
     c))
 
-## temp
-
+----
 Macro Type  : Function
 Macro Name  : temp
 Arguments   : []
@@ -2894,8 +2614,7 @@ Description >>
     
     $assert(/tmp/rad.txt,$temp())
 
-## tempin
-
+----
 Macro Type  : Function
 Macro Name  : tempin
 Arguments   : []
@@ -2913,8 +2632,7 @@ Description >>
     
     $tempin()
 
-## tempout
-
+----
 Macro Type  : Function
 Macro Name  : tempout
 Arguments   : ["a_content"]
@@ -2936,8 +2654,7 @@ Description >>
     
     $temout(Content)
 
-## tempto
-
+----
 Macro Type  : Function
 Macro Name  : tempto
 Arguments   : ["a_filename^"]
@@ -2960,8 +2677,7 @@ Description >>
     
     $tempto(/new/path)
 
-## time
-
+----
 Macro Type  : Function
 Macro Name  : time
 Arguments   : []
@@ -2974,8 +2690,7 @@ Description >>
     % HH:mm:ss
     $time()
 
-## tr
-
+----
 Macro Type  : Function
 Macro Name  : tr
 Arguments   : ["a_chars", "a_sub", "a_source"]
@@ -2993,8 +2708,7 @@ Description >>
     
     $assert(HellO_WOrld,$tr(-how,_HOW,hello-world))
 
-## trim
-
+----
 Macro Type  : Function
 Macro Name  : trim
 Arguments   : ["a_text"]
@@ -3012,8 +2726,7 @@ Description >>
         Middle
     ))
 
-## triml
-
+----
 Macro Type  : Function
 Macro Name  : triml
 Arguments   : ["a_content"]
@@ -3031,8 +2744,7 @@ Description >>
         Middle
               Last))
 
-## trimla
-
+----
 Macro Type  : Function
 Macro Name  : trimla
 Arguments   : ["a_trim_option^", "a_lines"]
@@ -3074,8 +2786,7 @@ Description >>
     % Second
     %   Third
 
-## undef
-
+----
 Macro Type  : Function
 Macro Name  : undef
 Arguments   : ["a_macro_name^"]
@@ -3097,8 +2808,7 @@ Description >>
     $undef(test)
     $fassert($test())
 
-## unicode
-
+----
 Macro Type  : Function
 Macro Name  : unicode
 Arguments   : ["a_value^"]
@@ -3114,8 +2824,7 @@ Description >>
     
     $assert(☺,$unicode(263a))
 
-## update
-
+----
 Macro Type  : Function
 Macro Name  : update
 Arguments   : ["a_text"]
@@ -3131,8 +2840,7 @@ Description >>
     
     $update(text to be pushed)
 
-## upper
-
+----
 Macro Type  : Function
 Macro Name  : upper
 Arguments   : ["a_text"]
@@ -3148,8 +2856,7 @@ Description >>
     
     $assert(ABCDE,$upper(aBcDe))
 
-## wrap
-
+----
 Macro Type  : Function
 Macro Name  : wrap
 Arguments   : ["a_width^", "a_text"]
@@ -3164,10 +2871,10 @@ Description >>
     
     # Example
     
-    $assert(Lorem ipsum
+    $assert(\*Lorem ipsum
     dolor sit amet,
     consectetur
     adipiscing elit. In
-    rhoncus,$wrap(20,$lipsum(10)))
+    rhoncus*\,$wrap(20,$lipsum(10)))
 
-
+----
