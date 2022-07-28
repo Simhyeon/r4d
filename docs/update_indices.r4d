@@ -1,3 +1,7 @@
+$strict()
+$require(fin,fout)
+$comment(start)
+
 $define(get_name,a_text=$index^(1,$split(:,$a_text())))
 % No need to replace whitespace because function name never has whitespaces
 $define(make_toc,a_item=* [$a_item()](#$a_item()))

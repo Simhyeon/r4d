@@ -224,6 +224,22 @@ Description >>
 
 ----
 Macro Type  : Function
+Macro Name  : comment
+Arguments   : ["a_comment_type^"]
+Usage       : $comment(a_comment_type^)
+Description >> 
+    Requires comment type
+    
+    # Arguments
+    
+    - a_comment_type: A comment type to require. ( trimmed ) ["none", "start", "any"]
+    
+    # Example
+    
+    $comment(start)
+
+----
+Macro Type  : Function
 Macro Name  : comp
 Arguments   : ["a_content"]
 Usage       : $comp(a_content)
@@ -2214,6 +2230,22 @@ Description >>
 
 ----
 Macro Type  : Function
+Macro Name  : require
+Arguments   : ["a_permissions^"]
+Usage       : $require(a_permissions^)
+Description >> 
+     Require permissions
+    
+    # Arguments
+    
+    - a_permissions : A permission array to require (trimmed) [ "fin", "fout", "cmd", "env" ]
+    
+    # Example
+    
+    $require(fin,fout)
+
+----
+Macro Type  : Function
 Macro Name  : rev
 Arguments   : ["a_array"]
 Usage       : $rev(a_array)
@@ -2345,19 +2377,20 @@ Description >>
 ----
 Macro Type  : Function
 Macro Name  : spilt
-Arguments   : ["a_sep", "a_text"]
-Usage       : $spilt(a_sep,a_text)
+Arguments   : ["a_sep", "a_index", "a_text"]
+Usage       : $spilt(a_sep,a_index,a_text)
 Description >> 
-    Split text into an array
+    Split text and cut from splitted array
     
     # Arguments
     
-    - a_sep  : A separator string
-    - a_text : Text to spilt
+    - a_sep    : A separator string
+    - a_index  : An index to cut out
+    - a_text   : Text to spilt
     
     # Example
     
-    $assert(\*a,b,c*\,$split(/,a/b/c))
+    $assert(b,$splitc(/,-2,a/b/c))
 
 ----
 Macro Type  : Deterred
@@ -2473,6 +2506,23 @@ Description >>
     $counter(ct)
     $assert(2,$ddf())
     $assert(0 ,$stt())
+
+----
+Macro Type  : Function
+Macro Name  : strict
+Arguments   : ["a_mode^"]
+Usage       : $strict(a_mode^)
+Description >> 
+    Check strict mode
+    
+    # Arguments
+    
+    - a_mode : A mode to require. Empty means strict ( trimmed ) [ "lenient", "purge" ]
+    
+    # Example
+    
+    $strict()
+    $strict(lenient)
 
 ----
 Macro Type  : Deterred

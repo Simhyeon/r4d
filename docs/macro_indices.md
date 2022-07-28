@@ -12,6 +12,7 @@
 * [chomp](#chomp)
 * [clear](#clear)
 * [comma](#comma)
+* [comment](#comment)
 * [comp](#comp)
 * [count](#count)
 * [counter](#counter)
@@ -112,6 +113,7 @@
 * [rename](#rename)
 * [repeat](#repeat)
 * [repl](#repl)
+* [require](#require)
 * [rev](#rev)
 * [sep](#sep)
 * [slice](#slice)
@@ -125,6 +127,7 @@
 * [sspilt](#sspilt)
 * [static](#static)
 * [staticr](#staticr)
+* [strict](#strict)
 * [strip](#strip)
 * [sub](#sub)
 * [surr](#surr)
@@ -470,6 +473,30 @@ Description
     # Example
     
     $assert(,,$comma())
+
+### comment
+
+Macro Type  : Function
+
+Macro Name  : comment
+
+Arguments   : ["a_comment_type^"]
+
+Usage       : $comment(a_comment_type^)
+
+Description 
+
+>>
+ 
+    Requires comment type
+    
+    # Arguments
+    
+    - a_comment_type: A comment type to require. ( trimmed ) ["none", "start", "any"]
+    
+    # Example
+    
+    $comment(start)
 
 ### comp
 
@@ -3261,6 +3288,30 @@ Description
     $repl(demo,DOMO)
     $assert(DOMO,$demo())
 
+### require
+
+Macro Type  : Function
+
+Macro Name  : require
+
+Arguments   : ["a_permissions^"]
+
+Usage       : $require(a_permissions^)
+
+Description 
+
+>>
+ 
+     Require permissions
+    
+    # Arguments
+    
+    - a_permissions : A permission array to require (trimmed) [ "fin", "fout", "cmd", "env" ]
+    
+    # Example
+    
+    $require(fin,fout)
+
 ### rev
 
 Macro Type  : Function
@@ -3453,24 +3504,25 @@ Macro Type  : Function
 
 Macro Name  : spilt
 
-Arguments   : ["a_sep", "a_text"]
+Arguments   : ["a_sep", "a_index", "a_text"]
 
-Usage       : $spilt(a_sep,a_text)
+Usage       : $spilt(a_sep,a_index,a_text)
 
 Description 
 
 >>
  
-    Split text into an array
+    Split text and cut from splitted array
     
     # Arguments
     
-    - a_sep  : A separator string
-    - a_text : Text to spilt
+    - a_sep    : A separator string
+    - a_index  : An index to cut out
+    - a_text   : Text to spilt
     
     # Example
     
-    $assert(a,b,c,$split(/,a/b/c))
+    $assert(b,$splitc(/,-2,a/b/c))
 
 ### spread
 
@@ -3626,6 +3678,31 @@ Description
     $counter(ct)
     $assert(2,$ddf())
     $assert(0 ,$stt())
+
+### strict
+
+Macro Type  : Function
+
+Macro Name  : strict
+
+Arguments   : ["a_mode^"]
+
+Usage       : $strict(a_mode^)
+
+Description 
+
+>>
+ 
+    Check strict mode
+    
+    # Arguments
+    
+    - a_mode : A mode to require. Empty means strict ( trimmed ) [ "lenient", "purge" ]
+    
+    # Example
+    
+    $strict()
+    $strict(lenient)
 
 ### strip
 
