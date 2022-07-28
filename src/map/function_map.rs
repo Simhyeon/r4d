@@ -3,7 +3,7 @@
 //! Function macro module includes struct and methods related to function macros
 //! which are technically function pointers.
 
-use crate::auth::AuthType;
+use crate::auth::{AuthState, AuthType};
 use crate::common::{ErrorBehaviour, FlowControl, MacroType, ProcessInput, RadResult, RelayTarget};
 use crate::consts::{ESR, LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER};
 use crate::error::RadError;
@@ -12,9 +12,9 @@ use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
-use crate::trim;
 use crate::utils::Utils;
 use crate::Processor;
+use crate::{trim, CommentType};
 use crate::{ArgParser, GreedyState};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
@@ -31,6 +31,7 @@ use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 #[cfg(not(feature = "wasm"))]
 use std::process::Command;
+use std::str::FromStr;
 #[cfg(feature = "hook")]
 use std::str::FromStr;
 
@@ -342,6 +343,23 @@ $assert(a,b)".to_string()),
 # Example
 
 $assert(\\*,*\\,$comma())".to_string()),
+                ),
+            ),
+            (
+                "comment".to_owned(),
+                FMacroSign::new(
+                    "comment",
+                    ["a_comment_type^"],
+                    Self::require_comment,
+                    Some("Requires comment type
+
+# Arguments
+
+- a_comment_type: A comment type to require. ( trimmed ) [\"none\", \"start\", \"any\"]
+
+# Example
+
+$comment(start)".to_string()),
                 ),
             ),
             (
@@ -1739,6 +1757,24 @@ $assert(DOMO,$demo())".to_string()),
                 ),
             ),
             (
+                "require".to_owned(),
+                FMacroSign::new(
+                    "require",
+                    ["a_permissions^"],
+                    Self::require_permissions,
+                    Some(
+" Require permissions
+
+# Arguments
+
+- a_permissions : A permission array to require (trimmed) [ \"fin\", \"fout\", \"cmd\", \"env\" ]
+
+# Example
+
+$require(fin,fout)".to_string()),
+                ),
+            ),
+            (
                 "source".to_owned(),
                 FMacroSign::new(
                     "source",
@@ -1869,6 +1905,25 @@ $counter(ct)
 $counter(ct)
 $assert(2,$ddf())
 $assert(0 ,$stt())".to_string()),
+                ),
+            ),
+            (
+                "strict".to_owned(),
+                FMacroSign::new(
+                    "strict",
+                    ["a_mode^"],
+                    Self::require_strict,
+                    Some(
+"Check strict mode
+
+# Arguments
+
+- a_mode : A mode to require. Empty means strict ( trimmed ) [ \"lenient\", \"purge\" ]
+
+# Example
+
+$strict()
+$strict(lenient)".to_string()),
                 ),
             ),
             (
@@ -5128,6 +5183,99 @@ $extract()"
                 "cap requires an argument".to_owned(),
             ))
         }
+    }
+
+    /// Comment
+    ///
+    /// # Usage
+    ///
+    /// $comment(any)
+    fn require_comment(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        let vec = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        let comment_src = &vec[0];
+        let comment_type = CommentType::from_str(trim!(comment_src).as_ref());
+        if comment_type.is_err() {
+            return Err(RadError::InvalidArgument(format!(
+                "Comment requires valid comment type but given \"{}\"",
+                comment_src
+            )));
+        }
+
+        let comment_type = comment_type?;
+
+        if p.state.comment_type != comment_type {
+            return Err(RadError::UnsoundExecution(format!(
+                "Comment type, \"{:#?}\" is required but it is not",
+                comment_type
+            )));
+        }
+        return Ok(None);
+    }
+
+    /// require
+    ///
+    /// # Usage
+    ///
+    /// $require(fout)
+    fn require_permissions(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        let vec = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        for auth in vec {
+            let auth_type = AuthType::from(&auth).ok_or_else(|| {
+                RadError::InvalidArgument(format!(
+                    "Require needs valid permission but given \"{}\"",
+                    auth
+                ))
+            })?;
+            let state = p.state.auth_flags.get_state(&auth_type);
+            if let AuthState::Restricted = state {
+                return Err(RadError::UnsoundExecution(format!(
+                    "Permission \"{}\" is required but is not.",
+                    auth
+                )));
+            }
+        }
+        return Ok(None);
+    }
+
+    /// Strict
+    ///
+    /// # Usage
+    ///
+    /// $strict(lenient)
+    fn require_strict(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        let vec = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        let mode = &vec[0];
+        let trimmed_mode = trim!(mode);
+        match trimmed_mode.to_lowercase().as_str() {
+            "lenient" => {
+                if p.state.behaviour != ErrorBehaviour::Lenient {
+                    return Err(RadError::UnsoundExecution(
+                        "Lenient mode is required but it is not".to_owned(),
+                    ));
+                }
+            }
+            "purge" => {
+                if p.state.behaviour != ErrorBehaviour::Purge {
+                    return Err(RadError::UnsoundExecution(
+                        "Purge mode is required but it is not".to_owned(),
+                    ));
+                }
+            }
+            "" => {
+                if p.state.behaviour != ErrorBehaviour::Strict {
+                    return Err(RadError::UnsoundExecution(
+                        "Strict mode is required but it is not".to_owned(),
+                    ));
+                }
+            }
+            _ => {
+                return Err(RadError::InvalidArgument(format!(
+                    "Received invalid strict mode which is \"{}\"",
+                    trimmed_mode.as_ref()
+                )));
+            }
+        }
+        return Ok(None);
     }
 
     /// Log message

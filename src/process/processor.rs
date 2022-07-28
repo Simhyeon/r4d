@@ -2420,6 +2420,11 @@ impl<'processor> Processor<'processor> {
         frag: &MacroFragment,
         remainder: &mut String,
     ) -> RadResult<()> {
+        // UnsoundExecution is critical error and should not be permitted
+        if let RadError::UnsoundExecution(_) = error {
+            return Err(error);
+        }
+
         if self.state.error_cache.is_none() {
             self.log_error(&error.to_string())?;
             self.state.error_cache.replace(error);
