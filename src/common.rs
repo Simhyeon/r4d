@@ -315,6 +315,24 @@ impl FileTarget {
         })
     }
 
+    /// Create an instance without truncate option
+    pub fn from_path(path: &Path) -> RadResult<Self> {
+        let repr_path = path.to_owned();
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .append(true)
+            .open(&repr_path)
+            .map_err(|_| {
+                RadError::InvalidFile(format!("File \"{}\" cannot be opened", repr_path.display()))
+            })?;
+        Ok(Self {
+            repr: repr_path,
+            absolute_path: path.canonicalize()?,
+            file,
+        })
+    }
+
     /// Creat an instance with trucate option
     pub fn with_truncate(path: &Path) -> RadResult<Self> {
         let repr_path = path.to_owned();
