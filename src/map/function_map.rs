@@ -4516,7 +4516,8 @@ $extract()"
     /// $index(1,1,2,3,4,5)
     fn index_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let content = &mut args[1].split(',').collect::<Vec<&str>>();
+            // Don't allocate as vector if possible to improve performance
+            let content = &mut args[1].split(",");
             let index = trim!(&args[0]).parse::<isize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "index requires to be an integer but got \"{}\"",
@@ -4524,29 +4525,30 @@ $extract()"
                 ))
             })?;
 
-            if index >= content.len() as isize || index < -(content.len() as isize) {
+            let len = args[1].split(",").count();
+
+            if index >= len as isize || index < -(len as isize) {
                 return Err(RadError::InvalidArgument(format!(
                     "Index out of range. Given index is \"{}\" but array length is \"{}\"",
                     index,
-                    content.len()
+                    content.count()
                 )));
             }
 
             let final_index = if index < 0 {
-                content.len() + index as usize
+                (len as isize + index) as usize
             } else {
                 index.max(0) as usize
             };
 
-            if content.len() <= final_index {
+            if len <= final_index {
                 return Err(RadError::InvalidArgument(format!(
                     "Index out of range. Given index is \"{}\" but array length is \"{}\"",
-                    index,
-                    content.len()
+                    index, len
                 )));
             }
-
-            Ok(Some(content[final_index].to_owned()))
+            // Safe to unwrap because bound check was already done
+            Ok(Some(content.nth(final_index).unwrap().to_owned()))
         } else {
             Err(RadError::InvalidArgument(
                 "index requires two arguments".to_owned(),
@@ -4561,7 +4563,7 @@ $extract()"
     /// $indexl(1,1$nl()2$nl())
     fn index_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let content = &mut args[1].lines().collect::<Vec<_>>();
+            let content = &mut args[1].lines();
             let index = trim!(&args[0]).parse::<isize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "indexl requires to be an integer but got \"{}\"",
@@ -4569,29 +4571,30 @@ $extract()"
                 ))
             })?;
 
-            if index >= content.len() as isize || index < -(content.len() as isize) {
+            let len = args[1].lines().count();
+
+            if index >= len as isize || index < -(len as isize) {
                 return Err(RadError::InvalidArgument(format!(
-                    "indexl out of range. Given index is \"{}\" but array length is \"{}\"",
-                    index,
-                    content.len()
+                    "indexl out of range. Given index is \"{}\" but lines length is \"{}\"",
+                    index, len
                 )));
             }
 
             let final_index = if index < 0 {
-                content.len() + index as usize
+                (len as isize + index) as usize
             } else {
                 index.max(0) as usize
             };
 
-            if content.len() <= final_index {
+            if len <= final_index {
                 return Err(RadError::InvalidArgument(format!(
-                    "Index out of range. Given index is \"{}\" but array length is \"{}\"",
-                    index,
-                    content.len()
+                    "Index out of range. Given index is \"{}\" but lines length is \"{}\"",
+                    index, len
                 )));
             }
 
-            Ok(Some(content[final_index].to_owned()))
+            // It is safe to unwrap because bound check was already done
+            Ok(Some(content.nth(final_index).unwrap().to_owned()))
         } else {
             Err(RadError::InvalidArgument(
                 "indexl requires two arguments".to_owned(),
