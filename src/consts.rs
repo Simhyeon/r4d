@@ -39,7 +39,7 @@ lazy_static::lazy_static! {
     // Numbers
     // Macro attributes * ^ | +
     // Underscore and reverse slash (\)
-    pub static ref UNALLOWED_CHARS: Regex = Regex::new(r#"[a-zA-Z1-9\\_\*\^\|\(\)=,:]"#).expect("Failed to create regex expression");
+    pub static ref UNALLOWED_CHARS: Regex = Regex::new(r#"[a-zA-Z1-9\\_\*\^\|\(\)-=,:!]"#).expect("Failed to create regex expression");
 }
 
 // Diff related

@@ -60,6 +60,7 @@ pub(crate) struct MacroFragment {
     pub pipe: bool,
     pub greedy: bool,
     pub yield_literal: bool,
+    pub negate_result: bool,
     pub trim_input: bool,
     pub trimmed: bool,
 
@@ -78,6 +79,7 @@ impl MacroFragment {
             pipe: false,
             greedy: false,
             yield_literal: false,
+            negate_result: false,
             trim_input: false,
             trimmed: false,
 
@@ -96,6 +98,7 @@ impl MacroFragment {
         self.greedy = false;
         self.yield_literal = false;
         self.trim_input = false;
+        self.negate_result = false;
         self.trimmed = false;
     }
 

@@ -2217,6 +2217,7 @@ impl<'processor> Processor<'processor> {
                 match ch {
                     '|' => frag.pipe = true,
                     '*' => frag.yield_literal = true,
+                    '!' => frag.negate_result = true,
                     '=' => frag.trim_input = true,
                     '^' => frag.trimmed = true,
                     _ => {
@@ -2476,6 +2477,30 @@ impl<'processor> Processor<'processor> {
                     self.state.consume_newline = true;
                 }
             }
+
+            // Negate result
+            if frag.negate_result {
+                match Utils::is_arg_true(trim!(&content).as_ref()) {
+                    Ok(boolean) => content = (!boolean).to_string(),
+                    Err(_) => {
+                        if self.state.behaviour == ErrorBehaviour::Strict {
+                            return Err(RadError::StorageError(format!(
+                                "Tried to negate value, \"{}\" which is not a boolean",
+                                content
+                            )));
+                        } else {
+                            self.log_warning(
+                                &format!(
+                                    "Tried to negate value, \"{}\" which is not a boolean",
+                                    content
+                                ),
+                                WarningType::Sanity,
+                            )?;
+                        }
+                    }
+                }
+            }
+
             if frag.yield_literal {
                 content = format!("\\*{}*\\", content);
             }
