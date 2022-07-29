@@ -14,7 +14,11 @@ pub fn main() -> RadResult<()> {
         let mut cli = RadCli::new();
         if let Err(err) = cli.parse() {
             cli.print_error(&err.to_string())?;
-            writeln!(std::io::stderr(), "=== Processor panicked ===",)?;
+            writeln!(
+                std::io::stderr(),
+                "Int: Rad panicked with inrecoverable error."
+            )?;
+            std::process::exit(1);
         }
     }
 

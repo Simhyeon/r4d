@@ -13,6 +13,11 @@ pub fn main() -> RadResult<()> {
         use std::io::Write;
         if let Err(content) = RadoCli::new().parse() {
             writeln!(std::io::stderr(), "{}", content)?;
+            writeln!(
+                std::io::stderr(),
+                "Int: Rad panicked with inrecoverable error."
+            )?;
+            std::process::exit(1);
         }
     }
     Ok(())
