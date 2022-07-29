@@ -2971,7 +2971,7 @@ $extract()"
 
             if match_expr.is_empty() {
                 return Err(RadError::InvalidArgument(
-                    "Regex expression cannot be a empty string".to_string(),
+                    "Regex expression cannot be an empty string".to_string(),
                 ));
             }
 
@@ -3044,7 +3044,7 @@ $extract()"
 
             if match_expr.is_empty() {
                 return Err(RadError::InvalidArgument(
-                    "Regex expression cannot be a empty string".to_string(),
+                    "Regex expression cannot be an empty string".to_string(),
                 ));
             }
 
@@ -3069,7 +3069,7 @@ $extract()"
 
             if match_expr.is_empty() {
                 return Err(RadError::InvalidArgument(
-                    "Regex expression cannot be a empty string".to_string(),
+                    "Regex expression cannot be an empty string".to_string(),
                 ));
             }
 

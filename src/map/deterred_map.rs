@@ -9,6 +9,7 @@ use crate::ArgParser;
 use crate::AuthType;
 use crate::{trim, Processor, RadError};
 use std::collections::HashMap;
+use std::fmt::Write;
 use std::iter::FromIterator;
 #[cfg(not(feature = "wasm"))]
 use std::path::PathBuf;
@@ -62,6 +63,27 @@ $append(arr,first,$comma())
 $append(arr,second,$comma())
 $assert($arr(),first,second)".to_string(),
                     ),
+                ),
+            ),
+            (
+                "capture".to_owned(),
+                DMacroSign::new(
+                    "capture",
+                    ["a_expr", "a_macro_name^", "a_text"],
+                    DeterredMacroMap::capture_map,
+                    Some(
+"Capture expressions and apply a macro to each captured expression
+
+# Arguments
+
+- a_expr       : An expression to match
+- a_macro_name : A macro name to execute on each captured string
+- a_text       : Source text to find expressions
+
+# Example
+
+$define(ss,a_text=$sub(2,,$a_text())$nl())
+$assert(c$nl()d$nl()e,$capture^(ab.,ss,abc abd abe))".to_string()),
                 ),
             ),
             (
@@ -684,6 +706,50 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         } else {
             Err(RadError::InvalidArgument(
                 "Append at least requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Apply maps on captured expressions
+    ///
+    /// # Usage
+    ///
+    /// $capture(expr,macro,text)
+    fn capture_map(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
+        let mut ap = ArgParser::new().no_strip();
+        let args = ap.args_to_vec(args, ',', GreedyState::Never);
+        ap.set_strip(true);
+        if args.len() >= 3 {
+            let match_expr = &args[0];
+            let macro_name = trim!(&args[1]);
+            let source = &args[2];
+
+            if match_expr.is_empty() {
+                return Err(RadError::InvalidArgument(
+                    "Regex expression cannot be an empty string".to_string(),
+                ));
+            }
+
+            let mut res = String::new();
+
+            // If this regex is not cloned, "capture" should collect captured string into a allocated
+            // vector. Which is generaly worse for performance.
+            let reg = p.try_get_or_insert_regex(match_expr)?.clone();
+            for cap in reg.captures_iter(source) {
+                let captured = cap.get(0).map_or("", |m| m.as_str());
+                let expanded = p.parse_and_strip(
+                    &mut ap,
+                    level,
+                    "capture",
+                    &format!("${}({})", macro_name, captured),
+                )?;
+                write!(res, "{}", expanded)?;
+            }
+
+            Ok(Some(res))
+        } else {
+            Err(RadError::InvalidArgument(
+                "capture requires two arguments".to_owned(),
             ))
         }
     }
