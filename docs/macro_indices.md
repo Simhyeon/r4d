@@ -123,6 +123,7 @@
 * [source](#source)
 * [space](#space)
 * [spilt](#spilt)
+* [spiltc](#spiltc)
 * [spread](#spread)
 * [squash](#squash)
 * [sspilt](#sspilt)
@@ -3532,9 +3533,34 @@ Macro Type  : Function
 
 Macro Name  : spilt
 
+Arguments   : ["a_sep", "a_text"]
+
+Usage       : $spilt(a_sep,a_text)
+
+Description 
+
+>>
+ 
+    Split text into an array
+    
+    # Arguments
+    
+    - a_sep  : A separator string
+    - a_text : Text to spilt
+    
+    # Example
+    
+    $assert(a,b,c,$split(/,a/b/c))
+
+### spiltc
+
+Macro Type  : Function
+
+Macro Name  : spiltc
+
 Arguments   : ["a_sep", "a_index", "a_text"]
 
-Usage       : $spilt(a_sep,a_index,a_text)
+Usage       : $spiltc(a_sep,a_index,a_text)
 
 Description 
 
@@ -3836,6 +3862,14 @@ Description
     - Each system command is executed as subprocess of folloiwng platform procedures
     - Windows : cmd /C
     - *Nix    : sh -c
+    
+    # NOTE
+    
+    - Syscmd's stdout is redirected to rad's input. Which enables inclusion of 
+    system call's result into a desired output.
+    - However, due to the inherent feature, you cannot use redirection within 
+    syscmd's call.
+    - Therefore code such as $syscmd(ls > file) will not work as expected.
     
     # Auth : CMD
     
