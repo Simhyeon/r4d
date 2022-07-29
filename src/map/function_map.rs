@@ -2362,6 +2362,14 @@ $countl($grepf(file.txt))"
 - Windows : cmd /C
 - *Nix    : sh -c
 
+# NOTE
+
+- Syscmd's stdout is redirected to rad's input. Which enables inclusion of 
+system call's result into a desired output.
+- However, due to the inherent feature, you cannot use redirection within 
+syscmd's call.
+- Therefore code such as $syscmd(ls > file) will not work as expected.
+
 # Auth : CMD
 
 # Arguments
