@@ -7,6 +7,7 @@
 * [align](#align)
 * [append](#append)
 * [assert](#assert)
+* [capture](#capture)
 * [ceil](#ceil)
 * [chars](#chars)
 * [chomp](#chomp)
@@ -352,6 +353,33 @@ Description
     $assert(1,1)
     % Fails
     $assert(a,b)
+
+### capture
+
+Macro Type  : Deterred
+
+Macro Name  : capture
+
+Arguments   : ["a_expr", "a_macro_name^", "a_text"]
+
+Usage       : $capture(a_expr,a_macro_name^,a_text)
+
+Description 
+
+>>
+ 
+    Capture expressions and apply a macro to each captured expression
+    
+    # Arguments
+    
+    - a_expr       : An expression to match
+    - a_macro_name : A macro name to execute on each captured string
+    - a_text       : Source text to find expressions
+    
+    # Example
+    
+    $define(ss,a_text=$sub(2,,$a_text())$nl())
+    $assert(c$nl()d$nl()e,$capture^(ab.,ss,abc abd abe))
 
 ### ceil
 

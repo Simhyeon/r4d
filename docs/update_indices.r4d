@@ -1,20 +1,15 @@
 $strict()
 $require(fin,fout)
-$comment(start)
 
 $define(get_name,a_text=$index^(1,$split(:,$a_text())))
-% No need to replace whitespace because function name never has whitespaces
 $define(make_toc,a_item=* [$a_item()](#$a_item()))
 
-$define=(make_header,
+$define=(
+    make_header,
     a_chunk=
     $let(
-        t_line
-        ,
-        $indexl(
-            2,
-            $a_chunk()
-        )
+        t_line,
+        $indexl(1, $a_chunk())
     )
     $let(macro_name,$index(1,$split^(:,$t_line())))
     ### $macro_name()

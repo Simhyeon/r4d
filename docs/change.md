@@ -3,24 +3,28 @@
 **rad**
 
 - BUG : Stdin input panicked
-- CHG : MOdule changes
+- CHG : Now exit code is properly emmited on panic
+- CHG : Module changes
 - CHG : Now static macro is not expanded
 - ERG : Ditched cmp and added multiple comparision macros
 - ERG : Now documentation has 80 caps on description.
+- ERG : Warn readin on relaying
 - FET : Dry run
 - FET : Freeze flag refactored
 - FET : Packaging flag
-- FET New macros
+- FET : Negate macro attribute
+- FET : New macros
     - Dump
-    - indexl
-    - Sep
-    - until
-    - after
     - Meta-processing related
         - Require
         - Strict
         - Comment
+    - Sep
+    - after
+    - capture
+    - indexl
     - splitc 
+    - until
 
 **rado**
 

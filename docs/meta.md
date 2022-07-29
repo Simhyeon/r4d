@@ -1,15 +1,13 @@
 ### TODO
 
 * [x] Rad backtrace prints strangely for deterred  macro
-    * [-] This fix should also affect template crate.... damn it. Actually no,
+    * [ ] This fix should also affect template crate.... damn it. Actually no,
       but keep in mind that user configured deterred macro doesn't set macro
       name properly without template related update.
-* [x] Warn readin when relay is on. For sanity reason
-
-* [ ] Capture : $capture(expr,count,src) : Possibly with regex pattern?
-    * [ ] Regxm macro? Which applies macro to captured groups?
 
 * [ ] Consider implementing arrays
+* [ ] Syscmd's inner call is not redirected. Thus you cannot pipe into othe
+  files within syscmd. Warn this in macro man
 
 * [ ] Argument parsing to return a slice of values not a string would be good I guess?
     - This needs to implement cow manipulation and I'm... ok maybe later
@@ -39,6 +37,7 @@ $todo_end()
 
 ### Changes
 
+* [x] Warn readin when relay is on. For sanity reason
 * [x] Now relay and read to doesn't truncate a file
 * [x] Now raw include doesn't pause but escape : More efficient + can handle
   possible breaking rad codes
@@ -53,6 +52,7 @@ $todo_end()
     * [x] Sep : Separate
     * [x] until
     * [x] after
+    * [x] Capture : $capture(expr,count,src) : Possibly with regex pattern?
     * [x] Meta-processing related
         * [x] Require
         * [x] Strict
@@ -60,6 +60,7 @@ $todo_end()
     * [x] splitc : Maybe this can replace until or after?
         - No actually not, because splitc's user should know the exact form
         while until and after never fails thus enable dynamic input.
+* [x] Negate macro attribute
 
 ### Macro ergonomics
 
