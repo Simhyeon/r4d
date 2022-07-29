@@ -255,7 +255,7 @@ $assert(\\*a,b,c*\\,$split(/,a/b/c))".to_string()),
             (
                 "splitc".to_owned(),
                 FMacroSign::new(
-                    "spilt",
+                    "spiltc",
                     ["a_sep", "a_index","a_text"],
                     Self::split_and_cut,
                     Some("Split text and cut from splitted array
