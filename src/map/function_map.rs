@@ -3590,6 +3590,7 @@ $extract()"
                 .split_terminator(sep)
                 .fold(String::new(), |mut acc, v| {
                     acc.push_str(v);
+                    acc.push_str(",");
                     acc
                 });
             result.pop();
