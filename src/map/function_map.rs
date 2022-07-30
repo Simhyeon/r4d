@@ -4285,15 +4285,17 @@ $extract()"
     fn translate(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let mut source = args[2].clone();
-            let target = &args[0].chars().collect::<Vec<char>>();
-            let destination = &args[1].chars().collect::<Vec<char>>();
+            let target = args[0].chars();
+            let destination = args[1].chars();
 
-            if target.len() != destination.len() {
+            if target.clone().count() != destination.clone().count() {
                 return Err(RadError::InvalidArgument(format!("Tr's replacment should have same length of texts while given \"{:?}\" and \"{:?}\"", target, destination)));
             }
 
-            for i in 0..target.len() {
-                source = source.replace(target[i], &destination[i].to_string());
+            let iter = target.zip(destination);
+
+            for (t, d) in iter {
+                source = source.replace(t, d.to_string().as_str());
             }
 
             Ok(Some(source))
