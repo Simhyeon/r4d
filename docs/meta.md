@@ -1,5 +1,11 @@
 ### TODO
 
+* [ ] Update blog contents,
+    * [ ] Splitc doesn't utilize file_path which is a shame.
+
+* [x] Remove unnecessary collect calls
+    - Not 100% but calls that are blatnatly insignificant
+
 * [x] Rad backtrace prints strangely for deterred  macro
     * [ ] This fix should also affect template crate.... damn it. Actually no,
       but keep in mind that user configured deterred macro doesn't set macro
@@ -52,7 +58,9 @@ $todo_end()
     * [x] Sep : Separate
     * [x] until
     * [x] after
-    * [x] Capture : $capture(expr,count,src) : Possibly with regex pattern?
+    * [x] map variants
+    * [x] grepmap
+    * [x] Capture
     * [x] Meta-processing related
         * [x] Require
         * [x] Strict

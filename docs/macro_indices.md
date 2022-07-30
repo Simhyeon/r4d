@@ -52,6 +52,7 @@
 * [grep](#grep)
 * [grepf](#grepf)
 * [grepl](#grepl)
+* [grepmap](#grepmap)
 * [gt](#gt)
 * [gte](#gte)
 * [halt](#halt)
@@ -88,6 +89,9 @@
 * [lower](#lower)
 * [lt](#lt)
 * [lte](#lte)
+* [map](#map)
+* [mapf](#mapf)
+* [mapl](#mapl)
 * [max](#max)
 * [min](#min)
 * [name](#name)
@@ -357,30 +361,31 @@ Description
 
 ### capture
 
-Macro Type  : Deterred
+Macro Type  : Function
 
 Macro Name  : capture
 
-Arguments   : ["a_expr", "a_macro_name^", "a_text"]
+Arguments   : ["a_expr", "a_text"]
 
-Usage       : $capture(a_expr,a_macro_name^,a_text)
+Usage       : $capture(a_expr,a_text)
 
 Description 
 
 >>
  
-    Capture expressions and apply a macro to each captured expression
+    Capture all matched expressions delimited by newline
     
     # Arguments
     
-    - a_expr       : An expression to match
-    - a_macro_name : A macro name to execute on each captured string
-    - a_text       : Source text to find expressions
+    - a_expr : A regex expression to match
+    - a_text : A text to get expressions
     
     # Example
     
-    $define(ss,a_text=$sub(2,,$a_text())$nl())
-    $assert(c$nl()d$nl()e,$capture^(ab.,ss,abc abd abe))
+    $capture|(test.[1-9],test 1 test 2 test 3)
+    $assert($-(),test 1
+    test 2
+    test 3)
 
 ### ceil
 
@@ -1542,6 +1547,41 @@ Description
     
     $assert(2,$countl($grepl(Cargo,$syscmd(ls))))
 
+### grepmap
+
+Macro Type  : Deterred
+
+Macro Name  : grepmap
+
+Arguments   : ["a_grep_type^", "a_expr", "a_macro_name^", "a_text"]
+
+Usage       : $grepmap(a_grep_type^,a_expr,a_macro_name^,a_text)
+
+Description 
+
+>>
+ 
+    Capture expressions and apply a macro to each captured expression
+    
+    # Auth : FIN
+    
+    # Note
+    
+    - If grep type is file, grep operation is executed on per line.
+    - If grep type is text, grep operation is executed one whole text.
+    
+    # Arguments
+    
+    - a_grep_type  : Grep type to execute. ["text", "file" ]
+    - a_expr       : An expression to match
+    - a_macro_name : A macro name to execute on each captured string
+    - a_text       : Source text to find expressions
+    
+    # Example
+    
+    $define(ss,a_text=$sub(2,,$a_text())$nl())
+    $assert(c$nl()d$nl()e,$grepmap^(text,ab.,ss,abc abd abe))
+
 ### gt
 
 Macro Type  : Function
@@ -2585,6 +2625,92 @@ Description
     
     $assert(true,$lte(b,c))
     $assert(true,$lte(text,text))
+
+### map
+
+Macro Type  : Deterred
+
+Macro Name  : map
+
+Arguments   : ["a_macro_name^", "a_array"]
+
+Usage       : $map(a_macro_name^,a_array)
+
+Description 
+
+>>
+ 
+    Execute macro on each array item
+    
+    # NOT Deterred
+    
+    # Arguments
+    
+    - a_macro_name : A macro name to execute ( trimmed ) 
+    - a_array      : An array to iterate
+    
+    # Example
+    
+    $define(m,a_src=$a_src()+)
+    $assert(a+b+c,$map(m,a,b,c))
+
+### mapf
+
+Macro Type  : Deterred
+
+Macro Name  : mapf
+
+Arguments   : ["a_macro_name^", "a_file"]
+
+Usage       : $mapf(a_macro_name^,a_file)
+
+Description 
+
+>>
+ 
+    Execute macro on each lines of a file
+    
+    # Auth : FIN
+    
+    # NOT Deterred
+    
+    # Arguments
+    
+    - a_macro_name : A macro name to execute ( trimmed ) 
+    - a_file       : A file to get lines iterator
+    
+    # Example
+    
+    $define(m,a_src=$a_src()+)
+    $assert(a+b+c,$mapf(m,file_name.txt))
+
+### mapl
+
+Macro Type  : Deterred
+
+Macro Name  : mapl
+
+Arguments   : ["a_macro_name^", "a_lines"]
+
+Usage       : $mapl(a_macro_name^,a_lines)
+
+Description 
+
+>>
+ 
+    Execute macro on each line
+    
+    # NOT Deterred
+    
+    # Arguments
+    
+    - a_macro_name : A macro name to execute ( trimmed ) 
+    - a_lines      : A lines to iterate
+    
+    # Example
+    
+    $define(m,a_src=$a_src()+)
+    $assert(a+b+c,$mapl(m,a$nl()b$nl()c$nl()))
 
 ### max
 
