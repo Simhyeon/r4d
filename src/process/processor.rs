@@ -1170,6 +1170,33 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// Execute a macro
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.execute_macro(0, "MAIN", "name", "args")
+    ///     .expect("Failed to execute a macro");
+    /// ```
+    pub fn execute_macro(
+        &mut self,
+        level: usize,
+        caller: &str,
+        macro_name: &str,
+        arguments: &str,
+    ) -> RadResult<Option<String>> {
+        self.logger
+            .start_new_tracker(TrackType::Input("String".to_string()));
+
+        let mut frag = MacroFragment::new();
+        frag.name = macro_name.to_owned();
+        frag.args = arguments.to_owned();
+        let result = self.evaluate(level, caller, &mut frag);
+
+        // This method stops last tracker, thus explicit one is not needed
+        self.organize_and_clear_cache()?;
+        result
+    }
+
     /// Read from string
     ///
     /// ```rust
