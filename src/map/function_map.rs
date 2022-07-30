@@ -3659,6 +3659,7 @@ $extract()"
 
             let mut result = text.split_whitespace().fold(String::new(), |mut acc, v| {
                 acc.push_str(v);
+                acc.push_str(",");
                 acc
             });
             result.pop();
@@ -4919,14 +4920,16 @@ $extract()"
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let expr = &args[0];
             let reg = p.try_get_or_insert_regex(expr)?;
-            let grepped =
+            let mut grepped =
                 args[1]
                     .split(",")
                     .filter(|l| reg.is_match(l))
                     .fold(String::new(), |mut acc, x| {
                         acc.push_str(x);
+                        acc.push_str(",");
                         acc
                     });
+            grepped.pop();
             Ok(Some(grepped))
         } else {
             Err(RadError::InvalidArgument(
