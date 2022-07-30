@@ -332,6 +332,28 @@ $assert(a,b)".to_string()),
                 ),
             ),
             (
+                "capture".to_owned(),
+                FMacroSign::new(
+                    "capture",
+                    ["a_expr", "a_text"],
+                    Self::capture,
+                    Some(
+"Capture all matched expressions delimited by newline
+
+# Arguments
+
+- a_expr : A regex expression to match
+- a_text : A text to get expressions
+
+# Example
+
+$capture|(test.[1-9],test 1 test 2 test 3)
+$assert($-(),test 1
+test 2
+test 3)".to_string()),
+                ),
+            ),
+            (
                 "comma".to_owned(),
                 FMacroSign::new(
                     "comma",
@@ -4856,6 +4878,31 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "regexpr requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Capture expressions
+    ///
+    /// # Usage
+    ///
+    /// $capture(expr,Array)
+    fn capture(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let expr = &args[0];
+            let nl = p.state.newline.clone();
+            let reg = p.try_get_or_insert_regex(expr)?;
+            let acc = reg
+                .captures_iter(&args[1])
+                .fold(String::new(), |mut acc, x| {
+                    acc.push_str(x.get(0).map_or("", |s| s.as_str()));
+                    acc.push_str(&nl);
+                    acc
+                });
+            Ok(acc.strip_suffix(&nl).map(|s| s.to_owned()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "capture requires two arguments".to_owned(),
             ))
         }
     }

@@ -9,7 +9,8 @@ use crate::ArgParser;
 use crate::AuthType;
 use crate::{trim, Processor, RadError};
 use std::collections::HashMap;
-use std::fmt::Write;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
 #[cfg(not(feature = "wasm"))]
 use std::path::PathBuf;
@@ -66,16 +67,24 @@ $assert($arr(),first,second)".to_string(),
                 ),
             ),
             (
-                "capture".to_owned(),
+                "grepmap".to_owned(),
                 DMacroSign::new(
-                    "capture",
-                    ["a_expr", "a_macro_name^", "a_text"],
-                    DeterredMacroMap::capture_map,
+                    "grepmap",
+                    ["a_grep_type^","a_expr", "a_macro_name^", "a_text"],
+                    DeterredMacroMap::grep_map,
                     Some(
 "Capture expressions and apply a macro to each captured expression
 
+# Auth : FIN
+
+# Note
+
+- If grep type is file, grep operation is executed on per line.
+- If grep type is text, grep operation is executed one whole text.
+
 # Arguments
 
+- a_grep_type  : Grep type to execute. [\"text\", \"file\" ]
 - a_expr       : An expression to match
 - a_macro_name : A macro name to execute on each captured string
 - a_text       : Source text to find expressions
@@ -83,7 +92,7 @@ $assert($arr(),first,second)".to_string(),
 # Example
 
 $define(ss,a_text=$sub(2,,$a_text())$nl())
-$assert(c$nl()d$nl()e,$capture^(ab.,ss,abc abd abe))".to_string()),
+$assert(c$nl()d$nl()e,$grepmap^(text,ab.,ss,abc abd abe))".to_string()),
                 ),
             ),
             (
@@ -250,6 +259,50 @@ item.
 # Example
 
 $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
+                ),
+            ),
+            (
+                "map".to_owned(),
+                DMacroSign::new(
+                    "map",
+                    ["a_macro_name^", "a_array"],
+                    Self::map_array,
+                    Some(
+"Execute macro on each array item
+
+# NOT Deterred
+
+# Arguments
+
+- a_macro_name : A macro name to execute ( trimmed ) 
+- a_array      : An array to iterate
+
+# Example
+
+$define(m,a_src=$a_src()+)
+$assert(a+b+c,$map(m,a,b,c))".to_string()),
+                ),
+            ),
+            (
+                "mapl".to_owned(),
+                DMacroSign::new(
+                    "mapl",
+                    ["a_macro_name^", "a_lines"],
+                    Self::map_lines,
+                    Some(
+"Execute macro on each line
+
+# NOT Deterred
+
+# Arguments
+
+- a_macro_name : A macro name to execute ( trimmed ) 
+- a_lines      : A lines to iterate
+
+# Example
+
+$define(m,a_src=$a_src()+)
+$assert(a+b+c,$mapl(m,a$nl()b$nl()c$nl()))".to_string()),
                 ),
             ),
             (
@@ -490,6 +543,32 @@ $strip(\\*1,2,3*\\)".to_string()),
         #[cfg(not(feature = "wasm"))]
         {
             map.insert(
+                "mapf".to_owned(),
+                DMacroSign::new(
+                    "mapf",
+                    ["a_macro_name^", "a_file"],
+                    Self::map_file,
+                    Some(
+                        "Execute macro on each lines of a file
+
+# Auth : FIN
+
+# NOT Deterred
+
+# Arguments
+
+- a_macro_name : A macro name to execute ( trimmed ) 
+- a_file       : A file to get lines iterator
+
+# Example
+
+$define(m,a_src=$a_src()+)
+$assert(a+b+c,$mapf(m,file_name.txt))"
+                            .to_string(),
+                    ),
+                ),
+            );
+            map.insert(
                 "readto".to_owned(),
                 DMacroSign::new(
                     "readto",
@@ -710,19 +789,134 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         }
     }
 
+    /// Apply map on array
+    ///
+    /// # Usage
+    ///
+    /// $map(macro_name,array)
+    fn map_array(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+            let macro_name = trim!(&args[0]);
+            let src = p.parse_and_strip(&mut ap, level, "map", &args[1])?;
+            let array = src.split(",");
+
+            let mut acc = String::new();
+            for item in array {
+                acc.push_str(
+                    &p.execute_macro(level, "map", &macro_name, item)?
+                        .unwrap_or_default(),
+                );
+            }
+            Ok(Some(acc))
+        } else {
+            Err(RadError::InvalidArgument(
+                "map requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Apply map on lines
+    ///
+    /// # Usage
+    ///
+    /// $mapl(macro_name,lines)
+    fn map_lines(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+            let macro_name = trim!(&args[0]);
+            let src = p.parse_and_strip(&mut ap, level, "mapl", &args[1])?;
+            let lines = src.lines();
+
+            let mut acc = String::new();
+            for item in lines {
+                acc.push_str(
+                    &p.execute_macro(level, "mapl", &macro_name, item)?
+                        .unwrap_or_default(),
+                );
+            }
+            Ok(Some(acc))
+        } else {
+            Err(RadError::InvalidArgument(
+                "mapl requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Apply map on file lines
+    ///
+    /// # Usage
+    ///
+    /// $mapf(macro_name,file_name)
+    #[cfg(not(feature = "wasm"))]
+    fn map_file(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("grepmap", AuthType::FIN, p)? {
+            return Ok(None);
+        }
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+            let macro_name = trim!(&args[0]);
+            let file = BufReader::new(std::fs::File::open(
+                p.parse_and_strip(&mut ap, level, "mapf", &args[1])?,
+            )?)
+            .lines();
+
+            let mut acc = String::new();
+            for line in file {
+                let line = line?;
+                acc.push_str(
+                    &p.execute_macro(level, "mapf", &macro_name, &line)?
+                        .unwrap_or_default(),
+                );
+            }
+            Ok(Some(acc))
+        } else {
+            Err(RadError::InvalidArgument(
+                "mapf requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     /// Apply maps on captured expressions
     ///
     /// # Usage
     ///
-    /// $capture(expr,macro,text)
-    fn capture_map(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
+    /// $grepmap(type,expr,macro,text)
+    fn grep_map(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new().no_strip();
-        let args = ap.args_to_vec(args, ',', GreedyState::Never);
-        ap.set_strip(true);
-        if args.len() >= 3 {
-            let match_expr = &args[0];
-            let macro_name = trim!(&args[1]);
-            let source = &args[2];
+        if let Some(args) = ap.args_with_len(args, 4) {
+            ap.set_strip(true);
+            let grep_type = &args[0];
+            let match_expr = &args[1];
+            let macro_name = trim!(&args[2]);
+            let source = &args[3];
+
+            let bufread = match grep_type.to_lowercase().as_str() {
+                #[cfg(not(feature = "wasm"))]
+                "file" => {
+                    if !Utils::is_granted("grepmap", AuthType::FIN, p)? {
+                        return Ok(None);
+                    }
+                    true
+                }
+                "text" => false,
+                _ => {
+                    return Err(RadError::InvalidArgument(format!(
+                        "{} is not a valid grep type",
+                        grep_type
+                    )))
+                }
+            };
+
+            if bufread && !std::path::Path::new(source).exists() {
+                return Err(RadError::InvalidArgument(format!(
+                    "Cannot find a file \"{}\" ",
+                    source
+                )));
+            }
 
             if match_expr.is_empty() {
                 return Err(RadError::InvalidArgument(
@@ -735,21 +929,34 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             // If this regex is not cloned, "capture" should collect captured string into a allocated
             // vector. Which is generaly worse for performance.
             let reg = p.try_get_or_insert_regex(match_expr)?.clone();
-            for cap in reg.captures_iter(source) {
-                let captured = cap.get(0).map_or("", |m| m.as_str());
-                let expanded = p.parse_and_strip(
-                    &mut ap,
-                    level,
-                    "capture",
-                    &format!("${}({})", macro_name, captured),
-                )?;
-                write!(res, "{}", expanded)?;
+
+            if !bufread {
+                for cap in reg.captures_iter(source) {
+                    let captured = cap.get(0).map_or("", |m| m.as_str());
+                    let expanded = p
+                        .execute_macro(level, "grepmap", &macro_name, captured)?
+                        .unwrap_or_default();
+                    res.push_str(&expanded);
+                }
+            } else {
+                let lines = BufReader::new(File::open(std::path::Path::new(source))?).lines();
+
+                for line in lines {
+                    let line = line?;
+                    for cap in reg.captures_iter(&line) {
+                        let captured = cap.get(0).map_or("", |m| m.as_str());
+                        let expanded = p
+                            .execute_macro(level, "grepmap", &macro_name, captured)?
+                            .unwrap_or_default();
+                        res.push_str(&expanded);
+                    }
+                }
             }
 
             Ok(Some(res))
         } else {
             Err(RadError::InvalidArgument(
-                "capture requires two arguments".to_owned(),
+                "grepamp requires four arguments".to_owned(),
             ))
         }
     }
@@ -1234,9 +1441,8 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             ));
         }
         let mut ap = ArgParser::new().no_strip();
-        let args = ap.args_to_vec(args, ',', GreedyState::Never);
-        ap.set_strip(true);
-        if args.len() >= 2 {
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
             let file_path = PathBuf::from(processor.parse_and_strip(
                 &mut ap,
                 level,
@@ -1331,9 +1537,8 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             ));
         }
         let mut ap = ArgParser::new().no_strip();
-        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
-        ap.set_strip(true);
-        if !args.is_empty() {
+        if let Some(args) = ap.args_with_len(args, 1) {
+            ap.set_strip(true);
             let file_path = PathBuf::from(processor.parse_and_strip(
                 &mut ap,
                 level,
@@ -1413,12 +1618,9 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let macro_name =
                 trim!(&processor.parse_and_strip(&mut ap, level, "exec", &args[0])?).to_string();
             let args = processor.parse_and_strip(&mut ap, level, "exec", &args[1])?;
-            let result = processor.parse_and_strip(
-                &mut ap,
-                level,
-                "exec",
-                &format!("${}({})", macro_name, args),
-            )?;
+            let result = processor
+                .execute_macro(level, "exec", &macro_name, &args)?
+                .unwrap_or_default();
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
