@@ -21,7 +21,6 @@ use cindex::OutOption;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
-use std::fmt::Write as _;
 #[cfg(not(feature = "wasm"))]
 use std::fs::OpenOptions;
 use std::io::BufRead;
@@ -3188,7 +3187,8 @@ $extract()"
             let mut iter = args[1].lines().peekable();
             while let Some(line) = iter.next() {
                 if !line.is_empty() {
-                    write!(lines, "{}{}", indenter, line)?;
+                    lines.push_str(indenter);
+                    lines.push_str(line);
                 }
                 // Append newline because String.lines() method cuts off all newlines
                 if iter.peek().is_some() {
@@ -3567,7 +3567,7 @@ $extract()"
             let mut result = text
                 .split_terminator(sep)
                 .fold(String::new(), |mut acc, v| {
-                    write!(acc, "{},", v).unwrap();
+                    acc.push_str(v);
                     acc
                 });
             result.pop();
@@ -3635,7 +3635,7 @@ $extract()"
             let text = trim!(&args[0]);
 
             let mut result = text.split_whitespace().fold(String::new(), |mut acc, v| {
-                write!(acc, "{},", v).unwrap();
+                acc.push_str(v);
                 acc
             });
             result.pop();
@@ -3745,7 +3745,12 @@ $extract()"
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let sep = &args[0];
             let text = &args[1];
-            Ok(Some(text.split(',').collect::<Vec<_>>().join(sep)))
+            let join = text.split(",").fold(String::new(), |mut acc, s| {
+                acc.push_str(s);
+                acc.push_str(sep);
+                acc
+            });
+            Ok(join.strip_suffix(sep).map(|s| s.to_owned()))
         } else {
             Err(RadError::InvalidArgument(
                 "join requires two arguments".to_owned(),
@@ -3762,7 +3767,12 @@ $extract()"
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let sep = &args[0];
             let text = &args[1];
-            Ok(Some(text.lines().collect::<Vec<_>>().join(sep)))
+            let joined = text.lines().fold(String::new(), |mut acc, l| {
+                acc.push_str(l);
+                acc.push_str(sep);
+                acc
+            });
+            Ok(joined.strip_suffix(sep).map(|s| s.to_owned()))
         } else {
             Err(RadError::InvalidArgument(
                 "joinl requires two arguments".to_owned(),
@@ -4799,8 +4809,11 @@ $extract()"
     /// $fold(1,2,3,4,5)
     fn fold(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let content = &mut args[0].split(',').collect::<Vec<&str>>();
-            Ok(Some(content.join("")))
+            let content = args[0].split(',').fold(String::new(), |mut acc, a| {
+                acc.push_str(a);
+                acc
+            });
+            Ok(Some(content))
         } else {
             Err(RadError::InvalidArgument(
                 "fold requires an argument".to_owned(),
@@ -4815,8 +4828,12 @@ $extract()"
     /// $foldl(1,1,2,3,4,5)
     fn fold_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let content = &mut args[0].lines().collect::<Vec<&str>>();
-            Ok(Some(content.join("")))
+            let content = args[0].lines().fold(String::new(), |mut acc, a| {
+                acc.push_str(a);
+                acc
+            });
+
+            Ok(Some(content))
         } else {
             Err(RadError::InvalidArgument(
                 "foldl requires an argument".to_owned(),
@@ -4843,22 +4860,23 @@ $extract()"
         }
     }
 
-    /// Grep
+    /// Grep items from array
     ///
     /// # Usage
     ///
-    /// $grep(EXPR,CONTENT)
+    /// $grep(expr,Array)
     fn grep_array(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let expr = &args[0];
             let reg = p.try_get_or_insert_regex(expr)?;
-            let content = args[1].split(',').collect::<Vec<_>>();
-            let grepped = content
-                .iter()
-                .filter(|l| reg.is_match(l))
-                .copied()
-                .collect::<Vec<&str>>()
-                .join(",");
+            let grepped =
+                args[1]
+                    .split(",")
+                    .filter(|l| reg.is_match(l))
+                    .fold(String::new(), |mut acc, x| {
+                        acc.push_str(x);
+                        acc
+                    });
             Ok(Some(grepped))
         } else {
             Err(RadError::InvalidArgument(
@@ -4871,17 +4889,21 @@ $extract()"
     ///
     /// # Usage
     ///
-    /// $grepl(EXPR,CONTENT)
+    /// $grepl(expr,Lines)
     fn grep_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let expr = &args[0];
+            let nl = p.state.newline.clone();
             let reg = p.try_get_or_insert_regex(expr)?;
             let content = args[1].lines();
             let grepped = content
                 .filter(|l| reg.is_match(l))
-                .collect::<Vec<&str>>()
-                .join(&p.state.newline);
-            Ok(Some(grepped))
+                .fold(String::new(), |mut acc, l| {
+                    acc.push_str(l);
+                    acc.push_str(&nl);
+                    acc
+                });
+            Ok(grepped.strip_suffix(&nl).map(|s| s.to_owned()))
         } else {
             Err(RadError::InvalidArgument(
                 "grepl requires two arguments".to_owned(),
@@ -5436,7 +5458,11 @@ $extract()"
                 "rev requires an argument".to_owned(),
             ))
         } else {
-            let reversed = args.split(',').rev().collect::<Vec<&str>>().join(",");
+            let reversed = args.rsplit(",").fold(String::new(), |mut acc, a| {
+                acc.push_str(a);
+                acc.push(',');
+                acc
+            });
             Ok(Some(reversed))
         }
     }
@@ -5448,7 +5474,6 @@ $extract()"
     /// $declare(n1,n2,n3)
     fn declare(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         let names = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
-        // TODO Create empty macro rules
         let runtime_rules = names
             .iter()
             .map(|name| (trim!(name).to_string(), "", ""))
@@ -6089,7 +6114,7 @@ $extract()"
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let arg = trim!(&args[0]);
             let mut chars = arg.as_ref().chars().fold(String::new(), |mut acc, ch| {
-                write!(acc, "{},", ch).unwrap();
+                acc.push(ch);
                 acc
             });
             chars.pop();
