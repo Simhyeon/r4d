@@ -1,9 +1,10 @@
 use crate::auth::AuthFlags;
+#[cfg(not(feature = "wasm"))]
+use crate::common::FileTarget;
+use crate::common::RadResult;
 use crate::common::{
     CommentType, ErrorBehaviour, FlowControl, Hygiene, ProcessInput, ProcessType, RelayTarget,
 };
-#[cfg(not(feature = "wasm"))]
-use crate::common::{FileTarget, RadResult};
 use crate::consts::LINE_ENDING;
 use crate::RadError;
 use regex::Regex;

@@ -1,13 +1,13 @@
-use crate::common::{ErrorBehaviour, FileTarget, FlowControl, MacroType, RadResult, RelayTarget};
+use crate::common::{ErrorBehaviour, MacroType, RadResult};
 use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
 use crate::formatter::Formatter;
 use crate::parser::GreedyState;
 use crate::utils::Utils;
 use crate::ArgParser;
-#[cfg(not(feature = "wasm"))]
-use crate::AuthType;
 use crate::{trim, Processor, RadError};
+#[cfg(not(feature = "wasm"))]
+use crate::{AuthType, FileTarget, FlowControl, RelayTarget};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};

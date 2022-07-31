@@ -31,8 +31,6 @@ use std::path::{Path, PathBuf};
 #[cfg(not(feature = "wasm"))]
 use std::process::Command;
 use std::str::FromStr;
-#[cfg(feature = "hook")]
-use std::str::FromStr;
 
 const ALIGN_TYPES: [&str; 3] = ["left", "right", "center"];
 
