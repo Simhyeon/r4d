@@ -94,6 +94,7 @@ impl MacroFragment {
         self.args.clear();
         #[cfg(feature = "debug")]
         self.processed_args.clear();
+        self.pipe_input = false;
         self.pipe_output = false;
         self.yield_literal = false;
         self.trim_input = false;
