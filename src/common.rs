@@ -95,7 +95,6 @@ impl MacroFragment {
         #[cfg(feature = "debug")]
         self.processed_args.clear();
         self.pipe_output = false;
-        self.greedy = false;
         self.yield_literal = false;
         self.trim_input = false;
         self.negate_result = false;
@@ -110,7 +109,12 @@ impl MacroFragment {
     }
 
     pub(crate) fn has_attribute(&self) -> bool {
-        self.pipe_output || self.greedy || self.yield_literal || self.trim_output || self.trim_input
+        self.pipe_input
+            || self.pipe_output
+            || self.yield_literal
+            || self.trim_output
+            || self.trim_input
+            || self.negate_result
     }
 }
 
