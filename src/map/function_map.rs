@@ -5047,7 +5047,7 @@ $extract()"
     /// $countl(CONTENT goes here)
     fn count_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let line_count = LINE_MATCH.find_iter(&args[0]).count();
+            let line_count = args[0].split("\n").count();
             return Ok(Some(line_count.to_string()));
         } else {
             Err(RadError::InvalidArgument(
