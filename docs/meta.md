@@ -3,20 +3,10 @@
 * [ ] Update blog contents,
     * [ ] Splitc doesn't utilize file_path which is a shame.
 
-* [x] Remove unnecessary collect calls
-    - Not 100% but calls that are blatnatly insignificant
-
 * [x] Rad backtrace prints strangely for deterred  macro
     * [ ] This fix should also affect template crate.... damn it. Actually no,
       but keep in mind that user configured deterred macro doesn't set macro
       name properly without template related update.
-
-* [ ] Consider implementing arrays
-* [ ] Syscmd's inner call is not redirected. Thus you cannot pipe into othe
-  files within syscmd. Warn this in macro man
-
-* [ ] Argument parsing to return a slice of values not a string would be good I guess?
-    - This needs to implement cow manipulation and I'm... ok maybe later
 
 : ORDERED :
 1. [ ] Update r4d version in gdengine
@@ -43,6 +33,7 @@ $todo_end()
 
 ### Changes
 
+* [x] Pipe input macro attribute
 * [x] Warn readin when relay is on. For sanity reason
 * [x] Now relay and read to doesn't truncate a file
 * [x] Now raw include doesn't pause but escape : More efficient + can handle
@@ -72,14 +63,17 @@ $todo_end()
 
 ### Macro ergonomics
 
-- Countl doesn't count empty trailing line : Include this in documentation for clarity
 - Macro chain : This is much harder because many internal changes
 
 #### Hard+misc ones
 
 * [ ] Complete wasm
 
+* [ ] Implement array object.
 * [ ] Projects performance
+
+- Argument parsing to return a slice of values not a string would be good I guess?
+    - This needs to implement cow manipulation and I'm... ok maybe later
 - Utilize regex engine for fast parsing especially, define parsing. Possibly
 whole parsing process, meh I don't think I can... Focus on define parsing.
 - Refactor codes into multiple chunks of functions for better readability

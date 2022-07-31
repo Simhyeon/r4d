@@ -13,18 +13,23 @@
 - FET : Freeze flag refactored
 - FET : Packaging flag
 - FET : Negate macro attribute
+- FET : Pipe input macro attribute
 - FET : New macros
-    - Dump
-    - Meta-processing related
-        - Require
-        - Strict
-        - Comment
-    - Sep
+    - dump
+    - map variants : map, mapf, mapl
+    - grepmap
+    - meta-processing related
+        - require
+        - strict
+        - comment
+    - sep
     - after
+    - until
     - capture
     - indexl
     - splitc 
-    - until
+    - gt, gte
+    - lt, lte
 
 **rado**
 
