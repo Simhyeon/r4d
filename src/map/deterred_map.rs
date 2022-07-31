@@ -1682,7 +1682,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                 processor.set_debug(original);
                 match processor.get_debug_switch() {
                     DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                        processor.set_prompt("\"From macro\"")
+                        processor.set_prompt("\"Spread macro\"")
                     }
                     _ => (),
                 }
@@ -1691,7 +1691,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
-                "From requires two arguments".to_owned(),
+                "spread requires two arguments".to_owned(),
             ))
         }
     }
