@@ -2036,10 +2036,11 @@ impl<'processor> Processor<'processor> {
                     .map
                     .contains_macro(&name, MacroType::Any, self.state.hygiene)
             {
+                // It is safe to unwrap
                 let mac_name = if frag.args.contains(',') {
-                    frag.args.split(',').collect::<Vec<&str>>()[0]
+                    frag.args.split(',').next().unwrap()
                 } else {
-                    frag.args.split('=').collect::<Vec<&str>>()[0]
+                    frag.args.split('=').next().unwrap()
                 };
                 let err = RadError::UnallowedMacroExecution(format!(
                     "Can't override exsiting macro : \"{}\"",
@@ -2053,8 +2054,11 @@ impl<'processor> Processor<'processor> {
                 body = trim!(&body
                     .lines()
                     .map(|l| trim!(l))
-                    .collect::<Vec<_>>()
-                    .join(&self.state.newline))
+                    .fold(String::new(), |mut acc, l| {
+                        acc.push_str(&l);
+                        acc.push_str(&self.state.newline);
+                        acc
+                    }))
                 .to_string();
             }
 
@@ -2073,10 +2077,11 @@ impl<'processor> Processor<'processor> {
                 }
             }
         } else {
+            // It is safe to unwrap
             let name = if frag.args.contains(',') {
-                frag.args.split(',').collect::<Vec<&str>>()[0]
+                frag.args.split(',').next().unwrap()
             } else {
-                frag.args.split('=').collect::<Vec<&str>>()[0]
+                frag.args.split('=').next().unwrap()
             };
             let err = RadError::InvalidMacroName(format!(
                 "Invalid macro definition format for a macro : \"{}\"",
