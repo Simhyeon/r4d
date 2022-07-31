@@ -57,12 +57,12 @@ pub(crate) struct MacroFragment {
     pub processed_args: String,
 
     // Macro attributes
-    pub pipe: bool,
-    pub greedy: bool,
+    pub pipe_output: bool,
+    pub pipe_input: bool,
     pub yield_literal: bool,
     pub negate_result: bool,
     pub trim_input: bool,
-    pub trimmed: bool,
+    pub trim_output: bool,
 
     // Status varaible
     pub is_processed: bool,
@@ -76,12 +76,12 @@ impl MacroFragment {
             args: String::new(),
             #[cfg(feature = "debug")]
             processed_args: String::new(),
-            pipe: false,
-            greedy: false,
+            pipe_input: false,
+            pipe_output: false,
             yield_literal: false,
             negate_result: false,
             trim_input: false,
-            trimmed: false,
+            trim_output: false,
 
             is_processed: false,
         }
@@ -94,12 +94,12 @@ impl MacroFragment {
         self.args.clear();
         #[cfg(feature = "debug")]
         self.processed_args.clear();
-        self.pipe = false;
+        self.pipe_output = false;
         self.greedy = false;
         self.yield_literal = false;
         self.trim_input = false;
         self.negate_result = false;
-        self.trimmed = false;
+        self.trim_output = false;
     }
 
     /// Check if fragment is empty or not
@@ -110,7 +110,7 @@ impl MacroFragment {
     }
 
     pub(crate) fn has_attribute(&self) -> bool {
-        self.pipe || self.greedy || self.yield_literal || self.trimmed || self.trim_input
+        self.pipe_output || self.greedy || self.yield_literal || self.trim_output || self.trim_input
     }
 }
 

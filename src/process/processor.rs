@@ -1801,18 +1801,36 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<Option<String>> {
         // Increase level to represent nestedness
         let level = level + 1;
+        let mut skip_expansion = false;
+
+        // Pipe doesn't expanded
+        if frag.pipe_input {
+            skip_expansion = true;
+            frag.args = self.state.get_pipe("-").unwrap_or_default();
+        }
+
+        // Assign local variables
         let (name, mut raw_args) = (&frag.name, frag.args.clone());
 
         if frag.trim_input {
             raw_args = raw_args
                 .lines()
                 .map(|l| l.trim())
-                .collect::<Vec<_>>()
-                .join(&self.state.newline);
+                .fold(String::new(), |mut acc, l| {
+                    acc.push_str(l);
+                    acc.push_str(&self.state.newline);
+                    acc
+                })
+                .strip_suffix(&self.state.newline)
+                .unwrap_or_default()
+                .to_string();
         }
         let args: String;
         // Preprocess only when macro is not a deterred macro
-        if !self.map.is_deterred_macro(name) || self.state.process_type == ProcessType::Dry {
+        if skip_expansion
+            || !self.map.is_deterred_macro(name)
+            || self.state.process_type == ProcessType::Dry
+        {
             args = self.parse_chunk_args(level, name, &raw_args)?;
             // This parses and processes arguments
             // and macro should be evaluated after
@@ -2242,11 +2260,12 @@ impl<'processor> Processor<'processor> {
                     self.logger.append_track(String::from("Macro start"));
                 }
                 match ch {
-                    '|' => frag.pipe = true,
+                    '|' => frag.pipe_output = true,
                     '*' => frag.yield_literal = true,
                     '!' => frag.negate_result = true,
                     '=' => frag.trim_input = true,
-                    '^' => frag.trimmed = true,
+                    '^' => frag.trim_output = true,
+                    '-' => frag.pipe_input = true,
                     _ => {
                         // This is mostly not reached because it is captured as non-exsitent name
                         if frag.has_attribute() {
@@ -2498,7 +2517,7 @@ impl<'processor> Processor<'processor> {
         if let Some(mut content) = content {
             // else it is ok to proceed.
             // thus it is safe to unwrap it
-            if frag.trimmed {
+            if frag.trim_output {
                 content = trim!(&content).to_string();
                 if content.is_empty() {
                     self.state.consume_newline = true;
@@ -2565,7 +2584,7 @@ impl<'processor> Processor<'processor> {
             // This should come later!!
             // because pipe should respect all other macro attributes
             // not the other way
-            if frag.pipe {
+            if frag.pipe_output {
                 self.state.add_pipe(None, content);
                 self.state.consume_newline = true;
             } else {
