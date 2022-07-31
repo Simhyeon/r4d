@@ -434,12 +434,13 @@ $macro_name=(
 % second
 ```
 
-**Piping**
+**Pipe output**
 
-Pipe attribute ```|``` saves macro output into a temporary container. This is
-useful when you use hygiene mode and needs a persistent container that is not
-volatile. Or simply you are just tired of defining container everytime you want
-to use. ( Though I recommend using named macro container for code readability )
+Pipe output attribute ```|``` saves macro output into a temporary container.
+This is useful when you use hygiene mode and needs a persistent container that
+is not volatile. Or simply you are just tired of defining container everytime
+you want to use. ( Though I recommend using named macro container for code
+readability )
 
 ```
 $define(test,a=$a())
@@ -454,7 +455,7 @@ I'm going to be used by a pipe macro
 \*I'll be requoted with literal*\
 ```
 
-**A caveat**
+CAVEAT
 
 Getting value from pipe truncates an original value. 
 
@@ -469,6 +470,21 @@ true
 
 ```
 
+**Pipe input**
+
+Pipe input attribute sets argument as piped value. This also truncates pipe
+value. Piped input is not expanded.
+
+```
+$define(mac,a_src=+$a_src())
+$mac|(1)
+$mac|-()
+$mac|-()
+$mac-()
+===
++++1
+```
+
 **Yield literal**
 
 Yield literal attribute ```*``` makes output printed as literal form. This is
@@ -479,6 +495,19 @@ yield literal when you manipulate complex texts that can possibly include
 unbalanced parenthesis or commas.
 
 Refer about [literal quotes](#literal-rules) to grasp possible usages.
+
+**Negate result**
+
+You can negate a result with ```!``` attribute. On strict mode, if the result
+is not a boolean-able, processor panicks.
+
+```
+$is_empty($empty())
+$is_empty!($empty())
+===
+true
+false
+```
 
 ### Errors
 
