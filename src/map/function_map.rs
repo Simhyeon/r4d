@@ -3495,7 +3495,7 @@ $extract()"
                 .split_terminator(sep)
                 .fold(String::new(), |mut acc, v| {
                     acc.push_str(v);
-                    acc.push_str(",");
+                    acc.push(',');
                     acc
                 });
             result.pop();
@@ -3564,7 +3564,7 @@ $extract()"
 
             let mut result = text.split_whitespace().fold(String::new(), |mut acc, v| {
                 acc.push_str(v);
-                acc.push_str(",");
+                acc.push(',');
                 acc
             });
             result.pop();
@@ -3674,7 +3674,7 @@ $extract()"
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let sep = &args[0];
             let text = &args[1];
-            let join = text.split(",").fold(String::new(), |mut acc, s| {
+            let join = text.split(',').fold(String::new(), |mut acc, s| {
                 acc.push_str(s);
                 acc.push_str(sep);
                 acc
@@ -4608,7 +4608,7 @@ $extract()"
     fn index_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             // Don't allocate as vector if possible to improve performance
-            let content = &mut args[1].split(",");
+            let content = &mut args[1].split(',');
             let index = trim!(&args[0]).parse::<isize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "index requires to be an integer but got \"{}\"",
@@ -4616,7 +4616,7 @@ $extract()"
                 ))
             })?;
 
-            let len = args[1].split(",").count();
+            let len = args[1].split(',').count();
 
             if index >= len as isize || index < -(len as isize) {
                 return Err(RadError::InvalidArgument(format!(
@@ -4848,11 +4848,11 @@ $extract()"
             let reg = p.try_get_or_insert_regex(expr)?;
             let mut grepped =
                 args[1]
-                    .split(",")
+                    .split(',')
                     .filter(|l| reg.is_match(l))
                     .fold(String::new(), |mut acc, x| {
                         acc.push_str(x);
-                        acc.push_str(",");
+                        acc.push(',');
                         acc
                     });
             grepped.pop();
@@ -5207,7 +5207,7 @@ $extract()"
                 comment_type
             )));
         }
-        return Ok(None);
+        Ok(None)
     }
 
     /// require
@@ -5232,7 +5232,7 @@ $extract()"
                 )));
             }
         }
-        return Ok(None);
+        Ok(None)
     }
 
     /// Strict
@@ -5273,7 +5273,7 @@ $extract()"
                 )));
             }
         }
-        return Ok(None);
+        Ok(None)
     }
 
     /// Log message
@@ -5426,7 +5426,7 @@ $extract()"
                 "rev requires an argument".to_owned(),
             ))
         } else {
-            let reversed = args.rsplit(",").fold(String::new(), |mut acc, a| {
+            let reversed = args.rsplit(',').fold(String::new(), |mut acc, a| {
                 acc.push_str(a);
                 acc.push(',');
                 acc

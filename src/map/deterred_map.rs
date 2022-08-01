@@ -850,7 +850,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             ap.set_strip(true);
             let macro_name = trim!(&args[0]);
             let src = p.parse_and_strip(&mut ap, level, "map", &args[1])?;
-            let array = src.split(",");
+            let array = src.split(',');
 
             let mut acc = String::new();
             for item in array {
