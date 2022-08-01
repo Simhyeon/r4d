@@ -1616,7 +1616,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                     }
                 }
 
-                if let Some(relay) = processor.state.relay.last() {
+                if let Some(relay) = processor.state.relay.last().clone() {
                     processor.log_warning(
                         &format!("Read file's content will be relayed to \"{:?}\"", relay),
                         WarningType::Sanity,
