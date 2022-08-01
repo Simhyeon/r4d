@@ -130,7 +130,7 @@ $assert(c,$splitc($PS(),-1,a/b/c))".to_string(),
 
 # Example
 
-$assert(하세요,$after(안녕,안녕하세요))".to_string()),
+$assert(world,$after($space(),Hello world))".to_string()),
                 ),
             ),
             (
@@ -1494,6 +1494,9 @@ $assert(30,$num(30k/h for 3 hours))".to_string()),
                     Some(
 "Print platform specific newlines. Its behaviour can be configured.
 
+- CRLF is returned on windows
+- LF is returned on *nix systems.
+
 # Arguments
 
 - a_amount : Amount of newlines [Unsigned integer] ( trimmed )
@@ -2287,7 +2290,7 @@ $assert(☺,$unicode(263a))".to_string()),
 
 # Example
 
-$assert(안녕하,$until(세,안녕하세요))".to_string()),
+$assert(Hello,$until($space(),Hello World))".to_string()),
                 ),
             ),
             (
