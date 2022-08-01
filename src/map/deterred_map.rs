@@ -553,8 +553,8 @@ $strip(\\*1,2,3*\\)".to_string()),
                     Some(
                         "Include a file
 
-- Include reads a whole chunk of file into a \"Reader\" and expands
-- Use readin or readto if you want buffered behaviour
+- Include works as bufread in first level and chunk read in nested call.
+- Use readin if you want to enforce bufread
 - If raw mode is enabled include doesn't expand any macros inside the file
 
 # NOT Deterred
@@ -629,10 +629,7 @@ $assert(a+b+c,$mapf(m,file_name.txt))"
                     ["a_from_file^", "a_to_file^", "a_raw_mode?+^"],
                     DeterredMacroMap::read_to,
                     Some(
-                        "Read from a file and paste into a file
-
-Readto can be only executed on first level therefore readto cannot be used 
-inside other macros
+                        "Read from a file as bufread and paste into a file
 
 # Auth : FIN + FOUT
 
@@ -658,10 +655,7 @@ $readto(from.txt,into.txt)"
                     ["a_file?^", "a_raw_mode^+?"],
                     DeterredMacroMap::read_in,
                     Some(
-                        "Read from a file
-
-Readin can be only executed on first level therefore readin cannot be used 
-inside other macros
+                        "Read from a file as \"Bufread\"
 
 # Auth : FIN
 
@@ -1489,11 +1483,6 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         {
             return Ok(None);
         }
-        if level != 1 {
-            return Err(RadError::UnallowedMacroExecution(
-                "Readto doesn't support nested buf read".to_string(),
-            ));
-        }
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
@@ -1584,11 +1573,6 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
 
         if !Utils::is_granted("readin", AuthType::FIN, processor)? {
             return Ok(None);
-        }
-        if level != 1 {
-            return Err(RadError::UnallowedMacroExecution(
-                "Readin doesn't support nested buf read".to_string(),
-            ));
         }
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 1) {
