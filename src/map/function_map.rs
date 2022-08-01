@@ -6197,6 +6197,11 @@ $extract()"
         }
     }
 
+    /// Update storage
+    ///
+    /// # Usage
+    ///
+    /// $update(text)
     fn update_storage(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
 
@@ -6211,6 +6216,11 @@ $extract()"
         Ok(None)
     }
 
+    /// Extract storage
+    ///
+    /// # Usage
+    ///
+    /// $extract()
     fn extract_storage(_: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         // Execute update method for storage
         if let Some(storage) = processor.storage.as_mut() {
