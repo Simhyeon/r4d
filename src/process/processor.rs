@@ -2432,23 +2432,29 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<()> {
         // Name is empty
         if frag.name.is_empty() {
-            let err =
-                RadError::InvalidMacroName("Cannot invoke a macro with empty name".to_string());
-            self.log_error(&err.to_string())?;
+            // $-() is valid syntax
+            if frag.pipe_input {
+                frag.pipe_input = false;
+                frag.name = "-".to_string();
+            } else {
+                let err =
+                    RadError::InvalidMacroName("Cannot invoke a macro with empty name".to_string());
+                self.log_error(&err.to_string())?;
 
-            // Handle empty name error
-            match self.state.behaviour {
-                ErrorBehaviour::Assert => return Err(RadError::AssertFail),
-                ErrorBehaviour::Strict | ErrorBehaviour::Interrupt => {
-                    return Err(RadError::StrictPanic);
-                } // Error
-                ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
-                ErrorBehaviour::Purge => (),
+                // Handle empty name error
+                match self.state.behaviour {
+                    ErrorBehaviour::Assert => return Err(RadError::AssertFail),
+                    ErrorBehaviour::Strict | ErrorBehaviour::Interrupt => {
+                        return Err(RadError::StrictPanic);
+                    } // Error
+                    ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
+                    ErrorBehaviour::Purge => (),
+                }
+
+                // Clear fragment regardless
+                frag.clear();
+                frag.is_processed = true;
             }
-
-            // Clear fragment regardless
-            frag.clear();
-            frag.is_processed = true;
         }
 
         // Debug
