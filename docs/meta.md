@@ -1,5 +1,15 @@
 ### TODO
 
+* [ ] Finish 3.0 release, becuase I cannot work... live like this... I'm P, and
+  I have to face it, curve it, overcome it.
+
+* [ ] Document about include related operations
+* [ ] Update interal, changes text about include call
+
+* [ ] Revert "relay" "include"... relationship.
+
+* [ ] Cache logic works the same, check what the hell cache does
+
 * [ ] Update blog contents,
     * [ ] Splitc doesn't utilize file_path which is a shame.
 
