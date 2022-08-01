@@ -642,6 +642,24 @@ Description >>
 
 ----
 Macro Type  : Function
+Macro Name  : exist
+Arguments   : ["a_filename^"]
+Usage       : $exist(a_filename^)
+Description >> 
+    Chck if file exists
+    
+    # Auth : FIN
+    
+    # Arguments
+    
+    - a_filename : A file name to audit ( trimmed )
+    
+    # Example
+    
+    $exists(file.txt)
+
+----
+Macro Type  : Function
 Macro Name  : exit
 Arguments   : []
 Usage       : $exit()
@@ -940,7 +958,7 @@ Usage       : $grepf(a_expr,a_file^)
 Description >> 
     Extract matched lines from given file. This returns all items as lines
     
-    - NOTE : The grep operation is executed on per line
+    - NOTE : The grep operation is executed on per line and doesn't expand lines
     
     # Arguments
     
@@ -1781,6 +1799,8 @@ Arguments   : ["a_macro_name^", "a_file"]
 Usage       : $mapf(a_macro_name^,a_file)
 Description >> 
     Execute macro on each lines of a file
+    
+    # Note : mapf macro doesn't expand lines from a file.
     
     # Auth : FIN
     

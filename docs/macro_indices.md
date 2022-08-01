@@ -35,6 +35,7 @@
 * [eval](#eval)
 * [evalk](#evalk)
 * [exec](#exec)
+* [exist](#exist)
 * [exit](#exit)
 * [extract](#extract)
 * [fassert](#fassert)
@@ -1082,6 +1083,32 @@ Description
     
     $assert($path(a,b,c),$exec(path,a,b,c))
 
+### exist
+
+Macro Type  : Function
+
+Macro Name  : exist
+
+Arguments   : ["a_filename^"]
+
+Usage       : $exist(a_filename^)
+
+Description 
+
+>>
+ 
+    Chck if file exists
+    
+    # Auth : FIN
+    
+    # Arguments
+    
+    - a_filename : A file name to audit ( trimmed )
+    
+    # Example
+    
+    $exists(file.txt)
+
 ### exit
 
 Macro Type  : Function
@@ -1510,7 +1537,7 @@ Description
  
     Extract matched lines from given file. This returns all items as lines
     
-    - NOTE : The grep operation is executed on per line
+    - NOTE : The grep operation is executed on per line and doesn't expand lines
     
     # Arguments
     
@@ -2671,6 +2698,8 @@ Description
 >>
  
     Execute macro on each lines of a file
+    
+    # Note : mapf macro doesn't expand lines from a file.
     
     # Auth : FIN
     
