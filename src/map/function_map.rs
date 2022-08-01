@@ -5,7 +5,7 @@
 
 use crate::auth::{AuthState, AuthType};
 use crate::common::{ErrorBehaviour, FlowControl, MacroType, ProcessInput, RadResult, RelayTarget};
-use crate::consts::{ESR, LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER};
+use crate::consts::{ESR, LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER, PATH_SEPARATOR};
 use crate::error::RadError;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
 use crate::formatter::Formatter;
@@ -45,6 +45,8 @@ lazy_static! {
     static ref LINE_MATCH : Regex = Regex::new("\n").expect("Failed to create line match regex");
     /// Two lines match
     static ref TWO_NL_MATCH: Regex = Regex::new(r#"(\n|\r\n)\s*(\n|\r\n)"#).expect("Failed to create tow nl regex");
+    /// Path separator match
+    static ref PATH_MATCH: Regex = Regex::new(r#"(\\|/)"#).expect("Failed to create path separator matches");
 }
 
 /// Function signature for "function" macro functions
@@ -92,6 +94,24 @@ $assert(3,$-())
 $nassert(3,$-())
 $pipeto(num,5)
 $assert(5,$-(num))".to_string(),
+                    ),
+                ),
+            ),
+            (
+                "PS".to_owned(),
+                FMacroSign::new(
+                    "PS",
+                    ESR,
+                    Self::path_separator,
+                    Some(
+"Return platform specific path separator
+
+- On windows, this return '\'
+- On non windows, this return '/'
+
+# Exmaple
+
+$assert(c,$splitc($PS(),-1,a/b/c))".to_string(),
                     ),
                 ),
             ),
@@ -3887,9 +3907,10 @@ $extract()"
     fn merge_path(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         let vec = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
 
+        let path_sep = PATH_SEPARATOR.to_string();
         let out = vec
             .iter()
-            .map(|s| trim!(s).to_string())
+            .map(|s| trim!(PATH_MATCH.replace_all(s, &path_sep).as_ref()).to_string())
             .collect::<PathBuf>();
 
         if let Some(value) = out.to_str() {
@@ -3943,6 +3964,15 @@ $extract()"
         };
 
         Ok(Some(" ".repeat(count)))
+    }
+
+    /// Path separator
+    ///
+    /// # Usage
+    ///
+    /// $PS()
+    fn path_separator(_: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        Ok(Some(PATH_SEPARATOR.to_string()))
     }
 
     /// Print nothing
