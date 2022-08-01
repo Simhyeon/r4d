@@ -605,6 +605,8 @@ $tempin()"
                     Some(
                         "Execute macro on each lines of a file
 
+# Note : mapf macro doesn't expand lines from a file.
+
 # Auth : FIN
 
 # NOT Deterred

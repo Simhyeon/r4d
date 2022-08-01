@@ -163,12 +163,7 @@ Think of it as a capture group of regular expressions.
 Dynamic expression "can" be expanded by a function macro, but the macro cannot
 capture a context of an invocation. Any expression can include local macros
 which are scope specific and also not known to a function macro. As a result,
-macros like exec or spread are deterred macro to enable a sane macro
-expansion. Yet some function macro does expand dynamic contents when a macro
-invocation context is unncessary and even discarded by needs. That macro is
-```include``` which reads and expands a file's contents. When ```include``` is
-invoked, processor dumps all local contexts before starting a fresh processing,
-thus context information is not required for a macro call.
+macros like exec or spread are deterred macro to enable a sane macro expansion. 
 
 # Errors
 

@@ -2346,6 +2346,28 @@ $assert(/home/user/cwd/test.md,$abs(test.md))"
                 ),
             );
             map.insert(
+                "exist".to_owned(),
+                FMacroSign::new(
+                    "exist",
+                    ["a_filename^"],
+                    Self::file_exists,
+                    Some(
+                        "Chck if file exists
+
+# Auth : FIN
+
+# Arguments
+
+- a_filename : A file name to audit ( trimmed )
+
+# Example
+
+$exists(file.txt)"
+                            .to_string(),
+                    ),
+                ),
+            );
+            map.insert(
                 "grepf".to_owned(),
                 FMacroSign::new(
                     "grepf",
@@ -2354,7 +2376,7 @@ $assert(/home/user/cwd/test.md,$abs(test.md))"
                     Some(
                         "Extract matched lines from given file. This returns all items as lines
 
-- NOTE : The grep operation is executed on per line
+- NOTE : The grep operation is executed on per line and doesn't expand lines
 
 # Arguments
 
@@ -3944,6 +3966,27 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "name requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Get absolute path from given path
+    ///
+    /// # Usage
+    ///
+    /// $abs(../canonic_path.txt)
+    #[cfg(not(feature = "wasm"))]
+    fn file_exists(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("exist", AuthType::FIN, p)? {
+            return Ok(None);
+        }
+
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let boolean = Path::new(trim!(&args[0]).as_ref()).exists();
+            Ok(Some(boolean.to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Exist requires an argument".to_owned(),
             ))
         }
     }

@@ -1,75 +1,24 @@
 ### TODO
-
-* [ ] Finish 3.0 release, becuase I cannot work... live like this... I'm P, and
-  I have to face it, curve it, overcome it.
-
-* [ ] Document about include related operations
-* [ ] Update interal, changes text about include call
-
-* [ ] Revert "relay" "include"... relationship.
-
-* [ ] Cache logic works the same, check what the hell cache does
-
-* [ ] Update blog contents,
-    * [ ] Splitc doesn't utilize file_path which is a shame.
-
-* [x] Rad backtrace prints strangely for deterred  macro
-    * [ ] This fix should also affect template crate.... damn it. Actually no,
-      but keep in mind that user configured deterred macro doesn't set macro
-      name properly without template related update.
-
-: ORDERED :
-1. [ ] Update r4d version in gdengine
-2. [ ] Clear re-exports of logger methods
-3. Push stable 3.0 version
-
-**Some big todos**
-
-- Pretty print
-
 $todo_start()
 * [x] New macros
 * [x] Macro ergonomics
 * [x] Library
-* [x] Bug fix
-* [x] Feature
+* [ ] Bug fix
+    * [ ] Currently use configured macro is not "available" in log message.
+* [ ] Feature
+    * [ ] Include data format pretty printer
 * [x] Documentation
 * [ ] Test
     * [ ] Test hook macro documentaion
-    * [ ] Decide when to push to 3.0
     * [ ] Test windows build
-    * [ ] Test multiple use cases
 $todo_end()
 
 ### Changes
 
-* [x] Pipe input macro attribute
-* [x] Warn readin when relay is on. For sanity reason
-* [x] Now relay and read to doesn't truncate a file
-* [x] Now raw include doesn't pause but escape : More efficient + can handle
-  possible breaking rad codes
-* [x] Somehow container relaying priority was wrong ..?
-* [x] Include call inside macro calls are not espcted behaviour
-* [x] now index variants don't allocate into a separate vector but use iterator
-  directly in cost of O(n) time complexity
-
-* [x] New macro
-    * [x] Dump
-    * [x] indexl : Index line
-    * [x] Sep : Separate
-    * [x] until
-    * [x] after
-    * [x] map variants
-    * [x] grepmap
-    * [x] Capture
-    * [x] Meta-processing related
-        * [x] Require
-        * [x] Strict
-        * [x] Comment
-    * [x] splitc : Maybe this can replace until or after?
-        - No actually not, because splitc's user should know the exact form
-        while until and after never fails thus enable dynamic input.
-* [x] Negate macro attribute
+- New macros
+    * [x] Exist
+- Changed Include behaviour
+- Changed readto and readin behaviour
 
 ### Macro ergonomics
 
@@ -799,3 +748,32 @@ critical
   separate ones
 * [x] Now static macro is not expanded
 * [x] Feature : Dry run
+
+* [x] Pipe input macro attribute
+* [x] Warn readin when relay is on. For sanity reason
+* [x] Now relay and read to doesn't truncate a file
+* [x] Now raw include doesn't pause but escape : More efficient + can handle
+  possible breaking rad codes
+* [x] Somehow container relaying priority was wrong ..?
+* [x] Include call inside macro calls are not espcted behaviour
+* [x] now index variants don't allocate into a separate vector but use iterator
+  directly in cost of O(n) time complexity
+
+* [x] New macro
+    * [x] Dump
+    * [x] indexl : Index line
+    * [x] Sep : Separate
+    * [x] until
+    * [x] after
+    * [x] map variants
+    * [x] grepmap
+    * [x] Capture
+    * [x] Meta-processing related
+        * [x] Require
+        * [x] Strict
+        * [x] Comment
+    * [x] splitc : Maybe this can replace until or after?
+        - No actually not, because splitc's user should know the exact form
+        while until and after never fails thus enable dynamic input.
+* [x] Negate macro attribute
+
