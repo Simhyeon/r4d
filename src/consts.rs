@@ -71,12 +71,21 @@ pub const DIFF_SOURCE_FILE: &str = "diff.src";
 /// Out file for diff operation
 pub const DIFF_OUT_FILE: &str = "diff.out";
 
+// LINE ENDING
 #[cfg(windows)]
 /// Platform specific line ending
 pub const LINE_ENDING: &str = "\r\n";
 #[cfg(not(windows))]
 /// Platform specific line ending
 pub const LINE_ENDING: &str = "\n";
+
+// PATH_SEPARATOR
+#[cfg(windows)]
+/// Platform specific path separator
+pub const PATH_SEPARATOR: char = '\\';
+#[cfg(not(windows))]
+/// Platform specific path separator
+pub const PATH_SEPARATOR: char = '/';
 
 #[cfg(feature = "debug")]
 /// Debug help message string
