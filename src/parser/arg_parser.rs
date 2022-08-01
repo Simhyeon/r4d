@@ -118,7 +118,10 @@ impl ArgParser {
     /// Branch on delimiter found
     fn branch_delimiter(&mut self, ch: char, value: &mut String, greedy_state: &mut GreedyState) {
         // Either literal or escaped
-        if self.lit_count > 0 || self.previous.unwrap_or('0') == ESCAPE_CHAR {
+        if self.lit_count > 0 {
+            value.push(ch);
+        } else if self.previous.unwrap_or('0') == ESCAPE_CHAR {
+            value.pop();
             value.push(ch);
         } else {
             // not literal
