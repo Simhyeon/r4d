@@ -1,3 +1,5 @@
+//! Parser module for multiple text formats
+
 mod arg_parser;
 mod define_parser;
 

@@ -1,3 +1,5 @@
+//! Parser that processes macro definition
+
 use crate::utils::Utils;
 
 /// Struct for deinition parsing
@@ -11,6 +13,7 @@ pub struct DefineParser {
 }
 
 impl DefineParser {
+    /// Create a new instance
     pub fn new() -> Self {
         Self {
             arg_cursor: DefineCursor::Name,
@@ -107,6 +110,7 @@ impl DefineParser {
     // Start of branche methods
     // <DEF_BRANCH>
 
+    /// Branch on none
     fn branch_name(&mut self, ch: char) -> ParseIgnore {
         // $define(variable=something)
         // Don't set argument but directly bind variable to body
@@ -139,6 +143,7 @@ impl DefineParser {
         }
     }
 
+    /// Branch on arguments
     fn branch_args(&mut self, ch: char) -> ParseIgnore {
         // Blank space separates arguments
         // TODO: Why check name's length? Is it necessary?
@@ -168,12 +173,14 @@ impl DefineParser {
     // ---------
 }
 
+/// Cursor for definition parsing state
 pub(crate) enum DefineCursor {
     Name,
     Args,
     Body,
 }
 
+/// A state indicates whether to ignore a character or not
 enum ParseIgnore {
     Ignore,
     None,

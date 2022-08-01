@@ -1,3 +1,5 @@
+//! State struct of a processing
+
 use crate::auth::AuthFlags;
 #[cfg(not(feature = "wasm"))]
 use crate::common::FileTarget;
@@ -13,6 +15,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::path::PathBuf;
 
+/// Processors processing state
 pub(crate) struct ProcessorState {
     // Current_input is either "stdin" or currently being read file's name thus it should not be a
     // path derivative
@@ -48,6 +51,7 @@ pub(crate) struct ProcessorState {
 }
 
 impl ProcessorState {
+    /// Create a new instance
     pub fn new() -> Self {
         Self {
             current_input: ProcessInput::Stdin,
@@ -89,6 +93,7 @@ impl ProcessorState {
         Ok(())
     }
 
+    /// Add a pipe with name
     pub fn add_pipe(&mut self, name: Option<&str>, value: String) {
         if let Some(name) = name {
             self.pipe_map.insert(name.to_owned(), value);
@@ -97,6 +102,7 @@ impl ProcessorState {
         }
     }
 
+    /// Get a pipe with key
     pub fn get_pipe(&mut self, key: &str) -> Option<String> {
         if self.pipe_truncate {
             self.pipe_map.remove(key)
@@ -113,6 +119,7 @@ pub(crate) struct RegexCache {
 }
 
 impl RegexCache {
+    /// Create a new instance
     pub fn new() -> Self {
         Self {
             cache: HashMap::new(),
@@ -143,6 +150,7 @@ impl RegexCache {
         Ok(self.get(src).unwrap())
     }
 
+    /// Get a regex with name
     pub fn get(&self, src: &str) -> Option<&Regex> {
         if self.register.get(src).is_some() {
             self.register.get(src)

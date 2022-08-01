@@ -1,6 +1,7 @@
 //! # Logger
 //!
-//! Logger handles all kinds of logging logics&&&. Such log can be warning, error or debug logs.
+//! Logger handles all kinds of logging logics. Such log can be warning, error
+//! or debug logs.
 
 use crate::common::{ProcessInput, RadResult, WriteOption};
 use crate::utils::Utils;
@@ -19,6 +20,7 @@ pub(crate) struct Logger<'logger> {
     stat: LoggerStat,
 }
 
+/// Status of a logger
 #[derive(Default)]
 pub struct LoggerStat {
     error_count: usize,
@@ -28,6 +30,7 @@ pub struct LoggerStat {
 }
 
 impl<'logger> Logger<'logger> {
+    /// Create a new instance
     pub fn new() -> Self {
         Self {
             suppresion_type: WarningType::None,
@@ -39,14 +42,17 @@ impl<'logger> Logger<'logger> {
         }
     }
 
+    /// Set assert mode
     pub fn set_assert(&mut self) {
         self.assert = true;
     }
 
+    /// Supress warning for a logger
     pub fn suppress_warning(&mut self, warning_type: WarningType) {
         self.suppresion_type = warning_type;
     }
 
+    /// Set write option for logger
     pub fn set_write_option(&mut self, write_option: Option<WriteOption<'logger>>) {
         self.write_option = write_option;
     }
@@ -60,6 +66,7 @@ impl<'logger> Logger<'logger> {
         self.tracker_stack.increase_level(track_type);
     }
 
+    /// Stop last tracker
     pub fn stop_last_tracker(&mut self) {
         self.tracker_stack.decrease_level();
     }
@@ -116,6 +123,7 @@ impl<'logger> Logger<'logger> {
         out_track
     }
 
+    /// Get last line
     #[cfg(feature = "debug")]
     pub fn get_last_line(&self) -> usize {
         let mut last_line = 0;
@@ -126,6 +134,7 @@ impl<'logger> Logger<'logger> {
         last_line
     }
 
+    /// Construct log position from trexter tracks
     fn construct_log_position(&self) -> RadResult<String> {
         #[cfg(debug_assertions)]
         if std::env::var("DEBUG_TRACE").is_ok() {
@@ -176,6 +185,7 @@ impl<'logger> Logger<'logger> {
         Ok(position)
     }
 
+    /// Write formatted log message without line
     fn write_formatted_log_msg_without_line(
         &mut self,
         prompt: &str,
@@ -206,6 +216,7 @@ impl<'logger> Logger<'logger> {
         Ok(())
     }
 
+    /// Write formatted log message
     fn write_formatted_log_msg(
         &mut self,
         prompt: &str,
@@ -276,6 +287,7 @@ impl<'logger> Logger<'logger> {
         )
     }
 
+    /// Log error without line number
     pub fn elog_no_line(&mut self, log_msg: impl std::fmt::Display) -> RadResult<()> {
         self.stat.error_count += 1;
 
@@ -480,39 +492,50 @@ impl std::str::FromStr for WarningType {
     }
 }
 
+/// Trackers container that saves trakcer as stack
 #[derive(Debug)]
 pub struct TrackerStack {
     pub(crate) stack: Vec<Tracker<TrackType>>,
 }
 
 impl TrackerStack {
+    /// Create a new instance
     pub fn new() -> Self {
         Self { stack: vec![] }
     }
 
+    /// Gets a top-most trakcer
     pub fn tracker(&self) -> &Tracker<TrackType> {
         self.stack.last().unwrap()
     }
 
+    /// Gets a top-most trakcer as mutable
     pub fn tracker_mut(&mut self) -> &mut Tracker<TrackType> {
         self.stack.last_mut().unwrap()
     }
 
+    /// Creates a new tracker on top of stack
     pub fn increase_level(&mut self, track_type: TrackType) {
         let tracker = Tracker::new(track_type);
         self.stack.push(tracker);
     }
 
+    /// Pop last tracker on top of stack
     pub fn decrease_level(&mut self) {
         self.stack.pop();
     }
 }
 
+/// Type of a track
 #[derive(Debug)]
 pub enum TrackType {
+    /// Meaningful but not decided milestone
     Record(String),
+    /// Start of new input
     Input(String),
+    /// Start of an argument
     Argument(String),
+    /// Macro body
     Body(String),
 }
 

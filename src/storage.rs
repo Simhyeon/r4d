@@ -57,6 +57,7 @@ pub enum StorageOutput {
 }
 
 impl StorageOutput {
+    /// Convert storage output into a printable string
     pub(crate) fn into_printable(self) -> String {
         match self {
             Self::Binary(bytes) => format!("{:?}", bytes),

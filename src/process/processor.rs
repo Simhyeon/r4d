@@ -1,3 +1,5 @@
+//! Main macro processing struct module
+
 use super::ProcessorState;
 use crate::auth::{AuthState, AuthType};
 use crate::common::ContainerType;
@@ -43,6 +45,7 @@ use std::path::{Path, PathBuf};
 
 lazy_static! {
     // Source : https://stackoverflow.com/questions/17564088/how-to-form-a-regex-to-recognize-correct-declaration-of-variable-names/17564142
+    /// Regex pattern for valid macro name
     static ref MAC_NAME : Regex = Regex::new(r#"^[_a-zA-Z]\w*$"#).expect("Failed to create regex expression");
 }
 
@@ -724,6 +727,13 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// Packages sources into a single file
+    ///
+    /// ```rust
+    /// let source = ["a.r4f","b.r4f"];
+    /// let proc = r4d::Processor::empty();
+    /// proc.package_sources(&source, Some(Path::new("OUT_FILE.r4c")));
+    /// ```
     pub fn package_sources<T: AsRef<Path>>(
         &self,
         sources: &[T],
@@ -859,7 +869,7 @@ impl<'processor> Processor<'processor> {
     pub(crate) fn get_signature_map(&self, sig_type: SignatureType) -> RadResult<SignatureMap> {
         let signatures = match sig_type {
             SignatureType::All => self.map.get_signatures(),
-            SignatureType::Default => self.map.get_default_signatures(),
+            SignatureType::Function => self.map.get_function_signatures(),
             SignatureType::Runtime => self.map.get_runtime_signatures(),
         };
         Ok(SignatureMap::new(signatures))
@@ -1561,6 +1571,7 @@ impl<'processor> Processor<'processor> {
         }
     } // parse_line end
 
+    /// Parse a macro body and expand
     fn parse_chunk_body(&mut self, level: usize, caller: &str, chunk: &str) -> RadResult<String> {
         let mut lexor = Lexor::new(
             self.get_macro_char(),
@@ -1750,7 +1761,7 @@ impl<'processor> Processor<'processor> {
                     );
 
                     // Char marcro execute
-                    self.lex_branch_end_invoke(
+                    self.expand_frag_as_invocation(
                         &mut hook_lexor,
                         &mut hook_frag,
                         &mut hook_mainder,
@@ -2154,6 +2165,7 @@ impl<'processor> Processor<'processor> {
                 }
                 self.map.append(mac, content, self.state.hygiene);
             }
+            #[cfg(not(feature = "wasm"))]
             RelayTarget::File(target) => {
                 // NOTE
                 // Pracically this cannot be set in wasm target because multiple code barriers
@@ -2184,12 +2196,15 @@ impl<'processor> Processor<'processor> {
     // <LEX>
     // Start of lex branch methods
     // These are parse's sub methods for eaiser reading
+    /// Lex branch with comment exit
     fn lex_branch_comment_exit(&mut self, frag: &mut MacroFragment, remainder: &mut String) {
         remainder.push_str(&frag.whole_string);
         remainder.push_str(&self.state.newline);
         frag.clear();
         frag.is_processed = true;
     }
+
+    /// Lex branch with literal charcter
     fn lex_branch_literal(
         &mut self,
         ch: char,
@@ -2217,6 +2232,7 @@ impl<'processor> Processor<'processor> {
         }
     }
 
+    /// Lex branch with fragment start
     fn lex_branch_start_frag(
         &mut self,
         ch: char,
@@ -2241,6 +2257,7 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// Lex branch with empty name
     fn lex_branch_empty_name(
         &mut self,
         ch: char,
@@ -2261,6 +2278,7 @@ impl<'processor> Processor<'processor> {
         }
     }
 
+    /// Lex branch for adding text to remainder
     fn lex_branch_add_to_remainder(&mut self, ch: char, remainder: &mut String) -> RadResult<()> {
         if !self.checker.check(ch) && !self.state.paused {
             self.logger
@@ -2273,6 +2291,7 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// Lex branch for adding text to fragment
     fn lex_branch_add_to_frag(
         &mut self,
         ch: char,
@@ -2311,6 +2330,7 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// Lex branch for end of fragment
     fn lex_branch_end_frag(
         &mut self,
         ch: char,
@@ -2358,7 +2378,7 @@ impl<'processor> Processor<'processor> {
             }
         } else {
             // Invoke macro
-            self.lex_branch_end_invoke(lexor, frag, remainder, level, caller)?;
+            self.expand_frag_as_invocation(lexor, frag, remainder, level, caller)?;
         }
 
         // Last return
@@ -2366,6 +2386,7 @@ impl<'processor> Processor<'processor> {
     }
 
     // Level is necessary for debug feature
+    /// Lex branch for end of definition framgnet
     fn lex_branch_end_frag_define(
         &mut self,
         frag: &mut MacroFragment,
@@ -2398,10 +2419,10 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    // TODO
-    // This should be renamed, because now it is not only used by lex branches
-    // but also used by external logic functions such as hook macro executions.
-    fn lex_branch_end_invoke(
+    /// Lex branch of invocation
+    ///
+    /// But is can be used other than lex result
+    fn expand_frag_as_invocation(
         &mut self,
         lexor: &mut Lexor,
         frag: &mut MacroFragment,
@@ -2485,7 +2506,8 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    /// When evaluation failed for various reasons.
+    // When evaluation failed for various reasons.
+    /// Lex branch of fragment expansion error
     fn lex_branch_end_frag_eval_result_error(
         &mut self,
         error: RadError,
@@ -2520,6 +2542,7 @@ impl<'processor> Processor<'processor> {
     }
 
     // Level is needed for feature debug & hook codes
+    /// Lex branch of fragment expansion Success
     fn lex_branch_end_frag_eval_result_ok(
         &mut self,
         content: Option<String>,
@@ -2590,7 +2613,7 @@ impl<'processor> Processor<'processor> {
                     &self.state.comment_type,
                 );
                 // Macro hook execute
-                self.lex_branch_end_invoke(
+                self.expand_frag_as_invocation(
                     &mut hook_lexor,
                     &mut hook_frag,
                     &mut hook_mainder,
@@ -2621,6 +2644,7 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// Lex branch of fragment exit
     fn lex_branch_exit_frag(&mut self, ch: char, frag: &mut MacroFragment, remainder: &mut String) {
         frag.whole_string.push(ch);
         remainder.push_str(&frag.whole_string);
@@ -2639,6 +2663,8 @@ impl<'processor> Processor<'processor> {
     // Start of miscellaenous methods
     // <MISC>
 
+    /// Get logger's write option reference
+    #[cfg(not(feature = "wasm"))]
     pub(crate) fn get_logger_write_option(&self) -> Option<&WriteOption> {
         self.logger.write_option.as_ref()
     }

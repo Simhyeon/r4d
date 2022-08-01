@@ -11,7 +11,7 @@ use crate::common::CommentType;
 use crate::consts::*;
 use crate::utils::Utils;
 
-/// Struct that validated a given character
+/// Struct that validats a given character
 pub struct Lexor {
     previous_char: Option<char>,
     inner_parse: bool,
@@ -25,6 +25,7 @@ pub struct Lexor {
 }
 
 impl Lexor {
+    /// Create a new instance
     pub fn new(macro_char: char, comment_char: char, comment_type: &CommentType) -> Self {
         let comment_char = if let CommentType::Any = comment_type {
             Some(comment_char)
@@ -108,6 +109,7 @@ impl Lexor {
     // <BRANCH>
     // Branch methods start
 
+    /// Branch on none state
     fn branch_none(&mut self, ch: char) -> LexResult {
         let result: LexResult;
         if ch == self.macro_char && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
@@ -129,6 +131,7 @@ impl Lexor {
         result
     }
 
+    /// Branch on name state
     fn branch_name(&mut self, ch: char) -> LexResult {
         let mut result: LexResult;
 
@@ -154,6 +157,7 @@ impl Lexor {
         result
     }
 
+    /// Branch on arg state
     fn branch_arg(&mut self, ch: char) -> LexResult {
         let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
         // Right paren decreases paren_count
@@ -204,6 +208,7 @@ impl Lexor {
     }
 }
 
+/// Result of a lex operation
 #[derive(Debug)]
 pub enum LexResult {
     Ignore,

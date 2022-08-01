@@ -1,3 +1,5 @@
+//! Cli processor for rado binary
+
 use crate::utils::Utils;
 use crate::RadResult;
 use crate::{RadCli, RadError};
@@ -5,12 +7,15 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 lazy_static::lazy_static! {
+    /// Temporary rado directory
     pub static ref RADO_DIR: std::path::PathBuf = std::env::temp_dir().join("rado");
 }
 
 #[cfg(windows)]
+/// Default rado editor
 pub(crate) const RADO_EDITOR: &str = "notepad.exe";
 #[cfg(not(windows))]
+/// Default rado editor
 pub(crate) const RADO_EDITOR: &str = "vim";
 
 /// Cli arguments parser for rado binary
@@ -26,6 +31,7 @@ impl Default for RadoCli {
 }
 
 impl RadoCli {
+    /// Create a new instance
     pub fn new() -> Self {
         Self {
             flag_arguments: vec![],
@@ -40,6 +46,7 @@ impl RadoCli {
         self.run_rado(&cli_args)
     }
 
+    /// Parse flag occurrences from matches
     fn parse_flags(&mut self, args: &clap::ArgMatches) {
         if let Some((_, args)) = args.subcommand() {
             if let Some(path) = args.value_of("out") {
@@ -52,6 +59,7 @@ impl RadoCli {
         }
     }
 
+    /// Run rado binary according to flag matches
     fn run_rado(&mut self, args: &clap::ArgMatches) -> RadResult<()> {
         match args.subcommand() {
             Some(("env", _)) => {
@@ -122,6 +130,7 @@ impl RadoCli {
         Ok(())
     }
 
+    /// Create argument requirements
     fn args_builder(&self) -> clap::ArgMatches {
         use clap::{App, Arg};
         #[allow(unused_mut)]
@@ -233,6 +242,7 @@ impl RadoCli {
         app.get_matches()
     }
 
+    /// Execute rad processing
     fn execute(&self, file: &Path) -> RadResult<()> {
         if file.exists() {
             let file_string = file.display().to_string();
@@ -245,6 +255,7 @@ impl RadoCli {
         Ok(())
     }
 
+    /// Package a static script
     fn package_file(&self, file: &Path) -> RadResult<()> {
         if file.exists() {
             let file_string = file.display().to_string();
@@ -258,6 +269,7 @@ impl RadoCli {
         Ok(())
     }
 
+    /// Replace file's content
     fn replace_file(&self, file: &Path) -> RadResult<()> {
         if file.exists() {
             let file_string = file.display().to_string();
@@ -278,6 +290,7 @@ impl RadoCli {
         Ok(())
     }
 
+    /// View a file
     fn view_file(&self, file: &Path) -> RadResult<()> {
         // View file
         let editor = if let Ok(editor) = std::env::var("RADO_EDITOR") {
@@ -292,6 +305,7 @@ impl RadoCli {
     }
 
     #[cfg(feature = "debug")]
+    /// Show difference of processing
     fn show_diff(&self, file: &str, force: bool) -> RadResult<()> {
         #[cfg(feature = "color")]
         use crate::consts::ColorDisplayFunc;
@@ -369,6 +383,7 @@ impl RadoCli {
         Ok(())
     }
 
+    /// Get temporary file path
     fn get_temp_path(&self, path: &str) -> RadResult<PathBuf> {
         // Create temp directory if not present
         if !RADO_DIR.exists() {
@@ -384,6 +399,7 @@ impl RadoCli {
         Ok(temp_file)
     }
 
+    /// Update file's content
     fn update_file(&self, path: &str, force: bool) -> RadResult<PathBuf> {
         let source_file = path;
         let mut target_file = self.get_temp_path(path)?;

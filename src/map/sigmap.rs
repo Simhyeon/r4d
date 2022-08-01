@@ -1,34 +1,23 @@
+//! Signature map module
+
+use crate::consts::LINE_ENDING;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
-use serde::{Deserialize, Serialize};
-
-use crate::consts::LINE_ENDING;
-
+/// Map for macro signatures
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignatureMap {
     pub content: HashMap<String, MacroSignature>,
 }
 
 impl SignatureMap {
+    /// Create a new instance
     pub fn new(sigs: Vec<MacroSignature>) -> Self {
         let sig = HashMap::from_iter(sigs.into_iter().map(|sig| (sig.name.clone(), sig)));
         Self { content: sig }
     }
 }
-
-// TODO
-// use serde::ser::SerializeStruct;
-// Placeholder for manual implementation of Serialize
-//impl Serialize for SignatureMap {
-//fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//where
-//S: serde::Serializer {
-//let mut state = serializer.serialize_struct("SignatureMap", 1)?;
-//state.serialize_field("object", &self.object)?;
-//state.end()
-//}
-//}
 
 /// Type(variant) of macro
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,7 +28,7 @@ pub enum MacroVariant {
     Static,
 }
 
-/// Macro signature
+/// Macro signature struct
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MacroSignature {
     pub variant: MacroVariant,

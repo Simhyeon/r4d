@@ -1,5 +1,8 @@
+//! Rad is a main binary executable for processing
+
 use r4d::RadResult;
 
+/// Main entry for rad binary
 pub fn main() -> RadResult<()> {
     // Enable color on pager such as "less"
     // by overloading color related environment

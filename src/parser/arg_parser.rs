@@ -5,6 +5,7 @@
 use crate::consts::{ESCAPE_CHAR, LIT_CHAR};
 use std::{iter::Peekable, str::Chars};
 
+/// Argument parser
 pub struct ArgParser {
     values: Vec<String>,
     previous: Option<char>,
@@ -13,15 +14,8 @@ pub struct ArgParser {
     strip_literal: bool,
 }
 
-/// State indicates whether argument should be parsed greedily or not
-#[derive(Debug)]
-pub enum GreedyState {
-    Deterred(usize),
-    Greedy,
-    Never,
-}
-
 impl ArgParser {
+    /// Create a new instance
     pub(crate) fn new() -> Self {
         Self {
             values: vec![],
@@ -32,7 +26,7 @@ impl ArgParser {
         }
     }
 
-    // Reset variables
+    /// Reset variables
     fn reset(&mut self) {
         self.values.clear();
         self.previous = None;
@@ -121,6 +115,7 @@ impl ArgParser {
     // <BRANCH>
     // Start of branch methods
 
+    /// Branch on delimiter found
     fn branch_delimiter(&mut self, ch: char, value: &mut String, greedy_state: &mut GreedyState) {
         // Either literal or escaped
         if self.lit_count > 0 || self.previous.unwrap_or('0') == ESCAPE_CHAR {
@@ -153,6 +148,7 @@ impl ArgParser {
         } // else end
     }
 
+    /// Branch on escape character found
     fn branch_escape_char(&mut self, ch: char, value: &mut String, next: Option<&char>) {
         if self.previous.unwrap_or(' ') == ESCAPE_CHAR {
             self.no_previous = true;
@@ -169,6 +165,7 @@ impl ArgParser {
         }
     } // end function
 
+    /// Branch on literal character found
     fn branch_literal_char(
         &mut self,
         ch: char,
@@ -226,4 +223,13 @@ impl ArgParser {
     // End of branch methods
     // </BRANCH>
     // ----------
+}
+
+/// State indicates whether argument should be parsed greedily or not
+#[derive(Debug)]
+pub enum GreedyState {
+    /// Split argument with given amount
+    Deterred(usize),
+    Greedy,
+    Never,
 }

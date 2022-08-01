@@ -1,3 +1,5 @@
+//! Utility struct, methods for various operations
+
 use crate::auth::{AuthState, AuthType};
 use crate::common::{ProcessInput, RadResult, RelayTarget};
 use crate::error::RadError;
@@ -10,9 +12,11 @@ use std::io::BufRead;
 use std::path::Path;
 
 lazy_static! {
+    /// Regex for trimming newlines from start and end
     pub static ref TRIM: Regex = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap();
 }
 
+/// Trim macro to trim a text
 #[macro_export]
 macro_rules! trim {
     ($e:expr) => {
@@ -23,10 +27,11 @@ macro_rules! trim {
 #[cfg(feature = "color")]
 use colored::*;
 
+/// Utility relates struct
 pub(crate) struct Utils;
 
 impl Utils {
-    /// Create local name
+    /// Create a local name from level and name
     pub(crate) fn local_name(level: usize, name: &str) -> String {
         format!("{}.{}", level, name)
     }
@@ -45,7 +50,7 @@ impl Utils {
         })
     }
 
-    /// Check if a character is blank
+    /// Check if a character is a blank chracter
     pub(crate) fn is_blank_char(ch: char) -> bool {
         ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
     }
@@ -109,6 +114,7 @@ impl Utils {
         result
     }
 
+    /// Print text as green if possible
     #[allow(unused_variables)]
     pub fn green(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
@@ -120,6 +126,7 @@ impl Utils {
         Box::new(string.to_owned())
     }
 
+    /// Print text as red if possible
     #[allow(unused_variables)]
     pub fn red(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
@@ -131,6 +138,7 @@ impl Utils {
         Box::new(string.to_owned())
     }
 
+    /// Print text as yellow if possible
     #[allow(unused_variables)]
     pub fn yellow(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
         if cfg!(feature = "color") {
@@ -175,6 +183,7 @@ impl Utils {
         Ok(())
     }
 
+    /// Pop only a single newline from a source
     pub fn pop_newline(s: &mut String) {
         if s.ends_with('\n') {
             s.pop();
@@ -206,6 +215,7 @@ impl Utils {
         }
     }
 
+    /// Execute a subprocess with given arguments
     #[cfg(feature = "basic")]
     pub(crate) fn subprocess(args: &[&str]) -> RadResult<()> {
         use std::io::Write;
@@ -290,6 +300,7 @@ impl Utils {
 
         // Rule 3
         // You cannot include file that is being relayed
+        #[cfg(not(feature = "wasm"))]
         if let Some(RelayTarget::File(file)) = &processor.state.relay.last() {
             if file.path() == canonic {
                 return Err(RadError::UnallowedMacroExecution(format!(
@@ -312,6 +323,7 @@ impl Utils {
 
         // Rule 5
         // You cannot include processor's error file
+        #[cfg(not(feature = "wasm"))]
         if let Some(WriteOption::File(target)) = &processor.get_logger_write_option() {
             if target.path() == canonic {
                 return Err(RadError::UnallowedMacroExecution(format!(

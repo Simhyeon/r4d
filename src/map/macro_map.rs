@@ -1,3 +1,5 @@
+//! Main entry for macro maps ( Local, runtime, deterred, function )
+
 use crate::common::Hygiene;
 use crate::common::LocalMacro;
 use crate::deterred_map::DeterredMacroMap;
@@ -46,6 +48,7 @@ impl MacroMap {
         }
     }
 
+    /// Clear runtime macros
     pub fn clear_runtime_macros(&mut self, volatile: bool) {
         self.runtime.clear_runtime_macros(volatile);
     }
@@ -77,14 +80,17 @@ impl MacroMap {
         self.local.retain(|_, mac| mac.level <= current_level);
     }
 
+    /// Check if given macro is deterred macro
     pub fn is_deterred_macro(&self, name: &str) -> bool {
         self.deterred.contains(name)
     }
 
+    /// Check if local macro exists
     pub fn contains_local_macro(&self, macro_name: &str) -> bool {
         self.local.contains_key(macro_name)
     }
 
+    /// Check if macro exists
     pub fn contains_macro(
         &self,
         macro_name: &str,
@@ -138,6 +144,7 @@ impl MacroMap {
         }
     }
 
+    /// Rename a macro
     pub fn rename(
         &mut self,
         macro_name: &str,
@@ -169,18 +176,21 @@ impl MacroMap {
         }
     }
 
+    /// Append content to a local macro
     pub fn append_local(&mut self, name: &str, target: &str) {
         if let Some(loc) = self.local.get_mut(name) {
             loc.body.push_str(target);
         }
     }
 
+    /// Append content to a macro
     pub fn append(&mut self, name: &str, target: &str, hygiene_type: Hygiene) {
         if self.runtime.contains(name, hygiene_type) {
             self.runtime.append_macro(name, target, hygiene_type);
         }
     }
 
+    /// Replace macro's content
     pub fn replace(&mut self, name: &str, target: &str, hygiene_type: Hygiene) -> bool {
         if self.runtime.contains(name, hygiene_type) {
             self.runtime.replace_macro(name, target, hygiene_type);
@@ -225,8 +235,9 @@ impl MacroMap {
         key_iter.chain(funcm_iter).chain(runtime_iter).collect()
     }
 
+    /// Get function signatures
     #[cfg(feature = "signature")]
-    pub fn get_default_signatures(&self) -> Vec<MacroSignature> {
+    pub fn get_function_signatures(&self) -> Vec<MacroSignature> {
         let key_iter = self
             .deterred
             .macros
@@ -240,6 +251,7 @@ impl MacroMap {
         key_iter.chain(funcm_iter).collect()
     }
 
+    /// Get runtime signatures
     #[cfg(feature = "signature")]
     pub fn get_runtime_signatures(&self) -> Vec<MacroSignature> {
         self.runtime

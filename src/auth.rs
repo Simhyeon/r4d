@@ -1,6 +1,13 @@
 //! Authorization(Permission)
 //!
 //! Permission should be given for some function macro types
+//!
+//! Currently there are four types of authorization
+//!
+//! - fin
+//! - fout
+//! - cmd
+//! - env
 
 use crate::consts::LINE_ENDING;
 use std::fmt::Write;
@@ -12,6 +19,7 @@ pub(crate) struct AuthFlags {
 }
 
 impl AuthFlags {
+    /// Create a new instance
     pub fn new() -> Self {
         let mut auths = Vec::new();
         for _ in 0..AuthType::LEN as usize {
@@ -21,14 +29,17 @@ impl AuthFlags {
         Self { auths }
     }
 
+    /// Set auth state
     pub fn set_state(&mut self, auth_type: &AuthType, auth_state: AuthState) {
         self.auths[*auth_type as usize] = auth_state;
     }
 
+    /// Get auth state
     pub fn get_state(&self, auth_type: &AuthType) -> &AuthState {
         &self.auths[*auth_type as usize]
     }
 
+    /// Get auth state but in string
     pub fn get_status_string(&self) -> Option<String> {
         let mut format = String::new();
         for index in 0..AuthType::LEN as usize {
@@ -50,6 +61,7 @@ impl AuthFlags {
         }
     }
 
+    /// Clear all auth states
     pub fn clear(&mut self) {
         *self = Self::new();
     }
@@ -105,6 +117,7 @@ impl AuthType {
         }
     }
 
+    /// Convert usize integer into a auth type
     pub fn from_usize(number: usize) -> Option<Self> {
         match number {
             0 => Some(Self::ENV),

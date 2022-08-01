@@ -1,7 +1,8 @@
-use dcsv::VirtualArray;
+//! Formatter for various formats
 
 use crate::error::RadError;
 use crate::RadResult;
+use dcsv::VirtualArray;
 use std::fmt::Write;
 
 /// Formatter that constructs multiple text formats
@@ -58,7 +59,7 @@ impl Formatter {
         Ok(exec)
     }
 
-    // Format csv into github formatted table
+    /// Format csv into github formatted table
     fn gfm_table(data: &VirtualArray, newline: &str) -> RadResult<String> {
         let mut table = String::new();
         let mut data_iter = data.rows.iter();
@@ -91,7 +92,7 @@ impl Formatter {
         Ok(table)
     }
 
-    // Format csv into wikitext formatted table
+    /// Format csv into wikitext formatted table
     fn wikitext_table(data: &VirtualArray, newline: &str) -> RadResult<String> {
         let mut table = String::new();
         let mut data_iter = data.rows.iter();
@@ -122,7 +123,7 @@ impl Formatter {
         Ok(table)
     }
 
-    // Format csv into html formatted table
+    /// Format csv into html formatted table
     fn html_table(data: &VirtualArray, newline: &str) -> RadResult<String> {
         let mut table = String::new();
         let mut data_iter = data.rows.iter();

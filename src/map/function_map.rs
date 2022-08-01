@@ -32,18 +32,26 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
 
+// NOTE
+// Is this necessary?
+/// Types for align macros
 const ALIGN_TYPES: [&str; 3] = ["left", "right", "center"];
 
 lazy_static! {
     // Thanks stack overflow! SRC : https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers
+    /// Number matches
     static ref NUM_MATCH: Regex = Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to create number regex");
+    /// Single line match
     static ref LINE_MATCH : Regex = Regex::new("\n").expect("Failed to create line match regex");
+    /// Two lines match
     static ref TWO_NL_MATCH: Regex = Regex::new(r#"(\n|\r\n)\s*(\n|\r\n)"#).expect("Failed to create tow nl regex");
 }
 
+/// Function signature for "function" macro functions
 pub(crate) type FunctionMacroType = fn(&str, &mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
+/// Collection map for a "function" macro function
 pub(crate) struct FunctionMacroMap {
     pub(crate) macros: HashMap<String, FMacroSign>,
 }
@@ -6285,12 +6293,6 @@ $extract()"
     }
 }
 
-// TODO
-// Curently implementation declard logic and signatrue separately.
-// Is this ideal?
-// Or the whole process should be automated?
-// Though I dought the possibility of automation because each logic is so relaxed and hardly follow
-// any concrete rules
 /// Function Macro signature
 #[derive(Clone)]
 pub(crate) struct FMacroSign {

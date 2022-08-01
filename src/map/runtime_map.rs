@@ -1,3 +1,7 @@
+//! Runtime macro map
+//!
+//! Runtime macro is defined on runtime.
+
 use crate::common::Hygiene;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -13,6 +17,7 @@ pub struct RuntimeMacro {
 }
 
 impl RuntimeMacro {
+    /// Create a new macro
     pub fn new(name: &str, args: &str, body: &str, is_static: bool) -> Self {
         // Empty args are no args
         let mut args: Vec<String> = args
@@ -63,6 +68,7 @@ impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
     }
 }
 
+/// Macro map for runtime macros
 #[derive(Clone, Debug)]
 pub(crate) struct RuntimeMacroMap {
     pub(crate) macros: HashMap<String, RuntimeMacro>,
@@ -70,6 +76,7 @@ pub(crate) struct RuntimeMacroMap {
 }
 
 impl RuntimeMacroMap {
+    /// Create a new instance
     pub fn new() -> Self {
         Self {
             macros: HashMap::new(),
@@ -77,6 +84,7 @@ impl RuntimeMacroMap {
         }
     }
 
+    /// Clear runtime macros
     pub fn clear_runtime_macros(&mut self, volatile: bool) {
         if volatile {
             self.volatile.clear();
@@ -85,6 +93,7 @@ impl RuntimeMacroMap {
         }
     }
 
+    /// Check if macro exists
     pub fn contains(&self, key: &str, hygiene_type: Hygiene) -> bool {
         match hygiene_type {
             Hygiene::Aseptic => self.macros.contains_key(key),
@@ -92,6 +101,7 @@ impl RuntimeMacroMap {
         }
     }
 
+    /// Get macro by name
     pub fn get(&self, key: &str, hygiene_type: Hygiene) -> Option<&RuntimeMacro> {
         match hygiene_type {
             Hygiene::Aseptic => self.macros.get(key),
@@ -107,6 +117,7 @@ impl RuntimeMacroMap {
         }
     }
 
+    /// Get macro by name as mutable
     pub fn get_mut(&mut self, key: &str, hygiene_type: Hygiene) -> Option<&mut RuntimeMacro> {
         match hygiene_type {
             Hygiene::Aseptic => self.macros.get_mut(key),
@@ -122,6 +133,7 @@ impl RuntimeMacroMap {
         }
     }
 
+    /// Append a new macro to a map
     pub fn new_macro(&mut self, name: &str, mac: RuntimeMacro, hygiene_type: Hygiene) {
         if hygiene_type == Hygiene::None {
             self.macros.insert(name.to_string(), mac);
@@ -131,6 +143,7 @@ impl RuntimeMacroMap {
         }
     }
 
+    /// Remove a macro from a map
     pub fn undefine(&mut self, name: &str, hygiene_type: Hygiene) -> Option<RuntimeMacro> {
         if hygiene_type == Hygiene::None {
             self.macros.remove(name)
@@ -140,6 +153,7 @@ impl RuntimeMacroMap {
         }
     }
 
+    /// Rename a macro
     pub fn rename(&mut self, name: &str, new_name: &str, hygiene_type: Hygiene) -> bool {
         if hygiene_type == Hygiene::None {
             if let Some(mac) = self.macros.remove(name) {
@@ -153,6 +167,7 @@ impl RuntimeMacroMap {
         false
     }
 
+    /// Append content to a macro
     pub fn append_macro(&mut self, name: &str, target: &str, hygiene_type: Hygiene) {
         if hygiene_type == Hygiene::None {
             if let Some(mac) = self.macros.get_mut(name) {
@@ -163,6 +178,7 @@ impl RuntimeMacroMap {
         }
     }
 
+    /// Replace macro with new name
     pub fn replace_macro(&mut self, name: &str, target: &str, hygiene_type: Hygiene) {
         if hygiene_type == Hygiene::None {
             if let Some(mac) = self.macros.get_mut(name) {
@@ -173,6 +189,7 @@ impl RuntimeMacroMap {
         }
     }
 
+    /// Extend map with other hashmap
     pub fn extend_map(&mut self, map: HashMap<String, RuntimeMacro>, hygiene_type: Hygiene) {
         if hygiene_type == Hygiene::None {
             self.macros.extend(map)

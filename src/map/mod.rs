@@ -1,3 +1,9 @@
+//! Map includes multiple data collection map
+//!
+//! - macro map
+//! - function_map
+//! - deterred_map
+
 pub mod deterred_map;
 pub mod function_map;
 mod macro_map;

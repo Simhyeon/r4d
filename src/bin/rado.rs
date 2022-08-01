@@ -1,5 +1,10 @@
+//! Rado is a wrapper binary executable for a processing
+//!
+//! Rado provides multiple ergonomic functionalities
+
 use r4d::RadResult;
 
+/// Main entry
 pub fn main() -> RadResult<()> {
     // Enable color on pager such as "less"
     // by overloading color related environment

@@ -1,3 +1,5 @@
+//! Macro collection for deterred macros
+
 #[cfg(not(feature = "wasm"))]
 use crate::auth::AuthType;
 #[cfg(not(feature = "wasm"))]
@@ -17,8 +19,10 @@ use std::iter::FromIterator;
 #[cfg(not(feature = "wasm"))]
 use std::path::PathBuf;
 
+/// Functino signature for a deterred macro function
 pub(crate) type DFunctionMacroType = fn(&str, usize, &mut Processor) -> RadResult<Option<String>>;
 
+/// Collection map for a deterred macro function
 #[derive(Clone)]
 pub struct DeterredMacroMap {
     pub(crate) macros: HashMap<String, DMacroSign>,
@@ -32,6 +36,7 @@ impl DeterredMacroMap {
         }
     }
 
+    /// Create a new instance with default macros
     pub fn new() -> Self {
         let mut map = HashMap::from_iter(IntoIterator::into_iter([
             (
@@ -760,10 +765,12 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         self.macros.contains_key(name)
     }
 
+    /// Undefine a deterred macro
     pub fn undefine(&mut self, name: &str) {
         self.macros.remove(name);
     }
 
+    /// Rename a deterred macro
     pub fn rename(&mut self, name: &str, target: &str) -> bool {
         if let Some(func) = self.macros.remove(name) {
             self.macros.insert(target.to_owned(), func);
@@ -772,6 +779,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         false
     }
 
+    /// Add new extension macro as deterred macro
     pub fn new_ext_macro(&mut self, ext: ExtMacroBuilder) {
         if let Some(ExtMacroBody::Deterred(mac_ref)) = ext.macro_body {
             let sign = DMacroSign::new(&ext.macro_name, &ext.args, mac_ref, ext.macro_desc);

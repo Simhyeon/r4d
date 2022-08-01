@@ -1,3 +1,5 @@
+//! Common structs, enums for code usage.
+
 use crate::error::RadError;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -25,6 +27,7 @@ pub enum WriteOption<'a> {
 }
 
 impl<'a> WriteOption<'a> {
+    /// Create a file type writeoption with path and open options
     pub fn file(path: &Path, open_option: OpenOptions) -> RadResult<Self> {
         let file = open_option.open(path).map_err(|_| {
             RadError::InvalidFile(format!("Cannot set write option to {}", path.display()))
@@ -42,6 +45,7 @@ pub struct LocalMacro {
 }
 
 impl LocalMacro {
+    /// Create a new local macro
     pub fn new(level: usize, name: String, body: String) -> Self {
         Self { level, name, body }
     }
@@ -70,6 +74,7 @@ pub(crate) struct MacroFragment {
 }
 
 impl MacroFragment {
+    /// Create a new macro fragment
     pub fn new() -> Self {
         MacroFragment {
             whole_string: String::new(),
@@ -110,6 +115,7 @@ impl MacroFragment {
         self.whole_string.len() == 0
     }
 
+    /// Check if fragment has attribute
     pub(crate) fn has_attribute(&self) -> bool {
         self.pipe_input
             || self.pipe_output
@@ -192,16 +198,22 @@ impl std::str::FromStr for DiffOption {
 /// Enum that controls processing flow
 #[derive(Debug, PartialEq)]
 pub enum FlowControl {
+    /// No flow control
     None,
+    /// Escape following texts
     Escape,
+    /// Exit from processing ( Input )
     Exit,
 }
 
 /// Signature type
 #[cfg(feature = "signature")]
 pub enum SignatureType {
+    /// Every macros
     All,
-    Default,
+    /// Only function macros
+    Function,
+    /// Only runtime macros
     Runtime,
 }
 
@@ -210,7 +222,7 @@ impl SignatureType {
     pub fn from_str(text: &str) -> RadResult<Self> {
         let variant = match text.to_lowercase().as_str() {
             "all" => Self::All,
-            "default" => Self::Default,
+            "function" => Self::Function,
             "runtime" => Self::Runtime,
             _ => {
                 return Err(RadError::InvalidConversion(format!(
@@ -228,6 +240,7 @@ impl SignatureType {
 #[derive(Debug)]
 pub enum RelayTarget {
     None,
+    #[cfg(not(feature = "wasm"))]
     File(FileTarget),
     Macro(String),
     #[cfg(not(feature = "wasm"))]
@@ -237,7 +250,9 @@ pub enum RelayTarget {
 /// Process input variant
 #[derive(Clone, Debug, PartialEq)]
 pub enum ProcessInput {
+    /// Standard input
     Stdin,
+    /// File input
     File(PathBuf),
 }
 
@@ -278,18 +293,24 @@ pub enum ProcessType {
 
 /// Types of a macros
 pub enum MacroType {
+    /// Function macro
     Function,
+    /// Deterred macro
     Deterred,
+    /// Runtime macro
     Runtime,
+    /// Any macro
     Any,
 }
 
+/// File wrapper which hodls both path and File handle
 #[derive(Debug)]
 pub struct FileTarget {
-    /// Representaion
+    /// Representaion path
     repr: PathBuf,
     /// Real path
     absolute_path: PathBuf,
+    /// File handle
     file: File,
 }
 

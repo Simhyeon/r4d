@@ -1,6 +1,9 @@
+//! Hook related data colletino structs
+
 use crate::{RadError, RadResult};
 use std::collections::HashMap;
 
+/// Main hook collection map
 #[derive(Debug)]
 pub struct HookMap {
     macro_hook: HashMap<String, HookState>,
@@ -8,6 +11,7 @@ pub struct HookMap {
 }
 
 impl HookMap {
+    /// Create a new instance
     pub fn new() -> Self {
         Self {
             macro_hook: HashMap::new(),
@@ -15,8 +19,7 @@ impl HookMap {
         }
     }
 
-    // TODO
-    // Make the code more 'DRY' for add_*_count series
+    /// Add macro count
     pub fn add_macro_count(&mut self, macro_name: &str) -> Option<String> {
         if let Some(hook_state) = self.macro_hook.get_mut(macro_name) {
             if hook_state.enabled {
@@ -33,6 +36,7 @@ impl HookMap {
         None
     }
 
+    /// Add character count
     pub fn add_char_count(&mut self, target: char) -> Option<String> {
         if let Some(hook_state) = self.char_hook.get_mut(&target) {
             if hook_state.enabled {
@@ -49,6 +53,7 @@ impl HookMap {
         None
     }
 
+    /// Switch a hook on/off
     pub fn switch_hook(&mut self, hook_type: HookType, index: &str, switch: bool) -> RadResult<()> {
         match hook_type {
             HookType::Macro => {
@@ -81,6 +86,7 @@ impl HookMap {
         Ok(())
     }
 
+    /// Add a new hook
     pub fn add_hook(
         &mut self,
         hook_type: HookType,
@@ -106,6 +112,7 @@ impl HookMap {
         Ok(())
     }
 
+    /// Delete a hook
     pub fn del_hook(&mut self, hook_type: HookType, index: &str) -> RadResult<()> {
         match hook_type {
             HookType::Char => {
@@ -124,6 +131,7 @@ impl HookMap {
     }
 }
 
+/// Hook type
 #[derive(Debug)]
 pub enum HookType {
     Macro,
@@ -148,6 +156,7 @@ impl std::str::FromStr for HookType {
     }
 }
 
+/// State of a hook macro
 #[derive(Debug)]
 pub struct HookState {
     enabled: bool,
@@ -158,6 +167,7 @@ pub struct HookState {
 }
 
 impl HookState {
+    /// Create a new instance
     pub fn new(target: String, target_count: usize, resetable: bool) -> Self {
         Self {
             target_macro: target,

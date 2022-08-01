@@ -1,3 +1,5 @@
+//! Debugger to debug rad processing
+
 use crate::common::{DiffOption, MacroFragment, RadResult};
 use crate::consts::{DIFF_OUT_FILE, DIFF_SOURCE_FILE, LINE_ENDING, RDB_HELP};
 use crate::logger::Logger;
@@ -27,6 +29,7 @@ pub(crate) struct Debugger {
 }
 
 impl Debugger {
+    /// Create a new instance
     pub fn new() -> Self {
         Self {
             debug: false,
@@ -539,20 +542,23 @@ impl Debugger {
         self.get_command(log, prompt)
     }
 
+    /// Increate trexter line number
     pub fn inc_line_number(&mut self) {
         self.line_number += 1;
     }
 
+    /// Add line cache for debug printing
     pub fn add_line_cache(&mut self, line: &str) {
         self.line_caches
             .insert(self.line_number, line.lines().next().unwrap().to_owned());
     }
 
+    /// Clear all line caches
     pub fn clear_line_cache(&mut self) {
         self.line_caches.clear();
     }
 
-    // Save original content to a file for diff check
+    /// Save original content to a file for diff check
     pub fn write_diff_original(&mut self, content: &str) -> RadResult<()> {
         if self.do_yield_diff {
             self.diff_original
@@ -563,7 +569,7 @@ impl Debugger {
         Ok(())
     }
 
-    // Save processed content to a file for diff check
+    /// Save processed content to a file for diff check
     pub fn write_diff_processed(&mut self, content: &str) -> RadResult<()> {
         if self.do_yield_diff {
             self.diff_processed
@@ -574,6 +580,7 @@ impl Debugger {
         Ok(())
     }
 
+    /// Set custom prompt
     pub fn set_prompt(&mut self, prompt: &str) {
         self.prompt_log.replace(prompt.to_owned());
     }
@@ -582,9 +589,14 @@ impl Debugger {
 /// Debug switch(state) that indicates what debugging behaviours are intended for next branch
 #[derive(PartialEq)]
 pub enum DebugSwitch {
+    /// Go until a macro
     UntilMacro,
+    /// Go until a next line start
     NextLine,
+    /// Go after macro
     NextMacro,
+    /// Step inside macro
     StepMacro,
+    /// Go after adjacent break point
     NextBreakPoint(String),
 }

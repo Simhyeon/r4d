@@ -1,5 +1,8 @@
-// NOTE
-// Leave imports as it is if you are not sure about it
+//! User configurable extension script
+//!
+//! NOTE
+//!
+//! Leave imports as it is if you are not sure about it
 
 #[allow(unused_imports)]
 use crate::rad_ext_template::*;
@@ -12,8 +15,8 @@ use crate::RadResult;
 
 /// Extend a processor with user configured extension macros
 ///
-/// Refer https://github.com/Simhyeon/r4d/blob/master/docs/ext.md for detailed explanation about
-/// macro extensions
+/// Refer https://github.com/Simhyeon/r4d/blob/master/docs/ext.md for detailed
+/// explanation about macro extensions
 #[allow(unused_variables)]
 pub fn extend_processor(processor: &mut Processor) -> RadResult<()> {
     // ---

@@ -1,3 +1,5 @@
+//! Cli processor for rad binary
+
 use crate::auth::AuthType;
 use crate::common::CommentType;
 #[cfg(feature = "debug")]
@@ -38,16 +40,19 @@ impl<'cli> Default for RadCli<'cli> {
 }
 
 impl<'cli> RadCli<'cli> {
+    /// Print an error with processor
     pub fn print_error(&mut self, error: &str) -> RadResult<()> {
         self.processor.print_error_no_line(error)?;
         Ok(())
     }
 
+    /// Print an error with processor but no line number
     pub fn print_error_with_line(&mut self, error: &str) -> RadResult<()> {
         self.processor.print_error(error)?;
         Ok(())
     }
 
+    /// Create a new instance
     pub fn new() -> Self {
         Self {
             rules: vec![],
@@ -68,6 +73,7 @@ impl<'cli> RadCli<'cli> {
         Ok(())
     }
 
+    /// Parse arguments from string
     pub(crate) fn parse_from(&mut self, source: &[&str]) -> RadResult<()> {
         let cli_args = Self::args_builder(Some(source));
         self.run_processor(&cli_args)?;
@@ -360,6 +366,7 @@ impl<'cli> RadCli<'cli> {
         }
     }
 
+    /// Create argument requirements
     fn args_builder(source: Option<&[&str]>) -> clap::ArgMatches {
         use clap::{App, Arg};
         let app = App::new("rad")

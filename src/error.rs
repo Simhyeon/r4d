@@ -1,3 +1,8 @@
+//! R4d' error types
+//!
+//! R4d can have many errors because it utilizes multiple functions and
+//! external crates at the same time.
+
 use crate::AuthType;
 #[cfg(feature = "cindex")]
 use cindex::CIndexError;

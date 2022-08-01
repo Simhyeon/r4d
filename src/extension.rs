@@ -1,3 +1,5 @@
+//! Extension related structs and enums module
+
 use crate::deterred_map::DFunctionMacroType;
 use crate::function_map::FunctionMacroType;
 
@@ -69,14 +71,20 @@ impl ExtMacroBuilder {
     }
 }
 
+/// Type of a extension macro
 #[derive(Clone)]
 pub(crate) enum ExtMacroType {
+    /// Function macro extension
     Function,
+    /// Deterred macro extension
     Deterred,
 }
 
+/// Types of a extension macro's body
 #[derive(Clone)]
 pub(crate) enum ExtMacroBody {
+    /// Function macro body
     Function(FunctionMacroType),
+    /// Deterred macro body
     Deterred(DFunctionMacroType),
 }
