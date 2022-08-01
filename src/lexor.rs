@@ -206,6 +206,11 @@ impl Lexor {
             false
         }
     }
+
+    /// Check if lexor is on literal
+    pub fn on_literal(&self) -> bool {
+        self.literal_count > 0
+    }
 }
 
 /// Result of a lex operation
