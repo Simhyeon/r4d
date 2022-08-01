@@ -13,6 +13,7 @@ pub type RadResult<T> = Result<T, RadError>;
 /// - File       : Set file output
 /// - Variable   : Set variable to save
 /// - Return     : Return otuput directly ( logger ignores this variant )
+///   This is used in wasm target
 /// - Terminal   : Print to terminal
 /// - Discard    : Do nothing
 pub enum WriteOption<'a> {
