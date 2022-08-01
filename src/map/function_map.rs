@@ -1637,7 +1637,7 @@ $assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
                     Self::relay,
                     Some(
 "Start relaying to a target. Relay redirects all following text to the relay 
-target.
+target. NOTE, relay is not evaluated inside arguments.
 
 # Auth : FOUT is required for relay target \"file\" and \"temp\"
 
