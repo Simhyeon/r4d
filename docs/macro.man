@@ -656,7 +656,7 @@ Description >>
     
     # Example
     
-    $exists(file.txt)
+    $exist(file.txt)
 
 ----
 Macro Type  : Function
@@ -2519,16 +2519,16 @@ Description >>
 
 ----
 Macro Type  : Function
-Macro Name  : spilt
+Macro Name  : split
 Arguments   : ["a_sep", "a_text"]
-Usage       : $spilt(a_sep,a_text)
+Usage       : $split(a_sep,a_text)
 Description >> 
     Split text into an array
     
     # Arguments
     
     - a_sep  : A separator string
-    - a_text : Text to spilt
+    - a_text : Text to split
     
     # Example
     
@@ -2536,9 +2536,9 @@ Description >>
 
 ----
 Macro Type  : Function
-Macro Name  : spiltc
+Macro Name  : splitc
 Arguments   : ["a_sep", "a_index", "a_text"]
-Usage       : $spiltc(a_sep,a_index,a_text)
+Usage       : $splitc(a_sep,a_index,a_text)
 Description >> 
     Split text and cut from splitted array
     
@@ -2546,7 +2546,7 @@ Description >>
     
     - a_sep    : A separator string
     - a_index  : An index to cut out
-    - a_text   : Text to spilt
+    - a_text   : Text to split
     
     # Example
     
@@ -2604,9 +2604,9 @@ Description >>
 
 ----
 Macro Type  : Function
-Macro Name  : sspilt
+Macro Name  : ssplit
 Arguments   : ["a_text^"]
-Usage       : $sspilt(a_text^)
+Usage       : $ssplit(a_text^)
 Description >> 
     Split text with space separator into an array
     
@@ -2614,7 +2614,7 @@ Description >>
     
     # Arguments
     
-    - a_text : Text to spilt ( trimmed )
+    - a_text : Text to split ( trimmed )
     
     # Example
     
@@ -2908,7 +2908,7 @@ Description >>
     
     # Example
     
-    $temout(Content)
+    $tempout(Content)
 
 ----
 Macro Type  : Function

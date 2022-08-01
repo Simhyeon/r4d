@@ -128,11 +128,11 @@
 * [sortl](#sortl)
 * [source](#source)
 * [space](#space)
-* [spilt](#spilt)
-* [spiltc](#spiltc)
+* [split](#split)
+* [splitc](#splitc)
 * [spread](#spread)
 * [squash](#squash)
-* [sspilt](#sspilt)
+* [ssplit](#ssplit)
 * [static](#static)
 * [staticr](#staticr)
 * [strict](#strict)
@@ -1108,7 +1108,7 @@ Description
     
     # Example
     
-    $exists(file.txt)
+    $exist(file.txt)
 
 ### exit
 
@@ -3705,15 +3705,15 @@ Description
     
     $assert(    ,$space(4))
 
-### spilt
+### split
 
 Macro Type  : Function
 
-Macro Name  : spilt
+Macro Name  : split
 
 Arguments   : ["a_sep", "a_text"]
 
-Usage       : $spilt(a_sep,a_text)
+Usage       : $split(a_sep,a_text)
 
 Description 
 
@@ -3724,21 +3724,21 @@ Description
     # Arguments
     
     - a_sep  : A separator string
-    - a_text : Text to spilt
+    - a_text : Text to split
     
     # Example
     
     $assert(a,b,c,$split(/,a/b/c))
 
-### spiltc
+### splitc
 
 Macro Type  : Function
 
-Macro Name  : spiltc
+Macro Name  : splitc
 
 Arguments   : ["a_sep", "a_index", "a_text"]
 
-Usage       : $spiltc(a_sep,a_index,a_text)
+Usage       : $splitc(a_sep,a_index,a_text)
 
 Description 
 
@@ -3750,7 +3750,7 @@ Description
     
     - a_sep    : A separator string
     - a_index  : An index to cut out
-    - a_text   : Text to spilt
+    - a_text   : Text to split
     
     # Example
     
@@ -3822,15 +3822,15 @@ Description
     b
     ))
 
-### sspilt
+### ssplit
 
 Macro Type  : Function
 
-Macro Name  : sspilt
+Macro Name  : ssplit
 
 Arguments   : ["a_text^"]
 
-Usage       : $sspilt(a_text^)
+Usage       : $ssplit(a_text^)
 
 Description 
 
@@ -3842,7 +3842,7 @@ Description
     
     # Arguments
     
-    - a_text : Text to spilt ( trimmed )
+    - a_text : Text to split ( trimmed )
     
     # Example
     
@@ -4248,7 +4248,7 @@ Description
     
     # Example
     
-    $temout(Content)
+    $tempout(Content)
 
 ### tempto
 

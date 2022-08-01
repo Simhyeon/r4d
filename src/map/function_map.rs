@@ -261,7 +261,7 @@ $assert(\\*2,3*\\,$slice(1,2,\\*1,2,3,4,5,6*\\))".to_string()),
             (
                 "split".to_owned(),
                 FMacroSign::new(
-                    "spilt",
+                    "split",
                     ["a_sep", "a_text"],
                     Self::split,
                     Some("Split text into an array
@@ -269,7 +269,7 @@ $assert(\\*2,3*\\,$slice(1,2,\\*1,2,3,4,5,6*\\))".to_string()),
 # Arguments
 
 - a_sep  : A separator string
-- a_text : Text to spilt
+- a_text : Text to split
 
 # Example
 
@@ -279,7 +279,7 @@ $assert(\\*a,b,c*\\,$split(/,a/b/c))".to_string()),
             (
                 "splitc".to_owned(),
                 FMacroSign::new(
-                    "spiltc",
+                    "splitc",
                     ["a_sep", "a_index","a_text"],
                     Self::split_and_cut,
                     Some("Split text and cut from splitted array
@@ -288,7 +288,7 @@ $assert(\\*a,b,c*\\,$split(/,a/b/c))".to_string()),
 
 - a_sep    : A separator string
 - a_index  : An index to cut out
-- a_text   : Text to spilt
+- a_text   : Text to split
 
 # Example
 
@@ -298,7 +298,7 @@ $assert(b,$splitc(/,-2,a/b/c))".to_string()),
             (
                 "ssplit".to_owned(),
                 FMacroSign::new(
-                    "sspilt",
+                    "ssplit",
                     ["a_text^"],
                     Self::space_split,
                     Some("Split text with space separator into an array
@@ -307,7 +307,7 @@ $assert(b,$splitc(/,-2,a/b/c))".to_string()),
 
 # Arguments
 
-- a_text : Text to spilt ( trimmed )
+- a_text : Text to split ( trimmed )
 
 # Example
 
@@ -2389,7 +2389,7 @@ $assert(/home/user/cwd/test.md,$abs(test.md))"
 
 # Example
 
-$exists(file.txt)"
+$exist(file.txt)"
                             .to_string(),
                     ),
                 ),
@@ -2472,7 +2472,7 @@ $assert(Linux,$syscmd(uname))"
 
 # Example
 
-$temout(Content)"
+$tempout(Content)"
                             .to_string(),
                     ),
                 ),
