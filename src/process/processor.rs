@@ -2122,10 +2122,13 @@ impl<'processor> Processor<'processor> {
             return Ok(());
         }
 
-        // Redirect to cache if set
+        // This is mostly for wasm target
+        // Redirect to cache if relay is set
         if let Some(cache) = &mut self.cache_file {
-            cache.write_all(content.as_bytes())?;
-            return Ok(());
+            if self.state.relay.is_empty() {
+                cache.write_all(content.as_bytes())?;
+                return Ok(());
+            }
         }
 
         // Save to "source" file for debuggin
