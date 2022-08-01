@@ -37,6 +37,7 @@
 * [exec](#exec)
 * [exist](#exist)
 * [exit](#exit)
+* [expand](#expand)
 * [extract](#extract)
 * [fassert](#fassert)
 * [fileout](#fileout)
@@ -1130,6 +1131,32 @@ Description
     # Example
     
     $exit()
+
+### expand
+
+Macro Type  : Function
+
+Macro Name  : expand
+
+Arguments   : ["a_expr"]
+
+Usage       : $expand(a_expr)
+
+Description 
+
+>>
+ 
+    Expand an expression
+    
+    This can be used on expression of local or static macros.
+    
+    # Arguments
+    
+    - a_expr : An expression to expand
+    
+    # Example
+    
+    $expand(expr)
 
 ### extract
 

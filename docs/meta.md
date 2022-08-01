@@ -1,22 +1,31 @@
 ### TODO
+
+1. Check manual sanity with scripts
+2. Test windows build
+
 $todo_start()
 * [x] New macros
 * [x] Macro ergonomics
 * [x] Library
 * [ ] Bug fix
-    * [ ] Currently use configured macro is not "available" in log message.
+    * [ ] Currently user configured macro is not "available" in log message.
 * [ ] Feature
-    * [ ] Include data format pretty printer
-* [x] Documentation
+    * [ ] Implement data format pretty printer
+* [ ] Documentation
+    * [ ] Function comments
 * [ ] Test
-    * [ ] Test hook macro documentaion
     * [ ] Test windows build
 $todo_end()
+
+### LATER
+
+* [ ] Test hook macro documentaion
 
 ### Changes
 
 - New macros
     * [x] Exist
+    * [x] Expand
 - Changed Include behaviour
 - Changed readto and readin behaviour
 

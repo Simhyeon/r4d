@@ -674,6 +674,24 @@ Description >>
 
 ----
 Macro Type  : Function
+Macro Name  : expand
+Arguments   : ["a_expr"]
+Usage       : $expand(a_expr)
+Description >> 
+    Expand an expression
+    
+    This can be used on expression of local or static macros.
+    
+    # Arguments
+    
+    - a_expr : An expression to expand
+    
+    # Example
+    
+    $expand(expr)
+
+----
+Macro Type  : Function
 Macro Name  : extract
 Arguments   : []
 Usage       : $extract()
