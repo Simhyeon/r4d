@@ -1526,6 +1526,22 @@ $assert(17,$notat(23,hex))".to_string()),
                 ),
             ),
             (
+                "ostype".to_owned(),
+                FMacroSign::new(
+                    "ostype",
+                    ESR,
+                    Self::get_os_type,
+                    Some("Get operating system type
+
+- R4d only supports windows and *nix systems.
+- This return either \"windows\" or \"unix\"
+
+# Example
+
+$assert(unix,$ostype())".to_string()),
+                ),
+            ),
+            (
                 "panic".to_owned(),
                 FMacroSign::new(
                     "panic",
@@ -4863,6 +4879,18 @@ $extract()"
                 "foldl requires an argument".to_owned(),
             ))
         }
+    }
+
+    /// Get os type
+    ///
+    /// # Usage
+    ///
+    /// $ostype()
+    fn get_os_type(_: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        #[cfg(windows)]
+        return Ok(Some("windows".to_owned()));
+        #[cfg(not(windows))]
+        return Ok(Some("unix".to_owned()));
     }
 
     /// Register expressino
