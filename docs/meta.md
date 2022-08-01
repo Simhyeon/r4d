@@ -1,7 +1,6 @@
 ### TODO
 
-1. Check manual sanity with scripts
-2. Test windows build
+1. Test windows build
 
 $todo_start()
 * [x] New macros
@@ -23,6 +22,13 @@ $todo_end()
 
 ### Changes
 
+- Escape characters
+    - ```\\``` nees to interpreted as ```\``` because ```\,``` should be evaded
+      on some cases. When ```\``` should be given as single character with
+      following delimiter comma.
+    - ```\,``` now interpreted as literal comma, not a delimiter
+- Fixed wrong initial input backtrace
+- Now path macro converts to platform specific path separator
 - New macros
     * [x] Exist
     * [x] Expand

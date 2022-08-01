@@ -13,7 +13,7 @@ command ```rad def.r4d index.r4d``` will work as if they were a single file.
 The other way is to freeze macros inside a file. Macro freezing is conceptually
 equal to m4's freezing. Rad processes macro definitions and save it into a
 binary file. The frozen file can be melted anytime and can be used without
-processing. 
+processing.
 
 ```bash
 # Freeze to a file

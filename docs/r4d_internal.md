@@ -11,7 +11,6 @@ macros](#r4d-recursively-finds-and-expands-macros)
 - [Function macro](#function-macro)
 - [Deterred macro](#deterred-macro)
 - [Errors](#errors)
-		
 
 # R4d recursively finds and expands macros
 
@@ -38,7 +37,7 @@ $macro_name(       -> On dollar character, a framgent start
 Expanded arguments' direction differs by macro types. If a macro is a runtime
 macro, the arguments are split by a length which is defined by a user, and then
 maps each into a local macro with a name from parameters. For a function macro,
-burden of argument spliting is transferred to each function because the length 
+burden of argument spliting is transferred to each function because the length
 is not defined at constnat time. Deterred macro is also not different.
 
 ```r4d
@@ -55,7 +54,7 @@ $macro($arg())
 Unlike other macros local macro is not expanded on invocation, because local
 macros are mapped with expanded arguments. This might not look reasonable in
 some cases but very much plausible. If a local macro was expanded, then macro
-arguments will consequently doubly expanded. 
+arguments will consequently doubly expanded.
 
 # Nature of macro types
 
@@ -73,7 +72,7 @@ A deterred macro, works similary in a sesne that it is mapped to a function
 pointer. However it's internal logic is quite different. A deterred macro
 prevents expansin of arguments and gladly bears a burden to expand by itself.
 In exchange of complexity, deterred macro gains a power to optionally expand
-arguments or even dynamic contents. 
+arguments or even dynamic contents.
 
 # Macro expansion
 
@@ -142,7 +141,7 @@ expand a dyanimc expression which is created inside of a function, and
 retreive information about parent's local macro. There is no way for a function
 macro to understand a local macro, while deterred macro can directly index,
 add, and modify them. A macro like strip can even curve a default behaviour of
-"expand & strip" and do "strip & expand". 
+"expand & strip" and do "strip & expand".
 
 Deterred macro can decide an order of expansion. Every if macro variants are
 deterred macro, because it needs to optionally expand macro arguments. ```If```
@@ -163,7 +162,7 @@ Think of it as a capture group of regular expressions.
 Dynamic expression "can" be expanded by a function macro, but the macro cannot
 capture a context of an invocation. Any expression can include local macros
 which are scope specific and also not known to a function macro. As a result,
-macros like exec or spread are deterred macro to enable a sane macro expansion. 
+macros like exec or spread are deterred macro to enable a sane macro expansion.
 
 # Errors
 

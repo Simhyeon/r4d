@@ -48,7 +48,7 @@ $mac(
   is same with mac's position. This is acceptible, but can be improved.
 - On current implementation, it prints 3 which is 1 + 2. One from mac's
   position and 2 from inner's position. This is due to Argument going
-  backwards. To solve this you have to merge paths carefully. 
+  backwards. To solve this you have to merge paths carefully.
 
 How to merge path varis, but merged path should be, mac's position + inner's
 position calculated by new tracker. In other words, new tracker's full track +

@@ -20,7 +20,7 @@ extend](./ext.md)
 
 There is a special type of function macro that is called deterred macro.
 Arguments of function macros are eagerly expanded while deterred macro
-interrupt such expansion and can control the entire behaviour. 
+interrupt such expansion and can control the entire behaviour.
 
 Not every macro that markded as deterred deters an argument expansion. If you
 want to know the exact order of expansion refer a manual with ```--man``` flag.
@@ -57,14 +57,14 @@ macro.
 
 ```
 $define=(
-	macro,
-	a_arg1 a_arg2
-	=
-	$let(arg1,$a_arg1() is first)
-	$let(arg2,$a_arg2() is second)
-	% arg1 and arg2 is shadowed by new let binding
-	$arg1() 
-	$arg2() 
+    macro,
+    a_arg1 a_arg2
+    =
+    $let(arg1,$a_arg1() is first)
+    $let(arg2,$a_arg2() is second)
+    % arg1 and arg2 is shadowed by new let binding
+    $arg1()
+    $arg2()
 )
 $macro^(1,2)
 ===
@@ -114,7 +114,7 @@ For example; hygiene, pause or relay are operational macros. Keep in mind that
 operational macros might not work as **procedurally** because operation macro
 applies before text is retrieved from macro call.
 
-## Hook macro 
+## Hook macro
 
 **Libary usage only**
 

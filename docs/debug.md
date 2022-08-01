@@ -91,7 +91,7 @@ rad -d
 rad --debug <FILE>
 
 # Interactive mode
-# This disables text wrapping 
+# This disables text wrapping
 rad --debug -i
 ===
 ...
@@ -132,7 +132,7 @@ $define(arg,a_arg=Arg is : $a_arg())
 4
 5
 % This is a break point
-$BR() 
+$BR()
 
 $arg(Hello World)
 
@@ -229,7 +229,7 @@ You can save diff to specific file with flag ```-e ErrorFile```.
 
 d.g.
 ```
-DIFF : 
+DIFF :
 - $define(author=Simon Creek)
 - $define(title=R4d demo)
   ---
@@ -242,11 +242,11 @@ DIFF :
 - forms of texts. This article was written in $date() $time().
 + My name is Simon Creek and I made r4d to make macros can be used within various
 + forms of texts. This article was written in 2022-07-08 22:12:21.
-  
+
 - $ifdef(test, This should be only printed when I'm testing not in release)$dnl()
   This is some important table automatically formatted according to environment
   variable.
-  
+
 - $regcsv(addr,$include(addr.csv))$dnl()
 - id,first name,last name,address
 - 1,John,doe,AA 1234
@@ -255,7 +255,7 @@ DIFF :
 - $static(
 -     queried,
 -     $query(
--         SELECT id,'first name',address 
+-         SELECT id,'first name',address
 -         FROM addr where 'first name' = John
 -     )
 - )$dnl()
@@ -264,12 +264,12 @@ DIFF :
 - $table($env(TABLE_FORM),$queried())
 + |1|John|AA 1234|
 + |-|-|-|
-  
+
 - $wrap(40,$lipsum(15))
 + Lorem ipsum dolor sit amet consectetur
 + adipiscing elit. In rhoncus sapien
 + iaculis sapien congue a
-  
+
 - Evaluation : $prec($eval( $num(0.1second) + $num(0.2sekunde)),2)
 - Evaluation : $evalk( 1 + 2 )
 + Evaluation : 0.30

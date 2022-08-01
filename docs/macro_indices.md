@@ -2,6 +2,7 @@
 
 * [-](#-)
 * [EB](#EB)
+* [PS](#PS)
 * [abs](#abs)
 * [after](#after)
 * [align](#align)
@@ -102,6 +103,7 @@
 * [not](#not)
 * [notat](#notat)
 * [num](#num)
+* [ostype](#ostype)
 * [panic](#panic)
 * [parent](#parent)
 * [path](#path)
@@ -211,6 +213,29 @@ Description
     # Example
     
     $EB()
+
+### PS
+
+Macro Type  : Function
+
+Macro Name  : PS
+
+Arguments   : []
+
+Usage       : $PS()
+
+Description 
+
+>>
+ 
+    Return platform specific path separator
+    
+    - On windows, this return ''
+    - On non windows, this return '/'
+    
+    # Exmaple
+    
+    $assert(c,$splitc($PS(),-1,a/b/c))
 
 ### abs
 
@@ -2979,6 +3004,29 @@ Description
     
     $assert(34,$num(34sec))
     $assert(30,$num(30k/h for 3 hours))
+
+### ostype
+
+Macro Type  : Function
+
+Macro Name  : ostype
+
+Arguments   : []
+
+Usage       : $ostype()
+
+Description 
+
+>>
+ 
+    Get operating system type
+    
+    - R4d only supports windows and *nix systems.
+    - This return either "windows" or "unix"
+    
+    # Example
+    
+    $assert(unix,$ostype())
 
 ### panic
 

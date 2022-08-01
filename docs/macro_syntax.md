@@ -34,7 +34,7 @@ whitespaces.**
 
 Third argument is a macro body. Any text can be included in the macro body
 while an unbalanced parenthesis will prematurely. Currently there is no way to
-include unbalanced parenthesis inside definition body. 
+include unbalanced parenthesis inside definition body.
 
 You can also simply bind the value without giving arguments. Which is mostly
 similar to static macro. But defined body is always evaluated.
@@ -62,7 +62,7 @@ $panik()
 error: Failed to invoke a macro : "calm"
  --> stdin:2:2
 $calm()
-KALM 
+KALM
 % After calm is defined, it prints out without error
 ```
 
@@ -144,7 +144,7 @@ Name : Jane
 An unbalanced parenthesis changes the behaviour of macro invocation and a
 non-escaped comma will change the number or content of arguments. If desirable
 content includes unbalanced parentheses or commas, enclose the body with string
-literal with the syntax of ```\* TEXT GOES HERE *\```. 
+literal with the syntax of ```\* TEXT GOES HERE *\```.
 
 ## Literal quotes
 
@@ -198,7 +198,7 @@ General rules are followings
 - Literal text as an argument is expanded and then stripped
     - Arguments with only constants is treated as if it were not quoted
     - Arguments with macro will not expand macro and return it as if it were
-    normal text 
+    normal text
 
 In short, rad processes macros in given subprocesses.
 
@@ -248,7 +248,7 @@ $assert($p1(),$p2())
 %  --> test:4:2
 %
 % log: a/b/b/c
-%  --> test:5:2 
+%  --> test:5:2
 % This holds anyway because assert has expanded each values
 % Thus final result of p1 and p2 is same to end user
 ```
@@ -316,7 +316,7 @@ hassle to create wrappers. But this makes codes a lot hard to read. There is no
 standard, so suit yourself.
 
 ```
-% Assume arr_pass defined. 
+% Assume arr_pass defined.
 $arr_pass^($strip*(\*$split($space(),$lipsum(4))*\),@)
 ===
 Lorem + @
@@ -428,9 +428,9 @@ $macro_name=(
     second
 )
 ===
-% Arguments are passed as 
+% Arguments are passed as
 % first
-% 
+%
 % second
 ```
 
@@ -457,7 +457,7 @@ I'm going to be used by a pipe macro
 
 CAVEAT
 
-Getting value from pipe truncates an original value. 
+Getting value from pipe truncates an original value.
 
 ```
 $eval|("test" == "test")

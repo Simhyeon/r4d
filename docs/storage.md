@@ -19,23 +19,23 @@ use r4d::{StorageOutput, StorageResult};
 
 #[derive(Serialize,Deserialize)]
 pub struct PlotModel {
-	// informations
-	...
+    // informations
+    ...
 }
 
 impl RadStorage for PlotModel {
-	fn update(&mut self, args : &[String]) -> StorageResult<()> {
-		// Update logics
-	}
+    fn update(&mut self, args : &[String]) -> StorageResult<()> {
+        // Update logics
+    }
 
-	// $extract() macro calls extract method with the serialize value of "false"
-	fn extract(&mut self, serialize: bool) -> StorageResult<Option<StorageOutput>> {
-		if serialize {
-			Ok(Some(StorageOutput::Binary(bincode::serialize(self)?)))
-		} else {
-			Ok(Some(StorageOutput::Text(serde_json::to_string(self)?)))
-		}
-	}
+    // $extract() macro calls extract method with the serialize value of "false"
+    fn extract(&mut self, serialize: bool) -> StorageResult<Option<StorageOutput>> {
+        if serialize {
+            Ok(Some(StorageOutput::Binary(bincode::serialize(self)?)))
+        } else {
+            Ok(Some(StorageOutput::Text(serde_json::to_string(self)?)))
+        }
+    }
 }
 ```
 And add storage to processor before processing.

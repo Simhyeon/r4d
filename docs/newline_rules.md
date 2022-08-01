@@ -12,11 +12,11 @@ Think of a macro as a function. ( Though it really is ) Macro gets arguments
 and processes body with given information and finally returns a value. Actually
 every macro returns a rust type of ```Result<Option<String>>```. Now any
 rustaceans would know the meaning of the title, but for those who are not, this
-means macro returns a real text value or nothing. 
+means macro returns a real text value or nothing.
 
 **When nothing is returned newline is consumed.** All function macros returns
 nothing if it has no text to print. Therefore macros such as define, let or
-static removes folloiwng newline. For example, 
+static removes folloiwng newline. For example,
 
 ```r4d
 $define(test=Test)
@@ -49,8 +49,8 @@ You might encounter a case like this
 
 ```
 $define(hmm=
-	$let(a,b)
-	$let(c,d)
+    $let(a,b)
+    $let(c,d)
 )
 $hmm()
 ===
@@ -79,9 +79,9 @@ processing steps would like following.
 
 ```
 % Source
-$define(hmm=\n	$let(a,b)\n	$let(c,d)\n)\n$hmm()\n
+$define(hmm=\n    $let(a,b)\n    $let(c,d)\n)\n$hmm()\n
 % 1. Expand fisrt let and consume newline
-$define(hmm=\n	$let(c,d)\n)\n$hmm()\n
+$define(hmm=\n    $let(c,d)\n)\n$hmm()\n
 % 2. Expand second let and consume newline
 $define(hmm=\n)\n$hmm()\n
 % 3. Definition also consumes newline
