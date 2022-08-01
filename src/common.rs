@@ -377,3 +377,14 @@ pub enum Hygiene {
     /// No runtime definition or invocation at all.
     Aseptic,
 }
+
+/// Type of container
+#[derive(Eq, PartialEq)]
+pub enum ContainerType {
+    /// Container inside arguments
+    Argument,
+    /// Container that is expanded
+    Expand,
+    /// D container
+    None,
+}

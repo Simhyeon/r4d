@@ -1,5 +1,6 @@
 use super::ProcessorState;
 use crate::auth::{AuthState, AuthType};
+use crate::common::ContainerType;
 #[cfg(feature = "debug")]
 use crate::common::DiffOption;
 #[cfg(feature = "signature")]
@@ -1208,7 +1209,7 @@ impl<'processor> Processor<'processor> {
         self.logger
             .start_new_tracker(TrackType::Input("String".to_string()));
         let mut reader = content.as_bytes();
-        self.process_buffer(&mut reader, None, false)?;
+        self.process_buffer(&mut reader, None, ContainerType::None)?;
 
         // This method stops last tracker, thus explicit one is not needed
         self.organize_and_clear_cache()
@@ -1238,12 +1239,12 @@ impl<'processor> Processor<'processor> {
             let mut input = String::new();
             stdin.lock().read_to_string(&mut input)?;
             // This is necessary to prevent unexpected output from being captured.
-            self.process_buffer(&mut input.as_bytes(), None, false)?;
+            self.process_buffer(&mut input.as_bytes(), None, ContainerType::None)?;
             return self.organize_and_clear_cache();
         }
 
         let mut reader = stdin.lock();
-        self.process_buffer(&mut reader, None, false)?;
+        self.process_buffer(&mut reader, None, ContainerType::None)?;
         self.organize_and_clear_cache()
     }
 
@@ -1275,7 +1276,7 @@ impl<'processor> Processor<'processor> {
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
-        self.process_buffer(&mut reader, backup, false)?;
+        self.process_buffer(&mut reader, backup, ContainerType::None)?;
         self.organize_and_clear_cache()
     }
 
@@ -1312,7 +1313,7 @@ impl<'processor> Processor<'processor> {
         let static_script = StaticScript::unpack(source)?;
         let mut reader = BufReader::new(&static_script.body[..]);
         self.melt_literal(&static_script.header[..])?;
-        self.process_buffer(&mut reader, backup, false)?;
+        self.process_buffer(&mut reader, backup, ContainerType::None)?;
         self.organize_and_clear_cache()
     }
 
@@ -1322,9 +1323,11 @@ impl<'processor> Processor<'processor> {
     /// - include
     /// - temp_include
     ///
+    #[cfg(not(feature = "wasm"))]
     pub(crate) fn process_file_as_chunk(
         &mut self,
         path: impl AsRef<Path>,
+        cont_type: ContainerType,
     ) -> RadResult<Option<String>> {
         // Sandboxed environment, backup
         let backup = if self.state.sandbox {
@@ -1338,7 +1341,7 @@ impl<'processor> Processor<'processor> {
 
         let file_stream = File::open(path)?;
         let mut reader = BufReader::new(file_stream);
-        self.process_buffer(&mut reader, backup, true)
+        self.process_buffer(&mut reader, backup, cont_type)
     }
 
     /// Internal method for processing buffers line by line
@@ -1346,7 +1349,7 @@ impl<'processor> Processor<'processor> {
         &mut self,
         buffer: &mut impl std::io::BufRead,
         backup: Option<SandboxBackup>,
-        use_container: bool,
+        cont_type: ContainerType,
     ) -> RadResult<Option<String>> {
         let mut line_iter = Utils::full_lines(buffer).peekable();
         let mut lexor = Lexor::new(
@@ -1357,8 +1360,11 @@ impl<'processor> Processor<'processor> {
         let mut frag = MacroFragment::new();
 
         // when processing has to return a value rather than modify in-place
-        let container = String::new();
-        let mut cont = if use_container { Some(container) } else { None };
+        let mut cont = if cont_type == ContainerType::Argument {
+            Some(String::new())
+        } else {
+            None
+        };
 
         #[cfg(feature = "debug")]
         self.debugger.user_input_on_start(
@@ -1387,7 +1393,7 @@ impl<'processor> Processor<'processor> {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(remainder) => {
-                    self.write_to(&remainder, &mut cont)?;
+                    self.write_to(&remainder, &cont_type, &mut cont)?;
 
                     // Test if this works
                     #[cfg(feature = "debug")]
@@ -1399,7 +1405,7 @@ impl<'processor> Processor<'processor> {
                     }
                 }
                 ParseResult::FoundMacro(remainder) => {
-                    self.write_to(&remainder, &mut cont)?;
+                    self.write_to(&remainder, &cont_type, &mut cont)?;
                 }
                 // This happens only when given macro involved text should not be printed
                 ParseResult::NoPrint => {}
@@ -1407,7 +1413,7 @@ impl<'processor> Processor<'processor> {
                 ParseResult::Eoi => {
                     // THis is necessary somehow, its kinda hard to explain
                     // but chunk read makes trailing new line and it should be deleted
-                    if use_container {
+                    if cont_type == ContainerType::Argument {
                         Utils::pop_newline(cont.as_mut().unwrap());
                     }
                     break;
@@ -1427,7 +1433,7 @@ impl<'processor> Processor<'processor> {
             self.state.sandbox = false;
         }
 
-        if use_container {
+        if cont_type != ContainerType::None {
             Ok(cont.filter(|t| !t.is_empty()))
         } else {
             Ok(None)
@@ -1443,6 +1449,7 @@ impl<'processor> Processor<'processor> {
     // <DEBUG>
 
     /// Check if given macro is local macro or not
+    #[cfg(feature = "debug")]
     fn is_local_macro(&self, mut level: usize, name: &str) -> bool {
         while level > 0 {
             if self.map.local.contains_key(&Utils::local_name(level, name)) {
@@ -2093,15 +2100,25 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Write text to either file or standard output according to processor's write option
-    fn write_to(&mut self, content: &str, container: &mut Option<String>) -> RadResult<()> {
+    fn write_to(
+        &mut self,
+        content: &str,
+        cont_type: &ContainerType,
+        container: &mut Option<String>,
+    ) -> RadResult<()> {
         // Don't try to write empty string, because it's a waste
         if content.is_empty() {
             return Ok(());
         }
 
-        // Save to container
-        if let Some(cont) = container.as_mut() {
-            cont.push_str(content);
+        // Save to container if it is an argument
+        if cont_type == &ContainerType::Argument {
+            if container.is_none() {
+                return Err(RadError::UnsoundExecution(
+                    "Argument container type should always have valid container. This is a programming error".to_string(),
+                ));
+            }
+            container.as_mut().unwrap().push_str(content);
             return Ok(());
         }
 

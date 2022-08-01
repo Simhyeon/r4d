@@ -2403,28 +2403,6 @@ $assert(Linux,$syscmd(uname))"
                 ),
             );
             map.insert(
-                "tempin".to_owned(),
-                FMacroSign::new(
-                    "tempin",
-                    ESR,
-                    Self::temp_include,
-                    Some(
-                        "Include a temporary file
-
-- A default temporary path is folloiwng
-- Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
-- *nix    : /tmp/rad.txt
-
-# Auth: FIN
-
-# Example
-
-$tempin()"
-                            .to_string(),
-                    ),
-                ),
-            );
-            map.insert(
                 "tempout".to_owned(),
                 FMacroSign::new(
                     "tempout",
@@ -2495,32 +2473,6 @@ $tempto(/new/path)"
 # Example
 
 $assert(/tmp/rad.txt,$temp())"
-                            .to_string(),
-                    ),
-                ),
-            );
-            map.insert(
-                "include".to_owned(),
-                FMacroSign::new(
-                    "include",
-                    ["a_filename^", "a_raw_mode^+?"],
-                    Self::include,
-                    Some(
-                        "Include a file
-
-- Include reads a whole chunk of file into a \"Reader\" and expands
-- Use readin or readto if you want buffered behaviour
-- If raw mode is enabled include doesn't expand any macros inside the file
-
-# AUTH : FIN
-
-# Arguments
-
-- a_filename : A file name to read ( trimmed )
-- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
-
-$include(file_path)
-$include(file_path, true)"
                             .to_string(),
                     ),
                 ),
@@ -3386,73 +3338,6 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "Lipsum requires an argument".to_owned(),
-            ))
-        }
-    }
-
-    /// Paste given file's content
-    ///
-    /// Every macros within the file is also expanded
-    ///
-    /// Include read file's content into a single string and print out.
-    /// This enables ergonomic process of macro execution. If you want file
-    /// inclusion to happen as bufstream, use read instead.
-    ///
-    /// # Usage
-    ///
-    /// $include(path)
-    #[cfg(not(feature = "wasm"))]
-    fn include(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("include", AuthType::FIN, processor)? {
-            return Ok(None);
-        }
-        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
-        if !args.is_empty() {
-            let raw_file = trim!(&args[0]);
-            let mut raw_include = false;
-            let file_path = PathBuf::from(raw_file.as_ref());
-
-            if file_path.is_file() {
-                let canonic = file_path.canonicalize()?;
-
-                Utils::check_file_sanity(processor, &canonic)?;
-                // Set sandbox after error checking or it will act starngely
-                processor.set_sandbox(true);
-
-                // Optionally enable raw mode
-                if args.len() >= 2 {
-                    raw_include = Utils::is_arg_true(&args[1])?;
-
-                    // You don't have to backup pause state because include wouldn't be triggered
-                    // at the first place, if paused was true
-                    if raw_include {
-                        processor.state.flow_control = FlowControl::Escape;
-                    }
-                }
-
-                // Create chunk
-                let chunk = processor.process_file_as_chunk(&file_path)?;
-
-                // Reset flow control per processing
-                if processor.state.flow_control != FlowControl::None {
-                    processor.reset_flow_control();
-                }
-                if raw_include {
-                    processor.state.flow_control = FlowControl::None;
-                }
-                processor.set_sandbox(false);
-                processor.state.input_stack.remove(&canonic); // Collect stack
-                Ok(chunk)
-            } else {
-                let formatted = format!(
-                    "File path : \"{}\" doesn't exist or not a file",
-                    file_path.display()
-                );
-                Err(RadError::InvalidArgument(formatted))
-            }
-        } else {
-            Err(RadError::InvalidArgument(
-                "Include requires an argument".to_owned(),
             ))
         }
     }
@@ -5052,23 +4937,6 @@ $extract()"
                 "countl requires an argument".to_owned(),
             ))
         }
-    }
-
-    /// Include but for temporary file
-    ///
-    /// This reads file's content into memory. Use read macro if streamed write is needed.
-    ///
-    /// # Usage
-    ///
-    /// $tempin()
-    #[cfg(not(feature = "wasm"))]
-    fn temp_include(_: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("tempin", AuthType::FIN, processor)? {
-            return Ok(None);
-        }
-        let file = processor.get_temp_path().display();
-        let chunk = Self::include(&file.to_string(), processor)?;
-        Ok(chunk)
     }
 
     /// Relay all text into given target
