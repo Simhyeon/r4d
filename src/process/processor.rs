@@ -1446,6 +1446,12 @@ impl<'processor> Processor<'processor> {
         if cont_type != ContainerType::None {
             Ok(cont.filter(|t| !t.is_empty()))
         } else {
+            if lexor.on_literal() {
+                self.log_warning_no_line(
+                    "Literal quote is not finished. This might not be an intended behaviour",
+                    WarningType::Sanity,
+                )?;
+            }
             Ok(None)
         }
     }
