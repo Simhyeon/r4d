@@ -144,8 +144,8 @@ impl<'logger> Logger<'logger> {
             let mut track_iter = self.tracker_stack.stack.iter();
             let input = track_iter.next().unwrap().get_distance();
             let mut trace = format!(
-                "[INPUT = {}]:{}:{}",
-                self.current_input, input.line_index, input.char_index
+                "[{}]:{}:{}",
+                input.milestone, input.line_index, input.char_index
             );
             for track in track_iter {
                 let dist = track.get_distance();
