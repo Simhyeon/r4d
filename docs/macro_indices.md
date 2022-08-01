@@ -2032,7 +2032,7 @@ Description
 
 ### include
 
-Macro Type  : Function
+Macro Type  : Deterred
 
 Macro Name  : include
 
@@ -2046,9 +2046,11 @@ Description
  
     Include a file
     
-    - Include reads a whole chunk of file into a "Reader" and expands
-    - Use readin or readto if you want buffered behaviour
+    - Include works as bufread in first level and chunk read in nested call.
+    - Use readin if you want to enforce bufread
     - If raw mode is enabled include doesn't expand any macros inside the file
+    
+    # NOT Deterred
     
     # AUTH : FIN
     
@@ -3194,10 +3196,7 @@ Description
 
 >>
  
-    Read from a file
-    
-    Readin can be only executed on first level therefore readin cannot be used 
-    inside other macros
+    Read from a file as "Bufread"
     
     # Auth : FIN
     
@@ -3226,10 +3225,7 @@ Description
 
 >>
  
-    Read from a file and paste into a file
-    
-    Readto can be only executed on first level therefore readto cannot be used 
-    inside other macros
+    Read from a file as bufread and paste into a file
     
     # Auth : FIN + FOUT
     
@@ -3346,7 +3342,7 @@ Description
 >>
  
     Start relaying to a target. Relay redirects all following text to the relay 
-    target.
+    target. NOTE, relay is not evaluated inside arguments.
     
     # Auth : FOUT is required for relay target "file" and "temp"
     
@@ -4142,7 +4138,7 @@ Description
 
 ### tempin
 
-Macro Type  : Function
+Macro Type  : Deterred
 
 Macro Name  : tempin
 
@@ -4159,6 +4155,8 @@ Description
     - A default temporary path is folloiwng
     - Windows : It depends, but %APPDATA%\Local\Temp\rad.txt can be one
     - *nix    : /tmp/rad.txt
+    
+    # NOT Deterred
     
     # Auth: FIN
     

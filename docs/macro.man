@@ -1325,16 +1325,18 @@ Description >>
     $import(def.r4f)
 
 ----
-Macro Type  : Function
+Macro Type  : Deterred
 Macro Name  : include
 Arguments   : ["a_filename^", "a_raw_mode^+?"]
 Usage       : $include(a_filename^,a_raw_mode^+?)
 Description >> 
     Include a file
     
-    - Include reads a whole chunk of file into a "Reader" and expands
-    - Use readin or readto if you want buffered behaviour
+    - Include works as bufread in first level and chunk read in nested call.
+    - Use readin if you want to enforce bufread
     - If raw mode is enabled include doesn't expand any macros inside the file
+    
+    # NOT Deterred
     
     # AUTH : FIN
     
@@ -2152,10 +2154,7 @@ Macro Name  : readin
 Arguments   : ["a_file?^", "a_raw_mode^+?"]
 Usage       : $readin(a_file?^,a_raw_mode^+?)
 Description >> 
-    Read from a file
-    
-    Readin can be only executed on first level therefore readin cannot be used 
-    inside other macros
+    Read from a file as "Bufread"
     
     # Auth : FIN
     
@@ -2176,10 +2175,7 @@ Macro Name  : readto
 Arguments   : ["a_from_file^", "a_to_file^", "a_raw_mode?+^"]
 Usage       : $readto(a_from_file^,a_to_file^,a_raw_mode?+^)
 Description >> 
-    Read from a file and paste into a file
-    
-    Readto can be only executed on first level therefore readto cannot be used 
-    inside other macros
+    Read from a file as bufread and paste into a file
     
     # Auth : FIN + FOUT
     
@@ -2264,7 +2260,7 @@ Arguments   : ["a_target_type^", "a_target^"]
 Usage       : $relay(a_target_type^,a_target^)
 Description >> 
     Start relaying to a target. Relay redirects all following text to the relay 
-    target.
+    target. NOTE, relay is not evaluated inside arguments.
     
     # Auth : FOUT is required for relay target "file" and "temp"
     
@@ -2835,7 +2831,7 @@ Description >>
     $assert(/tmp/rad.txt,$temp())
 
 ----
-Macro Type  : Function
+Macro Type  : Deterred
 Macro Name  : tempin
 Arguments   : []
 Usage       : $tempin()
@@ -2845,6 +2841,8 @@ Description >>
     - A default temporary path is folloiwng
     - Windows : It depends, but %APPDATA%\Local\Temp\rad.txt can be one
     - *nix    : /tmp/rad.txt
+    
+    # NOT Deterred
     
     # Auth: FIN
     
