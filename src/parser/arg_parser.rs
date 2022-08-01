@@ -153,7 +153,9 @@ impl ArgParser {
 
     /// Branch on escape character found
     fn branch_escape_char(&mut self, ch: char, value: &mut String, next: Option<&char>) {
-        if let Some(&LIT_CHAR) = next {
+        if self.previous.unwrap_or(' ') == ESCAPE_CHAR {
+            self.no_previous = true;
+        } else if let Some(&LIT_CHAR) = next {
             if !self.strip_literal || self.lit_count > 0 {
                 value.push(ch);
             }
