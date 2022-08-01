@@ -3923,10 +3923,9 @@ $extract()"
     fn merge_path(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         let vec = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
 
-        let path_sep = PATH_SEPARATOR.to_string();
         let out = vec
             .iter()
-            .map(|s| trim!(PATH_MATCH.replace_all(s, &path_sep).as_ref()).to_string())
+            .map(|s| trim!(PATH_MATCH.replace_all(s, PATH_SEPARATOR).as_ref()).to_string())
             .collect::<PathBuf>();
 
         if let Some(value) = out.to_str() {

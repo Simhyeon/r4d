@@ -80,12 +80,15 @@ pub const LINE_ENDING: &str = "\r\n";
 pub const LINE_ENDING: &str = "\n";
 
 // PATH_SEPARATOR
+// On windows this should return double forward slash.
+// because only double forward slash is guaranteed to be evaluated as single
+// forward slash
 #[cfg(windows)]
 /// Platform specific path separator
-pub const PATH_SEPARATOR: char = '\\';
+pub const PATH_SEPARATOR: &str = "\\\\";
 #[cfg(not(windows))]
 /// Platform specific path separator
-pub const PATH_SEPARATOR: char = '/';
+pub const PATH_SEPARATOR: &str = "/";
 
 #[cfg(feature = "debug")]
 /// Debug help message string
