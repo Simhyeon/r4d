@@ -106,7 +106,7 @@ $assert(5,$-(num))".to_string(),
                     Some(
 "Return platform specific path separator
 
-- On windows, this return '\'
+- On windows, this return '\\'
 - On non windows, this return '/'
 
 # Exmaple
