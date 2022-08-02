@@ -1,6 +1,7 @@
 # TOC
 
 - [How to debug](#how-to-debug)
+- [Backtrace](#backtrace)
 - [Log macro](#log-macro)
 - [Dry run](#dry-run)
 - [Debug mode](#debug-mode)
@@ -10,6 +11,20 @@
 - [Assertion](#assertion)
 
 ### How to debug
+
+### Backtrace
+
+Set environment variable RAD\_BACKTRACE to see error log information.
+
+```
+$envset(RAD_BACKTRACE,true)
+$define(demo=$sep($splitc($nl(),3,1$nl()2)))
+$demo()
+===
+error: Invalid argument
+= Index out of range. Given index is "3" but array length is "2"
+ --> [INPUT = test]:2:2 >> (MACRO = demo):0:2 >> (MACRO = sep):0:2
+```
 
 ### Log macro
 
