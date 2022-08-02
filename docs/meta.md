@@ -1,7 +1,5 @@
 ### TODO
 
-1. Test windows build
-
 $todo_start()
 * [x] New macros
 * [x] Macro ergonomics

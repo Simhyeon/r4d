@@ -389,7 +389,7 @@ dependencies = [
 
 [[package]]
 name = "r4d"
-version = "3.0.0-rc.6"
+version = "3.0.0"
 dependencies = [
  "atty",
  "bincode",

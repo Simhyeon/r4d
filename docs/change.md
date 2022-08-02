@@ -1,3 +1,13 @@
+# 3.0.0 stable
+
+- BUG : Fixed wrong initial input backtrace
+- CHG : Include behaviour
+- CHG : readto and readin behaviour
+- ERG : Now path macro converts to platform specific path separator
+- FET : New macros
+    - Exist
+    - Expand
+
 # 3.0.0-rc.6
 
 **rad**

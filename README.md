@@ -86,26 +86,9 @@ Evaluation : 1 + 2 = 3
 I recommend using ```cargo install``` until I prepare a proper CD
 pipeline.
 
-Currently version 3.0 is preparing for release and can be downloaded with
-a specific version flag.
-
 ```bash
-cargo install r4d --git https://github.com/simhyeon/r4d \ 
---features binary --locked --version 3.0.0-rc.6
-```
-
-Or use crates.io registry,
-
-e.g.
-
-```bash
-# Currently stable version is 2.0
-
 # Binary with full macros support
 cargo install r4d --features binary --locked
-
-# If you need color prompt, then use features "color"
-cargo install r4d --features binary,color --locked
 
 # Only include macros that doesnt't require external crates
 cargo install r4d --features basic --locked
