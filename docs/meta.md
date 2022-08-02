@@ -5,6 +5,7 @@ $todo_start()
 * [x] Macro ergonomics
 * [x] Library
 * [ ] Bug fix
+    * [x] PS description has a typo
     * [ ] Currently user configured macro is not "available" in log message.
 * [ ] Feature
     * [ ] Implement data format pretty printer
