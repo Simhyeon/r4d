@@ -221,25 +221,6 @@ $assert(true,$eq(23,23))".to_string()),
                 ),
             ),
             (
-                "expand".to_owned(),
-                FMacroSign::new(
-                    "expand",
-                    ["a_expr"],
-                    Self::expand_expression,
-                    Some("Expand an expression
-
-This can be used on expression of local or static macros.
-
-# Arguments
-
-- a_expr : An expression to expand
-
-# Example
-
-$expand(expr)".to_string()),
-                ),
-            ),
-            (
                 "sep".to_owned(),
                 FMacroSign::new(
                     "sep",
@@ -3729,21 +3710,6 @@ $extract()"
             }
         }
         Ok(None)
-    }
-
-    /// expand expression
-    ///
-    /// # Usage
-    ///
-    /// $expand(expr)
-    fn expand_expression(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(mut args) = ArgParser::new().args_with_len(args, 1) {
-            Ok(Some(std::mem::take(&mut args[0])))
-        } else {
-            Err(RadError::InvalidArgument(
-                "expand requires an argument".to_owned(),
-            ))
-        }
     }
 
     /// Join an array

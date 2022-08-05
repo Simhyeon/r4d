@@ -544,24 +544,24 @@ $ifque(true,halt(false))".to_string()),
                 ),
             ),
             (
-                "strip".to_owned(),
+                "expand".to_owned(),
                 DMacroSign::new(
-                    "strip",
+                    "expand",
                     ["a_literal_expr"],
-                    DeterredMacroMap::strip_expression,
-                    Some("Strip literal expression and then expand 
+                    DeterredMacroMap::expand_expression,
+                    Some("Expand expression 
 
-# Expansion order
+# Note
 
-1. a_literal_expr : After a pair of quote was striped
+- This will strip a given expression and then expand it.
 
 # Arguments
 
-- a_literal_expr : An expression to strip
+- a_expr : An expression to expand
 
 # Example
 
-$strip(\\*1,2,3*\\)".to_string()),
+$expand(\\*1,2,3*\\)".to_string()),
                 ),
             ),
         ]));
@@ -1417,7 +1417,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     /// # Usage
     ///
     /// $strip(\*expression*\)
-    fn strip_expression(
+    fn expand_expression(
         args: &str,
         level: usize,
         processor: &mut Processor,
