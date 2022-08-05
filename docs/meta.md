@@ -27,6 +27,7 @@ $todo_start()
     * [ ] About escape rules + parenthesis rule
 * [ ] Test
     * [ ] Test windows build
+    * [ ] Test multiple awk replacements
 $todo_end()
 
 ### LATER
