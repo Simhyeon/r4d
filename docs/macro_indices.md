@@ -6,6 +6,7 @@
 * [abs](#abs)
 * [after](#after)
 * [align](#align)
+* [anon](#anon)
 * [append](#append)
 * [assert](#assert)
 * [capture](#capture)
@@ -230,7 +231,7 @@ Description
  
     Return platform specific path separator
     
-    - On windows, this return ''
+    - On windows, this return '\'
     - On non windows, this return '/'
     
     # Exmaple
@@ -288,7 +289,7 @@ Description
     
     # Example
     
-    $assert(하세요,$after(안녕,안녕하세요))
+    $assert(world,$after($space(),Hello world))
 
 ### align
 
@@ -318,6 +319,32 @@ Description
     $assert(Hello***,$align(left  ,8,*,Hello))
     $assert(***Hello,$align(right ,8,*,Hello))
     $assert(**Hello*,$align(center,8,*,Hello))
+
+### anon
+
+Macro Type  : Deterred
+
+Macro Name  : anon
+
+Arguments   : ["a_macro"]
+
+Usage       : $anon(a_macro)
+
+Description 
+
+>>
+ 
+    Crate a anonymous macro and return it's name
+    
+    # Not expanded at all
+    
+    # Arguments
+    
+    - a_macro : A macro defintition without name
+    
+    # Example
+    
+    $map($anon(a=$a()+),a,b,c)
 
 ### append
 
@@ -2912,6 +2939,9 @@ Description
  
     Print platform specific newlines. Its behaviour can be configured.
     
+    - CRLF is returned on windows
+    - LF is returned on *nix systems.
+    
     # Arguments
     
     - a_amount : Amount of newlines [Unsigned integer] ( trimmed )
@@ -4555,7 +4585,7 @@ Description
     
     # Example
     
-    $assert(안녕하,$until(세,안녕하세요))
+    $assert(Hello,$until($space(),Hello World))
 
 ### update
 

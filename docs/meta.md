@@ -1,16 +1,29 @@
+### Milestone
+
+TARGET : Version 3.1.0
+
+- Minor bugfixes
+- Anon macro
+- Sensible default for argument parsing
+
 ### TODO
 
 $todo_start()
-* [x] New macros
+* [ ] New macros
+    * [ ] Unquote : Strip any quote-able characters from each end
 * [x] Macro ergonomics
 * [x] Library
 * [ ] Bug fix
     * [x] PS description has a typo
-    * [ ] Currently user configured macro is not "available" in log message.
+    * [x] Map variants were not expanding macro name
+    * [ ] Currently user configured macro name is not "available" in log
+      message.
 * [ ] Feature
+    * [x] Anonymouos macro
+    * [x] Sensible default argument parsing behaviour
     * [ ] Implement data format pretty printer
 * [ ] Documentation
-    * [ ] Function comments
+    * [ ] About escape rules + parenthesis rule
 * [ ] Test
     * [ ] Test windows build
 $todo_end()
