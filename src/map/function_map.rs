@@ -4060,11 +4060,11 @@ $extract()"
         }
     }
 
-    /// Get absolute path from given path
+    /// Check if file exists
     ///
     /// # Usage
     ///
-    /// $abs(../canonic_path.txt)
+    /// $exist(../canonic_path.txt)
     #[cfg(not(feature = "wasm"))]
     fn file_exists(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("exist", AuthType::FIN, p)? {
