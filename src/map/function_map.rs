@@ -3612,7 +3612,7 @@ $extract()"
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
-                "scut requires three arguments".to_owned(),
+                "scut requires two arguments".to_owned(),
             ))
         }
     }
