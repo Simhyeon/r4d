@@ -2476,6 +2476,23 @@ Description >>
 
 ----
 Macro Type  : Function
+Macro Name  : scut
+Arguments   : ["a_index", "a_text"]
+Usage       : $scut(a_index,a_text)
+Description >> 
+    Split text by whitespaces and cut from splitted array
+    
+    # Arguments
+    
+    - a_index  : An index to cut out
+    - a_text   : Text to split
+    
+    # Example
+    
+    $assert(b,$scut(-2,a    b c))
+
+----
+Macro Type  : Function
 Macro Name  : sep
 Arguments   : ["a_content"]
 Usage       : $sep(a_content)

@@ -126,6 +126,7 @@
 * [repl](#repl)
 * [require](#require)
 * [rev](#rev)
+* [scut](#scut)
 * [sep](#sep)
 * [slice](#slice)
 * [sort](#sort)
@@ -3647,6 +3648,31 @@ Description
     # Example
     
     $assert(3,2,1,$rev(1,2,3))
+
+### scut
+
+Macro Type  : Function
+
+Macro Name  : scut
+
+Arguments   : ["a_index", "a_text"]
+
+Usage       : $scut(a_index,a_text)
+
+Description 
+
+>>
+ 
+    Split text by whitespaces and cut from splitted array
+    
+    # Arguments
+    
+    - a_index  : An index to cut out
+    - a_text   : Text to split
+    
+    # Example
+    
+    $assert(b,$scut(-2,a    b c))
 
 ### sep
 
