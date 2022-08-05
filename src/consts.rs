@@ -55,6 +55,8 @@ pub const LIT_CHAR: char = '*';
 /// This is default for input
 pub const MAIN_CALLER: &str = "@MAIN@";
 
+pub const MACRO_SPECIAL_ANON: &str = "_ANON_";
+
 lazy_static::lazy_static! {
     // Numbers
     // Macro attributes * ^ | +

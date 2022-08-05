@@ -22,7 +22,7 @@ pub enum RadError {
     InvalidExecution(String),
     InvalidCommandOption(String),
     EnvError(std::env::VarError),
-    InvalidMacroName(String),
+    InvalidMacroDefinition(String),
     InvalidRegex(regex::Error),
     #[cfg(feature = "evalexpr")]
     InvalidFormula(evalexpr::EvalexprError),
@@ -58,7 +58,7 @@ impl std::fmt::Display for RadError {
             Self::InvalidExecution(err) => format!("Invalid execution error \n= {}", err),
             Self::InvalidCommandOption(command) => format!("Invalid command option\n= {}", command),
             Self::EnvError(env) => format!("Invalid environment name\n= {}", env),
-            Self::InvalidMacroName(name) => format!("Invalid macro name\n= {}", name),
+            Self::InvalidMacroDefinition(err) => format!("Invalid macro definition\n= {}", err),
             Self::InvalidRegex(err) => format!("Failed regex operation\n= {}", err),
             #[cfg(feature = "evalexpr")]
             Self::InvalidFormula(err) => format!("Invalid formula\n= {}", err),

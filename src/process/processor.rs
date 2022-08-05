@@ -1024,6 +1024,11 @@ impl<'processor> Processor<'processor> {
         }
     }
 
+    /// Add new anonymous macro
+    pub fn add_anon_macro(&mut self, body: &str) -> RadResult<()> {
+        self.map.new_anon_macro(body)
+    }
+
     /// Add runtime rules without builder pattern
     ///
     /// # Args
@@ -1052,7 +1057,7 @@ impl<'processor> Processor<'processor> {
         for (name, args, body) in rules {
             let name = name.as_ref().trim();
             if !MAC_NAME.is_match(name) {
-                let err = RadError::InvalidMacroName(format!(
+                let err = RadError::InvalidMacroDefinition(format!(
                     "Name : \"{}\" is not a valid macro name",
                     name
                 ));
@@ -1108,7 +1113,7 @@ impl<'processor> Processor<'processor> {
         for (name, body) in rules {
             let name = name.as_ref().trim();
             if !MAC_NAME.is_match(name) {
-                let err = RadError::InvalidMacroName(format!(
+                let err = RadError::InvalidMacroDefinition(format!(
                     "Name : \"{}\" is not a valid macro name",
                     name
                 ));
@@ -1140,7 +1145,7 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<()> {
         // Check target macro is empty
         if target_macro.is_empty() {
-            let err = RadError::InvalidMacroName(format!(
+            let err = RadError::InvalidMacroDefinition(format!(
                 "Cannot register hook for macro \"{}\"",
                 target_macro
             ));
@@ -1149,7 +1154,7 @@ impl<'processor> Processor<'processor> {
 
         // Check invoke macro is empty
         if invoke_macro.is_empty() {
-            let err = RadError::InvalidMacroName(format!(
+            let err = RadError::InvalidMacroDefinition(format!(
                 "Cannot register hook which invokes a macro \"{}\"",
                 target_macro
             ));
@@ -1170,7 +1175,7 @@ impl<'processor> Processor<'processor> {
     pub fn deregister_hook(&mut self, hook_type: HookType, target_macro: &str) -> RadResult<()> {
         // Check target macro is empty
         if target_macro.is_empty() {
-            let err = RadError::InvalidMacroName(format!(
+            let err = RadError::InvalidMacroDefinition(format!(
                 "Cannot deregister hook for macro \"{}\"",
                 target_macro
             ));
@@ -1545,6 +1550,14 @@ impl<'processor> Processor<'processor> {
 
             let remainder = self.parse_line(lexor, frag, &line, 0, MAIN_CALLER)?;
 
+            // ---
+            // NOTE
+            // Cache clearing is ok after every line operation becuase cache set is executed when
+            // frag is completed not when frag was detected. Therefore cache clear is always
+            // executed after macro was expanded.
+            // ---
+            // Remove anon macro
+            self.map.clear_anonymous_macros();
             // Clear local variable macros
             self.map.clear_local();
             // Reset error cache
@@ -1900,6 +1913,12 @@ impl<'processor> Processor<'processor> {
             temp_level -= 1;
         }
 
+        // SPECIAL MACROS
+        if name == MACRO_SPECIAL_ANON && self.map.get_anon_macro().is_some() {
+            let result = self.invoke_runtime(level, None, &args)?;
+            return Ok(result);
+        }
+
         // Find runtime macro
         // runtime macro comes before function macro so that
         // user can override it
@@ -1929,7 +1948,7 @@ impl<'processor> Processor<'processor> {
                 }
             }
 
-            let result = self.invoke_rule(level, name, &args)?;
+            let result = self.invoke_runtime(level, Some(name), &args)?;
             return Ok(result);
         }
         // Find deterred macro
@@ -1968,7 +1987,8 @@ impl<'processor> Processor<'processor> {
         }
         // No macros found to evaluate
         else {
-            let err = RadError::InvalidMacroName(format!("No such macro name : \"{}\"", &name));
+            let err =
+                RadError::InvalidMacroDefinition(format!("No such macro name : \"{}\"", &name));
 
             // On Dry mode, invalid macro name is not an error but a warning.
             // Because macros are not expanded, it is unsure if it is an error or not, thus rad
@@ -1984,21 +2004,31 @@ impl<'processor> Processor<'processor> {
 
     /// Invoke a runtime rule and get a result
     ///
+    /// **NOTE**
+    ///
+    /// If name is none, invoke anonymous macro
+    ///
     /// Invoke rule evaluates body of macro rule because the body is not evaluated on register process
-    fn invoke_rule(
+    fn invoke_runtime(
         &mut self,
         level: usize,
-        name: &str,
+        name: Option<&str>,
         arg_values: &str,
     ) -> RadResult<Option<String>> {
+        let new_name;
         // Get rule
         // Invoke is called only when key exists, thus unwrap is safe
-        let rule = self
-            .map
-            .runtime
-            .get(name, self.state.hygiene)
-            .unwrap()
-            .clone();
+        let rule = if let Some(name) = name {
+            new_name = name;
+            self.map
+                .runtime
+                .get(name, self.state.hygiene)
+                .unwrap()
+                .clone()
+        } else {
+            new_name = MACRO_SPECIAL_ANON;
+            self.map.get_anon_macro().unwrap().clone()
+        };
 
         // If static macro, return body without expansion
         if rule.is_static {
@@ -2014,7 +2044,7 @@ impl<'processor> Processor<'processor> {
                 // Necessary arg count is bigger than given arguments
                 let err = RadError::InvalidArgument(format!(
                     "{}'s arguments are not sufficient. Given {}, but needs {}",
-                    name,
+                    new_name,
                     ArgParser::new()
                         .args_to_vec(arg_values, ',', GreedyState::Never)
                         .len(),
@@ -2036,7 +2066,7 @@ impl<'processor> Processor<'processor> {
         // Process the rule body
         // NOTE
         // Previously, this was parse_chunk_body
-        let result = self.parse_chunk_body(level, name, &rule.body)?;
+        let result = self.parse_chunk_body(level, new_name, &rule.body)?;
 
         // Clear lower locals to prevent local collisions
         self.map.clear_lower_locals(level);
@@ -2050,7 +2080,8 @@ impl<'processor> Processor<'processor> {
     fn add_rule(&mut self, frag: &MacroFragment) -> RadResult<()> {
         if let Some((name, args, mut body)) = self.define_parser.parse_define(&frag.args) {
             if name.is_empty() {
-                let err = RadError::InvalidMacroName("Cannot define a empty macro".to_string());
+                let err =
+                    RadError::InvalidMacroDefinition("Cannot define a empty macro".to_string());
                 return Err(err);
             }
             // Strict mode
@@ -2107,7 +2138,7 @@ impl<'processor> Processor<'processor> {
             } else {
                 frag.args.split('=').next().unwrap()
             };
-            let err = RadError::InvalidMacroName(format!(
+            let err = RadError::InvalidMacroDefinition(format!(
                 "Invalid macro definition format for a macro : \"{}\"",
                 name
             ));
@@ -2163,7 +2194,7 @@ impl<'processor> Processor<'processor> {
                     .map
                     .contains_macro(mac, MacroType::Runtime, self.state.hygiene)
                 {
-                    let err = RadError::InvalidMacroName(format!(
+                    let err = RadError::InvalidMacroDefinition(format!(
                         "Cannot relay to non-exsitent macro \"{}\"",
                         mac
                     ));
@@ -2319,7 +2350,7 @@ impl<'processor> Processor<'processor> {
                     _ => {
                         // This is mostly not reached because it is captured as non-exsitent name
                         if frag.has_attribute() {
-                            let err = RadError::InvalidMacroName(format!(
+                            let err = RadError::InvalidMacroDefinition(format!(
                                 "Invalid macro attribute : \"{}\"",
                                 ch
                             ));
@@ -2443,8 +2474,9 @@ impl<'processor> Processor<'processor> {
                 frag.pipe_input = false;
                 frag.name = "-".to_string();
             } else {
-                let err =
-                    RadError::InvalidMacroName("Cannot invoke a macro with empty name".to_string());
+                let err = RadError::InvalidMacroDefinition(
+                    "Cannot invoke a macro with empty name".to_string(),
+                );
                 self.log_error(&err.to_string())?;
 
                 // Handle empty name error
@@ -2907,7 +2939,7 @@ impl<'processor> Processor<'processor> {
             .map
             .local
             .get(macro_name)
-            .ok_or_else(|| RadError::InvalidMacroName("No such macro".to_string()))?
+            .ok_or_else(|| RadError::InvalidMacroDefinition("No such macro".to_string()))?
             .body;
         Ok(body)
     }
@@ -2918,7 +2950,7 @@ impl<'processor> Processor<'processor> {
             .map
             .runtime
             .get(macro_name, self.state.hygiene)
-            .ok_or_else(|| RadError::InvalidMacroName("No such macro".to_string()))?
+            .ok_or_else(|| RadError::InvalidMacroDefinition("No such macro".to_string()))?
             .body;
         Ok(body)
     }

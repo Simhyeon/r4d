@@ -5,7 +5,7 @@ use crate::auth::AuthType;
 #[cfg(not(feature = "wasm"))]
 use crate::common::{ContainerType, FileTarget, FlowControl, RelayTarget};
 use crate::common::{ErrorBehaviour, MacroType, RadResult};
-use crate::consts::ESR;
+use crate::consts::{ESR, MACRO_SPECIAL_ANON};
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
 use crate::formatter::Formatter;
 use crate::parser::GreedyState;
@@ -71,6 +71,25 @@ $append(arr,first,$comma())
 $append(arr,second,$comma())
 $assert($arr(),first,second)".to_string(),
                     ),
+                ),
+            ),
+            (
+                "anon".to_owned(),
+                DMacroSign::new(
+                    "anon",
+                    ["a_macro"],
+                    Self::add_anonymous_macro,
+                    Some("Crate a anonymous macro and return it's name
+
+# Not expanded at all
+
+# Arguments
+
+- a_macro : A macro defintition without name
+
+# Example
+
+$map($anon(a=$a()+),a,b,c)".to_string()),
                 ),
             ),
             (
@@ -790,6 +809,16 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     // ----------
     // Keyword Macros start
 
+    /// Anon
+    ///
+    /// # Usage
+    ///
+    /// $anon(a=$a())
+    fn add_anonymous_macro(args: &str, _: usize, p: &mut Processor) -> RadResult<Option<String>> {
+        p.add_anon_macro(args)?;
+        Ok(Some(String::from(MACRO_SPECIAL_ANON)))
+    }
+
     /// Append content to a macro
     ///
     /// This is deterred because it needs level for local macro indexing
@@ -856,7 +885,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
-            let macro_name = trim!(&args[0]);
+            let macro_name = p.parse_and_strip(&mut ap, level, "mapl", &trim!(&args[0]))?;
             let src = p.parse_and_strip(&mut ap, level, "map", &args[1])?;
             let array = src.split(',');
 
@@ -884,7 +913,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
-            let macro_name = trim!(&args[0]);
+            let macro_name = p.parse_and_strip(&mut ap, level, "mapl", &trim!(&args[0]))?;
             let src = p.parse_and_strip(&mut ap, level, "mapl", &args[1])?;
             let lines = src.lines();
 
@@ -916,7 +945,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
-            let macro_name = trim!(&args[0]);
+            let macro_name = p.parse_and_strip(&mut ap, level, "mapl", &trim!(&args[0]))?;
             let file = BufReader::new(std::fs::File::open(
                 p.parse_and_strip(&mut ap, level, "mapf", &args[1])?,
             )?)

@@ -5146,7 +5146,7 @@ $extract()"
                     ));
                 }
                 if !p.contains_macro(&target, MacroType::Runtime) {
-                    return Err(RadError::InvalidMacroName(format!(
+                    return Err(RadError::InvalidMacroDefinition(format!(
                         "Cannot relay to non-exsitent macro or non-runtime macro \"{}\"",
                         target
                     )));
@@ -5553,7 +5553,7 @@ $extract()"
         for (name, _, _) in runtime_rules.iter() {
             if processor.contains_macro(name, MacroType::Any) {
                 if processor.state.behaviour == ErrorBehaviour::Strict {
-                    return Err(RadError::InvalidMacroName(format!(
+                    return Err(RadError::InvalidMacroDefinition(format!(
                         "Declaring a macro with a name already existing : \"{}\"",
                         name
                     )));
@@ -5742,7 +5742,7 @@ $extract()"
                 // Strict mode prevents overriding
                 // Return error
                 if processor.state.behaviour == ErrorBehaviour::Strict {
-                    return Err(RadError::InvalidMacroName(format!(
+                    return Err(RadError::InvalidMacroDefinition(format!(
                         "Creating a static macro with a name already existing : \"{}\"",
                         name
                     )));
@@ -5780,7 +5780,7 @@ $extract()"
                 // Strict mode prevents overriding
                 // Return error
                 if processor.state.behaviour == ErrorBehaviour::Strict {
-                    return Err(RadError::InvalidMacroName(format!(
+                    return Err(RadError::InvalidMacroDefinition(format!(
                         "Creating a static macro with a name already existing : \"{}\"",
                         name
                     )));

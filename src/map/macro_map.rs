@@ -1,5 +1,6 @@
 //! Main entry for macro maps ( Local, runtime, deterred, function )
 
+use super::anon_map::AnonMap;
 use crate::common::Hygiene;
 use crate::common::LocalMacro;
 use crate::deterred_map::DeterredMacroMap;
@@ -24,6 +25,7 @@ pub(crate) struct MacroMap {
     pub deterred: DeterredMacroMap,
     pub function: FunctionMacroMap,
     pub runtime: RuntimeMacroMap,
+    pub anon_map: AnonMap,
     pub local: HashMap<String, LocalMacro>,
 }
 
@@ -34,6 +36,7 @@ impl MacroMap {
             deterred: DeterredMacroMap::empty(),
             function: FunctionMacroMap::empty(),
             runtime: RuntimeMacroMap::new(),
+            anon_map: AnonMap::new(),
             local: HashMap::new(),
         }
     }
@@ -44,8 +47,14 @@ impl MacroMap {
             deterred: DeterredMacroMap::new(),
             function: FunctionMacroMap::new(),
             runtime: RuntimeMacroMap::new(),
+            anon_map: AnonMap::new(),
             local: HashMap::new(),
         }
+    }
+
+    /// Clear anonymous macros
+    pub fn clear_anonymous_macros(&mut self) {
+        self.anon_map.clear();
     }
 
     /// Clear runtime macros
@@ -107,6 +116,15 @@ impl MacroMap {
                     || self.deterred.contains(macro_name)
             }
         }
+    }
+
+    /// Add new anonymous macro
+    pub fn new_anon_macro(&mut self, body: &str) -> RadResult<()> {
+        self.anon_map.new_macro(body)
+    }
+
+    pub fn get_anon_macro(&self) -> Option<&RuntimeMacro> {
+        self.anon_map.get_anon()
     }
 
     // Empty argument should be treated as no arg
