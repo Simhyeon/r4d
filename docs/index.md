@@ -2,6 +2,8 @@
 
 ### [Detailed usage](usage.md)
 
+### [Full macro list](macro_indices.md)
+
 ### [Macro syntax](macro_syntax.md)
 
 ### [About modes](modes.md)
@@ -21,3 +23,5 @@
 ### [Understadning surplus newlines](newline_rules.md)
 
 ### [R4d internal logics](r4d_internal.md)
+
+### [R4d milestones](milestone.md)
