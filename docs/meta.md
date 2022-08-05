@@ -1,6 +1,6 @@
 ### Milestone
 
-TARGET : Version 3.1.0
+TARGET : Version 3.0.1
 
 - Minor bugfixes
 - Anon macro
@@ -9,11 +9,12 @@ TARGET : Version 3.1.0
 ### TODO
 
 $todo_start()
-* [ ] New macros
-    * [ ] Unquote : Strip any quote-able characters from each end
+* [ ] Macros
+    * [x] Change strip to expand
+    * [x] A macro strip to unquote quotes
 * [x] Macro ergonomics
 * [x] Library
-* [ ] Bug fix
+* [ ] Bug fixs
     * [x] PS description has a typo
     * [x] Map variants were not expanding macro name
     * [ ] Currently user configured macro name is not "available" in log

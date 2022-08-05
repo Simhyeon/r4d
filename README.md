@@ -7,6 +7,11 @@ use.
 
 [3.0 Changes](./docs/3_0.md)
 
+### NOTICE
+
+Use rad version **3.0.1** instead of 3.0. Refer a [md](docs/3_0_hassle.md) for
+a reason.
+
 ### Table of conents
 
 * [Demo](#demo)
