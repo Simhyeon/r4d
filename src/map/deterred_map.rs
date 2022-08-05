@@ -939,7 +939,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     /// $mapf(macro_name,file_name)
     #[cfg(not(feature = "wasm"))]
     fn map_file(args: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("grepmap", AuthType::FIN, p)? {
+        if !Utils::is_granted("mapf", AuthType::FIN, p)? {
             return Ok(None);
         }
         let mut ap = ArgParser::new().no_strip();
