@@ -311,7 +311,7 @@ $assert(b,$cut(/,-2,a/b/c))".to_string()),
 
 # Example
 
-$assert(b,$cut(-2,a    b c))".to_string()),
+$assert(b,$scut(-2,a    b c))".to_string()),
                 ),
             ),
             (
