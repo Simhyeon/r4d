@@ -286,6 +286,9 @@ $define=(
 )
 $static(array,a,b,c,d,e,f,g)
 $arr_pass^($array*(),@)
+
+% This is same with
+% $arr_pass^(\*a,b,c,d,e,f,g*\,@)
 ===
 a + @
 b + @
@@ -307,32 +310,6 @@ Simple process how this works
     - Expand $a_arr() -> ```\* a,b,c,d,e,f,g *\```
     - Strip a value -> ```a,b,c,d,e,f,g```
     - Bind the value to an argument ```a_body``` ( Refer --man foreach )
-
-**Strip macro**
-
-And finally, for the last resort use strip macro with literal attribute. This
-is handy when you want to write a short macro expression and don't worth a
-hassle to create wrappers. But this makes codes a lot hard to read. There is no
-standard, so suit yourself.
-
-```
-% Assume arr_pass defined.
-$arr_pass^($strip*(\*$split($space(),$lipsum(4))*\),@)
-===
-Lorem + @
-ipsum + @
-dolor + @
-sit + @
-```
-
-Strip macro strips out expression and then expand it. In other word, strip
-**constantize** given expression. This is the opposite behaviour of normal
-arguments expansion. Therefore following process happens in the demo.
-
-- Strip macro removes literal from input -> ```$split($space(),$lipsum(4))```
-- Expand given expression -> Lorem ipsum dolor sit
-- Wrap it inside literal (attirbute) -> ```\* Lorem ipsum dolor sit *\```
-- Bind the wrapped value to an argument ```a_arr```
 
 ## Comments
 

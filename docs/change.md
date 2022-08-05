@@ -1,4 +1,11 @@
-# 3.0.0 stable
+# 3.0.1 stable
+
+- New macro anon for anonymous macro
+- Now comma inside parenthesis is not treated as delimiter.
+- Strip has been merged with expand due to argument parsing logic change.
+- Changed name splitc -> cut
+
+# 3.0.0 ~~stable~~
 
 - BUG : Fixed wrong initial input backtrace
 - CHG : Include behaviour

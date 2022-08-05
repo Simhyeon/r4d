@@ -18,7 +18,7 @@ Set environment variable RAD\_BACKTRACE to see error log information.
 
 ```
 $envset(RAD_BACKTRACE,true)
-$define(demo=$sep($splitc($nl(),3,1$nl()2)))
+$define(demo=$sep($cut($nl(),3,1$nl()2)))
 $demo()
 ===
 error: Invalid argument

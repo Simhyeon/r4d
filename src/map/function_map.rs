@@ -111,7 +111,7 @@ $assert(5,$-(num))".to_string(),
 
 # Exmaple
 
-$assert(c,$splitc($PS(),-1,a/b/c))".to_string(),
+$assert(c,$cut($PS(),-1,a/b/c))".to_string(),
                     ),
                 ),
             ),
@@ -293,7 +293,7 @@ $assert(\\*a,b,c*\\,$split(/,a/b/c))".to_string()),
 
 # Example
 
-$assert(b,$splitc(/,-2,a/b/c))".to_string()),
+$assert(b,$cut(/,-2,a/b/c))".to_string()),
                 ),
             ),
             (
@@ -3558,7 +3558,7 @@ $extract()"
     ///
     /// # Usage
     ///
-    /// $splitc(/,a/b/c)
+    /// $cut(/,a/b/c)
     fn split_and_cut(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let sep = &args[0];
@@ -3567,7 +3567,7 @@ $extract()"
 
             let index = trim!(&args[1]).parse::<isize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
-                    "splitc requires an index to be a integer type but got \"{}\"",
+                    "cut requires an index to be a integer type but got \"{}\"",
                     &args[0]
                 ))
             })?;
@@ -3595,7 +3595,7 @@ $extract()"
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
-                "Splitc requires three arguments".to_owned(),
+                "cut requires three arguments".to_owned(),
             ))
         }
     }
@@ -4550,7 +4550,7 @@ $extract()"
     ///
     /// # Usage
     ///
-    /// $strip(<p>,</p>,content)
+    /// $surr(<p>,</p>,content)
     fn surround_with_pair(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let start = &args[0];

@@ -21,6 +21,7 @@
 * [counter](#counter)
 * [countl](#countl)
 * [countw](#countw)
+* [cut](#cut)
 * [date](#date)
 * [declare](#declare)
 * [define](#define)
@@ -132,14 +133,12 @@
 * [source](#source)
 * [space](#space)
 * [split](#split)
-* [splitc](#splitc)
 * [spread](#spread)
 * [squash](#squash)
 * [ssplit](#ssplit)
 * [static](#static)
 * [staticr](#staticr)
 * [strict](#strict)
-* [strip](#strip)
 * [sub](#sub)
 * [surr](#surr)
 * [syscmd](#syscmd)
@@ -236,7 +235,7 @@ Description
     
     # Exmaple
     
-    $assert(c,$splitc($PS(),-1,a/b/c))
+    $assert(c,$cut($PS(),-1,a/b/c))
 
 ### abs
 
@@ -732,6 +731,32 @@ Description
     
     $assert($countw(hello world),2)
 
+### cut
+
+Macro Type  : Function
+
+Macro Name  : cut
+
+Arguments   : ["a_sep", "a_index", "a_text"]
+
+Usage       : $cut(a_sep,a_index,a_text)
+
+Description 
+
+>>
+ 
+    Split text and cut from splitted array
+    
+    # Arguments
+    
+    - a_sep    : A separator string
+    - a_index  : An index to cut out
+    - a_text   : Text to split
+    
+    # Example
+    
+    $assert(b,$cut(/,-2,a/b/c))
+
 ### date
 
 Macro Type  : Function
@@ -1186,21 +1211,23 @@ Description
 
 ### expand
 
-Macro Type  : Function
+Macro Type  : Deterred
 
 Macro Name  : expand
 
-Arguments   : ["a_expr"]
+Arguments   : ["a_literal_expr"]
 
-Usage       : $expand(a_expr)
+Usage       : $expand(a_literal_expr)
 
 Description 
 
 >>
  
-    Expand an expression
+    Expand expression 
     
-    This can be used on expression of local or static macros.
+    # Note
+    
+    - This will strip a given expression and then expand it.
     
     # Arguments
     
@@ -1208,7 +1235,7 @@ Description
     
     # Example
     
-    $expand(expr)
+    $expand(1,2,3)
 
 ### extract
 
@@ -3808,32 +3835,6 @@ Description
     
     $assert(a,b,c,$split(/,a/b/c))
 
-### splitc
-
-Macro Type  : Function
-
-Macro Name  : splitc
-
-Arguments   : ["a_sep", "a_index", "a_text"]
-
-Usage       : $splitc(a_sep,a_index,a_text)
-
-Description 
-
->>
- 
-    Split text and cut from splitted array
-    
-    # Arguments
-    
-    - a_sep    : A separator string
-    - a_index  : An index to cut out
-    - a_text   : Text to split
-    
-    # Example
-    
-    $assert(b,$splitc(/,-2,a/b/c))
-
 ### spread
 
 Macro Type  : Deterred
@@ -4013,34 +4014,6 @@ Description
     
     $strict()
     $strict(lenient)
-
-### strip
-
-Macro Type  : Deterred
-
-Macro Name  : strip
-
-Arguments   : ["a_literal_expr"]
-
-Usage       : $strip(a_literal_expr)
-
-Description 
-
->>
- 
-    Strip literal expression and then expand 
-    
-    # Expansion order
-    
-    1. a_literal_expr : After a pair of quote was striped
-    
-    # Arguments
-    
-    - a_literal_expr : An expression to strip
-    
-    # Example
-    
-    $strip(1,2,3)
 
 ### sub
 

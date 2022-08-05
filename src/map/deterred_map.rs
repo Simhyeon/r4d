@@ -1410,13 +1410,13 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         }
     }
 
-    /// Strip literal expression
+    /// Expand expression
     ///
-    /// This strip expression and then expand it
+    /// This strip an expression and then expand it
     ///
     /// # Usage
     ///
-    /// $strip(\*expression*\)
+    /// $expand(expression)
     fn expand_expression(
         args: &str,
         level: usize,

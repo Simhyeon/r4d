@@ -140,8 +140,7 @@ determine whether a macro is valid in a context of invocation nested level,
 expand a dyanimc expression which is created inside of a function, and
 retreive information about parent's local macro. There is no way for a function
 macro to understand a local macro, while deterred macro can directly index,
-add, and modify them. A macro like strip can even curve a default behaviour of
-"expand & strip" and do "strip & expand".
+add, and modify them. 
 
 Deterred macro can decide an order of expansion. Every if macro variants are
 deterred macro, because it needs to optionally expand macro arguments. ```If```
