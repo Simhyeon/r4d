@@ -297,6 +297,24 @@ $assert(b,$cut(/,-2,a/b/c))".to_string()),
                 ),
             ),
             (
+                "scut".to_owned(),
+                FMacroSign::new(
+                    "scut",
+                    ["a_index","a_text"],
+                    Self::split_whitespace_and_cut,
+                    Some("Split text by whitespaces and cut from splitted array
+
+# Arguments
+
+- a_index  : An index to cut out
+- a_text   : Text to split
+
+# Example
+
+$assert(b,$cut(-2,a    b c))".to_string()),
+                ),
+            ),
+            (
                 "ssplit".to_owned(),
                 FMacroSign::new(
                     "ssplit",
@@ -3550,6 +3568,51 @@ $extract()"
         } else {
             Err(RadError::InvalidArgument(
                 "Split requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Split by whitespaces and cut
+    ///
+    /// # Usage
+    ///
+    /// $scut(0,a/b/c)
+    fn split_whitespace_and_cut(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let split = &mut args[1].split_whitespace();
+            let len = split.clone().count();
+
+            let index = trim!(&args[0]).parse::<isize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "scut requires an index to be a integer type but got \"{}\"",
+                    &args[0]
+                ))
+            })?;
+
+            if index >= len as isize || index < -(len as isize) {
+                return Err(RadError::InvalidArgument(format!(
+                    "Index out of range. Given index is \"{}\" but array length is \"{}\"",
+                    index, len
+                )));
+            }
+
+            let final_index = if index < 0 {
+                (len as isize + index) as usize
+            } else {
+                index.max(0) as usize
+            };
+
+            if len <= final_index {
+                return Err(RadError::InvalidArgument(format!(
+                    "Index out of range. Given index is \"{}\" but array length is \"{}\"",
+                    index, len
+                )));
+            }
+            let result = split.nth(final_index).unwrap().to_string();
+            Ok(Some(result))
+        } else {
+            Err(RadError::InvalidArgument(
+                "scut requires three arguments".to_owned(),
             ))
         }
     }
