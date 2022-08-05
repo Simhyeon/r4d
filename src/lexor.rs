@@ -160,6 +160,10 @@ impl Lexor {
     /// Branch on arg state
     fn branch_arg(&mut self, ch: char) -> LexResult {
         let mut result: LexResult = LexResult::AddToFrag(Cursor::Arg);
+        // Escape parenthesis doesn't end macro fragment.
+        if self.previous_char.unwrap_or('0') == ESCAPE_CHAR && (ch == ')' || ch == '(') {
+            return result;
+        }
         // Right paren decreases paren_count
         if ch == ')' {
             self.parenthesis_count -= 1;

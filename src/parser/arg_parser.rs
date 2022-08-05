@@ -10,6 +10,7 @@ pub struct ArgParser {
     values: Vec<String>,
     previous: Option<char>,
     lit_count: usize,
+    paren_count: usize,
     no_previous: bool,
     strip_literal: bool,
 }
@@ -21,6 +22,7 @@ impl ArgParser {
             values: vec![],
             previous: None,
             lit_count: 0,
+            paren_count: 0,
             no_previous: false,
             strip_literal: true,
         }
@@ -83,6 +85,9 @@ impl ArgParser {
         let mut arg_iter = arg_values.chars().peekable();
 
         while let Some(ch) = arg_iter.next() {
+            // Check parenthesis
+            self.check_parenthesis(&mut value, ch);
+
             if ch == delimiter {
                 self.branch_delimiter(ch, &mut value, &mut greedy_state);
             } else if ch == ESCAPE_CHAR {
@@ -111,6 +116,18 @@ impl ArgParser {
         std::mem::take(&mut self.values)
     }
 
+    /// Check parenthesis for sensible splitting
+    fn check_parenthesis(&mut self, value: &mut String, ch: char) {
+        if self.previous.unwrap_or('0') == ESCAPE_CHAR && (ch == '(' || ch == ')') {
+            value.pop();
+            self.previous.replace('0');
+        } else if ch == '(' {
+            self.paren_count += 1;
+        } else if ch == ')' && self.paren_count > 0 {
+            self.paren_count -= 1;
+        }
+    }
+
     // ----------
     // <BRANCH>
     // Start of branch methods
@@ -122,6 +139,9 @@ impl ArgParser {
             value.push(ch);
         } else if self.previous.unwrap_or('0') == ESCAPE_CHAR {
             value.pop();
+            value.push(ch);
+        } else if self.paren_count > 0 {
+            // If quote is inside parenthesis, simply push it into a value
             value.push(ch);
         } else {
             // not literal
