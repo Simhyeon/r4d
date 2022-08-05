@@ -1,6 +1,7 @@
 # 3.0.1 stable
 
 - New macro anon for anonymous macro
+- New macro scut for spaces cut
 - Now comma inside parenthesis is not treated as delimiter.
 - Strip has been merged with expand due to argument parsing logic change.
 - Changed name splitc -> cut
