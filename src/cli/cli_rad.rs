@@ -387,6 +387,7 @@ impl<'cli> RadCli<'cli> {
                 .conflicts_with("combination")
                 .help("Send stdin as a pipe value"))
             .arg(Arg::new("literal")
+                .short('L')
                 .long("literal")
                 .help("Don't interpret input source as file"))
             .arg(Arg::new("script")
