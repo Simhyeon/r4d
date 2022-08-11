@@ -19,7 +19,7 @@ pub fn main() -> RadResult<()> {
             cli.print_error(&err.to_string())?;
             writeln!(
                 std::io::stderr(),
-                "Int: Rad panicked with inrecoverable error."
+                "Int: Rad panicked with unrecoverable error."
             )?;
             std::process::exit(1);
         }
