@@ -624,7 +624,7 @@ $tempin()"
                 "mapf".to_owned(),
                 DMacroSign::new(
                     "mapf",
-                    ["a_macro_name^", "a_file"],
+                    ["a_macro_name^", "a_file^"],
                     Self::map_file,
                     Some(
                         "Execute macro on each lines of a file
@@ -638,7 +638,7 @@ $tempin()"
 # Arguments
 
 - a_macro_name : A macro name to execute ( trimmed ) 
-- a_file       : A file to get lines iterator
+- a_file       : A file to get lines iterator ( trimmed )
 
 # Example
 
@@ -946,9 +946,12 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
             let macro_name = p.parse_and_strip(&mut ap, level, "mapl", &trim!(&args[0]))?;
-            let file = BufReader::new(std::fs::File::open(
-                p.parse_and_strip(&mut ap, level, "mapf", &args[1])?,
-            )?)
+            let file = BufReader::new(std::fs::File::open(p.parse_and_strip(
+                &mut ap,
+                level,
+                "mapf",
+                &trim!(&args[1]),
+            )?)?)
             .lines();
 
             let mut acc = String::new();
