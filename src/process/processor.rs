@@ -960,6 +960,21 @@ impl<'processor> Processor<'processor> {
         self.storage.replace(storage);
     }
 
+    /// Update storage
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.update_storage(&[String::new("Hello world")]).expect("Failed to update a storage");
+    /// ```
+    pub fn update_storage(&mut self, data: &[String]) -> RadResult<Option<StorageOutput>> {
+        if let Some(storage) = self.storage.as_mut() {
+            storage
+                .update(data)
+                .map_err(|err| RadError::StorageError(format!("Update error : {}", err)))?;
+        }
+        Ok(None)
+    }
+
     /// Extract from storage
     ///
     /// ```rust
