@@ -1160,7 +1160,7 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<()> {
         // Check target macro is empty
         if target_macro.is_empty() {
-            let err = RadError::InvalidMacroDefinition(format!(
+            let err = RadError::InvalidMacroReference(format!(
                 "Cannot register hook for macro \"{}\"",
                 target_macro
             ));
@@ -1169,7 +1169,7 @@ impl<'processor> Processor<'processor> {
 
         // Check invoke macro is empty
         if invoke_macro.is_empty() {
-            let err = RadError::InvalidMacroDefinition(format!(
+            let err = RadError::InvalidMacroReference(format!(
                 "Cannot register hook which invokes a macro \"{}\"",
                 target_macro
             ));
@@ -1190,7 +1190,7 @@ impl<'processor> Processor<'processor> {
     pub fn deregister_hook(&mut self, hook_type: HookType, target_macro: &str) -> RadResult<()> {
         // Check target macro is empty
         if target_macro.is_empty() {
-            let err = RadError::InvalidMacroDefinition(format!(
+            let err = RadError::InvalidMacroReference(format!(
                 "Cannot deregister hook for macro \"{}\"",
                 target_macro
             ));
@@ -2003,7 +2003,7 @@ impl<'processor> Processor<'processor> {
         // No macros found to evaluate
         else {
             let err =
-                RadError::InvalidMacroDefinition(format!("No such macro name : \"{}\"", &name));
+                RadError::InvalidMacroReference(format!("No such macro name : \"{}\"", &name));
 
             // On Dry mode, invalid macro name is not an error but a warning.
             // Because macros are not expanded, it is unsure if it is an error or not, thus rad
@@ -2096,7 +2096,7 @@ impl<'processor> Processor<'processor> {
         if let Some((name, args, mut body)) = self.define_parser.parse_define(&frag.args) {
             if name.is_empty() {
                 let err =
-                    RadError::InvalidMacroDefinition("Cannot define a empty macro".to_string());
+                    RadError::InvalidMacroDefinition("Cannot define an empty macro".to_string());
                 return Err(err);
             }
             // Strict mode
@@ -2209,7 +2209,7 @@ impl<'processor> Processor<'processor> {
                     .map
                     .contains_macro(mac, MacroType::Runtime, self.state.hygiene)
                 {
-                    let err = RadError::InvalidMacroDefinition(format!(
+                    let err = RadError::InvalidMacroReference(format!(
                         "Cannot relay to non-exsitent macro \"{}\"",
                         mac
                     ));
@@ -2365,7 +2365,7 @@ impl<'processor> Processor<'processor> {
                     _ => {
                         // This is mostly not reached because it is captured as non-exsitent name
                         if frag.has_attribute() {
-                            let err = RadError::InvalidMacroDefinition(format!(
+                            let err = RadError::InvalidMacroReference(format!(
                                 "Invalid macro attribute : \"{}\"",
                                 ch
                             ));
@@ -2489,7 +2489,7 @@ impl<'processor> Processor<'processor> {
                 frag.pipe_input = false;
                 frag.name = "-".to_string();
             } else {
-                let err = RadError::InvalidMacroDefinition(
+                let err = RadError::InvalidMacroReference(
                     "Cannot invoke a macro with empty name".to_string(),
                 );
                 self.log_error(&err.to_string())?;
@@ -2954,7 +2954,7 @@ impl<'processor> Processor<'processor> {
             .map
             .local
             .get(macro_name)
-            .ok_or_else(|| RadError::InvalidMacroDefinition("No such macro".to_string()))?
+            .ok_or_else(|| RadError::InvalidMacroReference("No such macro".to_string()))?
             .body;
         Ok(body)
     }
@@ -2965,7 +2965,7 @@ impl<'processor> Processor<'processor> {
             .map
             .runtime
             .get(macro_name, self.state.hygiene)
-            .ok_or_else(|| RadError::InvalidMacroDefinition("No such macro".to_string()))?
+            .ok_or_else(|| RadError::InvalidMacroReference("No such macro".to_string()))?
             .body;
         Ok(body)
     }
