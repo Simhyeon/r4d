@@ -3,6 +3,8 @@
 #[cfg(not(feature = "wasm"))]
 use crate::auth::AuthType;
 #[cfg(not(feature = "wasm"))]
+use crate::common::ProcessInput;
+#[cfg(not(feature = "wasm"))]
 use crate::common::{ContainerType, FileTarget, FlowControl, RelayTarget};
 use crate::common::{ErrorBehaviour, MacroType, RadResult};
 use crate::consts::{ESR, MACRO_SPECIAL_ANON};
@@ -1796,9 +1798,19 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
         let args = ap.args_to_vec(args, ',', GreedyState::Never);
         ap.set_strip(true);
         if !args.is_empty() {
-            let raw_file = &processor.parse_and_strip(&mut ap, level, "include", &args[0])?;
+            let mut file_path = PathBuf::from(
+                trim!(&processor.parse_and_strip(&mut ap, level, "include", &args[0])?).as_ref(),
+            );
             let mut raw_include = false;
-            let file_path = PathBuf::from(trim!(raw_file).as_ref());
+
+            // if current input is not stdin and file path is relative
+            // Create new file path that starts from current file path
+            if let ProcessInput::File(path) = &processor.state.current_input {
+                if file_path.is_relative() {
+                    // It is ok get parent because any path that has a length can return parent
+                    file_path = path.parent().unwrap().join(file_path);
+                }
+            }
 
             if file_path.is_file() {
                 let canonic = file_path.canonicalize()?;
