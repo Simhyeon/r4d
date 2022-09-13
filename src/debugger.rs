@@ -264,13 +264,19 @@ impl Debugger {
     /// Format macro framgent attributes
     fn print_macro_attr(&self, frag: &MacroFragment) -> String {
         format!(
-            r#"Pipe    : {}{}Literal : {}{}Trimmed : {}{}"#,
+            "Pipe input\t: {}{}Pipe output\t: {}{}Trim input\t: {}{}Trim output\t: {}{}Literal\t\t: {}{}Negation\t: {}{}",
+            frag.pipe_input,
+            LINE_ENDING,
             frag.pipe_output,
+            LINE_ENDING,
+            frag.trim_input,
+            LINE_ENDING,
+            frag.trim_output,
             LINE_ENDING,
             frag.yield_literal,
             LINE_ENDING,
-            frag.trim_output,
-            LINE_ENDING
+            frag.negate_result,
+            LINE_ENDING,
         )
     }
 
