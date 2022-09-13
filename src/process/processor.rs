@@ -2513,13 +2513,21 @@ impl<'processor> Processor<'processor> {
         // Debug
         #[cfg(feature = "debug")]
         {
+            // Respect trim input
+            let args = if frag.pipe_input {
+                self.state.get_pipe("-").unwrap_or_default()
+            } else {
+                frag.args.clone()
+            };
+
             // Print a log information
             self.debugger
-                .print_log(&frag.name, &frag.args, frag, &mut self.logger)?;
+                .print_log(&frag.name, &args, frag, &mut self.logger)?;
 
             // If debug switch target is break point
             // Set switch to next line.
             self.debugger.break_point(frag)?;
+
             // Break point is true , continue
             if frag.name.is_empty() {
                 // Clear fragment regardless of success
