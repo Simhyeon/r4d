@@ -278,6 +278,60 @@ $assert(\\*a,b,c*\\,$split(/,a/b/c))".to_string()),
                 ),
             ),
             (
+                "strip".to_owned(),
+                FMacroSign::new(
+                    "strip",
+                    ["a_count^","a_content"],
+                    Self::strip,
+                    Some("Strip surroundings from text
+
+# Arguments
+
+- a_count   : Count of characters to strip ( trimmed )
+- a_content : Content to strip
+
+# Example
+
+$assert(Hello World,$strip(2,' Hello World '))".to_string()),
+                ),
+            ),
+            (
+                "stripf".to_owned(),
+                FMacroSign::new(
+                    "stripf",
+                    ["a_count^","a_content"],
+                    Self::stripf,
+                    Some("Strip from front
+
+# Arguments
+
+- a_count   : Count of characters to strip ( trimmed )
+- a_content : Content to strip
+
+# Example
+
+$assert(List item,$stripf(2,- List item))".to_string()),
+                ),
+            ),
+            (
+                "stripr".to_owned(),
+                FMacroSign::new(
+                    "stripr",
+                    ["a_count^","a_content"],
+                    Self::stripr,
+                    Some("Strip from rear
+
+# Arguments
+
+- a_count   : Count of characters to strip ( trimmed )
+- a_content : Content to strip
+
+# Example
+
+$assert(Hmp,$stripr(2,Hmp::))".to_string()),
+                ),
+            ),
+            (
                 "cut".to_owned(),
                 FMacroSign::new(
                     "cut",
@@ -1326,6 +1380,21 @@ $assert(abcde,$lower(AbCdE))".to_string()),
                 ),
             ),
             (
+                "lp".to_owned(),
+                FMacroSign::new(
+                    "lp",
+                    ESR,
+                    Self::left_parenthesis,
+                    Some("Left parenthesis
+
+# Arguments
+
+# Example
+
+$assert(\\(,$lp())".to_string()),
+                ),
+            ),
+            (
                 "lt".to_owned(),
                 FMacroSign::new(
                     "lt",
@@ -1856,6 +1925,21 @@ $assert(DOMO,$demo())".to_string()),
 # Example
 
 $require(fin,fout)".to_string()),
+                ),
+            ),
+            (
+                "rp".to_owned(),
+                FMacroSign::new(
+                    "rp",
+                    ESR,
+                    Self::right_parenthesis,
+                    Some("right parenthesis
+
+# Arguments
+
+# Example
+
+$assert(\\),$rp())".to_string()),
                 ),
             ),
             (
@@ -4193,6 +4277,24 @@ $extract()"
         Ok(pipe)
     }
 
+    /// Print left parenthesis
+    ///
+    /// # Usage
+    ///
+    /// $lp()
+    fn left_parenthesis(_: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        Ok(Some("(".to_string()))
+    }
+
+    /// Print right parenthesis
+    ///
+    /// # Usage
+    ///
+    /// $rp()
+    fn right_parenthesis(_: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        Ok(Some(")".to_string()))
+    }
+
     /// Return a length of the string
     ///
     /// This is O(n) operation.
@@ -4812,6 +4914,123 @@ $extract()"
         }
     }
 
+    /// Strip content
+    ///
+    /// # Usage
+    ///
+    /// $strip()
+    fn strip(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 2) {
+            let count = trim!(&args[0]).parse::<usize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "Could not convert given value \"{}\" into a number",
+                    args[0]
+                ))
+            })?;
+            let content = &args[1];
+
+            if count == 0 {
+                return Ok(Some(std::mem::take(&mut args[1])));
+            }
+
+            let char_count = content.chars().count();
+
+            if count * 2 > char_count {
+                return Err(RadError::InvalidArgument(
+                    "Cannot strip because given content's length is shorter".to_owned(),
+                ));
+            }
+
+            // abcd
+            // 2
+            // 22
+
+            Ok(Some(content[count..char_count - count].to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "strip requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Strip front
+    ///
+    /// # Usage
+    ///
+    /// $stripf()
+    fn stripf(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 2) {
+            let count = trim!(&args[0]).parse::<usize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "Could not convert given value \"{}\" into a number",
+                    args[0]
+                ))
+            })?;
+            let content = &args[1];
+
+            if count == 0 {
+                return Ok(Some(std::mem::take(&mut args[1])));
+            }
+
+            let char_count = content.chars().count();
+
+            if count > char_count {
+                return Err(RadError::InvalidArgument(
+                    "Cannot stripf because given content's length is shorter".to_owned(),
+                ));
+            }
+
+            // abcd
+            // 2
+            // 22
+
+            Ok(Some(content[count..].to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "stripf requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Strip reaer
+    ///
+    /// # Usage
+    ///
+    /// $stripr()
+    fn stripr(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 2) {
+            let count = trim!(&args[0]).parse::<usize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "Could not convert given value \"{}\" into a number",
+                    args[0]
+                ))
+            })?;
+            let content = &args[1];
+
+            if count == 0 {
+                return Ok(Some(std::mem::take(&mut args[1])));
+            }
+
+            let char_count = content.chars().count();
+
+            if count > char_count {
+                return Err(RadError::InvalidArgument(
+                    "Cannot stripr because given content's length is shorter".to_owned(),
+                ));
+            }
+
+            // abcd
+            // 2
+            // 22
+
+            Ok(Some(content[..char_count - count].to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "stripr requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     /// Separate content
     ///
     /// # Usage
@@ -5026,6 +5245,7 @@ $extract()"
     /// # Usage
     ///
     /// $grepf(EXPR,CONTENT)
+    #[cfg(not(feature = "wasm"))]
     fn grep_file(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("grepf", AuthType::FIN, p)? {
             return Ok(None);

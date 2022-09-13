@@ -13,6 +13,7 @@
 pub mod anon_map;
 pub mod deterred_map;
 pub mod function_map;
+pub mod macro_cache;
 mod macro_map;
 pub(crate) use macro_map::MacroMap;
 #[cfg(feature = "hook")]
