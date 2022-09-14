@@ -217,7 +217,14 @@ impl<'cli> RadCli<'cli> {
         if let Some(sources) = args.values_of("INPUT") {
             // Also read from stdin if given combiation option
             if args.is_present("combination") {
-                self.processor.process_stdin()?;
+                // Stdin doesn't work with debug flag
+                if args.is_present("debug") {
+                    return Err(RadError::InvalidCommandOption(String::from(
+                        "Stdin cannot use debug option",
+                    )));
+                } else {
+                    self.processor.process_stdin()?;
+                }
             }
 
             // Interpret every input source as literal text
@@ -268,7 +275,15 @@ impl<'cli> RadCli<'cli> {
             if self.print_signature(args)? {
                 return Ok(());
             }
-            self.processor.process_stdin()?;
+
+            // Stdin doesn't work with debug flag
+            if args.is_present("debug") {
+                return Err(RadError::InvalidCommandOption(String::from(
+                    "Stdin cannot use debug option",
+                )));
+            } else {
+                self.processor.process_stdin()?;
+            }
         }
 
         // Print result
