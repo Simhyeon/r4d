@@ -696,7 +696,7 @@ $readto(from.txt,into.txt)"
 
 # Example
 
-$readto(from.txt,into.txt)"
+$readin(file.txt)"
                             .to_string(),
                     ),
                 ),
