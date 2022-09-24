@@ -1044,6 +1044,21 @@ impl<'processor> Processor<'processor> {
         self.map.new_anon_macro(body)
     }
 
+    /// Set pass_through
+    pub fn set_pass_through(&mut self, switch: bool, macs: &[&str]) {
+        for &item in macs {
+            if switch {
+                // Insert
+                if !self.state.pass_through.contains(item) {
+                    self.state.pass_through.insert(item.to_string());
+                }
+            } else {
+                // remove
+                self.state.pass_through.remove(item);
+            }
+        }
+    }
+
     /// Add runtime rules without builder pattern
     ///
     /// # Args
@@ -1851,6 +1866,11 @@ impl<'processor> Processor<'processor> {
         caller: &str,
         frag: &mut MacroFragment,
     ) -> RadResult<Option<String>> {
+        // Check for passthrough
+        if self.state.pass_through.contains(&frag.name) {
+            return Ok(Some(frag.whole_string.clone()));
+        }
+
         // Increase level to represent nestedness
         let level = level + 1;
         let mut skip_expansion = false;
@@ -2539,6 +2559,7 @@ impl<'processor> Processor<'processor> {
             }
         }
 
+        // Main entry for macro evaluation
         let evaluation_result = self.evaluate(level, caller, frag);
 
         match evaluation_result {
