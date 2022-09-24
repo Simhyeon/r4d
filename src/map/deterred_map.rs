@@ -81,7 +81,7 @@ $assert($arr(),first,second)".to_string(),
                     "anon",
                     ["a_macro"],
                     Self::add_anonymous_macro,
-                    Some("Crate a anonymous macro and return it's name
+                    Some("Create an anonymous macro and return it's name
 
 # Not expanded at all
 

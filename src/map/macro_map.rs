@@ -123,6 +123,7 @@ impl MacroMap {
         self.anon_map.new_macro(body)
     }
 
+    /// Get anonyous macro
     pub fn get_anon_macro(&self) -> Option<&RuntimeMacro> {
         self.anon_map.get_anon()
     }
