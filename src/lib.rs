@@ -110,4 +110,5 @@ pub use rad_ext_template;
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
+#[cfg(test)]
 mod test;
