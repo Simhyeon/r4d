@@ -2833,11 +2833,10 @@ impl<'processor> Processor<'processor> {
     /// Recover backup information into the processor
     fn recover(&mut self, backup: SandboxBackup) -> RadResult<()> {
         // NOTE ::: Set file should come first becuase set_file override line number and character number
-        self.logger.set_input(&backup.current_input);
+        self.logger.recover_input(&backup.current_input);
         self.state.current_input = backup.current_input;
         self.map.local = backup.local_macro_map;
         self.logger.stop_last_tracker();
-
         Ok(())
     }
 

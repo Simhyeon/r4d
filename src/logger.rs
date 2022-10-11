@@ -71,10 +71,15 @@ impl<'logger> Logger<'logger> {
         self.tracker_stack.decrease_level();
     }
 
-    /// Set file's logging information and reset state
+    /// Set file's logging information and start new state
     pub fn set_input(&mut self, input: &ProcessInput) {
         self.current_input = input.clone();
         self.start_new_tracker(TrackType::Input(self.current_input.to_string()));
+    }
+
+    /// Set file's logging information and but don't start a new state
+    pub fn recover_input(&mut self, input: &ProcessInput) {
+        self.current_input = input.clone();
     }
 
     /// Increase line number
@@ -462,7 +467,7 @@ FAIL: {}",
 /// - Security : Security related warning
 /// - Sanity : Warning about possible errors
 /// - Any : Both warnings
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum WarningType {
     /// Default wrapping type
     None,
