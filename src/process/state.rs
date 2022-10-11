@@ -48,8 +48,6 @@ pub(crate) struct ProcessorState {
     pub queued: Vec<String>,
     pub regex_cache: RegexCache,
     pub lexor_escape_blanks: bool,
-    // Passthrough
-    pub pass_through: HashSet<String>,
 }
 
 impl ProcessorState {
@@ -81,7 +79,6 @@ impl ProcessorState {
             queued: vec![],
             regex_cache: RegexCache::new(),
             lexor_escape_blanks: false,
-            pass_through: HashSet::new(),
         }
     }
 

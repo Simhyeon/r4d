@@ -199,6 +199,7 @@ impl<'cli> RadCli<'cli> {
             self.processor.set_freeze_mode();
         } else if args.is_present("dryrun") {
             self.processor.set_dry_mode();
+            self.processor.add_pass_through("anon");
         }
 
         // print permission
@@ -300,6 +301,12 @@ impl<'cli> RadCli<'cli> {
                 }
             }
         }
+
+        // Clear pass through if it was dryrun
+        if args.is_present("dryrun") {
+            self.processor.clear_pass_through();
+        }
+
         Ok(())
     }
 

@@ -1044,21 +1044,6 @@ impl<'processor> Processor<'processor> {
         self.map.new_anon_macro(body)
     }
 
-    /// Set pass_through
-    pub fn set_pass_through(&mut self, switch: bool, macs: &[&str]) {
-        for &item in macs {
-            if switch {
-                // Insert
-                if !self.state.pass_through.contains(item) {
-                    self.state.pass_through.insert(item.to_string());
-                }
-            } else {
-                // remove
-                self.state.pass_through.remove(item);
-            }
-        }
-    }
-
     /// Add runtime rules without builder pattern
     ///
     /// # Args
@@ -1867,7 +1852,7 @@ impl<'processor> Processor<'processor> {
         frag: &mut MacroFragment,
     ) -> RadResult<Option<String>> {
         // Check for passthrough
-        if self.state.pass_through.contains(&frag.name) {
+        if self.map.pass_through.contains(&frag.name) {
             return Ok(Some(frag.whole_string.clone()));
         }
 
@@ -2493,7 +2478,7 @@ impl<'processor> Processor<'processor> {
 
     /// Lex branch of invocation
     ///
-    /// But is can be used other than lex result
+    /// But this can be used other than lex result
     fn expand_frag_as_invocation(
         &mut self,
         lexor: &mut Lexor,
@@ -3221,6 +3206,16 @@ impl<'processor> Processor<'processor> {
     /// ```
     pub fn append_local_macro(&mut self, macro_name: &str, target: &str) {
         self.map.append_local(macro_name, target);
+    }
+
+    /// Add new macro name as pass through
+    pub fn add_pass_through(&mut self, macro_name: &str) {
+        self.map.add_new_pass_through(macro_name);
+    }
+
+    /// Clear all macro names from pass through
+    pub fn clear_pass_through(&mut self) {
+        self.map.clear_pass_through();
     }
 
     /// Replace macro's content

@@ -12,16 +12,19 @@ use crate::trim;
 use crate::utils::Utils;
 use crate::MacroType;
 use crate::RadResult;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Macro map that stores all kinds of macro informations
 ///
 /// Included macro types are
-/// - Keyword macro
-/// - Basic macro
+/// - Passthrough
+/// - Deterred macro
+/// - function macro
 /// - Runtime macro
+/// - Anon macro
 /// - Local bound macro
 pub(crate) struct MacroMap {
+    pub pass_through: HashSet<String>,
     pub deterred: DeterredMacroMap,
     pub function: FunctionMacroMap,
     pub runtime: RuntimeMacroMap,
@@ -33,6 +36,7 @@ impl MacroMap {
     /// Creates empty map without default macros
     pub fn empty() -> Self {
         Self {
+            pass_through: HashSet::new(),
             deterred: DeterredMacroMap::empty(),
             function: FunctionMacroMap::empty(),
             runtime: RuntimeMacroMap::new(),
@@ -44,12 +48,23 @@ impl MacroMap {
     /// Creates default map with default function macros
     pub fn new() -> Self {
         Self {
+            pass_through: HashSet::new(),
             deterred: DeterredMacroMap::new(),
             function: FunctionMacroMap::new(),
             runtime: RuntimeMacroMap::new(),
             anon_map: AnonMap::new(),
             local: HashMap::new(),
         }
+    }
+
+    /// Add new pass through macro
+    pub fn add_new_pass_through(&mut self, name: &str) {
+        self.pass_through.insert(name.to_string());
+    }
+
+    /// Clear pass through
+    pub fn clear_pass_through(&mut self) {
+        self.pass_through.clear();
     }
 
     /// Clear anonymous macros
