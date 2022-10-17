@@ -141,3 +141,7 @@ processor.print_result()?;
 ## Documentation
 
 [index](./docs/index.md)
+
+## Known issues
+
+[issues](./docs/issues.md)
