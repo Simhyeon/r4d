@@ -1,33 +1,51 @@
-### Milestone
-
-TARGET : Version 3.0.1
-
-- Minor bugfixes
-- Anon macro
-- Sensible default for argument parsing
+### Right now
 
 ### TODO
 
 $todo_start()
-* [ ] Macros
-    * [x] Change strip to expand
-    * [x] A macro strip to unquote quotes
+* [x] Macros
 * [x] Macro ergonomics
 * [x] Library
-* [ ] Bug fixs
-    * [x] PS description has a typo
-    * [x] Map variants were not expanding macro name
+* [ ] Bug fixes
+    * [ ] StorageUpdate error display fix
+    - Actually I forgot what was the exact problem...
+    * [ ] Split_arguments should return Option not a result... Although this is
+      somewaht breaking changes. Therefore I don't know if this is proper or
+      not.
+        - Why not create a new method which returns simply splitted array? and
+          leave a method for correctly detecting a status
+    * [ ] Include doesn't respect pipe attribute.
+      - I don't know the context, but I think pipe out was not working right?
+      - Yes, this is because first level include works as bufread. Which is
+        directed to write_to method
+      - Solving this issue, is not so intutive, sadly
+      - Alternatives are
+          - Make first level include work as read
+          - Add new include variant for only "read"
+    * [-] Dryrun doesn't print log positions well. weird...
+      - Simple demo doesn't reproduce this... what?
     * [ ] Currently user configured macro name is not "available" in log
       message.
+      - Because proc macro doesn't support it as syntax
+* [ ] Fix parsing rule
+    * [ ] Parsing rule conflicts with some regex expressions
+    ``` 
+    $regexpr(in_paren,\\(([^)]+)\\)) 
+    ```
+
+    * [ ] Assert doesn't check value correctly. Yet this looks like parsing
+      error. No..
+    ```
+    $assert(\*(*\,\*(*\)
+    = Assert requires two arguments
+    ```
 * [ ] Feature
-    * [x] Anonymouos macro
-    * [x] Sensible default argument parsing behaviour
+    * [ ] Early return
     * [ ] Implement data format pretty printer
 * [ ] Documentation
     * [ ] About escape rules + parenthesis rule
 * [ ] Test
     * [ ] Test windows build
-    * [ ] Test multiple awk replacements
 $todo_end()
 
 ### LATER
@@ -36,18 +54,23 @@ $todo_end()
 
 ### Changes
 
-- Escape characters
-    - ```\\``` nees to interpreted as ```\``` because ```\,``` should be evaded
-      on some cases. When ```\``` should be given as single character with
-      following delimiter comma.
-    - ```\,``` now interpreted as literal comma, not a delimiter
-- Fixed wrong initial input backtrace
-- Now path macro converts to platform specific path separator
-- New macros
-    * [x] Exist
-    * [x] Expand
-- Changed Include behaviour
-- Changed readto and readin behaviour
+* [x] Macros
+    * [x] Strip macros
+* [x] Macro ergonomics
+    * [x] Dryrun as passthrough
+    * [x] Log flag to respect pipe input + print full attributes
+    * [x] Mapf trims file name
+* [x] Bug fix
+    * [x] Fix trexter logger bug
+    * [x] Currently include is evaluated on root directory. Which is not...
+      desirable.
+    * [x] You cannot safely use debug flag with pipe command
+    - Added invalid error for stdin usage
+    * [x] No such macro also yields invlaid macro definition which is a bummer
+* [x] Feature
+    * [x] Passthrough
+    * [x] Expose update method for radstorage
+    * [x] Enable literal parenthesis for body : $lp() $rp()
 
 ### Macro ergonomics
 
@@ -158,6 +181,7 @@ basic macro is as simple as creating function and insert a new hashmap item.
 
 ### DONE
 
+* [x] Passthrough feature
 * [x] BUG! : Fix unicode tail,head,strip: God damn it
 * [x] New macro : $enl() remove right next newline
 * [x] Error on duplicate table name
@@ -806,3 +830,23 @@ critical
         while until and after never fails thus enable dynamic input.
 * [x] Negate macro attribute
 
+- Escape characters
+    - ```\\``` nees to interpreted as ```\``` because ```\,``` should be evaded
+      on some cases. When ```\``` should be given as single character with
+      following delimiter comma.
+    - ```\,``` now interpreted as literal comma, not a delimiter
+- Fixed wrong initial input backtrace
+- Now path macro converts to platform specific path separator
+- New macros
+    * [x] Exist
+    * [x] Expand
+- Changed Include behaviour
+- Changed readto and readin behaviour
+
+* [x] Fix trexter bug with include macro. I can't reproduce. god damn it
+- Looks like trexter track is not collected ( deleted ) after include call
+- Ok, this bug was something stupid. And I have no idea why this was not
+detected on first 3.0 release
+- The problem was that function recover called set_input and then decreased
+trexter level. But recover method increased the level thus nothing really
+happned which was a bug.

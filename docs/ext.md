@@ -129,3 +129,18 @@ cargo build --release --features binary,template
 
 # Built binary is located in "target/release" directory
 ```
+
+### Some general examples for deterred macro extension
+
+By default, deterred macro's argument is not expanded at all. Therefore the
+user has to manually set all expansion rules. This is cumbersome but useful
+when you need a contextual information about macro expansion. R4d's default
+"if" macro variants really represent such cases well.
+
+You, as an end user can also profit by using hand written deterred macro when
+you need to capture a context but don't need early expansion. For example,
+```radroff``` which converts macro codes into a intermediate manual struct
+simply passes raw text arguments into a data structure. While an expansion
+occurs when the user decides a final format to print. With help of deterred
+macro, r4d knows a context of a macro call and able to redirect raw information
+to internal struct.

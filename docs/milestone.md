@@ -31,14 +31,3 @@ Due to the nature of its changes, 3.0 version has many breaking changes that is
 not compatible with 2.0 macro codes, which is a shame. This will not happen in
 the future and will be only permitted by major users' request or critical
 security demands.
-
-# 4.0 for core utilities replacement
-
-A short time before version 3.0 release. I also found a new possibility of r4d.
-Which is a swiss army knife that can replaces all core utilities. Some macros
-that was included in 3.0 followed this goals, such as "map" macros or "cut". If
-I had more time to do so, I could put many more macros for core utility
-replacements. However as I told in other article, I had to finish a milestone
-so that I can concentrate on other things.
-
-After some time I will come back to r4d and will add new macros or new logics.
