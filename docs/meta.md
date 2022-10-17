@@ -54,23 +54,6 @@ $todo_end()
 
 ### Changes
 
-* [x] Macros
-    * [x] Strip macros
-* [x] Macro ergonomics
-    * [x] Dryrun as passthrough
-    * [x] Log flag to respect pipe input + print full attributes
-    * [x] Mapf trims file name
-* [x] Bug fix
-    * [x] Fix trexter logger bug
-    * [x] Currently include is evaluated on root directory. Which is not...
-      desirable.
-    * [x] You cannot safely use debug flag with pipe command
-    - Added invalid error for stdin usage
-    * [x] No such macro also yields invlaid macro definition which is a bummer
-* [x] Feature
-    * [x] Passthrough
-    * [x] Expose update method for radstorage
-    * [x] Enable literal parenthesis for body : $lp() $rp()
 
 ### Macro ergonomics
 

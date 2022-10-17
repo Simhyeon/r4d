@@ -1,5 +1,21 @@
 # 3.1
 
+* [x] Macros
+    * [x] Strip macros
+* [x] Macro ergonomics
+    * [x] Dryrun as passthrough
+    * [x] Log flag to respect pipe input + print full attributes
+    * [x] Mapf trims file name
+* [x] Bug fix
+    * [x] Fixed trexter logger bug
+    * [x] Fixed invlaid include directory
+    * [x] You cannot safely use debug flag with pipe command. Added invalid error for stdin usage
+    * [x] No such macro error is not properly printed
+* [x] Feature
+    * [x] Passthrough
+    * [x] Expose update method for radstorage
+    * [x] Enable literal parenthesis for body : $lp() $rp()
+
 # 3.0.1 stable
 
 - New macro anon for anonymous macro
