@@ -599,6 +599,33 @@ $include(file_path, true)"
                 ),
             );
             map.insert(
+                "incread".to_owned(),
+                DMacroSign::new(
+                    "incread",
+                    ["a_filename^", "a_raw_mode^+?"],
+                    Self::incread,
+                    Some(
+                        "Alwasy include a file as \"read\"
+
+- Include works as bufread in first level and chunk read in nested call.
+- Use incread when you need to read on first level.
+
+# NOT Deterred
+
+# AUTH : FIN
+
+# Arguments
+
+- a_filename : A file name to read ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
+
+$incread|(file_path)
+$-()"
+                            .to_string(),
+                    ),
+                ),
+            );
+            map.insert(
                 "tempin".to_owned(),
                 DMacroSign::new(
                     "tempin",
@@ -1857,6 +1884,31 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
                 );
                 Err(RadError::InvalidArgument(formatted))
             }
+        } else {
+            Err(RadError::InvalidArgument(
+                "Include requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Paste given file's content but always read
+    ///
+    /// Every macros within the file is also expanded
+    ///
+    /// Include read file's content into a single string and print out.
+    /// This enables ergonomic process of macro execution. If you want file
+    /// inclusion to happen as read, use incread instead.
+    ///
+    /// # Usage
+    ///
+    /// $incread(path)
+    #[cfg(not(feature = "wasm"))]
+    fn incread(args: &str, level: usize, processor: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("incread", AuthType::FIN, processor)? {
+            return Ok(None);
+        }
+        if !args.is_empty() {
+            Ok(processor.execute_macro(level, "incread", "include", args)?)
         } else {
             Err(RadError::InvalidArgument(
                 "Include requires an argument".to_owned(),
