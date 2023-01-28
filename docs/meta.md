@@ -1,8 +1,22 @@
-### Right now
+### Note
+
+* [ ] There is something not working in mac.r4d but not reproducible in the folder... what?
+    - After process exited, logger panics and I don't know why.
+    - What I tried but no success
+        - Simple exit call
+        - Exit call inside if macro
+* [ ] Update dependencies to latest
 
 ### TODO
 
 $todo_start()
+* [ ] Refactor
+Totally change internal logic. Currently every text is processed as sequences.
+Yet this approach has both pros and cons. Especially when you have to process a
+file.
+- To think about it, one of the power of r4d is stream based processing which
+  makes concrete structure hard to be achieved... But shouldn't there be a
+  hybrid way to do so?
 * [x] Macros
 * [x] Macro ergonomics
 * [x] Library
@@ -14,14 +28,8 @@ $todo_start()
       not.
         - Why not create a new method which returns simply splitted array? and
           leave a method for correctly detecting a status
-    * [ ] Include doesn't respect pipe attribute.
-      - I don't know the context, but I think pipe out was not working right?
-      - Yes, this is because first level include works as bufread. Which is
-        directed to write_to method
-      - Solving this issue, is not so intutive, sadly
-      - Alternatives are
-          - Make first level include work as read
-          - Add new include variant for only "read"
+    * [x] Include doesn't respect pipe attribute.
+        - I added new macro 
     * [-] Dryrun doesn't print log positions well. weird...
       - Simple demo doesn't reproduce this... what?
     * [ ] Currently user configured macro name is not "available" in log
@@ -40,6 +48,9 @@ $todo_start()
     = Assert requires two arguments
     ```
 * [ ] Feature
+    * [-] Sed-like features ( Rado )
+        - Process file lines with given macro ( mapl )
+        - Rad should be rad not like other tools.
     * [ ] Early return
     * [ ] Implement data format pretty printer
 * [ ] Documentation

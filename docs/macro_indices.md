@@ -74,6 +74,7 @@
 * [ifque](#ifque)
 * [import](#import)
 * [include](#include)
+* [incread](#incread)
 * [indent](#indent)
 * [index](#index)
 * [indexl](#indexl)
@@ -92,6 +93,7 @@
 * [loge](#loge)
 * [logm](#logm)
 * [lower](#lower)
+* [lp](#lp)
 * [lt](#lt)
 * [lte](#lte)
 * [map](#map)
@@ -126,6 +128,7 @@
 * [repl](#repl)
 * [require](#require)
 * [rev](#rev)
+* [rp](#rp)
 * [scut](#scut)
 * [sep](#sep)
 * [slice](#slice)
@@ -140,6 +143,9 @@
 * [static](#static)
 * [staticr](#staticr)
 * [strict](#strict)
+* [strip](#strip)
+* [stripf](#stripf)
+* [stripr](#stripr)
 * [sub](#sub)
 * [surr](#surr)
 * [syscmd](#syscmd)
@@ -334,7 +340,7 @@ Description
 
 >>
  
-    Crate a anonymous macro and return it's name
+    Create an anonymous macro and return it's name
     
     # Not expanded at all
     
@@ -2196,6 +2202,37 @@ Description
     $include(file_path)
     $include(file_path, true)
 
+### incread
+
+Macro Type  : Deterred
+
+Macro Name  : incread
+
+Arguments   : ["a_filename^", "a_raw_mode^+?"]
+
+Usage       : $incread(a_filename^,a_raw_mode^+?)
+
+Description 
+
+>>
+ 
+    Alwasy include a file as "read"
+    
+    - Include works as bufread in first level and chunk read in nested call.
+    - Use incread when you need to read on first level.
+    
+    # NOT Deterred
+    
+    # AUTH : FIN
+    
+    # Arguments
+    
+    - a_filename : A file name to read ( trimmed )
+    - a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
+    
+    $incread|(file_path)
+    $-()
+
 ### indent
 
 Macro Type  : Function
@@ -2706,6 +2743,28 @@ Description
     
     $assert(abcde,$lower(AbCdE))
 
+### lp
+
+Macro Type  : Function
+
+Macro Name  : lp
+
+Arguments   : []
+
+Usage       : $lp()
+
+Description 
+
+>>
+ 
+    Left parenthesis
+    
+    # Arguments
+    
+    # Example
+    
+    $assert((,$lp())
+
 ### lt
 
 Macro Type  : Function
@@ -2796,9 +2855,9 @@ Macro Type  : Deterred
 
 Macro Name  : mapf
 
-Arguments   : ["a_macro_name^", "a_file"]
+Arguments   : ["a_macro_name^", "a_file^"]
 
-Usage       : $mapf(a_macro_name^,a_file)
+Usage       : $mapf(a_macro_name^,a_file^)
 
 Description 
 
@@ -2815,7 +2874,7 @@ Description
     # Arguments
     
     - a_macro_name : A macro name to execute ( trimmed ) 
-    - a_file       : A file to get lines iterator
+    - a_file       : A file to get lines iterator ( trimmed )
     
     # Example
     
@@ -3371,7 +3430,7 @@ Description
     
     # Example
     
-    $readto(from.txt,into.txt)
+    $readin(file.txt)
 
 ### readto
 
@@ -3648,6 +3707,28 @@ Description
     # Example
     
     $assert(3,2,1,$rev(1,2,3))
+
+### rp
+
+Macro Type  : Function
+
+Macro Name  : rp
+
+Arguments   : []
+
+Usage       : $rp()
+
+Description 
+
+>>
+ 
+    right parenthesis
+    
+    # Arguments
+    
+    # Example
+    
+    $assert(),$rp())
 
 ### scut
 
@@ -4040,6 +4121,81 @@ Description
     
     $strict()
     $strict(lenient)
+
+### strip
+
+Macro Type  : Function
+
+Macro Name  : strip
+
+Arguments   : ["a_count^", "a_content"]
+
+Usage       : $strip(a_count^,a_content)
+
+Description 
+
+>>
+ 
+    Strip surroundings from text
+    
+    # Arguments
+    
+    - a_count   : Count of characters to strip ( trimmed )
+    - a_content : Content to strip
+    
+    # Example
+    
+    $assert(Hello World,$strip(2,' Hello World '))
+
+### stripf
+
+Macro Type  : Function
+
+Macro Name  : stripf
+
+Arguments   : ["a_count^", "a_content"]
+
+Usage       : $stripf(a_count^,a_content)
+
+Description 
+
+>>
+ 
+    Strip from front
+    
+    # Arguments
+    
+    - a_count   : Count of characters to strip ( trimmed )
+    - a_content : Content to strip
+    
+    # Example
+    
+    $assert(List item,$stripf(2,- List item))
+
+### stripr
+
+Macro Type  : Function
+
+Macro Name  : stripr
+
+Arguments   : ["a_count^", "a_content"]
+
+Usage       : $stripr(a_count^,a_content)
+
+Description 
+
+>>
+ 
+    Strip from rear
+    
+    # Arguments
+    
+    - a_count   : Count of characters to strip ( trimmed )
+    - a_content : Content to strip
+    
+    # Example
+    
+    $assert(Hmp,$stripr(2,Hmp::))
 
 ### sub
 
