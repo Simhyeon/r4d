@@ -1027,7 +1027,7 @@ impl<'processor> Processor<'processor> {
     /// processor.add_ext_macro(r4d::ExtMacroBuilder::new("macro_name")
     ///     .args(&["a1","b2"])
     ///     .function(r4d::function_template!(
-    ///         let args = r4d::split_args!(2)?;
+    ///         let args = r4d::split_args!(2, false)?;
     ///         let result = format!("{} + {}", args[0], args[1]);
     ///         Ok(Some(result))
     /// )));
@@ -3019,6 +3019,34 @@ impl<'processor> Processor<'processor> {
             Ok(ArgParser::new().strip(&parsed))
         } else {
             Ok(parsed)
+        }
+    }
+
+    /// Get static macro contents
+    ///
+    /// This returns error if given macro name doesn't exist, or not a static macro
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::new();
+    /// processor.add_static_rules(&[("test","TEST")])?;
+    /// let value = processor.get_static("test")?;
+    /// ```
+    pub fn get_static(&self, name: &str) -> RadResult<&str> {
+        let mac = self.map.runtime.get(name, self.state.hygiene);
+        if mac.is_none() {
+            return Err(RadError::InvalidExecution(format!(
+                "Given static macro {} doesn't exist",
+                name
+            )));
+        }
+        let mac = mac.unwrap();
+        if mac.is_static {
+            Ok(&mac.body)
+        } else {
+            Err(RadError::InvalidExecution(format!(
+                "Given macro {} is not a static macro",
+                name
+            )))
         }
     }
 
