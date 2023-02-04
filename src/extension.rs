@@ -18,7 +18,7 @@ use crate::function_map::FunctionMacroType;
 /// processor.add_ext_macro(r4d::ExtMacroBuilder::new("macro_name")
 ///     .args(&["a1","b2"])
 ///     .function(r4d::function_template!(
-///         let args = r4d::split_args!(2)?;
+///         let args = r4d::split_args!(2, false)?;
 ///         let result = format!("{} + {}", args[0], args[1]);
 ///         Ok(Some(result))
 /// )));
