@@ -3,6 +3,7 @@
 use crate::error::RadError;
 use crate::RadResult;
 use dcsv::VirtualArray;
+use itertools::Itertools;
 use std::fmt::Write;
 
 /// Formatter that constructs multiple text formats
@@ -51,7 +52,7 @@ impl Formatter {
         let mut exec = String::new();
         let mut iter = data.rows.iter().peekable();
         while let Some(row) = iter.next() {
-            write!(exec, "${}({})", macro_name, row.join(","))?;
+            write!(exec, "${}({})", macro_name, row.iter().join(","))?;
             if iter.peek().is_some() {
                 exec.push_str(newline);
             }

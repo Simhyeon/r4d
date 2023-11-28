@@ -1,5 +1,6 @@
 //! Multiple constant variables
 
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 /// Text display wrapper
@@ -11,12 +12,10 @@ pub type ColorDisplayFunc = fn(string: &str, to_file: bool) -> Box<dyn std::fmt:
 /// Static source for lorem lipsum
 pub const LOREM_SOURCE: &str = "Lorem ipsum dolor sit amet consectetur adipiscing elit. In rhoncus sapien iaculis sapien congue a dictum urna malesuada. In hac habitasse platea dictumst. Quisque dapibus justo a mollis condimentum sapien ligula aliquam massa in vehicula tellus magna vitae enim. Aliquam mattis ligula in enim congue auctor. Pellentesque at sollicitudin velit. Quisque blandit lobortis turpis at malesuada. Donec vitae luctus mauris. Aenean efficitur risus id tortor blandit laoreet. Vestibulum commodo aliquam sapien. Cras aliquam eget leo iaculis cursus. Morbi iaculis justo sed tellus ultrices aliquet. Nam bibendum ut erat quis. ";
 
-lazy_static::lazy_static! {
-    /// Static lorem lipsum vector
-    pub static ref LOREM: Vec<&'static str> = LOREM_SOURCE.split(' ').collect();
-    /// Static lorem lipsum vector's length
-    pub static ref LOREM_WIDTH: usize = LOREM.len();
-}
+/// Static lorem lipsum vector
+pub static LOREM: Lazy<Vec<&'static str>> = Lazy::new(|| LOREM_SOURCE.split(' ').collect());
+/// Static lorem lipsum vector's length
+pub static LOREM_WIDTH: Lazy<usize> = Lazy::new(|| LOREM.len());
 
 /// Get macro start character
 ///
@@ -57,13 +56,13 @@ pub const MAIN_CALLER: &str = "@MAIN@";
 
 pub const MACRO_SPECIAL_ANON: &str = "_ANON_";
 
-lazy_static::lazy_static! {
-    // Numbers
-    // Macro attributes * ^ | +
-    // Underscore and reverse slash (\)
-    /// Unallowed regex pattern for macro attributes
-    pub static ref UNALLOWED_CHARS: Regex = Regex::new(r#"[a-zA-Z1-9\\_\*\^\|\(\)-=,:!]"#).expect("Failed to create regex expression");
-}
+// Numbers
+// Macro attributes * ^ | +
+// Underscore and reverse slash (\)
+/// Unallowed regex pattern for macro attributes
+pub static UNALLOWED_CHARS: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"[a-zA-Z1-9\\_\*\^\|\(\)-=,:!]"#).expect("Failed to create regex expression")
+});
 
 // Diff related
 #[cfg(feature = "debug")]

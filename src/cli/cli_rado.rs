@@ -3,13 +3,12 @@
 use crate::utils::Utils;
 use crate::RadResult;
 use crate::{RadCli, RadError};
+use once_cell::sync::Lazy;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-lazy_static::lazy_static! {
-    /// Temporary rado directory
-    pub static ref RADO_DIR: std::path::PathBuf = std::env::temp_dir().join("rado");
-}
+/// Temporary rado directory
+pub static RADO_DIR: Lazy<std::path::PathBuf> = Lazy::new(|| std::env::temp_dir().join("rado"));
 
 #[cfg(windows)]
 /// Default rado editor

@@ -1,4 +1,44 @@
-### Note
+### Todo... First?
+
+* [ ] Upgrade dependencies for sure
+    * [ ] Deprecate lazy_static and use once_cell
+    * [ ] Implemnet join for dcsv value
+    * [ ] Upgrade clap
+* [ ] Add a search algorithm for manual command
+For example
+```shell
+rad --man evaluation
+--> There is no macro named as "evaluation". Did you mean "eval"?
+```
+This would be really helpful.
+
+Or even better, create a new command search
+```shell
+rad --search evaluation
+---
+Macro name: eval
+Short desc: blah blah blah
+
+Macro name: evalk
+Short desc: blah blah blah
+---
+```
+
+* [ ] Add a new macro called format I don't know but something useful for example
+---Formatting comment macro--- Or you know what? how about align after
+```
+$some_name(
+Content # comment
+Longer content # Comment
+)
+is evaluated to
+Content        # comment
+Longer content # Comment
+```
+
+Formatting comments are bullshit. And often you change block contents. Vim
+command solves this problem, but ot everyone uses modal based editor.
+Therefore, it is better to let it processed by macro.
 
 * [ ] There is something not working in mac.r4d but not reproducible in the folder... what?
     - After process exited, logger panics and I don't know why.
@@ -6,6 +46,12 @@
         - Simple exit call
         - Exit call inside if macro
 * [ ] Update dependencies to latest
+    - Clap
+* [ ] Update documentation on ext macro builder
+    - I found one outdated information for "add_ext_macro"
+    - Also for ExtMacroBuilder's documentation
+    --> Fixed a little but keep an eye for them.
+* [x] Added get_static_macro
 
 ### TODO
 

@@ -1,4 +1,5 @@
 use crate::{RadError, RadResult, RadStorage, StorageOutput, StorageResult};
+use std::io::Write;
 
 pub struct TestStorage;
 
@@ -19,10 +20,9 @@ impl RadStorage for TestStorage {
 fn function_name_test() -> RadResult<()> {
     use crate::Processor;
     let mut processor = Processor::new();
-    processor.set_storage(Box::new(TestStorage {}));
-    let result = processor.update_storage(&["err".to_string()]);
-    if let Err(err) = result {
-        eprintln!("{}", err);
-    }
+    processor.add_static_rules(&[("test", "")])?;
+    writeln!(std::io::stdout(), "{}", processor.get_static("test")?);
+    processor.replace_macro("test", "WOWZER");
+    writeln!(std::io::stdout(), "{}", processor.get_static("test")?);
     Ok(())
 }

@@ -1,20 +1,21 @@
 //! Utility struct, methods for various operations
 
 use crate::auth::{AuthState, AuthType};
-use crate::common::{ProcessInput, RadResult, RelayTarget};
+use crate::common::{ProcessInput, RadResult};
 use crate::error::RadError;
 use crate::logger::WarningType;
 use crate::{Processor, WriteOption};
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use std::ffi::OsStr;
 use std::io::BufRead;
 use std::path::Path;
 
-lazy_static! {
-    /// Regex for trimming newlines from start and end
-    pub static ref TRIM: Regex = Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap();
-}
+#[cfg(not(feature = "wasm"))]
+use crate::common::RelayTarget;
+
+/// Regex for trimming newlines from start and end
+pub static TRIM: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap());
 
 /// Trim macro to trim a text
 #[macro_export]

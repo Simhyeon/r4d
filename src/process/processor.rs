@@ -35,7 +35,7 @@ use crate::{consts::*, RadResult};
 use crate::{ArgParser, GreedyState};
 #[cfg(feature = "cindex")]
 use cindex::Indexer;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -43,11 +43,8 @@ use std::fs::{File, OpenOptions};
 use std::io::{self, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 
-lazy_static! {
-    // Source : https://stackoverflow.com/questions/17564088/how-to-form-a-regex-to-recognize-correct-declaration-of-variable-names/17564142
-    /// Regex pattern for valid macro name
-    static ref MAC_NAME : Regex = Regex::new(r#"^[_a-zA-Z]\w*$"#).expect("Failed to create regex expression");
-}
+static MAC_NAME: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"^[_a-zA-Z]\w*$"#).expect("Failed to create regex expression"));
 
 // Methods of processor consists of multiple sections followed as <TAG>
 // <BUILDER>            -> Builder pattern related

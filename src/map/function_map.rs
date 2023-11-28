@@ -18,7 +18,7 @@ use crate::{trim, CommentType};
 use crate::{ArgParser, GreedyState};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashMap;
 #[cfg(not(feature = "wasm"))]
@@ -37,17 +37,19 @@ use std::str::FromStr;
 /// Types for align macros
 const ALIGN_TYPES: [&str; 3] = ["left", "right", "center"];
 
-lazy_static! {
-    // Thanks stack overflow! SRC : https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers
-    /// Number matches
-    static ref NUM_MATCH: Regex = Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to create number regex");
-    /// Single line match
-    static ref LINE_MATCH : Regex = Regex::new("\n").expect("Failed to create line match regex");
-    /// Two lines match
-    static ref TWO_NL_MATCH: Regex = Regex::new(r#"(\n|\r\n)\s*(\n|\r\n)"#).expect("Failed to create tow nl regex");
-    /// Path separator match
-    static ref PATH_MATCH: Regex = Regex::new(r#"(\\|/)"#).expect("Failed to create path separator matches");
-}
+// Thanks stack overflow! SRC : https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers
+/// Number matches
+static NUM_MATCH: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to create number regex"));
+/// Single line match
+// static LINE_MATCH: Lazy<Regex> =
+//    Lazy::new(|| Regex::new("\n").expect("Failed to create line match regex"));
+/// Two lines match
+static TWO_NL_MATCH: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"(\n|\r\n)\s*(\n|\r\n)"#).expect("Failed to create tow nl regex"));
+/// Patparator match
+static PATH_MATCH: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"(\\|/)"#).expect("Failed to create path separator matches"));
 
 /// Function signature for "function" macro functions
 pub(crate) type FunctionMacroType = fn(&str, &mut Processor) -> RadResult<Option<String>>;
