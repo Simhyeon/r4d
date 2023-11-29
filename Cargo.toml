@@ -47,12 +47,14 @@ regex = "1.10.2"
 serde = { version = "1.0.193", features = ["derive"]}
 trexter = "0.1.1"
 once_cell = "1.18.0"
+itertools = "0.12.0"
+flate2 = "1.0.24"
 
 # Optioanl features
 atty = { version = "0.2.14", optional = true}
 chrono = {version = "0.4.31", optional = true}
 cindex = {version = "0.5.2-rc1", optional = true, git="https://github.com/simhyeon/cindex", branch="dev"}
-clap = { version = "3.0.3", default-features = false, features = ["std"], optional=true}
+clap = { version = "4.4.10", default-features = false, features = ["std"], optional=true}
 colored = {version = "2.0.4", optional = true}
 crossterm = {version = "0.27.0", optional = true}
 evalexpr = {version = "11.2.0", optional = true}
@@ -66,8 +68,6 @@ textwrap = { version = "0.16.0", optional = true}
 wasm-bindgen = { version = "0.2.74", optional = true}
 console_error_panic_hook = { version = "0.1.7", optional = true}
 wee_alloc = { version = "0.4.5", optional = true }
-flate2 = "1.0.24"
-itertools = "0.12.0"
 
 [package.metadata.deb]
 features = ["binary"]

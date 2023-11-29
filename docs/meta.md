@@ -1,8 +1,9 @@
 ### Todo... First?
 
 * [ ] Upgrade dependencies for sure
-    * [ ] Deprecate lazy_static and use once_cell
-    * [ ] Implemnet join for dcsv value
+    * [x] Deprecate lazy_static and use once_cell
+    * [x] Implemnet join for dcsv value -> Instread I imported itertools
+    * [x] Check if flate crate is necessary -> Yes it is used in packaing
     * [ ] Upgrade clap
 * [ ] Add a search algorithm for manual command
 For example

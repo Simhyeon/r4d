@@ -1,3 +1,8 @@
+# 3.1.1-rc1
+
+- Upgraded misc crate versions
+- Finally ditched lazy_static
+
 # 3.1
 
 * [x] Macros

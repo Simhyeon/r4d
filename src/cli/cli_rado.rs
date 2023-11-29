@@ -3,6 +3,7 @@
 use crate::utils::Utils;
 use crate::RadResult;
 use crate::{RadCli, RadError};
+use clap::ArgAction;
 use once_cell::sync::Lazy;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -48,12 +49,12 @@ impl RadoCli {
     /// Parse flag occurrences from matches
     fn parse_flags(&mut self, args: &clap::ArgMatches) {
         if let Some((_, args)) = args.subcommand() {
-            if let Some(path) = args.value_of("out") {
+            if let Some(path) = args.get_one::<&str>("out") {
                 self.flag_out.replace(PathBuf::from(path));
             }
 
-            if let Some(values) = args.values_of("argument") {
-                self.flag_arguments = values.map(|s| s.to_owned()).collect::<Vec<_>>();
+            if let Some(values) = args.get_many::<&str>("argument") {
+                self.flag_arguments = values.map(|s| s.to_string()).collect();
             }
         }
     }
@@ -70,35 +71,35 @@ impl RadoCli {
                 )?;
             }
             Some(("package", sub_m)) => {
-                if let Some(input) = sub_m.value_of("INPUT") {
+                if let Some(input) = sub_m.get_one::<&str>("INPUT") {
                     self.package_file(Path::new(input))?;
                 }
             }
             Some(("execute", sub_m)) => {
-                if let Some(input) = sub_m.value_of("INPUT") {
+                if let Some(input) = sub_m.get_one::<&str>("INPUT") {
                     self.execute(Path::new(input))?;
                 }
             }
             Some(("replace", sub_m)) => {
-                if let Some(input) = sub_m.value_of("INPUT") {
+                if let Some(input) = sub_m.get_one::<&str>("INPUT") {
                     self.replace_file(Path::new(input))?;
                 }
             }
             Some(("edit", sub_m)) => {
-                if let Some(input) = sub_m.value_of("INPUT") {
+                if let Some(input) = sub_m.get_one::<&str>("INPUT") {
                     self.view_file(Path::new(input))?;
                 }
             }
             Some(("read", sub_m)) => {
-                if let Some(input) = sub_m.value_of("INPUT") {
+                if let Some(input) = sub_m.get_one::<&str>("INPUT") {
                     let file = self.update_file(input, false)?;
                     self.view_file(&file)?;
                 }
             }
             #[cfg(feature = "debug")]
             Some(("diff", sub_m)) => {
-                if let Some(input) = sub_m.value_of("INPUT") {
-                    self.show_diff(input, sub_m.is_present("force"))?;
+                if let Some(input) = sub_m.get_one::<&str>("INPUT") {
+                    self.show_diff(input, sub_m.contains_id("force"))?;
                 }
             }
             Some(("clear", _)) => {
@@ -108,15 +109,15 @@ impl RadoCli {
                 std::fs::create_dir(temp_dir)?;
             }
             Some(("force", sub_m)) => {
-                if let Some(input) = sub_m.value_of("INPUT") {
+                if let Some(input) = sub_m.get_one::<&str>("INPUT") {
                     let path = self.update_file(input, true)?;
-                    if sub_m.is_present("read") {
+                    if sub_m.contains_id("read") {
                         self.view_file(&path)?;
                     }
                 }
             }
             Some(("sync", sub_m)) => {
-                if let Some(input) = sub_m.value_of("INPUT") {
+                if let Some(input) = sub_m.get_one::<&str>("INPUT") {
                     use filetime::{set_file_mtime, FileTime};
                     let temp_file = self.get_temp_path(input)?;
                     set_file_mtime(temp_file, FileTime::now())?;
@@ -131,9 +132,9 @@ impl RadoCli {
 
     /// Create argument requirements
     fn args_builder(&self) -> clap::ArgMatches {
-        use clap::{App, Arg};
+        use clap::{Arg, Command};
         #[allow(unused_mut)]
-        let mut app = App::new("rado")
+        let mut app = Command::new("rado")
             .version("0.1.0")
             .author("Simon creek <simoncreek@tutanota.com>")
             .about( "Rado is a high level wrapper around rad binary")
@@ -148,74 +149,82 @@ impl RadoCli {
     rado sync <FILE>")
             .arg(Arg::new("argument")
                 .last(true)
-                .takes_value(true)
-                .multiple_values(true)
+                .action(ArgAction::Append)
+                .num_args(0..)
                 .global(true)
                 .help("Send arguments to rad binary"))
             .arg(Arg::new("out")
                 .short('o')
                 .long("out")
-                .takes_value(true)
+                .action(ArgAction::Set)
                 .global(true)
                 .help("Write to a file"))
-            .subcommand(App::new("replace")
-                .about("In replace a file")
+            .subcommand(Command::new("replace")
+                .about("In-replace a file's content")
                 .after_help("This creates cache file in temp directory's rado_repl.txt")
                 .arg(Arg::new("INPUT")
                     .required(true)
+                    .action(ArgAction::Set)
                     .help("INPUT source to execute processing")
                 )
             )
-            .subcommand(App::new("edit")
+            .subcommand(Command::new("edit")
                 .about("Edit a file as raw")
                 .arg(Arg::new("INPUT")
                     .required(true)
+                    .action(ArgAction::Set)
                     .help("INPUT source to execute processing")
                 )
             )
-            .subcommand(App::new("clear")
+            .subcommand(Command::new("clear")
                 .about("Clear temp directory")
             )
-            .subcommand(App::new("env")
+            .subcommand(Command::new("env")
                 .about("Print env information")
             )
-            .subcommand(App::new("package")
+            .subcommand(Command::new("package")
                 .about("Package into a file")
                 .arg(Arg::new("INPUT")
                     .required(true)
+                    .action(ArgAction::Set)
                     .help("File name to package")
                 )
             )
-            .subcommand(App::new("execute")
+            .subcommand(Command::new("execute")
                 .about("Execute a file")
                 .arg(Arg::new("INPUT")
                     .required(true)
+                    .action(ArgAction::Set)
                     .help("File name to execute")
                 )
             )
-            .subcommand(App::new("read")
+            .subcommand(Command::new("read")
                 .about("Read a file")
                 .arg(Arg::new("INPUT")
                     .required(true)
+                    .action(ArgAction::Set)
                     .help("File name to read from temp directory")
                 )
             )
-            .subcommand(App::new("force")
+            .subcommand(Command::new("force")
                 .about("Force update a file")
                 .arg(Arg::new("INPUT")
                     .required(true)
+                    .action(ArgAction::Set)
                     .help("File name to force update")
                 )
                 .arg(Arg::new("read")
                     .short('r')
                     .long("read")
+                    .action(ArgAction::SetTrue)
                     .help("Also open a file")
                 )
             )
-            .subcommand(App::new("sync")
+            .subcommand(Command::new("sync")
                 .about("Sync file's timestamp")
                 .arg(Arg::new("INPUT")
                     .required(true)
+                    .action(ArgAction::Set)
                     .help("File name to sync")
                 )
             );
@@ -223,17 +232,19 @@ impl RadoCli {
         #[cfg(feature = "debug")]
         {
             app = app.subcommand(
-                App::new("diff")
+                Command::new("diff")
                     .about("Show difference between files")
                     .arg(
                         Arg::new("INPUT")
                             .required(true)
+                            .action(ArgAction::Set)
                             .help("File name to read from temp directory"),
                     )
                     .arg(
                         Arg::new("force")
                             .short('f')
                             .long("force")
+                            .action(ArgAction::SetTrue)
                             .help("Force update before showding diff"),
                     ),
             );
@@ -374,7 +385,7 @@ impl RadoCli {
             #[cfg(feature = "color")]
             {
                 if let Some(func) = colorfunc {
-                    log = func(&log, !is_stdout).to_string(); // Apply color
+                    log = func(&log, !is_stdout).to_string(); // Commandly color
                 }
             }
             write!(std::io::stdout(), "{}", log)?;
