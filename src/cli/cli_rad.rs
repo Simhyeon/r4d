@@ -138,6 +138,20 @@ impl<'cli> RadCli<'cli> {
             return Ok(());
         }
 
+        // Search a macro
+        #[cfg(feature = "signature")]
+        if let Some(name) = args.get_one::<&str>("search") {
+            match processor.get_macro_manual(name) {
+                Some(text) => writeln!(std::io::stdout(), "{}", text)?,
+                None => writeln!(
+                    std::io::stdout(),
+                    "Given macro \"{}\" doesn't exist and cannot display a manual",
+                    name
+                )?,
+            }
+            return Ok(());
+        }
+
         if args.contains_id("package") {
             if let Some(sources) = args.get_many::<&str>("INPUT") {
                 let sources = sources.into_iter().map(Path::new).collect::<Vec<_>>();
@@ -546,6 +560,13 @@ impl<'cli> RadCli<'cli> {
                     .default_missing_value("*")
                     .value_name("MACRO_NAME")
                     .help("Get manual of a macro"),
+            )
+            .arg(
+                Arg::new("search")
+                    .long("search")
+                    .action(ArgAction::Set)
+                    .value_name("MACRO_NAME")
+                    .help("Search for a macro"),
             )
             .arg(
                 Arg::new("signature")
