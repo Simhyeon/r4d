@@ -92,19 +92,22 @@ impl<'cli> RadCli<'cli> {
             .set_comment_type(CommentType::from_str(if !args.contains_id("comment") {
                 "none" // None when no runtime flag
             } else {
-                args.get_one::<&str>("comment").unwrap() // default is start
+                args.get_one::<String>("comment").unwrap() // default is start
             })?)
-            .purge(args.contains_id("purge"))
-            .lenient(args.contains_id("lenient"))
+            .purge(args.get_flag("purge"))
+            .lenient(args.get_flag("lenient"))
+            // TODO
+            // ReallY? this is outrageous
             .silent(WarningType::from_str(
-                args.get_one::<&str>("silent").unwrap_or(&"none"),
+                args.get_one::<String>("silent")
+                    .unwrap_or(&"none".to_string()),
             )?)
-            .assert(args.contains_id("assert"))
+            .assert(args.get_flag("assert"))
             .allow(&self.allow_auth)
             .allow_with_warning(&self.allow_auth_warn)
-            .unix_new_line(args.contains_id("newline"))
+            .unix_new_line(args.get_flag("newline"))
             .melt_files(&self.rules)?
-            .discard(args.contains_id("discard"));
+            .discard(args.get_flag("discard"));
 
         // Early return-able procedures
         // - Help
@@ -112,7 +115,7 @@ impl<'cli> RadCli<'cli> {
 
         // Help command
         #[cfg(feature = "signature")]
-        if let Some(name) = args.get_one::<&str>("manual") {
+        if let Some(name) = args.get_one::<String>("manual") {
             if name == &"*" {
                 // Get all values
                 // Sort by name
@@ -140,7 +143,7 @@ impl<'cli> RadCli<'cli> {
 
         // Search a macro
         #[cfg(feature = "signature")]
-        if let Some(name) = args.get_one::<&str>("search") {
+        if let Some(name) = args.get_one::<String>("search") {
             match processor.get_macro_manual(name) {
                 Some(text) => writeln!(std::io::stdout(), "{}", text)?,
                 None => writeln!(
@@ -152,8 +155,8 @@ impl<'cli> RadCli<'cli> {
             return Ok(());
         }
 
-        if args.contains_id("package") {
-            if let Some(sources) = args.get_many::<&str>("INPUT") {
+        if args.get_flag("package") {
+            if let Some(sources) = args.get_many::<String>("INPUT") {
                 let sources = sources.into_iter().map(Path::new).collect::<Vec<_>>();
                 processor
                     .package_sources(&sources, self.write_to_file.as_ref().map(|p| p.as_ref()))?;
@@ -180,13 +183,13 @@ impl<'cli> RadCli<'cli> {
         #[cfg(feature = "debug")]
         {
             processor = processor
-                .debug(args.contains_id("debug"))
-                .log(args.contains_id("log"))
-                .interactive(args.contains_id("interactive"))
+                .debug(args.get_flag("debug"))
+                .log(args.get_flag("log"))
+                .interactive(args.get_flag("interactive"))
                 .diff(DiffOption::from_str(if !args.contains_id("diff") {
                     "none" // None when no runtime flag
                 } else {
-                    args.get_one::<&str>("diff").unwrap() // default is all
+                    args.get_one::<String>("diff").unwrap() // default is all
                 })?)?;
         }
 
@@ -196,7 +199,7 @@ impl<'cli> RadCli<'cli> {
         // Debug
         // Clear terminal cells
         #[cfg(feature = "debug")]
-        if args.contains_id("debug") {
+        if args.get_flag("debug") {
             Utils::clear_terminal()?;
         }
 
@@ -204,14 +207,14 @@ impl<'cli> RadCli<'cli> {
         // Main options
 
         // Process type related state changes
-        if args.contains_id("freeze") {
+        if args.get_flag("freeze") {
             if self.write_to_file.is_none() {
                 return Err(RadError::InvalidCommandOption(
                     "Freeze options needs an out file to write into".to_string(),
                 ));
             }
             self.processor.set_freeze_mode();
-        } else if args.contains_id("dryrun") {
+        } else if args.get_flag("dryrun") {
             self.processor.set_dry_mode();
             self.processor.add_pass_through("anon");
         }
@@ -229,11 +232,11 @@ impl<'cli> RadCli<'cli> {
         }
 
         // -->> Read from files or process as raw text
-        if let Some(sources) = args.get_many::<&str>("INPUT") {
+        if let Some(sources) = args.get_many::<String>("INPUT") {
             // Also read from stdin if given combiation option
-            if args.contains_id("combination") {
+            if args.get_flag("combination") {
                 // Stdin doesn't work with debug flag
-                if args.contains_id("debug") {
+                if args.get_flag("debug") {
                     return Err(RadError::InvalidCommandOption(String::from(
                         "Stdin cannot use debug option",
                     )));
@@ -243,7 +246,7 @@ impl<'cli> RadCli<'cli> {
             }
 
             // Interpret every input source as literal text
-            let literal = args.contains_id("literal");
+            let literal = args.get_flag("literal");
 
             // Read from given sources and write with given options
             for src in sources {
@@ -254,7 +257,7 @@ impl<'cli> RadCli<'cli> {
                     if src_as_file.exists() {
                         // If file extension is .r4c extract from it
                         let result = if src_as_file.extension().unwrap_or_default() == "r4c"
-                            || args.contains_id("script")
+                            || args.get_flag("script")
                         {
                             self.processor.set_hygiene(Hygiene::Input);
                             let result = self.processor.process_static_script(src_as_file);
@@ -292,7 +295,7 @@ impl<'cli> RadCli<'cli> {
             }
 
             // Stdin doesn't work with debug flag
-            if args.contains_id("debug") {
+            if args.get_flag("debug") {
                 return Err(RadError::InvalidCommandOption(String::from(
                     "Stdin cannot use debug option",
                 )));
@@ -305,7 +308,7 @@ impl<'cli> RadCli<'cli> {
         self.processor.print_result()?;
 
         // Freeze to a rule file if such option was given
-        if args.contains_id("freeze") {
+        if args.get_flag("freeze") {
             match &self.write_to_file {
                 Some(file) => self.processor.freeze_to_file(file)?,
                 None => {
@@ -317,7 +320,7 @@ impl<'cli> RadCli<'cli> {
         }
 
         // Clear pass through if it was dryrun
-        if args.contains_id("dryrun") {
+        if args.get_flag("dryrun") {
             self.processor.clear_pass_through();
         }
 
@@ -331,15 +334,19 @@ impl<'cli> RadCli<'cli> {
     fn print_signature(&mut self, args: &clap::ArgMatches) -> RadResult<bool> {
         #[cfg(feature = "signature")]
         if args.contains_id("signature") {
-            let sig_type =
-                SignatureType::from_str(args.get_one::<&str>("sigtype").unwrap_or(&"all"))?;
+            // TODO
+            // Outragoues
+            let sig_type = SignatureType::from_str(
+                args.get_one::<String>("sigtype")
+                    .unwrap_or(&"all".to_string()),
+            )?;
             let sig_map = self.processor.get_signature_map(sig_type)?;
             // TODO
             let sig_json =
                 serde_json::to_string(&sig_map.content).expect("Failed to create sig map");
 
             // This is file name
-            let file_name = args.get_one::<&str>("signature").unwrap();
+            let file_name = args.get_one::<String>("signature").unwrap();
 
             // TODO Check if this behaviour persists on clap version 4.0
             // This is default empty value should not be "" because it is ignored by clap
@@ -359,46 +366,38 @@ impl<'cli> RadCli<'cli> {
         // ========
         // Sub options
         // custom rules
-        self.rules = if let Some(files) = args.get_many::<&str>("melt") {
+        self.rules = if let Some(files) = args.get_many::<String>("melt") {
             files
                 .into_iter()
-                .map(|s| PathBuf::from(*s))
+                .map(PathBuf::from)
                 .collect::<Vec<PathBuf>>()
         } else {
             vec![]
         };
 
         // Write to file
-        self.write_to_file = args.get_one::<&str>("out").map(PathBuf::from);
+        self.write_to_file = args.get_one::<String>("out").map(PathBuf::from);
 
         // Error to file
-        self.error_to_file = args.get_one::<&str>("err").map(PathBuf::from);
+        self.error_to_file = args.get_one::<String>("err").map(PathBuf::from);
 
         // Permission
-        if let Some(auths) = args.get_one::<&str>("allow") {
-            self.allow_auth = auths
-                .split('+')
-                .into_iter()
-                .filter_map(AuthType::from)
-                .collect()
+        if let Some(auths) = args.get_one::<String>("allow") {
+            self.allow_auth = auths.split('+').filter_map(AuthType::from).collect()
         }
 
         // Permission with warning
-        if let Some(auths) = args.get_one::<&str>("allow_warn") {
-            self.allow_auth_warn = auths
-                .split('+')
-                .into_iter()
-                .filter_map(AuthType::from)
-                .collect()
+        if let Some(auths) = args.get_one::<String>("allow_warn") {
+            self.allow_auth_warn = auths.split('+').filter_map(AuthType::from).collect()
         }
 
         // Permission all
-        if args.contains_id("allow_all") {
+        if args.get_flag("allow_all") {
             self.allow_auth = vec![AuthType::FIN, AuthType::FOUT, AuthType::ENV, AuthType::CMD];
         }
 
         // Permission all with warning
-        if args.contains_id("allow_all_warn") {
+        if args.get_flag("allow_all_warn") {
             self.allow_auth_warn =
                 vec![AuthType::FIN, AuthType::FOUT, AuthType::ENV, AuthType::CMD];
         }
@@ -438,7 +437,6 @@ impl<'cli> RadCli<'cli> {
                 .short('o')
                 .long("out")
                 .action(ArgAction::Set)
-                // .action(ArgAction::Set) // TODO remove this line
                 .conflicts_with("discard")
                 .value_name("FILE")
                 .help("Save processed output to the file"))
@@ -446,7 +444,6 @@ impl<'cli> RadCli<'cli> {
                 .short('e')
                 .long("err")
                 .action(ArgAction::Set)
-                // .action(ArgAction::Set) // TODO remove this line
                 .value_name("FILE")
                 .help("Save error logs to the file"))
             .arg(Arg::new("combination")
