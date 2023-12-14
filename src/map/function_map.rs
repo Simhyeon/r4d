@@ -1752,10 +1752,9 @@ $relay(temp)$halt()".to_string()),
                 "rer".to_owned(),
                 FMacroSign::new(
                     "rer",
-                    ["a_target_type^", "a_target^"],
-                    Self::relay,
-                    Some(
-"Not yet".to_string()),
+                    ESR,
+                    Self::rearrange,
+                    Some("SOME".to_string()),
                 ),
             ),
             (

@@ -14,8 +14,10 @@ use crate::{trim, CommentType};
 use crate::{ArgParser, GreedyState};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
+use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
+use std::collections::HashMap;
 #[cfg(not(feature = "wasm"))]
 use std::fs::OpenOptions;
 use std::io::BufRead;
@@ -30,6 +32,23 @@ use std::str::FromStr;
 // Is this necessary?
 /// Types for align macros
 const ALIGN_TYPES: [&str; 3] = ["left", "right", "center"];
+
+// TODO
+// Check this regex
+// 1. leading space & tabs
+// 2. Numbers ( could be multiple )
+// 3. Any character except space, tab, newline
+// This regex consists of two groups
+// 1. Leading spaces which represents nested level
+// 2. Index characters which acts an index
+static BLANKHASH_MATCH: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(^[\s\t]*)\d+([^\d\s]+)\s+"#).expect("Failed to create blank regex")
+});
+
+// This is similar but captures for replace
+static REPLACER_MATCH: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(^[\s\t]*)(\d+)([^\d\s]+)(\s+)"#).expect("Failed to create replacer regex")
+});
 
 // Thanks stack overflow! SRC : https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers
 /// Number matches
@@ -2419,6 +2438,88 @@ impl FunctionMacroMap {
         Ok(None)
     }
 
+    // TODO
+    // You have to iterate twice
+    // 1. Regex and calculate nested level and total count of list items
+    // 2. Regex again while replacing specific parts of string
+    /// Rearrange
+    ///
+    /// # Usage
+    ///
+    /// $rer(contents)
+    pub(crate) fn rearrange(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let mut rer_hash = RerHash::default();
+            let mut blank_str: &str; // Container
+
+            // TODO
+            // Should I really collect it for indexing?
+            // Can it be improved?
+            let mut lines = args[0]
+                .lines()
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>();
+            let mut iteration_cache: Vec<(usize, usize)> = Vec::new();
+            // Find list elements and save counts of each sorts
+            for (ll, line) in lines.iter().enumerate() {
+                if let Some(captured) = BLANKHASH_MATCH.captures(line) {
+                    blank_str = captured.get(1).map_or("", |m| m.as_str());
+                    let index_id = captured.get(2).map_or("", |m| m.as_str());
+                    let blank = rer_hash.try_insert(blank_str, index_id)?;
+                    iteration_cache.push((blank, ll));
+                }
+            }
+
+            let mut blank_cache = 0;
+            let mut index_cache: String = String::default();
+            let mut counter = 0usize;
+            let mut replaced;
+            // Iterate lists and replace number according to proper order
+            for (blank, ll) in iteration_cache {
+                let line = &lines[ll];
+                if let Some(captured) = REPLACER_MATCH.captures(line) {
+                    // REPLACER INGREdient
+                    // ---
+                    let leading_part = captured.get(1).map_or("", |m| m.as_str());
+                    let index = captured.get(3).map_or("", |m| m.as_str());
+                    let following_part = captured.get(4).map_or("", |m| m.as_str());
+                    // ---
+                    if index != index_cache || blank_cache != blank {
+                        counter = rer_hash.get_current_count(blank, index);
+
+                        // This means list items go up
+                        if blank_cache > blank {
+                            rer_hash.update_counter(blank_cache, &index_cache, 1);
+                        }
+
+                        // This means counter was resumed not a fresh start
+                        if counter != 1 {
+                            counter += 1;
+                        }
+                    } else {
+                        counter += 1;
+                        rer_hash.update_counter(blank, index, counter);
+                    }
+                    blank_cache = blank;
+                    index_cache = index.to_string();
+
+                    replaced = REPLACER_MATCH
+                        .replace(
+                            line,
+                            format!("{}{}{}{}", leading_part, counter, index, following_part),
+                        )
+                        .to_string();
+                    lines[ll] = replaced;
+                }
+            }
+            Ok(Some(lines.join(&p.state.newline)))
+        } else {
+            Err(RadError::InvalidArgument(
+                "rer requires an argument".to_owned(),
+            ))
+        }
+    }
+
     /// Disable relaying
     ///
     /// # Usage
@@ -3652,4 +3753,96 @@ impl FunctionMacroMap {
             ))
         }
     }
+}
+
+/// Counter for total list items
+#[derive(Default, Debug)]
+struct RerHash {
+    index_hash: HashMap<String, ListCounterByLevel>,
+}
+
+impl RerHash {
+    pub fn update_counter(&mut self, blank: usize, index: &str, counter: usize) {
+        *self
+            .index_hash
+            .get_mut(index)
+            .unwrap()
+            .counts
+            .get_mut(&blank)
+            .unwrap() = counter;
+    }
+    pub fn get_current_count(&self, blank: usize, index: &str) -> usize {
+        *self
+            .index_hash
+            .get(index)
+            .unwrap()
+            .counts
+            .get(&blank)
+            .unwrap()
+    }
+
+    pub fn try_insert(&mut self, blank: &str, index: &str) -> RadResult<usize> {
+        let blank: usize = BlankHash::from_str(blank)?.into();
+        match self.index_hash.get_mut(index) {
+            Some(hash) => {
+                hash.counts.entry(blank).or_insert(1);
+            }
+            None => {
+                // Create a new value
+                let mut count_level = ListCounterByLevel::default();
+                count_level.counts.insert(blank, 1);
+                self.index_hash.insert(index.to_owned(), count_level);
+            }
+        }
+        Ok(blank)
+    }
+}
+
+// TODO
+// Actually you don't need blankhash
+// Simply convert tabs to spaces and it will be a unique identifier
+//
+/// This is intended for rearrange macro
+/// This represents nested level
+/// Therefore new struct or value should be used for capturing parts where to
+/// increase numbers
+#[derive(Default, Debug, PartialEq, Eq, Hash)]
+struct BlankHash {
+    index: usize,
+}
+
+impl From<BlankHash> for usize {
+    fn from(value: BlankHash) -> Self {
+        value.index
+    }
+}
+
+const SPACE_SIZE: usize = 1;
+const TAB_SIZE: usize = 4;
+
+impl FromStr for BlankHash {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut hash = BlankHash::default();
+        for ch in s.chars() {
+            if ch == '\t' {
+                hash.index += TAB_SIZE;
+            } else if ch == ' ' {
+                hash.index += SPACE_SIZE;
+            } else {
+                return Err(RadError::InvalidCommandOption(format!(
+                    "Could not create a BlankHash from string possibly due to \
+            incorrect input : Source string \"{}\"",
+                    s
+                )));
+            }
+        }
+        Ok(hash)
+    }
+}
+
+#[derive(Debug, Default)]
+struct ListCounterByLevel {
+    // key means level and value means total count of list items
+    counts: HashMap<usize, usize>,
 }
