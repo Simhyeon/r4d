@@ -234,7 +234,7 @@ impl Utils {
         #[cfg(not(target_os = "windows"))]
         let process = std::process::Command::new("sh")
             .arg("-c")
-            .arg(&args[0..].join(" ")) // TODO, is this correct?
+            .arg(&args[0..].join(" "))
             .stdin(Stdio::piped())
             .spawn()
             .map_err(|_| {

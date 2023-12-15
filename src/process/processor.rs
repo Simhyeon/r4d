@@ -1976,10 +1976,9 @@ impl<'processor> Processor<'processor> {
                     return Ok(None);
                 }
 
+                // Execute a macro function with arguments and get value
                 let final_result = func(&args, level, self)?;
-                // TODO
-                // Make parse logic consistent, not defined by delarator
-                // result = self.parse_chunk_args(level, caller, &result)?;
+
                 return Ok(final_result);
             }
         }

@@ -1766,8 +1766,6 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             let result =
                 Formatter::csv_to_macros(&macro_name, &macro_data, &processor.state.newline)?;
 
-            // TODO
-            // This behaviour might can be improved
             // Disable debugging for nested macro expansion
             #[cfg(feature = "debug")]
             let original = processor.is_debug();

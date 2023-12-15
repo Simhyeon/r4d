@@ -99,7 +99,7 @@ impl Debugger {
         } else {
             ""
         };
-        // TODO
+
         // This utilizes eprint variant which can yield not handled error
         // but it is generally ok because debugger is mostly self contained process
         eprintln!(

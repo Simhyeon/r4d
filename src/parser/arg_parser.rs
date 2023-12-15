@@ -160,8 +160,6 @@ impl ArgParser {
                 // Push everything to current item, index, value or you name it
                 GreedyState::Greedy => {
                     value.push(ch);
-                    // TODO check this line if this is neceesary
-                    // continue; = self.no_previous = true;
                 }
                 GreedyState::Never => {
                     // move to next value

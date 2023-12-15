@@ -33,8 +33,6 @@ use std::str::FromStr;
 /// Types for align macros
 const ALIGN_TYPES: [&str; 3] = ["left", "right", "center"];
 
-// TODO
-// Check this regex
 // 1. leading space & tabs
 // 2. Numbers ( could be multiple )
 // 3. Any character except space, tab, newline
@@ -45,7 +43,7 @@ static BLANKHASH_MATCH: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"(^[\s\t]*)\d+([^\d\s]+)\s+"#).expect("Failed to create blank regex")
 });
 
-// This is similar but captures for replace
+// This is similar to blankhash but for replacing purpose
 static REPLACER_MATCH: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"(^[\s\t]*)(\d+)([^\d\s]+)(\s+)"#).expect("Failed to create replacer regex")
 });
@@ -2438,15 +2436,21 @@ impl FunctionMacroMap {
         Ok(None)
     }
 
-    // TODO
-    // You have to iterate twice
-    // 1. Regex and calculate nested level and total count of list items
+    // This function iterate through lines twice
+    // 1. Regex and calculate nested level and corresponding identifier
     // 2. Regex again while replacing specific parts of string
     /// Rearrange
     ///
     /// # Usage
     ///
-    /// $rer(contents)
+    /// $rer(
+    /// 3.
+    /// 2.
+    /// 1.
+    ///     4]
+    ///     7]
+    ///     8]
+    /// )
     pub(crate) fn rearrange(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let mut rer_hash = RerHash::default();
@@ -3798,14 +3802,7 @@ impl RerHash {
     }
 }
 
-// TODO
-// Actually you don't need blankhash
-// Simply convert tabs to spaces and it will be a unique identifier
-//
-/// This is intended for rearrange macro
-/// This represents nested level
-/// Therefore new struct or value should be used for capturing parts where to
-/// increase numbers
+/// This is sub-struct for rearrange macro
 #[derive(Default, Debug, PartialEq, Eq, Hash)]
 struct BlankHash {
     index: usize,

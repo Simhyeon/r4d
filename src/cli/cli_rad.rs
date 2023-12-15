@@ -341,7 +341,7 @@ impl<'cli> RadCli<'cli> {
                     .unwrap_or(&"all".to_string()),
             )?;
             let sig_map = self.processor.get_signature_map(sig_type)?;
-            // TODO
+
             let sig_json =
                 serde_json::to_string(&sig_map.content).expect("Failed to create sig map");
 
@@ -350,7 +350,7 @@ impl<'cli> RadCli<'cli> {
 
             // TODO Check if this behaviour persists on clap version 4.0
             // This is default empty value should not be "" because it is ignored by clap
-            if file_name != &" " {
+            if file_name != " " {
                 std::fs::write(Path::new(file_name), sig_json.as_bytes())?;
             } else {
                 writeln!(std::io::stdout(), "{}", &sig_json)?;

@@ -414,9 +414,8 @@ impl RadoCli {
         let source_file = path;
         let mut target_file = self.get_temp_path(path)?;
         if target_file.exists() {
-            // TODO
             // Compare file_stamp
-            let source_modified = std::fs::metadata(&source_file)?.modified()?;
+            let source_modified = std::fs::metadata(source_file)?.modified()?;
             let temp_modified = std::fs::metadata(&target_file)?.modified()?;
 
             // Source is freshier or force
