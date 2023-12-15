@@ -224,6 +224,7 @@ impl<'cli> RadCli<'cli> {
 
         // Process
         // Redirect stdin as argument
+        // Pipe doesn't evaluate contents but simply save contents into a pipe
         if args.get_flag("pipe") {
             let stdin = std::io::stdin();
             let mut input = String::new();
@@ -423,7 +424,7 @@ impl<'cli> RadCli<'cli> {
                 .long("pipe")
                 .action(ArgAction::SetTrue)
                 .conflicts_with("combination")
-                .help("Send stdin as a pipe value"))
+                .help("Send stdin as a pipe value without evaluation"))
             .arg(Arg::new("literal")
                 .short('L')
                 .action(ArgAction::SetTrue)

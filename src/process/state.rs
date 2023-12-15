@@ -103,8 +103,8 @@ impl ProcessorState {
     }
 
     /// Get a pipe with key
-    pub fn get_pipe(&mut self, key: &str) -> Option<String> {
-        if self.pipe_truncate {
+    pub fn get_pipe(&mut self, key: &str, ignore_truncate: bool) -> Option<String> {
+        if self.pipe_truncate && !ignore_truncate {
             self.pipe_map.remove(key)
         } else {
             self.pipe_map.get(key).map(|s| s.to_owned())

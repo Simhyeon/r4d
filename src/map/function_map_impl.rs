@@ -1276,14 +1276,14 @@ impl FunctionMacroMap {
         let pipe = if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let name = trim!(&args[0]);
             if name.is_empty() {
-                let out = processor.state.get_pipe("-");
+                let out = processor.state.get_pipe("-", false);
 
                 if out.is_none() {
                     processor.log_warning("Empty pipe", WarningType::Sanity)?;
                 }
 
                 out
-            } else if let Some(pipe) = processor.state.get_pipe(&args[0]) {
+            } else if let Some(pipe) = processor.state.get_pipe(&args[0], false) {
                 Some(pipe)
             } else {
                 processor.log_warning(
@@ -1294,7 +1294,7 @@ impl FunctionMacroMap {
             }
         } else {
             // "-" Always exsit, thus safe to unwrap
-            let out = processor.state.get_pipe("-").unwrap_or_default();
+            let out = processor.state.get_pipe("-", false).unwrap_or_default();
             Some(out)
         };
         Ok(pipe)

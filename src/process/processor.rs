@@ -1860,7 +1860,7 @@ impl<'processor> Processor<'processor> {
         // Pipe doesn't expanded
         if frag.pipe_input {
             skip_expansion = true;
-            frag.args = self.state.get_pipe("-").unwrap_or_default();
+            frag.args = self.state.get_pipe("-", false).unwrap_or_default();
         }
 
         // Assign local variables
@@ -2516,7 +2516,7 @@ impl<'processor> Processor<'processor> {
         {
             // Respect trim input
             let args = if frag.pipe_input {
-                self.state.get_pipe("-").unwrap_or_default()
+                self.state.get_pipe("-", true).unwrap_or_default()
             } else {
                 frag.args.clone()
             };
