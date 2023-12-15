@@ -1752,9 +1752,24 @@ $relay(temp)$halt()".to_string()),
                 "rer".to_owned(),
                 FMacroSign::new(
                     "rer",
-                    ESR,
+                    ["a_list_contents"],
                     Self::rearrange,
-                    Some("SOME".to_string()),
+                    Some("Rearrange order of lists
+
+# Arguments
+
+- a_list_contents : List contents to rearrange
+
+# Example
+
+$assert($rer(8. a
+2. b
+3. c
+1. d)$enl()
+,1. a
+2. b
+3. c
+4. d)".to_string()),
                 ),
             ),
             (
