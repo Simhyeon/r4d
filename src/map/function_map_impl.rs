@@ -14,7 +14,6 @@ use crate::{trim, CommentType};
 use crate::{ArgParser, GreedyState};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
-use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashMap;
@@ -33,6 +32,9 @@ use std::str::FromStr;
 /// Types for align macros
 const ALIGN_TYPES: [&str; 3] = ["left", "right", "center"];
 
+// ----------
+// rer related regexes
+//
 // 1. leading space & tabs
 // 2. Numbers ( could be multiple )
 // 3. Any character except space, tab, newline
@@ -47,6 +49,7 @@ static BLANKHASH_MATCH: Lazy<Regex> = Lazy::new(|| {
 static REPLACER_MATCH: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"(^[\s\t]*)(\d+)([^\d\s]+)(\s+)"#).expect("Failed to create replacer regex")
 });
+// ----------
 
 // Thanks stack overflow! SRC : https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers
 /// Number matches
@@ -1445,6 +1448,52 @@ impl FunctionMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "Align requires four arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Ailgn texts by separator
+    ///
+    /// # Usage
+    ///
+    /// $alignsp(%, contents to align)
+    pub(crate) fn align_by_separator(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        use std::fmt::Write;
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let separator = &args[0];
+            let contents = args[1].lines();
+            let mut max_length = 0usize;
+            let mut result = String::new();
+            let nl = &p.state.newline;
+            for line in contents.clone() {
+                let mut splitted = line.split(separator);
+                let leading = splitted.next().unwrap();
+                if leading != line {
+                    max_length = max_length.max(leading.chars().count());
+                }
+            }
+            for line in contents {
+                let mut splitted = line.split(separator);
+                let leading = splitted.next().unwrap();
+                if leading != line {
+                    let following = splitted.next().unwrap();
+                    write!(
+                        result,
+                        "{}{}{}{}{}",
+                        leading,
+                        " ".repeat(max_length - leading.chars().count()),
+                        separator,
+                        following,
+                        nl
+                    )?;
+                } else {
+                    write!(result, "{}{}", leading, nl)?;
+                }
+            }
+            Ok(Some(result))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Alignsp requires two arguments".to_owned(),
             ))
         }
     }
@@ -3758,6 +3807,10 @@ impl FunctionMacroMap {
         }
     }
 }
+
+// ---
+// Private structs for organizational purposes
+// ---
 
 /// Counter for total list items
 #[derive(Default, Debug)]

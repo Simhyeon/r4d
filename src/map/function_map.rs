@@ -119,6 +119,26 @@ $assert(**Hello*,$align(center,8,*,Hello))".to_string(),
                 ),
             ),
             (
+                "alignsp".to_owned(),
+                FMacroSign::new(
+                    "alignsp",
+                    ESR,
+                    Self::align_by_separator,
+                    Some(
+                        "Align texts by separator
+
+# Arguments
+
+                        Empty
+
+# Example
+
+                        EMPTY 
+".to_string(),
+                    ),
+                ),
+            ),
+            (
                 "gt".to_owned(),
                 FMacroSign::new(
                     "gt",
