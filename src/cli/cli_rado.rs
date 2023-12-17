@@ -99,7 +99,7 @@ impl RadoCli {
             #[cfg(feature = "debug")]
             Some(("diff", sub_m)) => {
                 if let Some(input) = sub_m.get_one::<&str>("INPUT") {
-                    self.show_diff(input, sub_m.contains_id("force"))?;
+                    self.show_diff(input, sub_m.get_flag("force"))?;
                 }
             }
             Some(("clear", _)) => {
@@ -111,7 +111,7 @@ impl RadoCli {
             Some(("force", sub_m)) => {
                 if let Some(input) = sub_m.get_one::<&str>("INPUT") {
                     let path = self.update_file(input, true)?;
-                    if sub_m.contains_id("read") {
+                    if sub_m.get_flag("read") {
                         self.view_file(&path)?;
                     }
                 }
