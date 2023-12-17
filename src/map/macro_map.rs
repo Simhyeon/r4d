@@ -251,37 +251,17 @@ impl MacroMap {
     /// Get macro signatures object
     #[cfg(feature = "signature")]
     pub fn get_signatures(&self) -> Vec<MacroSignature> {
-        let key_iter = self
-            .deterred
-            .macros
-            .iter()
-            .map(|(_, sig)| MacroSignature::from(sig));
-        let funcm_iter = self
-            .function
-            .macros
-            .iter()
-            .map(|(_, sig)| MacroSignature::from(sig));
-        let runtime_iter = self
-            .runtime
-            .macros
-            .iter()
-            .map(|(_, mac)| MacroSignature::from(mac));
+        let key_iter = self.deterred.macros.values().map(MacroSignature::from);
+        let funcm_iter = self.function.macros.values().map(MacroSignature::from);
+        let runtime_iter = self.runtime.macros.values().map(MacroSignature::from);
         key_iter.chain(funcm_iter).chain(runtime_iter).collect()
     }
 
     /// Get function signatures
     #[cfg(feature = "signature")]
     pub fn get_function_signatures(&self) -> Vec<MacroSignature> {
-        let key_iter = self
-            .deterred
-            .macros
-            .iter()
-            .map(|(_, sig)| MacroSignature::from(sig));
-        let funcm_iter = self
-            .function
-            .macros
-            .iter()
-            .map(|(_, sig)| MacroSignature::from(sig));
+        let key_iter = self.deterred.macros.values().map(MacroSignature::from);
+        let funcm_iter = self.function.macros.values().map(MacroSignature::from);
         key_iter.chain(funcm_iter).collect()
     }
 
@@ -290,8 +270,8 @@ impl MacroMap {
     pub fn get_runtime_signatures(&self) -> Vec<MacroSignature> {
         self.runtime
             .macros
-            .iter()
-            .map(|(_, mac)| MacroSignature::from(mac))
+            .values()
+            .map(MacroSignature::from)
             .collect()
     }
 }

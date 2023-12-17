@@ -116,7 +116,7 @@ impl<'cli> RadCli<'cli> {
         // Help command
         #[cfg(feature = "signature")]
         if let Some(name) = args.get_one::<String>("manual") {
-            if name == &"*" {
+            if name == "*" {
                 // Get all values
                 // Sort by name
                 // and make it a single stirng, then print

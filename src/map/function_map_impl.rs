@@ -588,7 +588,7 @@ impl FunctionMacroMap {
                 } else {
                     &[]
                 };
-                Command::new(&arg_vec[0])
+                Command::new(arg_vec[0])
                     .args(sys_args)
                     .output()
                     .expect("failed to execute process")

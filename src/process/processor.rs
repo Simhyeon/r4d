@@ -3479,7 +3479,7 @@ impl RuleFile {
                 err
             )))
         } else {
-            self.rules.extend(result.unwrap().rules.into_iter());
+            self.rules.extend(result.unwrap().rules);
             Ok(())
         }
     }
@@ -3488,7 +3488,7 @@ impl RuleFile {
     pub fn melt_literal(&mut self, literal: &[u8]) -> RadResult<()> {
         let result = bincode::deserialize::<Self>(literal);
         if let Ok(rule_file) = result {
-            self.rules.extend(rule_file.rules.into_iter());
+            self.rules.extend(rule_file.rules);
             Ok(())
         } else {
             Err(RadError::BincodeError(

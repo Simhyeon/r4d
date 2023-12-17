@@ -960,7 +960,7 @@ impl DeterredMacroMap {
                     }
                 }
 
-                if let Some(relay) = processor.state.relay.last().clone() {
+                if let Some(relay) = processor.state.relay.last() {
                     processor.log_warning(
                         &format!("Read file's content will be relayed to \"{:?}\"", relay),
                         WarningType::Sanity,

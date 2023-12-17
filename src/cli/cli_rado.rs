@@ -66,8 +66,8 @@ impl RadoCli {
                 write!(
                     std::io::stdout(),
                     "RADO_EDITOR\t: {}\nRADO_DIR\t: {}\n",
-                    &*RADO_EDITOR,
-                    (&*RADO_DIR).display()
+                    RADO_EDITOR,
+                    (RADO_DIR).display()
                 )?;
             }
             Some(("package", sub_m)) => {
@@ -290,7 +290,7 @@ impl RadoCli {
             let cached_path = std::env::temp_dir().join("rado_repl.txt");
             let cached_string = cached_path.display().to_string();
 
-            rad_args.extend(vec!["-o", &cached_string].iter());
+            rad_args.extend(["-o", &cached_string].iter());
             {
                 RadCli::new().parse_from(&rad_args)?;
             }
@@ -430,7 +430,7 @@ impl RadoCli {
                     target_file = path.to_path_buf();
                 }
 
-                rad_args.extend(vec!["-o", target_file.to_str().as_ref().unwrap()].iter());
+                rad_args.extend(["-o", target_file.to_str().as_ref().unwrap()].iter());
                 RadCli::new().parse_from(&rad_args)?;
             }
         } else {
@@ -446,7 +446,7 @@ impl RadoCli {
             if !self.flag_arguments.is_empty() {
                 rad_args.extend(self.flag_arguments.iter().map(|s| s.as_str()));
             }
-            rad_args.extend(vec!["-o", target_file.to_str().as_ref().unwrap()].iter());
+            rad_args.extend(["-o", target_file.to_str().as_ref().unwrap()].iter());
             RadCli::new().parse_from(&rad_args)?;
         }
 
