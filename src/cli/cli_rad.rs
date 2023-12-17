@@ -264,6 +264,18 @@ impl<'cli> RadCli<'cli> {
                             let result = self.processor.process_static_script(src_as_file);
                             self.processor.toggle_hygiene(false);
                             result
+                        } else if let Some(mac) = args.get_one::<String>("stream-chunk") {
+                            // Execute macros on each file
+                            self.processor.stream_by_chunk(
+                                &std::fs::read_to_string(src)?,
+                                Some("src"),
+                                mac,
+                            )
+                        } else if let Some(mac) = args.get_one::<String>("stream-lines") {
+                            let file_stream = std::fs::File::open(src)?;
+                            let mut reader = std::io::BufReader::new(file_stream);
+                            self.processor
+                                .stream_by_lines(&mut reader, Some("src"), mac)
                         } else {
                             self.processor.process_file(src_as_file)
                         };
@@ -300,6 +312,19 @@ impl<'cli> RadCli<'cli> {
                 return Err(RadError::InvalidCommandOption(String::from(
                     "Stdin cannot use debug option",
                 )));
+            } else if let Some(mac) = args.get_one::<String>("stream-chunk") {
+                // Read stdin as chunk and stream to a macro
+                let mut input = String::new();
+                std::io::stdin().read_to_string(&mut input)?;
+                self.processor.stream_by_chunk(&input, None, mac)?;
+            } else if let Some(mac) = args.get_one::<String>("stream-lines") {
+                // Read stdin as line buffer and streams to a macro
+                #[allow(unused_imports)]
+                // TODO This was copy pasted check if this is necessary
+                use std::io::Read;
+                let stdin = std::io::stdin();
+                let mut reader = stdin.lock();
+                self.processor.stream_by_lines(&mut reader, None, mac)?;
             } else {
                 self.processor.process_stdin()?;
             }
@@ -430,6 +455,16 @@ impl<'cli> RadCli<'cli> {
                 .action(ArgAction::SetTrue)
                 .long("literal")
                 .help("Don't interpret input source as file"))
+            .arg(Arg::new("stream-chunk")
+                .action(ArgAction::Set)
+                .long("stream-chunk")
+                .conflicts_with_all(["pipe", "combination", "literal", "stream-lines"])
+                .help("Stream contents to a macro execution"))
+            .arg(Arg::new("stream-lines")
+                .action(ArgAction::Set)
+                .long("stream-lines")
+                .conflicts_with_all(["pipe", "combination", "literal", "stream-chunk"])
+                .help("Stream contents to a macro execution but by lines"))
             .arg(Arg::new("script")
                 .long("script")
                 .action(ArgAction::SetTrue)

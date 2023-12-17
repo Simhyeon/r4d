@@ -1307,6 +1307,86 @@ impl<'processor> Processor<'processor> {
         self.organize_and_clear_cache()
     }
 
+    /// Process chunk for streaming
+    ///
+    /// ```no_run
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.stream_by_chunk(...)
+    ///     .expect("Failed to process stream lines");
+    /// ```
+    pub fn stream_by_chunk(
+        &mut self,
+        content: &str,
+        current_target: Option<&str>,
+        macro_name: &str,
+    ) -> RadResult<Option<String>> {
+        // Sandboxed environment, backup
+        let backup = if self.state.sandbox {
+            Some(self.backup())
+        } else {
+            None
+        };
+
+        // Set target
+        if let Some(file) = current_target {
+            self.set_file(file)?;
+        } else {
+            self.set_input_stdin()?;
+        }
+
+        self.process_string(&format!(r#"${}({})"#, macro_name, content))?;
+
+        // Recover previous state from sandboxed processing
+        if let Some(backup) = backup {
+            self.recover(backup)?;
+            self.state.sandbox = false;
+        }
+
+        self.organize_and_clear_cache()
+    }
+
+    /// Process lines for streaming
+    ///
+    /// ```no_run
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.stream_by_lines(...)
+    ///     .expect("Failed to process stream lines");
+    /// ```
+    pub fn stream_by_lines(
+        &mut self,
+        buffer: &mut impl std::io::BufRead,
+        current_target: Option<&str>,
+        macro_name: &str,
+    ) -> RadResult<Option<String>> {
+        // Sandboxed environment, backup
+        let backup = if self.state.sandbox {
+            Some(self.backup())
+        } else {
+            None
+        };
+
+        // Set target
+        if let Some(file) = current_target {
+            self.set_file(file)?;
+        } else {
+            self.set_input_stdin()?;
+        }
+
+        let line_iter = Utils::full_lines(buffer);
+        for line in line_iter {
+            let line = line?;
+            self.process_string(&format!("${}({})", macro_name, line))?;
+        }
+
+        // Recover previous state from sandboxed processing
+        if let Some(backup) = backup {
+            self.recover(backup)?;
+            self.state.sandbox = false;
+        }
+
+        self.organize_and_clear_cache()
+    }
+
     /// Process contents from a static script
     ///
     /// ```no_run
