@@ -375,6 +375,60 @@ $assert=(
                 ),
             ),
             (
+                "stream".to_owned(),
+                DMacroSign::new(
+                    "stream",
+                    ["a_macro_name^"],
+                    Self::stream,
+                    Some("Stream texts to macro invocaiton
+
+# This is technically a wrapper around relay macro
+
+# Arguments
+
+- a_macro_name : A macro target that following texts are relayed to ( trimmed )
+
+# Example
+
+$stream(squash)
+
+abc
+
+clo
+
+fgh
+
+$consume()".to_string()),
+                ),
+            ),
+            (
+                "streaml".to_owned(),
+                DMacroSign::new(
+                    "streaml",
+                    ["a_macro_name^"],
+                    Self::stream_by_lines,
+                    Some("Stream texts to macro invocaiton but by lines
+
+# This is technically a wrapper around relay macro
+
+# Arguments
+
+- a_macro_name : A macro target that following texts are relayed to ( trimmed )
+
+# Example
+
+$streaml(trim)
+
+abc
+
+clo
+
+fgh
+
+$consume()".to_string()),
+                ),
+            ),
+            (
                 "if".to_owned(),
                 DMacroSign::new(
                     "if",

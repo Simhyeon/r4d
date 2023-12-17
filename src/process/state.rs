@@ -34,6 +34,7 @@ pub(crate) struct ProcessorState {
     pub behaviour: ErrorBehaviour,
     pub process_type: ProcessType,
     pub comment_type: CommentType,
+    pub stream_state: StreamState,
     // Temp target needs to save both path and file
     // because file doesn't necessarily have path.
     // Especially in unix, this is not so an unique case
@@ -67,6 +68,7 @@ impl ProcessorState {
             behaviour: ErrorBehaviour::Strict,
             process_type: ProcessType::Expand,
             comment_type: CommentType::None,
+            stream_state: StreamState::default(),
             sandbox: false,
             #[cfg(not(feature = "wasm"))]
             temp_target: FileTarget::with_truncate(&std::env::temp_dir().join("rad.txt")).unwrap(),
@@ -157,5 +159,20 @@ impl RegexCache {
         } else {
             self.cache.get(src)
         }
+    }
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct StreamState {
+    pub on_stream: bool,
+    pub as_lines: bool,
+    pub macro_name_src: String,
+}
+
+impl StreamState {
+    pub fn clear(&mut self) {
+        self.on_stream = false;
+        self.as_lines = false;
+        self.macro_name_src.clear();
     }
 }

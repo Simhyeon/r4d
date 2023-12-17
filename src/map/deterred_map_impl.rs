@@ -3,14 +3,17 @@ use crate::auth::AuthType;
 #[cfg(not(feature = "wasm"))]
 use crate::common::ProcessInput;
 #[cfg(not(feature = "wasm"))]
-use crate::common::{ContainerType, FileTarget, FlowControl, RelayTarget};
-use crate::common::{ErrorBehaviour, MacroType, RadResult, STREAM_CONTAINER, STREAM_MACRO_NAME};
+use crate::common::{ContainerType, FileTarget};
+use crate::common::{
+    ErrorBehaviour, FlowControl, MacroType, RadResult, RelayTarget, STREAM_CONTAINER,
+};
 use crate::consts::MACRO_SPECIAL_ANON;
 use crate::deterred_map::DeterredMacroMap;
 use crate::formatter::Formatter;
 use crate::parser::GreedyState;
 use crate::utils::Utils;
 use crate::ArgParser;
+use crate::WarningType;
 use crate::{trim, Processor, RadError};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -749,16 +752,32 @@ impl DeterredMacroMap {
     /// $stream(macro_name)
     /// $consume()
     pub(crate) fn consume(_: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
-        let macro_name = p.get_runtime_macro_body(STREAM_MACRO_NAME)?.to_owned();
+        p.state.relay.pop();
+
+        let mut ap = ArgParser::new().no_strip();
+        ap.set_strip(true);
+        let macro_name_src = std::mem::take(&mut p.state.stream_state.macro_name_src);
+        let macro_name = p.parse_and_strip(&mut ap, level, "consume", &macro_name_src)?;
         let content = p.get_runtime_macro_body(STREAM_CONTAINER)?.to_owned();
 
         // You should pop first because it has to be evaluated to open
-        p.state.relay.pop();
 
-        let result = p.execute_macro(level, "consume", &macro_name, &content)?;
+        let result = if p.state.stream_state.as_lines {
+            let mut acc = String::new();
+            for item in content.lines() {
+                acc.push_str(
+                    &p.execute_macro(level, "consume", &macro_name, item)?
+                        .unwrap_or_default(),
+                );
+                acc.push_str(&p.state.newline);
+            }
+            Some(acc)
+        } else {
+            p.execute_macro(level, "consume", &macro_name, &content)?
+        };
 
         p.replace_macro(STREAM_CONTAINER, &String::default()); // Clean macro
-        p.replace_macro(STREAM_MACRO_NAME, &String::default()); // Clean macro
+        p.state.stream_state.clear();
         Ok(result)
     }
 
@@ -923,8 +942,6 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        use crate::WarningType;
-
         if !Utils::is_granted("readin", AuthType::FIN, processor)? {
             return Ok(None);
         }
@@ -1084,6 +1101,77 @@ impl DeterredMacroMap {
                 "spread requires two arguments".to_owned(),
             ))
         }
+    }
+
+    /// stream
+    ///
+    /// # Usage
+    ///
+    /// $stream(macro_name)
+    /// $consume()
+    pub(crate) fn stream(args_src: &str, _: usize, p: &mut Processor) -> RadResult<Option<String>> {
+        if p.state.stream_state.on_stream {
+            return Err(RadError::InvalidArgument(
+                "Stream cannot be nested".to_string(),
+            ));
+        }
+        p.state.stream_state.on_stream = true;
+
+        let name = trim!(args_src);
+
+        if name.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "stream requires an argument ( macro name )".to_owned(),
+            ));
+        }
+
+        p.log_warning("Streaming text content to a macro", WarningType::Security)?;
+
+        p.state.stream_state.macro_name_src = name.to_string();
+
+        p.add_container_macro(STREAM_CONTAINER)?;
+        let rtype = RelayTarget::Macro(STREAM_CONTAINER.to_string());
+
+        p.state.relay.push(rtype);
+        Ok(None)
+    }
+
+    /// stream by lines
+    ///
+    /// # Usage
+    ///
+    /// $streaml(macro_name)
+    /// $consume()
+    pub(crate) fn stream_by_lines(
+        args_src: &str,
+        _: usize,
+        p: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        if p.state.stream_state.on_stream {
+            return Err(RadError::InvalidArgument(
+                "Stream series cannot be nested".to_string(),
+            ));
+        }
+        p.state.stream_state.on_stream = true;
+        p.state.stream_state.as_lines = true;
+
+        let name = trim!(args_src);
+
+        if name.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "streaml requires an argument ( macro name )".to_owned(),
+            ));
+        }
+
+        p.log_warning("Streaming text content to a macro", WarningType::Security)?;
+
+        p.state.stream_state.macro_name_src = name.to_string();
+
+        p.add_container_macro(STREAM_CONTAINER)?;
+        let rtype = RelayTarget::Macro(STREAM_CONTAINER.to_string());
+
+        p.state.relay.push(rtype);
+        Ok(None)
     }
 
     /// Paste given file's content

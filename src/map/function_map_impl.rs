@@ -2,7 +2,6 @@ use super::function_map::FunctionMacroMap;
 
 use crate::auth::{AuthState, AuthType};
 use crate::common::{ErrorBehaviour, FlowControl, MacroType, ProcessInput, RadResult, RelayTarget};
-use crate::common::{STREAM_CONTAINER, STREAM_MACRO_NAME};
 use crate::consts::{LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER, PATH_SEPARATOR};
 use crate::error::RadError;
 use crate::formatter::Formatter;
@@ -633,36 +632,6 @@ impl FunctionMacroMap {
 
     /// Placeholder for define
     pub(crate) fn define_type(_: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        Ok(None)
-    }
-
-    /// stream
-    ///
-    /// # Usage
-    ///
-    /// $stream(macro_name)
-    /// $consume()
-    pub(crate) fn stream(args_src: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let name = trim!(args_src);
-
-        if name.is_empty() {
-            return Err(RadError::InvalidArgument(
-                "stream requires an argument ( macro name )".to_owned(),
-            ));
-        }
-
-        p.log_warning(
-            &format!("Streaming text content to \"{}\"", name),
-            WarningType::Security,
-        )?;
-
-        p.add_container_macro(STREAM_MACRO_NAME)?;
-        p.add_container_macro(STREAM_CONTAINER)?;
-
-        p.replace_macro(STREAM_MACRO_NAME, &name);
-        let rtype = RelayTarget::Macro(STREAM_CONTAINER.to_string());
-
-        p.state.relay.push(rtype);
         Ok(None)
     }
 
