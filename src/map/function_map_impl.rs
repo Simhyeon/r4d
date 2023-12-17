@@ -1460,20 +1460,20 @@ impl FunctionMacroMap {
     pub(crate) fn align_by_separator(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let separator = &args[0];
+            let separator = trim!(&args[0]).to_string();
             let contents = args[1].lines();
             let mut max_length = 0usize;
             let mut result = String::new();
             let nl = &p.state.newline;
             for line in contents.clone() {
-                let mut splitted = line.split(separator);
+                let mut splitted = line.split(&separator);
                 let leading = splitted.next().unwrap();
                 if leading != line {
                     max_length = max_length.max(leading.chars().count());
                 }
             }
             for line in contents {
-                let mut splitted = line.split(separator);
+                let mut splitted = line.split(&separator);
                 let leading = splitted.next().unwrap();
                 if leading != line {
                     let following = splitted.next().unwrap();

@@ -122,18 +122,28 @@ $assert(**Hello*,$align(center,8,*,Hello))".to_string(),
                 "alignsp".to_owned(),
                 FMacroSign::new(
                     "alignsp",
-                    ESR,
+                    ["a_separator^", "a_lines"],
                     Self::align_by_separator,
                     Some(
                         "Align texts by separator
 
 # Arguments
 
-                        Empty
+- a_separator : A separator string ( trimmed )
+- a_lines : Lines to align
 
 # Example
 
-                        EMPTY 
+$assert=(
+First       %% wow
+Second part %% bob
+Thirdos     %% Howzer,
+$alignsp^=(
+%%,
+First %% wow
+Second part %% bob
+Thirdos %% Howzer
+))
 ".to_string(),
                     ),
                 ),
