@@ -757,6 +757,7 @@ impl DeterredMacroMap {
 
         let result = p.execute_macro(level, "consume", &macro_name, &content)?;
 
+        p.replace_macro(STREAM_CONTAINER, &String::default()); // Clean macro
         p.replace_macro(STREAM_MACRO_NAME, &String::default()); // Clean macro
         Ok(result)
     }
