@@ -287,6 +287,33 @@ $assert(Hello World,$strip(2,' Hello World '))".to_string()),
                 ),
             ),
             (
+                "stream".to_owned(),
+                FMacroSign::new(
+                    "stream",
+                    ["a_macro_name^"],
+                    Self::stream,
+                    Some("Stream texts to macro invocaiton
+
+# This is technically a wrapper around relay macro
+
+# Arguments
+
+- a_macro_name : A macro target that following texts are relayed to ( trimmed )
+
+# Example
+
+$stream(squash)
+
+abc
+
+clo
+
+fgh
+
+$consume()".to_string()),
+                ),
+            ),
+            (
                 "stripf".to_owned(),
                 FMacroSign::new(
                     "stripf",
