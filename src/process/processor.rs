@@ -1041,7 +1041,7 @@ impl<'processor> Processor<'processor> {
         self.map.new_anon_macro(body)
     }
 
-    /// Add runtime rules without builder pattern
+    /// Add runtime macros(rules) without builder pattern
     ///
     /// # Args
     ///
@@ -1092,7 +1092,7 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    /// Add static rules without builder pattern
+    /// Add static (macros) rules without builder pattern
     ///
     /// **NOTE** that this method doesn't expand body, but needs to be handled before invoking this method
     ///
@@ -2736,6 +2736,24 @@ impl<'processor> Processor<'processor> {
     #[cfg(not(feature = "wasm"))]
     pub(crate) fn get_logger_write_option(&self) -> Option<&WriteOption> {
         self.logger.write_option.as_ref()
+    }
+
+    /// Method for adding container macros
+    ///
+    /// This doesn't respect hygine but always add a macro
+    pub(crate) fn add_container_macro(&mut self, name: &str) -> RadResult<()> {
+        self.map
+            .runtime
+            .macros
+            .entry(name.to_string())
+            .or_insert(RuntimeMacro {
+                name: name.to_string(),
+                args: vec![],
+                body: String::new(),
+                desc: None,
+                is_static: true,
+            });
+        Ok(())
     }
 
     /// Get comment chararacter
