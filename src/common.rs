@@ -5,6 +5,10 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 
+// Stream related static strings
+pub(crate) static STREAM_CONTAINER: &str = "!STREAM_CONTAINER";
+pub(crate) static STREAM_MACRO_NAME: &str = "!STREAM_MACRO_NAME";
+
 /// Genenric result type for every rad operations
 ///
 /// RadResult is a genric result type of T and error of [RadError](RadError)
