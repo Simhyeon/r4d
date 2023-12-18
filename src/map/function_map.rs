@@ -119,9 +119,9 @@ $assert(**Hello*,$align(center,8,*,Hello))".to_string(),
                 ),
             ),
             (
-                "alignsp".to_owned(),
+                "alignby".to_owned(),
                 FMacroSign::new(
-                    "alignsp",
+                    "alignby",
                     ["a_separator^", "a_lines"],
                     Self::align_by_separator,
                     Some(
@@ -138,7 +138,7 @@ $assert=(
 First       %% wow
 Second part %% bob
 Thirdos     %% Howzer,
-$alignsp^=(
+$alignby^=(
 %%,
 First %% wow
 Second part %% bob

@@ -1456,7 +1456,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $alignsp(%, contents to align)
+    /// $alignby(%, contents to align)
     pub(crate) fn align_by_separator(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
