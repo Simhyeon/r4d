@@ -721,8 +721,9 @@ $docu(test,This is test macro)".to_string()),
                     "dump",
                     ["a_file_name^"],
                     Self::dump_file_content,
-                    Some(
-"Dump(truncate) given files' content
+                    Some("Dump(truncate) given files' content
+
+# Auth : FOUT
 
 # Arguments
 
@@ -976,6 +977,7 @@ $assert(abc,$fold(a,b,c))".to_string()),
 
 $assert(abc,$foldl(a
 b
+
 c))".to_string()),
                 ),
             ),
@@ -2857,6 +2859,8 @@ $assert(00:33:40,$hms(2020))"
                     Self::get_file_time,
                     Some(
                         "Get a file's last modified time.
+
+# Auth: FIN
 
 # Arguments
 

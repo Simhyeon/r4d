@@ -2185,9 +2185,16 @@ impl FunctionMacroMap {
 
     /// Fold lines
     ///
+    /// This folds empty lines
+    ///
     /// # Usage
     ///
-    /// $foldl(1,1,2,3,4,5)
+    /// $foldl(1
+    /// 1
+    /// 2
+    /// 3
+    /// 4
+    /// 5)
     pub(crate) fn fold_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let content = args[0].lines().fold(String::new(), |mut acc, a| {
@@ -2991,7 +2998,11 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $dump(macro,content)
-    pub(crate) fn dump_file_content(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+    pub(crate) fn dump_file_content(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if !Utils::is_granted("dump", AuthType::FOUT, p)? {
+            return Ok(None);
+        }
+
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let name = trim!(&args[0]);
             let file_name = Path::new(name.as_ref());
