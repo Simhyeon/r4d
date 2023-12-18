@@ -1,58 +1,39 @@
+--------------------------------------------------------------------------------
+
 ### Todo... First?
 
-* [ ] Upgrade dependencies for sure
-    * [x] Deprecate lazy_static and use once_cell
-    * [x] Implemnet join for dcsv value -> Instread I imported itertools
-    * [x] Check if flate crate is necessary -> Yes it is used in packaing
-    * [ ] Upgrade clap
-* [ ] Add a search algorithm for manual command
-For example
-```shell
-rad --man evaluation
---> There is no macro named as "evaluation". Did you mean "eval"?
-```
-This would be really helpful.
+#### BUG
 
-Or even better, create a new command search
-```shell
-rad --search evaluation
----
-Macro name: eval
-Short desc: blah blah blah
+[bugs](./bugs_to_handle.md)
 
-Macro name: evalk
-Short desc: blah blah blah
----
-```
+#### Documentation
 
-* [ ] Add a new macro called format I don't know but something useful for example
----Formatting comment macro--- Or you know what? how about align after
-```
-$some_name(
-Content # comment
-Longer content # Comment
-)
-is evaluated to
-Content        # comment
-Longer content # Comment
-```
+* [ ] Improve documentations
+    * [ ] Macro indices
+    * [ ] Macro syntaxes
+    * [ ] Hook macro
+    * [ ] ETC...
+* [ ] Add documentation why I didn't use include macro for extension.
+    - Mostly because it is not controlled at all. Although it might be good.
+      BUT really hard to help when user makes a mistake and it goes to
+      andromeda hell.
 
-Formatting comments are bullshit. And often you change block contents. Vim
-command solves this problem, but ot everyone uses modal based editor.
-Therefore, it is better to let it processed by macro.
+#### New features
 
-* [ ] There is something not working in mac.r4d but not reproducible in the folder... what?
-    - After process exited, logger panics and I don't know why.
-    - What I tried but no success
-        - Simple exit call
-        - Exit call inside if macro
-* [ ] Update dependencies to latest
-    - Clap
-* [ ] Update documentation on ext macro builder
-    - I found one outdated information for "add_ext_macro"
-    - Also for ExtMacroBuilder's documentation
-    --> Fixed a little but keep an eye for them.
-* [x] Added get_static_macro
+* [ ] Stream related flags
+    * [ ] Enable user to use anon macro in flag
+* [ ] [similar](./similar.md)
+
+#### New macro
+
+#### MISC, bug detecting
+
+* [ ] Check logging sanity as a whole for the time.
+    * [ ] Stream related flags
+    * [ ] Stream macro
+    * [ ] SPread macro
+* [ ] Check if macro attribute is necessary for macro name input ( map, spread )
+* [ ] Check cli option
 
 ### TODO
 
@@ -64,40 +45,16 @@ file.
 - To think about it, one of the power of r4d is stream based processing which
   makes concrete structure hard to be achieved... But shouldn't there be a
   hybrid way to do so?
-* [x] Macros
-* [x] Macro ergonomics
-* [x] Library
 * [ ] Bug fixes
-    * [ ] StorageUpdate error display fix
-    - Actually I forgot what was the exact problem...
     * [ ] Split_arguments should return Option not a result... Although this is
       somewaht breaking changes. Therefore I don't know if this is proper or
       not.
         - Why not create a new method which returns simply splitted array? and
           leave a method for correctly detecting a status
-    * [x] Include doesn't respect pipe attribute.
-        - I added new macro 
-    * [-] Dryrun doesn't print log positions well. weird...
-      - Simple demo doesn't reproduce this... what?
     * [ ] Currently user configured macro name is not "available" in log
       message.
       - Because proc macro doesn't support it as syntax
-* [ ] Fix parsing rule
-    * [ ] Parsing rule conflicts with some regex expressions
-    ``` 
-    $regexpr(in_paren,\\(([^)]+)\\)) 
-    ```
-
-    * [ ] Assert doesn't check value correctly. Yet this looks like parsing
-      error. No..
-    ```
-    $assert(\*(*\,\*(*\)
-    = Assert requires two arguments
-    ```
 * [ ] Feature
-    * [-] Sed-like features ( Rado )
-        - Process file lines with given macro ( mapl )
-        - Rad should be rad not like other tools.
     * [ ] Early return
     * [ ] Implement data format pretty printer
 * [ ] Documentation
@@ -110,8 +67,9 @@ $todo_end()
 
 * [ ] Test hook macro documentaion
 
-### Changes
+--------------------------------------------------------------------------------
 
+### Changes
 
 ### Macro ergonomics
 
@@ -891,3 +849,44 @@ detected on first 3.0 release
 - The problem was that function recover called set_input and then decreased
 trexter level. But recover method increased the level thus nothing really
 happned which was a bug.
+
+---
+From 3.2
+
+* [x] Added get_static_macro -> Is this 3.2?
+
+### Bug fix
+
+* [x] Fixed a bug where dump didn't require fout permission.
+* [x] So... pipe input was not working for the time... musseuk-tard
+
+### MISC
+
+* [x] Upgrade dependencies for sure
+    * [x] Deprecate lazy_static and use once_cell
+    * [x] Implemnet join for dcsv value -> Instread I imported itertools
+    * [x] Check if flate crate is necessary -> Yes it is used in packaing
+    * [x] Upgrade clap
+        -> Currnetly clap compiles thus it should be ok?
+
+### New macros
+
+* [x] Add align comment character macro. Read meta's document
+    * [x] Now add a documentation for it
+* [x] Add rer macro ( Rearrange )
+* [x] NEW: Stream macro
+To compensate relay's shortcoming, add new a flag called stream. and
+a macro called stream
+    This macro accepts data and send to macro invocation.
+    * [x] Enable anon macro in macro invocation
+    * [x] Stream lines macro
+
+
+### New flag, features
+
+* [x] New flag: Stream-lines
+* [x] New flag: Stream-chunk
+    * [x] Enhance stream_chunk newline stripping
+    * [x] Unify starting logger index between lines and chunk
+    * [x] Remove unnecessary process_string from flag related logics
+* [-] Fix RAD_BACKTRACE error -> THis is not an error
