@@ -1232,14 +1232,32 @@ impl<'processor> Processor<'processor> {
     /// proc.process_string("$define(new=NEW)")
     ///     .expect("Failed to process a string");
     /// ```
-    pub fn process_string(&mut self, content: &str) -> RadResult<Option<String>> {
-        self.logger
-            .start_new_tracker(TrackType::Input("String".to_string()));
+    pub fn process_string(
+        &mut self,
+        input_name: Option<String>,
+        content: &str,
+    ) -> RadResult<Option<String>> {
+        self.logger.start_new_tracker(TrackType::Input(
+            input_name.unwrap_or("String".to_string()).to_string(),
+        ));
         let mut reader = content.as_bytes();
         self.process_buffer(&mut reader, None, ContainerType::None)?;
 
         // This method stops last tracker, thus explicit one is not needed
         self.organize_and_clear_cache()
+    }
+
+    /// Read from piece
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.process_piece("$define(new=NEW)")
+    ///     .expect("Failed to process a string");
+    /// ```
+    pub fn process_piece(&mut self, content: &str) -> RadResult<()> {
+        let mut reader = content.as_bytes();
+        self.process_buffer(&mut reader, None, ContainerType::None)?;
+        Ok(())
     }
 
     /// Read from standard input
@@ -1320,6 +1338,7 @@ impl<'processor> Processor<'processor> {
         current_target: Option<&str>,
         macro_name: &str,
     ) -> RadResult<Option<String>> {
+        self.state.stream_state.on_stream = true;
         // Sandboxed environment, backup
         let backup = if self.state.sandbox {
             Some(self.backup())
@@ -1334,7 +1353,27 @@ impl<'processor> Processor<'processor> {
             self.set_input_stdin()?;
         }
 
-        self.process_string(&format!(r#"${}({})"#, macro_name, content))?;
+        // Anon type macro name
+        let macro_name = if macro_name.contains('=') {
+            let macro_form = format!(r#"$anon({})"#, macro_name);
+            if let Err(err) = self.process_string(Some(String::from("shell argument")), &macro_form)
+            {
+                self.log_error(&format!(
+                    "Could not create an anon macro from input: \"{}\"",
+                    macro_form
+                ))?;
+                return Err(err);
+            }
+            MACRO_SPECIAL_ANON
+        } else {
+            macro_name
+        };
+
+        // TODO
+        // Strip trailing new line
+        let content = content.strip_suffix(&self.state.newline).unwrap_or("");
+
+        self.process_piece(&format!(r#"${}({})"#, macro_name, content))?;
 
         // Recover previous state from sandboxed processing
         if let Some(backup) = backup {
@@ -1342,7 +1381,9 @@ impl<'processor> Processor<'processor> {
             self.state.sandbox = false;
         }
 
-        self.organize_and_clear_cache()
+        self.state.stream_state.on_stream = false;
+        //self.organize_and_clear_cache()
+        Ok(None)
     }
 
     /// Process lines for streaming
@@ -1354,10 +1395,11 @@ impl<'processor> Processor<'processor> {
     /// ```
     pub fn stream_by_lines(
         &mut self,
-        buffer: &mut impl std::io::BufRead,
+        buffer: impl std::io::BufRead,
         current_target: Option<&str>,
         macro_name: &str,
     ) -> RadResult<Option<String>> {
+        self.state.stream_state.on_stream = true;
         // Sandboxed environment, backup
         let backup = if self.state.sandbox {
             Some(self.backup())
@@ -1372,10 +1414,27 @@ impl<'processor> Processor<'processor> {
             self.set_input_stdin()?;
         }
 
-        let line_iter = Utils::full_lines(buffer);
+        // Anon type macro name
+        let macro_name = if macro_name.contains('=') {
+            let macro_form = format!(r#"$anon({})"#, macro_name);
+            if let Err(err) = self.process_string(Some(String::from("shell argument")), &macro_form)
+            {
+                self.log_error(&format!(
+                    "Could not create an anon macro from input: \"{}\"",
+                    macro_form
+                ))?;
+                return Err(err);
+            }
+            MACRO_SPECIAL_ANON
+        } else {
+            macro_name
+        };
+
+        let line_iter = buffer.lines();
         for line in line_iter {
             let line = line?;
-            self.process_string(&format!("${}({})", macro_name, line))?;
+            self.process_piece(&format!(r#"${}({})"#, macro_name, &line))?;
+            self.logger.inc_line_number();
         }
 
         // Recover previous state from sandboxed processing
@@ -1384,7 +1443,8 @@ impl<'processor> Processor<'processor> {
             self.state.sandbox = false;
         }
 
-        self.organize_and_clear_cache()
+        self.state.stream_state.on_stream = false;
+        Ok(None)
     }
 
     /// Process contents from a static script
@@ -1682,8 +1742,13 @@ impl<'processor> Processor<'processor> {
         }
     } // parse_line end
 
-    /// Parse a macro body and expand
-    fn parse_chunk_body(&mut self, level: usize, caller: &str, chunk: &str) -> RadResult<String> {
+    /// Parse a macro chunk and expand
+    fn parse_chunk_and_expand(
+        &mut self,
+        level: usize,
+        caller: &str,
+        chunk: &str,
+    ) -> RadResult<String> {
         let mut lexor = Lexor::new(
             self.get_macro_char(),
             self.get_comment_char(),
@@ -2162,7 +2227,7 @@ impl<'processor> Processor<'processor> {
         // Process the rule body
         // NOTE
         // Previously, this was parse_chunk_body
-        let result = self.parse_chunk_body(level, new_name, &rule.body)?;
+        let result = self.parse_chunk_and_expand(level, new_name, &rule.body)?;
 
         // Clear lower locals to prevent local collisions
         self.map.clear_lower_locals(level);
@@ -2220,7 +2285,7 @@ impl<'processor> Processor<'processor> {
             if self.state.process_type == ProcessType::Dry {
                 let err = RadError::InvalidArgument(format!("Macro \"{}\" has invalid body", name));
                 let res = self
-                    .process_string(&format!("${}({})", name, args.replace(' ', ",")))
+                    .process_string(None, &format!("${}({})", name, args.replace(' ', ",")))
                     .map_err(|_| &err);
 
                 if res.is_err() {

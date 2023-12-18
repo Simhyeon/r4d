@@ -252,7 +252,7 @@ impl<'cli> RadCli<'cli> {
             // Read from given sources and write with given options
             for src in sources {
                 if literal {
-                    self.processor.process_string(src)?;
+                    self.processor.process_string(None, src)?;
                 } else {
                     let src_as_file = Path::new(src);
                     if src_as_file.exists() {
@@ -273,9 +273,8 @@ impl<'cli> RadCli<'cli> {
                             )
                         } else if let Some(mac) = args.get_one::<String>("stream-lines") {
                             let file_stream = std::fs::File::open(src)?;
-                            let mut reader = std::io::BufReader::new(file_stream);
-                            self.processor
-                                .stream_by_lines(&mut reader, Some("src"), mac)
+                            let reader = std::io::BufReader::new(file_stream);
+                            self.processor.stream_by_lines(reader, Some(src), mac)
                         } else {
                             self.processor.process_file(src_as_file)
                         };
