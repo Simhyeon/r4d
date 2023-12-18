@@ -84,6 +84,11 @@ impl ArgParser {
         let mut value = String::new();
         let mut arg_iter = arg_values.chars().peekable();
 
+        // Return empty vector without going through logics
+        if arg_values.is_empty() {
+            return vec![];
+        }
+
         while let Some(ch) = arg_iter.next() {
             // Check parenthesis
             self.check_parenthesis(&mut value, ch);
