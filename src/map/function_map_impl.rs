@@ -1460,7 +1460,7 @@ impl FunctionMacroMap {
     pub(crate) fn align_by_separator(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let separator = trim!(&args[0]).to_string();
+            let separator = args[0].to_string();
             let contents = args[1].lines();
             let mut max_length = 0usize;
             let mut result = String::new();
@@ -1493,7 +1493,7 @@ impl FunctionMacroMap {
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
-                "Alignsp requires two arguments".to_owned(),
+                "Alignby requires two arguments".to_owned(),
             ))
         }
     }
