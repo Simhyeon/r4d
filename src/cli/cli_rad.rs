@@ -141,9 +141,11 @@ impl<'cli> RadCli<'cli> {
             return Ok(());
         }
 
+        // TODO
         // Search a macro
         #[cfg(feature = "signature")]
         if let Some(name) = args.get_one::<String>("search") {
+            unimplemented!();
             match processor.get_macro_manual(name) {
                 Some(text) => writeln!(std::io::stdout(), "{}", text)?,
                 None => writeln!(

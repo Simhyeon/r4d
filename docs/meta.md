@@ -4,10 +4,25 @@
 
 #### BUG
 
+* [ ] I need a total escape option. Escape character get lost on simple
+  processing
+* [ ] Pipe should escape everything. Not parse it...?
+* [ ] Fix manual macro cli problem...
+* [ ] Debugger panics from the start ;(
+* [ ] Fix require strict and require comment which doesn't respect vector rules
 [bugs](./bugs_to_handle.md)
+
+* [ ] Make sure I understand pipe and literal rules and stream rules.
+-> THis is confusing because some doesn't process but some doesn't.
+    - Pipe input evalaution
+    - Pipe STDIN evaluation
+    - Stream-lines and stream-chunk evaluation
 
 #### Documentation
 
+* [ ] New documentation for built in codes
+    - Demo for basic usage
+    - Example for automated tests
 * [ ] Improve documentations
     * [ ] Macro indices
     * [ ] Macro syntaxes
@@ -34,6 +49,10 @@
     * [ ] SPread macro
 * [ ] Check if macro attribute is necessary for macro name input ( map, spread )
 * [ ] Check cli option
+
+#### 4.0 IDEAS
+
+* [ ] Should after and until macro support regex? because it doesn't for now
 
 ### TODO
 
