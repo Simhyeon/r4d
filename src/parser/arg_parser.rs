@@ -13,6 +13,7 @@ pub struct ArgParser {
     paren_count: usize,
     no_previous: bool,
     strip_literal: bool,
+    raw_split: bool,
 }
 
 impl ArgParser {
@@ -25,6 +26,7 @@ impl ArgParser {
             paren_count: 0,
             no_previous: false,
             strip_literal: true,
+            raw_split: false,
         }
     }
 
@@ -42,6 +44,12 @@ impl ArgParser {
         self
     }
 
+    /// Split as raw
+    pub(crate) fn raw_split(mut self, raw: bool) -> Self {
+        self.raw_split = raw;
+        self
+    }
+
     /// Don't strip literals
     pub(crate) fn set_strip(&mut self, strip_literal: bool) {
         self.strip_literal = strip_literal;
@@ -49,7 +57,7 @@ impl ArgParser {
 
     /// Simply strip literal chunk
     pub(crate) fn strip(&mut self, args: &str) -> String {
-        self.args_to_vec(args, ',', GreedyState::Greedy)[0].to_owned()
+        self.args_to_vec(args, ',', SplitVariant::Greedy)[0].to_owned()
     }
 
     /// Check if given length is qualified for given raw arguments
@@ -58,13 +66,25 @@ impl ArgParser {
     /// if not, "None" is returned instead.
     pub(crate) fn args_with_len(&mut self, args: &str, length: usize) -> Option<Vec<String>> {
         self.reset();
-        let greedy_state = if length > 1 {
-            GreedyState::Deterred(length - 1)
+        let split_var = if length > 1 {
+            SplitVariant::Deterred(length - 1)
         } else {
-            GreedyState::Greedy
+            SplitVariant::Greedy
         };
 
-        let args: Vec<_> = self.args_to_vec(args, ',', greedy_state);
+        if self.raw_split {
+            if length == 1 {
+                return Some(vec![args.to_string()]);
+            } else {
+                return Some(
+                    args.splitn(length, ',')
+                        .map(|s| s.to_string())
+                        .collect::<Vec<_>>(),
+                );
+            }
+        }
+
+        let args: Vec<_> = self.args_to_vec(args, ',', split_var);
 
         if args.len() < length {
             return None;
@@ -78,7 +98,7 @@ impl ArgParser {
         &mut self,
         arg_values: &str,
         delimiter: char,
-        mut greedy_state: GreedyState,
+        mut split_var: SplitVariant,
     ) -> Vec<String> {
         self.reset();
         let mut value = String::new();
@@ -94,7 +114,7 @@ impl ArgParser {
             self.check_parenthesis(&mut value, ch);
 
             if ch == delimiter {
-                self.branch_delimiter(ch, &mut value, &mut greedy_state);
+                self.branch_delimiter(ch, &mut value, &mut split_var);
             } else if ch == ESCAPE_CHAR {
                 self.branch_escape_char(ch, &mut value, arg_iter.peek());
             } else {
@@ -138,7 +158,7 @@ impl ArgParser {
     // Start of branch methods
 
     /// Branch on delimiter found
-    fn branch_delimiter(&mut self, ch: char, value: &mut String, greedy_state: &mut GreedyState) {
+    fn branch_delimiter(&mut self, ch: char, value: &mut String, greedy_state: &mut SplitVariant) {
         // Either literal or escaped
         if self.lit_count > 0 {
             value.push(ch);
@@ -151,22 +171,22 @@ impl ArgParser {
         } else {
             // not literal
             match greedy_state {
-                GreedyState::Deterred(count) => {
+                SplitVariant::Deterred(count) => {
                     // move to next value
                     self.values.push(std::mem::take(value));
                     let count = *count - 1;
                     if count > 0 {
-                        *greedy_state = GreedyState::Deterred(count);
+                        *greedy_state = SplitVariant::Deterred(count);
                     } else {
-                        *greedy_state = GreedyState::Greedy;
+                        *greedy_state = SplitVariant::Greedy;
                     }
                     self.no_previous = true;
                 }
                 // Push everything to current item, index, value or you name it
-                GreedyState::Greedy => {
+                SplitVariant::Greedy => {
                     value.push(ch);
                 }
-                GreedyState::Never => {
+                SplitVariant::Never => {
                     // move to next value
                     self.values.push(std::mem::take(value));
                 }
@@ -253,7 +273,7 @@ impl ArgParser {
 
 /// State indicates whether argument should be parsed greedily or not
 #[derive(Debug)]
-pub enum GreedyState {
+pub enum SplitVariant {
     /// Split argument with given amount
     Deterred(usize),
     Greedy,
