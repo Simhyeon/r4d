@@ -592,6 +592,7 @@ impl<'cli> RadCli<'cli> {
                     .long("man")
                     .action(ArgAction::Set)
                     .default_missing_value("*")
+                    .num_args(0..=1)
                     .value_name("MACRO_NAME")
                     .help("Get manual of a macro"),
             )
