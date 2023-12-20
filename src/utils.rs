@@ -17,6 +17,9 @@ use crate::common::RelayTarget;
 /// Regex for trimming newlines from start and end
 pub static TRIM: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap());
 
+// ----------
+// MACRO RULES
+// ----------
 /// Trim macro to trim a text
 #[macro_export]
 macro_rules! trim {
@@ -24,6 +27,33 @@ macro_rules! trim {
         $crate::utils::TRIM.replace_all($e, "")
     };
 }
+
+// Include function macro manaul
+#[macro_export]
+macro_rules! man_fun {
+    ($fname:expr) => {
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/manual_src/fun/",
+            $fname
+        ))
+        .to_string() // assumes Linux ('/')!
+    };
+}
+
+// Include deterred macro manaul
+#[macro_export]
+macro_rules! man_det {
+    ($fname:expr) => {
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/manual_src/det/",
+            $fname
+        ))
+        .to_string() // assumes Linux ('/')!
+    };
+}
+// ----------
 
 #[cfg(feature = "color")]
 use colored::*;
