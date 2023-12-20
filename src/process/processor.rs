@@ -1198,6 +1198,30 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
+    /// Execute a macro with custom fragments
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// let frag = MacroFragment::new();
+    /// proc.execute_macro_with_frag(0, "MAIN", frag)
+    ///     .expect("Failed to execute a macro with fragments");
+    /// ```
+    pub(crate) fn execute_macro_with_frag(
+        &mut self,
+        level: usize,
+        caller: &str,
+        frag: &mut MacroFragment,
+    ) -> RadResult<Option<String>> {
+        self.logger
+            .start_new_tracker(TrackType::Input(caller.to_string()));
+
+        let result = self.evaluate(level, caller, frag);
+
+        // This method stops last tracker, thus explicit one is not needed
+        self.organize_and_clear_cache()?;
+        result
+    }
+
     /// Execute a macro
     ///
     /// ```rust
@@ -1213,7 +1237,7 @@ impl<'processor> Processor<'processor> {
         arguments: &str,
     ) -> RadResult<Option<String>> {
         self.logger
-            .start_new_tracker(TrackType::Input("String".to_string()));
+            .start_new_tracker(TrackType::Input(caller.to_string()));
 
         let mut frag = MacroFragment::new();
         frag.name = macro_name.to_owned();
@@ -1251,13 +1275,13 @@ impl<'processor> Processor<'processor> {
     ///
     /// ```rust
     /// let mut proc = r4d::Processor::empty();
-    /// proc.process_piece("$define(new=NEW)")
-    ///     .expect("Failed to process a string");
+    /// let frag = MacroFragment::new();
+    /// proc.process_piece(frag)
+    ///     .expect("Failed to process a piece");
     /// ```
-    pub fn process_piece(&mut self, content: &str) -> RadResult<()> {
-        let mut reader = content.as_bytes();
-        self.process_buffer(&mut reader, None, ContainerType::None)?;
-        Ok(())
+    pub(crate) fn process_piece(&mut self, frag: &mut MacroFragment) -> RadResult<()> {
+        let result = self.execute_macro_with_frag(0, MAIN_CALLER, frag)?;
+        self.write_to(&result.unwrap_or_default(), &ContainerType::None, &mut None)
     }
 
     /// Read from standard input
@@ -1327,6 +1351,8 @@ impl<'processor> Processor<'processor> {
 
     /// Process chunk for streaming
     ///
+    /// This should be only called on the most high level of processing
+    ///
     /// ```no_run
     /// let mut proc = r4d::Processor::empty();
     /// proc.stream_by_chunk(...)
@@ -1373,7 +1399,12 @@ impl<'processor> Processor<'processor> {
         // Strip trailing new line
         let content = content.strip_suffix(&self.state.newline).unwrap_or("");
 
-        self.process_piece(&format!(r#"${}:({})"#, macro_name, content))?;
+        let mut frag = MacroFragment::new();
+        frag.whole_string = content.to_string();
+        frag.args = content.to_string();
+        frag.skip_expansion = true;
+        frag.name = macro_name.to_string();
+        self.process_piece(&mut frag)?;
 
         // Recover previous state from sandboxed processing
         if let Some(backup) = backup {
@@ -1431,9 +1462,14 @@ impl<'processor> Processor<'processor> {
         };
 
         let line_iter = buffer.lines();
+        let mut frag = MacroFragment::new();
+        frag.skip_expansion = true;
+        frag.name = macro_name.to_string();
         for line in line_iter {
             let line = line?;
-            self.process_piece(&format!(r#"${}:({})"#, macro_name, &line))?;
+            frag.whole_string = line.to_string();
+            frag.args = line.to_string();
+            self.process_piece(&mut frag)?;
             self.logger.inc_line_number();
         }
 
