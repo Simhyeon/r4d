@@ -2364,6 +2364,23 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Condense
+    ///
+    /// # Usage
+    ///
+    /// $cond(a       b         c)
+    pub(crate) fn condense(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        use itertools::Itertools;
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 1) {
+            let content = std::mem::take(&mut args[0]);
+            Ok(Some(content.split_whitespace().join(" ")))
+        } else {
+            Err(RadError::InvalidArgument(
+                "cond requires an argument".to_owned(),
+            ))
+        }
+    }
+
     /// Count
     ///
     /// # Usage
@@ -2683,7 +2700,7 @@ impl FunctionMacroMap {
             Ok(Some(src.to_uppercase()))
         } else {
             Err(RadError::InvalidArgument(
-                "cap requires an argument".to_owned(),
+                "upper requires an argument".to_owned(),
             ))
         }
     }
@@ -2699,7 +2716,7 @@ impl FunctionMacroMap {
             Ok(Some(src.to_lowercase()))
         } else {
             Err(RadError::InvalidArgument(
-                "cap requires an argument".to_owned(),
+                "lower requires an argument".to_owned(),
             ))
         }
     }
@@ -2836,7 +2853,7 @@ impl FunctionMacroMap {
             Ok(Some(max.to_string()))
         } else {
             Err(RadError::InvalidArgument(
-                "cap requires an argument".to_owned(),
+                "max requires an argument".to_owned(),
             ))
         }
     }
@@ -2858,7 +2875,7 @@ impl FunctionMacroMap {
             Ok(Some(max.to_string()))
         } else {
             Err(RadError::InvalidArgument(
-                "cap requires an argument".to_owned(),
+                "min requires an argument".to_owned(),
             ))
         }
     }
