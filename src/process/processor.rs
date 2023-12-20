@@ -32,7 +32,7 @@ use crate::trim;
 use crate::utils::Utils;
 use crate::DefineParser;
 use crate::{consts::*, RadResult};
-use crate::{ArgParser, GreedyState};
+use crate::{ArgParser, SplitVariant};
 #[cfg(feature = "cindex")]
 use cindex::Indexer;
 use once_cell::sync::Lazy;
@@ -2005,7 +2005,14 @@ impl<'processor> Processor<'processor> {
         // Pipe doesn't expanded
         if frag.pipe_input {
             skip_expansion = true;
-            frag.args = self.state.get_pipe("-", false).unwrap_or_default();
+            let pipe_value = self.state.get_pipe("-", false).unwrap_or_default();
+            if frag.args.is_empty() {
+                frag.args = pipe_value;
+            } else {
+                // Append pipe vluae next to value
+                frag.args.push(',');
+                frag.args.push_str(&pipe_value);
+            }
         }
 
         // Assign local variables
@@ -2025,11 +2032,13 @@ impl<'processor> Processor<'processor> {
                 .to_string();
         }
         let args: String;
-        // Preprocess only when macro is not a deterred macro
-        if skip_expansion
-            || !self.map.is_deterred_macro(name)
-            || self.state.process_type == ProcessType::Dry
-        {
+
+        // Completely escape expansion
+        if skip_expansion {
+            args = raw_args;
+        } else if !self.map.is_deterred_macro(name) || self.state.process_type == ProcessType::Dry {
+            // Preprocess only when macro is not a deterred macro
+
             args = self.parse_chunk_args(level, name, &raw_args)?;
             // This parses and processes arguments
             // and macro should be evaluated after
@@ -2207,7 +2216,7 @@ impl<'processor> Processor<'processor> {
                     "{}'s arguments are not sufficient. Given {}, but needs {}",
                     new_name,
                     ArgParser::new()
-                        .args_to_vec(arg_values, ',', GreedyState::Never)
+                        .args_to_vec(arg_values, ',', SplitVariant::Never)
                         .len(),
                     arg_types.len()
                 ));
