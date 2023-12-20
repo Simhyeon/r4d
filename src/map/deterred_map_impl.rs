@@ -10,7 +10,7 @@ use crate::common::{
 use crate::consts::MACRO_SPECIAL_ANON;
 use crate::deterred_map::DeterredMacroMap;
 use crate::formatter::Formatter;
-use crate::parser::GreedyState;
+use crate::parser::SplitVariant;
 use crate::utils::Utils;
 use crate::ArgParser;
 use crate::WarningType;
@@ -53,7 +53,7 @@ impl DeterredMacroMap {
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new().no_strip();
-        let args = ap.args_to_vec(args, ',', GreedyState::Never);
+        let args = ap.args_to_vec(args, ',', SplitVariant::Never);
         ap.set_strip(true);
         if args.len() >= 2 {
             let name =
@@ -1195,7 +1195,7 @@ impl DeterredMacroMap {
             return Ok(None);
         }
         let mut ap = ArgParser::new().no_strip();
-        let args = ap.args_to_vec(args, ',', GreedyState::Never);
+        let args = ap.args_to_vec(args, ',', SplitVariant::Never);
         ap.set_strip(true);
         if !args.is_empty() {
             let mut file_path = PathBuf::from(

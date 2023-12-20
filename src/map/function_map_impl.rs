@@ -11,7 +11,7 @@ use crate::logger::WarningType;
 use crate::utils::Utils;
 use crate::Processor;
 use crate::{trim, CommentType};
-use crate::{ArgParser, GreedyState};
+use crate::{ArgParser, SplitVariant};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
 use once_cell::sync::Lazy;
@@ -155,7 +155,7 @@ impl FunctionMacroMap {
         match &p.state.current_input {
             ProcessInput::Stdin => Ok(Some("Stdin".to_string())),
             ProcessInput::File(path) => {
-                let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+                let args = ArgParser::new().args_to_vec(args, ',', SplitVariant::Never);
                 if !args.is_empty() && !trim!(&args[0]).is_empty() {
                     let print_absolute = Utils::is_arg_true(trim!(&args[0]).as_ref())?;
                     if print_absolute {
@@ -844,7 +844,7 @@ impl FunctionMacroMap {
     ///
     /// $counter(name, type)
     pub(crate) fn change_counter(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        let args = ArgParser::new().args_to_vec(args, ',', SplitVariant::Never);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "counter requires an argument".to_owned(),
@@ -1063,7 +1063,7 @@ impl FunctionMacroMap {
     ///
     /// $path($env(HOME),document,test.docx)
     pub(crate) fn merge_path(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let vec = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        let vec = ArgParser::new().args_to_vec(args, ',', SplitVariant::Never);
 
         let out = vec
             .iter()
@@ -1459,7 +1459,7 @@ impl FunctionMacroMap {
     /// $alignby(%, contents to align)
     pub(crate) fn align_by_separator(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
-        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+        if let Some(args) = ArgParser::new().raw_split(true).args_with_len(args, 2) {
             let separator = args[0].to_string();
             let contents = args[1].lines();
             let mut max_length = 0usize;
@@ -2426,7 +2426,7 @@ impl FunctionMacroMap {
     ///
     /// $relay(type,argument)
     pub(crate) fn relay(args_src: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_to_vec(args_src, ',', GreedyState::Never);
+        let args = ArgParser::new().args_to_vec(args_src, ',', SplitVariant::Never);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "relay at least requires an argument".to_owned(),
@@ -2508,7 +2508,7 @@ impl FunctionMacroMap {
     ///     8]
     /// )
     pub(crate) fn rearrange(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+        if let Some(args) = ArgParser::new().raw_split(true).args_with_len(args, 1) {
             let mut rer_hash = RerHash::default();
             let mut blank_str: &str; // Container
 
@@ -2710,7 +2710,7 @@ impl FunctionMacroMap {
     ///
     /// $comment(any)
     pub(crate) fn require_comment(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let vec = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        let vec = ArgParser::new().args_to_vec(args, ',', SplitVariant::Never);
         let comment_src = &vec[0];
         let comment_type = CommentType::from_str(trim!(comment_src).as_ref());
         if comment_type.is_err() {
@@ -2737,7 +2737,7 @@ impl FunctionMacroMap {
     ///
     /// $require(fout)
     pub(crate) fn require_permissions(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let vec = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        let vec = ArgParser::new().args_to_vec(args, ',', SplitVariant::Never);
         for auth in vec {
             let auth_type = AuthType::from(&auth).ok_or_else(|| {
                 RadError::InvalidArgument(format!(
@@ -2762,7 +2762,7 @@ impl FunctionMacroMap {
     ///
     /// $strict(lenient)
     pub(crate) fn require_strict(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let vec = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        let vec = ArgParser::new().args_to_vec(args, ',', SplitVariant::Never);
         let mode = &vec[0];
         let trimmed_mode = trim!(mode);
         match trimmed_mode.to_lowercase().as_str() {
@@ -2962,7 +2962,7 @@ impl FunctionMacroMap {
     ///
     /// $declare(n1,n2,n3)
     pub(crate) fn declare(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let names = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        let names = ArgParser::new().args_to_vec(args, ',', SplitVariant::Never);
         let runtime_rules = names
             .iter()
             .map(|name| (trim!(name).to_string(), "", ""))
@@ -3543,7 +3543,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("listdir", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        let args = ArgParser::new().args_to_vec(args, ',', SplitVariant::Never);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "listdir at least requires an argument".to_owned(),
@@ -3716,7 +3716,7 @@ impl FunctionMacroMap {
         args: &str,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_to_vec(args, ',', GreedyState::Never);
+        let args = ArgParser::new().args_to_vec(args, ',', SplitVariant::Never);
 
         // Execute update method for storage
         if let Some(storage) = processor.storage.as_mut() {
