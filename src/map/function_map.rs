@@ -6,7 +6,7 @@
 use crate::common::RadResult;
 use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
-use crate::Processor;
+use crate::{man_fun, Processor};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
@@ -40,22 +40,7 @@ impl FunctionMacroMap {
                     "-",
                     ["a_pipe_name?^"],
                     Self::get_pipe,
-                    Some(
-"Get a piped value. This truncates an original value by default if not 
-configured other
-
-# Arguments
-
-- a_pipe_name : A name of pipe ( trimmed, optional )
-
-# Exmaple
-
-$eval|(1+2)
-$assert(3,$-())
-$nassert(3,$-())
-$pipeto(num,5)
-$assert(5,$-(num))".to_string(),
-                    ),
+                    Some(man_fun!("pipe.r4d")),
                 ),
             ),
             (
@@ -64,16 +49,7 @@ $assert(5,$-(num))".to_string(),
                     "PS",
                     ESR,
                     Self::path_separator,
-                    Some(
-"Return platform specific path separator
-
-- On windows, this return '\\'
-- On non windows, this return '/'
-
-# Exmaple
-
-$assert(c,$cut($PS(),-1,a/b/c))".to_string(),
-                    ),
+                    Some(man_fun!("PS.r4d")),
                 ),
             ),
             (
@@ -82,16 +58,7 @@ $assert(c,$cut($PS(),-1,a/b/c))".to_string(),
                     "after",
                     ["a_pattern", "a_content"],
                     Self::get_slice_after,
-                    Some("Get a substring after a pattern
-
-# Arguments
-
-- a_pattern : A pattern to find
-- a_content : A content to get a sub string
-
-# Example
-
-$assert(world,$after($space(),Hello world))".to_string()),
+                    Some(man_fun!("after.r4d"))
                 ),
             ),
             (
@@ -100,36 +67,21 @@ $assert(world,$after($space(),Hello world))".to_string()),
                     "align",
                     ["a_type^","a_width^","a_fill^", "a_text"],
                     Self::align,
-                    Some(
-                        "Align texts with character filler
-
-# Arguments
-
-- a_type  : Types of alignment [\"Left\", \"right\", \"center\"] ( trimmed )
-- a_width : Total width of aligned chunk [ Unsigned integer ] ( trimmed )
-- a_fill  : A character to fill ( trimmed )
-- a_text  : Text to align
-
-# Example
-
-$assert(Hello***,$align(left  ,8,*,Hello))
-$assert(***Hello,$align(right ,8,*,Hello))
-$assert(**Hello*,$align(center,8,*,Hello))".to_string(),
-                    ),
+                    Some(man_fun!("align.r4d")),
                 ),
             ),
             (
                 "alignby".to_owned(),
                 FMacroSign::new(
                     "alignby",
-                    ["a_separator^", "a_lines"],
+                    ["a_separator", "a_lines"],
                     Self::align_by_separator,
                     Some(
                         "Align texts by separator
 
 # Arguments
 
-- a_separator : A separator string ( trimmed )
+- a_separator : A separator string
 - a_lines : Lines to align
 
 # Example
@@ -1655,10 +1607,13 @@ $assert(/first/second,$parent(/first/second/last.txt))".to_string()),
                     Some("Merge given paths
 
 - This respects a platform path separator
+- Users cannot override platform specific separator for this macro.
 - Paths with colliding separator cannot be merged.
     e.g) a/ + /b cannot be merged
 
 # Return : path
+
+# Demo
 
 # Arguments
 

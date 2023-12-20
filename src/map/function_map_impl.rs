@@ -1591,7 +1591,7 @@ impl FunctionMacroMap {
         }
     }
 
-    /// Get a substring(indexed) until a pattern
+    /// Get a substring(indexed) after a pattern
     ///
     /// # Usage
     ///
