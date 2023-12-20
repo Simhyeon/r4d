@@ -94,7 +94,10 @@ impl ArgParser {
             // Check parenthesis
             self.check_parenthesis(&mut value, ch);
 
-            if ch == delimiter {
+            // Greedy = No split
+            if let SplitVariant::Greedy = split_var {
+                value.push(ch);
+            } else if ch == delimiter {
                 self.branch_delimiter(ch, &mut value, &mut split_var);
             } else if ch == ESCAPE_CHAR {
                 self.branch_escape_char(ch, &mut value, arg_iter.peek());
@@ -139,7 +142,7 @@ impl ArgParser {
     // Start of branch methods
 
     /// Branch on delimiter found
-    fn branch_delimiter(&mut self, ch: char, value: &mut String, greedy_state: &mut SplitVariant) {
+    fn branch_delimiter(&mut self, ch: char, value: &mut String, variant: &mut SplitVariant) {
         // Either literal or escaped
         if self.lit_count > 0 {
             value.push(ch);
@@ -151,15 +154,15 @@ impl ArgParser {
             value.push(ch);
         } else {
             // not literal
-            match greedy_state {
+            match variant {
                 SplitVariant::Deterred(count) => {
                     // move to next value
                     self.values.push(std::mem::take(value));
                     let count = *count - 1;
                     if count > 0 {
-                        *greedy_state = SplitVariant::Deterred(count);
+                        *variant = SplitVariant::Deterred(count);
                     } else {
-                        *greedy_state = SplitVariant::Greedy;
+                        *variant = SplitVariant::Greedy;
                     }
                     self.no_previous = true;
                 }
