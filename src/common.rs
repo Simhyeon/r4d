@@ -71,6 +71,7 @@ pub(crate) struct MacroFragment {
     pub negate_result: bool,
     pub trim_input: bool,
     pub trim_output: bool,
+    pub skip_expansion: bool,
 
     // Status varaible
     pub is_processed: bool,
@@ -91,6 +92,7 @@ impl MacroFragment {
             negate_result: false,
             trim_input: false,
             trim_output: false,
+            skip_expansion: false,
 
             is_processed: false,
         }
@@ -109,6 +111,7 @@ impl MacroFragment {
         self.trim_input = false;
         self.negate_result = false;
         self.trim_output = false;
+        self.skip_expansion = false;
     }
 
     /// Check if fragment is empty or not

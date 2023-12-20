@@ -1373,7 +1373,7 @@ impl<'processor> Processor<'processor> {
         // Strip trailing new line
         let content = content.strip_suffix(&self.state.newline).unwrap_or("");
 
-        self.process_piece(&format!(r#"${}({})"#, macro_name, content))?;
+        self.process_piece(&format!(r#"${}:({})"#, macro_name, content))?;
 
         // Recover previous state from sandboxed processing
         if let Some(backup) = backup {
@@ -1433,7 +1433,7 @@ impl<'processor> Processor<'processor> {
         let line_iter = buffer.lines();
         for line in line_iter {
             let line = line?;
-            self.process_piece(&format!(r#"${}({})"#, macro_name, &line))?;
+            self.process_piece(&format!(r#"${}:({})"#, macro_name, &line))?;
             self.logger.inc_line_number();
         }
 
@@ -2015,6 +2015,11 @@ impl<'processor> Processor<'processor> {
             }
         }
 
+        // Don't expand arguments
+        if frag.skip_expansion {
+            skip_expansion = true;
+        }
+
         // Assign local variables
         let (name, mut raw_args) = (&frag.name, frag.args.clone());
 
@@ -2517,6 +2522,7 @@ impl<'processor> Processor<'processor> {
                     '=' => frag.trim_input = true,
                     '^' => frag.trim_output = true,
                     '-' => frag.pipe_input = true,
+                    ':' => frag.skip_expansion = true,
                     _ => {
                         // This is mostly not reached because it is captured as non-exsitent name
                         if frag.has_attribute() {
