@@ -2754,25 +2754,30 @@ impl FunctionMacroMap {
     ///
     /// $comment(any)
     pub(crate) fn require_comment(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let vec = ArgParser::new().args_to_vec(args, ',', SplitVariant::Never);
-        let comment_src = &vec[0];
-        let comment_type = CommentType::from_str(trim!(comment_src).as_ref());
-        if comment_type.is_err() {
-            return Err(RadError::InvalidArgument(format!(
-                "Comment requires valid comment type but given \"{}\"",
-                comment_src
-            )));
-        }
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 1) {
+            let comment_src = std::mem::take(&mut args[0]);
+            let comment_type = CommentType::from_str(trim!(&comment_src).as_ref());
+            if comment_type.is_err() {
+                return Err(RadError::InvalidArgument(format!(
+                    "Comment requires valid comment type but given \"{}\"",
+                    comment_src
+                )));
+            }
 
-        let comment_type = comment_type?;
+            let comment_type = comment_type?;
 
-        if p.state.comment_type != comment_type {
-            return Err(RadError::UnsoundExecution(format!(
-                "Comment type, \"{:#?}\" is required but it is not",
-                comment_type
-            )));
+            if p.state.comment_type != comment_type {
+                return Err(RadError::UnsoundExecution(format!(
+                    "Comment type, \"{:#?}\" is required but it is not",
+                    comment_type
+                )));
+            }
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "comment requires an argument".to_owned(),
+            ))
         }
-        Ok(None)
     }
 
     /// require
@@ -2782,6 +2787,12 @@ impl FunctionMacroMap {
     /// $require(fout)
     pub(crate) fn require_permissions(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         let vec = ArgParser::new().args_to_vec(args, ',', SplitVariant::Never);
+        if vec.is_empty() {
+            p.log_warning(
+                "Require macro used without any arguments.",
+                WarningType::Sanity,
+            )?;
+        }
         for auth in vec {
             let auth_type = AuthType::from(&auth).ok_or_else(|| {
                 RadError::InvalidArgument(format!(
