@@ -1,0 +1,18 @@
+Get a substring after a pattern. This is not a regex but an exact match finder.
+
+# Arguments
+
+- a_pattern : A pattern to find
+- a_content : Content to get a sub string
+
+# Demo
+
+```
+$after(goal : ,My goal : Complete a project)
+===
+Complete a project
+```
+
+# Example
+
+$assert(world,$after($space(),Hello world))
