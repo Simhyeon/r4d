@@ -1459,7 +1459,7 @@ impl FunctionMacroMap {
     /// $alignby(%, contents to align)
     pub(crate) fn align_by_separator(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
-        if let Some(args) = ArgParser::new().raw_split(true).args_with_len(args, 2) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let separator = args[0].to_string();
             let contents = args[1].lines();
             let mut max_length = 0usize;
@@ -2508,7 +2508,7 @@ impl FunctionMacroMap {
     ///     8]
     /// )
     pub(crate) fn rearrange(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().raw_split(true).args_with_len(args, 1) {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let mut rer_hash = RerHash::default();
             let mut blank_str: &str; // Container
 

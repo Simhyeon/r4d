@@ -79,7 +79,7 @@ impl FunctionMacroMap {
                     Some(
                         "Align texts by separator
 
-# Arguments ( Raw split )
+# Arguments
 
 - a_separator : A separator string
 - a_lines : Lines to align
@@ -1743,7 +1743,7 @@ $relay(temp)$halt()".to_string()),
                     Self::rearrange,
                     Some("Rearrange order of lists
 
-# Arguments ( Raw split )
+# Arguments
 
 - a_list_contents : List contents to rearrange
 

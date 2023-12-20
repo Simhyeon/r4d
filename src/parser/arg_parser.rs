@@ -13,7 +13,6 @@ pub struct ArgParser {
     paren_count: usize,
     no_previous: bool,
     strip_literal: bool,
-    raw_split: bool,
 }
 
 impl ArgParser {
@@ -26,7 +25,6 @@ impl ArgParser {
             paren_count: 0,
             no_previous: false,
             strip_literal: true,
-            raw_split: false,
         }
     }
 
@@ -41,12 +39,6 @@ impl ArgParser {
     /// Don't strip literals
     pub(crate) fn no_strip(mut self) -> Self {
         self.strip_literal = false;
-        self
-    }
-
-    /// Split as raw
-    pub(crate) fn raw_split(mut self, raw: bool) -> Self {
-        self.raw_split = raw;
         self
     }
 
@@ -69,20 +61,9 @@ impl ArgParser {
         let split_var = if length > 1 {
             SplitVariant::Deterred(length - 1)
         } else {
-            SplitVariant::Greedy
+            // SplitVariant::Greedy
+            return Some(vec![args.to_string()]);
         };
-
-        if self.raw_split {
-            if length == 1 {
-                return Some(vec![args.to_string()]);
-            } else {
-                return Some(
-                    args.splitn(length, ',')
-                        .map(|s| s.to_string())
-                        .collect::<Vec<_>>(),
-                );
-            }
-        }
 
         let args: Vec<_> = self.args_to_vec(args, ',', split_var);
 
