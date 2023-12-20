@@ -2381,6 +2381,33 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Condense
+    ///
+    /// # Usage
+    ///
+    /// $cond(a       b         c)
+    pub(crate) fn condense_by_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        use itertools::Itertools;
+        use std::fmt::Write;
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 1) {
+            let content = std::mem::take(&mut args[0]);
+            let mut acc = String::new();
+            for line in content.lines() {
+                write!(
+                    &mut acc,
+                    "{}{}",
+                    line.split_whitespace().join(" "),
+                    p.state.newline
+                )?;
+            }
+            Ok(Some(acc))
+        } else {
+            Err(RadError::InvalidArgument(
+                "condl requires an argument".to_owned(),
+            ))
+        }
+    }
+
     /// Count
     ///
     /// # Usage

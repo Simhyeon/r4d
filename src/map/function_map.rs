@@ -445,6 +445,26 @@ $comment(start)".to_string()),
                 ),
             ),
             (
+                "condl".to_owned(),
+                FMacroSign::new(
+                    "condl",
+                    ["a_lines"],
+                    Self::condense_by_lines,
+                    Some(
+"Condense whitespaces by lines
+
+# Arguments
+
+- a_lines : Text to condense
+
+# Demo
+
+# Example
+
+".to_string()),
+                ),
+            ),
+            (
                 "counter".to_owned(),
                 FMacroSign::new(
                     "counter",
