@@ -2036,25 +2036,6 @@ impl<'processor> Processor<'processor> {
 
         // Increase level to represent nestedness
         let level = level + 1;
-        let mut skip_expansion = false;
-
-        // Pipe doesn't expanded
-        if frag.pipe_input {
-            skip_expansion = true;
-            let pipe_value = self.state.get_pipe("-", false).unwrap_or_default();
-            if frag.args.is_empty() {
-                frag.args = pipe_value;
-            } else {
-                // Append pipe vluae next to value
-                frag.args.push(',');
-                frag.args.push_str(&pipe_value);
-            }
-        }
-
-        // Don't expand arguments
-        if frag.skip_expansion {
-            skip_expansion = true;
-        }
 
         // Assign local variables
         let (name, mut raw_args) = (&frag.name, frag.args.clone());
@@ -2072,17 +2053,28 @@ impl<'processor> Processor<'processor> {
                 .unwrap_or_default()
                 .to_string();
         }
-        let args: String;
+        let mut args = String::new();
 
-        // Completely escape expansion
-        if skip_expansion {
-            args = raw_args;
-        } else if !self.map.is_deterred_macro(name) || self.state.process_type == ProcessType::Dry {
+        if !self.map.is_deterred_macro(name) || self.state.process_type == ProcessType::Dry {
             // Preprocess only when macro is not a deterred macro
 
-            args = self.parse_chunk_args(level, name, &raw_args)?;
-            // This parses and processes arguments
-            // and macro should be evaluated after
+            if !frag.skip_expansion {
+                // This parses and processes arguments
+                // and macro should be evaluated after
+                args = self.parse_chunk_args(level, name, &raw_args)?;
+            }
+
+            // Pipe doesn't expanded but added
+            if frag.pipe_input {
+                let pipe_value = self.state.get_pipe("-", false).unwrap_or_default();
+                if args.is_empty() {
+                    args = pipe_value;
+                } else {
+                    // Append pipe vluae next to value
+                    args.push(',');
+                    args.push_str(&pipe_value);
+                }
+            }
 
             // Also update original arguments for better debugging
             #[cfg(feature = "debug")]
@@ -2105,11 +2097,23 @@ impl<'processor> Processor<'processor> {
             // Set raw args as literal
             args = raw_args;
 
+            // Pipe doesn't expanded but added
+            if frag.pipe_input {
+                let pipe_value = self.state.get_pipe("-", false).unwrap_or_default();
+                if args.is_empty() {
+                    args = pipe_value;
+                } else {
+                    // Append pipe vluae next to value
+                    args.push(',');
+                    args.push_str(&pipe_value);
+                }
+            }
+
             // Set processed_args some helpful message
             #[cfg(feature = "debug")]
             {
                 frag.processed_args =
-                    String::from("It is impossible to retrieve args from deterred macro")
+                    String::from("It is unavailable to retrieve args from deterred macro")
             }
         }
 
