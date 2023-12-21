@@ -1461,12 +1461,11 @@ impl<'processor> Processor<'processor> {
 
         let line_iter = buffer.lines();
         let mut frag = MacroFragment::new();
-        frag.skip_expansion = true;
+        frag.pipe_input = true;
         frag.name = macro_name.to_string();
         for line in line_iter {
             let line = line?;
-            frag.whole_string = line.to_string();
-            frag.args = line.to_string();
+            self.state.add_pipe(None, line);
             self.process_piece(&mut frag)?;
             self.logger.inc_line_number();
         }
