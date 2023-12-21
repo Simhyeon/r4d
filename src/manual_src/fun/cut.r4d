@@ -1,0 +1,21 @@
+Split text into an array to get a value
+
+# Arguments
+
+- a_sep    : A separator string
+- a_index  : An index to cut out
+- a_text   : Text to split
+
+# Demo
+
+```
+$syscmd|(ls -lah LICENSE)
+$static(size , $cut-($space(),1) )
+File size is $size()
+===
+File size is 1
+```
+
+# Example
+
+$assert(b,$cut(/,-2,a/b/c))

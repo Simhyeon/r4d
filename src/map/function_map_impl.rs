@@ -2105,14 +2105,107 @@ impl FunctionMacroMap {
                 ));
             }
 
-            // abcd
-            // 2
-            // 22
-
             Ok(Some(content[count..].to_string()))
         } else {
             Err(RadError::InvalidArgument(
                 "stripf requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Strip front lines
+    ///
+    /// # Usage
+    ///
+    /// $stripfl()
+    pub(crate) fn stripf_line(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 2) {
+            let count = trim!(&args[0]).parse::<usize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "Could not convert given value \"{}\" into a number",
+                    args[0]
+                ))
+            })?;
+            let content = &args[1];
+
+            if count == 0 {
+                return Ok(Some(std::mem::take(&mut args[1])));
+            }
+
+            let lines = content.lines().collect::<Vec<_>>();
+            let line_count = lines.len();
+
+            if count > line_count {
+                return Err(RadError::InvalidArgument(
+                    "Cannot stripfl because given content's length is shorter".to_owned(),
+                ));
+            }
+
+            let result = lines[count..].iter().fold(String::new(), |mut acc, a| {
+                acc.push_str(a);
+                acc.push_str(&p.state.newline);
+                acc
+            });
+
+            Ok(Some(
+                result
+                    .strip_suffix(&p.state.newline)
+                    .map(|s| s.to_string())
+                    .unwrap_or(result),
+            ))
+        } else {
+            Err(RadError::InvalidArgument(
+                "stripfl requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Strip rear lines
+    ///
+    /// # Usage
+    ///
+    /// $striprl()
+    pub(crate) fn stripr_line(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 2) {
+            let count = trim!(&args[0]).parse::<usize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "Could not convert given value \"{}\" into a number",
+                    args[0]
+                ))
+            })?;
+            let content = &args[1];
+
+            if count == 0 {
+                return Ok(Some(std::mem::take(&mut args[1])));
+            }
+
+            let lines = content.lines().collect::<Vec<_>>();
+            let line_count = lines.len();
+
+            if count > line_count {
+                return Err(RadError::InvalidArgument(
+                    "Cannot striprl because given content's length is shorter".to_owned(),
+                ));
+            }
+
+            let result =
+                lines[0..line_count - count - 1]
+                    .iter()
+                    .fold(String::new(), |mut acc, a| {
+                        acc.push_str(a);
+                        acc.push_str(&p.state.newline);
+                        acc
+                    });
+
+            Ok(Some(
+                result
+                    .strip_suffix(&p.state.newline)
+                    .map(|s| s.to_string())
+                    .unwrap_or(result),
+            ))
+        } else {
+            Err(RadError::InvalidArgument(
+                "striprl requires two arguments".to_owned(),
             ))
         }
     }

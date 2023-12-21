@@ -1,0 +1,23 @@
+Strip front lines from text
+
+# Arguments
+
+- a_count   : Count of lines to strip ( trimmed )
+- a_content : Content to strip
+
+# Demo
+
+```
+$syscmd|(top -b1 -n1) 
+
+$static(header_lines_from_top,9)
+$rename(header_lines_from_top,hlt)
+
+$countl( $stripfl-($hlt()) )
+===
+221
+```
+
+# Example
+
+$assert(a$nl()b,$stripfl(1,c$nl()a$nl()b))

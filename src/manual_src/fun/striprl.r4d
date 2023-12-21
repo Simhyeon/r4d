@@ -1,0 +1,21 @@
+Strip rear lines from text
+
+# Arguments
+
+- a_count   : Count of lines to strip ( trimmed )
+- a_content : Content to strip
+
+# Demo
+
+```
+% Strip examples from manual
+% Although not all example is a single line
+$striprl|(4,$syscmd(rad -M strip))
+$countl-()
+===
+22
+```
+
+# Example
+
+$assert(a$nl()b,$stripfl(1,c$nl()a$nl()b))

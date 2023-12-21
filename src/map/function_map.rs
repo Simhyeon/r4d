@@ -161,22 +161,30 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "stripfl".to_owned(),
+                FMacroSign::new(
+                    "stripfl",
+                    ["a_count^","a_content"],
+                    Self::stripf_line,
+                    Some(man_fun!("stripfl.r4d")),
+                ),
+            ),
+            (
+                "striprl".to_owned(),
+                FMacroSign::new(
+                    "striprl",
+                    ["a_count^","a_content"],
+                    Self::stripr_line,
+                    Some(man_fun!("striprl.r4d")),
+                ),
+            ),
+            (
                 "cut".to_owned(),
                 FMacroSign::new(
                     "cut",
                     ["a_sep", "a_index","a_text"],
                     Self::split_and_cut,
-                    Some("Split text and cut from splitted array
-
-# Arguments
-
-- a_sep    : A separator string
-- a_index  : An index to cut out
-- a_text   : Text to split
-
-# Example
-
-$assert(b,$cut(/,-2,a/b/c))".to_string()),
+                    Some(man_fun!("cut.r4d")),
                 ),
             ),
             (
