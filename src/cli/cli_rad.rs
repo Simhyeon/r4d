@@ -595,6 +595,7 @@ impl<'cli> RadCli<'cli> {
         let app = app
             .arg(
                 Arg::new("manual")
+                    .short('M')
                     .long("man")
                     .action(ArgAction::Set)
                     .default_missing_value("*")
