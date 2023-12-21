@@ -2557,7 +2557,7 @@ impl<'processor> Processor<'processor> {
                     '=' => frag.trim_input = true,
                     '^' => frag.trim_output = true,
                     '-' => frag.pipe_input = true,
-                    ';' => frag.skip_expansion = true,
+                    '~' => frag.skip_expansion = true,
                     _ => {
                         // This is mostly not reached because it is captured as non-exsitent name
                         if frag.has_attribute() {

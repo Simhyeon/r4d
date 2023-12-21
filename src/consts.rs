@@ -57,13 +57,13 @@ pub const MAIN_CALLER: &str = "@MAIN@";
 pub const MACRO_SPECIAL_ANON: &str = "_ANON_";
 
 // Numbers
-// Macro attributes * ^ = - | ;
+// Macro attributes * ^ = - | ~
 // Underscore and reverse slash (\)
 // Colon (:) for iterated value
 // Exclamation ( ! ) for negation
 /// Unallowed regex pattern that is reserved for other purposes
 pub static UNALLOWED_CHARS: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"[a-zA-Z1-9\\_\*\^\|\(\)-=,:;!]"#).expect("Failed to create regex expression")
+    Regex::new(r#"[a-zA-Z1-9\\_\*\^\|\(\)-=,:~!]"#).expect("Failed to create regex expression")
 });
 
 // Diff related
