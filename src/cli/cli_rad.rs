@@ -134,7 +134,7 @@ impl<'cli> RadCli<'cli> {
                     Some(text) => writeln!(std::io::stdout(), "{}", text)?,
                     None => {
                         let adder = if let Some(mac) = sim {
-                            format!(" Did you mean \"{mac}\'?")
+                            format!(" Did you mean \"{mac}\"?")
                         } else {
                             String::default()
                         };
