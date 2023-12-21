@@ -23,7 +23,7 @@ pub enum RadError {
     InvalidCommandOption(String),
     EnvError(std::env::VarError),
     InvalidMacroReference(String),
-    NoSuchMacroName(String, String),
+    NoSuchMacroName(String, Option<String>),
     InvalidMacroDefinition(String),
     InvalidRegex(regex::Error),
     #[cfg(feature = "evalexpr")]
@@ -61,9 +61,14 @@ impl std::fmt::Display for RadError {
             Self::InvalidCommandOption(command) => format!("Invalid command option\n= {}", command),
             Self::EnvError(env) => format!("Invalid environment name\n= {}", env),
             Self::InvalidMacroReference(err) => format!("Invalid macro reference\n= {}", err),
-            Self::NoSuchMacroName(given, candidate) => {
-                format!("No such macro name as \"{given}\", Did you mean \"{candidate}\"")
-            }
+            Self::NoSuchMacroName(given, candidate) => match candidate {
+                Some(cand) => {
+                    format!("No such macro name as \"{given}\", Did you mean \"{cand}\" ?")
+                }
+                None => {
+                    format!("No such macro name as \"{given}\"")
+                }
+            },
             Self::InvalidMacroDefinition(err) => format!("Invalid macro definition\n= {}", err),
             Self::InvalidRegex(err) => format!("Failed regex operation\n= {}", err),
             #[cfg(feature = "evalexpr")]
