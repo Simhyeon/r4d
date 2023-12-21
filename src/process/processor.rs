@@ -1395,14 +1395,12 @@ impl<'processor> Processor<'processor> {
             macro_name
         };
 
-        // TODO
         // Strip trailing new line
         let content = content.strip_suffix(&self.state.newline).unwrap_or("");
 
         let mut frag = MacroFragment::new();
-        frag.whole_string = content.to_string();
-        frag.args = content.to_string();
-        frag.skip_expansion = true;
+        self.state.add_pipe(None, content.to_string());
+        frag.pipe_input = true;
         frag.name = macro_name.to_string();
         self.process_piece(&mut frag)?;
 
@@ -2128,7 +2126,6 @@ impl<'processor> Processor<'processor> {
             }
             temp_level -= 1;
         }
-
         // SPECIAL MACROS
         if name == MACRO_SPECIAL_ANON && self.map.get_anon_macro().is_some() {
             let result = self.invoke_runtime(level, None, &args)?;
@@ -2181,7 +2178,6 @@ impl<'processor> Processor<'processor> {
                 return Ok(final_result);
             }
         }
-
         // Find function macro
         if self.map.function.contains(name) {
             // On dry run, macro is not expanded but only checks if found macro exists
