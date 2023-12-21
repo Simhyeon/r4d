@@ -293,6 +293,59 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Pipe in replace evaluation
+    ///
+    /// # Usage
+    ///
+    /// $pie(expression)
+    #[cfg(feature = "evalexpr")]
+    pub(crate) fn pipe_ire(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 1) {
+            let mut formula = std::mem::take(&mut args[0]);
+            let pipe = p.state.get_pipe("-", true).unwrap_or("".to_string());
+            let replaced = if formula.contains('p') {
+                formula.replace('p', &pipe)
+            } else {
+                formula.insert_str(0, &pipe);
+                formula
+            };
+            let result = evalexpr::eval(&replaced)?;
+            p.state.add_pipe(None, result.to_string());
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "pie requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Macro in replace evaluation
+    ///
+    /// # Usage
+    ///
+    /// $mie(expression)
+    #[cfg(feature = "evalexpr")]
+    pub(crate) fn macro_ire(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 2) {
+            let macro_name = std::mem::take(&mut args[0]);
+            let mut formula = std::mem::take(&mut args[1]);
+            let body = p.get_runtime_macro_body(&macro_name)?;
+            let replaced = if formula.contains('p') {
+                formula.replace('p', body)
+            } else {
+                formula.insert_str(0, body);
+                formula
+            };
+            let result = evalexpr::eval(&replaced)?;
+            p.replace_macro(&macro_name, &result.to_string());
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "mie requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     /// Negate given value
     ///
     /// This returns true, false or evaluated number

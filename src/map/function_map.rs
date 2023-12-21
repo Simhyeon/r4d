@@ -76,28 +76,7 @@ impl FunctionMacroMap {
                     "alignby",
                     ["a_separator", "a_lines"],
                     Self::align_by_separator,
-                    Some(
-                        "Align texts by separator
-
-# Arguments
-
-- a_separator : A separator string
-- a_lines : Lines to align
-
-# Example
-
-$assert=(
-First       %% wow
-Second part %% bob
-Thirdos     %% Howzer,
-$alignby^=(
-%%,
-First %% wow
-Second part %% bob
-Thirdos %% Howzer
-))
-".to_string(),
-                    ),
+                    Some(man_fun!("alignby.r4d"))
                 ),
             ),
             (
@@ -106,19 +85,7 @@ Thirdos %% Howzer
                     "gt",
                     ["a_lvalue", "a_rvalue"],
                     Self::greater_than,
-                    Some("Check if lvalue is greater than rvalue
-
-# Return : Boolean
-
-# Arguments
-
-- a_lvalue : A left value to compare
-- a_rvalue : A right value to compare
-
-# Example
-
-$assert(true,$gt(c,b))
-$assert(false,$gt(text,text))".to_string()),
+                    Some(man_fun!("gt.r4d")),
                 ),
             ),
             (
@@ -127,19 +94,7 @@ $assert(false,$gt(text,text))".to_string()),
                     "gte",
                     ["a_lvalue", "a_rvalue"],
                     Self::greater_than_or_equal,
-                    Some("Check if lvalue is greater than or equal to rvalue
-
-# Return : Boolean
-
-# Arguments
-
-- a_lvalue : A left value to compare
-- a_rvalue : A right value to compare
-
-# Example
-
-$assert(true,$gte(c,b))
-$assert(true,$gte(text,text))".to_string()),
+                    Some(man_fun!("gte.r4d")),
                 ),
             ),
             (
@@ -148,19 +103,7 @@ $assert(true,$gte(text,text))".to_string()),
                     "eq",
                     ["a_lvalue", "a_rvalue"],
                     Self::are_values_equal,
-                    Some("Check if given values are same
-
-# Return : Boolean
-
-# Arguments
-
-- a_lvalue : A left value to compare
-- a_rvalue : A right value to cmpare
-
-# Example
-
-$assert(false,$eq(a,b))
-$assert(true,$eq(23,23))".to_string()),
+                    Some(man_fun!("eq.r4d")),
                 ),
             ),
             (
@@ -169,18 +112,7 @@ $assert(true,$eq(23,23))".to_string()),
                     "sep",
                     ["a_content"],
                     Self::separate,
-                    Some("Separate content
-
-# Arguments
-
-- a_content : Content to separate
-
-# Example
-
-$assert(4,$countl($sep(
-1
-2
-)))".to_string()),
+                    Some(man_fun!("sep.r4d")),
                 ),
             ),
             (
@@ -189,17 +121,7 @@ $assert(4,$countl($sep(
                     "slice",
                     ["a_min^", "a_max^", "a_array"],
                     Self::slice,
-                    Some("Get a slice from an aray
-
-# Arguments
-
-- a_min   : A start index ( trimmed )
-- a_max   : A end index ( trimmed )
-- a_array : An array to process
-
-# Example
-
-$assert(\\*2,3*\\,$slice(1,2,\\*1,2,3,4,5,6*\\))".to_string()),
+                    Some(man_fun!("slice.r4d")),
                 ),
             ),
             (
@@ -208,16 +130,7 @@ $assert(\\*2,3*\\,$slice(1,2,\\*1,2,3,4,5,6*\\))".to_string()),
                     "split",
                     ["a_sep", "a_text"],
                     Self::split,
-                    Some("Split text into an array
-
-# Arguments
-
-- a_sep  : A separator string
-- a_text : Text to split
-
-# Example
-
-$assert(\\*a,b,c*\\,$split(/,a/b/c))".to_string()),
+                    Some(man_fun!("split.r4d")),
                 ),
             ),
             (
@@ -226,16 +139,7 @@ $assert(\\*a,b,c*\\,$split(/,a/b/c))".to_string()),
                     "strip",
                     ["a_count^","a_content"],
                     Self::strip,
-                    Some("Strip surroundings from text
-
-# Arguments
-
-- a_count   : Count of characters to strip ( trimmed )
-- a_content : Content to strip
-
-# Example
-
-$assert(Hello World,$strip(2,' Hello World '))".to_string()),
+                    Some(man_fun!("strip.r4d")),
                 ),
             ),
             (
@@ -244,16 +148,7 @@ $assert(Hello World,$strip(2,' Hello World '))".to_string()),
                     "stripf",
                     ["a_count^","a_content"],
                     Self::stripf,
-                    Some("Strip from front
-
-# Arguments
-
-- a_count   : Count of characters to strip ( trimmed )
-- a_content : Content to strip
-
-# Example
-
-$assert(List item,$stripf(2,- List item))".to_string()),
+                    Some(man_fun!("stripf.r4d")),
                 ),
             ),
             (
@@ -262,16 +157,7 @@ $assert(List item,$stripf(2,- List item))".to_string()),
                     "stripr",
                     ["a_count^","a_content"],
                     Self::stripr,
-                    Some("Strip from rear
-
-# Arguments
-
-- a_count   : Count of characters to strip ( trimmed )
-- a_content : Content to strip
-
-# Example
-
-$assert(Hmp,$stripr(2,Hmp::))".to_string()),
+                    Some(man_fun!("stripr.r4d")),
                 ),
             ),
             (
@@ -1603,7 +1489,15 @@ $assert(unix,$ostype())".to_string()),
                     "panic",
                     ["a_msg"],
                     Self::manual_panic,
-                    Some("Panics manually with a message
+                    Some("Forefully shutdown macro processing
+
+# NOTE
+
+Despite of the macro name, this means panicky state of macro processing not a 
+cli program itself. Thus rad gracefully return an error code.
+
+Panic macro's behaviour is not a flowcontrol therefore every input after the 
+execution is ignored.
 
 # Arguments
 
@@ -2916,6 +2810,14 @@ $assert(1 + 2 = 3,$evalk(1 + 2 ))"
                             .to_string(),
                     ),
                 ),
+            );
+            map.insert(
+                "pie".to_owned(),
+                FMacroSign::new("pie", ["a_expr"], Self::pipe_ire, Some("".to_string())),
+            );
+            map.insert(
+                "mie".to_owned(),
+                FMacroSign::new("mie", ["a_expr"], Self::macro_ire, Some("".to_string())),
             );
         }
         #[cfg(feature = "textwrap")]
