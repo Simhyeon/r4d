@@ -2667,7 +2667,7 @@ impl FunctionMacroMap {
                 if !p.contains_macro(&target, MacroType::Runtime) {
                     let sim = p.get_similar_macro(&target, true);
                     let adder = if let Some(mac) = sim {
-                        format!("Did you mean {mac}?")
+                        format!(" Did you mean {mac}?")
                     } else {
                         String::default()
                     };
