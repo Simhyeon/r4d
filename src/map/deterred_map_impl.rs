@@ -1,12 +1,8 @@
 #[cfg(not(feature = "wasm"))]
 use crate::auth::AuthType;
 #[cfg(not(feature = "wasm"))]
-use crate::common::ProcessInput;
-#[cfg(not(feature = "wasm"))]
-use crate::common::{ContainerType, FileTarget};
-use crate::common::{
-    ErrorBehaviour, FlowControl, MacroType, RadResult, RelayTarget, STREAM_CONTAINER,
-};
+use crate::common::{ContainerType, FileTarget, FlowControl, ProcessInput};
+use crate::common::{ErrorBehaviour, MacroType, RadResult, RelayTarget, STREAM_CONTAINER};
 use crate::consts::MACRO_SPECIAL_ANON;
 use crate::deterred_map::DeterredMacroMap;
 use crate::formatter::Formatter;

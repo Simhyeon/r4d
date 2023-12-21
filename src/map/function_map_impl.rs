@@ -16,6 +16,7 @@ use crate::{ArgParser, SplitVariant};
 use cindex::OutOption;
 use once_cell::sync::Lazy;
 use regex::Regex;
+use similar::DiffableStr;
 use std::collections::HashMap;
 #[cfg(not(feature = "wasm"))]
 use std::fs::OpenOptions;
@@ -2664,8 +2665,14 @@ impl FunctionMacroMap {
                     ));
                 }
                 if !p.contains_macro(&target, MacroType::Runtime) {
-                    return Err(RadError::InvalidMacroDefinition(format!(
-                        "Cannot relay to non-exsitent macro or non-runtime macro \"{}\"",
+                    let sim = p.get_similar_macro(&target, true);
+                    let adder = if let Some(mac) = sim {
+                        format!("Did you mean {mac}?")
+                    } else {
+                        String::default()
+                    };
+                    return Err(RadError::InvalidMacroReference(format!(
+                        "Cannot relay to non-exsitent macro or non-runtime macro \"{}\".{adder}",
                         target
                     )));
                 }
@@ -3241,7 +3248,11 @@ impl FunctionMacroMap {
             if !processor.set_documentation(&macro_name, content)
                 && processor.state.behaviour == ErrorBehaviour::Strict
             {
-                processor.log_error(&format!("No such macro \"{}\" to document", macro_name))?;
+                let err = RadError::NoSuchMacroName(
+                    macro_name.to_string(),
+                    processor.get_similar_macro(macro_name.as_str().unwrap(), true),
+                );
+                processor.log_error(&err.to_string())?;
             }
 
             Ok(None)

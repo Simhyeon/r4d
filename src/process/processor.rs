@@ -19,7 +19,6 @@ use crate::error::RadError;
 use crate::extension::{ExtMacroBuilder, ExtMacroType};
 #[cfg(feature = "hook")]
 use crate::hookmap::{HookMap, HookType};
-use crate::lexor::*;
 use crate::logger::TrackType;
 use crate::logger::{Logger, WarningType};
 use crate::map::MacroMap;
@@ -32,6 +31,7 @@ use crate::trim;
 use crate::utils::Utils;
 use crate::DefineParser;
 use crate::{consts::*, RadResult};
+use crate::{lexor::*, stake};
 use crate::{ArgParser, SplitVariant};
 #[cfg(feature = "cindex")]
 use cindex::Indexer;
@@ -1157,19 +1157,17 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<()> {
         // Check target macro is empty
         if target_macro.is_empty() {
-            let err = RadError::InvalidMacroReference(format!(
-                "Cannot register hook for macro \"{}\"",
-                target_macro
-            ));
+            let err = RadError::InvalidMacroReference(
+                "Cannot register hook because target macro name is empty".to_string(),
+            );
             return Err(err);
         }
 
         // Check invoke macro is empty
         if invoke_macro.is_empty() {
-            let err = RadError::InvalidMacroReference(format!(
-                "Cannot register hook which invokes a macro \"{}\"",
-                target_macro
-            ));
+            let err = RadError::InvalidMacroReference(
+                "Cannot register hook because invoke macro name is empty".to_string(),
+            );
             return Err(err);
         }
         self.hook_map.add_hook(
@@ -1187,10 +1185,9 @@ impl<'processor> Processor<'processor> {
     pub fn deregister_hook(&mut self, hook_type: HookType, target_macro: &str) -> RadResult<()> {
         // Check target macro is empty
         if target_macro.is_empty() {
-            let err = RadError::InvalidMacroReference(format!(
-                "Cannot deregister hook for macro \"{}\"",
-                target_macro
-            ));
+            let err = RadError::InvalidMacroReference(
+                "Cannot deregister hook because target macro name is empty".to_string(),
+            );
             return Err(err);
         }
 
@@ -2197,8 +2194,8 @@ impl<'processor> Processor<'processor> {
         }
         // No macros found to evaluate
         else {
-            let err =
-                RadError::InvalidMacroReference(format!("No such macro name : \"{}\"", &name));
+            let sim = self.get_similar_macro(name, false);
+            let err = RadError::NoSuchMacroName(name.to_string(), sim);
 
             // On Dry mode, invalid macro name is not an error but a warning.
             // Because macros are not expanded, it is unsure if it is an error or not, thus rad
@@ -2393,6 +2390,7 @@ impl<'processor> Processor<'processor> {
         #[cfg(feature = "debug")]
         self.debugger.write_diff_processed(content)?;
 
+        // This belongs here to evade borrowing rules
         match self
             .state
             .relay
@@ -3176,7 +3174,12 @@ impl<'processor> Processor<'processor> {
             .map
             .local
             .get(macro_name)
-            .ok_or_else(|| RadError::InvalidMacroReference("No such macro".to_string()))?
+            .ok_or_else(|| {
+                RadError::NoSuchMacroName(
+                    macro_name.to_string(),
+                    self.get_similar_local_macro(macro_name),
+                )
+            })?
             .body;
         Ok(body)
     }
@@ -3187,9 +3190,82 @@ impl<'processor> Processor<'processor> {
             .map
             .runtime
             .get(macro_name, self.state.hygiene)
-            .ok_or_else(|| RadError::InvalidMacroReference("No such macro".to_string()))?
+            .ok_or_else(|| {
+                RadError::NoSuchMacroName(
+                    macro_name.to_string(),
+                    self.get_similar_macro(macro_name, true),
+                )
+            })?
             .body;
         Ok(body)
+    }
+
+    #[inline]
+    /// Find similar macro name
+    pub(crate) fn get_similar_macro(
+        &self,
+        macro_name: &str,
+        only_search_runtime: bool,
+    ) -> Option<String> {
+        use std::cmp::Ordering::{Equal, Less};
+        let mut min_distance = 2usize; // Distance should be smaller than 2 at least.
+        let mut current_distance: usize;
+        let mut candidates = vec![];
+        let mut sigs = if !only_search_runtime {
+            self.map.get_signatures()
+        } else {
+            self.map.get_runtime_signatures()
+        };
+        for (idx, mac) in sigs.iter().enumerate() {
+            current_distance = Utils::levenshtein(&mac.name, macro_name);
+            match current_distance.cmp(&min_distance) {
+                Less => {
+                    candidates.clear();
+                    candidates.push(idx);
+                    min_distance = current_distance; // Update min_distance
+                }
+                Equal => {
+                    candidates.push(idx);
+                }
+                _ => (),
+            }
+        }
+        if candidates.is_empty() {
+            None
+        } else {
+            candidates.sort();
+            Some(stake!(sigs[candidates[0]].name))
+        }
+    }
+
+    #[inline]
+    /// Find similar local macro name
+    pub(crate) fn get_similar_local_macro(&self, macro_name: &str) -> Option<String> {
+        use std::cmp::Ordering::{Equal, Less};
+        let mut min_distance = 2usize; // Distance should be smaller than 2 at least.
+        let mut current_distance: usize;
+        let mut candidates = vec![];
+        let sigs = self.map.local.keys().collect::<Vec<_>>();
+        for (idx, local_name) in sigs.iter().enumerate() {
+            current_distance = Utils::levenshtein(local_name, macro_name);
+            match current_distance.cmp(&min_distance) {
+                Less => {
+                    candidates.clear();
+                    candidates.push(idx);
+                    min_distance = current_distance; // Update min_distance
+                }
+                Equal => {
+                    candidates.push(idx);
+                }
+                _ => (),
+            }
+        }
+        if candidates.is_empty() {
+            None
+        } else {
+            candidates.sort();
+            Some(sigs[candidates[0]].to_string())
+        }
     }
 
     // End of miscellaenous methods
