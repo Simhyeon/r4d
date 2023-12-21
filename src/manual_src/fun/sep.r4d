@@ -1,0 +1,31 @@
+Separate content. This technically doubles newlines.
+
+# Arguments
+
+- a_content : Content to separate
+
+# Demo
+
+```
+$sep(Tightly
+packed
+contents
+look depressing)
+===
+Tightly
+
+packed
+
+contents
+
+look depressing
+
+```
+
+# Example
+
+$assert(4,$countl($sep(1
+2)))
+
+$sep(1
+2)

@@ -1,0 +1,28 @@
+Check if given two values are same
+
+Consider using eval macro if you're trying mathematical evaluation.
+
+# Return : Boolean
+
+# Arguments
+
+- a_lvalue : A left value to compare
+- a_rvalue : A right value to cmpare
+
+# Demo
+
+```
+$static(lv,$eval(20*3))  % Left  value
+$static(rv,$eval(40+20)) % Right value
+$if^(
+    $eq($lv(),$rv()),    % This is same with $eval( $lv() = $rv() )
+    Wow so equal
+)
+===
+Wow so equal
+```
+
+# Example
+
+$assert(false,$eq(a,b))
+$assert(true,$eq(23,23))

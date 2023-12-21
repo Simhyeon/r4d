@@ -1,0 +1,20 @@
+Strip from rear
+
+# Arguments
+
+- a_count   : Count of characters to strip ( trimmed )
+- a_content : Content to strip
+
+# Demo
+
+```
+% Use raw variant to prevent trimming
+$staticr(has_nl_at_end,Long text $nl())
+$stripr(2,$has_nl_at_end())
+===
+Long text
+```
+
+# Example
+
+$assert(Hmp,$stripr(2,Hmp::))

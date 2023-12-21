@@ -1,0 +1,24 @@
+Check if left value is greater than right value
+
+Consider using eval macro if you're trying mathematical evaluation.
+
+# Return : Boolean
+
+# Arguments
+
+- a_lvalue : A left value to compare
+- a_rvalue : A right value to compare
+
+# Demo
+
+```
+$static(item_count,5)
+$if($gt($item_count(),3),Yeah)
+===
+Yeah
+```
+
+# Example
+
+$assert(true,$gt(c,b))
+$assert(false,$gt(text,text))

@@ -1,0 +1,18 @@
+Split text into an array
+
+# Arguments
+
+- a_sep  : A separator string
+- a_text : Text to split
+
+# Demo
+
+```
+$split(_,I _have_ a_ many_ underbar_ in_ me)
+===
+I ,have, a, many, underbar, in, me
+```
+
+# Example
+
+$assert(\\*a,b,c*\\,$split(/,a/b/c))

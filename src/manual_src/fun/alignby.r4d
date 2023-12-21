@@ -1,0 +1,36 @@
+Align lines by a separator
+
+# Arguments
+
+- a_separator : A separator string
+- a_lines     : Lines to align
+
+# Demo
+
+```
+$alignby^(//,
+let mut processor = Processor::new() // Make a processor
+    .lenient(true) // Disable strict mode
+    .hygiene(Hygiene::Macro) // Enable hygiene mode
+    .pipe_truncate(false) // Disable pipe truncate
+    .write_to_file(Path::new("out.txt"))? // default is stdout)
+===
+let mut processor = Processor::new()      // Make a processor
+    .lenient(true)                        // Disable strict mode
+    .hygiene(Hygiene::Macro)              // Enable hygiene mode
+    .pipe_truncate(false)                 // Disable pipe truncate
+    .write_to_file(Path::new("out.txt"))? // default is stdout
+```
+
+# Example
+
+$assert=(
+First       %% wow
+Second part %% bob
+Thirdos     %% Howzer,
+$alignby^=(
+%%,
+First %% wow
+Second part %% bob
+Thirdos %% Howzer
+

@@ -1,0 +1,20 @@
+Strip from front
+
+# Arguments
+
+- a_count   : Count of characters to strip ( trimmed )
+- a_content : Content to strip
+
+# Demo
+
+```
+$static(header_level,4)
+$mie(header_level,+1)
+$stripf($header_level(),#### I'm header four)
+===
+I'm header four
+```
+
+# Example
+
+$assert(List item,$stripf(2,- List item))
