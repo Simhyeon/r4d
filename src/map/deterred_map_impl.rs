@@ -218,10 +218,10 @@ impl DeterredMacroMap {
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 4) {
             ap.set_strip(true);
-            let grep_type = &args[0];
-            let match_expr = &args[1];
-            let macro_name = trim!(&args[2]);
-            let source = &args[3];
+            let grep_type = p.parse_and_strip(&mut ap, level, "grepmap", &trim!(&args[0]))?;
+            let match_expr = p.parse_and_strip(&mut ap, level, "grepmap", &args[1])?;
+            let macro_name = p.parse_and_strip(&mut ap, level, "grepmap", &trim!(&args[2]))?;
+            let source = p.parse_and_strip(&mut ap, level, "grepmap", &args[3])?;
 
             let bufread = match grep_type.to_lowercase().as_str() {
                 #[cfg(not(feature = "wasm"))]
@@ -240,7 +240,7 @@ impl DeterredMacroMap {
                 }
             };
 
-            if bufread && !std::path::Path::new(source).exists() {
+            if bufread && !std::path::Path::new(&source).exists() {
                 return Err(RadError::InvalidArgument(format!(
                     "Cannot find a file \"{}\" ",
                     source
@@ -257,10 +257,10 @@ impl DeterredMacroMap {
 
             // If this regex is not cloned, "capture" should collect captured string into a allocated
             // vector. Which is generaly worse for performance.
-            let reg = p.try_get_or_insert_regex(match_expr)?.clone();
+            let reg = p.try_get_or_insert_regex(&match_expr)?.clone();
 
             if !bufread {
-                for cap in reg.captures_iter(source) {
+                for cap in reg.captures_iter(&source) {
                     let captured = cap.get(0).map_or("", |m| m.as_str());
                     let expanded = p
                         .execute_macro(level, "grepmap", &macro_name, captured)?
@@ -268,7 +268,7 @@ impl DeterredMacroMap {
                     res.push_str(&expanded);
                 }
             } else {
-                let lines = BufReader::new(File::open(std::path::Path::new(source))?).lines();
+                let lines = BufReader::new(File::open(std::path::Path::new(&source))?).lines();
 
                 for line in lines {
                     let line = line?;
