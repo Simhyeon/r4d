@@ -129,13 +129,20 @@ impl<'cli> RadCli<'cli> {
                 });
                 write!(std::io::stdout(), "{}", manual)?
             } else {
+                let sim = processor.get_similar_macro(name, false);
                 match processor.get_macro_manual(name) {
                     Some(text) => writeln!(std::io::stdout(), "{}", text)?,
-                    None => writeln!(
+                    None => {
+                        let adder = if let Some(mac) = sim {
+                            format!(" Did you mean \"{mac}\'?")
+                        } else {
+                            String::default()
+                        };
+                        writeln!(
                         std::io::stdout(),
-                        "Given macro \"{}\" doesn't exist and cannot display a manual",
-                        name
-                    )?,
+                        "Given macro \"{name}\" doesn't exist and cannot display a manual.{adder}"
+                    )?
+                    }
                 }
             }
             return Ok(());
