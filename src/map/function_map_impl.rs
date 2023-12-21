@@ -331,7 +331,7 @@ impl FunctionMacroMap {
             let macro_name = std::mem::take(&mut args[0]);
             let mut formula = std::mem::take(&mut args[1]);
             let body = p.get_runtime_macro_body(&macro_name)?;
-            let replaced = if formula.contains('p') {
+            let replaced = if formula.contains('m') {
                 formula.replace('p', body)
             } else {
                 formula.insert_str(0, body);
