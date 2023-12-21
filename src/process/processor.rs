@@ -3208,7 +3208,7 @@ impl<'processor> Processor<'processor> {
         only_search_runtime: bool,
     ) -> Option<String> {
         use std::cmp::Ordering::{Equal, Less};
-        let mut min_distance = 2usize; // Distance should be smaller than 2 at least.
+        let mut min_distance = 1usize; // Distance should be smaller than 2 at least.
         let mut current_distance: usize;
         let mut candidates = vec![];
         let mut sigs = if !only_search_runtime {
