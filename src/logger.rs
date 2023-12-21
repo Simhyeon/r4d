@@ -268,7 +268,7 @@ impl<'logger> Logger<'logger> {
     }
 
     /// Log message
-    pub fn log(&mut self, log_msg: &str) -> RadResult<()> {
+    pub(crate) fn log(&mut self, log_msg: &str) -> RadResult<()> {
         self.write_formatted_log_msg(
             "log",
             log_msg,
@@ -278,7 +278,7 @@ impl<'logger> Logger<'logger> {
     }
 
     /// Log error
-    pub fn elog(&mut self, log_msg: &str) -> RadResult<()> {
+    pub(crate) fn elog(&mut self, log_msg: &str) -> RadResult<()> {
         self.stat.error_count += 1;
 
         if self.assert {
@@ -293,7 +293,7 @@ impl<'logger> Logger<'logger> {
     }
 
     /// Log error without line number
-    pub fn elog_no_line(&mut self, log_msg: impl std::fmt::Display) -> RadResult<()> {
+    pub(crate) fn elog_no_line(&mut self, log_msg: impl std::fmt::Display) -> RadResult<()> {
         self.stat.error_count += 1;
 
         if self.assert {
@@ -309,7 +309,7 @@ impl<'logger> Logger<'logger> {
     }
 
     /// Log warning
-    pub fn wlog(&mut self, log_msg: &str, warning_type: WarningType) -> RadResult<()> {
+    pub(crate) fn wlog(&mut self, log_msg: &str, warning_type: WarningType) -> RadResult<()> {
         if self.suppresion_type == WarningType::Any || self.suppresion_type == warning_type {
             return Ok(());
         }
@@ -329,7 +329,11 @@ impl<'logger> Logger<'logger> {
     }
 
     /// Log warning within line
-    pub fn wlog_no_line(&mut self, log_msg: &str, warning_type: WarningType) -> RadResult<()> {
+    pub(crate) fn wlog_no_line(
+        &mut self,
+        log_msg: &str,
+        warning_type: WarningType,
+    ) -> RadResult<()> {
         if self.suppresion_type == WarningType::Any || self.suppresion_type == warning_type {
             return Ok(());
         }
