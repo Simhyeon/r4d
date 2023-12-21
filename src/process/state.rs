@@ -96,6 +96,8 @@ impl ProcessorState {
     }
 
     /// Add a pipe with name
+    ///
+    /// THis will update the value if already exists
     pub fn add_pipe(&mut self, name: Option<&str>, value: String) {
         if let Some(name) = name {
             self.pipe_map.insert(name.to_owned(), value);
