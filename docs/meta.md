@@ -2,10 +2,8 @@
 
 ### Todo... First?
 
-1. Update cindex and dcsv
-2. After above two. release as 3.2-rc1.
-2. Documentation
-3. New macros
+1. Documentation
+2. New macros
 
 #### Peformance
 
@@ -35,6 +33,7 @@ but simply collecting is often faster.
 
 * Check CLI options
 
+* [ ] Dryun doesn't detect static macros...
 * [ ] Debugger panics from the start ;( Now it doesn't... like what is wrong with you?
 * [x] Fix require strict and require comment which doesn't respect vector rules -> auto.sh
     * [ ] Find similar cases
@@ -49,6 +48,8 @@ but simply collecting is often faster.
         -> THis should go for documentation
 
 #### Documentation
+
+* Usage.md's sigytype runtime is actually useless
 
 * From 177 macros, 17 documentation is done... wow
 * [ ] New documentation for built in codes

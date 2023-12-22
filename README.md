@@ -11,7 +11,7 @@ Many big changes including new macros, new features + flags, bug fixes are
 planned. If you want to test out upcoming features, try out a beta version.
 
 ```
-cargo install r4d --version 3.2.0-beta.1 --features binary --locked
+cargo install r4d --version 3.2.0-beta.2 --features binary --locked
 ```
 
 * Note 

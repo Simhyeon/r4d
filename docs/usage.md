@@ -69,13 +69,6 @@ rad test --package --out bin.r4c
 
 # Print signature information into file
 rad --signature sig.json
-# Print signature to stdout but only runtime macros
-rad --signature --sigtype runtime
-
-# Available signature types
-# all (This is the default value for signature type)
-# default
-# runtime
 ```
 
 Type ```-h``` or ```--help``` to see full options.
@@ -217,7 +210,7 @@ processor.undefine_macro("name1", MacroType::Any);
 
 // Process with inputs
 // This prints to desginated write destinations
-processor.process_string(r#"$define(test=Test)"#)?;
+processor.process_string(None,r#"$define(test=Test)"#)?;
 processor.process_stdin()?;
 processor.process_file(Path::new("from.txt"))?;
 
