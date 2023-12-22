@@ -1376,8 +1376,6 @@ impl<'processor> Processor<'processor> {
             self.set_input_stdin()?;
         }
 
-        eprintln!("{:#?}", macro_input);
-
         let (macro_name, macro_arguments) = match macro_input.len() {
             0 => {
                 return Err(RadError::InvalidMacroReference(

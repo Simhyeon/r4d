@@ -1,51 +1,32 @@
 --------------------------------------------------------------------------------
 
-### Todo... First?
+### Todo order
 
-1. Documentation
-2. New macros
+I'm so embarassed. Everything is bugged.
 
-#### Peformance
-
-* Think about ditching textwrap
-* Inline small functions
-    [src](https://matklad.github.io/2021/07/09/inline-in-rust.html)
-* Remove `impl AsRef` as much as possible
-
-* Change &args.to_string() into std::mem::take
-    e.g.) let content = std::mem::take(&mut args[0]);
-        -> function_map_impl:2374
-* Use cow for performance improvement
-
-* Remove a pattern such as ...
-```
-
-let mut lines = content.lines();
-let line_count = lines.count();
-
-if count > line_count: yatti yatta
-```
-
-THis is bad because count consumes. Error checking while iteration is better
-but simply collecting is often faster.
+1. Make r4d great again.
+    0. Test all clap flags if they work as expected.
+    1. Update all manuals
+2. Add new macros
+3. Update manuals again
+4. Fix regex register shenenigans
+4. Fix all shenenigans from deubbing features
+    1. Diff
+    2. Dryun
+    3. Logging, Debugging
+    4. You know what? Almost everything is bugged.
+5. Improve performance
 
 #### BUG
 
 * Check CLI options
 
+* [ ] Diff doesn't work at all
 * [ ] Dryun doesn't detect static macros...
 * [ ] Debugger panics from the start ;( Now it doesn't... like what is wrong with you?
 * [x] Fix require strict and require comment which doesn't respect vector rules -> auto.sh
     * [ ] Find similar cases
 [bugs](./bugs_to_handle.md)
-
-* [x] Make sure I understand pipe and literal rules and stream rules.
--> THis is confusing because some doesn't process but some doesn't.
-    - Pipe input evalaution : Doesn't evaluate
-    - Pipe STDIN evaluation : Doesn't evaluate
-    - Stream-lines and stream-chunk evaluation : Doesn't evluate
-        -> I simply forcefully made them `skip_expansion`
-        -> THis should go for documentation
 
 #### Documentation
 
@@ -64,12 +45,17 @@ but simply collecting is often faster.
     - Mostly because it is not controlled at all. Although it might be good.
       BUT really hard to help when user makes a mistake and it goes to
       andromeda hell.
+* [x] Make sure I understand pipe and literal rules and stream rules.
+-> THis is confusing because some doesn't process but some doesn't.
+    - Pipe input evalaution : Doesn't evaluate
+    - Pipe STDIN evaluation : Doesn't evaluate
+    - Stream-lines and stream-chunk evaluation : Doesn't evluate
+        -> I simply forcefully made them `skip_expansion`
+        -> THis should go for documentation
 
 #### New features
 
-* [ ] Enable arguments by whitespaces for `map` variants + stream_chunk flag
-* [ ] Stream related flags
-    * [ ] Enable user to use anon macro in flag
+* [ ] Enable arguments by whitespaces for `map` variants
 
 #### New macro
 
@@ -135,6 +121,31 @@ ABCEE
 * [ ] Check argument sanity ( Single argument )
 * [ ] Check if macro attribute is necessary for macro name input ( map, spread )
 * [ ] Check cli option
+
+#### Peformance
+
+* Think about ditching textwrap
+* Inline small functions
+    [src](https://matklad.github.io/2021/07/09/inline-in-rust.html)
+* Remove `impl AsRef` as much as possible
+
+* Change &args.to_string() into std::mem::take
+    e.g.) let content = std::mem::take(&mut args[0]);
+        -> function_map_impl:2374
+* Use cow for performance improvement
+
+* Remove a pattern such as ...
+```
+
+let mut lines = content.lines();
+let line_count = lines.count();
+
+if count > line_count: yatti yatta
+```
+
+THis is bad because count consumes. Error checking while iteration is better
+but simply collecting is often faster.
+
 
 #### 4.0 IDEAS
 
@@ -1013,3 +1024,4 @@ a macro called stream
     * [x] Remove unnecessary process_string from flag related logics
     * [x] Argument for stream chunk + stream lines
 * [-] Fix RAD_BACKTRACE error -> THis is not an error
+* [x] Enable arguments by whitespaces stream_chunk flag

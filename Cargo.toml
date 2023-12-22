@@ -54,7 +54,7 @@ flate2 = "1.0.24"
 atty = { version = "0.2.14", optional = true}
 chrono = {version = "0.4.31", optional = true}
 cindex = {version = "0.5.2-rc1", optional = true, git="https://github.com/simhyeon/cindex", branch="dev"}
-clap = { version = "4.4.10", default-features = false, features = [ "std","help", "usage", "error-context", "suggestions" ], optional=true}
+clap = { version = "4.4.10", default-features = false, features = [ "std","help", "usage", "error-context", "suggestions", "color" ], optional=true}
 colored = {version = "2.0.4", optional = true}
 crossterm = {version = "0.27.0", optional = true}
 evalexpr = {version = "11.2.0", optional = true}
