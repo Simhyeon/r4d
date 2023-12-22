@@ -148,18 +148,28 @@ impl<'cli> RadCli<'cli> {
             return Ok(());
         }
 
-        // TODO
         // Search a macro
         #[cfg(feature = "signature")]
         if let Some(name) = args.get_one::<String>("search") {
-            unimplemented!();
             match processor.get_macro_manual(name) {
                 Some(text) => writeln!(std::io::stdout(), "{}", text)?,
-                None => writeln!(
-                    std::io::stdout(),
-                    "Given macro \"{}\" doesn't exist and cannot display a manual",
-                    name
-                )?,
+                None => match processor.get_similar_macro_names(name) {
+                    Some(list) => {
+                        writeln!(
+                            std::io::stdout(),
+                            "Searched result : {}{:?}",
+                            processor.state.newline,
+                            list
+                        )?;
+                    }
+                    None => {
+                        writeln!(
+                            std::io::stdout(),
+                            "Failed to get search results for the macro \"{}\"",
+                            name
+                        )?;
+                    }
+                },
             }
             return Ok(());
         }
@@ -604,6 +614,7 @@ impl<'cli> RadCli<'cli> {
                 Arg::new("manual")
                     .short('M')
                     .long("man")
+                    .alias("manual")
                     .action(ArgAction::Set)
                     .default_missing_value("*")
                     .num_args(0..=1)

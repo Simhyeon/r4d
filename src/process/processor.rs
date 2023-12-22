@@ -3233,7 +3233,6 @@ impl<'processor> Processor<'processor> {
         if candidates.is_empty() {
             None
         } else {
-            candidates.sort();
             Some(stake!(sigs[candidates[0]].name))
         }
     }
@@ -3263,8 +3262,42 @@ impl<'processor> Processor<'processor> {
         if candidates.is_empty() {
             None
         } else {
-            candidates.sort();
             Some(sigs[candidates[0]].to_string())
+        }
+    }
+
+    #[inline]
+    /// get similar macro name list
+    pub(crate) fn get_similar_macro_names(&self, macro_name: &str) -> Option<Vec<String>> {
+        use std::cmp::Ordering::{Equal, Less};
+        let mut min_distance = 2usize;
+        let mut current_distance: usize;
+        let mut candidates = vec![];
+        let sigs = self.map.get_signatures();
+        for (idx, mac) in sigs.iter().enumerate() {
+            current_distance = Utils::levenshtein(&mac.name, macro_name);
+            match current_distance.cmp(&min_distance) {
+                Less => {
+                    candidates.clear();
+                    candidates.push(idx);
+                    min_distance = current_distance; // Update min_distance
+                }
+                Equal => {
+                    candidates.push(idx);
+                }
+                _ => (),
+            }
+        }
+        if candidates.is_empty() {
+            None
+        } else {
+            candidates.sort();
+            Some(
+                candidates
+                    .iter()
+                    .map(|idx| sigs[*idx].name.clone())
+                    .collect(),
+            )
         }
     }
 
