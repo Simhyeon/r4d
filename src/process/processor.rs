@@ -142,7 +142,7 @@ static MAC_NAME: Lazy<Regex> =
 ///
 ///     // Process with inputs
 ///     // This prints to desginated write destinations
-///     processor.process_string(r#"$define(test=Test)"#)?;
+///     processor.process_string(None,r#"$define(test=Test)"#)?;
 ///     processor.process_stdin()?;
 ///     processor.process_file(Path::new("from.txt"))?;
 ///
@@ -1250,7 +1250,7 @@ impl<'processor> Processor<'processor> {
     ///
     /// ```rust
     /// let mut proc = r4d::Processor::empty();
-    /// proc.process_string("$define(new=NEW)")
+    /// proc.process_string(None,"$define(new=NEW)")
     ///     .expect("Failed to process a string");
     /// ```
     pub fn process_string(
