@@ -1,6 +1,7 @@
 //! Cli processor for rad binary
 
 use clap::ArgAction;
+use itertools::Itertools;
 
 use crate::auth::AuthType;
 use crate::common::CommentType;
@@ -283,14 +284,16 @@ impl<'cli> RadCli<'cli> {
                             let result = self.processor.process_static_script(src_as_file);
                             self.processor.toggle_hygiene(false);
                             result
-                        } else if let Some(mac) = args.get_one::<String>("stream-chunk") {
+                        } else if let Some(mac) = args.get_many::<String>("stream-chunk") {
+                            let mac = mac.map(|s| s.as_str()).collect_vec();
                             // Execute macros on each file
                             self.processor.stream_by_chunk(
                                 &std::fs::read_to_string(src)?,
                                 Some("src"),
                                 mac,
                             )
-                        } else if let Some(mac) = args.get_one::<String>("stream-lines") {
+                        } else if let Some(mac) = args.get_many::<String>("stream-lines") {
+                            let mac = mac.map(|s| s.as_str()).collect_vec();
                             let file_stream = std::fs::File::open(src)?;
                             let reader = std::io::BufReader::new(file_stream);
                             self.processor.stream_by_lines(reader, Some(src), mac)
@@ -330,12 +333,14 @@ impl<'cli> RadCli<'cli> {
                 return Err(RadError::InvalidCommandOption(String::from(
                     "Stdin cannot use debug option",
                 )));
-            } else if let Some(mac) = args.get_one::<String>("stream-chunk") {
+            } else if let Some(mac) = args.get_many::<String>("stream-chunk") {
+                let mac = mac.map(|s| s.as_str()).collect_vec();
                 // Read stdin as chunk and stream to a macro
                 let mut input = String::new();
                 std::io::stdin().read_to_string(&mut input)?;
                 self.processor.stream_by_chunk(&input, None, mac)?;
-            } else if let Some(mac) = args.get_one::<String>("stream-lines") {
+            } else if let Some(mac) = args.get_many::<String>("stream-lines") {
+                let mac = mac.map(|s| s.as_str()).collect_vec();
                 // Read stdin as line buffer and streams to a macro
                 #[allow(unused_imports)]
                 // TODO This was copy pasted check if this is necessary
@@ -451,7 +456,7 @@ impl<'cli> RadCli<'cli> {
     fn args_builder(source: Option<&[&str]>) -> clap::ArgMatches {
         use clap::{Arg, Command};
         let app = Command::new("rad")
-            .version("3.2.1-rc1")
+            .version("3.2.0-rc1")
             .author("Simon creek <simoncreek@tutanota.com>")
             .about( "R4d(rad) is a modern macro processor made with rust. Refer https://github.com/simhyeon/r4d for detailed usage.")
             .long_about("R4d is a text oriented macro processor which aims to be an modern alternative to m4 macro processor. R4d procedurally follows texts and substitue macro calls with defined macro body. R4d comes with varoius useful built in macros so that user don't have to define from scratch. R4d also supports multiple debugging flags for easier error detection. Refer https://github.com/simhyeon/r4d for detailed usage.")
@@ -475,16 +480,19 @@ impl<'cli> RadCli<'cli> {
                 .long("literal")
                 .help("Don't interpret input source as file"))
             .arg(Arg::new("stream-chunk")
-                .action(ArgAction::Set)
                 .long("stream-chunk")
+                .num_args(1..)
+                .value_parser(clap::builder::ValueParser::string())
                 .aliases(["sc"])
-                .conflicts_with_all(["pipe", "combination", "literal", "stream-lines"])
+                .conflicts_with_all(["pipe", "combination", "literal", "stream-lines","INPUT"])
                 .help("Stream contents to a macro execution"))
             .arg(Arg::new("stream-lines")
                 .action(ArgAction::Set)
                 .long("stream-lines")
                 .aliases(["sl"])
-                .conflicts_with_all(["pipe", "combination", "literal", "stream-chunk"])
+                .num_args(1..)
+                .value_parser(clap::builder::ValueParser::string())
+                .conflicts_with_all(["pipe", "combination", "literal", "stream-chunk", "INPUT"])
                 .help("Stream contents to a macro execution but by lines"))
             .arg(Arg::new("script")
                 .long("script")

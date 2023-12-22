@@ -1359,7 +1359,7 @@ impl<'processor> Processor<'processor> {
         &mut self,
         content: &str,
         current_target: Option<&str>,
-        macro_name: &str,
+        macro_input: Vec<&str>,
     ) -> RadResult<Option<String>> {
         self.state.stream_state.on_stream = true;
         // Sandboxed environment, backup
@@ -1376,27 +1376,27 @@ impl<'processor> Processor<'processor> {
             self.set_input_stdin()?;
         }
 
-        // Anon type macro name
-        let macro_name = if macro_name.contains('=') {
-            let macro_form = format!(r#"$anon({})"#, macro_name);
-            if let Err(err) = self.process_string(Some(String::from("shell argument")), &macro_form)
-            {
-                self.log_error(&format!(
-                    "Could not create an anon macro from input: \"{}\"",
-                    macro_form
-                ))?;
-                return Err(err);
+        eprintln!("{:#?}", macro_input);
+
+        let (macro_name, macro_arguments) = match macro_input.len() {
+            0 => {
+                return Err(RadError::InvalidMacroReference(
+                    "Cannot invoke an empty macro name".to_string(),
+                ))
             }
-            MACRO_SPECIAL_ANON
-        } else {
-            macro_name
+            1 => (macro_input[0], "".to_string()),
+            _ => {
+                let mut joined = macro_input[1..].join(",");
+                joined.push(',');
+                (macro_input[0], joined)
+            }
         };
 
         // Strip trailing new line
-        let content = content.strip_suffix(&self.state.newline).unwrap_or("");
+        let content = macro_arguments + content.strip_suffix(&self.state.newline).unwrap_or("");
 
         let mut frag = MacroFragment::new();
-        self.state.add_pipe(None, content.to_string());
+        self.state.add_pipe(None, content);
         frag.pipe_input = true;
         frag.name = macro_name.to_string();
         self.process_piece(&mut frag)?;
@@ -1423,7 +1423,7 @@ impl<'processor> Processor<'processor> {
         &mut self,
         buffer: impl std::io::BufRead,
         current_target: Option<&str>,
-        macro_name: &str,
+        macro_input: Vec<&str>,
     ) -> RadResult<Option<String>> {
         self.state.stream_state.on_stream = true;
         // Sandboxed environment, backup
@@ -1440,20 +1440,18 @@ impl<'processor> Processor<'processor> {
             self.set_input_stdin()?;
         }
 
-        // Anon type macro name
-        let macro_name = if macro_name.contains('=') {
-            let macro_form = format!(r#"$anon({})"#, macro_name);
-            if let Err(err) = self.process_string(Some(String::from("shell argument")), &macro_form)
-            {
-                self.log_error(&format!(
-                    "Could not create an anon macro from input: \"{}\"",
-                    macro_form
-                ))?;
-                return Err(err);
+        let (macro_name, macro_arguments) = match macro_input.len() {
+            0 => {
+                return Err(RadError::InvalidMacroReference(
+                    "Cannot invoke an empty macro name".to_string(),
+                ))
             }
-            MACRO_SPECIAL_ANON
-        } else {
-            macro_name
+            1 => (macro_input[0], "".to_string()),
+            _ => {
+                let mut joined = macro_input[1..].join(",");
+                joined.push(',');
+                (macro_input[0], joined)
+            }
         };
 
         let line_iter = buffer.lines();
@@ -1461,7 +1459,7 @@ impl<'processor> Processor<'processor> {
         frag.pipe_input = true;
         frag.name = macro_name.to_string();
         for line in line_iter {
-            let line = line?;
+            let line = format!("{}{}", macro_arguments, line?);
             self.state.add_pipe(None, line);
             self.process_piece(&mut frag)?;
             self.logger.inc_line_number();
