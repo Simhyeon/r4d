@@ -2,24 +2,55 @@
 
 ### Todo... First?
 
+1. Update cindex and dcsv
+2. After above two. release as 3.2-rc1.
+2. Documentation
+3. New macros
+
+#### Peformance
+
+* Think about ditching textwrap
+* Inline small functions
+    [src](https://matklad.github.io/2021/07/09/inline-in-rust.html)
+* Remove `impl AsRef` as much as possible
+
+* Change &args.to_string() into std::mem::take
+    e.g.) let content = std::mem::take(&mut args[0]);
+        -> function_map_impl:2374
+* Use cow for performance improvement
+
+* Remove a pattern such as ...
+```
+
+let mut lines = content.lines();
+let line_count = lines.count();
+
+if count > line_count: yatti yatta
+```
+
+THis is bad because count consumes. Error checking while iteration is better
+but simply collecting is often faster.
+
 #### BUG
 
-* [ ] I need a total escape option. Escape character get lost on simple
-  processing
-* [ ] Pipe should escape everything. Not parse it...?
-* [ ] Fix manual macro cli problem...
-* [ ] Debugger panics from the start ;(
-* [ ] Fix require strict and require comment which doesn't respect vector rules
+* Check CLI options
+
+* [ ] Debugger panics from the start ;( Now it doesn't... like what is wrong with you?
+* [x] Fix require strict and require comment which doesn't respect vector rules -> auto.sh
+    * [ ] Find similar cases
 [bugs](./bugs_to_handle.md)
 
-* [ ] Make sure I understand pipe and literal rules and stream rules.
+* [x] Make sure I understand pipe and literal rules and stream rules.
 -> THis is confusing because some doesn't process but some doesn't.
-    - Pipe input evalaution
-    - Pipe STDIN evaluation
-    - Stream-lines and stream-chunk evaluation
+    - Pipe input evalaution : Doesn't evaluate
+    - Pipe STDIN evaluation : Doesn't evaluate
+    - Stream-lines and stream-chunk evaluation : Doesn't evluate
+        -> I simply forcefully made them `skip_expansion`
+        -> THis should go for documentation
 
 #### Documentation
 
+* From 177 macros, 17 documentation is done... wow
 * [ ] New documentation for built in codes
     - Demo for basic usage
     - Example for automated tests
@@ -35,18 +66,72 @@
 
 #### New features
 
+* [ ] Enable arguments by whitespaces for `map` variants + stream_chunk flag
 * [ ] Stream related flags
     * [ ] Enable user to use anon macro in flag
-* [ ] [similar](./similar.md)
 
 #### New macro
 
-#### MISC, bug detecting
+* [ ] Flat -> Flatten indented sub lines into a single one
+```
+$stream(flat)
+let setter = Setter::new()
+    .builder()
+    .yeah();
+$consume
+===
+let setter = Setter::new().builder().yeah();
+```
 
+-> This is simlar to vim J function but works on chunk.
+
+* [ ] Flatreg -> Flatten by regular expression. Regexed line becomes main line
+  that following lines are joined to
+```
+$define(wow,a_content=$flatreg(Self::,$a_content()))
+$stream(wow)
+Self::PermissionDenied(txt, atype) => format!(
+"Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.",
+txt, atype
+),
+Self::StrictPanic => 
+    "Every error is panicking in strict mode".to_string(),
+$consume
+===
+Self::PermissionDenied(txt, atype) => format!( "Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.", txt, atype),
+Self::StrictPanic => "Every error is panicking in strict mode".to_string(),
+```
+* [ ] Wrapl -> Wrap content by lines. == vim's "==" function
+* [ ] Sortli -> Sort list
+```
+$stream(sortli)
+ABCD
+ABCEE
+    AAAA
+AA
+$consume
+===
+AA
+ABCD
+ABCEE
+    AAAA
+```
+
+* [ ] No pipe truncate option for macro users.
+* [ ] Also add non evalexpr variant macro ( inc, dec )
+
+#### MISC, bug detecting, Ergonomics
+
+* [ ] Regcsv add skip parsing and skip extension maybe?
+    -> Arg parser changed, so it might have been fixed pretty.
+* [ ] Improve error messages for number related macros.
+    e.g) strip series should indicate why index doesn't meet condition.
+        -> Given content's length is ... and you gave index ...
 * [ ] Check logging sanity as a whole for the time.
     * [ ] Stream related flags
     * [ ] Stream macro
     * [ ] SPread macro
+* [ ] Check argument sanity ( Single argument )
 * [ ] Check if macro attribute is necessary for macro name input ( map, spread )
 * [ ] Check cli option
 
@@ -876,8 +961,18 @@ From 3.2
 
 ### Bug fix
 
+* [x] Stream-chunk doesn't work...
+* [x] Pipe input always tirggering skip_expansion is very tedious fix it asap
+
+* CLI
+    * [x] Fix manual macro cli problem...
 * [x] Fixed a bug where dump didn't require fout permission.
 * [x] So... pipe input was not working for the time... musseuk-tard
+* [x] Looks like skip_expansion variable inside evluate method does nothing?
+* [x] Pipe should escape everything. Not parse it...?
+* [x] Fixed strange behaviour of stream-chunk and stream-lines
+* [x] Grepmap doesn't work?
+    -> Wow, this was not parsing at all... Really?
 
 ### MISC
 
@@ -887,9 +982,12 @@ From 3.2
     * [x] Check if flate crate is necessary -> Yes it is used in packaing
     * [x] Upgrade clap
         -> Currnetly clap compiles thus it should be ok?
+* [x] ERGO : No such macro prints similar macro name.
 
 ### New macros
 
+* [x] Cond  : Condense ( remove duplicate whitespaces from an input )
+* [x] Condl : Condense by lines ( remove duplicate whitespaces from an input )
 * [x] Add align comment character macro. Read meta's document
     * [x] Now add a documentation for it
 * [x] Add rer macro ( Rearrange )
@@ -899,13 +997,18 @@ a macro called stream
     This macro accepts data and send to macro invocation.
     * [x] Enable anon macro in macro invocation
     * [x] Stream lines macro
-
+* [x] Stripfl
+* [x] Striprl
+* [x] Pie and Mie
 
 ### New flag, features
 
+* [x] New command `Search`
+* [x] New macro attribute `skip_expansion`
 * [x] New flag: Stream-lines
 * [x] New flag: Stream-chunk
     * [x] Enhance stream_chunk newline stripping
     * [x] Unify starting logger index between lines and chunk
     * [x] Remove unnecessary process_string from flag related logics
+    * [x] Argument for stream chunk + stream lines
 * [-] Fix RAD_BACKTRACE error -> THis is not an error
