@@ -5,12 +5,16 @@ use.
 
 [Changes](./docs/change.md)
 
-[3.0 Changes](./docs/3_0.md)
+### 3.2 is coming
 
-### NOTICE
+Many big changes including new macros, new features + flags, bug fixes are
+planned. If you want to test out upcoming features, try out a beta version.
 
-Use rad version **3.0.1** instead of 3.0. Refer a [md](docs/3_0_hassle.md) for
-a reason.
+```
+cargo install r4d --version 3.2.0-beta.1
+```
+
+* Note : currently not all new features are documented.
 
 ### Table of conents
 
