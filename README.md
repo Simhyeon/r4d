@@ -7,17 +7,8 @@ use.
 
 ### 3.2 is coming
 
-Many big changes including new macros, new features + flags, bug fixes are
-planned. If you want to test out upcoming features, try out a beta version.
-
-```
-cargo install r4d --version 3.2.0-beta.2 --features binary --locked
-```
-
-* Note 
-
-- Currently not all new features are documented.
-- There are many untested cases and there could be undetected bugs around.
+Currently master branch is not well tested. Please consider using a well tested
+crates.io version.
 
 ### Table of conents
 
