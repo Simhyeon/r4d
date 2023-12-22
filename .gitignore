@@ -12,3 +12,5 @@ pkg
 test
 wasm
 mac.r4d
+addr.csv
+sig.json
