@@ -651,7 +651,7 @@ impl<'cli> RadCli<'cli> {
                     .action(ArgAction::Set)
                     .value_name("SIG TYPE")
                     .default_value("all")
-                    .help("Signature type to get"),
+                    .help("Signature type to get. (all|function|runtime)"),
             );
 
         if let Some(src) = source {
