@@ -27,6 +27,7 @@ use std::path::{Path, PathBuf};
 #[cfg(not(feature = "wasm"))]
 use std::process::Command;
 use std::str::FromStr;
+use unicode_width::UnicodeWidthStr;
 
 // NOTE
 // Is this necessary?
@@ -1522,25 +1523,23 @@ impl FunctionMacroMap {
             for line in contents.clone() {
                 let mut splitted = line.split(&separator);
                 let leading = splitted.next().unwrap();
+                let width = UnicodeWidthStr::width(leading);
                 if leading != line {
-                    max_length = max_length.max(leading.chars().count());
+                    max_length = max_length.max(width);
                 }
             }
             for line in contents {
                 let mut splitted = line.split(&separator);
                 let leading = splitted.next().unwrap();
                 if leading != line {
-                    eprintln!("\"{leading}\"");
-                    eprintln!("--{}", max_length - leading.chars().count());
-                    eprintln!("max : --{max_length}--");
-                    eprintln!("leading : --{}--", leading.chars().count());
+                    let width = UnicodeWidthStr::width(leading);
                     // found matching line
                     let following = splitted.next().unwrap();
                     write!(
                         result,
                         "{}{}{}{}{}",
                         leading,
-                        " ".repeat(max_length - leading.chars().count()),
+                        " ".repeat(max_length - width),
                         separator,
                         following,
                         nl

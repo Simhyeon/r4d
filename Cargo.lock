@@ -535,6 +535,7 @@ dependencies = [
  "similar",
  "textwrap",
  "trexter",
+ "unicode-width",
  "wasm-bindgen",
  "wee_alloc",
 ]
