@@ -1530,6 +1530,11 @@ impl FunctionMacroMap {
                 let mut splitted = line.split(&separator);
                 let leading = splitted.next().unwrap();
                 if leading != line {
+                    eprintln!("\"{leading}\"");
+                    eprintln!("--{}", max_length - leading.chars().count());
+                    eprintln!("max : --{max_length}--");
+                    eprintln!("leading : --{}--", leading.chars().count());
+                    // found matching line
                     let following = splitted.next().unwrap();
                     write!(
                         result,

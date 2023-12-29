@@ -6,7 +6,6 @@ use crate::common::LocalMacro;
 use crate::deterred_map::DeterredMacroMap;
 use crate::function_map::FunctionMacroMap;
 use crate::runtime_map::{RuntimeMacro, RuntimeMacroMap};
-#[cfg(feature = "signature")]
 use crate::sigmap::MacroSignature;
 use crate::trim;
 use crate::utils::Utils;
@@ -235,7 +234,6 @@ impl MacroMap {
     }
 
     /// Get a macro signature
-    #[cfg(feature = "signature")]
     pub fn get_signature(&self, macro_name: &str) -> Option<MacroSignature> {
         if let Some(mac) = self.runtime.get(macro_name, Hygiene::None) {
             Some(MacroSignature::from(mac))
@@ -249,7 +247,6 @@ impl MacroMap {
     }
 
     /// Get macro signatures object
-    #[cfg(feature = "signature")]
     pub fn get_signatures(&self) -> Vec<MacroSignature> {
         let key_iter = self.deterred.macros.values().map(MacroSignature::from);
         let funcm_iter = self.function.macros.values().map(MacroSignature::from);
@@ -258,7 +255,6 @@ impl MacroMap {
     }
 
     /// Get function signatures
-    #[cfg(feature = "signature")]
     pub fn get_function_signatures(&self) -> Vec<MacroSignature> {
         let key_iter = self.deterred.macros.values().map(MacroSignature::from);
         let funcm_iter = self.function.macros.values().map(MacroSignature::from);
@@ -266,7 +262,6 @@ impl MacroMap {
     }
 
     /// Get runtime signatures
-    #[cfg(feature = "signature")]
     pub fn get_runtime_signatures(&self) -> Vec<MacroSignature> {
         self.runtime
             .macros

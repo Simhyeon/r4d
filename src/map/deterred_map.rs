@@ -866,7 +866,6 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
     }
 
     /// Get Function pointer from map
-    #[cfg(feature = "signature")]
     pub(crate) fn get_signature(&self, name: &str) -> Option<&DMacroSign> {
         self.macros.get(name)
     }
@@ -941,7 +940,6 @@ impl std::fmt::Display for DMacroSign {
     }
 }
 
-#[cfg(feature = "signature")]
 impl From<&DMacroSign> for crate::sigmap::MacroSignature {
     fn from(ms: &DMacroSign) -> Self {
         Self {

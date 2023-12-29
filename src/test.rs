@@ -18,11 +18,14 @@ impl RadStorage for TestStorage {
 
 #[test]
 fn function_name_test() -> RadResult<()> {
-    use crate::Processor;
-    let mut processor = Processor::new();
-    processor.add_static_rules(&[("test", "")])?;
-    writeln!(std::io::stdout(), "{}", processor.get_static("test")?);
-    processor.replace_macro("test", "WOWZER");
-    writeln!(std::io::stdout(), "{}", processor.get_static("test")?);
+    // use crate::Processor;
+    // let mut processor = Processor::new();
+    // processor.add_static_rules(&[("test", "")])?;
+    // writeln!(std::io::stdout(), "{}", processor.get_static("test")?);
+    // processor.replace_macro("test", "WOWZER");
+    let chs = ['안', 'a', 'ي', '𝅘𝅥𝅰'];
+    for ch in chs {
+        eprintln!("CH : \"{ch}\" -- bytes {}", ch.len_utf8())
+    }
     Ok(())
 }

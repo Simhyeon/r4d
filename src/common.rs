@@ -213,7 +213,6 @@ pub enum FlowControl {
 }
 
 /// Signature type
-#[cfg(feature = "signature")]
 pub enum SignatureType {
     /// Every macros
     All,
@@ -223,7 +222,6 @@ pub enum SignatureType {
     Runtime,
 }
 
-#[cfg(feature = "signature")]
 impl SignatureType {
     pub fn from_str(text: &str) -> RadResult<Self> {
         let variant = match text.to_lowercase().as_str() {

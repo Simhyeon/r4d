@@ -2948,7 +2948,6 @@ $extract()"
     }
 
     /// Get Function pointer from map
-    #[cfg(feature = "signature")]
     pub(crate) fn get_signature(&self, name: &str) -> Option<&FMacroSign> {
         self.macros.get(name)
     }
@@ -3020,7 +3019,6 @@ impl std::fmt::Display for FMacroSign {
     }
 }
 
-#[cfg(feature = "signature")]
 impl From<&FMacroSign> for crate::sigmap::MacroSignature {
     fn from(bm: &FMacroSign) -> Self {
         Self {

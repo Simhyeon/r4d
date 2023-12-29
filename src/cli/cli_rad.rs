@@ -7,9 +7,7 @@ use crate::auth::AuthType;
 use crate::common::CommentType;
 #[cfg(feature = "debug")]
 use crate::common::DiffOption;
-#[cfg(feature = "signature")]
 use crate::common::SignatureType;
-#[cfg(feature = "signature")]
 use crate::consts::LINE_ENDING;
 use crate::logger::WarningType;
 #[cfg(feature = "template")]
@@ -18,10 +16,8 @@ use crate::script;
 use crate::utils::Utils;
 use crate::Processor;
 use crate::{Hygiene, RadError, RadResult};
-#[cfg(feature = "signature")]
 use std::fmt::Write as _;
 use std::io::Read;
-#[cfg(feature = "signature")]
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -115,7 +111,6 @@ impl<'cli> RadCli<'cli> {
         // - Compile
 
         // Help command
-        #[cfg(feature = "signature")]
         if let Some(name) = args.get_one::<String>("manual") {
             if name == "*" {
                 // Get all values
@@ -150,7 +145,6 @@ impl<'cli> RadCli<'cli> {
         }
 
         // Search a macro
-        #[cfg(feature = "signature")]
         if let Some(name) = args.get_one::<String>("search") {
             match processor.get_macro_manual(name) {
                 Some(text) => writeln!(std::io::stdout(), "{}", text)?,
@@ -316,14 +310,12 @@ impl<'cli> RadCli<'cli> {
                     }
                 }
             }
-            #[cfg(feature = "signature")]
             self.print_signature(args)?;
         } else {
             // -->> Read from stdin
 
             // Print signature if such option is given
             // Signature option doesn't go with stdin option
-            #[cfg(feature = "signature")]
             if self.print_signature(args)? {
                 return Ok(());
             }
@@ -379,9 +371,7 @@ impl<'cli> RadCli<'cli> {
     /// Print signature
     ///
     /// Returns whether signature operation was executed or not
-    #[cfg(feature = "signature")]
     fn print_signature(&mut self, args: &clap::ArgMatches) -> RadResult<bool> {
-        #[cfg(feature = "signature")]
         if args.contains_id("signature") {
             // TODO
             // Outragoues
@@ -616,7 +606,6 @@ impl<'cli> RadCli<'cli> {
                 .action(ArgAction::SetTrue)
                 .help("Package sources into a single static file"));
 
-        #[cfg(feature = "signature")]
         let app = app
             .arg(
                 Arg::new("manual")

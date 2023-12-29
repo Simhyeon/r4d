@@ -5,7 +5,6 @@ use crate::auth::{AuthState, AuthType};
 use crate::common::ContainerType;
 #[cfg(feature = "debug")]
 use crate::common::DiffOption;
-#[cfg(feature = "signature")]
 use crate::common::SignatureType;
 use crate::common::{
     CommentType, ErrorBehaviour, FlowControl, Hygiene, LocalMacro, MacroFragment, MacroType,
@@ -24,7 +23,6 @@ use crate::logger::{Logger, WarningType};
 use crate::map::MacroMap;
 use crate::package::StaticScript;
 use crate::runtime_map::RuntimeMacro;
-#[cfg(feature = "signature")]
 use crate::sigmap::SignatureMap;
 use crate::storage::{RadStorage, StorageOutput};
 use crate::trim;
@@ -862,7 +860,6 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Get macro signatrue map
-    #[cfg(feature = "signature")]
     pub(crate) fn get_signature_map(&self, sig_type: SignatureType) -> RadResult<SignatureMap> {
         let signatures = match sig_type {
             SignatureType::All => self.map.get_signatures(),
@@ -3262,8 +3259,8 @@ impl<'processor> Processor<'processor> {
         }
     }
 
-    #[inline]
     /// get similar macro name list
+    #[inline]
     pub(crate) fn get_similar_macro_names(&self, macro_name: &str) -> Option<Vec<String>> {
         use std::cmp::Ordering::{Equal, Less};
         let mut min_distance = 2usize;
@@ -3306,7 +3303,6 @@ impl<'processor> Processor<'processor> {
     // <EXT>
 
     /// Get a macro manual string
-    #[cfg(feature = "signature")]
     pub(crate) fn get_macro_manual(&self, macro_name: &str) -> Option<String> {
         self.map.get_signature(macro_name).map(|s| s.to_string())
     }

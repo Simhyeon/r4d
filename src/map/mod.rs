@@ -20,5 +20,4 @@ pub(crate) use macro_map::MacroMap;
 #[cfg(feature = "hook")]
 pub mod hookmap;
 pub mod runtime_map;
-#[cfg(feature = "signature")]
 pub mod sigmap;

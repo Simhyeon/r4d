@@ -63,7 +63,6 @@ pub(crate) use map::function_map;
 #[cfg(feature = "hook")]
 pub(crate) use map::hookmap;
 pub(crate) use map::runtime_map;
-#[cfg(feature = "signature")]
 pub(crate) use map::sigmap;
 
 pub(crate) mod auth;

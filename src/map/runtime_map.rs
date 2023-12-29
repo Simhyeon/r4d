@@ -50,7 +50,6 @@ impl std::fmt::Display for RuntimeMacro {
     }
 }
 
-#[cfg(feature = "signature")]
 impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
     fn from(mac: &RuntimeMacro) -> Self {
         let variant = if mac.is_static {
