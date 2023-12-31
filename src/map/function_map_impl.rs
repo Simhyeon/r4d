@@ -2720,6 +2720,8 @@ impl FunctionMacroMap {
                 .lines()
                 .map(|s| s.to_string())
                 .collect::<Vec<String>>();
+            // TODO
+            // Refactor iteration_cache into a separate struct
             let mut iteration_cache: Vec<(usize, usize)> = Vec::new();
             // Find list elements and save counts of each sorts
             for (ll, line) in lines.iter().enumerate() {
@@ -2745,21 +2747,17 @@ impl FunctionMacroMap {
                     let index = captured.get(3).map_or("", |m| m.as_str());
                     let following_part = captured.get(4).map_or("", |m| m.as_str());
                     // ---
+                    // Different index from prior line OR different indentation
                     if index != index_cache || blank_cache != blank {
                         counter = rer_hash.get_current_count(blank, index);
 
                         // This means list items go up
                         if blank_cache > blank {
+                            // Reset previous cache
                             rer_hash.update_counter(blank_cache, &index_cache, 1);
-                        }
-
-                        // This means counter was resumed not a fresh start
-                        if counter != 1 {
-                            counter += 1;
                         }
                     } else {
                         counter += 1;
-                        rer_hash.update_counter(blank, index, counter);
                     }
                     blank_cache = blank;
                     index_cache = index.to_string();
@@ -2770,6 +2768,7 @@ impl FunctionMacroMap {
                             format!("{}{}{}{}", leading_part, counter, index, following_part),
                         )
                         .to_string();
+                    rer_hash.update_counter(blank, index, counter + 1);
                     lines[ll] = replaced;
                 }
             }
