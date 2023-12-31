@@ -1,4 +1,4 @@
-# How would one implement format comment macro
+# (Previous) How would one implement format comment macro
 
 Suppose I have an example like following
 
@@ -23,3 +23,23 @@ Let's do some crude yet functional proto-typing of logics.
     2. Lengthen first part with empty blanks
     3. Attach pattern after
     4. Print to text
+
+
+# I realized aligning after pattern is such a hard thing to achieve
+
+Because of CJK and emojis. I'm korean so I have nothing to say, but we need
+them anyway. Therefore I need a different approach.
+
+1. Find CJKs (This should be a well known problem.)
+
+2. Double the count and add to max charcters
+
+3. Find EMOJIS 
+
+4. Double the count and add to max charcters
+
+## CAVEAT
+
+Emojis are quite complex and more complex then CJK. CJK is mostly 3 bytes.
+(Except yet-hangul.) However emojis can be 4 btyes and consists of multiple
+unicode scalar. Despite of CJK Characters.

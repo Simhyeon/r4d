@@ -311,7 +311,7 @@ impl<'cli> RadCli<'cli> {
                 }
             }
             self.print_signature(args)?;
-        } else {
+        } else if !args.get_flag("freeze") {
             // -->> Read from stdin
 
             // Print signature if such option is given

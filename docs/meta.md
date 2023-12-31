@@ -4,12 +4,15 @@
 
 I'm so embarassed. Everything is bugged.
 
-1. Make r4d great again.
-    0. Test all clap flags if they work as expected.
+1. Make r4d great again. ( Until march )
+    1. Test all clap flags if they work as expected. -> DONE, except debugging
     1. Update all manuals
-2. Add new macros
-3. Update manuals again
-4. Fix regex register shenenigans
+1. Add new macros
+2. Update manuals again
+    1. Test english charcters
+    2. Test korean characters
+    3. Test invalid syntax, characters.
+3. Fix regex register shenenigans
 4. Fix all shenenigans from deubbing features
     1. Diff
     2. Dryun
@@ -17,14 +20,39 @@ I'm so embarassed. Everything is bugged.
     4. You know what? Almost everything is bugged.
 5. Improve performance
 
+6. Unicodwdith should be applied for aligin macro too
+7. Check for alignby performance maybe duplicate
+8. Try using qsv rather than maintaining a wheel
+9. Make a color scheme option for color blindness
+
 #### BUG
 
-* Check CLI options
 
-* [ ] Diff doesn't work at all
-* [ ] Dryun doesn't detect static macros...
-* [ ] Debugger panics from the start ;( Now it doesn't... like what is wrong with you?
-* [x] Fix require strict and require comment which doesn't respect vector rules -> auto.sh
+* [ ] Rer is bugged -> In a very specific case 
+
+e.g. ) 1. Make r4d ... doesn't work as first list item. WTF?
+```
+1. Make r4d great again.
+    1. Test all clap flags if they work as expected.
+    2. Update all manuals
+1. Add new macros
+2. Update manuals again
+3. Fix regex register shenenigans
+4. Fix all shenenigans from deubbing features
+    1. Diff
+    2. Dryun
+    3. Logging, Debugging
+    4. You know what? Almost everything is bugged.
+5. Improve performance
+```
+
+* [ ] Rer works strange on non english characters
+
+* Check CLI debugging options
+    * [ ] Diff doesn't work at all
+    * [ ] Dryun doesn't detect static macros...
+    * [ ] Debugger panics from the start ;( Now it doesn't... like what is wrong with you?
+    * [x] Fix require strict and require comment which doesn't respect vector rules -> auto.sh
     * [ ] Find similar cases
 [bugs](./bugs_to_handle.md)
 
@@ -985,6 +1013,10 @@ From 3.2
 * [x] Fixed strange behaviour of stream-chunk and stream-lines
 * [x] Grepmap doesn't work?
     -> Wow, this was not parsing at all... Really?
+* [x] Applied unicodewidth for alignby
+* [x] Package feature may not working for now
+    -> I didn't know how to use package feature LUL.
+* [x] Metl is bugged
 
 ### MISC
 
@@ -1025,3 +1057,4 @@ a macro called stream
     * [x] Argument for stream chunk + stream lines
 * [-] Fix RAD_BACKTRACE error -> THis is not an error
 * [x] Enable arguments by whitespaces stream_chunk flag
+1. Ditch feature signature, because it became too crucial.

@@ -67,6 +67,9 @@ rad test --melt frozen.r4f
 # Package into a single file
 rad test --package --out bin.r4c
 
+# Execute a script
+rad --script bin.r4c
+
 # Print signature information into file
 rad --signature sig.json
 ```
