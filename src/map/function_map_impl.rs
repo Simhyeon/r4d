@@ -1529,12 +1529,11 @@ impl FunctionMacroMap {
                 }
             }
             for line in contents {
-                let mut splitted = line.split(&separator);
-                let leading = splitted.next().unwrap();
-                if leading != line {
+                let splitted = line.split_once(&separator);
+                if splitted.is_some() {
+                    let (leading, following) = splitted.unwrap();
                     let width = UnicodeWidthStr::width(leading);
                     // found matching line
-                    let following = splitted.next().unwrap();
                     write!(
                         result,
                         "{}{}{}{}{}",
@@ -1545,7 +1544,7 @@ impl FunctionMacroMap {
                         nl
                     )?;
                 } else {
-                    write!(result, "{}{}", leading, nl)?;
+                    write!(result, "{}{}", line, nl)?;
                 }
             }
             Ok(Some(result))
