@@ -193,16 +193,7 @@ impl FunctionMacroMap {
                     "scut",
                     ["a_index","a_text"],
                     Self::split_whitespace_and_cut,
-                    Some("Split text by whitespaces and cut from splitted array
-
-# Arguments
-
-- a_index  : An index to cut out
-- a_text   : Text to split
-
-# Example
-
-$assert(b,$scut(-2,a    b c))".to_string()),
+                    Some(man_fun!("scut.r4d")),
                 ),
             ),
             (
@@ -211,17 +202,7 @@ $assert(b,$scut(-2,a    b c))".to_string()),
                     "ssplit",
                     ["a_text^"],
                     Self::space_split,
-                    Some("Split text with space separator into an array
-
-- This macro split text by one or more blank characters ( space, tab, newline )
-
-# Arguments
-
-- a_text : Text to split ( trimmed )
-
-# Example
-
-$assert(6,$count($ssplit(I have  some    spaces   in between)))".to_string()),
+                    Some(man_fun!("ssplit.r4d")),
                 ),
             ),
             (

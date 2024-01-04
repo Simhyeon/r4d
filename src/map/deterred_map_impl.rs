@@ -338,6 +338,14 @@ impl DeterredMacroMap {
             ap.set_strip(true);
             let mut sums = String::new();
             let body = &args[0];
+
+            if args[1].contains("$:()") || args[1].contains("$a_LN()") {
+                processor.log_warning(
+                    "Foreach's second argument is iterable array.",
+                    WarningType::Sanity,
+                )?;
+            }
+
             let loop_src = processor.parse_and_strip(&mut ap, level, "foreach", &args[1])?;
             let loopable = trim!(&loop_src);
             for (count, value) in loopable.as_ref().split(',').enumerate() {
@@ -409,6 +417,13 @@ impl DeterredMacroMap {
             ap.set_strip(true);
             let mut sums = String::new();
 
+            if args[2].contains("$:()") || args[1].contains("$a_LN()") {
+                processor.log_warning(
+                    "Forloop's third argument is a max number",
+                    WarningType::Sanity,
+                )?;
+            }
+
             let body = &args[0];
             let min_src =
                 trim!(&processor.parse_and_strip(&mut ap, level, "forloop", &args[1])?).to_string();
@@ -446,7 +461,7 @@ impl DeterredMacroMap {
             Ok(Some(sums))
         } else {
             Err(RadError::InvalidArgument(
-                "Forloop requires two argument".to_owned(),
+                "Forloop requires three arguments".to_owned(),
             ))
         }
     }
