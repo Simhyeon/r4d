@@ -211,19 +211,7 @@ impl FunctionMacroMap {
                     "squash",
                     ["a_text"],
                     Self::squash,
-                    Some("Squash text by trimming all empty newlines
-
-# Arguments
-
-- a_text : Text to squash
-
-# Example
-
-$assert(a$nl()b,$squash(
-a
-
-b
-))".to_string()),
+                    Some(man_fun!("squash.r4d")),
                 ),
             ),
             (
