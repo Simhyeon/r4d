@@ -1,0 +1,37 @@
+Squash text by trimming all empty newlines
+
+# NOTE
+
+- Technically empty newline means a newline that follows a preceding newline.
+- Use squash if you need to remove any duplicate newlines from given text. If
+  partial newlines are necessary, consider other macros such as trim, chomp or
+  comp.
+
+# Arguments
+
+- a_text : Text to squash
+
+# DEMO
+
+```
+% Following text is persistent over squash
+a
+b
+% While this doesn't
+$stream(squash)
+a
+
+b
+$consume()
+===
+a
+b
+```
+
+# Example
+
+$assert(a$nl()b,$squash(
+a
+
+b
+))

@@ -1,0 +1,20 @@
+Split text by whitespaces and cut an item from the splitted array
+
+# Arguments
+
+- a_index  : An index to cut out
+- a_text   : Text to split
+
+# Demo
+
+```
+$syscmd|(ls -lah ../../../LICENSE)
+$static(size , $scut-(1) )
+File size is $size()
+===
+File size is 1
+```
+
+# Example
+
+$assert(b,$scut(-2,a    b c))

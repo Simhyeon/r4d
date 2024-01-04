@@ -9,11 +9,11 @@ Split text into an array to get a value
 # Demo
 
 ```
-$syscmd|(ls -lah LICENSE)
-$static(size , $cut-($space(),1) )
-File size is $size()
+$syscmd|(curl wttr.in/Nuremberg?format=3)
+$cut|-(:,1)
+$-^()
 ===
-File size is 1
+☀️   +6°C
 ```
 
 # Example

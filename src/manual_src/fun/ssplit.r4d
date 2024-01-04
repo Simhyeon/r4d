@@ -1,0 +1,27 @@
+Split text with space separator into an array
+
+- This macro splits text by one or more blank characters ( space, tab, newline )
+- However it is not gauranteed to work with miscellaenous unicode blank
+  characters
+
+# Arguments
+
+- a_text : Text to split ( trimmed )
+
+# Demo
+
+```
+% ARG=a b c d e
+$env|(ARG)
+$foreach^-($a_LN() - $:()$nl())
+===
+0 - a
+1 - b
+2 - c
+3 - d
+4 - e
+```
+
+# Example
+
+$assert(6,$count($ssplit(I have  some    spaces   in between)))
