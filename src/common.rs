@@ -40,7 +40,7 @@ impl<'a> WriteOption<'a> {
 }
 
 /// Local macro
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LocalMacro {
     pub level: usize,
     pub name: String,
