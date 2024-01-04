@@ -834,6 +834,15 @@ c))".to_string()),
                 ),
             ),
             (
+                "foldby".to_owned(),
+                FMacroSign::new(
+                    "foldby",
+                    ["a_separator","a_content"],
+                    Self::fold_by,
+                    Some(String::new()),
+                ),
+            ),
+            (
                 "grep".to_owned(),
                 FMacroSign::new(
                     "grep",

@@ -2389,6 +2389,35 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Fold lines by separator
+    ///
+    /// This folds empty lines
+    ///
+    /// # Usage
+    ///
+    /// $foldl( ,1
+    /// 1
+    /// 2
+    /// 3
+    /// 4
+    /// 5)
+    pub(crate) fn fold_by(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let sep = &args[0];
+            let content = args[1].lines().fold(String::new(), |mut acc, a| {
+                acc.push_str(a);
+                acc.push_str(sep);
+                acc
+            });
+
+            Ok(Some(content))
+        } else {
+            Err(RadError::InvalidArgument(
+                "foldby requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     /// Get os type
     ///
     /// # Usage
