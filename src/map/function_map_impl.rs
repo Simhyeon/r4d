@@ -1555,6 +1555,35 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Apart texts by separator
+    ///
+    /// # Usage
+    ///
+    /// $apart(%, contents %to% align)
+    pub(crate) fn apart_by_separator(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let separator = args[0].to_string();
+            let contents = &args[1];
+            let result = contents
+                .split_inclusive(&separator)
+                .fold(String::new(), |mut acc, a| {
+                    acc.push_str(&trim!(a));
+                    acc.push_str(&p.state.newline);
+                    acc
+                });
+            Ok(Some(
+                result
+                    .strip_suffix(&p.state.newline)
+                    .map(|s| s.to_string())
+                    .unwrap_or(result),
+            ))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Apart requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     /// Translate given char aray into corresponding char array
     ///
     /// # Usage

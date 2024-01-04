@@ -71,6 +71,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "apart".to_owned(),
+                FMacroSign::new(
+                    "alignby",
+                    ["a_separator", "a_content"],
+                    Self::apart_by_separator,
+                    Some(man_fun!("apart.r4d"))
+                ),
+            ),
+            (
                 "alignby".to_owned(),
                 FMacroSign::new(
                     "alignby",
@@ -220,19 +229,7 @@ impl FunctionMacroMap {
                     "assert",
                     ["a_lvalue", "a_rvalue"],
                     Self::assert,
-                    Some("Compare lvalue and rvalue, panics with two values are not equal
-
-# Arguments
-
-- a_lvalue : Left  value to compare
-- a_rvalue : Right value to compare
-
-# Example
-
-% Succeed
-$assert(1,1)
-% Fails
-$assert(a,b)".to_string()),
+                    Some(man_fun!("assert.r4d")),
                 ),
             ),
             (
