@@ -1,0 +1,17 @@
+Print a comma
+
+# NOTE
+
+This is a "semantic" purpose macro
+
+# Demo
+
+```
+$define(t=0)
+$append(t,t,,)
+$t()
+```
+
+# Example
+
+$assert(\\*,*\\,$comma())

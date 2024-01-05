@@ -1,0 +1,37 @@
+Capture all matched expressions delimited by newlines
+
+# Arguments
+
+- a_expr : A regex expression to match
+- a_text : A text to get expressions
+
+# Demo
+
+```
+$stream(pipe)
+# Header 1 
+
+Wow
+
+## Header 2
+
+Doggy
+
+### Header 3
+
+Cute
+
+$consume()
+$capture-(^#+.+)
+===
+# Header 1 
+## Header 2
+### Header 3
+```
+
+# Example
+
+$capture|(test.[1-9],test 1 test 2 test 3)
+$assert($-(),test 1
+test 2
+test 3)
