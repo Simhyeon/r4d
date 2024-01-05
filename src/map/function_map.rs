@@ -238,20 +238,7 @@ impl FunctionMacroMap {
                     "capture",
                     ["a_expr", "a_text"],
                     Self::capture,
-                    Some(
-"Capture all matched expressions delimited by newline
-
-# Arguments
-
-- a_expr : A regex expression to match
-- a_text : A text to get expressions
-
-# Example
-
-$capture|(test.[1-9],test 1 test 2 test 3)
-$assert($-(),test 1
-test 2
-test 3)".to_string()),
+                    Some(man_fun!("capture.r4d")),
                 ),
             ),
             (
@@ -1814,6 +1801,15 @@ $assert(DOMO,$demo())".to_string()),
 # Example
 
 $require(fin,fout)".to_string()),
+                ),
+            ),
+            (
+                "rotate".to_owned(),
+                FMacroSign::new(
+                    "rotate",
+                    ["a_pattern", "a_orientation", "a_content"],
+                    Self::rotate,
+                    Some(String::new()),
                 ),
             ),
             (

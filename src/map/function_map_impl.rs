@@ -1,7 +1,9 @@
 use super::function_map::FunctionMacroMap;
 
 use crate::auth::{AuthState, AuthType};
-use crate::common::{ErrorBehaviour, FlowControl, MacroType, ProcessInput, RadResult, RelayTarget};
+use crate::common::{
+    AlignType, ErrorBehaviour, FlowControl, MacroType, ProcessInput, RadResult, RelayTarget,
+};
 use crate::consts::{LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER, PATH_SEPARATOR};
 use crate::error::RadError;
 use crate::formatter::Formatter;
@@ -28,11 +30,6 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
 use unicode_width::UnicodeWidthStr;
-
-// NOTE
-// Is this necessary?
-/// Types for align macros
-const ALIGN_TYPES: [&str; 3] = ["left", "right", "center"];
 
 // ----------
 // rer related regexes
@@ -1376,6 +1373,48 @@ impl FunctionMacroMap {
         Ok(Some(")".to_string()))
     }
 
+    /// Rotate text which is separated by pattern
+    ///
+    /// # Usage
+    ///
+    /// $rotate(//,left,Content)
+    pub(crate) fn rotate(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        use std::fmt::Write;
+        if let Some(args) = ArgParser::new().args_with_len(args, 3) {
+            let pattern = &args[0];
+            let orientation =
+                AlignType::from_str(trim!(&args[1]).as_str().unwrap_or("[INVALID TYPE]"))?;
+            let source = &args[2];
+
+            let mut result = String::new();
+            let mut extracted = String::new();
+            for line in source.lines() {
+                if let Some((leading, following)) = line.split_once(pattern) {
+                    extracted.clear();
+                    write!(extracted, "{pattern}{following}")?;
+                    match orientation {
+                        AlignType::Left => {
+                            write!(result, "{}{}{}", extracted, p.state.newline, leading)?
+                        }
+                        AlignType::Right => {
+                            write!(result, "{}{}{}", leading, p.state.newline, extracted)?
+                        }
+                        AlignType::Center => write!(result, "{}{}", extracted, leading)?,
+                    }
+                } else {
+                    write!(result, "{line}")?;
+                }
+                write!(result, "{}", p.state.newline)?;
+            }
+
+            Ok(Some(result))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Rotate requires three arguments".to_owned(),
+            ))
+        }
+    }
+
     /// Return a length of the string
     ///
     /// This is O(n) operation.
@@ -1424,20 +1463,8 @@ impl FunctionMacroMap {
     /// $align(center,10,a,Content)
     pub(crate) fn align(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 4) {
-            let align_type = trim!(&args[0]).to_lowercase();
-
-            if ALIGN_TYPES
-                .iter()
-                .filter(|&&x| x == align_type.as_str())
-                .count()
-                == 0
-            {
-                return Err(RadError::InvalidArgument(format!(
-                    "Align type should be among left, right or center but given {}",
-                    align_type
-                )));
-            }
-
+            let align_type =
+                AlignType::from_str(trim!(&args[0]).as_str().unwrap_or("[INVALID TYPE]"))?;
             let width = trim!(&args[1]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "Align requires positive integer number as width but got \"{}\"",
@@ -1483,10 +1510,10 @@ impl FunctionMacroMap {
 
             let space_count = width - text_length;
 
-            let formatted = match align_type.as_str() {
-                "left" => format!("{0}{1}", text, &filler_char.repeat(space_count)),
-                "right" => format!("{1}{0}", text, &filler_char.repeat(space_count)),
-                "center" => {
+            let formatted = match align_type {
+                AlignType::Left => format!("{0}{1}", text, &filler_char.repeat(space_count)),
+                AlignType::Right => format!("{1}{0}", text, &filler_char.repeat(space_count)),
+                AlignType::Center => {
                     let right_sp = space_count / 2;
                     let left_sp = space_count - right_sp;
                     format!(
@@ -1496,7 +1523,6 @@ impl FunctionMacroMap {
                         &filler_char.repeat(right_sp)
                     )
                 }
-                _ => unreachable!(),
             };
 
             Ok(Some(formatted))
