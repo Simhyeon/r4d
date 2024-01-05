@@ -103,6 +103,7 @@ impl<'cli> RadCli<'cli> {
             .allow(&self.allow_auth)
             .allow_with_warning(&self.allow_auth_warn)
             .unix_new_line(args.get_flag("newline"))
+            .pipe_truncate(!args.get_flag("no-truncate"))
             .melt_files(&self.rules)?
             .discard(args.get_flag("discard"));
 
@@ -464,6 +465,10 @@ impl<'cli> RadCli<'cli> {
                 .action(ArgAction::SetTrue)
                 .conflicts_with("combination")
                 .help("Send stdin as a pipe value without evaluation"))
+            .arg(Arg::new("no-truncate")
+                .long("no-truncate")
+                .action(ArgAction::SetTrue)
+                .help("Sets pipe truncate to false"))
             .arg(Arg::new("literal")
                 .short('L')
                 .action(ArgAction::SetTrue)
