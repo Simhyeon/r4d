@@ -15,4 +15,4 @@ I ,have, a, many, underbar, in, me
 
 # Example
 
-$assert(\\*a,b,c*\\,$split(/,a/b/c))
+$assert(\*a,b,c*\,$split(/,a/b/c))

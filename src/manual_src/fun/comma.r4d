@@ -17,4 +17,4 @@ t, t, t
 
 # Example
 
-$assert(\\*,*\\,$comma())
+$assert(\*,*\,$comma())

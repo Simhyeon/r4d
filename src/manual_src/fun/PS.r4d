@@ -1,6 +1,6 @@
 Return a platform specific path separator
 
-- On windows, this returns '\\'
+- On windows, this returns '\'
 - On non windows, this returns '/'
 
 # Note
@@ -15,7 +15,7 @@ platform the processor resides in.
 
 # Demo
 
-$PS() % Either '\\' or '/'
+$PS() % Either '\' or '/'
 
 ```
 $static(win_path,0)                      % Windows split path container
