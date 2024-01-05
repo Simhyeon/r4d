@@ -247,11 +247,7 @@ impl FunctionMacroMap {
                     "comma",
                     ESR,
                     Self::print_comma,
-                    Some("Print a comma
-
-# Example
-
-$assert(\\*,*\\,$comma())".to_string()),
+                    Some(man_fun!("comma.r4d")),
                 ),
             ),
             (
