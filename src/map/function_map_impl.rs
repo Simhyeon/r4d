@@ -1575,10 +1575,19 @@ impl FunctionMacroMap {
             let mut max_length = 0usize;
             let mut result = String::new();
             let nl = &p.state.newline;
+
+            let tab_width: usize = std::env::var("RAD_TAB_WIDTH")
+                .unwrap_or("4".to_string())
+                .parse::<usize>()
+                .map_err(|_| {
+                    RadError::InvalidCommandOption("RAD_TAB_WIDTH is not a valid value".to_string())
+                })?;
+
             for line in contents.clone() {
                 let mut splitted = line.split(&separator);
                 let leading = splitted.next().unwrap();
-                let width = UnicodeWidthStr::width(leading);
+                let width = UnicodeWidthStr::width(leading)
+                    + leading.matches('\t').count() * (tab_width - 1);
                 if leading != line {
                     max_length = max_length.max(width);
                 }
@@ -1587,7 +1596,9 @@ impl FunctionMacroMap {
                 let splitted = line.split_once(&separator);
                 if splitted.is_some() {
                     let (leading, following) = splitted.unwrap();
-                    let width = UnicodeWidthStr::width(leading);
+                    let width = UnicodeWidthStr::width(leading)
+                        + leading.matches('\t').count() * (tab_width - 1);
+
                     // found matching line
                     write!(
                         result,
