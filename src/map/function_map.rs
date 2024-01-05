@@ -255,15 +255,7 @@ impl FunctionMacroMap {
                     "comment",
                     ["a_comment_type^"],
                     Self::require_comment,
-                    Some("Requires comment type
-
-# Arguments
-
-- a_comment_type: A comment type to require. ( trimmed ) [\"none\", \"start\", \"any\"]
-
-# Example
-
-$comment(start)".to_string()),
+                    Some(man_fun!("comment.r4d")),
                 ),
             ),
             (

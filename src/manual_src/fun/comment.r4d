@@ -1,0 +1,17 @@
+Requires comment type
+
+If no comment type was set by user, processor panics.
+
+# Arguments
+
+- a_comment_type: A comment type to require. ( trimmed ) [ "none", "start", "any" ]
+
+# Demo
+
+```
+$comment(start)
+```
+
+# Example
+
+$fassert($comment(start))
