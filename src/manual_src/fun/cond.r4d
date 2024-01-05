@@ -1,0 +1,22 @@
+Condense whitespaces
+
+- This remove any duplicate whitespaces from arguments.
+- Use condl if line based operation is necessary
+
+# Arguments
+
+- a_text : Text to condense
+
+# Demo
+
+```
+$stream(cond)
+  a       b c  
+$consume()
+===
+a b c
+```
+
+# Example
+
+$assert(a b c,$cond( a    b     c  ))

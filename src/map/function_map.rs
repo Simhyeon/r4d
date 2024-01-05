@@ -264,18 +264,7 @@ impl FunctionMacroMap {
                     "cond",
                     ["a_text"],
                     Self::condense,
-                    Some(
-"Condense whitespaces
-
-# Arguments
-
-- a_text : Text to condense
-
-# Demo
-
-# Example
-
-".to_string()),
+                    Some(man_fun!("cond.r4d")),
                 ),
             ),
             (
@@ -284,18 +273,7 @@ impl FunctionMacroMap {
                     "condl",
                     ["a_lines"],
                     Self::condense_by_lines,
-                    Some(
-"Condense whitespaces by lines
-
-# Arguments
-
-- a_lines : Text to condense
-
-# Demo
-
-# Example
-
-".to_string()),
+                    Some(man_fun!("condl.r4d")),
                 ),
             ),
             (
@@ -304,26 +282,7 @@ impl FunctionMacroMap {
                     "counter",
                     ["a_macro_name^","a_counter_type^+"],
                     Self::change_counter,
-                    Some("Increae/decrease counter macro.
-
-- Counter macro is automatically defined if the macro doesn't exist
-- Counter's value should be a number and can be negative.
-
-# Arguments
-
-- a_macro_name   : A macro name to use as counter ( trimmed )
-- a_counter_type : A counter opration type. Default is plus [ \"plus\", \"minus\" ] ( trimmed )
-
-# Example
-
-$define(ct=0)
-$counter(ct)
-$counter(ct)
-$counter(ct,minus)
-$assert($ct(),3)
-
-$counter(ct,minus)
-$assert($ct(),2)".to_string()),
+                    Some(man_fun!("counter.r4d")),
                 ),
             ),
             (
@@ -332,18 +291,7 @@ $assert($ct(),2)".to_string()),
                     "ceil",
                     ["a_number^"],
                     Self::get_ceiling,
-                    Some("Get ceiling of a number
-
-# Return : Signed integer
-
-# Arguments
-
-- a_number : A number to get a ceiling from [float] ( trimmed )
-
-# Example
-
-$assert($ceil(0.9),1)
-$assert($ceil(3.1),4)".to_string()),
+                    Some(man_fun!("ceil.r4d")),
                 ),
             ),
             (

@@ -1,0 +1,40 @@
+Increae/decrease a counter.
+
+- Counter's target macro is automatically defined if the macro doesn't exist
+- Counter's value should be a number and can be negative.
+
+# Arguments
+
+- a_macro_name   : A macro name to use as counter ( trimmed )
+- a_counter_type : A counter opration type. Default is plus [ "plus", "minus" ] ( trimmed )
+
+# Demo
+
+```
+$define(cont=0)
+$counter(cont)
+$cont()
+
+$counter(cont)
+$cont()
+
+$counter(cont,minus)
+$cont()
+===
+1
+
+2
+
+1
+```
+
+# Example
+
+$define(ct=0)
+$counter(ct)
+$counter(ct)
+$counter(ct,minus)
+$assert($ct(),1)
+
+$counter(ct,minus)
+$assert($ct(),0)

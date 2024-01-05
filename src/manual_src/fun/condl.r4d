@@ -1,0 +1,33 @@
+Condense blank spaces by lines
+
+- This macro applies cond for each lines
+
+# Arguments
+
+- a_lines : Lines to condense
+
+# Demo
+
+```
+% With --no-truncate
+$stream(pipe)
+  a  b   c
+  d  e   f
+  g  h   i
+$consume()
+$cond-()
+----------
+$condl-()
+===
+a b c d e f g h i
+----------
+a b c
+d e f
+g h i
+```
+
+# Example
+
+$assert(a b c$nl()d e f$nl()g h i,$condl(a  b   c
+   d  e   f
+   g  h   i))

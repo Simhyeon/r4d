@@ -58,6 +58,13 @@
 
 #### Macro
 
+* [ ] Evalk formatting to be aesthetic
+* [ ] rer to also support alphabets
+```
+a.
+b.
+c.
+```
 * [ ] Enable arguments by whitespaces for `map` variants
 * [ ] TOC macro-script ( Not builtin but usage's example )
 * [ ] Flat -> Flatten indented sub lines into a single one

@@ -1,0 +1,20 @@
+Get ceiling of a number
+
+# Return : Signed integer
+
+# Arguments
+
+- a_number : A number to get a ceiling from [float] ( trimmed )
+
+# Demo
+
+```
+$evalk(1 + $ceil(0.9123) )
+===
+1 + 1 = 2
+```
+
+# Example
+
+$assert($ceil(0.9),1)
+$assert($ceil(3.1),4)
