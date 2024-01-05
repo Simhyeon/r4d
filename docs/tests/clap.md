@@ -1,7 +1,6 @@
 # TODO
 
-* [ ] File freezing doesn't work
-* [ ] 
+* [x] File freezing doesn't work
 
 # IMPORTANT
 

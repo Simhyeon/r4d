@@ -4,49 +4,45 @@
 
 I'm so embarassed. Everything is bugged.
 
-1. Make r4d great again. ( Until march )
+1. Update all manuals
+2. Make r4d great again. ( Until march )
     1. Test all clap flags if they work as expected. -> DONE, except debugging
-    1. Update all manuals
-1. Add new macros
-2. Update manuals again
+3. Add new macros
+    1. New macro apart -> Documentation is not yet
+    2. New macro foldby -> Documentation is not yet
+4. Update manuals again
     1. Test english charcters
     2. Test korean characters
     3. Test invalid syntax, characters.
-3. Fix regex register shenenigans
-4. Fix all shenenigans from deubbing features
-    1. Diff
-    2. Dryun
-    3. Logging, Debugging
-    4. You know what? Almost everything is bugged.
-5. Improve performance
+5. Fix regex register shenenigans
+6. Fix all shenenigans from deubbing features
+    1. Add assertion information
+        1. WHy it failed
+        2. What was the value then,
+    2. Diff
+    3. Dryun
+    4. Logging, Debugging
+    5. You know what? Almost everything is bugged.
+7. Improve performance
 
-6. Unicodwdith should be applied for aligin macro too
-7. Check for alignby performance maybe duplicate
-8. Try using qsv rather than maintaining a wheel
-9. Make a color scheme option for color blindness
+8. Search should be about searching. I don't know if something exists. It is no
+   use when you only prints something just similar. How about showing lists if
+   necessary?
+9. Unicodwdith should be applied for aligin macro too
+10. Check for alignby performance maybe duplicate
+11. Try using qsv rather than maintaining a wheel
+12. Make a color scheme option for color blindness
+13. Parsing and set error code of "~~ requires ~ arguments are super lame..."
+    can it be much more DRY?
+14. Capture works on chunk based is capturel necessary? which works like ripgrep
+15. Consider implementing align super which applies consecutive alignby rules 
+ -> e.g. first alignby ] and then by : and then # etc...
+16. Should textwrap respect unicode width?
+17. Rename rer? because rearrange is useful name and reordering numbers can be
+   different name I guess
+18. Should rad support awk like operations?
 
 #### BUG
-
-
-* [ ] Rer is bugged -> In a very specific case 
-
-e.g. ) 1. Make r4d ... doesn't work as first list item. WTF?
-```
-1. Make r4d great again.
-    1. Test all clap flags if they work as expected.
-    2. Update all manuals
-1. Add new macros
-2. Update manuals again
-3. Fix regex register shenenigans
-4. Fix all shenenigans from deubbing features
-    1. Diff
-    2. Dryun
-    3. Logging, Debugging
-    4. You know what? Almost everything is bugged.
-5. Improve performance
-```
-
-* [ ] Rer works strange on non english characters
 
 * Check CLI debugging options
     * [ ] Diff doesn't work at all
@@ -87,6 +83,7 @@ e.g. ) 1. Make r4d ... doesn't work as first list item. WTF?
 
 #### New macro
 
+* [ ] TOC macro-script ( Not builtin but usage's example )
 * [ ] Flat -> Flatten indented sub lines into a single one
 ```
 $stream(flat)
@@ -132,6 +129,27 @@ ABCEE
     AAAA
 ```
 
+* [x] Some kind of "rotate" macro
+```
+{ col_gray3, col_gray1, "#000000" }, // Statusbar right {text,background,not used but cannot be empty}
+{ col_gray4, col_cyan,  "#000000" }, // Tagbar left selected {text,background,not used but cannot be empty}
+{ col_gray3, col_gray1, "#000000" }, // Tagbar left unselected {text,background,not used but cannot be empty}
+{ col_gray4, col_cyan,  "#000000" }, // infobar middle selected {text,background,not used but cannot be empty}
+{ col_gray3, col_gray1, "#000000" }, // infobar middle unselected {text,background,not used but cannot be empty}
+===
+// Statusbar right {text,background,not used but cannot be empty}
+{ col_gray3, col_gray1, "#000000" }, 
+// Tagbar left selected {text,background,not used but cannot be empty}
+{ col_gray4, col_cyan,  "#000000" },
+// Tagbar left unselected {text,background,not used but cannot be empty}
+{ col_gray3, col_gray1, "#000000" }, 
+// infobar middle selected {text,background,not used but cannot be empty}
+{ col_gray4, col_cyan,  "#000000" }, 
+// infobar middle unselected {text,background,not used but cannot be empty}
+{ col_gray3, col_gray1, "#000000" }, 
+```
+* [ ] Rotate concat -> Reverse of rotate macro
+
 * [ ] No pipe truncate option for macro users.
 * [ ] Also add non evalexpr variant macro ( inc, dec )
 
@@ -152,6 +170,7 @@ ABCEE
 
 #### Peformance
 
+* [ ] Rer iteration cache to a concrete struct for better maintainability
 * Think about ditching textwrap
 * Inline small functions
     [src](https://matklad.github.io/2021/07/09/inline-in-rust.html)
@@ -995,12 +1014,33 @@ trexter level. But recover method increased the level thus nothing really
 happned which was a bug.
 
 ---
-From 3.2
+From 4.0
 
-* [x] Added get_static_macro -> Is this 3.2?
+* [x] Added get_static_macro -> Is this 4.0?
 
 ### Bug fix
 
+* [x] Argparser panics on
+```
+$define(t=0)
+$append(t,t,,)
+```
+* [x] Alignby doesn't work properly
+This was due to tab size... which is translated as 1 width by unicode.
+This can be problematic in many cases, yet there is no migcal solutoin.
+```
+	[SchemeNorm] = { col_glightfg, col_glightbg, col_glightbg},
+	[SchemeSel]  = { col_glightbg, col_glightfg, col_highlight},
+   	// Statusbar right {text,background,not used but cannot be empty}
+   	[SchemeStatus]  = { col_gray3, col_gray1,  "#000000"  }, 
+=== With "rad --sc alignby ="
+	[SchemeNorm]       = { col_glightfg, col_glightbg, col_glightbg},
+	[SchemeSel]        = { col_glightbg, col_glightfg, col_highlight},
+   	// Statusbar right {text,background,not used but cannot be empty}
+   	[SchemeStatus]  = { col_gray3, col_gray1,  "#000000"  }, 
+```
+* [x] Rer is bugged -> In a very specific case 
+* [x] Alignby removes content after separator if there are multiple separators.
 * [x] Stream-chunk doesn't work...
 * [x] Pipe input always tirggering skip_expansion is very tedious fix it asap
 
@@ -1020,6 +1060,7 @@ From 3.2
 
 ### MISC
 
+* [x] Now greedy arguments doesn't strip literal characters
 * [x] Upgrade dependencies for sure
     * [x] Deprecate lazy_static and use once_cell
     * [x] Implemnet join for dcsv value -> Instread I imported itertools
@@ -1044,6 +1085,7 @@ a macro called stream
 * [x] Stripfl
 * [x] Striprl
 * [x] Pie and Mie
+* [x] Append rolled back to non trailer version with legacy feature
 
 ### New flag, features
 
