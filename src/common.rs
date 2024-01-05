@@ -414,3 +414,24 @@ pub enum ContainerType {
     /// D container
     None,
 }
+
+#[derive(Eq, PartialEq, Debug)]
+pub enum AlignType {
+    Left,
+    Right,
+    Center,
+}
+impl std::str::FromStr for AlignType {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "l" | "left" => Ok(Self::Left),
+            "r" | "right" => Ok(Self::Right),
+            "c" | "center" => Ok(Self::Center),
+            _ => Err(RadError::InvalidCommandOption(format!(
+                "Align type : \"{}\" is not available.",
+                s
+            ))),
+        }
+    }
+}
