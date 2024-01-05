@@ -32,7 +32,6 @@ impl FunctionMacroMap {
     /// Optional macros are included only when a feature is enabled
     pub fn new() -> Self {
         // Create hashmap of functions
-        #[allow(unused_mut)]
         let mut map = HashMap::from_iter(IntoIterator::into_iter([
             (
                 "-".to_owned(),
@@ -2301,12 +2300,7 @@ $assert($test(),Test)
 $assert(wow cow,$demo(wow,cow))".to_string()),
                 ),
             ),
-        ]));
-
-        // Auth related macros are speical and has to be segregated from wasm target
-        #[cfg(not(feature = "wasm"))]
-        {
-            map.insert(
+            (
                 "env".to_owned(),
                 FMacroSign::new(
                     "env",
@@ -2327,8 +2321,8 @@ $assert(/home/user/dir,$env(HOME))"
                             .to_string(),
                     ),
                 ),
-            );
-            map.insert(
+            ),
+            (
                 "envset".to_owned(),
                 FMacroSign::new(
                     "envset",
@@ -2350,8 +2344,8 @@ $envset(HOME,/tmp)"
                             .to_string(),
                     ),
                 ),
-            );
-            map.insert(
+            ),
+            (
                 "abs".to_owned(),
                 FMacroSign::new(
                     "abs",
@@ -2374,8 +2368,8 @@ $assert(/home/user/cwd/test.md,$abs(test.md))"
                             .to_string(),
                     ),
                 ),
-            );
-            map.insert(
+            ),
+            (
                 "exist".to_owned(),
                 FMacroSign::new(
                     "exist",
@@ -2396,8 +2390,8 @@ $exist(file.txt)"
                             .to_string(),
                     ),
                 ),
-            );
-            map.insert(
+            ),
+            (
                 "grepf".to_owned(),
                 FMacroSign::new(
                     "grepf",
@@ -2419,8 +2413,8 @@ $countl($grepf(file.txt))"
                             .to_string(),
                     ),
                 ),
-            );
-            map.insert(
+            ),
+            (
                 "syscmd".to_owned(),
                 FMacroSign::new(
                     "syscmd",
@@ -2453,8 +2447,8 @@ $assert(Linux,$syscmd(uname))"
                             .to_string(),
                     ),
                 ),
-            );
-            map.insert(
+            ),
+            (
                 "tempout".to_owned(),
                 FMacroSign::new(
                     "tempout",
@@ -2479,8 +2473,8 @@ $tempout(Content)"
                             .to_string(),
                     ),
                 ),
-            );
-            map.insert(
+            ),
+            (
                 "tempto".to_owned(),
                 FMacroSign::new(
                     "tempto",
@@ -2506,8 +2500,8 @@ $tempto(/new/path)"
                             .to_string(),
                     ),
                 ),
-            );
-            map.insert(
+            ),
+            (
                 "temp".to_owned(),
                 FMacroSign::new(
                     "temp",
@@ -2528,8 +2522,8 @@ $assert(/tmp/rad.txt,$temp())"
                             .to_string(),
                     ),
                 ),
-            );
-            map.insert(
+            ),
+            (
                 "fileout".to_owned(),
                 FMacroSign::new(
                     "fileout",
@@ -2552,8 +2546,8 @@ $fileout(/tmp/some_file.txt,true,Hello World)"
                             .to_string(),
                     ),
                 ),
-            );
-            map.insert(
+            ),
+            (
                 "listdir".to_owned(),
                 FMacroSign::new(
                     "listdir",
@@ -2581,8 +2575,44 @@ $listdir(/tmp,true,|)"
                             .to_string(),
                     ),
                 ),
-            );
-        }
+            ),
+            (
+                "update".to_owned(),
+                FMacroSign::new(
+                    "update",
+                    ["a_text"],
+                    Self::update_storage,
+                    Some(
+                        "Update a storage
+
+# Arguments
+
+- a_text : Text to update into a storage
+
+# Example
+
+$update(text to be pushed)"
+                            .to_string(),
+                    ),
+                ),
+            ),
+            (
+                "extract".to_owned(),
+                FMacroSign::new(
+                    "extract",
+                    ESR,
+                    Self::extract_storage,
+                    Some(
+                        "Extract from a storage
+
+# Example
+
+$extract()"
+                            .to_string(),
+                    ),
+                ),
+            ),
+        ]));
 
         #[cfg(feature = "cindex")]
         {
@@ -2712,7 +2742,6 @@ $assert(00:33:40,$hms(2020))"
                 ),
             );
         }
-        #[cfg(not(feature = "wasm"))]
         #[cfg(feature = "chrono")]
         {
             map.insert(
@@ -2840,46 +2869,6 @@ rhoncus*\\,$wrap(20,$lipsum(10)))"
                     ["a_macro_type^", "a_target_name^"],
                     Self::hook_disable,
                     Some("Disable hook".to_string()),
-                ),
-            );
-        }
-
-        // Storage
-        {
-            map.insert(
-                "update".to_owned(),
-                FMacroSign::new(
-                    "update",
-                    ["a_text"],
-                    Self::update_storage,
-                    Some(
-                        "Update a storage
-
-# Arguments
-
-- a_text : Text to update into a storage
-
-# Example
-
-$update(text to be pushed)"
-                            .to_string(),
-                    ),
-                ),
-            );
-            map.insert(
-                "extract".to_owned(),
-                FMacroSign::new(
-                    "extract",
-                    ESR,
-                    Self::extract_storage,
-                    Some(
-                        "Extract from a storage
-
-# Example
-
-$extract()"
-                            .to_string(),
-                    ),
                 ),
             );
         }

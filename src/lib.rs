@@ -106,8 +106,5 @@ pub use cli::RadoCli;
 #[cfg(feature = "template")]
 pub use rad_ext_template;
 
-#[cfg(feature = "wasm")]
-pub mod wasm;
-
 #[cfg(test)]
 mod test;

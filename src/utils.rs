@@ -11,7 +11,6 @@ use std::ffi::OsStr;
 use std::io::BufRead;
 use std::path::Path;
 
-#[cfg(not(feature = "wasm"))]
 use crate::common::RelayTarget;
 
 /// Regex for trimming newlines from start and end
@@ -389,7 +388,6 @@ impl Utils {
 
         // Rule 3
         // You cannot include file that is being relayed
-        #[cfg(not(feature = "wasm"))]
         if let Some(RelayTarget::File(file)) = &processor.state.relay.last() {
             if file.path() == canonic {
                 return Err(RadError::UnallowedMacroExecution(format!(
@@ -412,7 +410,6 @@ impl Utils {
 
         // Rule 5
         // You cannot include processor's error file
-        #[cfg(not(feature = "wasm"))]
         if let Some(WriteOption::File(target)) = &processor.get_logger_write_option() {
             if target.path() == canonic {
                 return Err(RadError::UnallowedMacroExecution(format!(

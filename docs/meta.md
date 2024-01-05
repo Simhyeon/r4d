@@ -5,10 +5,8 @@
 I'm so embarassed. Everything is bugged.
 
 1. Update all manuals
-2. Make r4d great again. ( Until march )
-    1. Test all clap flags if they work as expected. -> DONE, except debugging
 3. Add new macros
-    1. New macro apart -> Documentation is not yet
+    1. New macro apart  -> Documentation is not yet
     2. New macro foldby -> Documentation is not yet
 4. Update manuals again
     1. Test english charcters
@@ -41,6 +39,15 @@ I'm so embarassed. Everything is bugged.
 17. Rename rer? because rearrange is useful name and reordering numbers can be
    different name I guess
 18. Should rad support awk like operations?
+1. Test all clap flags if they work as expected. -> DONE, except debugging
+0. Ditch wasm feature DONE
+    -> However You still need to remove unnecessary features that was made for
+    wasm target exclusviely. I sustained such codes with wasm keyword on comments
+0. KEEP IN MIND : Escape rule is strange
+    ```
+    $assert(\,\) -> This doesn't invoked at all
+    ```
+    -> Check PS.r4d manual because escape character is strange in the document.
 
 #### BUG
 
@@ -56,7 +63,7 @@ I'm so embarassed. Everything is bugged.
 
 * Usage.md's sigytype runtime is actually useless
 
-* From 177 macros, 17 documentation is done... wow
+* From 177 macros, 24 documentation is done... wow
 * [ ] New documentation for built in codes
     - Demo for basic usage
     - Example for automated tests
@@ -130,24 +137,6 @@ ABCEE
 ```
 
 * [x] Some kind of "rotate" macro
-```
-{ col_gray3, col_gray1, "#000000" }, // Statusbar right {text,background,not used but cannot be empty}
-{ col_gray4, col_cyan,  "#000000" }, // Tagbar left selected {text,background,not used but cannot be empty}
-{ col_gray3, col_gray1, "#000000" }, // Tagbar left unselected {text,background,not used but cannot be empty}
-{ col_gray4, col_cyan,  "#000000" }, // infobar middle selected {text,background,not used but cannot be empty}
-{ col_gray3, col_gray1, "#000000" }, // infobar middle unselected {text,background,not used but cannot be empty}
-===
-// Statusbar right {text,background,not used but cannot be empty}
-{ col_gray3, col_gray1, "#000000" }, 
-// Tagbar left selected {text,background,not used but cannot be empty}
-{ col_gray4, col_cyan,  "#000000" },
-// Tagbar left unselected {text,background,not used but cannot be empty}
-{ col_gray3, col_gray1, "#000000" }, 
-// infobar middle selected {text,background,not used but cannot be empty}
-{ col_gray4, col_cyan,  "#000000" }, 
-// infobar middle unselected {text,background,not used but cannot be empty}
-{ col_gray3, col_gray1, "#000000" }, 
-```
 * [ ] Rotate concat -> Reverse of rotate macro
 
 * [ ] No pipe truncate option for macro users.

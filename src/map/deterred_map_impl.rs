@@ -1,6 +1,4 @@
-#[cfg(not(feature = "wasm"))]
 use crate::auth::AuthType;
-#[cfg(not(feature = "wasm"))]
 use crate::common::{ContainerType, FileTarget, FlowControl, ProcessInput};
 use crate::common::{ErrorBehaviour, MacroType, RadResult, RelayTarget, STREAM_CONTAINER};
 use crate::consts::MACRO_SPECIAL_ANON;
@@ -13,7 +11,6 @@ use crate::WarningType;
 use crate::{trim, Processor, RadError};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-#[cfg(not(feature = "wasm"))]
 use std::path::PathBuf;
 
 impl DeterredMacroMap {
@@ -142,7 +139,6 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $mapf(macro_name,file_name)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn map_file(
         args: &str,
         level: usize,
@@ -198,7 +194,6 @@ impl DeterredMacroMap {
             let source = p.parse_and_strip(&mut ap, level, "grepmap", &args[3])?;
 
             let bufread = match grep_type.to_lowercase().as_str() {
-                #[cfg(not(feature = "wasm"))]
                 "file" => {
                     if !Utils::is_granted("grepmap", AuthType::FIN, p)? {
                         return Ok(None);
@@ -616,7 +611,6 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $ifenv(env_name, expr)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn ifenv(
         args: &str,
         level: usize,
@@ -652,7 +646,6 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $ifenvel(env_name,expr,expr2)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn ifenvel(
         args: &str,
         level: usize,
@@ -829,7 +822,6 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $readto(file_a,file_b)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn read_to(
         args: &str,
         level: usize,
@@ -925,7 +917,6 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $readin(file_a)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn read_in(
         args: &str,
         level: usize,
@@ -1174,7 +1165,6 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $include(path)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn include(
         args: &str,
         level: usize,
@@ -1264,7 +1254,6 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $incread(path)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn incread(
         args: &str,
         level: usize,
@@ -1289,7 +1278,6 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $tempin()
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn temp_include(
         _: &str,
         level: usize,

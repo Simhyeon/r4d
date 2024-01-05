@@ -25,8 +25,225 @@ impl DeterredMacroMap {
 
     /// Create a new instance with default macros
     pub fn new() -> Self {
-        // THis needs to be mutable because of wasm configuration
-        let mut map = HashMap::from_iter(IntoIterator::into_iter([
+        let map = HashMap::from_iter(IntoIterator::into_iter([
+            (
+                "include".to_owned(),
+                DMacroSign::new(
+                    "include",
+                    ["a_filename^", "a_raw_mode^+?"],
+                    Self::include,
+                    Some(
+                        "Include a file
+
+- Include works as bufread in first level and chunk read in nested call.
+- Use readin if you want to enforce bufread
+- If raw mode is enabled include doesn't expand any macros inside the file
+
+# NOT Deterred
+
+# AUTH : FIN
+
+# Arguments
+
+- a_filename : A file name to read ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
+
+$include(file_path)
+$include(file_path, true)"
+                            .to_string(),
+                    ),
+                ),
+            ),
+            (
+                "incread".to_owned(),
+                DMacroSign::new(
+                    "incread",
+                    ["a_filename^", "a_raw_mode^+?"],
+                    Self::incread,
+                    Some(
+                        "Alwasy include a file as \"read\"
+
+- Include works as bufread in first level and chunk read in nested call.
+- Use incread when you need to read on first level.
+
+# NOT Deterred
+
+# AUTH : FIN
+
+# Arguments
+
+- a_filename : A file name to read ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
+
+$incread|(file_path)
+$-()"
+                            .to_string(),
+                    ),
+                ),
+            ),
+            (
+                "tempin".to_owned(),
+                DMacroSign::new(
+                    "tempin",
+                    ESR,
+                    Self::temp_include,
+                    Some(
+                        "Include a temporary file
+
+- A default temporary path is folloiwng
+- Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
+- *nix    : /tmp/rad.txt
+
+# NOT Deterred
+
+# Auth: FIN
+
+# Example
+
+$tempin()"
+                            .to_string(),
+                    ),
+                ),
+            ),
+            (
+                "mapf".to_owned(),
+                DMacroSign::new(
+                    "mapf",
+                    ["a_macro_name^", "a_file^"],
+                    Self::map_file,
+                    Some(
+                        "Execute macro on each lines of a file
+
+# Note : mapf macro doesn't expand lines from a file.
+
+# Auth : FIN
+
+# NOT Deterred
+
+# Arguments
+
+- a_macro_name : A macro name to execute ( trimmed ) 
+- a_file       : A file to get lines iterator ( trimmed )
+
+# Example
+
+$define(m,a_src=$a_src()+)
+$assert(a+b+c,$mapf(m,file_name.txt))"
+                            .to_string(),
+                    ),
+                ),
+            ),
+            (
+                "readto".to_owned(),
+                DMacroSign::new(
+                    "readto",
+                    ["a_from_file^", "a_to_file^", "a_raw_mode?+^"],
+                    DeterredMacroMap::read_to,
+                    Some(
+                        "Read from a file as bufread and paste into a file
+
+# Auth : FIN + FOUT
+
+# NOT deterred
+
+# Arguments
+
+- a_from_file : A file to read from ( trimmed )
+- a_to_file   : A file to paste into ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
+
+# Example
+
+$readto(from.txt,into.txt)"
+                            .to_string(),
+                    ),
+                ),
+            ),
+            (
+                "readin".to_owned(),
+                DMacroSign::new(
+                    "readin",
+                    ["a_file?^", "a_raw_mode^+?"],
+                    DeterredMacroMap::read_in,
+                    Some(
+                        "Read from a file as \"Bufread\"
+
+# Auth : FIN
+
+# NOT deterred
+
+# Arguments
+
+- a_file : A file to read from ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
+
+# Example
+
+$readin(file.txt)"
+                            .to_string(),
+                    ),
+                ),
+            ),
+            (
+                "ifenv".to_owned(),
+                DMacroSign::new(
+                    "ifenv",
+                    ["a_env_name^", "a_if_expr"],
+                    DeterredMacroMap::ifenv,
+                    Some(
+                        "Execute an expression if an environment variable is set
+
+# Auth : ENV
+
+# Expansion order
+
+1. a_env_name : Expanded on time
+2. a_if_expr  : Only when env_name is defined
+
+# Arguments
+
+- a_env_name   : An environment variable to check ( trimmed )
+- a_if_expr    : An expression to expand if env exists
+
+# Example
+
+$assert(I'm alive,$ifenv(HOME,I'm alive))"
+                            .to_string(),
+                    ),
+                ),
+            ),
+            (
+                "ifenvel".to_owned(),
+                DMacroSign::new(
+                    "ifenvel",
+                    ["a_env_name^", "a_if_expr", "a_else_expr"],
+                    DeterredMacroMap::ifenvel,
+                    Some(
+                        "Execute an expression by whether environment variable is set or not
+
+# Auth : ENV
+
+# Expansion order
+
+1. a_env_name   : Expanded on time
+2. a_if_expr    : Only when env_name is defined
+3. a_else_expr  : Only when env_name is NOT defined
+
+
+# Arguments
+
+- a_env_name   : An environment variable to check ( trimmed )
+- a_if_expr    : An expression to expand if env exists
+- a_else_expr  : An expression to expand if env doesn't exist
+
+# Example
+
+$assert(I'm alive,$ifenvel(HOME,I'm alive,I'm dead))
+$assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
+                            .to_string(),
+                    ),
+                ),
+            ),
             (
                 "append".to_owned(),
                 DMacroSign::new(
@@ -630,228 +847,6 @@ $expand(\\*1,2,3*\\)".to_string()),
                 ),
             ),
         ]));
-        // Auth realted macros should be segregated from wasm target
-        #[cfg(not(feature = "wasm"))]
-        {
-            map.insert(
-                "include".to_owned(),
-                DMacroSign::new(
-                    "include",
-                    ["a_filename^", "a_raw_mode^+?"],
-                    Self::include,
-                    Some(
-                        "Include a file
-
-- Include works as bufread in first level and chunk read in nested call.
-- Use readin if you want to enforce bufread
-- If raw mode is enabled include doesn't expand any macros inside the file
-
-# NOT Deterred
-
-# AUTH : FIN
-
-# Arguments
-
-- a_filename : A file name to read ( trimmed )
-- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
-
-$include(file_path)
-$include(file_path, true)"
-                            .to_string(),
-                    ),
-                ),
-            );
-            map.insert(
-                "incread".to_owned(),
-                DMacroSign::new(
-                    "incread",
-                    ["a_filename^", "a_raw_mode^+?"],
-                    Self::incread,
-                    Some(
-                        "Alwasy include a file as \"read\"
-
-- Include works as bufread in first level and chunk read in nested call.
-- Use incread when you need to read on first level.
-
-# NOT Deterred
-
-# AUTH : FIN
-
-# Arguments
-
-- a_filename : A file name to read ( trimmed )
-- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
-
-$incread|(file_path)
-$-()"
-                            .to_string(),
-                    ),
-                ),
-            );
-            map.insert(
-                "tempin".to_owned(),
-                DMacroSign::new(
-                    "tempin",
-                    ESR,
-                    Self::temp_include,
-                    Some(
-                        "Include a temporary file
-
-- A default temporary path is folloiwng
-- Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
-- *nix    : /tmp/rad.txt
-
-# NOT Deterred
-
-# Auth: FIN
-
-# Example
-
-$tempin()"
-                            .to_string(),
-                    ),
-                ),
-            );
-            map.insert(
-                "mapf".to_owned(),
-                DMacroSign::new(
-                    "mapf",
-                    ["a_macro_name^", "a_file^"],
-                    Self::map_file,
-                    Some(
-                        "Execute macro on each lines of a file
-
-# Note : mapf macro doesn't expand lines from a file.
-
-# Auth : FIN
-
-# NOT Deterred
-
-# Arguments
-
-- a_macro_name : A macro name to execute ( trimmed ) 
-- a_file       : A file to get lines iterator ( trimmed )
-
-# Example
-
-$define(m,a_src=$a_src()+)
-$assert(a+b+c,$mapf(m,file_name.txt))"
-                            .to_string(),
-                    ),
-                ),
-            );
-            map.insert(
-                "readto".to_owned(),
-                DMacroSign::new(
-                    "readto",
-                    ["a_from_file^", "a_to_file^", "a_raw_mode?+^"],
-                    DeterredMacroMap::read_to,
-                    Some(
-                        "Read from a file as bufread and paste into a file
-
-# Auth : FIN + FOUT
-
-# NOT deterred
-
-# Arguments
-
-- a_from_file : A file to read from ( trimmed )
-- a_to_file   : A file to paste into ( trimmed )
-- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
-
-# Example
-
-$readto(from.txt,into.txt)"
-                            .to_string(),
-                    ),
-                ),
-            );
-            map.insert(
-                "readin".to_owned(),
-                DMacroSign::new(
-                    "readin",
-                    ["a_file?^", "a_raw_mode^+?"],
-                    DeterredMacroMap::read_in,
-                    Some(
-                        "Read from a file as \"Bufread\"
-
-# Auth : FIN
-
-# NOT deterred
-
-# Arguments
-
-- a_file : A file to read from ( trimmed )
-- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
-
-# Example
-
-$readin(file.txt)"
-                            .to_string(),
-                    ),
-                ),
-            );
-            map.insert(
-                "ifenv".to_owned(),
-                DMacroSign::new(
-                    "ifenv",
-                    ["a_env_name^", "a_if_expr"],
-                    DeterredMacroMap::ifenv,
-                    Some(
-                        "Execute an expression if an environment variable is set
-
-# Auth : ENV
-
-# Expansion order
-
-1. a_env_name : Expanded on time
-2. a_if_expr  : Only when env_name is defined
-
-# Arguments
-
-- a_env_name   : An environment variable to check ( trimmed )
-- a_if_expr    : An expression to expand if env exists
-
-# Example
-
-$assert(I'm alive,$ifenv(HOME,I'm alive))"
-                            .to_string(),
-                    ),
-                ),
-            );
-            map.insert(
-                "ifenvel".to_owned(),
-                DMacroSign::new(
-                    "ifenvel",
-                    ["a_env_name^", "a_if_expr", "a_else_expr"],
-                    DeterredMacroMap::ifenvel,
-                    Some(
-                        "Execute an expression by whether environment variable is set or not
-
-# Auth : ENV
-
-# Expansion order
-
-1. a_env_name   : Expanded on time
-2. a_if_expr    : Only when env_name is defined
-3. a_else_expr  : Only when env_name is NOT defined
-
-
-# Arguments
-
-- a_env_name   : An environment variable to check ( trimmed )
-- a_if_expr    : An expression to expand if env exists
-- a_else_expr  : An expression to expand if env doesn't exist
-
-# Example
-
-$assert(I'm alive,$ifenvel(HOME,I'm alive,I'm dead))
-$assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
-                            .to_string(),
-                    ),
-                ),
-            );
-        }
 
         Self { macros: map }
     }

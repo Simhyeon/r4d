@@ -1,7 +1,6 @@
 //! State struct of a processing
 
 use crate::auth::AuthFlags;
-#[cfg(not(feature = "wasm"))]
 use crate::common::FileTarget;
 use crate::common::RadResult;
 use crate::common::{
@@ -11,7 +10,6 @@ use crate::consts::LINE_ENDING;
 use crate::RadError;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
-#[cfg(not(feature = "wasm"))]
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -38,7 +36,6 @@ pub(crate) struct ProcessorState {
     // Temp target needs to save both path and file
     // because file doesn't necessarily have path.
     // Especially in unix, this is not so an unique case
-    #[cfg(not(feature = "wasm"))]
     pub temp_target: FileTarget,
     pub comment_char: Option<char>,
     pub macro_char: Option<char>,
@@ -70,7 +67,6 @@ impl ProcessorState {
             comment_type: CommentType::None,
             stream_state: StreamState::default(),
             sandbox: false,
-            #[cfg(not(feature = "wasm"))]
             temp_target: FileTarget::with_truncate(&std::env::temp_dir().join("rad.txt")).unwrap(),
             comment_char: None,
             macro_char: None,
@@ -84,7 +80,6 @@ impl ProcessorState {
         }
     }
 
-    #[cfg(not(feature = "wasm"))]
     /// Internal method for setting temp target
     pub(crate) fn set_temp_target(&mut self, path: &Path) -> RadResult<()> {
         if path.exists() {

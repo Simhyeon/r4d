@@ -20,13 +20,10 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use similar::DiffableStr;
 use std::collections::HashMap;
-#[cfg(not(feature = "wasm"))]
 use std::fs::OpenOptions;
 use std::io::BufRead;
-#[cfg(not(feature = "wasm"))]
 use std::io::Write;
 use std::path::{Path, PathBuf};
-#[cfg(not(feature = "wasm"))]
 use std::process::Command;
 use std::str::FromStr;
 use unicode_width::UnicodeWidthStr;
@@ -174,7 +171,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $ftime(file_name.txt)
-    #[cfg(not(feature = "wasm"))]
     #[cfg(feature = "chrono")]
     pub(crate) fn get_file_time(
         args: &str,
@@ -620,7 +616,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $syscmd(system command -a arguments)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn syscmd(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("syscmd", AuthType::CMD, p)? {
             return Ok(None);
@@ -1044,7 +1039,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $env(SHELL)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn get_env(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("env", AuthType::ENV, p)? {
             return Ok(None);
@@ -1067,7 +1061,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $envset(SHELL,value)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn set_env(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("envset", AuthType::ENV, p)? {
             return Ok(None);
@@ -1259,7 +1252,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $exist(../canonic_path.txt)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn file_exists(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("exist", AuthType::FIN, p)? {
             return Ok(None);
@@ -1280,7 +1272,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $abs(../canonic_path.txt)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn absolute_path(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("abs", AuthType::FIN, p)? {
             return Ok(None);
@@ -1778,7 +1769,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $tempout(Content)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn temp_out(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("tempout", AuthType::FOUT, p)? {
             return Ok(None);
@@ -1807,7 +1797,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $fileout(file_name,true,Content)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn file_out(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("fileout", AuthType::FOUT, p)? {
             return Ok(None);
@@ -2598,7 +2587,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $grepf(EXPR,CONTENT)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn grep_file(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("grepf", AuthType::FIN, p)? {
             return Ok(None);
@@ -2763,14 +2751,12 @@ impl FunctionMacroMap {
             String::new()
         };
         let relay_type = match raw_type.as_ref() {
-            #[cfg(not(feature = "wasm"))]
             "temp" => {
                 if !Utils::is_granted("relay", AuthType::FOUT, p)? {
                     return Ok(None);
                 }
                 RelayTarget::Temp
             }
-            #[cfg(not(feature = "wasm"))]
             "file" => {
                 use crate::common::FileTarget;
                 if !Utils::is_granted("relay", AuthType::FOUT, p)? {
@@ -2936,7 +2922,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $tempto(file_name)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn set_temp_target(
         args: &str,
         processor: &mut Processor,
@@ -2961,7 +2946,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $temp()
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn get_temp_path(_: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if !Utils::is_granted("temp", AuthType::FIN, processor)? {
             return Ok(None);
@@ -3871,7 +3855,6 @@ impl FunctionMacroMap {
     /// List directory files
     ///
     /// $listdir(path, is_abs, delimiter)
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn list_directory_files(
         args: &str,
         processor: &mut Processor,

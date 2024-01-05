@@ -1513,7 +1513,6 @@ impl<'processor> Processor<'processor> {
     /// - include
     /// - temp_include
     ///
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn process_file_as_chunk(
         &mut self,
         path: impl AsRef<Path>,
@@ -2403,14 +2402,12 @@ impl<'processor> Processor<'processor> {
                 }
                 self.map.append(mac, content, self.state.hygiene);
             }
-            #[cfg(not(feature = "wasm"))]
             RelayTarget::File(target) => {
                 // NOTE
                 // Pracically this cannot be set in wasm target because multiple code barriers
                 // yet panic can theoreoically happen.
                 target.inner().write_all(content.as_bytes())?;
             }
-            #[cfg(not(feature = "wasm"))]
             RelayTarget::Temp => {
                 if let Some(file) = self.get_temp_file() {
                     file.write_all(content.as_bytes())?;
@@ -2919,7 +2916,6 @@ impl<'processor> Processor<'processor> {
     // <MISC>
 
     /// Get logger's write option reference
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn get_logger_write_option(&self) -> Option<&WriteOption> {
         self.logger.write_option.as_ref()
     }
@@ -2964,7 +2960,6 @@ impl<'processor> Processor<'processor> {
     /// Change temp file target
     ///
     /// This will create a new temp file if not existent
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn set_temp_file(&mut self, path: &Path) -> RadResult<()> {
         self.state.set_temp_target(path)
     }
@@ -2993,13 +2988,11 @@ impl<'processor> Processor<'processor> {
         self.state.sandbox = sandbox;
     }
 
-    #[cfg(not(feature = "wasm"))]
     /// Get temp file's path
     pub(crate) fn get_temp_path(&self) -> &Path {
         self.state.temp_target.name()
     }
 
-    #[cfg(not(feature = "wasm"))]
     /// Get temp file's "file" struct
     pub(crate) fn get_temp_file(&mut self) -> Option<&mut File> {
         Some(self.state.temp_target.inner())
@@ -3132,7 +3125,6 @@ impl<'processor> Processor<'processor> {
     /// This returns canonicalized absolute path
     ///
     /// It fails when the parent path cannot be canonicalized
-    #[cfg(not(feature = "wasm"))]
     pub(crate) fn get_current_dir(&self) -> RadResult<PathBuf> {
         let path = match &self.state.current_input {
             ProcessInput::Stdin => std::env::current_dir()?,

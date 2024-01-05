@@ -244,10 +244,8 @@ impl SignatureType {
 #[derive(Debug)]
 pub enum RelayTarget {
     None,
-    #[cfg(not(feature = "wasm"))]
     File(FileTarget),
     Macro(String),
-    #[cfg(not(feature = "wasm"))]
     Temp,
 }
 
