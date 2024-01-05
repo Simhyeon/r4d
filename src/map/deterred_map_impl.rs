@@ -48,37 +48,15 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        let args = ap.args_to_vec(args, ',', SplitVariant::Never);
-        ap.set_strip(true);
-        if args.len() >= 2 {
+        let mut ap = ArgParser::new();
+        if let Some(args) = ap.args_with_len(args, 2) {
             let name =
                 processor.parse_and_strip(&mut ap, level, "append", trim!(&args[0]).as_ref())?;
             let target = processor.parse_and_strip(&mut ap, level, "append", &args[1])?;
-            let mut trailer = None;
-
-            if args.len() >= 3 {
-                trailer = Some(processor.parse_and_strip(&mut ap, level, "append", &args[2])?);
-            }
 
             if let Some(name) = processor.contains_local_macro(level, &name) {
-                if let Some(tt) = trailer {
-                    let body = processor.get_local_macro_body(&name)?;
-                    if !body.ends_with(&tt) && !body.is_empty() {
-                        processor.append_local_macro(&name, &format!("{}{}", tt, target));
-                        return Ok(None);
-                    }
-                }
                 processor.append_local_macro(&name, &target);
             } else if processor.contains_macro(&name, MacroType::Runtime) {
-                // Append to runtime
-                if let Some(tt) = trailer {
-                    let body = processor.get_runtime_macro_body(&name)?;
-                    if !body.ends_with(&tt) && !body.is_empty() {
-                        processor.append_macro(&name, &format!("{}{}", tt, target));
-                        return Ok(None);
-                    }
-                }
                 processor.append_macro(&name, &target);
             } else {
                 return Err(RadError::InvalidArgument(format!(
@@ -1206,7 +1184,7 @@ impl DeterredMacroMap {
             return Ok(None);
         }
         let mut ap = ArgParser::new().no_strip();
-        let args = ap.args_to_vec(args, ',', SplitVariant::Never);
+        let args = ap.args_to_vec(args, ',', SplitVariant::Always);
         ap.set_strip(true);
         if !args.is_empty() {
             let mut file_path = PathBuf::from(
