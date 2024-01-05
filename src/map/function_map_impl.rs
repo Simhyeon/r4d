@@ -2654,13 +2654,12 @@ impl FunctionMacroMap {
         if let Some(mut args) = ArgParser::new().args_with_len(args, 1) {
             let content = std::mem::take(&mut args[0]);
             let mut acc = String::new();
-            for line in content.lines() {
-                write!(
-                    &mut acc,
-                    "{}{}",
-                    line.split_whitespace().join(" "),
-                    p.state.newline
-                )?;
+            let mut itr = content.lines().peekable();
+            while let Some(line) = itr.next() {
+                write!(&mut acc, "{}", line.split_whitespace().join(" "),)?;
+                if itr.peek().is_some() {
+                    write!(&mut acc, "{}", &p.state.newline)?;
+                }
             }
             Ok(Some(acc))
         } else {
