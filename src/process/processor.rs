@@ -2246,7 +2246,7 @@ impl<'processor> Processor<'processor> {
                     "{}'s arguments are not sufficient. Given {}, but needs {}",
                     new_name,
                     ArgParser::new()
-                        .args_to_vec(arg_values, ',', SplitVariant::Never)
+                        .args_to_vec(arg_values, ',', SplitVariant::Always)
                         .len(),
                     arg_types.len()
                 ));

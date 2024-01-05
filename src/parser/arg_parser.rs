@@ -49,7 +49,7 @@ impl ArgParser {
 
     /// Simply strip literal chunk
     pub(crate) fn strip(&mut self, args: &str) -> String {
-        self.args_to_vec(args, ',', SplitVariant::Greedy)[0].to_owned()
+        self.args_to_vec(args, ',', SplitVariant::GreedyStrip)[0].to_owned()
     }
 
     /// Check if given length is qualified for given raw arguments
@@ -167,10 +167,10 @@ impl ArgParser {
                     self.no_previous = true;
                 }
                 // Push everything to current item, index, value or you name it
-                SplitVariant::Greedy => {
+                SplitVariant::Greedy | SplitVariant::GreedyStrip => {
                     value.push(ch);
                 }
-                SplitVariant::Never => {
+                SplitVariant::Always => {
                     // move to next value
                     self.values.push(std::mem::take(value));
                 }
@@ -261,5 +261,6 @@ pub enum SplitVariant {
     /// Split argument with given amount
     Deterred(usize),
     Greedy,
-    Never,
+    GreedyStrip,
+    Always,
 }
