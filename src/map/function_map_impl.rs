@@ -31,6 +31,9 @@ use std::process::Command;
 use std::str::FromStr;
 use unicode_width::UnicodeWidthStr;
 
+static START_BLANK_MATCH: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"^[\s\t]*"#).expect("Failed to create blank regex"));
+
 // ----------
 // rer related regexes
 //
@@ -1388,18 +1391,44 @@ impl FunctionMacroMap {
 
             let mut result = String::new();
             let mut extracted = String::new();
+            let mut blank;
             for line in source.lines() {
                 if let Some((leading, following)) = line.split_once(pattern) {
+                    // Don't "rotate" for pattern starting line
+                    if leading.trim().is_empty() {
+                        write!(result, "{line}{}", p.state.newline)?;
+                        continue;
+                    }
+
                     extracted.clear();
                     write!(extracted, "{pattern}{following}")?;
+                    blank = START_BLANK_MATCH
+                        .find(leading)
+                        .map(|s| s.as_str())
+                        .unwrap_or("")
+                        .to_string();
                     match orientation {
                         AlignType::Left => {
-                            write!(result, "{}{}{}", extracted, p.state.newline, leading)?
+                            write!(
+                                result,
+                                "{}{}{}{}",
+                                blank, extracted, p.state.newline, leading
+                            )?;
                         }
                         AlignType::Right => {
-                            write!(result, "{}{}{}", leading, p.state.newline, extracted)?
+                            write!(
+                                result,
+                                "{}{}{}{}",
+                                leading, p.state.newline, blank, extracted
+                            )?;
                         }
-                        AlignType::Center => write!(result, "{}{}", extracted, leading)?,
+                        AlignType::Center => {
+                            let mut leading = leading;
+                            if !blank.is_empty() {
+                                leading = leading.trim_start();
+                            }
+                            write!(result, "{}{} {}", blank, extracted, leading)?;
+                        }
                     }
                 } else {
                     write!(result, "{line}")?;
