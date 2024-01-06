@@ -1431,7 +1431,12 @@ impl FunctionMacroMap {
                     }
 
                     extracted.clear();
-                    write!(extracted, "{pattern}{following}")?;
+                    let leader_pattern = if orientation == AlignType::Center {
+                        ""
+                    } else {
+                        pattern
+                    };
+                    write!(extracted, "{leader_pattern}{following}")?;
                     blank = START_BLANK_MATCH
                         .find(leading)
                         .map(|s| s.as_str())
@@ -1457,7 +1462,14 @@ impl FunctionMacroMap {
                             if !blank.is_empty() {
                                 leading = leading.trim_start();
                             }
-                            write!(result, "{}{} {}", blank, extracted, leading)?;
+                            write!(
+                                result,
+                                "{}{} {} {}",
+                                blank,
+                                trim!(&extracted),
+                                pattern,
+                                trim!(leading)
+                            )?;
                         }
                     }
                 } else {
