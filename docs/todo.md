@@ -9,6 +9,7 @@
     1. Test english charcters
     2. Test korean characters
     3. Test invalid syntax, characters.
+    4. Test macro argument's default attribute
 
 0. KEEP IN MIND : Escape rule is strange
     ```
@@ -18,6 +19,7 @@
 
 #### BUG
 
+* [x] Fixed where chars didn't work at all...
 * [ ] Fix regex register shenenigans
 * [ ] Fix deubbing feature bugs
     1. Add assertion information
@@ -58,6 +60,35 @@
 
 #### Macro
 
+* [ ] Add Squeeze macro
+```
+a  b  c  d 
+e
+
+dkdkdkd
+=
+abcdedkdkdkd
+```
+* [ ] Add for column
+    * [ ] Complete multiple iteration system from the for column macro and add
+      to foreach and forsp
+* [ ] Joined foreach?
+* [x] Added forsp ( For space )
+* [x] Unicode length macro
+* [ ] Make rotate center creates more plausible whitespaces
+    -> Currently it simply fixes into `[space] [pattern] [space]`
+* [ ] Require "discard" option
+    Since making a macro to change processor behaviour is not necessarily good.
+    It's better to notify user that something is going to happen and has to be
+    handled by user him/herself
+* [x] Percent macro
+* [x] Print macro
+    This overrides discard macro and print to stdout on necessary.
+    This is similar to log macro but it doesn't mean anything.
+* [x] Evalf - Evaluate as floating point
+* [ ] Padding macro
+    There are times when you need to pad spaces or characters. Such as
+    automatic conversion from int to float or padding spaces etc etc...
 * [ ] Evalk formatting to be aesthetic
 * [ ] rer to also support alphabets
 ```
@@ -169,7 +200,7 @@ if count > line_count: yatti yatta
 THis is bad because count consumes. Error checking while iteration is better
 but simply collecting is often faster.
 
-* [ ] Ditch wasm feature DONE
+* [x] Ditch wasm feature DONE -> Completely ditched
     -> However You still need to remove unnecessary features that was made for
     wasm target exclusviely. I sustained such codes with wasm keyword on comments
 

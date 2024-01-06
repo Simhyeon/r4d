@@ -843,19 +843,17 @@ This can be problematic in many cases, yet there is no migcal solutoin.
 
 * [x] Cond  : Condense ( remove duplicate whitespaces from an input )
 * [x] Condl : Condense by lines ( remove duplicate whitespaces from an input )
-* [x] Add align comment character macro. Read meta's document
+* [x] Alignby
     * [x] Now add a documentation for it
 * [x] Add rer macro ( Rearrange )
 * [x] NEW: Stream macro
-To compensate relay's shortcoming, add new a flag called stream. and
-a macro called stream
-    This macro accepts data and send to macro invocation.
     * [x] Enable anon macro in macro invocation
     * [x] Stream lines macro
 * [x] Stripfl
 * [x] Striprl
-* [x] Pie and Mie
-* [x] Append rolled back to non trailer version with legacy feature
+* [x] Pie 
+* [x] Mie
+* [x] "Append" rolled back to non trailer version with legacy feature
 * [x] Some kind of "rotate" macro
 
 ### New flag, features
