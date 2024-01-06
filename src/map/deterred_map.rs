@@ -461,6 +461,33 @@ $assert(a+b+c+,$foreach($:()+,a,b,c))".to_string(),
                 ),
             ),
             (
+                "forsp".to_owned(),
+                DMacroSign::new(
+                    "forsp",
+                    ["a_body", "a_words^"],
+                    DeterredMacroMap::for_space,
+                    Some(
+                        "Iterate around given words.
+
+An iterated value is bound to macro \":\"
+ 
+# Expansion order
+
+1. a_words : Expanded on time
+2. a_body : Split array by comma, and expanded by per item.
+
+# Arguments
+
+- a_body  : A body to be pasted as iterated item
+- a_words : Words to iterate ( trimmed )
+
+# Example
+
+".to_string(),
+                    ),
+                ),
+            ),
+            (
                 "forline".to_owned(),
                 DMacroSign::new(
                     "forline",

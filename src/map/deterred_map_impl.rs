@@ -341,6 +341,51 @@ impl DeterredMacroMap {
         }
     }
 
+    /// Loop around given words and substitute iterators  with the value
+    ///
+    /// # Usage
+    ///
+    /// $forsp($:(),a,b,c)
+    pub(crate) fn for_space(
+        args: &str,
+        level: usize,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+            let mut sums = String::new();
+            let body = &args[0];
+
+            if args[1].contains("$:()") || args[1].contains("$a_LN()") {
+                processor.log_warning(
+                    "Foreach's second argument is iterable array.",
+                    WarningType::Sanity,
+                )?;
+            }
+
+            let loop_src = processor.parse_and_strip(&mut ap, level, "forsp", &args[1])?;
+            let loopable = trim!(&loop_src);
+            for (count, value) in loopable.as_ref().split_whitespace().enumerate() {
+                // This overrides value
+                processor.add_new_local_macro(level, "a_LN", &count.to_string());
+                processor.add_new_local_macro(level, ":", value);
+                let result = &processor.parse_and_strip(&mut ap, level, "forsp", body)?;
+
+                sums.push_str(result);
+            }
+
+            // Clear local macro
+            processor.remove_local_macro(level, ":");
+
+            Ok(Some(sums))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Foreach requires two argument".to_owned(),
+            ))
+        }
+    }
+
     /// Loop around given values split by new line and substitute iterators  with the value
     ///
     /// # Usage
