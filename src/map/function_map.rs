@@ -1494,6 +1494,15 @@ $assert(1,$i())".to_string()),
                 ),
             ),
             (
+                "percent".to_owned(),
+                FMacroSign::new(
+                    "percent",
+                    ESR,
+                    Self::print_percent,
+                    Some("percent".to_string()),
+                ),
+            ),
+            (
                 "pipe".to_owned(),
                 FMacroSign::new(
                     "pipe",
@@ -1548,6 +1557,15 @@ $assert($-(yum),YUM)".to_string()),
 # Example
 
 $assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
+                ),
+            ),
+            (
+                "print".to_owned(),
+                FMacroSign::new(
+                    "print",
+                    ["a_message"],
+                    Self::print_message,
+                    Some("print message -> discard option is ignored for this macro + it has trailing new line for pretty foramtting".to_owned()),
                 ),
             ),
             (
@@ -2719,7 +2737,11 @@ $ftime(some_file.txt)
                     Some(
                         "Evaluate a given expression
 
+# NOTE
+
 - This macro redirects expression to evalexpr crate
+- Append point after number if you want floating point operation.
+    e.g. ) 1 / 5 = 0 while 1.0 / 5.0 = 0.2
 
 # Arguments
 
@@ -2751,6 +2773,29 @@ $assert(true,$eval(\"string\" == \"string\"))"
 # Example
 
 $assert(1 + 2 = 3,$evalk(1 + 2 ))"
+                            .to_string(),
+                    ),
+                ),
+            );
+            map.insert(
+                "evalf".to_owned(),
+                FMacroSign::new(
+                    "evalf",
+                    ["a_expr"],
+                    Self::evalf,
+                    Some(
+                        "Evaluate a given expression
+
+# NOTE
+
+- This macro redirects expression to evalexpr crate
+- Evalf forces floating point form for integers.
+
+# Arguments
+
+- a_expr : An expression to evaluate
+
+# Example"
                             .to_string(),
                     ),
                 ),
