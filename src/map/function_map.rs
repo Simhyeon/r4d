@@ -336,17 +336,7 @@ impl FunctionMacroMap {
                     "count",
                     ["a_array"],
                     Self::count,
-                    Some("Get counts of an array
-
-# Return : Unsigned integer
-
-# Arguments
-
-- a_array : An array to get counts from
-
-# Example
-
-$assert($count(a,b,c),3)".to_string()),
+                    Some(man_fun!("count.r4d")),
                 ),
             ),
             (
@@ -355,17 +345,7 @@ $assert($count(a,b,c),3)".to_string()),
                     "countw",
                     ["a_array"],
                     Self::count_word,
-                    Some("Get count of words
-
-# Return : Unsigned integer
-
-# Arguments
-
-- a_array : An array to get word counts from
-
-# Example
-
-$assert($countw(hello world),2)".to_string()),
+                    Some(man_fun!("countw.r4d")),
                 ),
             ),
             (
@@ -374,19 +354,7 @@ $assert($countw(hello world),2)".to_string()),
                     "countl",
                     ["a_lines"],
                     Self::count_lines,
-                    Some("Get counts of lines.
-
-# Return : Unsigned integer
-
-# Arguments
-
-- a_lines : Lines to get counts from
-
-# Example
-
-$assert(3,$countl(1
-2
-3))".to_string()),
+                    Some(man_fun!("countl.r4d")),
                 ),
             ),
             (
@@ -395,17 +363,7 @@ $assert(3,$countl(1
                     "dnl",
                     ESR,
                     Self::deny_newline,
-                    Some(
-"Deny a next newline. This technically squashes following two consequent 
-line_ending into a single one
-
-- dnl doesn't deny right next newlie but a newline after a newline.
-
-# Example
-
-$assert(a$nl()b,a$dnl()
-
-b)".to_string()),
+                    Some(man_fun!("dnl.r4d")),
                 ),
             ),
             (
@@ -486,12 +444,7 @@ $assert(,$empty())".to_string()),
                     "enl",
                     ESR,
                     Self::escape_newline,
-                    Some("Escape a following newline
-
-# Example
-
-$assert(ab,a$enl()
-b)".to_string()),
+                    Some(man_fun!("enl.r4d"))
                 ),
             ),
             (
