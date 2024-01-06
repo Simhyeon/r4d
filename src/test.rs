@@ -23,7 +23,7 @@ fn function_name_test() -> RadResult<()> {
     // processor.add_static_rules(&[("test", "")])?;
     // writeln!(std::io::stdout(), "{}", processor.get_static("test")?);
     // processor.replace_macro("test", "WOWZER");
-    let chs = ['안', 'a', 'ي', '𝅘𝅥𝅰'];
+    let chs = ['안', 'a', 'ي', '𝅘𝅥𝅰']; // let chs = ['a', 'b', 'c', 'd'];
     for ch in chs {
         eprintln!("CH : \"{ch}\" -- bytes {}", ch.len_utf8())
     }
