@@ -300,15 +300,7 @@ impl FunctionMacroMap {
                     "chars",
                     ["a_text^"],
                     Self::chars_array,
-                    Some("Get a characters array from text
-
-# Arguments
-
-- a_text : Text to get a chars array from ( trimmed )
-
-# Example
-
-$assert(\\*a,b,c,d,e*\\$chars(abcde))".to_string()),
+                    Some(man_fun!("chars.r4d")),
                 ),
             ),
             (
@@ -317,20 +309,7 @@ $assert(\\*a,b,c,d,e*\\$chars(abcde))".to_string()),
                     "chomp",
                     ["a_content"],
                     Self::chomp,
-                    Some("Remove duplicate newlines from content
-
-# Arguments
-
-- a_content: Contents to chomp
-
-# Example
-
-$staticr(lines,Upper
-
-
-Down)
-$assert($countl($lines()),4)
-$assert($countl($chomp($lines())),3)".to_string()),
+                    Some(man_fun!("chomp.r4d")),
                 ),
             ),
             (
@@ -339,13 +318,7 @@ $assert($countl($chomp($lines())),3)".to_string()),
                     "clear",
                     ESR,
                     Self::clear,
-                    Some(
-"Clear volatile macros. This macro is intended to be used when hygiene mode is 
-enabled and user wants to clear volatiles immediately without waiting.
-
-# Example
-
-$clear()".to_string()),
+                    Some(man_fun!("clear.r4d")),
                 ),
             ),
             (
@@ -354,22 +327,7 @@ $clear()".to_string()),
                     "comp",
                     ["a_content"],
                     Self::compress,
-                    Some("Apply both trim and chomp (compress) to contents
-
-# Arguments
-
-- a_content : Content to compress
-
-# Example
-
-$staticr(lines,
-    upper
-
-
-    down
-)
-$assert($countl($lines()),5)
-$assert($countl($comp($lines())),3)".to_string()),
+                    Some(man_fun!("comp.r4d")),
                 ),
             ),
             (
@@ -1030,6 +988,25 @@ $assert($len(가나다),$len(ABC))".to_string()),
                 ),
             ),
             (
+                "ulen".to_owned(),
+                FMacroSign::new(
+                    "ulen",
+                    ["a_string"],
+                    Self::unicode_len,
+                    Some("Get a unicode length of text.
+
+# Return : Unsigned integer
+
+# Arguments
+
+- a_string : Text to get unicode length
+
+# Example
+
+$assert($ulen(가나다),$ulen(ABCDEF))".to_string()),
+                ),
+            ),
+            (
                 "let".to_owned(),
                 FMacroSign::new(
                     "let",
@@ -1386,6 +1363,24 @@ $assert(17,$notat(23,hex))".to_string()),
 # Example
 
 $assert(unix,$ostype())".to_string()),
+                ),
+            ),
+            (
+                "output".to_owned(),
+                FMacroSign::new(
+                    "require",
+                    ["a_output_type^"],
+                    Self::require_output,
+                    Some(
+" Require output type
+
+# Arguments
+
+- a_output_type : A output type to require (trimmed) []
+
+# Example
+
+".to_string()),
                 ),
             ),
             (
