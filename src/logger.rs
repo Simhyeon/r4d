@@ -215,7 +215,7 @@ impl<'logger> Logger<'logger> {
                 WriteOption::Variable(var) => {
                     write!(var, "{} : {}{}", prompt, log_msg, LINE_ENDING)?;
                 }
-                WriteOption::Discard | WriteOption::Return => (),
+                WriteOption::Discard => (),
             } // Match end
         }
         Ok(())
@@ -261,7 +261,7 @@ impl<'logger> Logger<'logger> {
                         prompt, log_msg, log_pos, LINE_ENDING
                     )?;
                 }
-                WriteOption::Discard | WriteOption::Return => (),
+                WriteOption::Discard => (),
             } // Match end
         }
         Ok(())
@@ -416,7 +416,7 @@ FAIL: {}",
                         writeln!(std::io::stderr(), "{}", assert_result)?;
                     }
                 }
-                WriteOption::Discard | WriteOption::Variable(_) | WriteOption::Return => (),
+                WriteOption::Discard | WriteOption::Variable(_) => (),
             }
         } else {
             // Silent option
