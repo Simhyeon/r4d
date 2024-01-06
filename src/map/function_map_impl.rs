@@ -11,9 +11,9 @@ use crate::formatter::Formatter;
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
 use crate::utils::Utils;
-use crate::Processor;
-use crate::{trim, CommentType};
+use crate::{trim, CommentType, WriteOption};
 use crate::{ArgParser, SplitVariant};
+use crate::{Hygiene, Processor};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
 use once_cell::sync::Lazy;
@@ -1498,6 +1498,18 @@ impl FunctionMacroMap {
     /// $len(Hello)
     pub(crate) fn len(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         Ok(Some(args.chars().count().to_string()))
+    }
+
+    /// Return a unicode length of the string
+    ///
+    /// # Usage
+    ///
+    /// $len(안녕하세요)
+    /// $len(Hello)
+    pub(crate) fn unicode_len(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        Ok(Some(
+            unicode_width::UnicodeWidthStr::width(args).to_string(),
+        ))
     }
 
     /// Rename macro rule to other name
@@ -3165,6 +3177,49 @@ impl FunctionMacroMap {
         Ok(None)
     }
 
+    /// Output
+    ///
+    /// # Usage
+    ///
+    /// $Output(fout)
+    pub(crate) fn require_output(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        match trim!(args).as_ref().to_lowercase().as_str() {
+            "terminal" => {
+                if let WriteOption::Terminal = p.write_option {
+                } else {
+                    return Err(RadError::UnsoundExecution(
+                        "Rad should write to a terminal and yet such flag was not satisfied."
+                            .to_owned(),
+                    ));
+                }
+            }
+            "file" => {
+                if let WriteOption::File(_) = p.write_option {
+                } else {
+                    return Err(RadError::UnsoundExecution(
+                        "Rad should write to a file and yet such flag was not satisfied."
+                            .to_owned(),
+                    ));
+                }
+            }
+            "discard" => {
+                if let WriteOption::Discard = p.write_option {
+                } else {
+                    return Err(RadError::UnsoundExecution(
+                        "Rad should discard output and yet such flag was not satisfied.".to_owned(),
+                    ));
+                }
+            }
+            _ => {
+                p.log_warning(
+                    "No output type was given for the macro",
+                    WarningType::Sanity,
+                )?;
+            }
+        }
+        Ok(None)
+    }
+
     /// Log message
     ///
     /// # Usage
@@ -3479,6 +3534,12 @@ impl FunctionMacroMap {
 
     /// Clear volatile macros
     pub(crate) fn clear(_: &str, processor: &mut Processor) -> RadResult<Option<String>> {
+        if processor.state.hygiene == Hygiene::None {
+            processor.log_warning(
+                "Currently hygiene mode is not set. Clear will do nothing.",
+                WarningType::Sanity,
+            )?;
+        }
         processor.clear_volatile();
         Ok(None)
     }
@@ -4014,6 +4075,7 @@ impl FunctionMacroMap {
             let arg = trim!(&args[0]);
             let mut chars = arg.as_ref().chars().fold(String::new(), |mut acc, ch| {
                 acc.push(ch);
+                acc.push(',');
                 acc
             });
             chars.pop();
