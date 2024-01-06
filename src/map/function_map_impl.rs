@@ -291,6 +291,36 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Evaluate given expression but force floating point
+    ///
+    /// This returns true, false or evaluated number
+    ///
+    /// # Usage
+    ///
+    /// $eval(expression)
+    #[cfg(feature = "evalexpr")]
+    pub(crate) fn evalf(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let formula = args[0]
+                .split_whitespace()
+                .map(|item| {
+                    let mut new_str = item.to_string();
+                    if item.parse::<isize>().is_ok() {
+                        new_str.push_str(".0");
+                    }
+                    new_str
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            let result = evalexpr::eval(&formula)?;
+            Ok(Some(result.to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Eval requires an argument".to_owned(),
+            ))
+        }
+    }
+
     /// Pipe in replace evaluation
     ///
     /// # Usage
@@ -1145,13 +1175,22 @@ impl FunctionMacroMap {
         Ok(Some("\t".repeat(count)))
     }
 
+    /// Print a literal percent
+    ///
+    /// # Usage
+    ///
+    /// $percent()
+    pub(crate) fn print_percent(_: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        Ok(Some('%'.to_string()))
+    }
+
     /// Print a literal comma
     ///
     /// # Usage
     ///
     /// $comma()
     pub(crate) fn print_comma(_: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        Ok(Some(",".to_string()))
+        Ok(Some(','.to_string()))
     }
 
     /// Yield spaces
@@ -3131,6 +3170,16 @@ impl FunctionMacroMap {
     /// $loge(This is a problem)
     pub(crate) fn log_error_message(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         p.print_error(args)?;
+        Ok(None)
+    }
+
+    /// Print message
+    ///
+    /// # Usage
+    ///
+    /// $print(This is a problem)
+    pub(crate) fn print_message(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        write!(std::io::stdout(), "{}{}", args, p.state.newline)?;
         Ok(None)
     }
 
