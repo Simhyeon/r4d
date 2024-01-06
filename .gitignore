@@ -5,12 +5,10 @@ compiled.r4c
 diff.out
 diff.src
 err.txt
-def.r4d
-nested.r4d
 lib.r4f
 pkg
 test
 wasm
-mac.r4d
 addr.csv
 sig.json
+*.r4d
