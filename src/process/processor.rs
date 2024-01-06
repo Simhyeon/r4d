@@ -158,7 +158,6 @@ pub struct Processor<'processor> {
     map: MacroMap,
     define_parser: DefineParser,
     pub(crate) write_option: WriteOption<'processor>,
-    cache_file: Option<File>,
     logger: Logger<'processor>,
     cache: String,
     // -- Features --
@@ -238,7 +237,6 @@ impl<'processor> Processor<'processor> {
             map,
             cache: String::new(),
             write_option: WriteOption::Terminal,
-            cache_file: None,
             define_parser: DefineParser::new(),
             logger,
             state,
@@ -2369,15 +2367,6 @@ impl<'processor> Processor<'processor> {
             return Ok(());
         }
 
-        // This is mostly for wasm target
-        // Redirect to cache if relay is set
-        if let Some(cache) = &mut self.cache_file {
-            if self.state.relay.is_empty() {
-                cache.write_all(content.as_bytes())?;
-                return Ok(());
-            }
-        }
-
         // Save to "source" file for debuggin
         #[cfg(feature = "debug")]
         self.debugger.write_diff_processed(content)?;
@@ -2418,7 +2407,6 @@ impl<'processor> Processor<'processor> {
                     WriteOption::File(f) => f.inner().write_all(content.as_bytes())?,
                     WriteOption::Terminal => std::io::stdout().write_all(content.as_bytes())?,
                     WriteOption::Variable(var) => var.push_str(content),
-                    WriteOption::Return => self.cache.push_str(content),
                     WriteOption::Discard => (), // Don't print anything
                 }
             }
