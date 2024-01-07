@@ -11,4 +11,4 @@ test
 wasm
 addr.csv
 sig.json
-*.r4d
+/*.r4d
