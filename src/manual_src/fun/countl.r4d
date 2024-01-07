@@ -1,0 +1,30 @@
+Get counts of lines.
+
+# Return : Unsigned integer
+
+# Demo
+
+```
+$countl()
+$countl(a)
+$countl(a
+b)
+$countl(a
+
+b)
+===
+0
+1
+2
+3
+```
+
+# Arguments
+
+- a_lines : Lines to get counts from
+
+# Example
+
+$assert(3,$countl(1
+2
+3))

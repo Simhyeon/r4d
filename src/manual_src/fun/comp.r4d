@@ -1,0 +1,36 @@
+Apply both trim and chomp (compress) to contents
+
+# Arguments
+
+- a_content : Content to compress
+
+# Demo
+
+```
+$stream(comp)
+a
+
+
+b
+
+
+c
+
+consume()$enl()
+===
+a
+
+b
+
+c
+```
+
+# Example
+
+$staticr(lines,
+    upper
+
+
+    down
+)
+$assert($countl($comp($lines())),3)

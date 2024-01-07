@@ -1,0 +1,31 @@
+Declare multiple variables separated by commas
+
+# Arguments
+
+- a_macro_names: Macro names array ( trimmed )
+
+# Demo
+
+```
+$declare(first,second,third)
+
+$append(first,1)
+$append(second,2)
+$append(third,3)
+$append(first,-1)
+$append(second,-2)
+$append(third,-3)
+
+$first()
+$second()
+$third()
+===
+1-1
+2-2
+3-3
+```
+
+# Example
+
+$declare(first,second)
+$assert($first(),$empty())

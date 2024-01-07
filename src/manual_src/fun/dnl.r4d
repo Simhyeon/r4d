@@ -1,0 +1,53 @@
+Deny a next newline. 
+
+# Note
+
+- This technically squashes following two consequent line_ending into a single
+  one.
+- Dnl's position does not matter and even if there is interrupting text after
+  the macro, it's effect still persists.
+- Dnl doesn't deny right next newline but only a newline after a newline.
+- Dnl doesn't care semantic newline but only detects real newline
+- Also refer "enl" macro for better understanding
+
+# Demo
+
+```
+$define(ep=)
+% Runtime macro leaves empty line
+[1]
+$ep()
+<-
+% dnl will remove following newline
+[2]
+$ep()$dnl()
+<-
+% Dnl before non empty line does nothing
+[3]
+$lipsum(5)$dnl()
+$ep()
+<-
+[4]
+$lipsum(5)$dnl()-Int-
+
+<-
+===
+[1]
+
+<-
+[2]
+<-
+[3]
+Lorem ipsum dolor sit amet
+
+<-
+[4]
+Lorem ipsum dolor sit amet-Int-
+<-
+```
+
+# Example
+
+$assert(a$nl()b,a$dnl()
+
+b)

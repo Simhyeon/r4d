@@ -1,0 +1,23 @@
+Get count of words
+
+# Return : Unsigned integer
+
+# Demo
+
+```
+$countw()
+$countw(a )
+$countw($lipsum(5))
+===
+0
+1
+5
+```
+
+# Arguments
+
+- a_array : An array to get word counts from
+
+# Example
+
+$assert($countw(hello world),2)

@@ -1,0 +1,21 @@
+Get counts of an array
+
+# Return : Unsigned integer
+
+# Demo
+
+```
+$count()
+$count(a,b,c)
+===
+0
+3
+```
+
+# Arguments
+
+- a_array : An array to get counts from
+
+# Example
+
+$assert($count(a,b,c),3)

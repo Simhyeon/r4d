@@ -372,16 +372,7 @@ impl FunctionMacroMap {
                     "declare",
                     ["a_macro_names^"],
                     Self::declare,
-                    Some("Declare multiple variables separated by commas
-
-# Arguments
-
-- a_macro_names: Macro names array ( trimmed )
-
-# Example
-
-$declare(first,second)
-$assert($first(),$empty())".to_string()),
+                    Some(man_fun!("declare.r4d")),
                 ),
             ),
             (
@@ -390,19 +381,7 @@ $assert($first(),$empty())".to_string()),
                     "docu",
                     ["a_macro_name^", "a_doc"],
                     Self::document,
-                    Some(
-"Append documents(description) to a macro. You cannot directly retreive 
-documentation from macros but by --man flag.
-
-# Arguments
-
-- a_macro_name : A macro to append documentation ( trimmed )
-- a_doc        : Documents to append
-
-# Example
-
-$define(test=)
-$docu(test,This is test macro)".to_string()),
+                    Some(man_fun!("docu.r4d")),
                 ),
             ),
             (
@@ -411,18 +390,7 @@ $docu(test,This is test macro)".to_string()),
                     "dump",
                     ["a_file_name^"],
                     Self::dump_file_content,
-                    Some("Dump(truncate) given files' content
-
-# Auth : FOUT
-
-# Arguments
-
-- a_file_name: File's name to dump ( trimmed )
-
-# Example
-
-$dump(file.txt)
-$assert($empty(),$include(file.txt))".to_string()),
+                    Some(man_fun!("dump.r4d")),
                 ),
             ),
             (
@@ -431,11 +399,7 @@ $assert($empty(),$include(file.txt))".to_string()),
                     "empty",
                     ESR,
                     Self::print_empty,
-                    Some("Print empty string. Used for semantic formatting.
-
-# Example
-
-$assert(,$empty())".to_string()),
+                    Some(man_fun!("empty.r4d")),
                 ),
             ),
             (

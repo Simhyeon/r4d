@@ -1,0 +1,37 @@
+Escape a right next newline
+
+# Note
+
+- In contrast to dnl, enl escapes right next newline in any cases.
+- Enl works for literal newline and not for semantic newline
+
+# Demo
+
+```
+[1]
+a$enl()
+b
+<-
+[2]
+$define(ep=)
+$ep()$enl()
+<-
+[3]
+$ep()$enl()
+ab
+<-
+===
+[1]
+ab
+<-
+[2]
+<-
+[3]
+ab
+<-
+```
+
+# Example
+
+$assert(ab,a$enl()
+b)

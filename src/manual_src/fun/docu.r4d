@@ -1,0 +1,33 @@
+Append documents(description) to a macro. You cannot directly retreive 
+documentation from macros but by --man flag.
+
+# Arguments
+
+- a_macro_name : A macro to append documentation ( trimmed )
+- a_doc        : Documents to append
+
+# Demo
+
+1. Mac.r4d -> Mac.r4f
+
+```
+$define(print_doggy=dogi)
+$docu(print_doggy,Print a doggy)
+% rad --freeze Mac.r4d --out Mac.r4f
+```
+
+2. `rad --melt Mac.r4f --man print_doggy`
+
+```
+Macro Type  : Runtime
+Macro Name  : print_doggy
+Arguments   : []
+Usage       : $print_doggy()
+Description >>
+    Print a doggy
+```
+
+# Example
+
+$define(test=)
+$docu(test,This is test macro)

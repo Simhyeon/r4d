@@ -1,0 +1,22 @@
+Dump(truncate) given files' content
+
+# Auth : FOUT
+
+# Arguments
+
+- a_file_name: File's name to dump ( trimmed )
+
+# Demo
+
+```
+$dump(cache.txt)
+$syscmd(sh complicated_operation.sh)
+$include(cache.txt)
+==
+abcdefghijklmnop
+```
+
+# Example
+
+$dump(file.txt)
+$assert($empty(),$include(file.txt))

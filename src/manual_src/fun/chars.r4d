@@ -1,0 +1,22 @@
+Get a characters array from text
+
+# Arguments
+
+- a_text : Text to get a chars array from ( trimmed )
+
+# Demo
+
+```
+$foreach($:(). list $nl(),$chars(abcde))
+===
+a. list 
+b. list 
+c. list 
+d. list 
+e. list 
+
+```
+
+# Example
+
+$assert(\*a,b,c,d,e*\,$chars(abcde))

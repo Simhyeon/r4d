@@ -1,0 +1,33 @@
+Remove duplicate newlines from content
+
+# Arguments
+
+- a_content: Contents to chomp
+
+# Demo
+
+```
+$stream(chomp)
+1
+
+
+2
+
+
+3
+$consume()$enl()
+===
+1
+
+2
+
+3
+```
+
+# Example
+
+$staticr(lines,Upper
+
+
+Down)
+$assert($countl($chomp($lines())),3)

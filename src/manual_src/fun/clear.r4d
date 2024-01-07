@@ -1,0 +1,25 @@
+Clear volatile macros. 
+
+# NOTE
+
+- This macro is intended to be used when hygiene mode is enabled and user wants
+  to clear volatiles immediately without waiting.
+- Currently published binary doesn't have flags to control hygiene of macro
+  processing. Use r4d as library if you want fine control over processing
+
+# Demo
+
+Hygiene type : Input
+
+```
+$define(...)
+$define(...)
+
+$clear()
+
+$some_important_yet_independent_processing()
+```
+
+# Example
+
+$clear()
