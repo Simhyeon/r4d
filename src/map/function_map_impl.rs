@@ -3440,7 +3440,7 @@ impl FunctionMacroMap {
 
             if !file_name.is_file() {
                 return Err(RadError::InvalidArgument(format!(
-                    "Dump requires an file to dump but given \"{}\"",
+                    "Dump requires a real file to dump but given file \"{}\" doesn't exist",
                     file_name.display()
                 )));
             }
