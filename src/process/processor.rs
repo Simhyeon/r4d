@@ -2159,7 +2159,7 @@ impl<'processor> Processor<'processor> {
                 }
 
                 // Execute a macro function with arguments and get value
-                let final_result = func(&args, level, self)?;
+                let final_result = func(&args, level, self)?.filter(|f| !f.is_empty());
 
                 return Ok(final_result);
             }
@@ -2175,7 +2175,7 @@ impl<'processor> Processor<'processor> {
             let func = self.map.function.get_func(name).unwrap();
             //let final_result = func(&args, self)?;
             let final_result = match func(&args, self) {
-                Ok(e) => e,
+                Ok(e) => e.filter(|f| !f.is_empty()),
                 Err(err) => {
                     return Err(err);
                 }
