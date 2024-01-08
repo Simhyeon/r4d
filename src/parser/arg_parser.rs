@@ -49,7 +49,10 @@ impl ArgParser {
 
     /// Simply strip literal chunk
     pub(crate) fn strip(&mut self, args: &str) -> String {
-        self.args_to_vec(args, ',', SplitVariant::GreedyStrip)[0].to_owned()
+        self.args_to_vec(args, ',', SplitVariant::GreedyStrip)
+            .first()
+            .map(|s| s.to_string())
+            .unwrap_or_default()
     }
 
     /// Check if given length is qualified for given raw arguments
