@@ -1,0 +1,29 @@
+Print a current file input.
+
+# Note
+
+- This macro does not need FIN permission.
+
+# Return : Path
+
+# Arguments
+
+- a_absolute : Whether to print an input path as absolute. Default is false. [boolean] ( trimmed, optional )
+
+# Demo
+
+```
+% INPUT = /home/user/test
+$input()
+$input(false)
+$input(true)
+===
+test
+test
+/home/user/test
+```
+
+# Example
+
+$assert($input(),test)
+$assert($input(true),/home/user/dir/test)

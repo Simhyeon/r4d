@@ -417,13 +417,7 @@ impl FunctionMacroMap {
                     "escape",
                     ESR,
                     Self::escape,
-                    Some("Escape processing from the invocation.
-
-- NOTE : This flow control only sustains for the input.
-
-# Example
-
-$escape()".to_string()),
+                    Some(man_fun!("escape.r4d")),
                 ),
             ),
             (
@@ -432,13 +426,7 @@ $escape()".to_string()),
                     "exit",
                     ESR,
                     Self::exit,
-                    Some("Exit processing from the invocation
-
-- NOTE : This flow control only sustains for the input
-
-# Example
-
-$exit()".to_string()),
+                    Some(man_fun!("exit.r4d")),
                 ),
             ),
             (
@@ -447,18 +435,7 @@ $exit()".to_string()),
                     "input",
                     ["a_absolute?^+"],
                     Self::print_current_input,
-                    Some("Print a current file input.
-
-# Return : Path
-
-# Arguments
-
-- a_absolute : Whether to print an input path as absolute. Default is false. [boolean] ( trimmed, optional )
-
-# Example
-
-$assert($input(),test)
-$assert($input(true),/home/user/dir/test)".to_string()),
+                    Some(man_fun!("input.r4d")),
                 ),
             ),
             (
@@ -467,18 +444,7 @@ $assert($input(true),/home/user/dir/test)".to_string()),
                     "isempty",
                     ["a_value"],
                     Self::is_empty,
-                    Some("Check if a given value is empty
-
-# Return : Boolean
-
-# Arguments
-
-- a_value : Value to qualify
-
-# Example
-
-$assert(true,$isempty())
-$assert(false,$isempty( ))".to_string()),
+                    Some(man_fun!("isempty.r4d")),
                 ),
             ),
             (
@@ -487,28 +453,7 @@ $assert(false,$isempty( ))".to_string()),
                     "istype",
                     ["a_value^","a_type^"],
                     Self::qualify_value,
-                    Some("Check if a given value is a type
-
-# Return : Boolean
-
-# Arguments
-
-- a_value : Value to qualify ( trimmed )
-- a_type  : Type of qualification [\"uint\",\"int\",\"float\",\"bool\"] ( trimmed )
-
-# Example
-
-$assert(true,$istype(  0,  uint))
-$assert(false,$istype(-1,  uint))
-$assert(true,$istype(  0,  int))
-$assert(false,$istype(-0.1,uint))
-$assert(true,$istype( -1,  int))
-$assert(false,$istype( 0.1,int))
-$assert(true,$istype( -0.1,float))
-$assert(true,$istype( -0,  float))
-$assert(true,$istype(  0,  float))
-$assert(true,$istype(  0,  bool))
-$assert(true,$istype(  1,  bool))".to_string()),
+                    Some(man_fun!("istype.r4d")),
                 ),
             ),
             (

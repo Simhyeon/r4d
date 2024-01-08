@@ -1,6 +1,7 @@
 # Todo immediate
 
 - Update manuals one by one
+    * [ ] Istype is not done yet
 - Add new macros that is immediately necessary for daily use
 - Fix bugs that was found during manual update
     - Regardless of bug size and difficulties
@@ -19,6 +20,15 @@
 
 #### BUG
 
+* [ ] Improve repl's error code
+* [ ] Not every funcion macro was treating zero width string as None.. It is
+  shoking. Yet is it a "bug" that should be fixed or not?
+    - I changed the behaviour of deterred macro and function macro to treate
+    zero width string as None. Runtime and local macro should work as same.
+    In this way, user knows why their macro has failed to malfunctioned.
+    While making an experince of function macros comfortable.
+    - However, giving an option to override is not necessarily a bad thing.
+    Consider adding later.
 * [x] Fixed where chars didn't work at all...
 * [ ] Fix regex register shenenigans
 * [ ] Fix deubbing feature bugs
@@ -60,6 +70,19 @@
 
 #### Macro
 
+* [ ] Interspace : Shorthand for $regex($comma*(),$comma*()$space(), SOURCE)
+```
+["uint","int","float","bool"] 
+===
+["uint", "int", "float", "bool"] 
+```
+* [ ] And vice versa
+```
+["uint", "int", "float", "bool"] 
+===
+["uint","int","float","bool"] 
+```
+* [ ] Evalfk -> Evalf but keep
 * [ ] Add Squeeze macro
 ```
 a  b  c  d 
@@ -148,6 +171,7 @@ ABCEE
 
 #### MISC, bug detecting, Ergonomics
 
+* [ ] Should istype support string type? Which means non-digit in this case?
 * [ ] Regcsv add skip parsing and skip extension maybe?
     -> Arg parser changed, so it might have been fixed pretty.
 * [ ] Improve error messages for number related macros.

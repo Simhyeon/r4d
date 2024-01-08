@@ -1,0 +1,24 @@
+Check if a given value is a type
+
+# Return : Boolean
+
+# Arguments
+
+- a_value : Value to qualify ( trimmed )
+- a_type  : Type of qualification ["uint", "int", "float", "bool"] ( trimmed )
+
+# Demo
+
+# Example
+
+$assert(true,$istype(  0,  uint))
+$assert(false,$istype(-1,  uint))
+$assert(true,$istype(  0,  int))
+$assert(false,$istype(-0.1,uint))
+$assert(true,$istype( -1,  int))
+$assert(false,$istype( 0.1,int))
+$assert(true,$istype( -0.1,float))
+$assert(true,$istype( -0,  float))
+$assert(true,$istype(  0,  float))
+$assert(true,$istype(  0,  bool))
+$assert(true,$istype(  1,  bool))
