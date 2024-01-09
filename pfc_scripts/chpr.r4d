@@ -1,0 +1,11 @@
+$require(cmd)
+$output(discard)
+
+$syscmd|(ls -al ../src/manual_src/fun)
+$static(current,$countl-())
+
+$syscmd|(rad --man)
+$static(total,$findm-(Macro Name  :))
+$prec|($evalf( $current() / $total() * 100),2)
+
+$print(Current rate of manual : $-()$percent())

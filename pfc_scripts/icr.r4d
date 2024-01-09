@@ -1,0 +1,12 @@
+$isolate-|()
+$define=(check_ln,a_ln a_line=
+    $ifelse=(
+        $eval($a_ln() % 7 == 5),
+        $tab()$rotate^($comma*(),center,$a_line()),
+        $a_line()
+    )
+)
+$forline-|($check_ln($a_LN(),$:()))
+$foldlc-|(7)
+$condl-|()
+$print($alignby-($comma*()))

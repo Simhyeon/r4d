@@ -1,7 +1,7 @@
 # Todo immediate
 
 - Update manuals one by one
-    * [ ] Istype is not done yet
+- Update all "None" variatns of manuals
 - Add new macros that is immediately necessary for daily use
 - Fix bugs that was found during manual update
     - Regardless of bug size and difficulties
@@ -70,6 +70,32 @@
 
 #### Macro
 
+* [x] Change istype syntax
+* [ ] Assert trimmed version.
+* [ ] Consider chaning name rotate to rotatel since it has trailing newline and
+  it can be consufing for newcomers
+* [ ] Condl variant to respect leading tabs and spaces -> Maybe this is a burden of pretty printer
+* [ ] Increase all number by one or Apply formulat to numbers
+```
+"{0}{1}{2}{3}",
+-> I wanted to increase them by one but I couldn't dman...
+```
+* [ ] Delete after 
+    -> Remove all comments from chunk
+* [ ] Isolate macro
+```
+( a,b,c )
+===
+( 
+    a,b,c 
+)
+```
+* [ ] Alignby but complicated : abcr ( Align by complicated rules )
+```
+% $abcr(regex_expression,reserved count,source)
+% Reserved count means which regex pattern match if there are multiple ones.
+% If there is only single, it will match singe or not ( by configuation )
+```
 * [ ] Interspace : Shorthand for $regex($comma*(),$comma*()$space(), SOURCE)
 ```
 ["uint","int","float","bool"] 
