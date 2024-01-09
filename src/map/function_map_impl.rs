@@ -28,6 +28,9 @@ use std::process::Command;
 use std::str::FromStr;
 use unicode_width::UnicodeWidthStr;
 
+static ISOLATION_CHARS: [char; 6] = ['(', ')', '[', ']', '{', '}'];
+static ISOLATION_CHARS_OPENING: [char; 3] = ['(', '[', '{'];
+
 static START_BLANK_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"^[\s\t]*"#).expect("Failed to create blank regex"));
 
@@ -3858,6 +3861,55 @@ impl FunctionMacroMap {
                 "iszero requires an argument".to_owned(),
             ))
         }
+    }
+
+    /// isolate
+    ///
+    /// # Usage
+    ///
+    /// $isolate(value,type)
+    pub(crate) fn isolate(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        use std::fmt::Write;
+        let mut formatted = String::new();
+        let mut only_blank = true;
+        let mut first_contact = false;
+        let mut nest_level = 1usize;
+        for ch in args.chars() {
+            if only_blank && !ch.is_whitespace() && !ISOLATION_CHARS.contains(&ch) {
+                only_blank = false;
+                first_contact = true;
+            }
+            if ISOLATION_CHARS.contains(&ch) {
+                first_contact = false;
+                if !ISOLATION_CHARS_OPENING.contains(&ch) {
+                    nest_level -= 1;
+                }
+                if !only_blank {
+                    write!(formatted, "{}", p.state.newline)?;
+                }
+                write!(
+                    formatted,
+                    "{2}{0}{1}",
+                    ch,
+                    p.state.newline,
+                    " ".repeat((nest_level - 1) * 4)
+                )?;
+                if ISOLATION_CHARS_OPENING.contains(&ch) {
+                    nest_level += 1;
+                }
+
+                only_blank = true;
+            } else if !only_blank || !ch.is_whitespace() {
+                // TODO Check first contact
+                if first_contact {
+                    write!(formatted, "{}", " ".repeat((nest_level - 1) * 4))?;
+                    first_contact = false;
+                }
+                write!(formatted, "{ch}")?;
+            }
+        }
+
+        Ok(Some(formatted))
     }
 
     /// istype : Qualify a value

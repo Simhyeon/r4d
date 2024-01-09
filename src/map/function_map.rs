@@ -448,6 +448,16 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "isolate".to_owned(),
+                FMacroSign::new(
+                    "istype",
+                    ["a_content"],
+                    Self::isolate,
+                    None,
+                    // Some(man_fun!("isolate.r4d")),
+                ),
+            ),
+            (
                 "istype".to_owned(),
                 FMacroSign::new(
                     "istype",
