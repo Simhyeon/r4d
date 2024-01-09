@@ -586,6 +586,16 @@ c))".to_string()),
                 ),
             ),
             (
+                "foldlc".to_owned(),
+                FMacroSign::new(
+                    "foldlc",
+                    ["a_count","a_lines"],
+                    Self::fold_lines_by_count,
+                    None,
+                    // Some(),
+                ),
+            ),
+            (
                 "foldby".to_owned(),
                 FMacroSign::new(
                     "foldby",

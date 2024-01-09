@@ -3863,6 +3863,38 @@ impl FunctionMacroMap {
         }
     }
 
+    /// foldlc
+    ///
+    /// # Usage
+    ///
+    /// $foldlc(count,type)
+    pub(crate) fn fold_lines_by_count(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            use std::fmt::Write;
+
+            let count = args[0].parse::<usize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "Could not convert a given value \"{}\" into a unsigned integer",
+                    args[0]
+                ))
+            })?;
+            let mut formatted = String::new();
+
+            for (idx, line) in args[1].lines().enumerate() {
+                write!(formatted, "{}", line)?;
+                if idx % count == 0 {
+                    write!(formatted, "{}", p.state.newline)?;
+                }
+            }
+
+            Ok(Some(formatted))
+        } else {
+            Err(RadError::InvalidArgument(
+                "foldlc requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     /// isolate
     ///
     /// # Usage
