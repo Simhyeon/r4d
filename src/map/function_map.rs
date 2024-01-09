@@ -451,7 +451,7 @@ impl FunctionMacroMap {
                 "istype".to_owned(),
                 FMacroSign::new(
                     "istype",
-                    ["a_value^","a_type^"],
+                    ["a_type^","a_value^"],
                     Self::qualify_value,
                     Some(man_fun!("istype.r4d")),
                 ),

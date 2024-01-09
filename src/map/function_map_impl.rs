@@ -3867,8 +3867,8 @@ impl FunctionMacroMap {
     /// $istype(value,type)
     pub(crate) fn qualify_value(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let value = trim!(&args[0]);
-            let qtype = trim!(&args[1]);
+            let qtype = trim!(&args[0]);
+            let value = trim!(&args[1]);
             let qualified = match qtype.to_lowercase().as_str() {
                 "uint" => value.parse::<usize>().is_ok(),
                 "int" => value.parse::<isize>().is_ok(),
