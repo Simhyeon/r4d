@@ -4,21 +4,28 @@ Check if a given value is a type
 
 # Arguments
 
+- a_type  : Type to check ["uint", "int", "float", "bool"] ( trimmed )
 - a_value : Value to qualify ( trimmed )
-- a_type  : Type of qualification ["uint", "int", "float", "bool"] ( trimmed )
 
 # Demo
 
+```
+$syscmd|(sh get_current_server_status.sh)
+$if($istype-!(uint),$panic(Critical Error))
+```
+
 # Example
 
-$assert(true,$istype(  0,  uint))
-$assert(false,$istype(-1,  uint))
-$assert(true,$istype(  0,  int))
-$assert(false,$istype(-0.1,uint))
-$assert(true,$istype( -1,  int))
-$assert(false,$istype( 0.1,int))
-$assert(true,$istype( -0.1,float))
-$assert(true,$istype( -0,  float))
-$assert(true,$istype(  0,  float))
-$assert(true,$istype(  0,  bool))
-$assert(true,$istype(  1,  bool))
+$assert(true,$istype( uint , 0 ))
+$assert(false,$istype( uint , -1 ))
+$assert(true,$istype( int , 0 ))
+$assert(false,$istype( uint , -0.1 ))
+$assert(true,$istype( int , -1 ))
+$assert(false,$istype( int , 0.1 ))
+$assert(true,$istype( float , -0.1 ))
+$assert(true,$istype( float , -0 ))
+$assert(true,$istype( float , 0 ))
+$assert(true,$istype( bool , 0 ))
+$assert(true,$istype( bool , 1 ))
+$assert(true,$istype( bool , false ))
+$assert(true,$istype( bool , true ))
