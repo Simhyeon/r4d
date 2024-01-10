@@ -1,0 +1,29 @@
+Check any occurrence of an expression from a given source.
+
+# Return : Boolean
+
+# Arguments
+
+- a_expr   : An expression to match
+- a_source : Source to match for
+
+# Demo
+
+```
+$regexpr(target,Hello world)
+$find(target,HellO world)
+$find(target,HelLo world)
+$find(target,HeLlo world)
+$find(target,HEllo world)
+$find(target,Hello world)
+===
+false
+false
+false
+false
+true
+```
+
+# Example
+
+$assert(true,$find(^abc,abcde))

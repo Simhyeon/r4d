@@ -1,0 +1,26 @@
+Check if a given value is a zero
+
+# Return : Boolean
+
+# Arguments
+
+- a_value : Value to qualify
+
+# Demo
+
+```
+$syscmd|(sh dummy.sh)
+$syscmd|(echo $?)
+$if($iszero-!(),$panic(Script failed))
+===
+error: Panic triggered with message
+^^^ Script failed ^^^
+ --> [INPUT = test]:3:2 >> (MACRO = if):1:2
+error: Process Interrupted
+Int: Rad panicked with unrecoverable error.
+```
+
+# Example
+
+$assert(true,$iszero(0))
+$assert(false,$iszero(1))

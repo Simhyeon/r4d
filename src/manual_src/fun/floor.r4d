@@ -1,0 +1,23 @@
+Get a floored integer from a given number
+
+# Return : Signed integer
+
+# Arguments
+
+- a_number : A number to get a floor from [float] ( trimmed )
+
+# Demo
+
+```
+$static( stamina_per_minute,5 )
+$static( time_passed,1567 )
+$evalf|( ($time_passed() / 60.0) * $stamina_per_minute() )
+Current available stamina : $floor-()
+===
+Current available stamina : 130
+```
+
+# Example
+
+$assert($floor( 1.9),1)
+$assert($floor(-3.1),-4)

@@ -472,18 +472,7 @@ impl FunctionMacroMap {
                     "iszero",
                     ["a_value^"],
                     Self::is_zero,
-                    Some("Check if a given value is a zero
-
-# Return : Boolean
-
-# Arguments
-
-- a_value : Value to qualify
-
-# Example
-
-$assert(true,$iszero(0))
-$assert(false,$iszero(1))".to_string()),
+                    Some(man_fun!("iszero.r4d")),
                 ),
             ),
             (
@@ -492,18 +481,7 @@ $assert(false,$iszero(1))".to_string()),
                     "find",
                     ["a_expr", "a_source"],
                     Self::find_occurence,
-                    Some("Check an occurrence of expression from source.
-
-# Return : Boolean
-
-# Arguments
-
-- a_expr   : An expression to match
-- a_source : Source to match for
-
-# Example
-
-$assert(true,$find(^abc,abcde))".to_string()),
+                    Some(man_fun!("find.r4d")),
                 ),
             ),
             (
@@ -512,20 +490,7 @@ $assert(true,$find(^abc,abcde))".to_string()),
                     "findm",
                     ["a_expr", "a_source"],
                     Self::find_multiple_occurence,
-                    Some(
-"Get occurrences of expression from source. This returns 0 if there are no 
-occurrences.
-
-# Return : Unsigned integer
-
-# Arguments
-
-- a_expr   : An expression to match
-- a_source : Source to match for
-
-# Example
-
-$assert(2,$findm(o,hello world))".to_string()),
+                    Some(man_fun!("findm.r4d")),
                 ),
             ),
             (
@@ -534,18 +499,7 @@ $assert(2,$findm(o,hello world))".to_string()),
                     "floor",
                     ["a_number^"],
                     Self::get_floor,
-                    Some("Get a floor integer from a given number
-
-# Return : Signed integer
-
-# Arguments
-
-- a_number : A number to get a floor from [float] ( trimmed )
-
-# Example
-
-$assert($floor( 1.9),1)
-$assert($floor(-3.1),-4)".to_string()),
+                    Some(man_fun!("floor.r4d")),
                 ),
             ),
             (

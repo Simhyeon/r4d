@@ -1,0 +1,22 @@
+Get occurrences of an expression from source. This returns 0 if there are no
+occurrences.
+
+# Return : Unsigned integer
+
+# Arguments
+
+- a_expr   : An expression to match
+- a_source : Source to match for
+
+# Demo
+
+```
+$lipsum|(5)
+$findm-(m)
+===
+3
+```
+
+# Example
+
+$assert(2,$findm(o,hello world))
