@@ -2051,6 +2051,14 @@ impl<'processor> Processor<'processor> {
             // Pipe doesn't expanded but added
             if frag.pipe_input {
                 let pipe_value = self.state.get_pipe("-", false).unwrap_or_default();
+
+                if pipe_value.is_empty() {
+                    self.log_warning(
+                        &format!("Adding empty pipe value to \"{}\"", frag.name),
+                        WarningType::Sanity,
+                    )?;
+                }
+
                 if args.is_empty() {
                     args = pipe_value;
                 } else {
