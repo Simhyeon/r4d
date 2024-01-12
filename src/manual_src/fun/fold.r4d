@@ -1,0 +1,16 @@
+Fold an array into a single value
+
+# Arguments
+
+- a_array : An array to fold
+
+# Demo
+
+```
+$fold|(ab,cd,ef)
+$foreach|($:() : )
+```
+
+# Example
+
+$assert(abc,$fold(a,b,c))
