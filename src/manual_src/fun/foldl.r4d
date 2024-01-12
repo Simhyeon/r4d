@@ -1,0 +1,42 @@
+Fold lines into a single value
+
+# Note
+
+- Foldl doesn't remove preceding spaces from each lines.
+
+# Arguments
+
+- a_lines : Lines to fold
+
+# Demo
+
+```
+[1]
+$stream(foldl)
+[
+    a,
+    b,
+    c,
+]
+$consume()
+[2]
+$fold|(
+[
+    a,
+    b,
+    c,
+])
+$cond-()
+===
+[1]
+[    a,    b,    c,]
+[2]
+[ a b c ]
+```
+
+# Example
+
+$assert(abc,$foldl(a
+b
+
+c))
