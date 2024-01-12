@@ -448,13 +448,23 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "isolate".to_owned(),
+                "insulav".to_owned(),
                 FMacroSign::new(
                     "istype",
                     ["a_content"],
-                    Self::isolate,
+                    Self::isolate_vertical,
                     None,
-                    // Some(man_fun!("isolate.r4d")),
+                    // Some(man_fun!("insluav.r4d")),
+                ),
+            ),
+            (
+                "insulah".to_owned(),
+                FMacroSign::new(
+                    "istype",
+                    ["a_content"],
+                    Self::isolate_horizontal,
+                    None,
+                    // Some(man_fun!("insluah.r4d")),
                 ),
             ),
             (
@@ -508,15 +518,7 @@ impl FunctionMacroMap {
                     "fold",
                     ["a_array"],
                     Self::fold,
-                    Some("Fold an array into a single value
-
-# Arguments
-
-- a_array : An array to fold
-
-# Example
-
-$assert(abc,$fold(a,b,c))".to_string()),
+                    Some(man_fun!("fold.r4d")),
                 ),
             ),
             (
@@ -903,6 +905,23 @@ $fassert($lc())".to_string()),
                     "lipsum",
                     ["a_word_count^"],
                     Self::lipsum_words,
+                    Some("Create placeholder text. The order of placeholder is always same.
+
+# Arguments
+
+- a_word_count : Word counts of placeholder ( trimmed )
+
+# Example
+
+$assert(Lorem ipsum dolor,$lipsum(3))".to_string()),
+                ),
+            ),
+            (
+                "lipsumr".to_owned(),
+                FMacroSign::new(
+                    "lipsumr",
+                    ["a_word_count^"],
+                    Self::lipsum_repeat,
                     Some("Create placeholder text. The order of placeholder is always same.
 
 # Arguments
