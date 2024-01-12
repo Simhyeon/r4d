@@ -55,6 +55,7 @@ pub const LIT_CHAR: char = '*';
 pub const MAIN_CALLER: &str = "@MAIN@";
 
 pub const MACRO_SPECIAL_ANON: &str = "_ANON_";
+pub const MACRO_SPECIAL_LIPSUM: &str = "_LIPSUM_";
 
 // Numbers
 // Macro attributes * ^ = - | ~
