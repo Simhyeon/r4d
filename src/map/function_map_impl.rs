@@ -4,7 +4,9 @@ use crate::auth::{AuthState, AuthType};
 use crate::common::{
     AlignType, ErrorBehaviour, FlowControl, MacroType, ProcessInput, RadResult, RelayTarget,
 };
-use crate::consts::{LOREM, LOREM_SOURCE, LOREM_WIDTH, MAIN_CALLER, PATH_SEPARATOR};
+use crate::consts::{
+    LOREM, LOREM_SOURCE, LOREM_WIDTH, MACRO_SPECIAL_LIPSUM, MAIN_CALLER, PATH_SEPARATOR,
+};
 use crate::error::RadError;
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
@@ -18,7 +20,6 @@ use crate::{Hygiene, Processor};
 use cindex::OutOption;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use similar::DiffableStr;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::BufRead;
@@ -28,8 +29,10 @@ use std::process::Command;
 use std::str::FromStr;
 use unicode_width::UnicodeWidthStr;
 
+static ISOLATION_SINGLE: [char; 1] = [','];
 static ISOLATION_CHARS: [char; 6] = ['(', ')', '[', ']', '{', '}'];
 static ISOLATION_CHARS_OPENING: [char; 3] = ['(', '[', '{'];
+static ISOLATION_CHARS_CLOSING: [char; 3] = [')', ']', '}'];
 
 static START_BLANK_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"^[\s\t]*"#).expect("Failed to create blank regex"));
@@ -609,6 +612,82 @@ impl FunctionMacroMap {
                 }
             } else {
                 Err(RadError::InvalidArgument(format!("Lipsum needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", word_count)))
+            }
+        } else {
+            Err(RadError::InvalidArgument(
+                "Lipsum requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Creates placeholder with given amount of word counts but for repeated purposes.
+    ///
+    /// # Usage
+    ///
+    /// $lipsumr(Number)
+    pub(crate) fn lipsum_repeat(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let word_count = &args[0];
+            let mut current_index = match p.get_runtime_macro_body(MACRO_SPECIAL_LIPSUM) {
+                Ok(value) => value.parse::<usize>().unwrap(),
+                Err(_) => {
+                    p.add_static_rules(&[(MACRO_SPECIAL_LIPSUM, "0")])?;
+                    0usize
+                }
+            };
+
+            if let Ok(count) = trim!(word_count).parse::<usize>() {
+                if current_index + count <= *LOREM_WIDTH - 1 {
+                    let mut fin = current_index + count;
+                    if fin == *LOREM_WIDTH {
+                        fin = 0;
+                    }
+                    // Renew current index in macro
+                    p.replace_macro(MACRO_SPECIAL_LIPSUM, &fin.to_string());
+
+                    Ok(Some(
+                        LOREM[current_index..=current_index + count - 1].join(" "),
+                    ))
+                } else {
+                    let mut lorem = String::new();
+                    let mut rem = count;
+
+                    // While there are words to print
+                    while rem != 0 {
+                        // Try print until end
+                        lorem.push_str(
+                            &LOREM[current_index..=(current_index + rem - 1).min(*LOREM_WIDTH - 1)]
+                                .join(" "),
+                        );
+                        // Get "possible" printed count of words
+                        let printed = if current_index + rem > *LOREM_WIDTH {
+                            *LOREM_WIDTH - current_index
+                        } else {
+                            rem
+                        };
+                        if rem >= printed {
+                            // Not yet final
+                            rem -= printed;
+                            current_index += printed;
+                            if current_index >= *LOREM_WIDTH {
+                                current_index = 0;
+                            }
+                            p.replace_macro(MACRO_SPECIAL_LIPSUM, &current_index.to_string());
+                            lorem.push(' ');
+                        } else {
+                            current_index += printed - 1;
+                            if current_index >= *LOREM_WIDTH {
+                                current_index = 0;
+                            }
+                            // Final
+                            p.replace_macro(MACRO_SPECIAL_LIPSUM, &current_index.to_string());
+                            break;
+                        }
+                    }
+                    Ok(Some(lorem))
+                }
+            } else {
+                Err(RadError::InvalidArgument(format!("Lipsumr needs a number bigger or equal to 0 (unsigned integer) but given \"{}\"", word_count)))
             }
         } else {
             Err(RadError::InvalidArgument(
@@ -1418,8 +1497,7 @@ impl FunctionMacroMap {
         use std::fmt::Write;
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let pattern = &args[0];
-            let orientation =
-                AlignType::from_str(trim!(&args[1]).as_str().unwrap_or("[INVALID TYPE]"))?;
+            let orientation = AlignType::from_str(trim!(&args[1]).as_ref())?;
             let source = &args[2];
 
             let mut result = String::new();
@@ -1549,8 +1627,7 @@ impl FunctionMacroMap {
     /// $align(center,10,a,Content)
     pub(crate) fn align(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 4) {
-            let align_type =
-                AlignType::from_str(trim!(&args[0]).as_str().unwrap_or("[INVALID TYPE]"))?;
+            let align_type = AlignType::from_str(trim!(&args[0]).as_ref())?;
             let width = trim!(&args[1]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "Align requires positive integer number as width but got \"{}\"",
@@ -3476,7 +3553,7 @@ impl FunctionMacroMap {
             {
                 let err = RadError::NoSuchMacroName(
                     macro_name.to_string(),
-                    processor.get_similar_macro(macro_name.as_str().unwrap(), true),
+                    processor.get_similar_macro(macro_name.as_ref(), true),
                 );
                 processor.log_error(&err.to_string())?;
             }
@@ -3899,21 +3976,22 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $isolate(value,type)
-    pub(crate) fn isolate(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+    /// $insulav(value,type)
+    pub(crate) fn isolate_vertical(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
         let mut formatted = String::new();
         let mut only_blank = true;
         let mut first_contact = false;
         let mut nest_level = 1usize;
         for ch in args.chars() {
-            if only_blank && !ch.is_whitespace() && !ISOLATION_CHARS.contains(&ch) {
+            let is_isolation = ISOLATION_CHARS.contains(&ch);
+            if only_blank && !ch.is_whitespace() && !is_isolation {
                 only_blank = false;
                 first_contact = true;
             }
-            if ISOLATION_CHARS.contains(&ch) {
+            if is_isolation {
                 first_contact = false;
-                if !ISOLATION_CHARS_OPENING.contains(&ch) {
+                if ISOLATION_CHARS_CLOSING.contains(&ch) {
                     nest_level -= 1;
                 }
                 if !only_blank {
@@ -3938,6 +4016,34 @@ impl FunctionMacroMap {
                     first_contact = false;
                 }
                 write!(formatted, "{ch}")?;
+            }
+        }
+
+        Ok(Some(formatted))
+    }
+
+    /// isolate horizontal
+    ///
+    /// # Usage
+    ///
+    /// $insulah(value,type)
+    pub(crate) fn isolate_horizontal(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        let mut formatted = String::new();
+        let mut iter = args.chars().peekable();
+        let mut previous: char = '@';
+        while let Some(ch) = iter.next() {
+            if !previous.is_whitespace() && ISOLATION_CHARS_CLOSING.contains(&ch) {
+                formatted.push(' ');
+            }
+            previous = ch;
+            formatted.push(ch);
+            if let Some(next_ch) = iter.peek() {
+                if !next_ch.is_whitespace()
+                    && (ISOLATION_CHARS.contains(&ch) || ISOLATION_SINGLE.contains(&ch))
+                {
+                    formatted.push(' ');
+                    previous = ' ';
+                }
             }
         }
 
