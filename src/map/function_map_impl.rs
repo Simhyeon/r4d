@@ -12,8 +12,8 @@ use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
-use crate::utils::Utils;
-use crate::{trim, CommentType, WriteOption};
+use crate::utils::{Utils, NUM_MATCH};
+use crate::{stake, trim, CommentType, WriteOption};
 use crate::{ArgParser, SplitVariant};
 use crate::{Hygiene, Processor};
 #[cfg(feature = "cindex")]
@@ -56,10 +56,6 @@ static REPLACER_MATCH: Lazy<Regex> = Lazy::new(|| {
 });
 // ----------
 
-// Thanks stack overflow! SRC : https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers
-/// Number matches
-static NUM_MATCH: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to create number regex"));
 /// Single line match
 // static LINE_MATCH: Lazy<Regex> =
 //    Lazy::new(|| Regex::new("\n").expect("Failed to create line match regex"));
@@ -1065,6 +1061,28 @@ impl FunctionMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "join requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Join lines
+    ///
+    /// # Usage
+    ///
+    /// $joinl(" ",a\nb\nc\n)
+    pub(crate) fn join_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let sep = &args[0];
+            let text = &args[1];
+            let join = text.lines().fold(String::new(), |mut acc, s| {
+                acc.push_str(s);
+                acc.push_str(sep);
+                acc
+            });
+            Ok(join.strip_suffix(sep).map(|s| s.to_owned()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "joinl requires two arguments".to_owned(),
             ))
         }
     }
@@ -2081,6 +2099,31 @@ impl FunctionMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "surr requires three arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Squeeze a line
+    ///
+    /// # Usage
+    ///
+    /// $squz(a b c d e)
+    pub(crate) fn squeeze_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 1) {
+            let mut content = stake!(args[0]);
+            let trailer = if content.ends_with('\n') {
+                "\n"
+            } else if content.ends_with("\r\n") {
+                "\r\n"
+            } else {
+                ""
+            };
+            content.retain(|s| !s.is_whitespace());
+            content.push_str(trailer);
+            Ok(Some(content))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Squeeze requires an argument".to_owned(),
             ))
         }
     }

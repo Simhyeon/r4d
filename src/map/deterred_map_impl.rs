@@ -5,7 +5,7 @@ use crate::consts::MACRO_SPECIAL_ANON;
 use crate::deterred_map::DeterredMacroMap;
 use crate::formatter::Formatter;
 use crate::parser::SplitVariant;
-use crate::utils::Utils;
+use crate::utils::{Utils, NUM_MATCH};
 use crate::ArgParser;
 use crate::WarningType;
 use crate::{trim, Processor, RadError};
@@ -134,6 +134,58 @@ impl DeterredMacroMap {
         }
     }
 
+    /// Apply map on numbers
+    ///
+    /// # Usage
+    ///
+    /// $mapn()
+    #[cfg(feature = "evalexpr")]
+    pub(crate) fn map_number(
+        args: &str,
+        level: usize,
+        p: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        use evalexpr::eval;
+
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+            let mut operation = p.parse_and_strip(&mut ap, level, "mapn", &trim!(&args[0]))?;
+            let src = p.parse_and_strip(&mut ap, level, "mapn", &trim!(&args[1]))?;
+
+            let map_type = if p.contains_macro(&operation, MacroType::Runtime) {
+                "macro"
+            } else if operation.contains('n') {
+                "formula"
+            } else {
+                operation.insert(0, 'n');
+                "formula"
+            };
+
+            let mut new = String::with_capacity(src.len());
+            let mut last_match = 0;
+            for caps in NUM_MATCH.captures_iter(&src) {
+                let m = caps.get(0).unwrap();
+                new.push_str(&src[last_match..m.start()]);
+                let evaluated = match map_type {
+                    "macro" => p
+                        .execute_macro(level, "mapn", "macro", m.as_str())?
+                        .unwrap_or_default(),
+                    "formula" => eval(&operation.replace('n', m.as_str()))?.to_string(),
+                    _ => unreachable!(),
+                };
+                new.push_str(&evaluated);
+                last_match = m.end();
+            }
+            new.push_str(&src[last_match..]);
+            Ok(Some(new))
+        } else {
+            Err(RadError::InvalidArgument(
+                "mapf requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     /// Apply map on file lines
     ///
     /// # Usage
@@ -150,7 +202,7 @@ impl DeterredMacroMap {
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
-            let macro_name = p.parse_and_strip(&mut ap, level, "mapl", &trim!(&args[0]))?;
+            let macro_name = p.parse_and_strip(&mut ap, level, "mapf", &trim!(&args[0]))?;
             let file = BufReader::new(std::fs::File::open(p.parse_and_strip(
                 &mut ap,
                 level,

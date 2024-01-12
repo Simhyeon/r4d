@@ -527,18 +527,7 @@ impl FunctionMacroMap {
                     "foldl",
                     ["a_lines"],
                     Self::fold_line,
-                    Some("Fold lines into a single value
-
-# Arguments
-
-- a_lines : Lines to fold
-
-# Example
-
-$assert(abc,$foldl(a
-b
-
-c))".to_string()),
+                    Some(man_fun!("foldl.r4d")),
                 ),
             ),
             (
@@ -784,6 +773,25 @@ $import(def.r4f)".to_string()),
 # Example
 
 $assert(a-b-c,$join(-,a,b,c))".to_string()),
+                ),
+            ),
+            (
+                "joinl".to_owned(),
+                FMacroSign::new(
+                    "joinl",
+                    ["a_sep","a_lines"],
+                    Self::join_lines,
+                    None,
+//                     Some("Join lines into a single chunk
+//
+// # Arguments
+//
+// - a_sep   : A separator used for joining
+// - a_array : Source to array to join
+//
+// # Example
+//
+// $assert(a-b-c,$join(-,a,b,c))".to_string()),
                 ),
             ),
             (
@@ -1823,6 +1831,15 @@ $assert(def,$sub(3,5,abcdef))".to_string()),
 
 $assert(<div>dividivi dip</div>,$enl()
 $surr(<div>,</div>,dividivi dip))".to_string()),
+                ),
+            ),
+            (
+                "squz".to_owned(),
+                FMacroSign::new(
+                    "squz",
+                    ["a_content"],
+                    Self::squeeze_line,
+                    None,
                 ),
             ),
             (
