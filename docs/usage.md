@@ -128,7 +128,6 @@ r4d = { version = "*", features = ["full"] }
 
 # Other available features are... 
 
-# evalexpr  - "eval", "evalk" macro
 # chrono    - "date", "time" macro
 # textwrap  - Enable "wrap" macro
 # cindex    - Query related macros

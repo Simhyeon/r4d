@@ -1,6 +1,10 @@
 # Todo immediate
 
+- Fix basic Lorem indexing
 - Update manuals one by one
+    - Don't think too serious about demo. If you can't think just pass it. You
+      might go back and make some distinguishing demo or maybe forever not. The
+      important thing is that you should keep going.
 - Update all "None" variatns of manuals
 - Add new macros that is immediately necessary for daily use
 - Fix bugs that was found during manual update
@@ -20,6 +24,7 @@
 
 #### BUG
 
+* [ ] How come insula doesn't print any insulav or insulah for help message?
 * [ ] Improve repl's error code
 * [ ] Not every funcion macro was treating zero width string as None.. It is
   shoking. Yet is it a "bug" that should be fixed or not?
@@ -63,6 +68,7 @@
 
 #### Features
 
+* [ ] Ditch evalexpr flag and include it as default
 * [ ] Check if greedy argument's no-strip behaviour is ideal or not
 * [ ] Search should be about searching. I don't know if something exists. It is no
    use when you only prints something just similar. How about showing lists if
@@ -70,7 +76,16 @@
 
 #### Macro
 
-* [x] Change istype syntax
+* [ ] Discard and print status macro
+* [ ] New macro : align-by-column
+```
+Lorem ipsum dolor sit amet
+1 2 3 4 5
+===
+Lorem ipsum dolor sit amet
+1     2     3     4   5
+```
+
 * [ ] Assert trimmed version.
 * [ ] Consider chaning name rotate to rotatel since it has trailing newline and
   it can be consufing for newcomers
@@ -82,59 +97,37 @@
 ```
 * [ ] Delete after 
     -> Remove all comments from chunk
-* [ ] Isolate macro
-```
-( a,b,c )
-===
-( 
-    a,b,c 
-)
-```
+* [x] Joinl macro
+    * [ ] Add a environmnet variable to set sensible default for eliminating empty new lines.
+    ```
+    JOINL_RNL
+    $joinl(,
+    a
+
+    b
+
+    c
+    )
+    ===
+    a,b,c
+    ```
 * [ ] Alignby but complicated : abcr ( Align by complicated rules )
 ```
 % $abcr(regex_expression,reserved count,source)
 % Reserved count means which regex pattern match if there are multiple ones.
 % If there is only single, it will match singe or not ( by configuation )
 ```
-* [ ] Interspace : Shorthand for $regex($comma*(),$comma*()$space(), SOURCE)
-```
-["uint","int","float","bool"] 
-===
-["uint", "int", "float", "bool"] 
-```
-* [ ] And vice versa
-```
-["uint", "int", "float", "bool"] 
-===
-["uint","int","float","bool"] 
-```
 * [ ] Evalfk -> Evalf but keep
-* [ ] Add Squeeze macro
-```
-a  b  c  d 
-e
-
-dkdkdkd
-=
-abcdedkdkdkd
-```
 * [ ] Add for column
     * [ ] Complete multiple iteration system from the for column macro and add
       to foreach and forsp
 * [ ] Joined foreach?
-* [x] Added forsp ( For space )
-* [x] Unicode length macro
 * [ ] Make rotate center creates more plausible whitespaces
     -> Currently it simply fixes into `[space] [pattern] [space]`
 * [ ] Require "discard" option
     Since making a macro to change processor behaviour is not necessarily good.
     It's better to notify user that something is going to happen and has to be
     handled by user him/herself
-* [x] Percent macro
-* [x] Print macro
-    This overrides discard macro and print to stdout on necessary.
-    This is similar to log macro but it doesn't mean anything.
-* [x] Evalf - Evaluate as floating point
 * [ ] Padding macro
     There are times when you need to pad spaces or characters. Such as
     automatic conversion from int to float or padding spaces etc etc...
@@ -147,6 +140,7 @@ c.
 ```
 * [ ] Enable arguments by whitespaces for `map` variants
 * [ ] TOC macro-script ( Not builtin but usage's example )
+* [ ] Stream to support arguments
 * [ ] Flat -> Flatten indented sub lines into a single one
 ```
 $stream(flat)
@@ -191,7 +185,6 @@ ABCEE
     AAAA
 ```
 * [ ] Rotate concat -> Reverse of rotate macro
-* [ ] No pipe truncate option for macro users.
 * [ ] Also add non evalexpr variant macro ( inc, dec )
 * [ ] Pretty printer ( Json, toml etc... )
 
@@ -226,6 +219,7 @@ ABCEE
 
 #### Peformance
 
+* [ ] Mie and pie insert_str is inefficient.
 * [ ] Check for alignby performance maybe duplicate
 * [ ] Rer iteration cache to a concrete struct for better maintainability
 * Think about ditching textwrap
