@@ -13,9 +13,6 @@ use std::path::Path;
 
 use crate::common::RelayTarget;
 
-/// Regex for trimming newlines from start and end
-pub static TRIM: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[ \t\r\n]+|[ \t\r\n]+$").unwrap());
-
 // Thanks stack overflow! SRC : https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers
 /// Number matches
 pub static NUM_MATCH: Lazy<Regex> =
@@ -28,7 +25,7 @@ pub static NUM_MATCH: Lazy<Regex> =
 #[macro_export]
 macro_rules! trim {
     ($e:expr) => {
-        $crate::utils::TRIM.replace_all($e, "")
+        $e.trim_start().trim_end()
     };
 }
 
