@@ -158,7 +158,7 @@ impl FunctionMacroMap {
             ProcessInput::File(path) => {
                 let args = ArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
                 if !args.is_empty() && !trim!(&args[0]).is_empty() {
-                    let print_absolute = Utils::is_arg_true(trim!(&args[0]).as_ref())?;
+                    let print_absolute = Utils::is_arg_true(trim!(&args[0]))?;
                     if print_absolute {
                         return Ok(Some(path.canonicalize()?.display().to_string()));
                     }
@@ -183,7 +183,7 @@ impl FunctionMacroMap {
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let file = trim!(&args[0]);
-            let path = Path::new(file.as_ref());
+            let path = Path::new(file);
             if !path.exists() {
                 return Err(RadError::InvalidArgument(format!(
                     "Cannot get a filetime from a non-existent file : \"{}\"",
@@ -413,6 +413,46 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Trim preceding whitespaces (' ', '\n', '\t', '\r')
+    ///
+    /// # Usage
+    ///
+    /// $trimf(expression)
+    pub(crate) fn trimf(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            Ok(Some(args[0].trim_start().to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Trimf requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Trim trailing whitespaces (' ', '\n', '\t', '\r')
+    ///
+    /// # Usage
+    ///
+    /// $trimr(expression)
+    pub(crate) fn trimr(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let content = &args[0];
+            let trailer = if content.ends_with('\n') {
+                "\n"
+            } else if content.ends_with("\r\n") {
+                "\r\n"
+            } else {
+                ""
+            };
+            let mut content = content.trim_end().to_string();
+            content.push_str(trailer);
+            Ok(Some(content))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Trimr requires an argument".to_owned(),
+            ))
+        }
+    }
+
     /// Indent lines
     ///
     /// # Usage
@@ -485,7 +525,7 @@ impl FunctionMacroMap {
             let option = trim!(&args[0]);
             let source = &args[1];
             let mut try_amount = None;
-            let min_amount = match option.as_ref() {
+            let min_amount = match option {
                 "max" => None,
                 "min" => {
                     let mut min_amount = usize::MAX;
@@ -1168,7 +1208,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("env", AuthType::ENV, p)? {
             return Ok(None);
         }
-        if let Ok(out) = std::env::var(trim!(args).as_ref()) {
+        if let Ok(out) = std::env::var(trim!(args)) {
             Ok(Some(out))
         } else {
             if p.state.behaviour == ErrorBehaviour::Strict {
@@ -1194,14 +1234,14 @@ impl FunctionMacroMap {
             let name = trim!(&args[0]);
             let value = &args[1];
 
-            if p.state.behaviour == ErrorBehaviour::Strict && std::env::var(name.as_ref()).is_ok() {
+            if p.state.behaviour == ErrorBehaviour::Strict && std::env::var(name).is_ok() {
                 return Err(RadError::InvalidArgument(format!(
                     "You cannot override environment variable in strict mode. Failed to set \"{}\"",
                     name
                 )));
             }
 
-            std::env::set_var(name.as_ref(), value);
+            std::env::set_var(name, value);
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -1240,7 +1280,7 @@ impl FunctionMacroMap {
 
         let out = vec
             .iter()
-            .map(|s| trim!(PATH_MATCH.replace_all(s, PATH_SEPARATOR).as_ref()).to_string())
+            .map(|s| trim!(PATH_MATCH.replace_all(s, PATH_SEPARATOR)).to_string())
             .collect::<PathBuf>();
 
         if let Some(value) = out.to_str() {
@@ -1392,7 +1432,7 @@ impl FunctionMacroMap {
         }
 
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let boolean = Path::new(trim!(&args[0]).as_ref()).exists();
+            let boolean = Path::new(trim!(&args[0])).exists();
             Ok(Some(boolean.to_string()))
         } else {
             Err(RadError::InvalidArgument(
@@ -1412,7 +1452,7 @@ impl FunctionMacroMap {
         }
 
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let path = std::fs::canonicalize(p.get_current_dir()?.join(trim!(&args[0]).as_ref()))?
+            let path = std::fs::canonicalize(p.get_current_dir()?.join(trim!(&args[0])))?
                 .to_str()
                 .unwrap()
                 .to_owned();
@@ -1510,7 +1550,7 @@ impl FunctionMacroMap {
         use std::fmt::Write;
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let pattern = &args[0];
-            let orientation = AlignType::from_str(trim!(&args[1]).as_ref())?;
+            let orientation = AlignType::from_str(trim!(&args[1]))?;
             let source = &args[2];
 
             let mut result = String::new();
@@ -1640,14 +1680,14 @@ impl FunctionMacroMap {
     /// $align(center,10,a,Content)
     pub(crate) fn align(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 4) {
-            let align_type = AlignType::from_str(trim!(&args[0]).as_ref())?;
+            let align_type = AlignType::from_str(trim!(&args[0]))?;
             let width = trim!(&args[1]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "Align requires positive integer number as width but got \"{}\"",
                     &args[1]
                 ))
             })?;
-            let filler: &str = args[2].as_ref();
+            let filler: &str = &args[2];
             let text = trim!(&args[3]);
             let filler_char: String;
 
@@ -1964,7 +2004,7 @@ impl FunctionMacroMap {
             if let Ok(truncate) = Utils::is_arg_true(&truncate) {
                 // This doesn't use canonicalize, because fileout can write file to non-existent
                 // file. Thus canonicalize can possibly yield error
-                let path = std::env::current_dir()?.join(file_name.as_ref());
+                let path = std::env::current_dir()?.join(file_name);
                 if path.exists() && !path.is_file() {
                     return Err(RadError::InvalidArgument(format!(
                         "Failed to write \"{}\". Fileout cannot write to a directory",
@@ -2479,7 +2519,7 @@ impl FunctionMacroMap {
         }
     }
 
-    /// Strip reaer
+    /// Strip rear
     ///
     /// # Usage
     ///
@@ -2511,6 +2551,44 @@ impl FunctionMacroMap {
             // 22
 
             Ok(Some(content[..char_count - count].to_string()))
+        } else {
+            Err(RadError::InvalidArgument(
+                "stripr requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Strip rear with pattern
+    ///
+    /// # Usage
+    ///
+    /// $striper()
+    pub(crate) fn strip_expression_from_rear(
+        args: &str,
+        p: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let expr = &args[0];
+            let content = &args[1];
+            let nl = p.state.newline.clone();
+            let reg = p.try_get_or_insert_regex(expr)?;
+
+            let mut acc = String::new();
+            for line in content.lines() {
+                let last_item = reg.captures_iter(line).last();
+                // Last item
+                match last_item {
+                    Some(capped) => {
+                        acc.push_str(&line[0..capped.get(0).unwrap().start()]);
+                    }
+                    None => {
+                        acc.push_str(line);
+                    }
+                }
+                acc.push_str(&nl);
+            }
+
+            Ok(Some(acc))
         } else {
             Err(RadError::InvalidArgument(
                 "stripr requires two arguments".to_owned(),
@@ -2774,7 +2852,7 @@ impl FunctionMacroMap {
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let file = trim!(&args[1]);
-            let path = Path::new(file.as_ref());
+            let path = Path::new(file);
 
             if path.exists() {
                 let canonic = path.canonicalize()?;
@@ -2857,7 +2935,7 @@ impl FunctionMacroMap {
     /// $count(1,2,3,4,5)
     pub(crate) fn count(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            if trim!(&args[0]).as_ref().is_empty() {
+            if trim!(&args[0]).is_empty() {
                 return Ok(Some("0".to_string()));
             }
             let array_count = &args[0].split(',').count();
@@ -2930,7 +3008,7 @@ impl FunctionMacroMap {
         } else {
             String::new()
         };
-        let relay_type = match raw_type.as_ref() {
+        let relay_type = match raw_type {
             "temp" => {
                 if !Utils::is_granted("relay", AuthType::FOUT, p)? {
                     return Ok(None);
@@ -3079,7 +3157,7 @@ impl FunctionMacroMap {
             let halt_immediate = if args[0].is_empty() {
                 false
             } else {
-                Utils::is_arg_true(trim!(&args[0]).as_ref())?
+                Utils::is_arg_true(trim!(&args[0]))?
             };
             if halt_immediate {
                 // This remove last element from stack
@@ -3110,7 +3188,7 @@ impl FunctionMacroMap {
             return Ok(None);
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let path = &std::env::temp_dir().join(trim!(&args[0]).as_ref());
+            let path = &std::env::temp_dir().join(trim!(&args[0]));
             Utils::check_file_sanity(processor, path)?;
             processor.set_temp_file(path)?;
             Ok(None)
@@ -3199,7 +3277,7 @@ impl FunctionMacroMap {
     pub(crate) fn require_comment(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(mut args) = ArgParser::new().args_with_len(args, 1) {
             let comment_src = std::mem::take(&mut args[0]);
-            let comment_type = CommentType::from_str(trim!(&comment_src).as_ref());
+            let comment_type = CommentType::from_str(trim!(&comment_src));
             if comment_type.is_err() {
                 return Err(RadError::InvalidArgument(format!(
                     "Comment requires valid comment type but given \"{}\"",
@@ -3288,7 +3366,7 @@ impl FunctionMacroMap {
             _ => {
                 return Err(RadError::InvalidArgument(format!(
                     "Received invalid strict mode which is \"{}\"",
-                    trimmed_mode.as_ref()
+                    trimmed_mode
                 )));
             }
         }
@@ -3301,7 +3379,7 @@ impl FunctionMacroMap {
     ///
     /// $Output(fout)
     pub(crate) fn require_output(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        match trim!(args).as_ref().to_lowercase().as_str() {
+        match trim!(args).to_lowercase().as_str() {
             "terminal" => {
                 if let WriteOption::Terminal = p.write_option {
                 } else {
@@ -3554,7 +3632,7 @@ impl FunctionMacroMap {
 
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let name = trim!(&args[0]);
-            let file_name = Path::new(name.as_ref());
+            let file_name = Path::new(name);
 
             if !file_name.is_file() {
                 return Err(RadError::InvalidArgument(format!(
@@ -3591,7 +3669,7 @@ impl FunctionMacroMap {
             {
                 let err = RadError::NoSuchMacroName(
                     macro_name.to_string(),
-                    processor.get_similar_macro(macro_name.as_ref(), true),
+                    processor.get_similar_macro(macro_name, true),
                 );
                 processor.log_error(&err.to_string())?;
             }
@@ -3970,7 +4048,7 @@ impl FunctionMacroMap {
     pub(crate) fn is_zero(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let value = trim!(&args[0]);
-            Ok(Some(value.as_ref().eq("0").to_string()))
+            Ok(Some(value.eq("0").to_string()))
         } else {
             Err(RadError::InvalidArgument(
                 "iszero requires an argument".to_owned(),
@@ -4130,7 +4208,7 @@ impl FunctionMacroMap {
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let path = &trim!(&args[0]);
-            let path = Path::new(path.as_ref());
+            let path = Path::new(path);
             if !path.exists() {
                 return Err(RadError::InvalidArgument(format!(
                     "Cannot source non-existent file \"{}\"",
@@ -4184,7 +4262,7 @@ impl FunctionMacroMap {
         }
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let path = &trim!(&args[0]);
-            let path = Path::new(path.as_ref());
+            let path = Path::new(path);
             if !path.exists() {
                 return Err(RadError::InvalidArgument(format!(
                     "Cannot import from non-existent file \"{}\"",
@@ -4237,7 +4315,7 @@ impl FunctionMacroMap {
             path = if val.is_empty() {
                 processor.get_current_dir()?
             } else {
-                PathBuf::from(trim!(val).as_ref())
+                PathBuf::from(trim!(val))
             };
             if !path.exists() {
                 return Err(RadError::InvalidArgument(format!(
@@ -4301,7 +4379,7 @@ impl FunctionMacroMap {
     pub(crate) fn chars_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let arg = trim!(&args[0]);
-            let mut chars = arg.as_ref().chars().fold(String::new(), |mut acc, ch| {
+            let mut chars = arg.chars().fold(String::new(), |mut acc, ch| {
                 acc.push(ch);
                 acc.push(',');
                 acc
