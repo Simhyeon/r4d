@@ -259,7 +259,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $eval(expression)
-    #[cfg(feature = "evalexpr")]
     pub(crate) fn eval(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let formula = &args[0];
@@ -279,7 +278,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $eval(expression)
-    #[cfg(feature = "evalexpr")]
     pub(crate) fn eval_keep(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             // This is the processed raw formula
@@ -300,7 +298,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $eval(expression)
-    #[cfg(feature = "evalexpr")]
     pub(crate) fn evalf(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let formula = args[0]
@@ -328,7 +325,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $pie(expression)
-    #[cfg(feature = "evalexpr")]
     pub(crate) fn pipe_ire(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(mut args) = ArgParser::new().args_with_len(args, 1) {
             let mut formula = std::mem::take(&mut args[0]);
@@ -354,7 +350,6 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $mie(expression)
-    #[cfg(feature = "evalexpr")]
     pub(crate) fn macro_ire(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(mut args) = ArgParser::new().args_with_len(args, 2) {
             let macro_name = std::mem::take(&mut args[0]);

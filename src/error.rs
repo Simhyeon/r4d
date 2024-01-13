@@ -26,7 +26,6 @@ pub enum RadError {
     NoSuchMacroName(String, Option<String>),
     InvalidMacroDefinition(String),
     InvalidRegex(regex::Error),
-    #[cfg(feature = "evalexpr")]
     InvalidFormula(evalexpr::EvalexprError),
     InvalidArgument(String),
     InvalidArgInt(std::num::ParseIntError),
@@ -71,7 +70,6 @@ impl std::fmt::Display for RadError {
             },
             Self::InvalidMacroDefinition(err) => format!("Invalid macro definition\n= {}", err),
             Self::InvalidRegex(err) => format!("Failed regex operation\n= {}", err),
-            #[cfg(feature = "evalexpr")]
             Self::InvalidFormula(err) => format!("Invalid formula\n= {}", err),
             Self::InvalidArgument(arg) => format!("Invalid argument\n= {}", arg),
             Self::InvalidArgInt(err) => format!("Invalid argument type\n= {}", err),
@@ -117,7 +115,6 @@ impl From<dcsv::DcsvError> for RadError {
     }
 }
 
-#[cfg(feature = "evalexpr")]
 impl From<evalexpr::EvalexprError> for RadError {
     fn from(err: evalexpr::EvalexprError) -> Self {
         Self::InvalidFormula(err)

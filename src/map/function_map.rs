@@ -2593,7 +2593,6 @@ $ftime(some_file.txt)
                 ),
             );
         }
-        #[cfg(feature = "evalexpr")]
         {
             map.insert(
                 "eval".to_owned(),

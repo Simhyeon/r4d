@@ -133,7 +133,6 @@ $assert(a+b+c,$mapf(m,file_name.txt))"
                     ),
                 ),
             ),
-            #[cfg(feature = "evalexpr")]
             (
                 "mapn".to_owned(),
                 DMacroSign::new(

@@ -139,7 +139,6 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $mapn()
-    #[cfg(feature = "evalexpr")]
     pub(crate) fn map_number(
         args: &str,
         level: usize,
@@ -181,7 +180,7 @@ impl DeterredMacroMap {
             Ok(Some(new))
         } else {
             Err(RadError::InvalidArgument(
-                "mapf requires two arguments".to_owned(),
+                "mapn requires two arguments".to_owned(),
             ))
         }
     }
