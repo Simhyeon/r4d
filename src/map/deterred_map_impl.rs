@@ -47,8 +47,7 @@ impl DeterredMacroMap {
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
         if let Some(args) = ap.args_with_len(args, 2) {
-            let name =
-                processor.parse_and_strip(&mut ap, level, "append", trim!(&args[0]).as_ref())?;
+            let name = processor.parse_and_strip(&mut ap, level, "append", trim!(&args[0]))?;
             let target = processor.parse_and_strip(&mut ap, level, "append", &args[1])?;
 
             if let Some(name) = processor.contains_local_macro(level, &name) {
@@ -372,7 +371,7 @@ impl DeterredMacroMap {
 
             let loop_src = processor.parse_and_strip(&mut ap, level, "foreach", &args[1])?;
             let loopable = trim!(&loop_src);
-            for (count, value) in loopable.as_ref().split(',').enumerate() {
+            for (count, value) in loopable.split(',').enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 processor.add_new_local_macro(level, ":", value);
@@ -417,7 +416,7 @@ impl DeterredMacroMap {
 
             let loop_src = processor.parse_and_strip(&mut ap, level, "forsp", &args[1])?;
             let loopable = trim!(&loop_src);
-            for (count, value) in loopable.as_ref().split_whitespace().enumerate() {
+            for (count, value) in loopable.split_whitespace().enumerate() {
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
                 processor.add_new_local_macro(level, ":", value);
@@ -936,13 +935,13 @@ impl DeterredMacroMap {
                 &mut ap,
                 level,
                 "readto",
-                trim!(&args[0]).as_ref(),
+                trim!(&args[0]),
             )?);
             let to_path = PathBuf::from(processor.parse_and_strip(
                 &mut ap,
                 level,
                 "readto",
-                trim!(&args[1]).as_ref(),
+                trim!(&args[1]),
             )?);
             if file_path == to_path {
                 return Err(RadError::InvalidArgument(format!(
@@ -968,7 +967,7 @@ impl DeterredMacroMap {
                         &mut ap,
                         level,
                         "readto",
-                        trim!(&args[2]).as_ref(),
+                        trim!(&args[2]),
                     )?)?;
 
                     // You don't have to backup pause state because include wouldn't be triggered
@@ -1028,7 +1027,7 @@ impl DeterredMacroMap {
                 &mut ap,
                 level,
                 "readin",
-                trim!(&args[0]).as_ref(),
+                trim!(&args[0]),
             )?);
             let mut raw_include = false;
             if file_path.is_file() {
@@ -1043,7 +1042,7 @@ impl DeterredMacroMap {
                         &mut ap,
                         level,
                         "readin",
-                        trim!(&args[1]).as_ref(),
+                        trim!(&args[1]),
                     )?)?;
 
                     // You don't have to backup pause state because include wouldn't be triggered
@@ -1273,9 +1272,9 @@ impl DeterredMacroMap {
         let args = ap.args_to_vec(args, ',', SplitVariant::Always);
         ap.set_strip(true);
         if !args.is_empty() {
-            let mut file_path = PathBuf::from(
-                trim!(&processor.parse_and_strip(&mut ap, level, "include", &args[0])?).as_ref(),
-            );
+            let mut file_path = PathBuf::from(trim!(
+                &processor.parse_and_strip(&mut ap, level, "include", &args[0])?
+            ));
             let mut raw_include = false;
 
             // if current input is not stdin and file path is relative
