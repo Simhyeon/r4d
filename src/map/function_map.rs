@@ -151,6 +151,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "striper".to_owned(),
+                FMacroSign::new(
+                    "striper",
+                    ["a_expr^","a_content"],
+                    Self::strip_expression_from_rear,
+                    None,
+                ),
+            ),
+            (
                 "stripf".to_owned(),
                 FMacroSign::new(
                     "stripf",
@@ -1959,6 +1968,24 @@ $assert(HellO_WOrld,$tr(-how,_HOW,hello-world))".to_string()),
 $assert(Middle,$trim(
     Middle
 ))".to_string()),
+                ),
+            ),
+            (
+                "trimf".to_owned(),
+                FMacroSign::new(
+                    "trimf",
+                    ["a_text"],
+                    Self::trimf,
+                    None
+                ),
+            ),
+            (
+                "trimr".to_owned(),
+                FMacroSign::new(
+                    "trimr",
+                    ["a_text"],
+                    Self::trimr,
+                    None
                 ),
             ),
             (
