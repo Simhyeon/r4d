@@ -1447,7 +1447,7 @@ impl<'processor> Processor<'processor> {
             }
         };
 
-        let line_iter = buffer.lines();
+        let line_iter = Utils::full_lines(buffer);
         let mut frag = MacroFragment::new();
         frag.pipe_input = true;
         frag.name = macro_name.to_string();
@@ -2315,7 +2315,7 @@ impl<'processor> Processor<'processor> {
                     .lines()
                     .map(|l| trim!(l))
                     .fold(String::new(), |mut acc, l| {
-                        acc.push_str(&l);
+                        acc.push_str(l);
                         acc.push_str(&self.state.newline);
                         acc
                     }))
@@ -2822,7 +2822,7 @@ impl<'processor> Processor<'processor> {
 
             // Negate result
             if frag.negate_result {
-                match Utils::is_arg_true(trim!(&content).as_ref()) {
+                match Utils::is_arg_true(trim!(&content)) {
                     Ok(boolean) => content = (!boolean).to_string(),
                     Err(_) => {
                         if self.state.behaviour == ErrorBehaviour::Strict {
