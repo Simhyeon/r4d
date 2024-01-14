@@ -147,25 +147,22 @@ impl<'cli> RadCli<'cli> {
 
         // Search a macro
         if let Some(name) = args.get_one::<String>("search") {
-            match processor.get_macro_manual(name) {
-                Some(text) => writeln!(std::io::stdout(), "{}", text)?,
-                None => match processor.get_similar_macro_names(name) {
-                    Some(list) => {
-                        writeln!(
-                            std::io::stdout(),
-                            "Searched result : {}{:?}",
-                            processor.state.newline,
-                            list
-                        )?;
-                    }
-                    None => {
-                        writeln!(
-                            std::io::stdout(),
-                            "Failed to get search results for the macro \"{}\"",
-                            name
-                        )?;
-                    }
-                },
+            match processor.get_similar_macro_names(name) {
+                Some(list) => {
+                    writeln!(
+                        std::io::stdout(),
+                        "Searched result : {}{:?}",
+                        processor.state.newline,
+                        list
+                    )?;
+                }
+                None => {
+                    writeln!(
+                        std::io::stdout(),
+                        "Failed to get search results for the macro \"{}\"",
+                        name
+                    )?;
+                }
             }
             return Ok(());
         }

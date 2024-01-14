@@ -36,7 +36,7 @@ use cindex::Indexer;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
@@ -3253,30 +3253,45 @@ impl<'processor> Processor<'processor> {
         use std::cmp::Ordering::{Equal, Less};
         let mut min_distance = 2usize;
         let mut current_distance: usize;
-        let mut candidates = vec![];
+        let mut candidates = HashSet::new();
+        let mut superset_candidates = HashSet::new();
+        let mut has_exact_match = false;
         let sigs = self.map.get_signatures();
         for (idx, mac) in sigs.iter().enumerate() {
+            if mac.name == macro_name {
+                has_exact_match = true;
+                continue;
+            }
             current_distance = Utils::levenshtein(&mac.name, macro_name);
             match current_distance.cmp(&min_distance) {
                 Less => {
                     candidates.clear();
-                    candidates.push(idx);
+                    candidates.insert(idx);
                     min_distance = current_distance; // Update min_distance
                 }
                 Equal => {
-                    candidates.push(idx);
+                    candidates.insert(idx);
                 }
                 _ => (),
+            }
+            // Also include macro that contains given value
+            if mac.name.contains(macro_name) {
+                superset_candidates.insert(idx);
             }
         }
         if candidates.is_empty() {
             None
         } else {
-            candidates.sort();
+            candidates.extend(superset_candidates);
+            let leader = if has_exact_match {
+                vec![macro_name.to_string()]
+            } else {
+                vec![]
+            };
             Some(
-                candidates
-                    .iter()
-                    .map(|idx| sigs[*idx].name.clone())
+                leader
+                    .into_iter()
+                    .chain(candidates.iter().map(|idx| sigs[*idx].name.clone()))
                     .collect(),
             )
         }
