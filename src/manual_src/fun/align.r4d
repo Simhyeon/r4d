@@ -1,22 +1,36 @@
-Align texts with a character filler
+Align lines by a separator
 
 # Arguments
 
-- a_type  : Types of alignment ["Left", "right", "center"] ( trimmed )
-- a_width : Total width of aligned chunk [ Unsigned integer ] ( trimmed )
-- a_fill  : A character to fill ( trimmed )
-- a_text  : Text to align
+- a_separator : A separator string
+- a_lines     : Lines to align
 
 # Demo
 
 ```
-<-$align(center,18,^,HEADER)->
+$align^(//,
+let mut processor = Processor::new() // Make a processor
+    .lenient(true) // Disable strict mode
+    .hygiene(Hygiene::Macro) // Enable hygiene mode
+    .pipe_truncate(false) // Disable pipe truncate
+    .write_to_file(Path::new("out.txt"))? // default is stdout)
 ===
-<-^^^^^^HEADER^^^^^^->
+let mut processor = Processor::new()      // Make a processor
+    .lenient(true)                        // Disable strict mode
+    .hygiene(Hygiene::Macro)              // Enable hygiene mode
+    .pipe_truncate(false)                 // Disable pipe truncate
+    .write_to_file(Path::new("out.txt"))? // default is stdout
 ```
 
 # Example
 
-$assert(Hello***,$align(left  ,8,*,Hello))
-$assert(***Hello,$align(right ,8,*,Hello))
-$assert(**Hello*,$align(center,8,*,Hello))
+$assert=(
+First       %% wow
+Second part %% bob
+Thirdos     %% Howzer,
+$align^=(
+%%,
+First %% wow
+Second part %% bob
+Thirdos %% Howzer
+

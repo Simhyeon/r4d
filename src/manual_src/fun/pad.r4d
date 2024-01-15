@@ -1,0 +1,23 @@
+Pad texts with a character filler
+
+# Arguments
+
+- a_type  : Types of alignment ["Left", "right", "center"] ( trimmed )
+- a_width : Total width of padded chunk [ Unsigned integer ] ( trimmed )
+- a_fill  : A character to fill ( trimmed )
+- a_text  : Text to pad
+
+
+# Demo
+
+```
+<-$pad(center,18,^,HEADER)->
+===
+<-^^^^^^HEADER^^^^^^->
+```
+
+# Example
+
+$assert(Hello***,$pad(left  ,8,*,Hello))
+$assert(***Hello,$pad(right ,8,*,Hello))
+$assert(**Hello*,$pad(center,8,*,Hello))
