@@ -61,21 +61,30 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "align".to_owned(),
-                FMacroSign::new(
-                    "align",
-                    ["a_type^","a_width^","a_fill^", "a_text"],
-                    Self::align,
-                    Some(man_fun!("align.r4d")),
-                ),
-            ),
-            (
                 "apart".to_owned(),
                 FMacroSign::new(
-                    "alignby",
+                    "apart",
                     ["a_separator", "a_content"],
                     Self::apart_by_separator,
                     Some(man_fun!("apart.r4d"))
+                ),
+            ),
+            (
+                "pad".to_owned(),
+                FMacroSign::new(
+                    "pad",
+                    [ "a_type","a_width","a_fill","a_text"],
+                    Self::pad_string,
+                    Some(man_fun!("pad.r4d"))
+                ),
+            ),
+            (
+                "align".to_owned(),
+                FMacroSign::new(
+                    "align",
+                    ["a_separator", "a_lines"],
+                    Self::align_by_separator,
+                    Some(man_fun!("align.r4d"))
                 ),
             ),
             (
@@ -84,7 +93,7 @@ impl FunctionMacroMap {
                     "alignby",
                     ["a_separator", "a_lines"],
                     Self::align_by_separator,
-                    Some(man_fun!("alignby.r4d"))
+                    Some(man_fun!("align.r4d"))
                 ),
             ),
             (

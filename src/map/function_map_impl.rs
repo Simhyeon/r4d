@@ -497,7 +497,7 @@ impl FunctionMacroMap {
             let mut lines = String::new();
             let mut iter = args[0].lines().peekable();
             while let Some(line) = iter.next() {
-                lines.push_str(&trim!(line));
+                lines.push_str(trim!(line));
                 // Append newline because String.lines() method cuts off all newlines
                 if iter.peek().is_some() {
                     lines.push_str(&p.state.newline);
@@ -1190,7 +1190,7 @@ impl FunctionMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             processor
                 .state
-                .add_pipe(Some(&trim!(&args[0])), args[1].to_owned());
+                .add_pipe(Some(trim!(&args[0])), args[1].to_owned());
         } else {
             return Err(RadError::InvalidArgument(
                 "pipeto requires two arguments".to_owned(),
@@ -1677,18 +1677,25 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $align(center,10,a,Content)
-    pub(crate) fn align(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+    /// $pad(center,10,a,Content)
+    pub(crate) fn pad_string(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 4) {
             let align_type = AlignType::from_str(trim!(&args[0]))?;
             let width = trim!(&args[1]).parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
-                    "Align requires positive integer number as width but got \"{}\"",
+                    "pad requires positive integer number as width but got \"{}\"",
                     &args[1]
                 ))
             })?;
-            let filler: &str = &args[2];
-            let text = trim!(&args[3]);
+            let filler: &str = trim!(&args[2]);
+            let text = &args[3];
+            let text_length = text.chars().count();
+            if width < text_length {
+                return Err(RadError::InvalidArgument(
+                    "Width should be bigger than source texts".to_string(),
+                ));
+            }
+
             let filler_char: String;
 
             if filler.is_empty() {
@@ -1717,13 +1724,6 @@ impl FunctionMacroMap {
                 ));
             }
 
-            let text_length = text.chars().count();
-            if width < text_length {
-                return Err(RadError::InvalidArgument(
-                    "Width should be bigger than source texts".to_string(),
-                ));
-            }
-
             let space_count = width - text_length;
 
             let formatted = match align_type {
@@ -1744,7 +1744,7 @@ impl FunctionMacroMap {
             Ok(Some(formatted))
         } else {
             Err(RadError::InvalidArgument(
-                "Align requires four arguments".to_owned(),
+                "pad requires four arguments".to_owned(),
             ))
         }
     }
@@ -1753,7 +1753,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $alignby(%, contents to align)
+    /// $align(%, contents to align)
     pub(crate) fn align_by_separator(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
@@ -1803,10 +1803,87 @@ impl FunctionMacroMap {
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
-                "Alignby requires two arguments".to_owned(),
+                "Align requires two arguments".to_owned(),
             ))
         }
     }
+
+    /// Ailgn columns
+    ///
+    /// # Usage
+    ///
+    /// $alignc(%, contents to align)
+    pub(crate) fn align_columns(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        use std::fmt::Write;
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let contents = args[0].lines();
+
+            Ok(None)
+        } else {
+            Err(RadError::InvalidArgument(
+                "Alignc requires arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Ailgn texts by rules
+    ///
+    /// # Usage
+    ///
+    /// $alignby(rules, contents to align)
+    // pub(crate) fn align_by_rules(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+    //     use std::fmt::Write;
+    //     if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+    //         let rules = trim!(args[0]).chars().collect();
+    //         let contents = args[1].lines();
+    //         let mut max_length = 0usize;
+    //         let mut result = String::new();
+    //         let nl = &p.state.newline;
+    //
+    //         let tab_width: usize = std::env::var("RAD_TAB_WIDTH")
+    //             .unwrap_or("4".to_string())
+    //             .parse::<usize>()
+    //             .map_err(|_| {
+    //                 RadError::InvalidCommandOption("RAD_TAB_WIDTH is not a valid value".to_string())
+    //             })?;
+    //
+    //         for line in contents.clone() {
+    //             let mut splitted = line.split(&separator);
+    //             let leading = splitted.next().unwrap();
+    //             let width = UnicodeWidthStr::width(leading)
+    //                 + leading.matches('\t').count() * (tab_width - 1);
+    //             if leading != line {
+    //                 max_length = max_length.max(width);
+    //             }
+    //         }
+    //         for line in contents {
+    //             let splitted = line.split_once(&separator);
+    //             if splitted.is_some() {
+    //                 let (leading, following) = splitted.unwrap();
+    //                 let width = UnicodeWidthStr::width(leading)
+    //                     + leading.matches('\t').count() * (tab_width - 1);
+    //
+    //                 // found matching line
+    //                 write!(
+    //                     result,
+    //                     "{}{}{}{}{}",
+    //                     leading,
+    //                     " ".repeat(max_length - width),
+    //                     separator,
+    //                     following,
+    //                     nl
+    //                 )?;
+    //             } else {
+    //                 write!(result, "{}{}", line, nl)?;
+    //             }
+    //         }
+    //         Ok(Some(result))
+    //     } else {
+    //         Err(RadError::InvalidArgument(
+    //             "Alignby requires two arguments".to_owned(),
+    //         ))
+    //     }
+    // }
 
     /// Apart texts by separator
     ///
@@ -1820,7 +1897,7 @@ impl FunctionMacroMap {
             let result = contents
                 .split_inclusive(&separator)
                 .fold(String::new(), |mut acc, a| {
-                    acc.push_str(&trim!(a));
+                    acc.push_str(trim!(a));
                     acc.push_str(&p.state.newline);
                     acc
                 });
@@ -4405,9 +4482,9 @@ impl FunctionMacroMap {
     #[cfg(feature = "hook")]
     pub(crate) fn hook_enable(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let hook_type = HookType::from_str(&trim!(&args[0]))?;
+            let hook_type = HookType::from_str(trim!(&args[0]))?;
             let index = trim!(&args[1]);
-            processor.hook_map.switch_hook(hook_type, &index, true)?;
+            processor.hook_map.switch_hook(hook_type, index, true)?;
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -4424,7 +4501,7 @@ impl FunctionMacroMap {
     #[cfg(feature = "hook")]
     pub(crate) fn hook_disable(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-            let hook_type = HookType::from_str(&trim!(&args[0]))?;
+            let hook_type = HookType::from_str(trim!(&args[0]))?;
             let index = trim!(&args[1]);
             processor.hook_map.switch_hook(hook_type, &index, false)?;
             Ok(None)
@@ -4511,7 +4588,7 @@ impl FunctionMacroMap {
 
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let table_name = trim!(&args[0]);
-            if processor.indexer.contains_table(&table_name) {
+            if processor.indexer.contains_table(table_name) {
                 return Err(RadError::InvalidArgument(format!(
                     "Cannot register exsiting table : \"{}\"",
                     args[0]
@@ -4538,7 +4615,7 @@ impl FunctionMacroMap {
     #[cfg(feature = "cindex")]
     pub(crate) fn cindex_drop(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            processor.indexer.drop_table(&trim!(&args[0]));
+            processor.indexer.drop_table(trim!(&args[0]));
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(
@@ -4556,7 +4633,7 @@ impl FunctionMacroMap {
             let mut value = String::new();
             processor
                 .indexer
-                .index_raw(&trim!(&args[0]), OutOption::Value(&mut value))?;
+                .index_raw(trim!(&args[0]), OutOption::Value(&mut value))?;
             Ok(Some(trim!(&value).to_string()))
         } else {
             Err(RadError::InvalidArgument(
