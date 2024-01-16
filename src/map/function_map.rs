@@ -102,8 +102,9 @@ impl FunctionMacroMap {
                 FMacroSign::new(
                     "alignby",
                     ["a_separator", "a_lines"],
-                    Self::align_by_separator,
-                    Some(man_fun!("align.r4d"))
+                    Self::align_by_rules,
+                    None,
+                    // Some(man_fun!("alignby.r4d"))
                 ),
             ),
             (

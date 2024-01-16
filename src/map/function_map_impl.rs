@@ -1834,59 +1834,83 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $alignby(rules, contents to align)
-    // pub(crate) fn align_by_rules(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-    //     use std::fmt::Write;
-    //     if let Some(args) = ArgParser::new().args_with_len(args, 2) {
-    //         let rules = trim!(args[0]).chars().collect();
-    //         let contents = args[1].lines();
-    //         let mut max_length = 0usize;
-    //         let mut result = String::new();
-    //         let nl = &p.state.newline;
-    //
-    //         let tab_width: usize = std::env::var("RAD_TAB_WIDTH")
-    //             .unwrap_or("4".to_string())
-    //             .parse::<usize>()
-    //             .map_err(|_| {
-    //                 RadError::InvalidCommandOption("RAD_TAB_WIDTH is not a valid value".to_string())
-    //             })?;
-    //
-    //         for line in contents.clone() {
-    //             let mut splitted = line.split(&separator);
-    //             let leading = splitted.next().unwrap();
-    //             let width = UnicodeWidthStr::width(leading)
-    //                 + leading.matches('\t').count() * (tab_width - 1);
-    //             if leading != line {
-    //                 max_length = max_length.max(width);
-    //             }
-    //         }
-    //         for line in contents {
-    //             let splitted = line.split_once(&separator);
-    //             if splitted.is_some() {
-    //                 let (leading, following) = splitted.unwrap();
-    //                 let width = UnicodeWidthStr::width(leading)
-    //                     + leading.matches('\t').count() * (tab_width - 1);
-    //
-    //                 // found matching line
-    //                 write!(
-    //                     result,
-    //                     "{}{}{}{}{}",
-    //                     leading,
-    //                     " ".repeat(max_length - width),
-    //                     separator,
-    //                     following,
-    //                     nl
-    //                 )?;
-    //             } else {
-    //                 write!(result, "{}{}", line, nl)?;
-    //             }
-    //         }
-    //         Ok(Some(result))
-    //     } else {
-    //         Err(RadError::InvalidArgument(
-    //             "Alignby requires two arguments".to_owned(),
-    //         ))
-    //     }
-    // }
+    pub(crate) fn align_by_rules(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        use itertools::Itertools;
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let rules = trim!(args[0]).chars().collect::<Vec<_>>();
+
+            if rules.len() % 2 != 0 {
+                return Err(RadError::InvalidCommandOption(
+                    "alignby needs specific syntax for rules".to_string(),
+                ));
+            }
+
+            let mut contents = args[1].lines().map(|s| s.to_owned()).collect::<Vec<_>>();
+
+            let tab_width: usize = std::env::var("RAD_TAB_WIDTH")
+                .unwrap_or("4".to_string())
+                .parse::<usize>()
+                .map_err(|_| {
+                    RadError::InvalidCommandOption("RAD_TAB_WIDTH is not a valid value".to_string())
+                })?;
+
+            let mut iter = rules.iter();
+            while let (Some(count), Some(separator)) = (iter.next(), iter.next()) {
+                let count = count.to_digit(10).ok_or_else(|| {
+                    RadError::InvalidArgument(format!(
+                        "Could not convert given value \"{}\" into a number",
+                        args[0]
+                    ))
+                })?;
+                align_step(&mut contents, *separator, count as usize, tab_width)?;
+            }
+
+            #[inline]
+            fn align_step(
+                contents: &mut [String],
+                separator: char,
+                count: usize,
+                tab_width: usize,
+            ) -> RadResult<()> {
+                let mut max_length = 0usize;
+
+                for line in contents.iter() {
+                    let splitted_index = line.chars().positions(|s| s == separator).nth(count - 1);
+                    if splitted_index.is_none() {
+                        continue;
+                    }
+                    let leading = &line[0..splitted_index.unwrap()];
+                    let width = UnicodeWidthStr::width(leading)
+                        + leading.matches('\t').count() * (tab_width - 1);
+                    if leading != line {
+                        max_length = max_length.max(width);
+                    }
+                }
+
+                for line in contents.iter_mut() {
+                    let splitted_index = line.chars().positions(|s| s == separator).nth(count - 1);
+                    // found matching line
+                    if splitted_index.is_some() {
+                        let (leading, following) = line.split_at(splitted_index.unwrap());
+                        let width = UnicodeWidthStr::width(leading)
+                            + leading.matches('\t').count() * (tab_width - 1);
+
+                        *line =
+                            format!("{}{}{}", leading, " ".repeat(max_length - width), following,);
+                    }
+                }
+                Ok(())
+            }
+
+            let result = contents.join(&p.state.newline);
+
+            Ok(Some(result))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Alignby requires two arguments".to_owned(),
+            ))
+        }
+    }
 
     /// Apart texts by separator
     ///
