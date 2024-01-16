@@ -40,7 +40,7 @@ template = ["rad_ext_template"]
 [dependencies]
 # Default features
 bincode = "1.3.3"
-dcsv = { version = "0.3.3-rc2", git="https://github.com/simhyeon/dcsv"}
+dcsv = { version = "0.3.3", git="https://github.com/simhyeon/dcsv"}
 regex = "1.10.2"
 serde = { version = "1.0.193", features = ["derive"]}
 serde_json = { version = "1.0.108"}
