@@ -1814,11 +1814,14 @@ impl FunctionMacroMap {
     ///
     /// $alignc(%, contents to align)
     pub(crate) fn align_columns(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        use std::fmt::Write;
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let contents = args[0].lines();
+            let contents = &args[0];
+            let data = dcsv::Reader::new()
+                .trim(true)
+                .use_space_delimiter(true)
+                .data_from_stream(contents.as_bytes())?;
 
-            Ok(None)
+            Ok(Some(data.pretty_table(&p.state.newline)))
         } else {
             Err(RadError::InvalidArgument(
                 "Alignc requires arguments".to_owned(),

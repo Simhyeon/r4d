@@ -88,6 +88,16 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "alignc".to_owned(),
+                FMacroSign::new(
+                    "alignc",
+                    ["a_content"],
+                    Self::align_columns,
+                    None,
+                    // Some(man_fun!("alignc.r4d"))
+                ),
+            ),
+            (
                 "alignby".to_owned(),
                 FMacroSign::new(
                     "alignby",
