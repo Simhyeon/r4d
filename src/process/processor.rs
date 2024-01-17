@@ -1343,8 +1343,6 @@ impl<'processor> Processor<'processor> {
 
     /// Process chunk for streaming
     ///
-    /// This should be only called on the most high level of processing
-    ///
     /// ```no_run
     /// let mut proc = r4d::Processor::empty();
     /// proc.stream_by_chunk(...)
@@ -1379,17 +1377,21 @@ impl<'processor> Processor<'processor> {
             }
             1 => (macro_input[0], "".to_string()),
             _ => {
-                let mut joined = macro_input[1..].join(",");
-                joined.push(',');
+                let joined = macro_input[1..].join(",");
                 (macro_input[0], joined)
             }
         };
 
         // Strip trailing new line
-        let content = macro_arguments + content.strip_suffix(&self.state.newline).unwrap_or("");
+        let content = content
+            .strip_suffix(&self.state.newline)
+            .unwrap_or("")
+            .to_string();
+
+        self.state.add_pipe(None, content);
 
         let mut frag = MacroFragment::new();
-        self.state.add_pipe(None, content);
+        frag.args = macro_arguments;
         frag.pipe_input = true;
         frag.name = macro_name.to_string();
         self.process_piece(&mut frag)?;
@@ -1441,8 +1443,7 @@ impl<'processor> Processor<'processor> {
             }
             1 => (macro_input[0], "".to_string()),
             _ => {
-                let mut joined = macro_input[1..].join(",");
-                joined.push(',');
+                let joined = macro_input[1..].join(",");
                 (macro_input[0], joined)
             }
         };
@@ -1451,8 +1452,9 @@ impl<'processor> Processor<'processor> {
         let mut frag = MacroFragment::new();
         frag.pipe_input = true;
         frag.name = macro_name.to_string();
+        frag.args = macro_arguments;
         for line in line_iter {
-            let line = format!("{}{}", macro_arguments, line?);
+            let line = line?;
             self.state.add_pipe(None, line);
             self.process_piece(&mut frag)?;
             self.logger.inc_line_number();
