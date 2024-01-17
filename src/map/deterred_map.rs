@@ -523,6 +523,15 @@ $assert(a+b+c+,$forline($:()+,a$nl()b$nl()c))".to_string()),
                 ),
             ),
             (
+                "forcol".to_owned(),
+                DMacroSign::new(
+                    "forcol",
+                    ["a_body","a_table"],
+                    DeterredMacroMap::forcol,
+                    None,
+                ),
+            ),
+            (
                 "forloop".to_owned(),
                 DMacroSign::new(
                     "forloop",

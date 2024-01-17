@@ -9,6 +9,7 @@ use crate::utils::{Utils, NUM_MATCH};
 use crate::ArgParser;
 use crate::WarningType;
 use crate::{trim, Processor, RadError};
+use dcsv::VCont;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -530,6 +531,51 @@ impl DeterredMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "Forloop requires three arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Loop around table columns
+    ///
+    /// # Usage
+    ///
+    /// $forcol($:(),Content)
+    pub(crate) fn forcol(
+        args: &str,
+        level: usize,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+            let mut sums = String::new();
+            let body = &args[0];
+            let loop_src = processor.parse_and_strip(&mut ap, level, "forcol", &args[1])?;
+            let table = dcsv::Reader::new()
+                .trim(true)
+                .has_header(false)
+                .use_space_delimiter(true)
+                .array_from_stream(loop_src.as_bytes())?;
+            for idx in 0..table.get_column_count() {
+                let mut column = table.get_column_iterator(idx)?.map(|s| s.to_string()).fold(
+                    String::new(),
+                    |mut acc, v| {
+                        acc.push_str(&v.to_string());
+                        acc.push(',');
+                        acc
+                    },
+                );
+                column.pop();
+                // This overrides value
+                processor.add_new_local_macro(level, "a_LN", &idx.to_string());
+                processor.add_new_local_macro(level, ":", &column);
+                let result = processor.parse_and_strip(&mut ap, level, "forcol", body)?;
+                sums.push_str(&result);
+            }
+            Ok(Some(sums))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Forcol requires two argument".to_owned(),
             ))
         }
     }
