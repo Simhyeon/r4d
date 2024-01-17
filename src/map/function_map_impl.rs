@@ -34,9 +34,9 @@ static ISOLATION_CHARS: [char; 6] = ['(', ')', '[', ']', '{', '}'];
 static ISOLATION_CHARS_OPENING: [char; 3] = ['(', '[', '{'];
 static ISOLATION_CHARS_CLOSING: [char; 3] = [')', ']', '}'];
 
-static START_BLANK_MATCH: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"^[\s\t]*"#).expect("Failed to create blank regex"));
-
+/// Regex for leading and following spaces
+static LSPA: Lazy<Regex> = Lazy::new(|| Regex::new(r"(^[^\S\r\n]*)").unwrap());
+static FSPA: Lazy<Regex> = Lazy::new(|| Regex::new(r"([^\S\r\n]*$)").unwrap());
 // ----------
 // rer related regexes
 //
@@ -56,13 +56,10 @@ static REPLACER_MATCH: Lazy<Regex> = Lazy::new(|| {
 });
 // ----------
 
-/// Single line match
-// static LINE_MATCH: Lazy<Regex> =
-//    Lazy::new(|| Regex::new("\n").expect("Failed to create line match regex"));
 /// Two lines match
 static TWO_NL_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"(\n|\r\n)\s*(\n|\r\n)"#).expect("Failed to create tow nl regex"));
-/// Patparator match
+/// Path separator match
 static PATH_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"(\\|/)"#).expect("Failed to create path separator matches"));
 
@@ -807,8 +804,8 @@ impl FunctionMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             let name = trim!(&args[0]);
 
-            if processor.contains_macro(&name, MacroType::Any) {
-                processor.undefine_macro(&name, MacroType::Any);
+            if processor.contains_macro(name, MacroType::Any) {
+                processor.undefine_macro(name, MacroType::Any);
             } else {
                 processor.log_error(&format!(
                     "Macro \"{}\" doesn't exist, therefore cannot undefine",
@@ -1050,11 +1047,11 @@ impl FunctionMacroMap {
             "plus".to_string()
         };
         // Crate new macro if non-existent
-        if !p.contains_macro(&counter_name, MacroType::Runtime) {
+        if !p.contains_macro(counter_name, MacroType::Runtime) {
             p.add_static_rules(&[(&counter_name, "0")])?;
         }
         let body = p
-            .get_runtime_macro_body(&counter_name)?
+            .get_runtime_macro_body(counter_name)?
             .parse::<isize>()
             .map_err(|_| {
                 RadError::UnallowedMacroExecution(
@@ -1541,12 +1538,12 @@ impl FunctionMacroMap {
         Ok(Some(")".to_string()))
     }
 
-    /// Rotate text which is separated by pattern
+    /// Rotate lines which is separated by pattern
     ///
     /// # Usage
     ///
-    /// $rotate(//,left,Content)
-    pub(crate) fn rotate(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+    /// $rotatel(//,left,Content)
+    pub(crate) fn rotatel(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
         if let Some(args) = ArgParser::new().args_with_len(args, 3) {
             let pattern = &args[0];
@@ -1555,8 +1552,10 @@ impl FunctionMacroMap {
 
             let mut result = String::new();
             let mut extracted = String::new();
-            let mut blank;
-            for line in source.lines() {
+            // Leading blank spaces from the line itself.
+            let mut line_preceding_blank;
+            for line in Utils::full_lines(source.as_bytes()) {
+                let line = line?;
                 if let Some((leading, following)) = line.split_once(pattern) {
                     // Don't "rotate" for pattern starting line
                     if leading.trim().is_empty() {
@@ -1571,7 +1570,7 @@ impl FunctionMacroMap {
                         pattern
                     };
                     write!(extracted, "{leader_pattern}{following}")?;
-                    blank = START_BLANK_MATCH
+                    line_preceding_blank = LSPA
                         .find(leading)
                         .map(|s| s.as_str())
                         .unwrap_or("")
@@ -1581,35 +1580,64 @@ impl FunctionMacroMap {
                             write!(
                                 result,
                                 "{}{}{}{}",
-                                blank, extracted, p.state.newline, leading
+                                line_preceding_blank, extracted, leading, p.state.newline,
                             )?;
                         }
                         AlignType::Right => {
                             write!(
                                 result,
                                 "{}{}{}{}",
-                                leading, p.state.newline, blank, extracted
+                                leading, p.state.newline, line_preceding_blank, extracted
                             )?;
                         }
                         AlignType::Center => {
                             let mut leading = leading;
-                            if !blank.is_empty() {
+                            if !line_preceding_blank.is_empty() {
                                 leading = leading.trim_start();
                             }
+                            let line_end = if extracted.ends_with("\r\n") {
+                                extracted.pop();
+                                extracted.pop();
+                                "\r\n"
+                            } else {
+                                extracted.pop();
+                                "\n"
+                            };
+
+                            let extracted_spl = LSPA
+                                .captures(&extracted)
+                                .map(|s| s.get(0).unwrap().as_str())
+                                .unwrap_or("");
+                            let extracted_spf = FSPA
+                                .captures(&extracted)
+                                .map(|s| s.get(0).unwrap().as_str())
+                                .unwrap_or("");
+
+                            let extracted =
+                                format!("{}{}{}", extracted_spf, trim!(extracted), extracted_spl);
+
+                            let leading_spl = LSPA
+                                .captures(leading)
+                                .map(|s| s.get(0).unwrap().as_str())
+                                .unwrap_or("");
+                            let laeding_spf = FSPA
+                                .captures(leading)
+                                .map(|s| s.get(0).unwrap().as_str())
+                                .unwrap_or("");
+
+                            let leading =
+                                format!("{}{}{}", laeding_spf, trim!(leading), leading_spl);
+
                             write!(
                                 result,
-                                "{}{} {} {}",
-                                blank,
-                                trim!(&extracted),
-                                pattern,
-                                trim!(leading)
+                                "{}{}{}{}{}",
+                                line_preceding_blank, extracted, pattern, leading, line_end
                             )?;
                         }
                     }
                 } else {
                     write!(result, "{line}")?;
                 }
-                write!(result, "{}", p.state.newline)?;
             }
 
             Ok(Some(result))

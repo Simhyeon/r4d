@@ -575,7 +575,7 @@ impl FunctionMacroMap {
                     "foldby",
                     ["a_separator","a_content"],
                     Self::fold_by,
-                    Some(String::new()),
+                    None,
                 ),
             ),
             (
@@ -1644,12 +1644,12 @@ $require(fin,fout)".to_string()),
                 ),
             ),
             (
-                "rotate".to_owned(),
+                "rotatel".to_owned(),
                 FMacroSign::new(
-                    "rotate",
+                    "rotatel",
                     ["a_pattern", "a_orientation", "a_content"],
-                    Self::rotate,
-                    Some(String::new()),
+                    Self::rotatel,
+                    None,
                 ),
             ),
             (
