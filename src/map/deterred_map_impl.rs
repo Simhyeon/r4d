@@ -453,12 +453,12 @@ impl DeterredMacroMap {
             let mut sums = String::new();
             let body = &args[0];
             let loop_src = processor.parse_and_strip(&mut ap, level, "forline", &args[1])?;
-            let loopable = trim!(&loop_src);
             let mut count = 1;
-            for value in loopable.lines() {
+            for line in Utils::full_lines(loop_src.as_bytes()) {
+                let line = line?;
                 // This overrides value
                 processor.add_new_local_macro(level, "a_LN", &count.to_string());
-                processor.add_new_local_macro(level, ":", value);
+                processor.add_new_local_macro(level, ":", line.as_str());
                 let result = processor.parse_and_strip(&mut ap, level, "forline", body)?;
                 sums.push_str(&result);
                 count += 1;

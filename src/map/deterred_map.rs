@@ -500,7 +500,7 @@ An iterated value is bound to macro \":\"
                 "forline".to_owned(),
                 DMacroSign::new(
                     "forline",
-                    ["a_body","a_lines^"],
+                    ["a_body","a_lines"],
                     DeterredMacroMap::forline,
                     Some(
 "Loop around given lines separated by newline chraracter. 
@@ -510,7 +510,7 @@ An iterated value is bound to macro \":\"
 # Expansion order
 
 1. a_lines : Expanded on time
-2. a_body  : Split lines by newline, and expanded by per item. ( trimmed )
+2. a_body  : Split lines by newline, and expanded by per item.
 
 # Arguments
 
