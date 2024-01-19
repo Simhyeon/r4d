@@ -35,8 +35,8 @@ static ISOLATION_CHARS_OPENING: [char; 3] = ['(', '[', '{'];
 static ISOLATION_CHARS_CLOSING: [char; 3] = [')', ']', '}'];
 
 /// Regex for leading and following spaces
-static LSPA: Lazy<Regex> = Lazy::new(|| Regex::new(r"(^[^\S\r\n]*)").unwrap());
-static FSPA: Lazy<Regex> = Lazy::new(|| Regex::new(r"([^\S\r\n]*$)").unwrap());
+static LSPA: Lazy<Regex> = Lazy::new(|| Regex::new(r"(^[^\S\r\n]+)").unwrap());
+static FSPA: Lazy<Regex> = Lazy::new(|| Regex::new(r"([^\S\r\n]+$)").unwrap());
 // ----------
 // rer related regexes
 //
@@ -274,7 +274,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $eval(expression)
+    /// $evalk(expression)
     pub(crate) fn eval_keep(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
             // This is the processed raw formula
@@ -313,6 +313,36 @@ impl FunctionMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "Eval requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Evaluate given expression but keep original expression and force float expression
+    ///
+    /// This returns true, false or evaluated number
+    ///
+    /// # Usage
+    ///
+    /// $evalkf(expression)
+    pub(crate) fn eval_keep_as_float(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            // This is the processed raw formula
+            let formula = args[0]
+                .split_whitespace()
+                .map(|item| {
+                    let mut new_str = item.to_string();
+                    if item.parse::<isize>().is_ok() {
+                        new_str.push_str(".0");
+                    }
+                    new_str
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            let result = format!("{}= {}", formula, evalexpr::eval(&formula)?);
+            Ok(Some(result))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Evalkf requires an argument".to_owned(),
             ))
         }
     }
@@ -986,6 +1016,27 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Assert trimmed
+    ///
+    /// # Usage
+    ///
+    /// $assertt( abc ,abc)
+    pub(crate) fn assert_trimmed(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            if trim!(args[0]) == trim!(args[1]) {
+                p.track_assertion(true)?;
+                Ok(None)
+            } else {
+                p.track_assertion(false)?;
+                Err(RadError::AssertFail)
+            }
+        } else {
+            Err(RadError::InvalidArgument(
+                "Assertt requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     /// Assert
     ///
     /// # Usage
@@ -1599,9 +1650,11 @@ impl FunctionMacroMap {
                                 extracted.pop();
                                 extracted.pop();
                                 "\r\n"
-                            } else {
+                            } else if extracted.ends_with('\n') {
                                 extracted.pop();
                                 "\n"
+                            } else {
+                                ""
                             };
 
                             let extracted_spl = LSPA
@@ -1643,7 +1696,7 @@ impl FunctionMacroMap {
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
-                "Rotate requires three arguments".to_owned(),
+                "Rotatel requires three arguments".to_owned(),
             ))
         }
     }
@@ -2383,6 +2436,63 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Sort lists ( chunks )
+    ///
+    /// # Usage
+    ///
+    /// $sortc(asec, ... chunk ... )
+    pub(crate) fn sort_chunk(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(mut args) = ArgParser::new().args_with_len(args, 2) {
+            let order_type = trim!(stake!(args[0])).to_string();
+            let mut content = stake!(args[1]);
+            let line_end = if content.ends_with("\r\n") {
+                content.pop();
+                content.pop();
+                "\r\n"
+            } else if content.ends_with('\n') {
+                content.pop();
+                "\n"
+            } else {
+                content.push_str(&p.state.newline);
+                ""
+            };
+            // --- Chunk creation
+            let mut clogged_chunk_list = vec![];
+            let mut container = String::new();
+            for line in Utils::full_lines(content.as_bytes()) {
+                let line = line?;
+                // Has empty leading + has parent
+                if LSPA.captures(&line).is_some() && !container.is_empty() {
+                    container.push_str(&line);
+                } else {
+                    clogged_chunk_list.push(container);
+                    container = line;
+                }
+            }
+            clogged_chunk_list.push(container);
+            // ---
+            match order_type.to_lowercase().as_str() {
+                "asec" => clogged_chunk_list.sort_unstable(),
+                "desc" => {
+                    clogged_chunk_list.sort_unstable();
+                    clogged_chunk_list.reverse()
+                }
+                _ => {
+                    return Err(RadError::InvalidArgument(format!(
+                        "Sortc requires either asec or desc but given \"{}\"",
+                        order_type
+                    )))
+                }
+            }
+
+            Ok(Some(clogged_chunk_list.join("") + line_end))
+        } else {
+            Err(RadError::InvalidArgument(
+                "sortc requires two arguments".to_owned(),
+            ))
+        }
+    }
+
     // [1 2 3]
     //  0 1 2
     //  -3-2-1
@@ -2841,7 +2951,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $foldl( ,1
+    /// $foldby( ,1
     /// 1
     /// 2
     /// 3
@@ -2860,6 +2970,69 @@ impl FunctionMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "foldby requires two arguments".to_owned(),
+            ))
+        }
+    }
+
+    /// Fold lines as trimmed
+    ///
+    /// # Usage
+    ///
+    /// $foldt(1
+    /// 1
+    /// 2
+    /// 3
+    /// 4
+    /// 5)
+    pub(crate) fn foldt(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let content = args[0].lines().fold(String::new(), |mut acc, a| {
+                acc.push_str(trim!(a));
+                acc
+            });
+
+            Ok(Some(content))
+        } else {
+            Err(RadError::InvalidArgument(
+                "foldt requires an argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Fold lines by regular expressions
+    ///
+    /// # Usage
+    ///
+    /// $foldreg(expr,1
+    /// 2)
+    pub(crate) fn fold_regular_expr(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let mut container = String::new();
+            let mut folded = String::new();
+            let nl = p.state.newline.to_owned();
+            let reg = p.try_get_or_insert_regex(&args[0])?;
+            for line in Utils::full_lines(args[1].as_bytes()) {
+                let line = line?;
+                // Start new container
+                if reg.find(&line).is_some() {
+                    folded.push_str(std::mem::take(&mut container.as_str()));
+                    if !container.is_empty() {
+                        folded.push_str(&nl);
+                    }
+                    container.clear();
+                    container.push_str(line.trim_end());
+                } else if !container.is_empty() {
+                    container.push_str(trim!(line));
+                } else {
+                    folded.push_str(&line);
+                }
+            }
+            folded.push_str(&container);
+
+            Ok(Some(folded))
+        } else {
+            Err(RadError::InvalidArgument(
+                "foldreg requires two argument".to_owned(),
             ))
         }
     }

@@ -261,6 +261,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "assertt".to_owned(),
+                FMacroSign::new(
+                    "assertt",
+                    ["a_lvalue^", "a_rvalue^"],
+                    Self::assert_trimmed,
+                    None,
+                ),
+            ),
+            (
                 "capture".to_owned(),
                 FMacroSign::new(
                     "capture",
@@ -570,11 +579,29 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "foldt".to_owned(),
+                FMacroSign::new(
+                    "foldt",
+                    ["a_lines"],
+                    Self::foldt,
+                    None,
+                ),
+            ),
+            (
                 "foldby".to_owned(),
                 FMacroSign::new(
                     "foldby",
                     ["a_separator","a_content"],
                     Self::fold_by,
+                    None,
+                ),
+            ),
+            (
+                "foldreg".to_owned(),
+                FMacroSign::new(
+                    "foldreg",
+                    ["a_expr","a_lines"],
+                    Self::fold_regular_expr,
                     None,
                 ),
             ),
@@ -1733,6 +1760,15 @@ c))".to_string()),
                 ),
             ),
             (
+                "sortc".to_owned(),
+                FMacroSign::new(
+                    "sortc",
+                    ["a_sort_type^","a_content"],
+                    Self::sort_chunk,
+                    None,
+                ),
+            ),
+            (
                 "space".to_owned(),
                 FMacroSign::new(
                     "space",
@@ -2714,12 +2750,16 @@ $assert(1 + 2 = 3,$evalk(1 + 2 ))"
                 ),
             );
             map.insert(
+                "evalkf".to_owned(),
+                FMacroSign::new("evalkf", ["a_expr"], Self::eval_keep_as_float, None),
+            );
+            map.insert(
                 "pie".to_owned(),
-                FMacroSign::new("pie", ["a_expr"], Self::pipe_ire, Some("".to_string())),
+                FMacroSign::new("pie", ["a_expr"], Self::pipe_ire, None),
             );
             map.insert(
                 "mie".to_owned(),
-                FMacroSign::new("mie", ["a_expr"], Self::macro_ire, Some("".to_string())),
+                FMacroSign::new("mie", ["a_expr"], Self::macro_ire, None),
             );
         }
         #[cfg(feature = "textwrap")]
