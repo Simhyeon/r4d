@@ -2039,8 +2039,8 @@ impl<'processor> Processor<'processor> {
                 .unwrap_or_default()
                 .to_string();
         }
-        let mut args = String::new();
 
+        let mut args;
         if !self.map.is_deterred_macro(name) || self.state.process_type == ProcessType::Dry {
             // Preprocess only when macro is not a deterred macro
 
@@ -2048,6 +2048,8 @@ impl<'processor> Processor<'processor> {
                 // This parses and processes arguments
                 // and macro should be evaluated after
                 args = self.parse_chunk_args(level, name, &raw_args)?;
+            } else {
+                args = raw_args;
             }
 
             // Pipe doesn't expanded but added
