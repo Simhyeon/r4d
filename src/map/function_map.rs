@@ -489,8 +489,7 @@ impl FunctionMacroMap {
                     "istype",
                     ["a_content"],
                     Self::isolate_vertical,
-                    None,
-                    // Some(man_fun!("insluav.r4d")),
+                    Some(man_fun!("insulav.r4d")),
                 ),
             ),
             (
