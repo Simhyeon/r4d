@@ -3255,7 +3255,7 @@ impl<'processor> Processor<'processor> {
     #[inline]
     pub(crate) fn get_similar_macro_names(&self, macro_name: &str) -> Option<Vec<String>> {
         use std::cmp::Ordering::{Equal, Less};
-        let mut min_distance = 2usize;
+        let mut min_distance = 1usize;
         let mut current_distance: usize;
         let mut candidates = HashSet::new();
         let mut superset_candidates = HashSet::new();
@@ -3284,7 +3284,12 @@ impl<'processor> Processor<'processor> {
             }
         }
         if candidates.is_empty() {
-            None
+            Some(
+                superset_candidates
+                    .iter()
+                    .map(|idx| sigs[*idx].name.clone())
+                    .collect(),
+            )
         } else {
             candidates.extend(superset_candidates);
             let leader = if has_exact_match {
