@@ -1784,15 +1784,13 @@ impl FunctionMacroMap {
                     &args[1]
                 ))
             })?;
-            let filler: &str = trim!(&args[2]);
             let text = &args[3];
             let text_length = text.chars().count();
             if width < text_length {
-                return Err(RadError::InvalidArgument(
-                    "Width should be bigger than source texts".to_string(),
-                ));
+                return Ok(Some(text.to_string()));
             }
 
+            let filler: &str = trim!(&args[2]);
             let filler_char: String;
 
             if filler.is_empty() {
