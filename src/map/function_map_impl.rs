@@ -4412,78 +4412,90 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $insulav(value,type)
+    /// $insulav(value)
     pub(crate) fn isolate_vertical(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
-        let mut formatted = String::new();
-        let mut only_blank = true;
-        let mut first_contact = false;
-        let mut nest_level = 1usize;
-        for ch in args.chars() {
-            let is_isolation = ISOLATION_CHARS.contains(&ch);
-            if only_blank && !ch.is_whitespace() && !is_isolation {
-                only_blank = false;
-                first_contact = true;
-            }
-            if is_isolation {
-                first_contact = false;
-                if ISOLATION_CHARS_CLOSING.contains(&ch) {
-                    nest_level -= 1;
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let mut formatted = String::new();
+            let mut only_blank = true;
+            let mut first_contact = false;
+            let mut nest_level = 1usize;
+            for ch in args[0].chars() {
+                let is_isolation = ISOLATION_CHARS.contains(&ch);
+                if only_blank && !ch.is_whitespace() && !is_isolation {
+                    only_blank = false;
+                    first_contact = true;
                 }
-                if !only_blank {
-                    write!(formatted, "{}", p.state.newline)?;
-                }
-                write!(
-                    formatted,
-                    "{2}{0}{1}",
-                    ch,
-                    p.state.newline,
-                    " ".repeat((nest_level - 1) * 4)
-                )?;
-                if ISOLATION_CHARS_OPENING.contains(&ch) {
-                    nest_level += 1;
-                }
-
-                only_blank = true;
-            } else if !only_blank || !ch.is_whitespace() {
-                // TODO Check first contact
-                if first_contact {
-                    write!(formatted, "{}", " ".repeat((nest_level - 1) * 4))?;
+                if is_isolation {
                     first_contact = false;
-                }
-                write!(formatted, "{ch}")?;
-            }
-        }
+                    if ISOLATION_CHARS_CLOSING.contains(&ch) {
+                        nest_level -= 1;
+                    }
+                    if !only_blank {
+                        write!(formatted, "{}", p.state.newline)?;
+                    }
+                    write!(
+                        formatted,
+                        "{2}{0}{1}",
+                        ch,
+                        p.state.newline,
+                        " ".repeat((nest_level - 1) * 4)
+                    )?;
+                    if ISOLATION_CHARS_OPENING.contains(&ch) {
+                        nest_level += 1;
+                    }
 
-        Ok(Some(formatted))
+                    only_blank = true;
+                } else if !only_blank || !ch.is_whitespace() {
+                    // TODO Check first contact
+                    if first_contact {
+                        write!(formatted, "{}", " ".repeat((nest_level - 1) * 4))?;
+                        first_contact = false;
+                    }
+                    write!(formatted, "{ch}")?;
+                }
+            }
+
+            Ok(Some(formatted))
+        } else {
+            Err(RadError::InvalidArgument(
+                "insulav requires an argument".to_owned(),
+            ))
+        }
     }
 
     /// isolate horizontal
     ///
     /// # Usage
     ///
-    /// $insulah(value,type)
+    /// $insulah(value)
     pub(crate) fn isolate_horizontal(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let mut formatted = String::new();
-        let mut iter = args.chars().peekable();
-        let mut previous: char = '@';
-        while let Some(ch) = iter.next() {
-            if !previous.is_whitespace() && ISOLATION_CHARS_CLOSING.contains(&ch) {
-                formatted.push(' ');
-            }
-            previous = ch;
-            formatted.push(ch);
-            if let Some(next_ch) = iter.peek() {
-                if !next_ch.is_whitespace()
-                    && (ISOLATION_CHARS.contains(&ch) || ISOLATION_SINGLE.contains(&ch))
-                {
+        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
+            let mut formatted = String::new();
+            let mut iter = args[0].chars().peekable();
+            let mut previous: char = '@';
+            while let Some(ch) = iter.next() {
+                if !previous.is_whitespace() && ISOLATION_CHARS_CLOSING.contains(&ch) {
                     formatted.push(' ');
-                    previous = ' ';
+                }
+                previous = ch;
+                formatted.push(ch);
+                if let Some(next_ch) = iter.peek() {
+                    if !next_ch.is_whitespace()
+                        && (ISOLATION_CHARS.contains(&ch) || ISOLATION_SINGLE.contains(&ch))
+                    {
+                        formatted.push(' ');
+                        previous = ' ';
+                    }
                 }
             }
-        }
 
-        Ok(Some(formatted))
+            Ok(Some(formatted))
+        } else {
+            Err(RadError::InvalidArgument(
+                "insulah requires an argument".to_owned(),
+            ))
+        }
     }
 
     /// istype : Qualify a value
@@ -4499,7 +4511,7 @@ impl FunctionMacroMap {
                 "uint" => value.parse::<usize>().is_ok(),
                 "int" => value.parse::<isize>().is_ok(),
                 "float" => value.parse::<f64>().is_ok(),
-                "bool" => Utils::is_arg_true(&value).is_ok(),
+                "bool" => Utils::is_arg_true(value).is_ok(),
                 _ => {
                     return Err(RadError::InvalidArgument(format!(
                         "Given type \"{}\" is not valid",
