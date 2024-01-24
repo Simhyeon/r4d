@@ -1,0 +1,58 @@
+Align lines by a specific rules
+
+# Alignby syntax
+
+- Rules' length should be multiples of 2. Think of it as vector of tuples.
+- First element of every two characters is number of character to set standard
+- Second element is a target character
+
+e.g.
+
+$alignby(2;3=)
+-> Align lines by second ';' character and then align by third '=' character
+
+# Arguments
+
+- a_rules : Rules to align 
+- a_lines : Lines to align
+
+# Demo
+
+```
+$stream(alignby 1$lp()1/)
+let mut processor = Processor::new()
+.set_comment_type(CommentType::Start) // Use comment
+.custom_macro_char('~')? // use custom macro character
+.custom_comment_char('#')? // use custom comment character
+.purge(true) // Purge undefined macro
+.silent(WarningType::Security) // Silents all warnings
+.assert(true) // Enable assertion mode
+.lenient(true) // Disable strict mode
+.hygiene(Hygiene::Macro) // Enable hygiene mode
+.pipe_truncate(false) // Disable pipe truncate
+.write_to_file(Path::new("out.txt"))? // default is stdout
+.error_to_file(Path::new("err.txt"))? // default is stderr
+.unix_new_line(true) // use unix new line for formatting
+.discard(true) // discard all output
+.melt_files(&[Path::new("source.r4d")])? // Read runtime macros from frozen
+$consume|()
+$indent^-($tab(1))
+===
+let mut processor = Processor::new()
+	.set_comment_type(CommentType::Start)    // Use comment
+	.custom_macro_char('~')?                 // use custom macro character
+	.custom_comment_char('#')?               // use custom comment character
+	.purge(true)                             // Purge undefined macro
+	.silent(WarningType::Security)           // Silents all warnings
+	.assert(true)                            // Enable assertion mode
+	.lenient(true)                           // Disable strict mode
+	.hygiene(Hygiene::Macro)                 // Enable hygiene mode
+	.pipe_truncate(false)                    // Disable pipe truncate
+	.write_to_file(Path::new("out.txt"))?    // default is stdout
+	.error_to_file(Path::new("err.txt"))?    // default is stderr
+	.unix_new_line(true)                     // use unix new line for formatting
+	.discard(true)                           // discard all output
+	.melt_files(&[Path::new("source.r4d")])? // Read runtime macros from frozen
+```
+
+# Example

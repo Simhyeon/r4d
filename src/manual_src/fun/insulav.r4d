@@ -1,0 +1,18 @@
+Isolate content vertically.
+
+# Note
+
+- This doesn't pretty print.
+- Utilize this macro for isolating enclosed contents.
+
+# Demo
+
+```
+$stream(insulav)
+$assert(true,$istype( uint , 0 ))
+$assert(false,$istype( uint , -1 ))
+$assert(true,$istype( int , 0 ))
+$consume()
+```
+
+# Example

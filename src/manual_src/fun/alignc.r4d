@@ -1,0 +1,32 @@
+Align content by columns ( namely as formatted table )
+
+# Arguments
+
+- a_content : Table to align ( trimmed )
+
+# Demo
+
+```
+% File name -> emploee.txt
+%
+% ajay manager account 45000
+% sunil clerk account 25000
+% varun manager sales 50000
+% amit manager account 47000
+
+$stream(alignc)
+$syscmd(awk '{print NR,$0}' employee.txt)
+$-()
+$consume()
+===
+1 ajay   manager  account  45000
+2 sunil  clerk    account  25000
+3 varun  manager  sales    50000
+4 amit   manager  account  47000
+```
+
+# Example
+
+$assert($alignc(aa bbbb ccccc$nl()1 2 3),$enl()
+aa bbbb ccccc
+1  2    3    )
