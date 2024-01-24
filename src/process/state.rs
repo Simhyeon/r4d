@@ -163,13 +163,13 @@ impl RegexCache {
 pub(crate) struct StreamState {
     pub on_stream: bool,
     pub as_lines: bool,
-    pub macro_name_src: String,
+    pub macro_src: String,
 }
 
 impl StreamState {
     pub fn clear(&mut self) {
         self.on_stream = false;
         self.as_lines = false;
-        self.macro_name_src.clear();
+        self.macro_src.clear();
     }
 }
