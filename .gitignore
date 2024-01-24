@@ -1,10 +1,8 @@
 /target
 auto.sh
-cache.txt
 compiled.r4c
 diff.out
 diff.src
-err.txt
 lib.r4f
 pkg
 test
@@ -12,3 +10,4 @@ wasm
 addr.csv
 sig.json
 /*.r4d
+/*.txt
