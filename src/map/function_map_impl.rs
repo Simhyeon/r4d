@@ -792,29 +792,32 @@ impl FunctionMacroMap {
         }
         if let Some(args_content) = ArgParser::new().args_with_len(args, 1) {
             let source = &args_content[0];
-            let arg_vec = source.split_whitespace().collect::<Vec<&str>>();
+            let arg_vec = Utils::get_whitespace_split_retain_quote_rule(source);
+            let args_ref = arg_vec.iter().map(|s| s.as_ref()).collect::<Vec<_>>();
 
             let output = if cfg!(target_os = "windows") {
                 Command::new("cmd")
                     .arg("/C")
-                    .args(arg_vec)
+                    .args(args_ref)
                     .output()
                     .expect("failed to execute process")
-                    .stdout
             } else {
                 let sys_args = if arg_vec.len() > 1 {
-                    &arg_vec[1..]
+                    &args_ref[1..]
                 } else {
                     &[]
                 };
-                Command::new(arg_vec[0])
+                Command::new(args_ref[0])
                     .args(sys_args)
                     .output()
                     .expect("failed to execute process")
-                    .stdout
             };
 
-            Ok(Some(String::from_utf8(output)?))
+            if output.status.success() {
+                Ok(Some(String::from_utf8(output.stdout)?))
+            } else {
+                Ok(Some(String::from_utf8(output.stderr)?))
+            }
         } else {
             Err(RadError::InvalidArgument(
                 "Syscmd requires an argument".to_owned(),
@@ -1204,7 +1207,7 @@ impl FunctionMacroMap {
         if let Some(args) = ArgParser::new().args_with_len(args, 2) {
             let table_format = trim!(&args[0]); // Either gfm, wikitex, latex, none
             let csv_content = trim!(&args[1]);
-            let result = Formatter::csv_to_table(&table_format, &csv_content, &p.state.newline)?;
+            let result = Formatter::csv_to_table(table_format, csv_content, &p.state.newline)?;
             Ok(Some(result))
         } else {
             Err(RadError::InvalidArgument(
@@ -1343,6 +1346,10 @@ impl FunctionMacroMap {
 
     /// Print tab
     ///
+    /// This prints spaces by tab_width amount if RAD_TAB_WIDTH is set as value
+    ///
+    /// If not, it prints tab
+    ///
     /// # Usage
     ///
     /// $tab()
@@ -1355,7 +1362,16 @@ impl FunctionMacroMap {
             1
         };
 
-        Ok(Some("\t".repeat(count)))
+        let tab_width = std::env::var("RAD_TAB_WIDTH");
+        match tab_width {
+            Ok(value) => {
+                let tab = " ".repeat(value.parse::<usize>().map_err(|_| {
+                    RadError::InvalidCommandOption("RAD_TAB_WIDTH is not a valid value".to_string())
+                })?);
+                Ok(Some(tab.repeat(count)))
+            }
+            Err(_) => Ok(Some("\t".repeat(count))),
+        }
     }
 
     /// Print a literal percent
@@ -1896,7 +1912,7 @@ impl FunctionMacroMap {
     /// $alignc(%, contents to align)
     pub(crate) fn align_columns(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let contents = &args[0];
+            let contents = trim!(&args[0]);
             let data = dcsv::Reader::new()
                 .trim(true)
                 .use_space_delimiter(true)
@@ -1921,9 +1937,10 @@ impl FunctionMacroMap {
             let rules = trim!(args[0]).chars().collect::<Vec<_>>();
 
             if rules.len() % 2 != 0 {
-                return Err(RadError::InvalidCommandOption(
-                    "alignby needs specific syntax for rules".to_string(),
-                ));
+                return Err(RadError::InvalidCommandOption(format!(
+                    "alignby needs specific syntax for rules but given \"{}\"",
+                    args[0]
+                )));
             }
 
             let mut contents = args[1].lines().map(|s| s.to_owned()).collect::<Vec<_>>();
@@ -3745,7 +3762,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $print(This is a problem)
+    /// $println(This is a problem)
     pub(crate) fn print_message(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         write!(std::io::stdout(), "{}{}", args, p.state.newline)?;
         Ok(None)

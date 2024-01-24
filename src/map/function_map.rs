@@ -91,20 +91,18 @@ impl FunctionMacroMap {
                 "alignc".to_owned(),
                 FMacroSign::new(
                     "alignc",
-                    ["a_content"],
+                    ["a_content^"],
                     Self::align_columns,
-                    None,
-                    // Some(man_fun!("alignc.r4d"))
+                    Some(man_fun!("alignc.r4d"))
                 ),
             ),
             (
                 "alignby".to_owned(),
                 FMacroSign::new(
                     "alignby",
-                    ["a_separator", "a_lines"],
+                    ["a_rules", "a_lines"],
                     Self::align_by_rules,
-                    None,
-                    // Some(man_fun!("alignby.r4d"))
+                    Some(man_fun!("alignby.r4d"))
                 ),
             ),
             (
@@ -1474,9 +1472,9 @@ $assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
                 ),
             ),
             (
-                "print".to_owned(),
+                "println".to_owned(),
                 FMacroSign::new(
-                    "print",
+                    "println",
                     ["a_message"],
                     Self::print_message,
                     Some("print message -> discard option is ignored for this macro + it has trailing new line for pretty foramtting".to_owned()),
