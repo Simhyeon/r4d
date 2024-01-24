@@ -7,6 +7,7 @@ use crate::logger::WarningType;
 use crate::{Processor, WriteOption};
 use once_cell::sync::Lazy;
 use regex::Regex;
+use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::io::BufRead;
 use std::path::Path;
@@ -71,6 +72,82 @@ use colored::*;
 pub(crate) struct Utils;
 
 impl Utils {
+    /// Split string by whitespaces but respect spaces within commas and strip commas
+    ///
+    /// # Example
+    ///
+    /// "a b c"           -> [a,b,c]
+    /// "a b ' ' d"       -> [a,b, ,d]
+    /// "a b c' ' d"      -> [a,b,c ,d]
+    /// "a b ' c f g ' d" -> ["a","b"," c f g ","d",]
+    pub fn get_whitespace_split_retain_quote_rule<'a>(args: &'a str) -> Vec<Cow<'a, str>> {
+        let mut split: Vec<Cow<'a, str>> = vec![];
+        let args = trim!(args);
+        if args.is_empty() {
+            return split;
+        }
+        let mut index = 0usize;
+        let mut quoted = false;
+        let mut strip_quote = false;
+        let mut prev = '0';
+        for (idx, ch) in args.chars().enumerate() {
+            // Decide whether split needs or not
+            if ch == ' ' {
+                if quoted {
+                    // Ignore space
+                    // continue;
+                } else {
+                    // Not quoted
+
+                    // if previous was also space
+                    // don't split and continue
+                    if prev == ' ' {
+                    } else {
+                        // Previous was concrete character
+                        if strip_quote {
+                            split.push(args[index..idx].trim_start().replace('\'', "").into());
+                            strip_quote = false;
+                        } else {
+                            split.push(args[index..idx].trim_start().into());
+                        }
+                    }
+                    index = idx; // Update index
+                }
+            }
+            if ch == '\'' {
+                quoted = !quoted;
+                strip_quote = true;
+            }
+
+            // GLobal process
+            prev = ch;
+        }
+
+        // Collect last
+        if strip_quote {
+            split.push(args[index..].trim_start().replace('\'', "").into());
+        } else {
+            split.push(args[index..].trim_start().into());
+        }
+        split
+    }
+
+    /// Split macro name and arguments from given source
+    pub(crate) fn get_name_n_arguments(
+        src: &str,
+        with_trailing_comma: bool,
+    ) -> RadResult<(&str, String)> {
+        let macro_src_joined = src.split_whitespace().collect::<Vec<_>>();
+        let macro_name = macro_src_joined.first().ok_or(RadError::InvalidArgument(
+            "Macro name cannot be empty".to_string(),
+        ))?;
+        let mut macro_arguments = macro_src_joined[1..].join(",");
+        if with_trailing_comma && !macro_arguments.is_empty() {
+            macro_arguments.push(',');
+        }
+        Ok((macro_name, macro_arguments))
+    }
+
     /// Generic levenshtein distance function
     ///
     /// SOURCE : https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance#Rust
