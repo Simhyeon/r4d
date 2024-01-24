@@ -14,8 +14,6 @@
 
 ## Hard+misc ones
 
-* [ ] Complete wasm
-
 * [ ] Implement array object.
 * [ ] Projects performance
 

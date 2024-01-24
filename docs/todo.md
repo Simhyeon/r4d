@@ -1,14 +1,36 @@
 # Todo immediate
 
-- Fix basic Lorem indexing
+* [ ] Consider reverting changes for greedy and greedy strip
+* [ ] Bug: stream bugged? or strip bugged?
+```
+$stream(insulav)
+\*
+$assert(true,$istype( uint , 0 ))
+$assert(false,$istype( uint , -1 ))
+$assert(true,$istype( int , 0 ))
+*\
+$consume()
+```
+-> This doesn't strip literal quote
+
+* [ ] update alignc to use newer dcsv version's right and center align feature
+* [ ] Escape rule is very outrageous
+```
+\\ -> \\
+\ -> NONE WHAT?
+```
+* [x] Learn how to use cow
+* [x] Fixed a bug whree skip_expansion was not working
+* [x] Syscmd is inconsistent
+    * [x] quote enclosed value has to be sent separately. Currently arguments
+    * [x] Rad inside rad squeezes output -> It was other bug
+* [ ] Check if all macros can handle empty arguments without panicking.
 - Update manuals one by one
-    - Don't think too serious about demo. If you can't think just pass it. You
-      might go back and make some distinguishing demo or maybe forever not. The
-      important thing is that you should keep going.
 - Update all "None" variatns of manuals
 - Add new macros that is immediately necessary for daily use
 - Fix bugs that was found during manual update
     - Regardless of bug size and difficulties
+    - Fix basic Lorem indexing
 
 - Debug all manuals
     1. Test english charcters
@@ -36,7 +58,7 @@
     Consider adding later.
 * [x] Fixed where chars didn't work at all...
 * [ ] Fix regex register shenenigans
-* [ ] Fix deubbing feature bugs
+ [ ] Fix deubbing feature bugs
     1. Add assertion information
         1. WHy it failed
         2. What was the value then,
@@ -56,6 +78,11 @@
 
 #### Documentation
 
+* [ ] Illustrate that insula macros are not pretty printer but, rather
+  functional macro that creates sufficient spaces and newlines for following
+  macro processes
+* [ ] Changed rotate behaviour
+    -> Think of center rotation as "ferris wheel"
 * [ ] Update manuals
     * 24/177
 * [ ] Update repository documentations
@@ -68,125 +95,42 @@
 
 #### Features
 
-* [ ] Ditch evalexpr flag and include it as default
 * [ ] Check if greedy argument's no-strip behaviour is ideal or not
-* [ ] Search should be about searching. I don't know if something exists. It is no
+* [x] Currently --sc arguments are sent as pipe which is not evaluated at all
+  which might be unexpected behaviour
+    -> Now sc and sl accepts arguments as real arguments not pipe input
+* [x] Ditch evalexpr flag and include it as default
+* [x] Search should be about searching. I don't know if something exists. It is no
    use when you only prints something just similar. How about showing lists if
    necessary?
 
-#### Macro
+#### Macro ( macro )
 
-* [ ] Discard and print status macro
-* [ ] New macro : align-by-column
-```
-Lorem ipsum dolor sit amet
-1 2 3 4 5
-===
-Lorem ipsum dolor sit amet
-1     2     3     4   5
-```
-
-* [ ] Assert trimmed version.
-* [ ] Consider chaning name rotate to rotatel since it has trailing newline and
-  it can be consufing for newcomers
-* [ ] Condl variant to respect leading tabs and spaces -> Maybe this is a burden of pretty printer
-* [ ] Increase all number by one or Apply formulat to numbers
-```
-"{0}{1}{2}{3}",
--> I wanted to increase them by one but I couldn't dman...
-```
-* [ ] Delete after 
-    -> Remove all comments from chunk
+* [x] Make alignby with complicated rules supportted
+    * [ ] Notify users that align with comma will work strange
+    * [ ] Rename macros that execute on lines that has no l suffix
+    * [ ] Condl variant to respect leading tabs and spaces 
+    -> Maybe this is a burden of pretty printer
 * [x] Joinl macro
-    * [ ] Add a environmnet variable to set sensible default for eliminating empty new lines.
-    ```
-    JOINL_RNL
-    $joinl(,
-    a
-
-    b
-
-    c
-    )
-    ===
-    a,b,c
-    ```
-* [ ] Alignby but complicated : abcr ( Align by complicated rules )
-```
-% $abcr(regex_expression,reserved count,source)
-% Reserved count means which regex pattern match if there are multiple ones.
-% If there is only single, it will match singe or not ( by configuation )
-```
-* [ ] Evalfk -> Evalf but keep
-* [ ] Add for column
-    * [ ] Complete multiple iteration system from the for column macro and add
-      to foreach and forsp
-* [ ] Joined foreach?
-* [ ] Make rotate center creates more plausible whitespaces
-    -> Currently it simply fixes into `[space] [pattern] [space]`
-* [ ] Require "discard" option
-    Since making a macro to change processor behaviour is not necessarily good.
-    It's better to notify user that something is going to happen and has to be
-    handled by user him/herself
-* [ ] Padding macro
-    There are times when you need to pad spaces or characters. Such as
-    automatic conversion from int to float or padding spaces etc etc...
+    * [ ] Add an environmnet variable to set sensible default for eliminating
+      empty new lines. Or say, if something can be eaisly achieved by another
+      macro there should be need to add sensible default behaviour. it is not
+      consistent 
+* [ ] Discard and print status macro
 * [ ] Evalk formatting to be aesthetic
-* [ ] rer to also support alphabets
-```
-a.
-b.
-c.
-```
-* [ ] Enable arguments by whitespaces for `map` variants
 * [ ] TOC macro-script ( Not builtin but usage's example )
-* [ ] Stream to support arguments
-* [ ] Flat -> Flatten indented sub lines into a single one
-```
-$stream(flat)
-let setter = Setter::new()
-    .builder()
-    .yeah();
-$consume
-===
-let setter = Setter::new().builder().yeah();
-```
--> This is simlar to vim J function but works on chunk.
 
-* [ ] Flatreg -> Flatten by regular expression. Regexed line becomes main line
-  that following lines are joined to
-```
-$define(wow,a_content=$flatreg(Self::,$a_content()))
-$stream(wow)
-Self::PermissionDenied(txt, atype) => format!(
-"Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.",
-txt, atype
-),
-Self::StrictPanic => 
-    "Every error is panicking in strict mode".to_string(),
-$consume
-===
-Self::PermissionDenied(txt, atype) => format!( "Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.", txt, atype),
-Self::StrictPanic => "Every error is panicking in strict mode".to_string(),
-```
 * [ ] Wrapl -> Wrap content by lines. == vim's "==" function
-* [ ] Sortli -> Sort list
-```
-$stream(sortli)
-ABCD
-ABCEE
-    AAAA
-AA
-$consume
-===
-AA
-ABCD
-ABCEE
-    AAAA
-```
 * [ ] Rotate concat -> Reverse of rotate macro
 * [ ] Also add non evalexpr variant macro ( inc, dec )
 * [ ] Pretty printer ( Json, toml etc... )
+* [ ] Increaser by alphabets? ( Replacement for possible rer macro )
+* [ ] Inner align? -> Stretch
+```
+[a,b,c          ]
+=
+[a,     b,     c]
+```
 
 #### MISC, bug detecting, Ergonomics
 
@@ -217,8 +161,10 @@ ABCEE
         different name I guess
 * [ ] Should rad support awk like operations?
 
-#### Peformance
+#### Performance
 
+* [ ] Macro to return cow rather than string? Is it that performant?
+* [ ] Try removing unnecessary clone calls
 * [ ] Mie and pie insert_str is inefficient.
 * [ ] Check for alignby performance maybe duplicate
 * [ ] Rer iteration cache to a concrete struct for better maintainability
