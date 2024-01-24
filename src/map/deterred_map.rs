@@ -470,6 +470,15 @@ $assert(a+b+c+,$foreach($:()+,a,b,c))".to_string(),
                 ),
             ),
             (
+                "forjoin".to_owned(),
+                DMacroSign::new(
+                    "forjoin",
+                    ["a_body", "a_joined_array^"],
+                    DeterredMacroMap::forjoin,
+                    None,
+                ),
+            ),
+            (
                 "forsp".to_owned(),
                 DMacroSign::new(
                     "forsp",

@@ -83,14 +83,15 @@ impl DeterredMacroMap {
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
-            let macro_name = p.parse_and_strip(&mut ap, level, "mapl", &trim!(&args[0]))?;
+            let expanded = p.parse_and_strip(&mut ap, level, "map", trim!(&args[0]))?;
+            let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
             let src = p.parse_and_strip(&mut ap, level, "map", &args[1])?;
             let array = src.split(',');
 
             let mut acc = String::new();
             for item in array {
                 acc.push_str(
-                    &p.execute_macro(level, "map", &macro_name, item)?
+                    &p.execute_macro(level, "map", name, &(arguments.clone() + item))?
                         .unwrap_or_default(),
                 );
             }
@@ -115,14 +116,15 @@ impl DeterredMacroMap {
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
-            let macro_name = p.parse_and_strip(&mut ap, level, "mapl", &trim!(&args[0]))?;
+            let expanded = p.parse_and_strip(&mut ap, level, "mapl", trim!(&args[0]))?;
+            let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
             let src = p.parse_and_strip(&mut ap, level, "mapl", &args[1])?;
             let lines = src.lines();
 
             let mut acc = String::new();
             for item in lines {
                 acc.push_str(
-                    &p.execute_macro(level, "mapl", &macro_name, item)?
+                    &p.execute_macro(level, "mapl", name, &(arguments.clone() + item))?
                         .unwrap_or_default(),
                 );
             }
@@ -149,8 +151,8 @@ impl DeterredMacroMap {
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
-            let mut operation = p.parse_and_strip(&mut ap, level, "mapn", &trim!(&args[0]))?;
-            let src = p.parse_and_strip(&mut ap, level, "mapn", &trim!(&args[1]))?;
+            let mut operation = p.parse_and_strip(&mut ap, level, "mapn", trim!(&args[0]))?;
+            let src = p.parse_and_strip(&mut ap, level, "mapn", trim!(&args[1]))?;
 
             let map_type = if p.contains_macro(&operation, MacroType::Runtime) {
                 "macro"
@@ -201,12 +203,13 @@ impl DeterredMacroMap {
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
-            let macro_name = p.parse_and_strip(&mut ap, level, "mapf", &trim!(&args[0]))?;
+            let macro_src = p.parse_and_strip(&mut ap, level, "mapf", trim!(&args[0]))?;
+            let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
             let file = BufReader::new(std::fs::File::open(p.parse_and_strip(
                 &mut ap,
                 level,
                 "mapf",
-                &trim!(&args[1]),
+                trim!(&args[1]),
             )?)?)
             .lines();
 
@@ -214,8 +217,13 @@ impl DeterredMacroMap {
             for line in file {
                 let line = line?;
                 acc.push_str(
-                    &p.execute_macro(level, "mapf", &macro_name, &line)?
-                        .unwrap_or_default(),
+                    &p.execute_macro(
+                        level,
+                        "mapf",
+                        macro_name,
+                        &(macro_arguments.clone() + &line),
+                    )?
+                    .unwrap_or_default(),
                 );
             }
             Ok(Some(acc))
@@ -239,9 +247,10 @@ impl DeterredMacroMap {
         let mut ap = ArgParser::new().no_strip();
         if let Some(args) = ap.args_with_len(args, 4) {
             ap.set_strip(true);
-            let grep_type = p.parse_and_strip(&mut ap, level, "grepmap", &trim!(&args[0]))?;
+            let grep_type = p.parse_and_strip(&mut ap, level, "grepmap", trim!(&args[0]))?;
             let match_expr = p.parse_and_strip(&mut ap, level, "grepmap", &args[1])?;
-            let macro_name = p.parse_and_strip(&mut ap, level, "grepmap", &trim!(&args[2]))?;
+            let macro_src = p.parse_and_strip(&mut ap, level, "grepmap", trim!(&args[2]))?;
+            let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
             let source = p.parse_and_strip(&mut ap, level, "grepmap", &args[3])?;
 
             let bufread = match grep_type.to_lowercase().as_str() {
@@ -283,7 +292,12 @@ impl DeterredMacroMap {
                 for cap in reg.captures_iter(&source) {
                     let captured = cap.get(0).map_or("", |m| m.as_str());
                     let expanded = p
-                        .execute_macro(level, "grepmap", &macro_name, captured)?
+                        .execute_macro(
+                            level,
+                            "grepmap",
+                            macro_name,
+                            &(macro_arguments.clone() + captured),
+                        )?
                         .unwrap_or_default();
                     res.push_str(&expanded);
                 }
@@ -295,7 +309,12 @@ impl DeterredMacroMap {
                     for cap in reg.captures_iter(&line) {
                         let captured = cap.get(0).map_or("", |m| m.as_str());
                         let expanded = p
-                            .execute_macro(level, "grepmap", &macro_name, captured)?
+                            .execute_macro(
+                                level,
+                                "grepmap",
+                                macro_name,
+                                &(macro_arguments.clone() + captured),
+                            )?
                             .unwrap_or_default();
                         res.push_str(&expanded);
                     }
@@ -388,6 +407,78 @@ impl DeterredMacroMap {
         } else {
             Err(RadError::InvalidArgument(
                 "Foreach requires two argument".to_owned(),
+            ))
+        }
+    }
+
+    /// Loop around given joined and substitute iterators with the value
+    ///
+    /// # Usage
+    ///
+    /// $forjoin($:(),a,b,c\nd,e,f)
+    pub(crate) fn forjoin(
+        args: &str,
+        level: usize,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+            let mut sums = String::new();
+            let body = &args[0];
+
+            if args[1].contains("$:()") || args[1].contains("$a_LN()") {
+                processor.log_warning(
+                    "Forjoin's second argument is iterable array.",
+                    WarningType::Sanity,
+                )?;
+            }
+
+            let loop_src = processor.parse_and_strip(&mut ap, level, "forjoin", &args[1])?;
+            let loopable = trim!(&loop_src).lines().collect::<Vec<_>>();
+
+            let mut line_width = 0;
+            let loopable: RadResult<Vec<Vec<&str>>> = loopable
+                .into_iter()
+                .map(|s| {
+                    let splitted = s.split(',').collect::<Vec<_>>();
+                    if splitted.is_empty() {
+                        return Err(RadError::InvalidArgument(format!(
+                            "Forjoin cannot process {} as valid array",
+                            s
+                        )));
+                    } else if line_width == 0 {
+                        // Initial state
+                        line_width = splitted.len();
+                    } else if line_width != splitted.len() {
+                        return Err(RadError::InvalidArgument(format!(
+                            "Line {} has inconsistent array length",
+                            s
+                        )));
+                    }
+                    Ok(splitted)
+                })
+                .collect();
+            let loopable = loopable?;
+            for (count, value) in loopable.into_iter().enumerate() {
+                processor.add_new_local_macro(level, ":0", &value.join(","));
+                // This overrides value
+                processor.add_new_local_macro(level, "a_LN", &count.to_string());
+                for (idx, item) in value.iter().enumerate() {
+                    processor.add_new_local_macro(level, &format!(":{}", idx + 1), item);
+                }
+                let result = &processor.parse_and_strip(&mut ap, level, "forjoin", body)?;
+
+                sums.push_str(result);
+            }
+
+            // Clear local macro
+            processor.remove_local_macro(level, ":");
+
+            Ok(Some(sums))
+        } else {
+            Err(RadError::InvalidArgument(
+                "Forjoin requires two argument".to_owned(),
             ))
         }
     }
@@ -879,24 +970,32 @@ impl DeterredMacroMap {
 
         let mut ap = ArgParser::new().no_strip();
         ap.set_strip(true);
-        let macro_name_src = std::mem::take(&mut p.state.stream_state.macro_name_src);
-        let macro_name = p.parse_and_strip(&mut ap, level, "consume", &macro_name_src)?;
+        let macro_src = std::mem::take(&mut p.state.stream_state.macro_src);
+        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
         let content = p.get_runtime_macro_body(STREAM_CONTAINER)?.to_owned();
-
-        // You should pop first because it has to be evaluated to open
 
         let result = if p.state.stream_state.as_lines {
             let mut acc = String::new();
             for item in content.lines() {
                 acc.push_str(
-                    &p.execute_macro(level, "consume", &macro_name, item)?
-                        .unwrap_or_default(),
+                    &p.execute_macro(
+                        level,
+                        "consume",
+                        macro_name,
+                        &(macro_arguments.clone() + item),
+                    )?
+                    .unwrap_or_default(),
                 );
                 acc.push_str(&p.state.newline);
             }
             Some(acc)
         } else {
-            p.execute_macro(level, "consume", &macro_name, &content)?
+            p.execute_macro(
+                level,
+                "consume",
+                macro_name,
+                &(macro_arguments.clone() + &content),
+            )?
         };
 
         p.replace_macro(STREAM_CONTAINER, &String::default()); // Clean macro
@@ -1179,13 +1278,17 @@ impl DeterredMacroMap {
         if let Some(args) = ap.args_with_len(args, 2) {
             ap.set_strip(true);
 
-            let expanded_name = &processor.parse_and_strip(&mut ap, level, "spread", &args[0])?;
+            let expanded_src = &processor.parse_and_strip(&mut ap, level, "spread", &args[0])?;
             let expanded_data = &processor.parse_and_strip(&mut ap, level, "spread", &args[1])?;
-            let macro_name = trim!(expanded_name);
+            let (macro_name, macro_arguments) = Utils::get_name_n_arguments(expanded_src, true)?;
             let macro_data = trim!(expanded_data);
 
-            let result =
-                Formatter::csv_to_macros(&macro_name, &macro_data, &processor.state.newline)?;
+            let result = Formatter::csv_to_macros(
+                macro_name,
+                macro_arguments,
+                macro_data,
+                &processor.state.newline,
+            )?;
 
             // Disable debugging for nested macro expansion
             #[cfg(feature = "debug")]
@@ -1242,13 +1345,13 @@ impl DeterredMacroMap {
 
         if name.is_empty() {
             return Err(RadError::InvalidArgument(
-                "stream requires an argument ( macro name )".to_owned(),
+                "stream requires an argument".to_owned(),
             ));
         }
 
         p.log_warning("Streaming text content to a macro", WarningType::Security)?;
 
-        p.state.stream_state.macro_name_src = name.to_string();
+        p.state.stream_state.macro_src = name.to_string();
 
         p.add_container_macro(STREAM_CONTAINER)?;
         let rtype = RelayTarget::Macro(STREAM_CONTAINER.to_string());
@@ -1286,7 +1389,7 @@ impl DeterredMacroMap {
 
         p.log_warning("Streaming text content to a macro", WarningType::Security)?;
 
-        p.state.stream_state.macro_name_src = name.to_string();
+        p.state.stream_state.macro_src = name.to_string();
 
         p.add_container_macro(STREAM_CONTAINER)?;
         let rtype = RelayTarget::Macro(STREAM_CONTAINER.to_string());
