@@ -45,14 +45,28 @@ impl Formatter {
     // Formatting methods start
     // <FORMAT>
     /// Execute sequence of macros from csv data
-    pub fn csv_to_macros(macro_name: &str, data: &str, newline: &str) -> RadResult<String> {
+    pub fn csv_to_macros(
+        macro_name: &str,
+        mut macro_arguments: String,
+        data: &str,
+        newline: &str,
+    ) -> RadResult<String> {
         let data = dcsv::Reader::new()
             .has_header(false)
             .array_from_stream(data.as_bytes())?;
         let mut exec = String::new();
         let mut iter = data.rows.iter().peekable();
+        if !macro_arguments.is_empty() {
+            macro_arguments.push(',');
+        }
         while let Some(row) = iter.next() {
-            write!(exec, "${}({})", macro_name, row.iter().join(","))?;
+            write!(
+                exec,
+                "${}({}{})",
+                macro_name,
+                macro_arguments,
+                row.iter().join(",")
+            )?;
             if iter.peek().is_some() {
                 exec.push_str(newline);
             }
