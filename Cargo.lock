@@ -248,7 +248,7 @@ dependencies = [
 [[package]]
 name = "dcsv"
 version = "0.3.3"
-source = "git+https://github.com/simhyeon/dcsv#906ecb603ab03e3af66c00761f87fa32ee15e028"
+source = "git+https://github.com/simhyeon/dcsv#020dbdc43a46284a58d3864060197df3f2ebd0fc"
 dependencies = [
  "regex",
  "unicode-width",

@@ -23,6 +23,7 @@ path = "src/bin/rado.rs"
 name = "r4d"
 path = "src/lib.rs"
 crate-type = ["cdylib","rlib"]
+doctest = false
 
 [features]
 # Binary related 

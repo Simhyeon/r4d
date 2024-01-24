@@ -64,8 +64,7 @@ impl ArgParser {
         let split_var = if length > 1 {
             SplitVariant::Deterred(length - 1)
         } else {
-            // SplitVariant::Greedy
-            return Some(vec![args.to_string()]);
+            SplitVariant::GreedyStrip
         };
 
         let args: Vec<_> = self.args_to_vec(args, ',', split_var);
@@ -97,10 +96,7 @@ impl ArgParser {
             // Check parenthesis
             self.check_parenthesis(&mut value, ch);
 
-            // Greedy = No split
-            if let SplitVariant::Greedy = split_var {
-                value.push(ch);
-            } else if ch == delimiter {
+            if ch == delimiter {
                 self.branch_delimiter(ch, &mut value, &mut split_var);
             } else if ch == ESCAPE_CHAR {
                 self.branch_escape_char(ch, &mut value, arg_iter.peek());
@@ -165,12 +161,12 @@ impl ArgParser {
                     if count > 0 {
                         *variant = SplitVariant::Deterred(count);
                     } else {
-                        *variant = SplitVariant::Greedy;
+                        *variant = SplitVariant::GreedyStrip;
                     }
                     self.no_previous = true;
                 }
                 // Push everything to current item, index, value or you name it
-                SplitVariant::Greedy | SplitVariant::GreedyStrip => {
+                SplitVariant::GreedyStrip => {
                     value.push(ch);
                 }
                 SplitVariant::Always => {
@@ -263,7 +259,6 @@ impl ArgParser {
 pub enum SplitVariant {
     /// Split argument with given amount
     Deterred(usize),
-    Greedy,
     GreedyStrip,
     Always,
 }
