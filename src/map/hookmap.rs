@@ -1,6 +1,9 @@
 //! Hook related data colletino structs
 
 use crate::{RadError, RadResult};
+#[cfg(feature = "rustc_hash")]
+use rustc_hash::FxHashMap as HashMap;
+#[cfg(not(feature = "rustc_hash"))]
 use std::collections::HashMap;
 
 /// Main hook collection map

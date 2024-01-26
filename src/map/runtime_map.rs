@@ -3,7 +3,10 @@
 //! Runtime macro is defined on runtime.
 
 use crate::common::Hygiene;
+#[cfg(feature = "rustc_hash")]
+use rustc_hash::FxHashMap as HashMap;
 use serde::{Deserialize, Serialize};
+#[cfg(not(feature = "rustc_hash"))]
 use std::collections::HashMap;
 
 /// Runtime macro

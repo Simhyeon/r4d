@@ -3,7 +3,11 @@ use crate::common::RadResult;
 use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
 use crate::Processor;
+#[cfg(feature = "rustc_hash")]
+use rustc_hash::FxHashMap as HashMap;
+#[cfg(not(feature = "rustc_hash"))]
 use std::collections::HashMap;
+
 use std::iter::FromIterator;
 
 /// Functino signature for a deterred macro function

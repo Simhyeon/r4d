@@ -1,7 +1,10 @@
 //! Signature map module
 
 use crate::consts::LINE_ENDING;
+#[cfg(feature = "rustc_hash")]
+use rustc_hash::FxHashMap as HashMap;
 use serde::{Deserialize, Serialize};
+#[cfg(not(feature = "rustc_hash"))]
 use std::collections::HashMap;
 use std::iter::FromIterator;
 

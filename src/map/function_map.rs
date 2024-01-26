@@ -7,6 +7,9 @@ use crate::common::RadResult;
 use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
 use crate::{man_fun, Processor};
+#[cfg(feature = "rustc_hash")]
+use rustc_hash::FxHashMap as HashMap;
+#[cfg(not(feature = "rustc_hash"))]
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
@@ -23,7 +26,7 @@ impl FunctionMacroMap {
     /// Creates empty map
     pub fn empty() -> Self {
         Self {
-            macros: HashMap::new(),
+            macros: HashMap::default(),
         }
     }
 
@@ -91,7 +94,7 @@ impl FunctionMacroMap {
                 "alignc".to_owned(),
                 FMacroSign::new(
                     "alignc",
-                    ["a_content^"],
+                    ["a_align_type^","a_content^"],
                     Self::align_columns,
                     Some(man_fun!("alignc.r4d"))
                 ),
@@ -174,7 +177,7 @@ impl FunctionMacroMap {
                     "striper",
                     ["a_expr^","a_content"],
                     Self::strip_expression_from_rear,
-                    None,
+                    Some(man_fun!("striper.r4d")),
                 ),
             ),
             (

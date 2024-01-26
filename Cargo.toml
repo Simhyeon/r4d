@@ -28,6 +28,7 @@ doctest = false
 [features]
 # Binary related 
 # For some reaons that I dont' know, clap cannot be enabled with dep: prefix
+default = ["rchash"]
 basic = ["clap", "dep:filetime","rad_ext_template?/binary"]
 binary = ["basic","debug", "full", "color"]
 full = [ "chrono", "textwrap", "cindex"]
@@ -37,12 +38,13 @@ debug = [ "dep:crossterm", "dep:similar" ]
 color = [ "dep:colored", "dep:atty" ]
 hook = []
 template = ["rad_ext_template"]
+rchash = ["rustc-hash"]
 
 [dependencies]
 # Default features
 bincode = "1.3.3"
-dcsv = { version = "0.3.3", git="https://github.com/simhyeon/dcsv"}
-regex = "1.10.2"
+dcsv = { version = "0.3.4-beta.2"}
+regex =  "1.10.2"
 serde = { version = "1.0.193", features = ["derive"]}
 serde_json = { version = "1.0.108"}
 trexter = "0.1.1"
@@ -53,9 +55,10 @@ unicode-width = "0.1.11"
 evalexpr = {version = "11.2.0"}
 
 # Optioanl features
+rustc-hash = { version ="1.1.0", optional = true}
 atty = { version = "0.2.14", optional = true}
 chrono = {version = "0.4.31", optional = true}
-cindex = {version = "0.5.2-rc1", optional = true, git="https://github.com/simhyeon/cindex", branch="dev"}
+cindex = {version = "0.6.0-beta.1", optional = true}
 clap = { version = "4.4.10", default-features = false, features = [ "std","help", "usage", "error-context", "suggestions", "color" ], optional=true}
 colored = {version = "2.0.4", optional = true}
 crossterm = {version = "0.27.0", optional = true}
