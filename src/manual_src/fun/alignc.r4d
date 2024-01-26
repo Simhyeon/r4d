@@ -2,7 +2,8 @@ Align content by columns ( namely as formatted table )
 
 # Arguments
 
-- a_content : Table to align ( trimmed )
+- a_align_type : Align type for cells ( trimmed ) [ left, right, center ]
+- a_content    : Table to align       ( trimmed )
 
 # Demo
 
@@ -14,7 +15,7 @@ Align content by columns ( namely as formatted table )
 % varun manager sales 50000
 % amit manager account 47000
 
-$stream(alignc)
+$stream(alignc l)
 $syscmd(awk '{print NR,$0}' employee.txt)
 $-()
 $consume()

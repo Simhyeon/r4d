@@ -3,15 +3,21 @@ Isolate content vertically.
 # Note
 
 - This doesn't pretty print.
-- Utilize this macro for isolating enclosed contents.
+- Utilize this macro for isolating enclosed contents before processing.
 
 # Demo
 
 ```
 $stream(insulav)
-$assert(true,$istype( uint , 0 ))
-$assert(false,$istype( uint , -1 ))
-$assert(true,$istype( int , 0 ))
+"menu": {
+  "id": "file",
+  "popup": {
+    "menuitem": [
+      {"value": "New", "onclick": "CreateNewDoc()"},
+      {"value": "Close", "onclick": "CloseDoc()"}
+    ]
+  }
+}
 $consume()
 ```
 
