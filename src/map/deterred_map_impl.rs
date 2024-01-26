@@ -170,7 +170,7 @@ impl DeterredMacroMap {
                 new.push_str(&src[last_match..m.start()]);
                 let evaluated = match map_type {
                     "macro" => p
-                        .execute_macro(level, "mapn", "macro", m.as_str())?
+                        .execute_macro(level, "mapn", &operation, m.as_str())?
                         .unwrap_or_default(),
                     "formula" => eval(&operation.replace('n', m.as_str()))?.to_string(),
                     _ => unreachable!(),
