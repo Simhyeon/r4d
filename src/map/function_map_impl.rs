@@ -102,7 +102,7 @@ impl FunctionMacroMap {
             Ok(Some(time))
         } else {
             Err(RadError::InvalidArgument(
-                "hms sub requires an argument".to_owned(),
+                "hms requires an argument".to_owned(),
             ))
         }
     }
@@ -1907,19 +1907,23 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $alignc(%, contents to align)
+    /// $alignc(c, contents to align)
     pub(crate) fn align_columns(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().args_with_len(args, 1) {
-            let contents = trim!(&args[0]);
+        use dcsv::VCont;
+        if let Some(args) = ArgParser::new().args_with_len(args, 2) {
+            let align_type = AlignType::from_str(trim!(args[0]))?;
+            let contents = trim!(&args[1]);
             let data = dcsv::Reader::new()
                 .trim(true)
                 .use_space_delimiter(true)
                 .data_from_stream(contents.as_bytes())?;
 
-            Ok(Some(data.pretty_table(&p.state.newline)))
+            Ok(Some(
+                data.get_formatted_string(&p.state.newline, align_type.into()),
+            ))
         } else {
             Err(RadError::InvalidArgument(
-                "Alignc requires arguments".to_owned(),
+                "Alignc requires two arguments".to_owned(),
             ))
         }
     }
