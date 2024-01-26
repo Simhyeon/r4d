@@ -1,19 +1,14 @@
 # Todo immediate
 
-* [ ] Consider reverting changes for greedy and greedy strip
-* [ ] Bug: stream bugged? or strip bugged?
-```
-$stream(insulav)
-\*
-$assert(true,$istype( uint , 0 ))
-$assert(false,$istype( uint , -1 ))
-$assert(true,$istype( int , 0 ))
-*\
-$consume()
-```
--> This doesn't strip literal quote
-
-* [ ] update alignc to use newer dcsv version's right and center align feature
+* [ ] Add a feature to use rope instead of simple string ( Crop crate )
+    -> For example if skip expansion flag was given OR text size is bigger than
+    1K ( which is a standard point where rope out-performs normal string )
+        -> text size standard for crop usage should be supplied as arguments
+        and saved to processor ` --rope 1000 ` means use crop from 1000 byte
+        sizes.
+* [ ] use `get_split_arguments_or_error` for arg splitting
+* [ ] Argparser rerturn cow vector rather than string vector
+* [ ] Check insula's logic throughly
 * [ ] Escape rule is very outrageous
 ```
 \\ -> \\
@@ -45,6 +40,32 @@ $consume()
     -> Check PS.r4d manual because escape character is strange in the document.
 
 #### BUG
+
+* [ ] Trim input is really... necessary. I mean it is required to do lots of
+  things... but hey it is 4.0 and you really fucking needs it.
+```
+$stream(insulav)
+\*
+$assert(true,$istype( uint , 0 ))
+$assert(false,$istype( uint , -1 ))
+$assert(true,$istype( int , 0 ))
+*\
+$consume|()
+
+$define=(sq,
+a_ln a_lc
+=
+$ifelse($eval($a_ln() %  7 == 5),
+$rotatel($comma*(),c,$a_lc()),
+$a_lc()))
+$forline-($sq($a_LN(),$:()))
+=> This yield duplicated new lines
+```
+* [ ] Check macros with single argument so that a function might not be
+  analyzing shits.
+
+* [x] Consider reverting changes for greedy and greedy strip
+* [x] Bug: insulav and insulah was not stripping
 
 * [ ] How come insula doesn't print any insulav or insulah for help message?
 * [ ] Improve repl's error code
