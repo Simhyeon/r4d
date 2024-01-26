@@ -430,3 +430,13 @@ impl std::str::FromStr for AlignType {
         }
     }
 }
+
+impl From<AlignType> for dcsv::CellAlignType {
+    fn from(value: AlignType) -> Self {
+        match value {
+            AlignType::Left => dcsv::CellAlignType::Left,
+            AlignType::Center => dcsv::CellAlignType::Center,
+            AlignType::Right => dcsv::CellAlignType::Right,
+        }
+    }
+}
