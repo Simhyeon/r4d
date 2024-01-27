@@ -55,7 +55,7 @@ mod process;
 
 mod parser;
 pub(crate) use parser::DefineParser;
-pub(crate) use parser::{ArgParser, SplitVariant};
+pub(crate) use parser::{ArgParser, NewArgParser, SplitVariant};
 
 mod map;
 pub(crate) use map::deterred_map;

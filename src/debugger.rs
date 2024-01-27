@@ -5,7 +5,10 @@ use crate::consts::{DIFF_OUT_FILE, DIFF_SOURCE_FILE, LINE_ENDING, RDB_HELP};
 use crate::logger::Logger;
 use crate::utils::Utils;
 use crossterm::{terminal::ClearType, ExecutableCommand};
+#[cfg(feature = "rustc_hash")]
+use rustc_hash::FxHashMap as HashMap;
 use similar::ChangeTag;
+#[cfg(not(feature = "rustc_hash"))]
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, Write};

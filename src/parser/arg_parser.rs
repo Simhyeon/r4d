@@ -344,7 +344,6 @@ impl<'a> NewArgParser<'a> {
         if args.len() < length {
             return None;
         }
-
         Some(args)
     }
 
@@ -391,8 +390,9 @@ impl<'a> NewArgParser<'a> {
             }
         } // while end
           // Add last arg
-          // self.values.push(value);
-          //
+        self.values
+            .push(cursor.take_value(arg_values.len(), arg_values));
+
         std::mem::take(&mut self.values)
     }
 
@@ -437,7 +437,8 @@ impl<'a> NewArgParser<'a> {
             match variant {
                 SplitVariant::Deterred(count) => {
                     // move to next value
-                    // self.values.push(std::mem::take(value));
+                    let v = cursor.take_value(index + 1, src);
+                    self.values.push(v);
                     let count = *count - 1;
                     if count > 0 {
                         *variant = SplitVariant::Deterred(count);
@@ -452,7 +453,7 @@ impl<'a> NewArgParser<'a> {
                 }
                 SplitVariant::Always => {
                     // move to next value
-                    let v = cursor.take_value(index, src);
+                    let v = cursor.take_value(index + 1, src);
                     self.values.push(v);
                 }
             } // Match end
@@ -550,10 +551,6 @@ enum ArgCursor {
 }
 
 impl ArgCursor {
-    pub fn new() -> Self {
-        Self::Reference(0, 0)
-    }
-
     pub fn take_value<'a>(&mut self, index: usize, src: &'a &str) -> Cow<'a, str> {
         match self {
             Self::Reference(c, n) => {
@@ -566,9 +563,8 @@ impl ArgCursor {
     }
 
     pub fn convert_to_modified(&mut self, src: &&str) {
-        match self {
-            Self::Reference(c, n) => *self = Self::Modified(src[*c..*n].to_string()),
-            _ => (), // Do nothing
+        if let Self::Reference(c, n) = self {
+            *self = Self::Modified(src[*c..*n].to_string())
         }
     }
 

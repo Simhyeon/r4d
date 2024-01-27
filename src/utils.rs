@@ -4,7 +4,7 @@ use crate::auth::{AuthState, AuthType};
 use crate::common::{ProcessInput, RadResult};
 use crate::error::RadError;
 use crate::logger::WarningType;
-use crate::{Processor, WriteOption};
+use crate::{NewArgParser, Processor, WriteOption};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::borrow::Cow;
@@ -22,13 +22,6 @@ pub static NUM_MATCH: Lazy<Regex> =
 // ----------
 // MACRO RULES
 // ----------
-/// Trim macro to trim a text
-#[macro_export]
-macro_rules! trim {
-    ($e:expr) => {
-        $e.trim_start().trim_end()
-    };
-}
 
 /// string std::mem::take
 #[macro_export]
@@ -72,6 +65,24 @@ use colored::*;
 pub(crate) struct Utils;
 
 impl Utils {
+    pub fn get_split_arguments_or_error<'a>(
+        macro_name: &'a str,
+        arguments: &'a &str,
+        length: usize,
+        mut parser: NewArgParser<'a>,
+    ) -> RadResult<Vec<Cow<'a, str>>> {
+        if let Some(args) = parser.args_with_len(arguments, length) {
+            Ok(args)
+        } else {
+            let error_message = match length {
+                0 => format!("{} does not require any arguments", macro_name),
+                1 => format!("{} requires an argument", macro_name),
+                _ => format!("{} requires {} arguments", macro_name, length),
+            };
+            Err(RadError::InvalidArgument(error_message))
+        }
+    }
+
     /// Split string by whitespaces but respect spaces within commas and strip commas
     ///
     /// # Example
@@ -82,7 +93,7 @@ impl Utils {
     /// "a b ' c f g ' d" -> ["a","b"," c f g ","d",]
     pub fn get_whitespace_split_retain_quote_rule<'a>(args: &'a str) -> Vec<Cow<'a, str>> {
         let mut split: Vec<Cow<'a, str>> = vec![];
-        let args = trim!(args);
+        let args = args.trim();
         if args.is_empty() {
             return split;
         }
@@ -226,7 +237,7 @@ impl Utils {
     ///
     /// In this contenxt, true and non zero number is 'true' while false and zero number is false
     pub(crate) fn is_arg_true(arg: &str) -> RadResult<bool> {
-        let arg = trim!(arg);
+        let arg = arg.trim();
         if let Ok(value) = arg.parse::<usize>() {
             if value == 0 {
                 return Ok(false);

@@ -25,7 +25,6 @@ use crate::package::StaticScript;
 use crate::runtime_map::RuntimeMacro;
 use crate::sigmap::SignatureMap;
 use crate::storage::{RadStorage, StorageOutput};
-use crate::trim;
 use crate::utils::Utils;
 use crate::DefineParser;
 use crate::{consts::*, RadResult};
@@ -2315,15 +2314,16 @@ impl<'processor> Processor<'processor> {
             }
 
             if frag.trim_input {
-                body = trim!(&body
+                body = body
                     .lines()
-                    .map(|l| trim!(l))
+                    .map(|l| l.trim())
                     .fold(String::new(), |mut acc, l| {
                         acc.push_str(l);
                         acc.push_str(&self.state.newline);
                         acc
-                    }))
-                .to_string();
+                    })
+                    .trim()
+                    .to_string();
             }
 
             self.map
@@ -2818,7 +2818,7 @@ impl<'processor> Processor<'processor> {
             // else it is ok to proceed.
             // thus it is safe to unwrap it
             if frag.trim_output {
-                content = trim!(&content).to_string();
+                content = content.trim().to_string();
                 if content.is_empty() {
                     self.state.consume_newline = true;
                 }
@@ -2826,7 +2826,7 @@ impl<'processor> Processor<'processor> {
 
             // Negate result
             if frag.negate_result {
-                match Utils::is_arg_true(trim!(&content)) {
+                match Utils::is_arg_true(content.trim()) {
                     Ok(boolean) => content = (!boolean).to_string(),
                     Err(_) => {
                         if self.state.behaviour == ErrorBehaviour::Strict {
