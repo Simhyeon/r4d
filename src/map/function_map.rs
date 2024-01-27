@@ -469,6 +469,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "inner".to_owned(),
+                FMacroSign::new(
+                    "inner",
+                    ["a_rule^","a_count^","a_src"],
+                    Self::get_inner,
+                    None
+                ),
+            ),
+            (
                 "input".to_owned(),
                 FMacroSign::new(
                     "input",

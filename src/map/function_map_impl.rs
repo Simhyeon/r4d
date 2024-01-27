@@ -13,7 +13,7 @@ use crate::formatter::Formatter;
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
 use crate::utils::{Utils, NUM_MATCH};
-use crate::{stake, trim, CommentType, WriteOption};
+use crate::{stake, trim, CommentType, NewArgParser, WriteOption};
 use crate::{ArgParser, SplitVariant};
 use crate::{Hygiene, Processor};
 #[cfg(feature = "cindex")]
@@ -383,7 +383,7 @@ impl FunctionMacroMap {
             let mut formula = std::mem::take(&mut args[1]);
             let body = p.get_runtime_macro_body(&macro_name)?;
             let replaced = if formula.contains('m') {
-                formula.replace('p', body)
+                formula.replace('m', body)
             } else {
                 formula.insert_str(0, body);
                 formula
@@ -478,6 +478,80 @@ impl FunctionMacroMap {
                 "Trimr requires an argument".to_owned(),
             ))
         }
+    }
+
+    /// Get inner text from given src
+    ///
+    /// This doesn't support utf-8 character but only ASCII
+    pub(crate) fn get_inner(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("inner", &args, 3, NewArgParser::new())?;
+        let rule = args[0].trim().as_bytes();
+        if rule.len() != 2 {
+            return Err(RadError::InvalidArgument(
+                "Inner rule should consists of two characters".to_string(),
+            ));
+        }
+        let (rs, re) = (rule[0], rule[1]);
+        let target = args[1].trim().parse::<usize>().map_err(|_| {
+            RadError::InvalidArgument("Inner option should be unsinged integer".to_string())
+        })?;
+        let src = &args[2];
+        let mut cursors: Vec<InnerCursor> = vec![];
+        let mut opened_count = 0usize;
+        for (idx, ch) in src.bytes().enumerate() {
+            // Start ch match
+            if ch == rs {
+                if opened_count == 0 {
+                    // Match start first
+                    opened_count += 1;
+                    cursors.push(InnerCursor {
+                        start_index: idx,
+                        end_index: src.len(),
+                        level: opened_count,
+                    });
+                } else if ch == re {
+                    // Update count
+                    // opened_count -= 1;
+                    // End match
+                    if target == opened_count {
+                        let start = cursors.last().unwrap().start_index + 1;
+                        return Ok(Some(src[start..idx].to_string()));
+                    }
+                    cursors.pop();
+                } else {
+                    opened_count += 1;
+                    cursors.push(InnerCursor {
+                        start_index: idx,
+                        end_index: idx,
+                        level: opened_count,
+                    });
+                }
+            } else if ch == re {
+                // opened_count = opened_count.saturating_sub(1);
+                // End ch match
+                // End match
+                if target == opened_count {
+                    let start = cursors.last().unwrap().start_index + 1;
+                    return Ok(Some(src[start..idx].to_string()));
+                }
+                if cursors.len() > 1 {
+                    cursors.pop();
+                } else {
+                    cursors.last_mut().unwrap().end_index = idx;
+                }
+            }
+        }
+
+        for cur in cursors.iter().rev() {
+            if cur.level == target {
+                let start = cur.start_index + 1;
+                let end = cur.end_index;
+                return Ok(Some(src[start..end].to_string()));
+            }
+        }
+
+        // No match
+        Ok(None)
     }
 
     /// Indent lines
@@ -2758,14 +2832,13 @@ impl FunctionMacroMap {
                 ));
             }
 
-            let result =
-                lines[0..line_count - count - 1]
-                    .iter()
-                    .fold(String::new(), |mut acc, a| {
-                        acc.push_str(a);
-                        acc.push_str(&p.state.newline);
-                        acc
-                    });
+            let result = lines[0..line_count - count]
+                .iter()
+                .fold(String::new(), |mut acc, a| {
+                    acc.push_str(a);
+                    acc.push_str(&p.state.newline);
+                    acc
+                });
 
             Ok(Some(
                 result
@@ -4903,6 +4976,7 @@ impl FunctionMacroMap {
 }
 
 // ---
+// <MISC>
 // Private structs for organizational purposes
 // ---
 
@@ -4990,3 +5064,14 @@ struct ListCounterByLevel {
     // key means level and value means total count of list items
     counts: HashMap<usize, usize>,
 }
+
+#[derive(Debug, Default)]
+struct InnerCursor {
+    start_index: usize,
+    end_index: usize,
+    level: usize,
+}
+
+// ---
+// </MISC>
+// ---
