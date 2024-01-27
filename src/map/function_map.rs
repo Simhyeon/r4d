@@ -860,26 +860,6 @@ $assert(a-b-c,$join(-,a,b,c))".to_string()),
                 ),
             ),
             (
-                "joinl".to_owned(),
-                FMacroSign::new(
-                    "joinl",
-                    ["a_sep","a_lines"],
-                    Self::joinl,
-                    Some("Join text lines into a single line
-
-# Arguments
-
-- a_sep   : A separator used for joining
-- a_lines : Source lines to join
-
-# Example
-
-$assert(a-b-c,$joinl(-,a
-b
-c))".to_string()),
-                ),
-            ),
-            (
                 "len".to_owned(),
                 FMacroSign::new(
                     "len",

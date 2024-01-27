@@ -7,7 +7,6 @@ use crate::deterred_map::DeterredMacroMap;
 use crate::function_map::FunctionMacroMap;
 use crate::runtime_map::{RuntimeMacro, RuntimeMacroMap};
 use crate::sigmap::MacroSignature;
-use crate::trim;
 use crate::utils::Utils;
 use crate::MacroType;
 use crate::RadResult;
@@ -152,7 +151,7 @@ impl MacroMap {
         hygiene_type: Hygiene,
     ) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
-        let mac = RuntimeMacro::new(&trim!(name), &trim!(args), body, false);
+        let mac = RuntimeMacro::new(name.trim(), args.trim(), body, false);
         self.runtime.new_macro(name, mac, hygiene_type);
         Ok(())
     }
