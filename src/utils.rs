@@ -69,9 +69,12 @@ impl Utils {
         macro_name: &'a str,
         arguments: &'a &str,
         length: usize,
-        mut parser: NewArgParser<'a>,
+        parser: Option<&mut NewArgParser>,
     ) -> RadResult<Vec<Cow<'a, str>>> {
-        if let Some(args) = parser.args_with_len(arguments, length) {
+        if let Some(args) = parser
+            .unwrap_or(&mut NewArgParser::new())
+            .args_with_len(arguments, length)
+        {
             Ok(args)
         } else {
             let error_message = match length {

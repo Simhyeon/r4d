@@ -27,14 +27,16 @@ use crate::sigmap::SignatureMap;
 use crate::storage::{RadStorage, StorageOutput};
 use crate::utils::Utils;
 use crate::DefineParser;
+use crate::NewArgParser as ArgParser;
+use crate::SplitVariant;
 use crate::{consts::*, RadResult};
 use crate::{lexor::*, stake};
-use crate::{ArgParser, SplitVariant};
 #[cfg(feature = "cindex")]
 use cindex::Indexer;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufReader, Read, Write};
@@ -2246,7 +2248,7 @@ impl<'processor> Processor<'processor> {
         let arg_types = &rule.args;
         // Set variable to local macros
         let args =
-            if let Some(content) = ArgParser::new().args_with_len(arg_values, arg_types.len()) {
+            if let Some(content) = ArgParser::new().args_with_len(&arg_values, arg_types.len()) {
                 content
             } else {
                 // Necessary arg count is bigger than given arguments
@@ -2254,7 +2256,7 @@ impl<'processor> Processor<'processor> {
                     "{}'s arguments are not sufficient. Given {}, but needs {}",
                     new_name,
                     ArgParser::new()
-                        .args_to_vec(arg_values, ',', SplitVariant::Always)
+                        .args_to_vec(&arg_values, ',', SplitVariant::Always)
                         .len(),
                     arg_types.len()
                 ));
@@ -3143,14 +3145,15 @@ impl<'processor> Processor<'processor> {
     /// Parse chunk and strip quotes
     ///
     /// This is for internal logic
-    pub(crate) fn parse_and_strip(
+    pub(crate) fn parse_and_strip<'a>(
         &mut self,
         ap: &mut ArgParser,
         level: usize,
-        caller: &str,
-        src: &str,
+        caller: &'a str,
+        src: &'a str,
     ) -> RadResult<String> {
-        Ok(ap.strip(&self.parse_chunk_args(level, caller, src)?))
+        let parsed = &self.parse_chunk_args(level, caller, src)?;
+        Ok(ap.strip(parsed))
     }
 
     /// Get a local macro's raw body
@@ -3338,7 +3341,7 @@ impl<'processor> Processor<'processor> {
     pub fn expand(&mut self, level: usize, src: &str, strip: bool) -> RadResult<String> {
         let parsed = self.parse_chunk_args(level, "", src)?;
         if strip {
-            Ok(ArgParser::new().strip(&parsed))
+            Ok(ArgParser::new().strip(&parsed.as_str()))
         } else {
             Ok(parsed)
         }
@@ -3406,15 +3409,15 @@ impl<'processor> Processor<'processor> {
     /// let mut proc = r4d::Processor::new();
     /// proc.split_arguments("a,b", 2,false).expect("Failed to split arguments");
     /// ```
-    pub fn split_arguments(
+    pub fn split_arguments<'a>(
         &self,
-        source: &str,
+        source: &'a str,
         target_length: usize,
         no_strip: bool,
-    ) -> RadResult<Vec<String>> {
+    ) -> RadResult<Vec<Cow<'a, str>>> {
         let mut ap = ArgParser::new();
         ap.set_strip(!no_strip);
-        if let Some(args) = ap.args_with_len(source, target_length) {
+        if let Some(args) = ap.args_with_len(&source, target_length) {
             Ok(args)
         } else {
             Err(RadError::InvalidArgument(
