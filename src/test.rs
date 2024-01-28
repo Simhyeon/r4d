@@ -1,5 +1,5 @@
 use crate::utils::Utils;
-use crate::{ArgParser, RadError, RadResult, RadStorage, StorageOutput, StorageResult};
+use crate::{NewArgParser, RadError, RadResult, RadStorage, StorageOutput, StorageResult};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::borrow::Cow;
@@ -31,7 +31,7 @@ fn arg_test() {
         "{:#?}",
         Utils::get_whitespace_split_retain_quote_rule("a b ' c f g ' d")
     );
-    let mut arg_parser = ArgParser::new();
+    let mut arg_parser = NewArgParser::new();
     let result = arg_parser.args_to_vec("\\(,a", ',', crate::SplitVariant::Always);
     eprintln!("{result:#?}");
 }

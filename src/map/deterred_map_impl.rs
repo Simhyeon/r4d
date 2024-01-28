@@ -860,7 +860,7 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().strip(&args);
+        let args = ArgParser::new().strip(args);
         let result = processor.parse_chunk_args(level, "", &args)?;
 
         Ok(if result.is_empty() {
@@ -1326,7 +1326,7 @@ impl DeterredMacroMap {
             return Ok(None);
         }
         let mut ap = ArgParser::new().no_strip();
-        let args = ap.args_to_vec(&args, ',', SplitVariant::Always);
+        let args = ap.args_to_vec(args, ',', SplitVariant::Always);
         ap.set_strip(true);
         if !args.is_empty() {
             let mut file_path = PathBuf::from(
@@ -1453,7 +1453,7 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().no_strip().args_with_len(&args, 3) {
+        if let Some(args) = ArgParser::new().no_strip().args_with_len(args, 3) {
             //processor.log_message(&args[0]);
             //processor.log_message(&args[1]);
             //processor.log_message(&args[2]);

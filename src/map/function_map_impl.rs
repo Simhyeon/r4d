@@ -1040,7 +1040,7 @@ impl FunctionMacroMap {
     ///
     /// $counter(name, type)
     pub(crate) fn change_counter(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = NewArgParser::new().args_to_vec(&args, ',', SplitVariant::Always);
+        let args = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "counter requires an argument".to_owned(),
@@ -1454,7 +1454,7 @@ impl FunctionMacroMap {
     /// $-()
     /// $-(p1)
     pub(crate) fn get_pipe(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let pipe = if let Some(args) = NewArgParser::new().args_with_len(&args, 1) {
+        let pipe = if let Some(args) = NewArgParser::new().args_with_len(args, 1) {
             let name = args[0].trim();
             if name.is_empty() {
                 let out = processor.state.get_pipe("-", false);
@@ -3573,7 +3573,7 @@ impl FunctionMacroMap {
     ///
     /// $declare(n1,n2,n3)
     pub(crate) fn declare(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let names = NewArgParser::new().args_to_vec(&args, ',', SplitVariant::Always);
+        let names = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
         let runtime_rules = names
             .iter()
             .map(|name| (name.trim().to_string(), "", ""))
@@ -4193,7 +4193,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("listdir", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        let args = NewArgParser::new().args_to_vec(&args, ',', SplitVariant::Always);
+        let args = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "listdir at least requires an argument".to_owned(),
@@ -4351,7 +4351,7 @@ impl FunctionMacroMap {
         // TODO
         // Improve by not allocating
         let args = NewArgParser::new()
-            .args_to_vec(&args, ',', SplitVariant::Always)
+            .args_to_vec(args, ',', SplitVariant::Always)
             .into_iter()
             .map(|s| s.to_string())
             .collect::<Vec<String>>();

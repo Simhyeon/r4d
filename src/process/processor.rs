@@ -2248,7 +2248,7 @@ impl<'processor> Processor<'processor> {
         let arg_types = &rule.args;
         // Set variable to local macros
         let args =
-            if let Some(content) = ArgParser::new().args_with_len(&arg_values, arg_types.len()) {
+            if let Some(content) = ArgParser::new().args_with_len(arg_values, arg_types.len()) {
                 content
             } else {
                 // Necessary arg count is bigger than given arguments
@@ -2256,7 +2256,7 @@ impl<'processor> Processor<'processor> {
                     "{}'s arguments are not sufficient. Given {}, but needs {}",
                     new_name,
                     ArgParser::new()
-                        .args_to_vec(&arg_values, ',', SplitVariant::Always)
+                        .args_to_vec(arg_values, ',', SplitVariant::Always)
                         .len(),
                     arg_types.len()
                 ));
@@ -3341,7 +3341,7 @@ impl<'processor> Processor<'processor> {
     pub fn expand(&mut self, level: usize, src: &str, strip: bool) -> RadResult<String> {
         let parsed = self.parse_chunk_args(level, "", src)?;
         if strip {
-            Ok(ArgParser::new().strip(&parsed.as_str()))
+            Ok(ArgParser::new().strip(parsed.as_str()))
         } else {
             Ok(parsed)
         }
@@ -3417,7 +3417,7 @@ impl<'processor> Processor<'processor> {
     ) -> RadResult<Vec<Cow<'a, str>>> {
         let mut ap = ArgParser::new();
         ap.set_strip(!no_strip);
-        if let Some(args) = ap.args_with_len(&source, target_length) {
+        if let Some(args) = ap.args_with_len(source, target_length) {
             Ok(args)
         } else {
             Err(RadError::InvalidArgument(
