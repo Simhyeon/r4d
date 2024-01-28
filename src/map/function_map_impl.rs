@@ -121,9 +121,9 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $regex(expression,substitution,source)
+    /// $sub(expression,substitution,source)
     pub(crate) fn regex_sub(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("regex", &args, 3, None)?;
+        let args = Utils::get_split_arguments_or_error("sub", &args, 3, None)?;
 
         let match_expr = &args[0];
         let substitution = &args[1];
@@ -1940,9 +1940,9 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $sub(0,5,GivenString)
+    /// $slice(0,5,GivenString)
     pub(crate) fn substring(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("sub", &args, 3, None)?;
+        let args = Utils::get_split_arguments_or_error("slice", &args, 3, None)?;
 
         let source = &args[2];
 
@@ -1955,13 +1955,13 @@ impl FunctionMacroMap {
         if let Ok(num) = start.parse::<usize>() {
             min.replace(num);
         } else if !start.is_empty() {
-            return Err(RadError::InvalidArgument(format!("Sub's min value should be non zero positive integer or empty value but given \"{}\"", start)));
+            return Err(RadError::InvalidArgument(format!("Slice's min value should be non zero positive integer or empty value but given \"{}\"", start)));
         }
 
         if let Ok(num) = end.parse::<usize>() {
             max.replace(num);
         } else if !end.is_empty() {
-            return Err(RadError::InvalidArgument(format!("Sub's max value should be non zero positive integer or empty value but given \"{}\"", end)));
+            return Err(RadError::InvalidArgument(format!("Slice's max value should be non zero positive integer or empty value but given \"{}\"", end)));
         }
 
         Ok(Some(Utils::utf8_substring(source, min, max)))
@@ -2655,13 +2655,13 @@ impl FunctionMacroMap {
         Ok(Some(separated.join(&p.state.newline)))
     }
 
-    /// Get a sliced array
+    /// Get range from array
     ///
     /// # Usage
     ///
-    /// $slice(1,2,1,2,3,4,5)
-    pub(crate) fn slice(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("slice", &args, 3, None)?;
+    /// $range(1,2,1,2,3,4,5)
+    pub(crate) fn range(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("range", &args, 3, None)?;
 
         let mut min: Option<usize> = None;
         let mut max: Option<usize> = None;
@@ -2672,13 +2672,13 @@ impl FunctionMacroMap {
         if let Ok(num) = start_src.parse::<usize>() {
             min.replace(num);
         } else if !start_src.is_empty() {
-            return Err(RadError::InvalidArgument(format!("Silce's min value should be non zero positive integer or empty value but given \"{}\"", start_src)));
+            return Err(RadError::InvalidArgument(format!("Range's min value should be non zero positive integer or empty value but given \"{}\"", start_src)));
         }
 
         if let Ok(num) = end_src.parse::<usize>() {
             max.replace(num);
         } else if !end_src.is_empty() {
-            return Err(RadError::InvalidArgument(format!("Slice's max value should be non zero positive integer or empty value but given \"{}\"", end_src)));
+            return Err(RadError::InvalidArgument(format!("Ragne's max value should be non zero positive integer or empty value but given \"{}\"", end_src)));
         }
 
         let content = &args[2].split(',').collect::<Vec<_>>();
@@ -2818,7 +2818,8 @@ impl FunctionMacroMap {
         return Ok(Some("unix".to_owned()));
     }
 
-    /// Register expressino
+    // TODO Move this to deterred macro
+    /// Register expression
     ///
     /// # Usage
     ///

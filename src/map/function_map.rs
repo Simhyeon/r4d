@@ -145,12 +145,12 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "slice".to_owned(),
+                "range".to_owned(),
                 FMacroSign::new(
-                    "slice",
+                    "range",
                     ["a_min^", "a_max^", "a_array"],
-                    Self::slice,
-                    Some(man_fun!("slice.r4d")),
+                    Self::range,
+                    Some(man_fun!("range.r4d")),
                 ),
             ),
             (
@@ -1537,22 +1537,22 @@ $assert(\\*3,2,1*\\,$rev(1,2,3))".to_string()),
                 ),
             ),
             (
-                "regex".to_owned(),
+                "sub".to_owned(),
                 FMacroSign::new(
-                    "regex",
-                    ["a_expr", "a_sub", "a_source"],
+                    "sub",
+                    ["a_expr", "a_target", "a_source"],
                     Self::regex_sub,
                     Some("Apply a regular expression substitution to a source
 
 # Arguments
 
 - a_expr   : A regex expression to match
-- a_sub    : Text to substitute as
+- a_target : Text to substitute as
 - a_source : Source text to operate on
 
 # Example
 
-$assert(Hello Rust,$regex(World,Rust,Hello World))".to_string()),
+$assert(Hello Rust,$sub(World,Rust,Hello World))".to_string()),
                 ),
             ),
             (
@@ -1845,9 +1845,9 @@ $strict(lenient)".to_string()),
                 ),
             ),
             (
-                "sub".to_owned(),
+                "slice".to_owned(),
                 FMacroSign::new(
-                    "sub",
+                    "slice",
                     ["a_start_index^", "a_end_index^", "a_source"],
                     Self::substring,
                     Some("Get a substring with indices.
@@ -1864,7 +1864,7 @@ $strict(lenient)".to_string()),
 
 # Example
 
-$assert(def,$sub(3,5,abcdef))".to_string()),
+$assert(def,$slice(3,5,abcdef))".to_string()),
                 ),
             ),
             (
