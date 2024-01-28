@@ -1734,7 +1734,7 @@ impl FunctionMacroMap {
         use std::fmt::Write;
         let args = Utils::get_split_arguments_or_error("align", &args, 2, None)?;
 
-        let separator = args[0].to_string();
+        let separator = &args[0];
         let contents = args[1].lines();
         let mut max_length = 0usize;
         let mut result = String::new();
@@ -1748,7 +1748,7 @@ impl FunctionMacroMap {
             })?;
 
         for line in contents.clone() {
-            let mut splitted = line.split(&separator);
+            let mut splitted = line.split(separator.as_ref());
             let leading = splitted.next().unwrap();
             let width =
                 UnicodeWidthStr::width(leading) + leading.matches('\t').count() * (tab_width - 1);
@@ -1757,7 +1757,7 @@ impl FunctionMacroMap {
             }
         }
         for line in contents {
-            let splitted = line.split_once(&separator);
+            let splitted = line.split_once(separator.as_ref());
             if splitted.is_some() {
                 let (leading, following) = splitted.unwrap();
                 let width = UnicodeWidthStr::width(leading)
@@ -1887,15 +1887,16 @@ impl FunctionMacroMap {
     pub(crate) fn apart_by_separator(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("apart", &args, 2, None)?;
 
-        let separator = args[0].to_string();
+        let separator = &args[0];
         let contents = &args[1];
-        let result = contents
-            .split_inclusive(&separator)
-            .fold(String::new(), |mut acc, a| {
-                acc.push_str(a.trim());
-                acc.push_str(&p.state.newline);
-                acc
-            });
+        let result =
+            contents
+                .split_inclusive(separator.as_ref())
+                .fold(String::new(), |mut acc, a| {
+                    acc.push_str(a.trim());
+                    acc.push_str(&p.state.newline);
+                    acc
+                });
         Ok(Some(
             result
                 .strip_suffix(&p.state.newline)

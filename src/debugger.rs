@@ -1,6 +1,6 @@
 //! Debugger to debug rad processing
 
-use crate::common::{DiffOption, MacroFragment, RadResult};
+use crate::common::{DiffOption, MacroAttribute, MacroFragment, RadResult};
 use crate::consts::{DIFF_OUT_FILE, DIFF_SOURCE_FILE, LINE_ENDING, RDB_HELP};
 use crate::logger::Logger;
 use crate::utils::Utils;
@@ -256,7 +256,7 @@ impl Debugger {
         if !self.log {
             return Ok(());
         }
-        let attributes = self.print_macro_attr(frag);
+        let attributes = self.print_macro_attr(&frag.attribute);
         logger.dlog_print(&format!(
             r#"Name    = "{}"{}Attr    ={}{}Args    = "{}"{}---{}"#,
             macro_name, LINE_ENDING, LINE_ENDING, attributes, raw_args, LINE_ENDING, LINE_ENDING
@@ -265,20 +265,20 @@ impl Debugger {
     }
 
     /// Format macro framgent attributes
-    fn print_macro_attr(&self, frag: &MacroFragment) -> String {
+    fn print_macro_attr(&self, attr: &MacroAttribute) -> String {
         format!(
             "Pipe input\t: {}{}Pipe output\t: {}{}Trim input\t: {}{}Trim output\t: {}{}Literal\t\t: {}{}Negation\t: {}{}",
-            frag.pipe_input,
+            attr.pipe_input,
             LINE_ENDING,
-            frag.pipe_output,
+            attr.pipe_output,
             LINE_ENDING,
-            frag.trim_input,
+            attr.trim_input,
             LINE_ENDING,
-            frag.trim_output,
+            attr.trim_output,
             LINE_ENDING,
-            frag.yield_literal,
+            attr.yield_literal,
             LINE_ENDING,
-            frag.negate_result,
+            attr.negate_result,
             LINE_ENDING,
         )
     }

@@ -1393,7 +1393,7 @@ impl<'processor> Processor<'processor> {
 
         let mut frag = MacroFragment::new();
         frag.args = macro_arguments;
-        frag.pipe_input = true;
+        frag.attribute.pipe_input = true;
         frag.name = macro_name.to_string();
         self.process_piece(&mut frag)?;
 
@@ -1451,7 +1451,7 @@ impl<'processor> Processor<'processor> {
 
         let line_iter = Utils::full_lines(buffer);
         let mut frag = MacroFragment::new();
-        frag.pipe_input = true;
+        frag.attribute.pipe_input = true;
         frag.name = macro_name.to_string();
         frag.args = macro_arguments;
         for line in line_iter {
@@ -2027,7 +2027,7 @@ impl<'processor> Processor<'processor> {
         // Assign local variables
         let (name, mut raw_args) = (&frag.name, frag.args.clone());
 
-        if frag.trim_input {
+        if frag.attribute.trim_input {
             raw_args = raw_args
                 .lines()
                 .map(|l| l.trim())
@@ -2045,7 +2045,7 @@ impl<'processor> Processor<'processor> {
         if !self.map.is_deterred_macro(name) || self.state.process_type == ProcessType::Dry {
             // Preprocess only when macro is not a deterred macro
 
-            if !frag.skip_expansion {
+            if !frag.attribute.skip_expansion {
                 // This parses and processes arguments
                 // and macro should be evaluated after
                 args = self.parse_chunk_args(level, name, &raw_args)?;
@@ -2054,7 +2054,7 @@ impl<'processor> Processor<'processor> {
             }
 
             // Pipe doesn't expanded but added
-            if frag.pipe_input {
+            if frag.attribute.pipe_input {
                 let pipe_value = self.state.get_pipe("-", false).unwrap_or_default();
 
                 if pipe_value.is_empty() {
@@ -2095,7 +2095,7 @@ impl<'processor> Processor<'processor> {
             args = raw_args;
 
             // Pipe doesn't expanded but added
-            if frag.pipe_input {
+            if frag.attribute.pipe_input {
                 let pipe_value = self.state.get_pipe("-", false).unwrap_or_default();
                 if args.is_empty() {
                     args = pipe_value;
@@ -2315,7 +2315,7 @@ impl<'processor> Processor<'processor> {
                 return Err(RadError::StrictPanic);
             }
 
-            if frag.trim_input {
+            if frag.attribute.trim_input {
                 body = body
                     .lines()
                     .map(|l| l.trim())
@@ -2541,13 +2541,13 @@ impl<'processor> Processor<'processor> {
                     self.logger.append_track(String::from("Macro start"));
                 }
                 match ch {
-                    '|' => frag.pipe_output = true,
-                    '*' => frag.yield_literal = true,
-                    '!' => frag.negate_result = true,
-                    '=' => frag.trim_input = true,
-                    '^' => frag.trim_output = true,
-                    '-' => frag.pipe_input = true,
-                    '~' => frag.skip_expansion = true,
+                    '|' => frag.attribute.pipe_output = true,
+                    '*' => frag.attribute.yield_literal = true,
+                    '!' => frag.attribute.negate_result = true,
+                    '=' => frag.attribute.trim_input = true,
+                    '^' => frag.attribute.trim_output = true,
+                    '-' => frag.attribute.pipe_input = true,
+                    '~' => frag.attribute.skip_expansion = true,
                     _ => {
                         // This is mostly not reached because it is captured as non-exsitent name
                         if frag.has_attribute() {
@@ -2671,8 +2671,8 @@ impl<'processor> Processor<'processor> {
         // Name is empty
         if frag.name.is_empty() {
             // $-() is valid syntax
-            if frag.pipe_input {
-                frag.pipe_input = false;
+            if frag.attribute.pipe_input {
+                frag.attribute.pipe_input = false;
                 frag.name = "-".to_string();
             } else {
                 let err = RadError::InvalidMacroReference(
@@ -2700,7 +2700,7 @@ impl<'processor> Processor<'processor> {
         #[cfg(feature = "debug")]
         {
             // Respect trim input
-            let args = if frag.pipe_input {
+            let args = if frag.attribute.pipe_input {
                 self.state.get_pipe("-", true).unwrap_or_default()
             } else {
                 frag.args.clone()
@@ -2819,7 +2819,7 @@ impl<'processor> Processor<'processor> {
         if let Some(mut content) = content {
             // else it is ok to proceed.
             // thus it is safe to unwrap it
-            if frag.trim_output {
+            if frag.attribute.trim_output {
                 content = content.trim().to_string();
                 if content.is_empty() {
                     self.state.consume_newline = true;
@@ -2827,7 +2827,7 @@ impl<'processor> Processor<'processor> {
             }
 
             // Negate result
-            if frag.negate_result {
+            if frag.attribute.negate_result {
                 match Utils::is_arg_true(content.trim()) {
                     Ok(boolean) => content = (!boolean).to_string(),
                     Err(_) => {
@@ -2849,7 +2849,7 @@ impl<'processor> Processor<'processor> {
                 }
             }
 
-            if frag.yield_literal {
+            if frag.attribute.yield_literal {
                 content = format!("\\*{}*\\", content);
             }
 
@@ -2886,7 +2886,7 @@ impl<'processor> Processor<'processor> {
             // This should come later!!
             // because pipe should respect all other macro attributes
             // not the other way
-            if frag.pipe_output {
+            if frag.attribute.pipe_output {
                 self.state.add_pipe(None, content);
                 self.state.consume_newline = true;
             } else {

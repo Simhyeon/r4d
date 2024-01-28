@@ -51,6 +51,34 @@ impl LocalMacro {
     }
 }
 
+#[derive(Debug, Default)]
+pub(crate) struct MacroAttribute {
+    // Macro attributes
+    pub pipe_output: bool,
+    pub pipe_input: bool,
+    pub yield_literal: bool,
+    pub negate_result: bool,
+    pub trim_input: bool,
+    pub trim_output: bool,
+    pub skip_expansion: bool,
+}
+
+impl MacroAttribute {
+    pub fn clear(&mut self) {
+        *self = Self::default();
+    }
+
+    /// Check if fragment has attribute
+    pub(crate) fn has_attribute(&self) -> bool {
+        self.pipe_input
+            || self.pipe_output
+            || self.yield_literal
+            || self.trim_output
+            || self.trim_input
+            || self.negate_result
+    }
+}
+
 /// Macro framgent that processor saves fragmented information of the mcaro invocation
 #[derive(Debug, Default)]
 pub(crate) struct MacroFragment {
@@ -60,15 +88,7 @@ pub(crate) struct MacroFragment {
     // This yield processed_args information which is not needed for normal operation.
     #[cfg(feature = "debug")]
     pub processed_args: String,
-
-    // Macro attributes
-    pub pipe_output: bool,
-    pub pipe_input: bool,
-    pub yield_literal: bool,
-    pub negate_result: bool,
-    pub trim_input: bool,
-    pub trim_output: bool,
-    pub skip_expansion: bool,
+    pub attribute: MacroAttribute,
 
     // Status varaible
     pub is_processed: bool,
@@ -83,13 +103,7 @@ impl MacroFragment {
             args: String::new(),
             #[cfg(feature = "debug")]
             processed_args: String::new(),
-            pipe_input: false,
-            pipe_output: false,
-            yield_literal: false,
-            negate_result: false,
-            trim_input: false,
-            trim_output: false,
-            skip_expansion: false,
+            attribute: MacroAttribute::default(),
 
             is_processed: false,
         }
@@ -102,13 +116,7 @@ impl MacroFragment {
         self.args.clear();
         #[cfg(feature = "debug")]
         self.processed_args.clear();
-        self.pipe_input = false;
-        self.pipe_output = false;
-        self.yield_literal = false;
-        self.trim_input = false;
-        self.negate_result = false;
-        self.trim_output = false;
-        self.skip_expansion = false;
+        self.attribute.clear();
     }
 
     /// Check if fragment is empty or not
@@ -120,12 +128,7 @@ impl MacroFragment {
 
     /// Check if fragment has attribute
     pub(crate) fn has_attribute(&self) -> bool {
-        self.pipe_input
-            || self.pipe_output
-            || self.yield_literal
-            || self.trim_output
-            || self.trim_input
-            || self.negate_result
+        self.attribute.has_attribute()
     }
 }
 
