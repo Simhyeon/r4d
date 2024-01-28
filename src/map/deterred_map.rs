@@ -855,9 +855,9 @@ $que(halt(false))".to_string()),
                 ),
             ),
             (
-                "ifque".to_owned(),
+                "queif".to_owned(),
                 DMacroSign::new(
-                    "ifque",
+                    "queif",
                     ["a_bool?^", "a_content"],
                     DeterredMacroMap::if_queue_content,
                     Some("If true, then queue expressions
