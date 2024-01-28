@@ -1,5 +1,78 @@
 # Todo immediate
 
+* [ ] Inner panics on certain cenarios
+```
+$println^($inner({},1,$content~()))
+```
+
+for following
+
+```
+    pub(crate) fn map_file( args: &str, level: usize, p: &mut Processor,) -> RadResult<Option<String>> {
+        if !Utils::is_granted("mapf", AuthType::FIN, p)? {
+            return Ok(None);
+        }
+        let mut ap = ArgParser::new().no_strip();
+        if let Some(args) = ap.args_with_len(args, 2) {
+            ap.set_strip(true);
+            let macro_src = p.parse_and_strip(&mut ap, level, "mapf", args[0].trim())?;
+            let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+            let file = BufReader::new(std::fs::File::open(p.parse_and_strip(
+                &mut ap,
+                level,
+                "mapf",
+                args[1].trim(),
+            )?)?)
+            .lines();
+
+            let mut acc = String::new();
+            for line in file {
+                let line = line?;
+                acc.push_str(
+                    &p.execute_macro(
+                        level,
+                        "mapf",
+                        macro_name,
+                        &(macro_arguments.clone() + &line),
+                    )?
+                    .unwrap_or_default(),
+                );
+            }
+            Ok(Some(acc))
+        } else {
+            Err(RadError::InvalidArgument(
+                "mapf requires two arguments".to_owned(),
+            ))
+        }
+    }
+```
+* [ ] Change deterred macro map
+* [ ] There are multiple macros that utilizes args to vec directory or simply
+  utilize args.is-empty which might cause inconsistent behaviour. Check them.
+* [ ] Check unnecessary `to_string`
+* [ ] Capture to support capture group
+* [ ] For chunk -> Apply this also to foldreg
+```
+Iter through lines and aggregate regexed chunk and apply macro to it
+$forchunk(start_regex,end_regex,macro_body,src)
+```
+* [ ] Extract inner
+```
+let macro_name =  std::mem::take(&mut args[0]);
+let mut formula = std::mem::take(&mut args[1]);
+===
+let macro_name =  args[0];
+let mut formula = args[1];
+```
+* [ ] Split by
+* [x] Ditch trim! macro because it is literally unnecessary
+* [x] Implement inner macro
+* [ ] Make some autotmated way to update shits...
+* [ ] Update `args_with_len`
+```
+let args = Utils::get_split_arguments_or_error("x", args, y, &mut ArgParser::new())?;
+```
+* [ ] Argparser rerturn cow vector rather than string vector
 * [ ] Add a feature to use rope instead of simple string ( Crop crate )
     -> For example if skip expansion flag was given OR text size is bigger than
     1K ( which is a standard point where rope out-performs normal string )
@@ -7,7 +80,8 @@
         and saved to processor ` --rope 1000 ` means use crop from 1000 byte
         sizes.
 * [ ] use `get_split_arguments_or_error` for arg splitting
-* [ ] Argparser rerturn cow vector rather than string vector
+    * [x] FunctionMacroMap
+    * [ ] DeterredMacroMap
 * [ ] Check insula's logic throughly
 * [ ] Escape rule is very outrageous
 ```
