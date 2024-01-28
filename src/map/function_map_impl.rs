@@ -14,7 +14,7 @@ use crate::formatter::Formatter;
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
 use crate::utils::{Utils, NUM_MATCH};
-use crate::{ArgParser, SplitVariant};
+use crate::SplitVariant;
 use crate::{CommentType, NewArgParser, WriteOption};
 use crate::{Hygiene, Processor};
 #[cfg(feature = "cindex")]
@@ -89,7 +89,7 @@ impl FunctionMacroMap {
     /// $hms(2020)
     #[cfg(feature = "chrono")]
     pub(crate) fn hms(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("hms", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("hms", &args, 1, None)?;
 
         let seconds = args[0].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -123,7 +123,7 @@ impl FunctionMacroMap {
     ///
     /// $regex(expression,substitution,source)
     pub(crate) fn regex_sub(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("regex", &args, 3, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("regex", &args, 3, None)?;
 
         let match_expr = &args[0];
         let substitution = &args[1];
@@ -146,7 +146,7 @@ impl FunctionMacroMap {
         match &p.state.current_input {
             ProcessInput::Stdin => Ok(Some("Stdin".to_string())),
             ProcessInput::File(path) => {
-                let args = ArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
+                let args = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
                 if !args.is_empty() && !args[0].trim().is_empty() {
                     let print_absolute = Utils::is_arg_true(args[0].trim())?;
                     if print_absolute {
@@ -171,7 +171,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("ftime", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        let args = Utils::get_split_arguments_or_error("ftime", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("ftime", &args, 1, None)?;
 
         let file = args[0].trim();
         let path = Path::new(file);
@@ -191,7 +191,7 @@ impl FunctionMacroMap {
     ///
     /// $find(regex_match,source)
     pub(crate) fn find_occurence(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("find", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("find", &args, 2, None)?;
 
         let match_expr = &args[0];
         let source = &args[1];
@@ -215,7 +215,7 @@ impl FunctionMacroMap {
         args: &str,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("findm", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("findm", &args, 2, None)?;
         let match_expr = &args[0];
         let source = &args[1];
 
@@ -237,7 +237,7 @@ impl FunctionMacroMap {
     ///
     /// $eval(expression)
     pub(crate) fn eval(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("eval", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("eval", &args, 1, None)?;
 
         let formula = &args[0];
         let result = evalexpr::eval(formula)?;
@@ -252,7 +252,7 @@ impl FunctionMacroMap {
     ///
     /// $evalk(expression)
     pub(crate) fn eval_keep(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("evalk", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("evalk", &args, 1, None)?;
 
         // This is the processed raw formula
         let formula = &args[0];
@@ -268,7 +268,7 @@ impl FunctionMacroMap {
     ///
     /// $eval(expression)
     pub(crate) fn evalf(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("evalf", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("evalf", &args, 1, None)?;
 
         let formula = args[0]
             .split_whitespace()
@@ -293,7 +293,7 @@ impl FunctionMacroMap {
     ///
     /// $evalkf(expression)
     pub(crate) fn eval_keep_as_float(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("evalkf", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("evalkf", &args, 1, None)?;
 
         // This is the processed raw formula
         let formula = args[0]
@@ -317,7 +317,7 @@ impl FunctionMacroMap {
     ///
     /// $pie(expression)
     pub(crate) fn pipe_ire(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("pie", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("pie", &args, 1, None)?;
 
         let mut formula = args[0].to_string();
         let pipe = p.state.get_pipe("-", true).unwrap_or("".to_string());
@@ -338,7 +338,7 @@ impl FunctionMacroMap {
     ///
     /// $mie(expression)
     pub(crate) fn macro_ire(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("mie", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("mie", &args, 2, None)?;
 
         let macro_name = &args[0];
         let mut formula = args[1].to_string();
@@ -362,7 +362,7 @@ impl FunctionMacroMap {
     ///
     /// $not(expression)
     pub(crate) fn not(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("not", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("not", &args, 1, None)?;
 
         // No need to trim right now because is_arg_true trims already
         // Of course, it returns cow so it doesn't create overhead anyway
@@ -383,7 +383,7 @@ impl FunctionMacroMap {
     ///
     /// $trim(expression)
     pub(crate) fn trim(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("trim", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("trim", &args, 1, None)?;
         Ok(Some(args[0].trim().to_string()))
     }
 
@@ -393,7 +393,7 @@ impl FunctionMacroMap {
     ///
     /// $trimf(expression)
     pub(crate) fn trimf(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("trimf", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("trimf", &args, 1, None)?;
 
         Ok(Some(args[0].trim_start().to_string()))
     }
@@ -404,7 +404,7 @@ impl FunctionMacroMap {
     ///
     /// $trimr(expression)
     pub(crate) fn trimr(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("trimr", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("trimr", &args, 1, None)?;
 
         let content = &args[0];
         let trailer = if content.ends_with('\n') {
@@ -423,7 +423,7 @@ impl FunctionMacroMap {
     ///
     /// This doesn't support utf-8 character but only ASCII
     pub(crate) fn get_inner(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("inner", &args, 3, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("inner", &args, 3, None)?;
         let rule = args[0].trim().as_bytes();
         if rule.len() != 2 {
             return Err(RadError::InvalidArgument(
@@ -502,7 +502,7 @@ impl FunctionMacroMap {
     /// expression
     /// )
     pub(crate) fn indent_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("indent", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("indent", &args, 2, None)?;
 
         let indenter = &args[0];
         let mut lines = String::new();
@@ -529,7 +529,7 @@ impl FunctionMacroMap {
     /// \t expression
     /// )
     pub(crate) fn triml(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("triml", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("triml", &args, 1, None)?;
 
         let mut lines = String::new();
         let mut iter = args[0].lines().peekable();
@@ -553,7 +553,7 @@ impl FunctionMacroMap {
     /// \t expression
     /// )
     pub(crate) fn trimla(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("trimla", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("trimla", &args, 2, None)?;
 
         let option = args[0].trim();
         let source = &args[1];
@@ -616,7 +616,7 @@ impl FunctionMacroMap {
     ///
     /// $chomp(expression)
     pub(crate) fn chomp(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("chomp", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("chomp", &args, 1, None)?;
 
         let source = &args[0];
         let chomp_result = &*TWO_NL_MATCH.replace_all(source, &processor.state.newline.repeat(2));
@@ -630,7 +630,7 @@ impl FunctionMacroMap {
     ///
     /// $comp(Expression)
     pub(crate) fn compress(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("compress", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("compress", &args, 1, None)?;
 
         let source = &args[0];
         // Chomp and then compress
@@ -648,7 +648,7 @@ impl FunctionMacroMap {
     ///
     /// $lipsum(Number)
     pub(crate) fn lipsum_words(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("lipsum", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("lipsum", &args, 1, None)?;
 
         let word_count = &args[0];
         if let Ok(count) = word_count.trim().parse::<usize>() {
@@ -678,7 +678,7 @@ impl FunctionMacroMap {
     ///
     /// $lipsumr(Number)
     pub(crate) fn lipsum_repeat(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("lipsumr", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("lipsumr", &args, 1, None)?;
 
         let word_count = &args[0];
         let mut current_index = match p.get_runtime_macro_body(MACRO_SPECIAL_LIPSUM) {
@@ -753,7 +753,7 @@ impl FunctionMacroMap {
     ///
     /// $repeat(count,text)
     pub(crate) fn repeat(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("repeat", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("repeat", &args, 2, None)?;
 
         let repeat_count = if let Ok(count) = args[0].trim().parse::<usize>() {
             count
@@ -782,7 +782,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("syscmd", AuthType::CMD, p)? {
             return Ok(None);
         }
-        let args = Utils::get_split_arguments_or_error("syscmd", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("syscmd", &args, 1, None)?;
 
         let source = &args[0];
         let arg_vec = Utils::get_whitespace_split_retain_quote_rule(source);
@@ -822,7 +822,7 @@ impl FunctionMacroMap {
         args: &str,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("undef", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("undef", &args, 1, None)?;
 
         let name = args[0].trim();
 
@@ -848,7 +848,7 @@ impl FunctionMacroMap {
     ///
     /// $squash(/,a/b/c)
     pub(crate) fn squash(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("squash", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("squash", &args, 1, None)?;
 
         let text = args[0].trim();
         let new_text = TWO_NL_MATCH.replace_all(text, &p.state.newline);
@@ -862,7 +862,7 @@ impl FunctionMacroMap {
     ///
     /// $split(/,a/b/c)
     pub(crate) fn split(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("split", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("split", &args, 2, None)?;
 
         let sep = args[0].as_ref();
         let text = &args[1];
@@ -887,7 +887,7 @@ impl FunctionMacroMap {
         args: &str,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("scut", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("scut", &args, 2, None)?;
 
         let split = &mut args[1].split_whitespace();
         let len = split.clone().count();
@@ -928,7 +928,7 @@ impl FunctionMacroMap {
     ///
     /// $cut(/,a/b/c)
     pub(crate) fn split_and_cut(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("cut", &args, 3, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("cut", &args, 3, None)?;
 
         let sep = args[0].as_ref();
         let mut split = args[2].split_terminator(sep);
@@ -970,7 +970,7 @@ impl FunctionMacroMap {
     ///
     /// $ssplit(a/b/c)
     pub(crate) fn space_split(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("ssplit", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("ssplit", &args, 1, None)?;
 
         let text = args[0].trim();
 
@@ -989,7 +989,7 @@ impl FunctionMacroMap {
     ///
     /// $assertt( abc ,abc)
     pub(crate) fn assert_trimmed(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("assertt", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("assertt", &args, 2, None)?;
 
         if args[0].trim() == args[1].trim() {
             p.track_assertion(true)?;
@@ -1006,7 +1006,7 @@ impl FunctionMacroMap {
     ///
     /// $assert(abc,abc)
     pub(crate) fn assert(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("assert", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("assert", &args, 2, None)?;
 
         if args[0] == args[1] {
             p.track_assertion(true)?;
@@ -1023,7 +1023,7 @@ impl FunctionMacroMap {
     ///
     /// $nassert(abc,abc)
     pub(crate) fn assert_ne(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("nassert", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("nassert", &args, 2, None)?;
 
         if args[0] != args[1] {
             p.track_assertion(true)?;
@@ -1087,7 +1087,7 @@ impl FunctionMacroMap {
     ///
     /// $join(" ",a,b,c)
     pub(crate) fn join(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("join", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("join", &args, 2, None)?;
 
         let sep = args[0].as_ref();
         let text = &args[1];
@@ -1105,7 +1105,7 @@ impl FunctionMacroMap {
     ///
     /// $joinl(" ",a\nb\nc\n)
     pub(crate) fn join_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("joinl", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("joinl", &args, 2, None)?;
 
         let sep = args[0].as_ref();
         let text = &args[1];
@@ -1126,7 +1126,7 @@ impl FunctionMacroMap {
     /// $table(github,1,2,3
     /// 4,5,6)
     pub(crate) fn table(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("table", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("table", &args, 2, None)?;
 
         let table_format = args[0].trim(); // Either gfm, wikitex, latex, none
         let csv_content = args[1].trim();
@@ -1142,7 +1142,7 @@ impl FunctionMacroMap {
     ///
     /// $pipe(Value)
     pub(crate) fn pipe(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("pipe", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("pipe", &args, 1, None)?;
 
         processor.state.add_pipe(None, args[0].to_string());
         Ok(None)
@@ -1156,7 +1156,7 @@ impl FunctionMacroMap {
     ///
     /// $pipeto(Value)
     pub(crate) fn pipe_to(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("pipeto", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("pipeto", &args, 2, None)?;
 
         processor
             .state
@@ -1195,7 +1195,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("envset", AuthType::ENV, p)? {
             return Ok(None);
         }
-        let args = Utils::get_split_arguments_or_error("set", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("set", &args, 2, None)?;
 
         let name = args[0].trim();
         let value = &args[1];
@@ -1237,7 +1237,7 @@ impl FunctionMacroMap {
     ///
     /// $path($env(HOME),document,test.docx)
     pub(crate) fn merge_path(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let vec = ArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
+        let vec = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
 
         let out = vec
             .iter()
@@ -1376,7 +1376,7 @@ impl FunctionMacroMap {
     ///
     /// $name(path/file.exe)
     pub(crate) fn get_name(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("name", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("name", &args, 1, None)?;
 
         let path = Path::new(args[0].as_ref());
 
@@ -1401,7 +1401,7 @@ impl FunctionMacroMap {
             return Ok(None);
         }
 
-        let args = Utils::get_split_arguments_or_error("exist", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("exist", &args, 1, None)?;
 
         let boolean = Path::new(args[0].trim()).exists();
         Ok(Some(boolean.to_string()))
@@ -1417,7 +1417,7 @@ impl FunctionMacroMap {
             return Ok(None);
         }
 
-        let args = Utils::get_split_arguments_or_error("abs", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("abs", &args, 1, None)?;
 
         let path = std::fs::canonicalize(p.get_current_dir()?.join(args[0].trim()))?
             .to_str()
@@ -1432,7 +1432,7 @@ impl FunctionMacroMap {
     ///
     /// $parent(path/file.exe)
     pub(crate) fn get_parent(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("parent", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("parent", &args, 1, None)?;
 
         let path = Path::new(args[0].trim());
 
@@ -1506,7 +1506,7 @@ impl FunctionMacroMap {
     /// $rotatel(//,left,Content)
     pub(crate) fn rotatel(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
-        let args = Utils::get_split_arguments_or_error("rotatel", &args, 3, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("rotatel", &args, 3, None)?;
 
         let pattern = args[0].as_ref();
         let orientation = AlignType::from_str(args[1].trim())?;
@@ -1638,7 +1638,7 @@ impl FunctionMacroMap {
     ///
     /// $rename(name,target)
     pub(crate) fn rename_call(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("rename", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("rename", &args, 2, None)?;
 
         let target = args[0].trim();
         let new = args[1].trim();
@@ -1661,7 +1661,7 @@ impl FunctionMacroMap {
     ///
     /// $pad(center,10,a,Content)
     pub(crate) fn pad_string(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("pad", &args, 4, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("pad", &args, 4, None)?;
 
         let align_type = AlignType::from_str(args[0].trim())?;
         let width = args[1].trim().parse::<usize>().map_err(|_| {
@@ -1732,7 +1732,7 @@ impl FunctionMacroMap {
     /// $align(%, contents to align)
     pub(crate) fn align_by_separator(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
-        let args = Utils::get_split_arguments_or_error("align", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("align", &args, 2, None)?;
 
         let separator = args[0].to_string();
         let contents = args[1].lines();
@@ -1787,7 +1787,7 @@ impl FunctionMacroMap {
     /// $alignc(c, contents to align)
     pub(crate) fn align_columns(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use dcsv::VCont;
-        let args = Utils::get_split_arguments_or_error("alignc", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("alignc", &args, 2, None)?;
 
         let align_type = AlignType::from_str(args[0].trim())?;
         let contents = args[1].trim();
@@ -1807,7 +1807,7 @@ impl FunctionMacroMap {
     ///
     /// $alignby(rules, contents to align)
     pub(crate) fn align_by_rules(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("alignby", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("alignby", &args, 2, None)?;
 
         let rules = args[0].trim().chars().collect::<Vec<_>>();
 
@@ -1885,7 +1885,7 @@ impl FunctionMacroMap {
     ///
     /// $apart(%, contents %to% align)
     pub(crate) fn apart_by_separator(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("apart", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("apart", &args, 2, None)?;
 
         let separator = args[0].to_string();
         let contents = &args[1];
@@ -1911,7 +1911,7 @@ impl FunctionMacroMap {
     /// $tr(abc,ABC,Source)
     /// TODO Check
     pub(crate) fn translate(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("tr", &args, 3, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("tr", &args, 3, None)?;
 
         let source = args[2].as_ref();
         let mut replaced = String::with_capacity(source.len());
@@ -1941,7 +1941,7 @@ impl FunctionMacroMap {
     ///
     /// $sub(0,5,GivenString)
     pub(crate) fn substring(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("sub", &args, 3, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("sub", &args, 3, None)?;
 
         let source = &args[2];
 
@@ -1972,7 +1972,7 @@ impl FunctionMacroMap {
     ///
     /// $until(pattern,Content)
     pub(crate) fn get_slice_until(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("until", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("until", &args, 2, None)?;
 
         let pattern = args[0].as_ref();
 
@@ -1997,7 +1997,7 @@ impl FunctionMacroMap {
     ///
     /// $after(pattern,Content)
     pub(crate) fn get_slice_after(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("after", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("after", &args, 2, None)?;
 
         let pattern = args[0].as_ref();
         let offset = pattern.len();
@@ -2027,7 +2027,7 @@ impl FunctionMacroMap {
             return Ok(None);
         }
 
-        let args = Utils::get_split_arguments_or_error("tempout", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("tempout", &args, 1, None)?;
 
         let content = &args[0];
         if let Some(file) = p.get_temp_file() {
@@ -2051,7 +2051,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("fileout", AuthType::FOUT, p)? {
             return Ok(None);
         }
-        let args = Utils::get_split_arguments_or_error("fileout", &args, 3, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("fileout", &args, 3, None)?;
 
         let file_name = args[0].trim();
         let truncate = args[1].trim();
@@ -2098,7 +2098,7 @@ impl FunctionMacroMap {
     ///
     /// $head(2,Text To extract)
     pub(crate) fn head(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("head", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("head", &args, 2, None)?;
 
         let count = args[0].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -2118,7 +2118,7 @@ impl FunctionMacroMap {
     ///
     /// $headl(2,Text To extract)
     pub(crate) fn head_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("headl", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("headl", &args, 2, None)?;
 
         let count = args[0].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -2140,7 +2140,7 @@ impl FunctionMacroMap {
     ///
     /// $tail(2,Text To extract)
     pub(crate) fn tail(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("tail", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("tail", &args, 2, None)?;
 
         let count = args[0].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -2164,7 +2164,7 @@ impl FunctionMacroMap {
     ///
     /// $surr(<p>,</p>,content)
     pub(crate) fn surround_with_pair(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("surr", &args, 3, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("surr", &args, 3, None)?;
 
         let start = &args[0];
         let end = &args[1];
@@ -2178,7 +2178,7 @@ impl FunctionMacroMap {
     ///
     /// $squz(a b c d e)
     pub(crate) fn squeeze_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("squz", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("squz", &args, 1, None)?;
 
         let mut content = args[0].to_string();
         let trailer = if content.ends_with('\n') {
@@ -2199,7 +2199,7 @@ impl FunctionMacroMap {
     ///
     /// $taill(2,Text To extract)
     pub(crate) fn tail_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("taill", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("taill", &args, 2, None)?;
 
         let count = args[0].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -2221,7 +2221,7 @@ impl FunctionMacroMap {
     ///
     /// $sort(asec,1,2,3,4,5)
     pub(crate) fn sort_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("sort", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("sort", &args, 2, None)?;
 
         let order_type = args[0].trim();
         let content = &mut args[1].split(',').collect::<Vec<&str>>();
@@ -2248,7 +2248,7 @@ impl FunctionMacroMap {
     ///
     /// $sortl(asec,Content)
     pub(crate) fn sort_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("sortl", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("sortl", &args, 2, None)?;
 
         let order_type = args[0].trim();
         let content = &mut args[1].lines().collect::<Vec<&str>>();
@@ -2275,7 +2275,7 @@ impl FunctionMacroMap {
     ///
     /// $sortc(asec, ... chunk ... )
     pub(crate) fn sort_chunk(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("sortc", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("sortc", &args, 2, None)?;
 
         let order_type = args[0].trim().to_string();
         let mut content = args[1].to_string();
@@ -2332,7 +2332,7 @@ impl FunctionMacroMap {
     ///
     /// $index(1,1,2,3,4,5)
     pub(crate) fn index_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("index", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("index", &args, 2, None)?;
 
         // Don't allocate as vector if possible to improve performance
         let content = &mut args[1].split(',');
@@ -2375,7 +2375,7 @@ impl FunctionMacroMap {
     ///
     /// $indexl(1,1$nl()2$nl())
     pub(crate) fn index_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("indexl", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("indexl", &args, 2, None)?;
 
         let content = &mut args[1].lines();
         let index = args[0].trim().parse::<isize>().map_err(|_| {
@@ -2417,7 +2417,7 @@ impl FunctionMacroMap {
     ///
     /// $strip()
     pub(crate) fn strip(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("strip", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("strip", &args, 2, None)?;
 
         let count = args[0].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -2452,7 +2452,7 @@ impl FunctionMacroMap {
     ///
     /// $stripf()
     pub(crate) fn stripf(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("stripf", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("stripf", &args, 2, None)?;
 
         let count = args[0].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -2483,7 +2483,7 @@ impl FunctionMacroMap {
     ///
     /// $stripfl()
     pub(crate) fn stripf_line(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("stripfl", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("stripfl", &args, 2, None)?;
 
         let count = args[0].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -2526,7 +2526,7 @@ impl FunctionMacroMap {
     ///
     /// $striprl()
     pub(crate) fn stripr_line(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("striprl", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("striprl", &args, 2, None)?;
 
         let count = args[0].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -2571,7 +2571,7 @@ impl FunctionMacroMap {
     ///
     /// $stripr()
     pub(crate) fn stripr(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("stripr", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("stripr", &args, 2, None)?;
 
         let count = args[0].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -2609,7 +2609,7 @@ impl FunctionMacroMap {
         args: &str,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("striper", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("striper", &args, 2, None)?;
 
         let expr = &args[0];
         let content = &args[1];
@@ -2640,7 +2640,7 @@ impl FunctionMacroMap {
     ///
     /// $sep(1$nl()2$nl())
     pub(crate) fn separate(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("sep", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("sep", &args, 1, None)?;
 
         let content = &args[0];
         let mut separated = vec![];
@@ -2660,7 +2660,7 @@ impl FunctionMacroMap {
     ///
     /// $slice(1,2,1,2,3,4,5)
     pub(crate) fn slice(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("slice", &args, 3, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("slice", &args, 3, None)?;
 
         let mut min: Option<usize> = None;
         let mut max: Option<usize> = None;
@@ -2693,7 +2693,7 @@ impl FunctionMacroMap {
     ///
     /// $fold(1,2,3,4,5)
     pub(crate) fn fold(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("fold", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("fold", &args, 1, None)?;
 
         let content = args[0].split(',').fold(String::new(), |mut acc, a| {
             acc.push_str(a);
@@ -2715,7 +2715,7 @@ impl FunctionMacroMap {
     /// 4
     /// 5)
     pub(crate) fn fold_line(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("foldl", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("foldl", &args, 1, None)?;
 
         let content = args[0].lines().fold(String::new(), |mut acc, a| {
             acc.push_str(a);
@@ -2738,7 +2738,7 @@ impl FunctionMacroMap {
     /// 4
     /// 5)
     pub(crate) fn fold_by(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("foldby", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("foldby", &args, 2, None)?;
 
         let sep = &args[0];
         let content = args[1].lines().fold(String::new(), |mut acc, a| {
@@ -2761,7 +2761,7 @@ impl FunctionMacroMap {
     /// 4
     /// 5)
     pub(crate) fn foldt(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("foldt", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("foldt", &args, 1, None)?;
 
         let content = args[0].lines().fold(String::new(), |mut acc, a| {
             acc.push_str(a.trim());
@@ -2778,7 +2778,7 @@ impl FunctionMacroMap {
     /// $foldreg(expr,1
     /// 2)
     pub(crate) fn fold_regular_expr(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("foldreg", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("foldreg", &args, 2, None)?;
 
         let mut container = String::new();
         let mut folded = String::new();
@@ -2823,7 +2823,7 @@ impl FunctionMacroMap {
     ///
     /// $regexpr(name,EXPR)
     pub(crate) fn register_expression(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("regexpr", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("regexpr", &args, 2, None)?;
 
         let name = &args[0];
         let expr = &args[1];
@@ -2838,7 +2838,7 @@ impl FunctionMacroMap {
     ///
     /// $capture(expr,Array)
     pub(crate) fn capture(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("capture", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("capture", &args, 2, None)?;
 
         let expr = &args[0];
         let nl = p.state.newline.clone();
@@ -2859,7 +2859,7 @@ impl FunctionMacroMap {
     ///
     /// $grep(expr,Array)
     pub(crate) fn grep_array(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("grep", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("grep", &args, 2, None)?;
 
         let expr = &args[0];
         let reg = p.try_get_or_insert_regex(expr)?;
@@ -2882,7 +2882,7 @@ impl FunctionMacroMap {
     ///
     /// $grepl(expr,Lines)
     pub(crate) fn grep_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("grepl", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("grepl", &args, 2, None)?;
 
         let expr = &args[0];
         let nl = p.state.newline.clone();
@@ -2908,7 +2908,7 @@ impl FunctionMacroMap {
             return Ok(None);
         }
 
-        let args = Utils::get_split_arguments_or_error("grepf", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("grepf", &args, 2, None)?;
         let file = args[1].trim();
         let path = Path::new(file);
 
@@ -2944,7 +2944,7 @@ impl FunctionMacroMap {
     ///
     /// $cond(a       b         c)
     pub(crate) fn condense(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("cond", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("cond", &args, 1, None)?;
 
         // TODO CHECK TO_string
         let content = &args[0];
@@ -2958,7 +2958,7 @@ impl FunctionMacroMap {
     /// $condl(a       b         c)
     pub(crate) fn condense_by_lines(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
-        let args = Utils::get_split_arguments_or_error("condl", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("condl", &args, 1, None)?;
 
         let content = &args[0];
         let mut acc = String::new();
@@ -2978,7 +2978,7 @@ impl FunctionMacroMap {
     ///
     /// $count(1,2,3,4,5)
     pub(crate) fn count(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("count", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("count", &args, 1, None)?;
 
         if args[0].trim().is_empty() {
             return Ok(Some("0".to_string()));
@@ -2993,7 +2993,7 @@ impl FunctionMacroMap {
     ///
     /// $countw(1 2 3 4 5)
     pub(crate) fn count_word(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("countw", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("countw", &args, 1, None)?;
 
         let array_count = &args[0].split_whitespace().count();
         Ok(Some(array_count.to_string()))
@@ -3005,7 +3005,7 @@ impl FunctionMacroMap {
     ///
     /// $countl(CONTENT goes here)
     pub(crate) fn count_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("countl", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("countl", &args, 1, None)?;
 
         if args[0].is_empty() {
             return Ok(Some("0".to_string()));
@@ -3022,7 +3022,7 @@ impl FunctionMacroMap {
     ///
     /// $relay(type,argument)
     pub(crate) fn relay(args_src: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_to_vec(args_src, ',', SplitVariant::Always);
+        let args = NewArgParser::new().args_to_vec(args_src, ',', SplitVariant::Always);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "relay at least requires an argument".to_owned(),
@@ -3079,7 +3079,7 @@ impl FunctionMacroMap {
                         target
                     )));
                 }
-                RelayTarget::Macro(args[1].to_owned())
+                RelayTarget::Macro(args[1].to_string())
             }
             _ => {
                 return Err(RadError::InvalidArgument(format!(
@@ -3108,7 +3108,7 @@ impl FunctionMacroMap {
     ///     8]
     /// )
     pub(crate) fn rearrange(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("rer", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("rer", &args, 1, None)?;
 
         let mut rer_hash = RerHash::default();
         let mut blank_str: &str; // Container
@@ -3181,7 +3181,7 @@ impl FunctionMacroMap {
     ///
     /// $halt()
     pub(crate) fn halt_relay(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("halt", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("halt", &args, 1, None)?;
 
         let halt_immediate = if args[0].is_empty() {
             false
@@ -3211,7 +3211,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("tempto", AuthType::FOUT, processor)? {
             return Ok(None);
         }
-        let args = Utils::get_split_arguments_or_error("tempto", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("tempto", &args, 1, None)?;
 
         let path = &std::env::temp_dir().join(args[0].trim());
         Utils::check_file_sanity(processor, path)?;
@@ -3237,7 +3237,7 @@ impl FunctionMacroMap {
     ///
     /// $num(20%)
     pub(crate) fn get_number(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("num", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("num", &args, 1, None)?;
 
         let src = args[0].trim();
         let captured = NUM_MATCH.captures(src).ok_or_else(|| {
@@ -3259,7 +3259,7 @@ impl FunctionMacroMap {
     ///
     /// $upper(hello world)
     pub(crate) fn capitalize(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("upper", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("upper", &args, 1, None)?;
 
         let src = args[0].trim();
         Ok(Some(src.to_uppercase()))
@@ -3271,7 +3271,7 @@ impl FunctionMacroMap {
     ///
     /// $lower(hello world)
     pub(crate) fn lower(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("lower", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("lower", &args, 1, None)?;
 
         let src = args[0].trim();
         Ok(Some(src.to_lowercase()))
@@ -3283,7 +3283,7 @@ impl FunctionMacroMap {
     ///
     /// $comment(any)
     pub(crate) fn require_comment(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("comment", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("comment", &args, 1, None)?;
 
         let comment_src = &args[0];
         let comment_type = CommentType::from_str(comment_src.trim());
@@ -3311,7 +3311,7 @@ impl FunctionMacroMap {
     ///
     /// $require(fout)
     pub(crate) fn require_permissions(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let vec = ArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
+        let vec = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
         if vec.is_empty() {
             p.log_warning(
                 "Require macro used without any arguments.",
@@ -3342,7 +3342,7 @@ impl FunctionMacroMap {
     ///
     /// $strict(lenient)
     pub(crate) fn require_strict(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let vec = ArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
+        let vec = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
         let mode = &vec[0];
         let trimmed_mode = mode.trim();
         match trimmed_mode.to_lowercase().as_str() {
@@ -3456,7 +3456,7 @@ impl FunctionMacroMap {
     ///
     /// $max(1,2,3,4,5)
     pub(crate) fn get_max(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("max", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("max", &args, 1, None)?;
 
         let content = args[0].trim();
         if content.is_empty() {
@@ -3474,7 +3474,7 @@ impl FunctionMacroMap {
     ///
     /// $min(1,2,3,4,5)
     pub(crate) fn get_min(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("min", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("min", &args, 1, None)?;
 
         let content = args[0].trim();
         if content.is_empty() {
@@ -3492,7 +3492,7 @@ impl FunctionMacroMap {
     ///
     /// $ceil(1.56)
     pub(crate) fn get_ceiling(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("ceil", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("ceil", &args, 1, None)?;
 
         let number = args[0].trim().parse::<f64>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -3509,7 +3509,7 @@ impl FunctionMacroMap {
     ///
     /// $floor(1.23)
     pub(crate) fn get_floor(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("floor", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("floor", &args, 1, None)?;
 
         let number = args[0].trim().parse::<f64>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -3526,7 +3526,7 @@ impl FunctionMacroMap {
     ///
     /// $prec(1.56,2)
     pub(crate) fn prec(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("prec", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("prec", &args, 2, None)?;
 
         let number = args[0].trim().parse::<f64>().map_err(|_| {
             RadError::InvalidArgument(format!(
@@ -3614,7 +3614,7 @@ impl FunctionMacroMap {
             return Ok(None);
         }
 
-        let args = Utils::get_split_arguments_or_error("dump", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("dump", &args, 1, None)?;
 
         let name = args[0].trim();
         let file_name = Path::new(name);
@@ -3639,7 +3639,7 @@ impl FunctionMacroMap {
     ///
     /// $document(macro,content)
     pub(crate) fn document(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("document", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("document", &args, 2, None)?;
 
         let macro_name = args[0].trim();
         let content = &args[1];
@@ -3669,7 +3669,7 @@ impl FunctionMacroMap {
         args: &str,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("let", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("let", &args, 2, None)?;
 
         let name = args[0].trim();
         let value = args[1].trim();
@@ -3688,7 +3688,7 @@ impl FunctionMacroMap {
         args: &str,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("letr", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("letr", &args, 2, None)?;
 
         let name = args[0].trim();
         let value = &args[1];
@@ -3718,7 +3718,7 @@ impl FunctionMacroMap {
         args: &str,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("hygiene", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("hygiene", &args, 1, None)?;
 
         if let Ok(value) = Utils::is_arg_true(&args[0]) {
             processor.toggle_hygiene(value);
@@ -3742,7 +3742,7 @@ impl FunctionMacroMap {
     /// $pause(true)
     /// $pause(false)
     pub(crate) fn pause(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("pause", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("pause", &args, 1, None)?;
 
         if let Ok(value) = Utils::is_arg_true(&args[0]) {
             processor.state.paused = value;
@@ -3766,7 +3766,7 @@ impl FunctionMacroMap {
         args: &str,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("static", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("static", &args, 2, None)?;
 
         let name = args[0].trim();
         let value = args[1].trim();
@@ -3803,7 +3803,7 @@ impl FunctionMacroMap {
         args: &str,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("staticr", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("staticr", &args, 2, None)?;
 
         let name = args[0].trim();
         let value = &args[1];
@@ -3837,7 +3837,7 @@ impl FunctionMacroMap {
     ///
     /// $notat(23,binary)
     pub(crate) fn change_notation(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("notat", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("notat", &args, 2, None)?;
 
         let number = args[0].trim();
         let notation = args[1].trim().to_lowercase();
@@ -3867,7 +3867,7 @@ impl FunctionMacroMap {
     ///
     /// $repl(macro,value)
     pub(crate) fn replace(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("repl", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("repl", &args, 2, None)?;
 
         let name = args[0].trim();
         let target = &args[1];
@@ -3886,7 +3886,7 @@ impl FunctionMacroMap {
     ///
     /// $gt(lvalue, rvalue)
     pub(crate) fn greater_than(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("gt", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("gt", &args, 2, None)?;
 
         let lvalue = &args[0];
         let rvalue = &args[1];
@@ -3902,7 +3902,7 @@ impl FunctionMacroMap {
         args: &str,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("gte", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("gte", &args, 2, None)?;
 
         let lvalue = &args[0];
         let rvalue = &args[1];
@@ -3915,7 +3915,7 @@ impl FunctionMacroMap {
     ///
     /// $lt(lvalue, rvalue)
     pub(crate) fn less_than(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("lt", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("lt", &args, 2, None)?;
 
         let lvalue = &args[0];
         let rvalue = &args[1];
@@ -3928,7 +3928,7 @@ impl FunctionMacroMap {
     ///
     /// $lte(lvalue, rvalue)
     pub(crate) fn less_than_or_equal(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("lte", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("lte", &args, 2, None)?;
 
         let lvalue = &args[0];
         let rvalue = &args[1];
@@ -3941,7 +3941,7 @@ impl FunctionMacroMap {
     ///
     /// $eq(lvalue, rvalue)
     pub(crate) fn are_values_equal(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("eq", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("eq", &args, 2, None)?;
 
         let lvalue = &args[0];
         let rvalue = &args[1];
@@ -3954,7 +3954,7 @@ impl FunctionMacroMap {
     ///
     /// $isempty(value)
     pub(crate) fn is_empty(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("isempty", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("isempty", &args, 1, None)?;
 
         let value = &args[0];
         Ok(Some(value.is_empty().to_string()))
@@ -3966,7 +3966,7 @@ impl FunctionMacroMap {
     ///
     /// $iszero(value)
     pub(crate) fn is_zero(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("iszero", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("iszero", &args, 1, None)?;
 
         let value = args[0].trim();
         Ok(Some(value.eq("0").to_string()))
@@ -3978,7 +3978,7 @@ impl FunctionMacroMap {
     ///
     /// $foldlc(count,type)
     pub(crate) fn fold_lines_by_count(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("foldlc", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("foldlc", &args, 2, None)?;
 
         use std::fmt::Write;
 
@@ -4007,7 +4007,7 @@ impl FunctionMacroMap {
     /// $insulav(value)
     pub(crate) fn isolate_vertical(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
         use std::fmt::Write;
-        let args = Utils::get_split_arguments_or_error("insulav", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("insulav", &args, 1, None)?;
 
         let mut formatted = String::new();
         let mut only_blank = true;
@@ -4058,7 +4058,7 @@ impl FunctionMacroMap {
     ///
     /// $insulah(value)
     pub(crate) fn isolate_horizontal(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("insulah", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("insulah", &args, 1, None)?;
 
         let mut formatted = String::new();
         let mut iter = args[0].chars().peekable();
@@ -4088,7 +4088,7 @@ impl FunctionMacroMap {
     ///
     /// $istype(value,type)
     pub(crate) fn qualify_value(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("istype", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("istype", &args, 2, None)?;
 
         let qtype = args[0].trim();
         let value = args[1].trim();
@@ -4118,7 +4118,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("source", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        let args = Utils::get_split_arguments_or_error("source", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("source", &args, 1, None)?;
 
         let path = args[0].trim();
         let path = Path::new(path);
@@ -4168,7 +4168,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("import", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        let args = Utils::get_split_arguments_or_error("import", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("import", &args, 1, None)?;
 
         let path = args[0].trim();
         let path = Path::new(path);
@@ -4258,7 +4258,7 @@ impl FunctionMacroMap {
     ///
     /// $unicode(123)
     pub(crate) fn paste_unicode(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("unicode", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("unicode", &args, 1, None)?;
 
         let unicode_character = args[0].trim();
         let unicode_hex = u32::from_str_radix(unicode_character, 16)?;
@@ -4278,7 +4278,7 @@ impl FunctionMacroMap {
     ///
     /// $chars(abcde)
     pub(crate) fn chars_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("chars", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("chars", &args, 1, None)?;
 
         let arg = args[0].trim();
         let mut chars = arg.chars().fold(String::new(), |mut acc, ch| {
@@ -4301,7 +4301,7 @@ impl FunctionMacroMap {
     /// $hookon(MacroType, macro_name)
     #[cfg(feature = "hook")]
     pub(crate) fn hook_enable(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("hookon", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("hookon", &args, 2, None)?;
 
         let hook_type = HookType::from_str(args[0].trim())?;
         let index = args[1].trim();
@@ -4316,7 +4316,7 @@ impl FunctionMacroMap {
     /// $hookoff(MacroType, macro_name)
     #[cfg(feature = "hook")]
     pub(crate) fn hook_disable(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("hookoff", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("hookoff", &args, 2, None)?;
 
         let hook_type = HookType::from_str(args[0].trim())?;
         let index = args[1].trim();
@@ -4331,7 +4331,7 @@ impl FunctionMacroMap {
     /// $wrap(80, Content goes here)
     #[cfg(feature = "textwrap")]
     pub(crate) fn wrap(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("wrap", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("wrap", &args, 2, None)?;
 
         let width = args[0].trim().parse::<usize>()?;
         let content = &args[1];
@@ -4400,7 +4400,7 @@ impl FunctionMacroMap {
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         use cindex::ReaderOption;
-        let args = Utils::get_split_arguments_or_error("regcsv", &args, 2, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("regcsv", &args, 2, None)?;
 
         let table_name = args[0].trim();
         if processor.indexer.contains_table(table_name) {
@@ -4422,7 +4422,7 @@ impl FunctionMacroMap {
     /// $dropcsv(table_name)
     #[cfg(feature = "cindex")]
     pub(crate) fn cindex_drop(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("dropcsv", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("dropcsv", &args, 1, None)?;
 
         processor.indexer.drop_table(args[0].trim());
         Ok(None)
@@ -4433,7 +4433,7 @@ impl FunctionMacroMap {
     /// $query(statment)
     #[cfg(feature = "cindex")]
     pub(crate) fn cindex_query(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("query", &args, 1, NewArgParser::new())?;
+        let args = Utils::get_split_arguments_or_error("query", &args, 1, None)?;
 
         let mut value = String::new();
         processor

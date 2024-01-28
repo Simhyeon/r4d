@@ -6,10 +6,11 @@ use crate::deterred_map::DeterredMacroMap;
 use crate::formatter::Formatter;
 use crate::parser::SplitVariant;
 use crate::utils::{Utils, NUM_MATCH};
-use crate::ArgParser;
+use crate::NewArgParser as ArgParser;
 use crate::WarningType;
 use crate::{Processor, RadError};
 use dcsv::VCont;
+use evalexpr::eval;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -47,27 +48,23 @@ impl DeterredMacroMap {
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            let name = processor.parse_and_strip(&mut ap, level, "append", args[0].trim())?;
-            let target = processor.parse_and_strip(&mut ap, level, "append", &args[1])?;
+        let args = Utils::get_split_arguments_or_error("append", &args, 2, Some(&mut ap))?;
 
-            if let Some(name) = processor.contains_local_macro(level, &name) {
-                processor.append_local_macro(&name, &target);
-            } else if processor.contains_macro(&name, MacroType::Runtime) {
-                processor.append_macro(&name, &target);
-            } else {
-                return Err(RadError::InvalidArgument(format!(
-                    "Macro \"{}\" doesn't exist",
-                    name
-                )));
-            }
+        let name = processor.parse_and_strip(&mut ap, level, "append", args[0].trim())?;
+        let target = processor.parse_and_strip(&mut ap, level, "append", args[1].as_ref())?;
 
-            Ok(None)
+        if let Some(name) = processor.contains_local_macro(level, &name) {
+            processor.append_local_macro(&name, &target);
+        } else if processor.contains_macro(&name, MacroType::Runtime) {
+            processor.append_macro(&name, &target);
         } else {
-            Err(RadError::InvalidArgument(
-                "Append at least requires two arguments".to_owned(),
-            ))
+            return Err(RadError::InvalidArgument(format!(
+                "Macro \"{}\" doesn't exist",
+                name
+            )));
         }
+
+        Ok(None)
     }
 
     /// Apply map on array
@@ -80,27 +77,23 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let expanded = p.parse_and_strip(&mut ap, level, "map", args[0].trim())?;
-            let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
-            let src = p.parse_and_strip(&mut ap, level, "map", &args[1])?;
-            let array = src.split(',');
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("map", &args, 2, Some(&mut ap))?;
 
-            let mut acc = String::new();
-            for item in array {
-                acc.push_str(
-                    &p.execute_macro(level, "map", name, &(arguments.clone() + item))?
-                        .unwrap_or_default(),
-                );
-            }
-            Ok(Some(acc))
-        } else {
-            Err(RadError::InvalidArgument(
-                "map requires two arguments".to_owned(),
-            ))
+        ap.set_strip(true);
+        let expanded = p.parse_and_strip(&mut ap, level, "map", args[0].trim())?;
+        let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
+        let src = p.parse_and_strip(&mut ap, level, "map", &args[1])?;
+        let array = src.split(',');
+
+        let mut acc = String::new();
+        for item in array {
+            acc.push_str(
+                &p.execute_macro(level, "map", name, &(arguments.clone() + item))?
+                    .unwrap_or_default(),
+            );
         }
+        Ok(Some(acc))
     }
 
     /// Apply map on lines
@@ -113,27 +106,23 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let expanded = p.parse_and_strip(&mut ap, level, "mapl", args[0].trim())?;
-            let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
-            let src = p.parse_and_strip(&mut ap, level, "mapl", &args[1])?;
-            let lines = src.lines();
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("mapl", &args, 2, Some(&mut ap))?;
 
-            let mut acc = String::new();
-            for item in lines {
-                acc.push_str(
-                    &p.execute_macro(level, "mapl", name, &(arguments.clone() + item))?
-                        .unwrap_or_default(),
-                );
-            }
-            Ok(Some(acc))
-        } else {
-            Err(RadError::InvalidArgument(
-                "mapl requires two arguments".to_owned(),
-            ))
+        ap.set_strip(true);
+        let expanded = p.parse_and_strip(&mut ap, level, "mapl", args[0].trim())?;
+        let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
+        let src = p.parse_and_strip(&mut ap, level, "mapl", &args[1])?;
+        let lines = src.lines();
+
+        let mut acc = String::new();
+        for item in lines {
+            acc.push_str(
+                &p.execute_macro(level, "mapl", name, &(arguments.clone() + item))?
+                    .unwrap_or_default(),
+            );
         }
+        Ok(Some(acc))
     }
 
     /// Apply map on numbers
@@ -146,45 +135,39 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        use evalexpr::eval;
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("mapn", &args, 2, Some(&mut ap))?;
 
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let mut operation = p.parse_and_strip(&mut ap, level, "mapn", args[0].trim())?;
-            let src = p.parse_and_strip(&mut ap, level, "mapn", args[1].trim())?;
+        ap.set_strip(true);
+        let mut operation = p.parse_and_strip(&mut ap, level, "mapn", args[0].trim())?;
+        let src = p.parse_and_strip(&mut ap, level, "mapn", args[1].trim())?;
 
-            let map_type = if p.contains_macro(&operation, MacroType::Runtime) {
-                "macro"
-            } else if operation.contains('n') {
-                "formula"
-            } else {
-                operation.insert(0, 'n');
-                "formula"
-            };
-
-            let mut new = String::with_capacity(src.len());
-            let mut last_match = 0;
-            for caps in NUM_MATCH.captures_iter(&src) {
-                let m = caps.get(0).unwrap();
-                new.push_str(&src[last_match..m.start()]);
-                let evaluated = match map_type {
-                    "macro" => p
-                        .execute_macro(level, "mapn", &operation, m.as_str())?
-                        .unwrap_or_default(),
-                    "formula" => eval(&operation.replace('n', m.as_str()))?.to_string(),
-                    _ => unreachable!(),
-                };
-                new.push_str(&evaluated);
-                last_match = m.end();
-            }
-            new.push_str(&src[last_match..]);
-            Ok(Some(new))
+        let map_type = if p.contains_macro(&operation, MacroType::Runtime) {
+            "macro"
+        } else if operation.contains('n') {
+            "formula"
         } else {
-            Err(RadError::InvalidArgument(
-                "mapn requires two arguments".to_owned(),
-            ))
+            operation.insert(0, 'n');
+            "formula"
+        };
+
+        let mut new = String::with_capacity(src.len());
+        let mut last_match = 0;
+        for caps in NUM_MATCH.captures_iter(&src) {
+            let m = caps.get(0).unwrap();
+            new.push_str(&src[last_match..m.start()]);
+            let evaluated = match map_type {
+                "macro" => p
+                    .execute_macro(level, "mapn", &operation, m.as_str())?
+                    .unwrap_or_default(),
+                "formula" => eval(&operation.replace('n', m.as_str()))?.to_string(),
+                _ => unreachable!(),
+            };
+            new.push_str(&evaluated);
+            last_match = m.end();
         }
+        new.push_str(&src[last_match..]);
+        Ok(Some(new))
     }
 
     /// Apply map on file lines
@@ -200,38 +183,34 @@ impl DeterredMacroMap {
         if !Utils::is_granted("mapf", AuthType::FIN, p)? {
             return Ok(None);
         }
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let macro_src = p.parse_and_strip(&mut ap, level, "mapf", args[0].trim())?;
-            let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
-            let file = BufReader::new(std::fs::File::open(p.parse_and_strip(
-                &mut ap,
-                level,
-                "mapf",
-                args[1].trim(),
-            )?)?)
-            .lines();
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("mapf", &args, 2, Some(&mut ap))?;
 
-            let mut acc = String::new();
-            for line in file {
-                let line = line?;
-                acc.push_str(
-                    &p.execute_macro(
-                        level,
-                        "mapf",
-                        macro_name,
-                        &(macro_arguments.clone() + &line),
-                    )?
-                    .unwrap_or_default(),
-                );
-            }
-            Ok(Some(acc))
-        } else {
-            Err(RadError::InvalidArgument(
-                "mapf requires two arguments".to_owned(),
-            ))
+        ap.set_strip(true);
+        let macro_src = p.parse_and_strip(&mut ap, level, "mapf", args[0].trim())?;
+        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+        let file = BufReader::new(std::fs::File::open(p.parse_and_strip(
+            &mut ap,
+            level,
+            "mapf",
+            args[1].trim(),
+        )?)?)
+        .lines();
+
+        let mut acc = String::new();
+        for line in file {
+            let line = line?;
+            acc.push_str(
+                &p.execute_macro(
+                    level,
+                    "mapf",
+                    macro_name,
+                    &(macro_arguments.clone() + &line),
+                )?
+                .unwrap_or_default(),
+            );
         }
+        Ok(Some(acc))
     }
 
     /// Apply maps on captured expressions
@@ -244,52 +223,70 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 4) {
-            ap.set_strip(true);
-            let grep_type = p.parse_and_strip(&mut ap, level, "grepmap", args[0].trim())?;
-            let match_expr = p.parse_and_strip(&mut ap, level, "grepmap", &args[1])?;
-            let macro_src = p.parse_and_strip(&mut ap, level, "grepmap", args[2].trim())?;
-            let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
-            let source = p.parse_and_strip(&mut ap, level, "grepmap", &args[3])?;
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("grepmap", &args, 4, Some(&mut ap))?;
 
-            let bufread = match grep_type.to_lowercase().as_str() {
-                "file" => {
-                    if !Utils::is_granted("grepmap", AuthType::FIN, p)? {
-                        return Ok(None);
-                    }
-                    true
-                }
-                "text" => false,
-                _ => {
-                    return Err(RadError::InvalidArgument(format!(
-                        "{} is not a valid grep type",
-                        grep_type
-                    )))
-                }
-            };
+        ap.set_strip(true);
+        let grep_type = p.parse_and_strip(&mut ap, level, "grepmap", args[0].trim())?;
+        let match_expr = p.parse_and_strip(&mut ap, level, "grepmap", &args[1])?;
+        let macro_src = p.parse_and_strip(&mut ap, level, "grepmap", args[2].trim())?;
+        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+        let source = p.parse_and_strip(&mut ap, level, "grepmap", &args[3])?;
 
-            if bufread && !std::path::Path::new(&source).exists() {
+        let bufread = match grep_type.to_lowercase().as_str() {
+            "file" => {
+                if !Utils::is_granted("grepmap", AuthType::FIN, p)? {
+                    return Ok(None);
+                }
+                true
+            }
+            "text" => false,
+            _ => {
                 return Err(RadError::InvalidArgument(format!(
-                    "Cannot find a file \"{}\" ",
-                    source
-                )));
+                    "{} is not a valid grep type",
+                    grep_type
+                )))
             }
+        };
 
-            if match_expr.is_empty() {
-                return Err(RadError::InvalidArgument(
-                    "Regex expression cannot be an empty string".to_string(),
-                ));
+        if bufread && !std::path::Path::new(&source).exists() {
+            return Err(RadError::InvalidArgument(format!(
+                "Cannot find a file \"{}\" ",
+                source
+            )));
+        }
+
+        if match_expr.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "Regex expression cannot be an empty string".to_string(),
+            ));
+        }
+
+        let mut res = String::new();
+
+        // If this regex is not cloned, "capture" should collect captured string into a allocated
+        // vector. Which is generaly worse for performance.
+        let reg = p.try_get_or_insert_regex(&match_expr)?.clone();
+
+        if !bufread {
+            for cap in reg.captures_iter(&source) {
+                let captured = cap.get(0).map_or("", |m| m.as_str());
+                let expanded = p
+                    .execute_macro(
+                        level,
+                        "grepmap",
+                        macro_name,
+                        &(macro_arguments.clone() + captured),
+                    )?
+                    .unwrap_or_default();
+                res.push_str(&expanded);
             }
+        } else {
+            let lines = BufReader::new(File::open(std::path::Path::new(&source))?).lines();
 
-            let mut res = String::new();
-
-            // If this regex is not cloned, "capture" should collect captured string into a allocated
-            // vector. Which is generaly worse for performance.
-            let reg = p.try_get_or_insert_regex(&match_expr)?.clone();
-
-            if !bufread {
-                for cap in reg.captures_iter(&source) {
+            for line in lines {
+                let line = line?;
+                for cap in reg.captures_iter(&line) {
                     let captured = cap.get(0).map_or("", |m| m.as_str());
                     let expanded = p
                         .execute_macro(
@@ -301,32 +298,10 @@ impl DeterredMacroMap {
                         .unwrap_or_default();
                     res.push_str(&expanded);
                 }
-            } else {
-                let lines = BufReader::new(File::open(std::path::Path::new(&source))?).lines();
-
-                for line in lines {
-                    let line = line?;
-                    for cap in reg.captures_iter(&line) {
-                        let captured = cap.get(0).map_or("", |m| m.as_str());
-                        let expanded = p
-                            .execute_macro(
-                                level,
-                                "grepmap",
-                                macro_name,
-                                &(macro_arguments.clone() + captured),
-                            )?
-                            .unwrap_or_default();
-                        res.push_str(&expanded);
-                    }
-                }
             }
-
-            Ok(Some(res))
-        } else {
-            Err(RadError::InvalidArgument(
-                "grepamp requires four arguments".to_owned(),
-            ))
         }
+
+        Ok(Some(res))
     }
 
     /// Loop around given values which is separated by given separator
@@ -339,31 +314,27 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 3) {
-            ap.set_strip(true);
-            let mut sums = String::new();
-            let body = &args[0];
-            let sep = &processor.parse_and_strip(&mut ap, level, "forby", &args[1])?;
-            let loopable = &processor.parse_and_strip(&mut ap, level, "forby", &args[2])?;
-            for (count, value) in loopable.split_terminator(sep).enumerate() {
-                // This overrides value
-                processor.add_new_local_macro(level, "a_LN", &count.to_string());
-                processor.add_new_local_macro(level, ":", value);
-                let result = &processor.parse_and_strip(&mut ap, level, "forby", body)?;
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("forby", &args, 3, Some(&mut ap))?;
 
-                sums.push_str(result);
-            }
+        ap.set_strip(true);
+        let mut sums = String::new();
+        let body = &args[0];
+        let sep = &processor.parse_and_strip(&mut ap, level, "forby", &args[1])?;
+        let loopable = &processor.parse_and_strip(&mut ap, level, "forby", &args[2])?;
+        for (count, value) in loopable.split_terminator(sep).enumerate() {
+            // This overrides value
+            processor.add_new_local_macro(level, "a_LN", &count.to_string());
+            processor.add_new_local_macro(level, ":", value);
+            let result = &processor.parse_and_strip(&mut ap, level, "forby", body)?;
 
-            // Clear local macro
-            processor.remove_local_macro(level, ":");
-
-            Ok(Some(sums))
-        } else {
-            Err(RadError::InvalidArgument(
-                "Foreach requires two argument".to_owned(),
-            ))
+            sums.push_str(result);
         }
+
+        // Clear local macro
+        processor.remove_local_macro(level, ":");
+
+        Ok(Some(sums))
     }
 
     /// Loop around given values and substitute iterators  with the value
@@ -376,39 +347,35 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let mut sums = String::new();
-            let body = &args[0];
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("foreach", &args, 2, Some(&mut ap))?;
 
-            if args[1].contains("$:()") || args[1].contains("$a_LN()") {
-                processor.log_warning(
-                    "Foreach's second argument is iterable array.",
-                    WarningType::Sanity,
-                )?;
-            }
+        ap.set_strip(true);
+        let mut sums = String::new();
+        let body = &args[0];
 
-            let loop_src = processor.parse_and_strip(&mut ap, level, "foreach", &args[1])?;
-            let loopable = loop_src.trim();
-            for (count, value) in loopable.split(',').enumerate() {
-                // This overrides value
-                processor.add_new_local_macro(level, "a_LN", &count.to_string());
-                processor.add_new_local_macro(level, ":", value);
-                let result = &processor.parse_and_strip(&mut ap, level, "foreach", body)?;
-
-                sums.push_str(result);
-            }
-
-            // Clear local macro
-            processor.remove_local_macro(level, ":");
-
-            Ok(Some(sums))
-        } else {
-            Err(RadError::InvalidArgument(
-                "Foreach requires two argument".to_owned(),
-            ))
+        if args[1].contains("$:()") || args[1].contains("$a_LN()") {
+            processor.log_warning(
+                "Foreach's second argument is iterable array.",
+                WarningType::Sanity,
+            )?;
         }
+
+        let loop_src = processor.parse_and_strip(&mut ap, level, "foreach", &args[1])?;
+        let loopable = loop_src.trim();
+        for (count, value) in loopable.split(',').enumerate() {
+            // This overrides value
+            processor.add_new_local_macro(level, "a_LN", &count.to_string());
+            processor.add_new_local_macro(level, ":", value);
+            let result = &processor.parse_and_strip(&mut ap, level, "foreach", body)?;
+
+            sums.push_str(result);
+        }
+
+        // Clear local macro
+        processor.remove_local_macro(level, ":");
+
+        Ok(Some(sums))
     }
 
     /// Loop around given joined and substitute iterators with the value
@@ -421,66 +388,62 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let mut sums = String::new();
-            let body = &args[0];
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("forjoin", &args, 2, Some(&mut ap))?;
 
-            if args[1].contains("$:()") || args[1].contains("$a_LN()") {
-                processor.log_warning(
-                    "Forjoin's second argument is iterable array.",
-                    WarningType::Sanity,
-                )?;
-            }
+        ap.set_strip(true);
+        let mut sums = String::new();
+        let body = &args[0];
 
-            let loop_src = processor.parse_and_strip(&mut ap, level, "forjoin", &args[1])?;
-            let loopable = loop_src.trim().lines().collect::<Vec<_>>();
-
-            let mut line_width = 0;
-            let loopable: RadResult<Vec<Vec<&str>>> = loopable
-                .into_iter()
-                .map(|s| {
-                    let splitted = s.split(',').collect::<Vec<_>>();
-                    if splitted.is_empty() {
-                        return Err(RadError::InvalidArgument(format!(
-                            "Forjoin cannot process {} as valid array",
-                            s
-                        )));
-                    } else if line_width == 0 {
-                        // Initial state
-                        line_width = splitted.len();
-                    } else if line_width != splitted.len() {
-                        return Err(RadError::InvalidArgument(format!(
-                            "Line {} has inconsistent array length",
-                            s
-                        )));
-                    }
-                    Ok(splitted)
-                })
-                .collect();
-            let loopable = loopable?;
-            for (count, value) in loopable.into_iter().enumerate() {
-                processor.add_new_local_macro(level, ":0", &value.join(","));
-                // This overrides value
-                processor.add_new_local_macro(level, "a_LN", &count.to_string());
-                for (idx, item) in value.iter().enumerate() {
-                    processor.add_new_local_macro(level, &format!(":{}", idx + 1), item);
-                }
-                let result = &processor.parse_and_strip(&mut ap, level, "forjoin", body)?;
-
-                sums.push_str(result);
-            }
-
-            // Clear local macro
-            processor.remove_local_macro(level, ":");
-
-            Ok(Some(sums))
-        } else {
-            Err(RadError::InvalidArgument(
-                "Forjoin requires two argument".to_owned(),
-            ))
+        if args[1].contains("$:()") || args[1].contains("$a_LN()") {
+            processor.log_warning(
+                "Forjoin's second argument is iterable array.",
+                WarningType::Sanity,
+            )?;
         }
+
+        let loop_src = processor.parse_and_strip(&mut ap, level, "forjoin", &args[1])?;
+        let loopable = loop_src.trim().lines().collect::<Vec<_>>();
+
+        let mut line_width = 0;
+        let loopable: RadResult<Vec<Vec<&str>>> = loopable
+            .into_iter()
+            .map(|s| {
+                let splitted = s.split(',').collect::<Vec<_>>();
+                if splitted.is_empty() {
+                    return Err(RadError::InvalidArgument(format!(
+                        "Forjoin cannot process {} as valid array",
+                        s
+                    )));
+                } else if line_width == 0 {
+                    // Initial state
+                    line_width = splitted.len();
+                } else if line_width != splitted.len() {
+                    return Err(RadError::InvalidArgument(format!(
+                        "Line {} has inconsistent array length",
+                        s
+                    )));
+                }
+                Ok(splitted)
+            })
+            .collect();
+        let loopable = loopable?;
+        for (count, value) in loopable.into_iter().enumerate() {
+            processor.add_new_local_macro(level, ":0", &value.join(","));
+            // This overrides value
+            processor.add_new_local_macro(level, "a_LN", &count.to_string());
+            for (idx, item) in value.iter().enumerate() {
+                processor.add_new_local_macro(level, &format!(":{}", idx + 1), item);
+            }
+            let result = &processor.parse_and_strip(&mut ap, level, "forjoin", body)?;
+
+            sums.push_str(result);
+        }
+
+        // Clear local macro
+        processor.remove_local_macro(level, ":");
+
+        Ok(Some(sums))
     }
 
     /// Loop around given words and substitute iterators  with the value
@@ -493,39 +456,35 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let mut sums = String::new();
-            let body = &args[0];
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("forsp", &args, 2, Some(&mut ap))?;
 
-            if args[1].contains("$:()") || args[1].contains("$a_LN()") {
-                processor.log_warning(
-                    "Foreach's second argument is iterable array.",
-                    WarningType::Sanity,
-                )?;
-            }
+        ap.set_strip(true);
+        let mut sums = String::new();
+        let body = &args[0];
 
-            let loop_src = processor.parse_and_strip(&mut ap, level, "forsp", &args[1])?;
-            let loopable = loop_src.trim();
-            for (count, value) in loopable.split_whitespace().enumerate() {
-                // This overrides value
-                processor.add_new_local_macro(level, "a_LN", &count.to_string());
-                processor.add_new_local_macro(level, ":", value);
-                let result = &processor.parse_and_strip(&mut ap, level, "forsp", body)?;
-
-                sums.push_str(result);
-            }
-
-            // Clear local macro
-            processor.remove_local_macro(level, ":");
-
-            Ok(Some(sums))
-        } else {
-            Err(RadError::InvalidArgument(
-                "Foreach requires two argument".to_owned(),
-            ))
+        if args[1].contains("$:()") || args[1].contains("$a_LN()") {
+            processor.log_warning(
+                "Foreach's second argument is iterable array.",
+                WarningType::Sanity,
+            )?;
         }
+
+        let loop_src = processor.parse_and_strip(&mut ap, level, "forsp", &args[1])?;
+        let loopable = loop_src.trim();
+        for (count, value) in loopable.split_whitespace().enumerate() {
+            // This overrides value
+            processor.add_new_local_macro(level, "a_LN", &count.to_string());
+            processor.add_new_local_macro(level, ":", value);
+            let result = &processor.parse_and_strip(&mut ap, level, "forsp", body)?;
+
+            sums.push_str(result);
+        }
+
+        // Clear local macro
+        processor.remove_local_macro(level, ":");
+
+        Ok(Some(sums))
     }
 
     /// Loop around given values split by new line and substitute iterators  with the value
@@ -538,28 +497,24 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let mut sums = String::new();
-            let body = &args[0];
-            let loop_src = processor.parse_and_strip(&mut ap, level, "forline", &args[1])?;
-            let mut count = 1;
-            for line in Utils::full_lines(loop_src.as_bytes()) {
-                let line = line?;
-                // This overrides value
-                processor.add_new_local_macro(level, "a_LN", &count.to_string());
-                processor.add_new_local_macro(level, ":", line.as_str());
-                let result = processor.parse_and_strip(&mut ap, level, "forline", body)?;
-                sums.push_str(&result);
-                count += 1;
-            }
-            Ok(Some(sums))
-        } else {
-            Err(RadError::InvalidArgument(
-                "Forline requires two argument".to_owned(),
-            ))
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("forline", &args, 2, Some(&mut ap))?;
+
+        ap.set_strip(true);
+        let mut sums = String::new();
+        let body = &args[0];
+        let loop_src = processor.parse_and_strip(&mut ap, level, "forline", &args[1])?;
+        let mut count = 1;
+        for line in Utils::full_lines(loop_src.as_bytes()) {
+            let line = line?;
+            // This overrides value
+            processor.add_new_local_macro(level, "a_LN", &count.to_string());
+            processor.add_new_local_macro(level, ":", line.as_str());
+            let result = processor.parse_and_strip(&mut ap, level, "forline", body)?;
+            sums.push_str(&result);
+            count += 1;
         }
+        Ok(Some(sums))
     }
 
     /// For loop around given min, max value and finally substitue iterators with value
@@ -572,62 +527,58 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 3) {
-            ap.set_strip(true);
-            let mut sums = String::new();
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("forloop", &args, 3, Some(&mut ap))?;
 
-            if args[2].contains("$:()") || args[1].contains("$a_LN()") {
-                processor.log_warning(
-                    "Forloop's third argument is a max number",
-                    WarningType::Sanity,
-                )?;
-            }
+        ap.set_strip(true);
+        let mut sums = String::new();
 
-            let body = &args[0];
-            let min_src = &processor
-                .parse_and_strip(&mut ap, level, "forloop", &args[1])?
-                .trim()
-                .to_string();
-            let max_src = &processor
-                .parse_and_strip(&mut ap, level, "forloop", &args[2])?
-                .trim()
-                .to_string();
-
-            let min = if let Ok(num) = min_src.parse::<usize>() {
-                num
-            } else {
-                return Err(RadError::InvalidArgument(format!(
-                    "Forloop's min value should be non zero positive integer but given {}",
-                    min_src
-                )));
-            };
-            let max = if let Ok(num) = max_src.parse::<usize>() {
-                num
-            } else {
-                return Err(RadError::InvalidArgument(format!(
-                    "Forloop's max value should be non zero positive integer but given \"{}\"",
-                    max_src
-                )));
-            };
-            let mut result: String;
-            for value in min..=max {
-                processor.add_new_local_macro(level, ":", &value.to_string());
-                result = processor.parse_and_strip(&mut ap, level, "forloop", body)?;
-
-                sums.push_str(&result);
-                result.clear();
-            }
-
-            // Clear local macro
-            processor.remove_local_macro(level, ":");
-
-            Ok(Some(sums))
-        } else {
-            Err(RadError::InvalidArgument(
-                "Forloop requires three arguments".to_owned(),
-            ))
+        if args[2].contains("$:()") || args[1].contains("$a_LN()") {
+            processor.log_warning(
+                "Forloop's third argument is a max number",
+                WarningType::Sanity,
+            )?;
         }
+
+        let body = &args[0];
+        let min_src = &processor
+            .parse_and_strip(&mut ap, level, "forloop", &args[1])?
+            .trim()
+            .to_string();
+        let max_src = &processor
+            .parse_and_strip(&mut ap, level, "forloop", &args[2])?
+            .trim()
+            .to_string();
+
+        let min = if let Ok(num) = min_src.parse::<usize>() {
+            num
+        } else {
+            return Err(RadError::InvalidArgument(format!(
+                "Forloop's min value should be non zero positive integer but given {}",
+                min_src
+            )));
+        };
+        let max = if let Ok(num) = max_src.parse::<usize>() {
+            num
+        } else {
+            return Err(RadError::InvalidArgument(format!(
+                "Forloop's max value should be non zero positive integer but given \"{}\"",
+                max_src
+            )));
+        };
+        let mut result: String;
+        for value in min..=max {
+            processor.add_new_local_macro(level, ":", &value.to_string());
+            result = processor.parse_and_strip(&mut ap, level, "forloop", body)?;
+
+            sums.push_str(&result);
+            result.clear();
+        }
+
+        // Clear local macro
+        processor.remove_local_macro(level, ":");
+
+        Ok(Some(sums))
     }
 
     /// Loop around table columns
@@ -640,39 +591,35 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let mut sums = String::new();
-            let body = &args[0];
-            let loop_src = processor.parse_and_strip(&mut ap, level, "forcol", &args[1])?;
-            let table = dcsv::Reader::new()
-                .trim(true)
-                .has_header(false)
-                .use_space_delimiter(true)
-                .array_from_stream(loop_src.as_bytes())?;
-            for idx in 0..table.get_column_count() {
-                let mut column = table.get_column_iterator(idx)?.map(|s| s.to_string()).fold(
-                    String::new(),
-                    |mut acc, v| {
-                        acc.push_str(&v.to_string());
-                        acc.push(',');
-                        acc
-                    },
-                );
-                column.pop();
-                // This overrides value
-                processor.add_new_local_macro(level, "a_LN", &idx.to_string());
-                processor.add_new_local_macro(level, ":", &column);
-                let result = processor.parse_and_strip(&mut ap, level, "forcol", body)?;
-                sums.push_str(&result);
-            }
-            Ok(Some(sums))
-        } else {
-            Err(RadError::InvalidArgument(
-                "Forcol requires two argument".to_owned(),
-            ))
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("forcol", &args, 2, Some(&mut ap))?;
+
+        ap.set_strip(true);
+        let mut sums = String::new();
+        let body = &args[0];
+        let loop_src = processor.parse_and_strip(&mut ap, level, "forcol", &args[1])?;
+        let table = dcsv::Reader::new()
+            .trim(true)
+            .has_header(false)
+            .use_space_delimiter(true)
+            .array_from_stream(loop_src.as_bytes())?;
+        for idx in 0..table.get_column_count() {
+            let mut column = table.get_column_iterator(idx)?.map(|s| s.to_string()).fold(
+                String::new(),
+                |mut acc, v| {
+                    acc.push_str(&v.to_string());
+                    acc.push(',');
+                    acc
+                },
+            );
+            column.pop();
+            // This overrides value
+            processor.add_new_local_macro(level, "a_LN", &idx.to_string());
+            processor.add_new_local_macro(level, ":", &column);
+            let result = processor.parse_and_strip(&mut ap, level, "forcol", body)?;
+            sums.push_str(&result);
         }
+        Ok(Some(sums))
     }
 
     /// Log macro information
@@ -714,31 +661,27 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let boolean = &processor.parse_and_strip(&mut ap, level, "if", &args[0])?;
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("if", &args, 2, Some(&mut ap))?;
 
-            // Given condition is true
-            let cond = Utils::is_arg_true(boolean);
-            if let Ok(cond) = cond {
-                if cond {
-                    let if_expr = processor.parse_and_strip(&mut ap, level, "if", &args[1])?;
-                    return Ok(Some(if_expr));
-                }
-            } else {
-                return Err(RadError::InvalidArgument(format!(
-                    "If requires either true/false or zero/nonzero integer but given \"{}\"",
-                    boolean
-                )));
+        ap.set_strip(true);
+        let boolean = &processor.parse_and_strip(&mut ap, level, "if", &args[0])?;
+
+        // Given condition is true
+        let cond = Utils::is_arg_true(boolean);
+        if let Ok(cond) = cond {
+            if cond {
+                let if_expr = processor.parse_and_strip(&mut ap, level, "if", &args[1])?;
+                return Ok(Some(if_expr));
             }
-
-            Ok(None)
         } else {
-            Err(RadError::InvalidArgument(
-                "if requires two arguments".to_owned(),
-            ))
+            return Err(RadError::InvalidArgument(format!(
+                "If requires either true/false or zero/nonzero integer but given \"{}\"",
+                boolean
+            )));
         }
+
+        Ok(None)
     }
 
     /// Print content according to given condition
@@ -751,34 +694,30 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 3) {
-            ap.set_strip(true);
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("ifelse", &args, 3, Some(&mut ap))?;
 
-            let boolean = &processor.parse_and_strip(&mut ap, level, "ifelse", &args[0])?;
+        ap.set_strip(true);
 
-            // Given condition is true
-            let cond = Utils::is_arg_true(boolean);
-            if let Ok(cond) = cond {
-                if cond {
-                    let if_expr = processor.parse_and_strip(&mut ap, level, "ifelse", &args[1])?;
-                    return Ok(Some(if_expr));
-                }
-            } else {
-                return Err(RadError::InvalidArgument(format!(
-                    "Ifelse requires either true/false or zero/nonzero integer but given \"{}\"",
-                    boolean
-                )));
+        let boolean = &processor.parse_and_strip(&mut ap, level, "ifelse", &args[0])?;
+
+        // Given condition is true
+        let cond = Utils::is_arg_true(boolean);
+        if let Ok(cond) = cond {
+            if cond {
+                let if_expr = processor.parse_and_strip(&mut ap, level, "ifelse", &args[1])?;
+                return Ok(Some(if_expr));
             }
-
-            // Else state
-            let else_expr = processor.parse_and_strip(&mut ap, level, "ifelse", &args[2])?;
-            Ok(Some(else_expr))
         } else {
-            Err(RadError::InvalidArgument(
-                "ifelse requires three argument".to_owned(),
-            ))
+            return Err(RadError::InvalidArgument(format!(
+                "Ifelse requires either true/false or zero/nonzero integer but given \"{}\"",
+                boolean
+            )));
         }
+
+        // Else state
+        let else_expr = processor.parse_and_strip(&mut ap, level, "ifelse", &args[2])?;
+        Ok(Some(else_expr))
     }
 
     /// If macro exists, then execute expresion
@@ -791,27 +730,23 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("ifdef", &args, 2, Some(&mut ap))?;
 
-            let name = &processor
-                .parse_and_strip(&mut ap, level, "ifdef", &args[0])?
-                .trim()
-                .to_string();
+        ap.set_strip(true);
 
-            let boolean = processor.contains_macro(name, MacroType::Any);
-            // Return true or false by the definition
-            if boolean {
-                let if_expr = processor.parse_and_strip(&mut ap, level, "ifdef", &args[1])?;
-                return Ok(Some(if_expr));
-            }
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "ifdef requires two arguments".to_owned(),
-            ))
+        let name = &processor
+            .parse_and_strip(&mut ap, level, "ifdef", &args[0])?
+            .trim()
+            .to_string();
+
+        let boolean = processor.contains_macro(name, MacroType::Any);
+        // Return true or false by the definition
+        if boolean {
+            let if_expr = processor.parse_and_strip(&mut ap, level, "ifdef", &args[1])?;
+            return Ok(Some(if_expr));
         }
+        Ok(None)
     }
 
     /// If macro exists, then execute expresion else exectue another
@@ -824,28 +759,24 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 3) {
-            ap.set_strip(true);
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("ifdefel", &args, 3, Some(&mut ap))?;
 
-            let name = &processor
-                .parse_and_strip(&mut ap, level, "ifdefel", &args[0])?
-                .trim()
-                .to_string();
+        ap.set_strip(true);
 
-            let boolean = processor.contains_macro(name, MacroType::Any);
-            // Return true or false by the definition
-            if boolean {
-                let if_expr = processor.parse_and_strip(&mut ap, level, "ifdefel", &args[1])?;
-                Ok(Some(if_expr))
-            } else {
-                let else_expr = processor.parse_and_strip(&mut ap, level, "ifdefel", &args[2])?;
-                Ok(Some(else_expr))
-            }
+        let name = &processor
+            .parse_and_strip(&mut ap, level, "ifdefel", &args[0])?
+            .trim()
+            .to_string();
+
+        let boolean = processor.contains_macro(name, MacroType::Any);
+        // Return true or false by the definition
+        if boolean {
+            let if_expr = processor.parse_and_strip(&mut ap, level, "ifdefel", &args[1])?;
+            Ok(Some(if_expr))
         } else {
-            Err(RadError::InvalidArgument(
-                "ifdefel requires three arguments".to_owned(),
-            ))
+            let else_expr = processor.parse_and_strip(&mut ap, level, "ifdefel", &args[2])?;
+            Ok(Some(else_expr))
         }
     }
 
@@ -862,28 +793,24 @@ impl DeterredMacroMap {
         if !Utils::is_granted("ifenv", AuthType::ENV, processor)? {
             return Ok(None);
         }
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("ifenv", &args, 2, Some(&mut ap))?;
 
-            let name = &processor
-                .parse_and_strip(&mut ap, level, "ifenv", &args[0])?
-                .trim()
-                .to_string();
+        ap.set_strip(true);
 
-            let boolean = std::env::var(name).is_ok();
+        let name = &processor
+            .parse_and_strip(&mut ap, level, "ifenv", &args[0])?
+            .trim()
+            .to_string();
 
-            // Return true or false by the definition
-            if boolean {
-                let if_expr = processor.parse_and_strip(&mut ap, level, "ifenv", &args[1])?;
-                return Ok(Some(if_expr));
-            }
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "ifenv requires two arguments".to_owned(),
-            ))
+        let boolean = std::env::var(name).is_ok();
+
+        // Return true or false by the definition
+        if boolean {
+            let if_expr = processor.parse_and_strip(&mut ap, level, "ifenv", &args[1])?;
+            return Ok(Some(if_expr));
         }
+        Ok(None)
     }
 
     /// If env exists, then execute expresion else execute another
@@ -899,29 +826,25 @@ impl DeterredMacroMap {
         if !Utils::is_granted("ifenvel", AuthType::ENV, processor)? {
             return Ok(None);
         }
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 3) {
-            ap.set_strip(true);
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("ifenvel", &args, 3, Some(&mut ap))?;
 
-            let name = &processor
-                .parse_and_strip(&mut ap, level, "ifenvel", &args[0])?
-                .trim()
-                .to_string();
+        ap.set_strip(true);
 
-            let boolean = std::env::var(name).is_ok();
+        let name = &processor
+            .parse_and_strip(&mut ap, level, "ifenvel", &args[0])?
+            .trim()
+            .to_string();
 
-            // Return true or false by the definition
-            if boolean {
-                let if_expr = processor.parse_and_strip(&mut ap, level, "ifenvel", &args[1])?;
-                Ok(Some(if_expr))
-            } else {
-                let else_expr = processor.parse_and_strip(&mut ap, level, "ifenvel", &args[2])?;
-                Ok(Some(else_expr))
-            }
+        let boolean = std::env::var(name).is_ok();
+
+        // Return true or false by the definition
+        if boolean {
+            let if_expr = processor.parse_and_strip(&mut ap, level, "ifenvel", &args[1])?;
+            Ok(Some(if_expr))
         } else {
-            Err(RadError::InvalidArgument(
-                "ifenvel requires three arguments".to_owned(),
-            ))
+            let else_expr = processor.parse_and_strip(&mut ap, level, "ifenvel", &args[2])?;
+            Ok(Some(else_expr))
         }
     }
 
@@ -937,7 +860,7 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().strip(args);
+        let args = ArgParser::new().strip(&args);
         let result = processor.parse_chunk_args(level, "", &args)?;
 
         Ok(if result.is_empty() {
@@ -1036,26 +959,22 @@ impl DeterredMacroMap {
     ///
     /// # Usage
     ///
-    /// $ifque(true,Sentence to process)
+    /// $queif(true,Sentence to process)
     pub(crate) fn if_queue_content(
         args: &str,
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let boolean = &processor.parse_and_strip(&mut ap, level, "ifque", &args[0])?;
-            let cond = Utils::is_arg_true(boolean)?;
-            if cond {
-                processor.insert_queue(&args[1]);
-            }
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "ifque requires two argument".to_owned(),
-            ))
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("queif", &args, 2, Some(&mut ap))?;
+
+        ap.set_strip(true);
+        let boolean = &processor.parse_and_strip(&mut ap, level, "queif", &args[0])?;
+        let cond = Utils::is_arg_true(boolean)?;
+        if cond {
+            processor.insert_queue(&args[1]);
         }
+        Ok(None)
     }
 
     pub(crate) fn escape_blanks(
@@ -1088,82 +1007,70 @@ impl DeterredMacroMap {
         {
             return Ok(None);
         }
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let file_path = PathBuf::from(processor.parse_and_strip(
-                &mut ap,
-                level,
-                "readto",
-                args[0].trim(),
-            )?);
-            let to_path = PathBuf::from(processor.parse_and_strip(
-                &mut ap,
-                level,
-                "readto",
-                args[1].trim(),
-            )?);
-            if file_path == to_path {
-                return Err(RadError::InvalidArgument(format!(
-                    "readto cannot read from and into a same file \"{}\"",
-                    file_path.display()
-                )));
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("readto", &args, 2, Some(&mut ap))?;
+
+        ap.set_strip(true);
+        let file_path =
+            PathBuf::from(processor.parse_and_strip(&mut ap, level, "readto", args[0].trim())?);
+        let to_path =
+            PathBuf::from(processor.parse_and_strip(&mut ap, level, "readto", args[1].trim())?);
+        if file_path == to_path {
+            return Err(RadError::InvalidArgument(format!(
+                "readto cannot read from and into a same file \"{}\"",
+                file_path.display()
+            )));
+        }
+        let mut raw_include = false;
+        if file_path.is_file() {
+            let canonic = file_path.canonicalize()?;
+            Utils::check_file_sanity(processor, &canonic)?;
+
+            // Check path sanity if to_path exists
+            if to_path.exists() {
+                Utils::check_file_sanity(processor, &to_path.canonicalize()?)?;
             }
-            let mut raw_include = false;
-            if file_path.is_file() {
-                let canonic = file_path.canonicalize()?;
-                Utils::check_file_sanity(processor, &canonic)?;
+            // Set sandbox after error checking or it will act starngely
+            processor.set_sandbox(true);
 
-                // Check path sanity if to_path exists
-                if to_path.exists() {
-                    Utils::check_file_sanity(processor, &to_path.canonicalize()?)?;
-                }
-                // Set sandbox after error checking or it will act starngely
-                processor.set_sandbox(true);
+            // Optionally enable raw mode
+            if args.len() >= 3 {
+                raw_include = Utils::is_arg_true(&processor.parse_and_strip(
+                    &mut ap,
+                    level,
+                    "readto",
+                    args[2].trim(),
+                )?)?;
 
-                // Optionally enable raw mode
-                if args.len() >= 3 {
-                    raw_include = Utils::is_arg_true(&processor.parse_and_strip(
-                        &mut ap,
-                        level,
-                        "readto",
-                        args[2].trim(),
-                    )?)?;
-
-                    // You don't have to backup pause state because include wouldn't be triggered
-                    // at the first place, if paused was true
-                    if raw_include {
-                        processor.state.flow_control = FlowControl::Escape;
-                    }
-                }
-
-                let file_target = FileTarget::from_path(&to_path)?;
-                processor.state.relay.push(RelayTarget::File(file_target));
-
-                // Create chunk
-                let chunk = processor.process_file_as_chunk(&file_path, ContainerType::Expand)?;
-
-                // Reset flow control per processing
-                if processor.state.flow_control != FlowControl::None {
-                    processor.reset_flow_control();
-                }
+                // You don't have to backup pause state because include wouldn't be triggered
+                // at the first place, if paused was true
                 if raw_include {
-                    processor.state.flow_control = FlowControl::None; // Recover state
+                    processor.state.flow_control = FlowControl::Escape;
                 }
-                processor.set_sandbox(false);
-                processor.state.input_stack.remove(&canonic); // Collect stack
-                processor.state.relay.pop(); // Pop relay
-                Ok(chunk)
-            } else {
-                Err(RadError::InvalidArgument(format!(
-                    "readto cannot read non-file \"{}\"",
-                    file_path.display()
-                )))
             }
+
+            let file_target = FileTarget::from_path(&to_path)?;
+            processor.state.relay.push(RelayTarget::File(file_target));
+
+            // Create chunk
+            let chunk = processor.process_file_as_chunk(&file_path, ContainerType::Expand)?;
+
+            // Reset flow control per processing
+            if processor.state.flow_control != FlowControl::None {
+                processor.reset_flow_control();
+            }
+            if raw_include {
+                processor.state.flow_control = FlowControl::None; // Recover state
+            }
+            processor.set_sandbox(false);
+            processor.state.input_stack.remove(&canonic); // Collect stack
+            processor.state.relay.pop(); // Pop relay
+            Ok(chunk)
         } else {
-            Err(RadError::InvalidArgument(
-                "readto requires two argument".to_owned(),
-            ))
+            Err(RadError::InvalidArgument(format!(
+                "readto cannot read non-file \"{}\"",
+                file_path.display()
+            )))
         }
     }
 
@@ -1180,68 +1087,60 @@ impl DeterredMacroMap {
         if !Utils::is_granted("readin", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 1) {
-            ap.set_strip(true);
-            let file_path = PathBuf::from(processor.parse_and_strip(
-                &mut ap,
-                level,
-                "readin",
-                args[0].trim(),
-            )?);
-            let mut raw_include = false;
-            if file_path.is_file() {
-                let canonic = file_path.canonicalize()?;
-                Utils::check_file_sanity(processor, &canonic)?;
-                // Set sandbox after error checking or it will act starngely
-                processor.set_sandbox(true);
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("readin", &args, 1, Some(&mut ap))?;
 
-                // Optionally enable raw mode
-                if args.len() >= 2 {
-                    raw_include = Utils::is_arg_true(&processor.parse_and_strip(
-                        &mut ap,
-                        level,
-                        "readin",
-                        args[1].trim(),
-                    )?)?;
+        ap.set_strip(true);
+        let file_path =
+            PathBuf::from(processor.parse_and_strip(&mut ap, level, "readin", args[0].trim())?);
+        let mut raw_include = false;
+        if file_path.is_file() {
+            let canonic = file_path.canonicalize()?;
+            Utils::check_file_sanity(processor, &canonic)?;
+            // Set sandbox after error checking or it will act starngely
+            processor.set_sandbox(true);
 
-                    // You don't have to backup pause state because include wouldn't be triggered
-                    // at the first place, if paused was true
-                    if raw_include {
-                        processor.state.flow_control = FlowControl::Escape;
-                    }
-                }
+            // Optionally enable raw mode
+            if args.len() >= 2 {
+                raw_include = Utils::is_arg_true(&processor.parse_and_strip(
+                    &mut ap,
+                    level,
+                    "readin",
+                    args[1].trim(),
+                )?)?;
 
-                if let Some(relay) = processor.state.relay.last() {
-                    processor.log_warning(
-                        &format!("Read file's content will be relayed to \"{:?}\"", relay),
-                        WarningType::Sanity,
-                    )?;
-                }
-
-                // Create chunk
-                let chunk = processor.process_file(&file_path)?;
-
-                // Reset flow control per processing
-                if processor.state.flow_control != FlowControl::None {
-                    processor.reset_flow_control();
-                }
+                // You don't have to backup pause state because include wouldn't be triggered
+                // at the first place, if paused was true
                 if raw_include {
-                    processor.state.flow_control = FlowControl::None;
+                    processor.state.flow_control = FlowControl::Escape;
                 }
-                processor.set_sandbox(false);
-                processor.state.input_stack.remove(&canonic); // Collect stack
-                Ok(chunk)
-            } else {
-                Err(RadError::InvalidArgument(format!(
-                    "readin cannot read non-file \"{}\"",
-                    file_path.display()
-                )))
             }
+
+            if let Some(relay) = processor.state.relay.last() {
+                processor.log_warning(
+                    &format!("Read file's content will be relayed to \"{:?}\"", relay),
+                    WarningType::Sanity,
+                )?;
+            }
+
+            // Create chunk
+            let chunk = processor.process_file(&file_path)?;
+
+            // Reset flow control per processing
+            if processor.state.flow_control != FlowControl::None {
+                processor.reset_flow_control();
+            }
+            if raw_include {
+                processor.state.flow_control = FlowControl::None;
+            }
+            processor.set_sandbox(false);
+            processor.state.input_stack.remove(&canonic); // Collect stack
+            Ok(chunk)
         } else {
-            Err(RadError::InvalidArgument(
-                "readin requires an argument".to_owned(),
-            ))
+            Err(RadError::InvalidArgument(format!(
+                "readin cannot read non-file \"{}\"",
+                file_path.display()
+            )))
         }
     }
 
@@ -1255,34 +1154,30 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("exec", &args, 2, Some(&mut ap))?;
 
-            let macro_name = &processor
-                .parse_and_strip(&mut ap, level, "exec", &args[0])?
-                .trim()
-                .to_string();
-            let args = processor.parse_and_strip(&mut ap, level, "exec", &args[1])?;
-            let result = processor
-                .execute_macro(level, "exec", macro_name, &args)?
-                .unwrap_or_default();
-            Ok(Some(result))
-        } else {
-            Err(RadError::InvalidArgument(
-                "exec requires two argument".to_owned(),
-            ))
-        }
+        ap.set_strip(true);
+
+        let macro_name = &processor
+            .parse_and_strip(&mut ap, level, "exec", &args[0])?
+            .trim()
+            .to_string();
+        let args = processor.parse_and_strip(&mut ap, level, "exec", &args[1])?;
+        let result = processor
+            .execute_macro(level, "exec", macro_name, &args)?
+            .unwrap_or_default();
+        Ok(Some(result))
     }
 
     /// Create multiple macro executions from given csv value
     ///
     /// # Usage
     ///
-    /// $from(macro_name,\*1,2,3
+    /// $spread(macro_name,\*1,2,3
     /// 4,5,6*\)
     ///
-    /// $from+(macro_name,
+    /// $spread+(macro_name,
     /// 1,2,3
     /// 4,5,6
     /// )
@@ -1291,57 +1186,53 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("spread", &args, 2, Some(&mut ap))?;
 
-            let expanded_src = &processor.parse_and_strip(&mut ap, level, "spread", &args[0])?;
-            let expanded_data = &processor.parse_and_strip(&mut ap, level, "spread", &args[1])?;
-            let (macro_name, macro_arguments) = Utils::get_name_n_arguments(expanded_src, true)?;
-            let macro_data = expanded_data.trim();
+        ap.set_strip(true);
 
-            let result = Formatter::csv_to_macros(
-                macro_name,
-                macro_arguments,
-                macro_data,
-                &processor.state.newline,
-            )?;
+        let expanded_src = &processor.parse_and_strip(&mut ap, level, "spread", &args[0])?;
+        let expanded_data = &processor.parse_and_strip(&mut ap, level, "spread", &args[1])?;
+        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(expanded_src, true)?;
+        let macro_data = expanded_data.trim();
 
-            // Disable debugging for nested macro expansion
-            #[cfg(feature = "debug")]
-            let original = processor.is_debug();
+        let result = Formatter::csv_to_macros(
+            macro_name,
+            macro_arguments,
+            macro_data,
+            &processor.state.newline,
+        )?;
 
-            // Now this might look strange,
-            // "Why not just enclose two lines with curly brackets?"
-            // The answer is such appraoch somehow doesn't work.
-            // Compiler cannot deduce the variable original and will yield error on
-            // processor.debug(original)
-            #[cfg(feature = "debug")]
-            processor.set_debug(false);
+        // Disable debugging for nested macro expansion
+        #[cfg(feature = "debug")]
+        let original = processor.is_debug();
 
-            // Parse macros
-            let result = processor.parse_and_strip(&mut ap, level, "spread", &result)?;
+        // Now this might look strange,
+        // "Why not just enclose two lines with curly brackets?"
+        // The answer is such appraoch somehow doesn't work.
+        // Compiler cannot deduce the variable original and will yield error on
+        // processor.debug(original)
+        #[cfg(feature = "debug")]
+        processor.set_debug(false);
 
-            // Set custom prompt log to indicate user thatn from macro doesn't support
-            // debugging inside macro expansion
-            #[cfg(feature = "debug")]
-            {
-                use crate::debugger::DebugSwitch;
-                processor.set_debug(original);
-                match processor.get_debug_switch() {
-                    DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
-                        processor.set_prompt("\"Spread macro\"")
-                    }
-                    _ => (),
+        // Parse macros
+        let result = processor.parse_and_strip(&mut ap, level, "spread", &result)?;
+
+        // Set custom prompt log to indicate user thatn from macro doesn't support
+        // debugging inside macro expansion
+        #[cfg(feature = "debug")]
+        {
+            use crate::debugger::DebugSwitch;
+            processor.set_debug(original);
+            match processor.get_debug_switch() {
+                DebugSwitch::StepMacro | DebugSwitch::NextMacro => {
+                    processor.set_prompt("\"Spread macro\"")
                 }
+                _ => (),
             }
-
-            Ok(Some(result))
-        } else {
-            Err(RadError::InvalidArgument(
-                "spread requires two arguments".to_owned(),
-            ))
         }
+
+        Ok(Some(result))
     }
 
     /// stream
@@ -1435,7 +1326,7 @@ impl DeterredMacroMap {
             return Ok(None);
         }
         let mut ap = ArgParser::new().no_strip();
-        let args = ap.args_to_vec(args, ',', SplitVariant::Always);
+        let args = ap.args_to_vec(&args, ',', SplitVariant::Always);
         ap.set_strip(true);
         if !args.is_empty() {
             let mut file_path = PathBuf::from(
@@ -1562,7 +1453,7 @@ impl DeterredMacroMap {
         level: usize,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().no_strip().args_with_len(args, 3) {
+        if let Some(args) = ArgParser::new().no_strip().args_with_len(&args, 3) {
             //processor.log_message(&args[0]);
             //processor.log_message(&args[1]);
             //processor.log_message(&args[2]);
