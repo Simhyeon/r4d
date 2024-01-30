@@ -5,7 +5,6 @@ use crate::common::{ProcessInput, RadResult};
 use crate::error::RadError;
 use crate::logger::WarningType;
 use crate::{NewArgParser, Processor, WriteOption};
-use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::borrow::Cow;
@@ -310,13 +309,25 @@ impl Utils {
     /// Get a sub lines from text
     ///
     /// None means end of slice
+    #[allow(clippy::needless_late_init)]
+    #[allow(clippy::iter_skip_zero)]
     pub(crate) fn sub_lines(
         source: &str,
         min_src: Option<isize>,
         max_src: Option<isize>,
     ) -> RadResult<&str> {
-        let mut raw_min: isize = 0;
-        let mut raw_max: isize = 0;
+        // Critical exception
+        // which is...
+        //
+        // empty source :)
+        if source.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "Given source is empty which cannot be sliced".to_string(),
+            ));
+        }
+
+        let raw_min: isize;
+        let raw_max: isize;
         let mut min_index: usize = 0; // Converted value corresponds to real index
         let mut max_index: usize = 0; // Converted value corresponds to real index
         let mut min_byte_index: Option<usize> = None; // Byte index from str
@@ -347,7 +358,6 @@ impl Utils {
             chain_src.into_iter().rev().skip(1).rev() // Remove it
         } else {
             // This is required because of type coercion
-            #[deny(clippy::iter_skip_zero)]
             chain_src.into_iter().rev().skip(0).rev() // Retain it
         };
 
@@ -384,6 +394,12 @@ impl Utils {
 
                 let lines_indices_collected = lines_indices.collect::<Vec<_>>();
 
+                // No line separator
+                if !ending_newline && lines_indices_collected.len() == 1 {
+                    return Ok(source);
+                }
+
+                // Slice until end of string
                 let sliced = if lines_indices_collected.len() <= 1 {
                     source
                 } else {
@@ -444,6 +460,7 @@ impl Utils {
         if min_byte_index.is_some() && max_byte_index.is_some() {
             return Ok(source);
         }
+
         // ----------
         // : END OF EARLY RETURN CASES
         // ----------
@@ -476,6 +493,16 @@ impl Utils {
             raw_max = max_src.expect("Logical error and should not happen");
             if raw_min < 0 || raw_max < 0 {
                 lines_indices_collected = lines_indices.clone().collect();
+
+                // ----------
+                // Empty iteratoable list -> Error
+                // ----------
+                if !ending_newline && lines_indices_collected.len() == 1 {
+                    return Err(RadError::InvalidArgument(
+                        "Cannot slice a string without any newlines with non 0 integer".to_string(),
+                    ));
+                }
+
                 if raw_min < 0 {
                     min_index = lines_indices_collected.len() - raw_min.unsigned_abs() - 1;
                 }
@@ -554,8 +581,11 @@ impl Utils {
                 }
 
                 let sliced = &source[a..=b];
-                if ending_newline {
-                    Ok(&sliced[..sliced.len() - strip_count])
+                // TODO This is ugly
+                if let Some(sliced) = sliced.strip_suffix("\r\n") {
+                    Ok(sliced)
+                } else if let Some(sliced) = sliced.strip_suffix('\n') {
+                    Ok(sliced)
                 } else {
                     Ok(sliced)
                 }
