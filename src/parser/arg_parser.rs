@@ -98,6 +98,10 @@ impl NewArgParser {
         let mut values: Vec<Cow<'a, str>> = vec![];
         self.reset();
         let mut cursor = ArgCursor::Reference(0, 0);
+
+        // This is totally ok to iterate as char_indices rather than chars
+        // because "only ASCII char is matched" so there is zero possibilty that
+        // char_indices will make any unexpected side effects.
         let mut arg_iter = arg_values.char_indices().peekable();
 
         // Return empty vector without going through logics
