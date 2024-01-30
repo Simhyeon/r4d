@@ -159,7 +159,7 @@ pub struct Processor<'processor> {
     map: MacroMap,
     define_parser: DefineParser,
     pub(crate) write_option: WriteOption<'processor>,
-    logger: Logger<'processor>,
+    pub(crate) logger: Logger<'processor>,
     cache: String,
     // -- Features --
     #[cfg(feature = "hook")]
