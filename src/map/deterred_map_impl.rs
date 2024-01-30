@@ -888,6 +888,7 @@ impl DeterredMacroMap {
         let mut ap = ArgParser::new().no_strip();
         let result = processor.parse_and_strip(&mut ap, level, "fassert", args);
         processor.state.behaviour = backup;
+        processor.logger.stop_last_tracker();
         if result.is_err() {
             processor.track_assertion(true)?;
             Ok(None)
