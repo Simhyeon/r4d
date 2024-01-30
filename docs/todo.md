@@ -1,5 +1,147 @@
 # Todo immediate
 
+* [ ] Trim input !IMPORTANT
+    * [ ] Skip expansion doesn't work for deterred macro
+
+* [ ] Always keep in mind that slicel can fail
+
+* [ ] Surr might be bugged? test later : Argparser is bugged
+    -> This is possibly due to new argparser logic error
+    when \) is supplied or namely literal quotes are bugged...
+* [ ] Add environmnet variable for preventing negative index for slicel
+
+* [ ] Log option shows unappended result before pipe append
+```
+ printf 'test' | rad -PL '$indent-(+)' --log
+1:log
+Name    = "indent"
+Attr    =
+Pipe input      : true
+Pipe output     : false
+Trim input      : false
+Trim output     : false
+Literal         : false
+Negation        : false
+Args    = "test"
+---
++test%
+```
+
+* [x] Refactor slice to be much more singular
+    -> Only two positive integer can be optimized, other than that everything
+    has to be collected which is bit inefficient.
+
+* [x] Branched that calls Collect directly assumed that lines were simple enurmation
+
+-> Currently it is enumeration of tuple thus the structure should be considerd proeplery
+Cehck if coherently
+
+* [ ] Remove unnecessary head, tail, strip bullshits and integate into slice
+  ,range, slicel -> Actually no, those are useful when you don't know the total
+  length. Or... maybe not? -> Implement -index for range than it will be
+  compltely replacable head, headl, tail, taill strip
+
+* [ ] Add sliceu ( Slice unicode ) and make slice non allocating
+* [ ] Support _ syntax for slice series
+    * [x] Slicel
+    * [ ] Slice
+
+* [ ] Insulah to use : also
+* [ ] Make a new macro for border?
+```
+% NExt is start line
+// Text           // |
+
+abcde
+ddd
+fff
+gggg
+==
+// -------------------
+// Text           // |
+//                // |
+abcde             // |
+ddd               // |
+fff               // |
+gggg              // |
+```
+
+* [ ] Make an interal data structure for arrays? ( Table )
+    -> Problem I want to split contents into an array but existing array needs
+    to process the whole contents every time when it needs to index.
+    ```
+    $split-($comma*(),a,b,c)
+
+    ```
+
+* [ ] Change names that are inconsistent or incoherent
+* [ ] Move regexpr to deterred macro
+    -> Don't expand or parse second argument
+    -> Use `split_once(',')` instead
+* [ ] There are multiple macros that utilizes args to vec directory or simply
+  utilize args.is-empty which might cause inconsistent behaviour. Check them.
+    -> THis means such macro doesn't use "argparser" which has an side effect
+* [ ] Check unnecessary `to_string`
+    * [x] FunctionMap
+    * [ ] DeterredMap
+    * [ ] Other
+* [ ] Capture to support capture group
+* [ ] For chunk -> Also apply this logic to foldreg
+```
+Iter through lines and aggregate regexed chunk and apply macro to it
+$forchunk(start_regex,end_regex,macro_body,src)
+```
+* [ ] Extract inner
+```
+let macro_name =  std::mem::take(&mut args[0]);
+let mut formula = std::mem::take(&mut args[1]);
+===
+let macro_name =  args[0];
+let mut formula = args[1];
+```
+* [ ] Split by
+* [ ] Add a feature to use rope instead of simple string ( Crop crate )
+    -> For example if skip expansion flag was given OR text size is bigger than
+    1K ( which is a standard point where rope out-performs normal string )
+        -> text size standard for crop usage should be supplied as arguments
+        and saved to processor ` --rope 1000 ` means use crop from 1000 byte
+        sizes.
+* [ ] Check insula's logic throughly
+* [ ] Escape rule is very outrageous
+```
+\\ -> \\
+\ -> NONE WHAT?
+```
+* [ ] Check if all macros can handle empty arguments without panicking.
+- Update manuals one by one
+- Update all "None" variatns of manuals
+- Add new macros that is immediately necessary for daily use
+- Fix bugs that was found during manual update
+    - Regardless of bug size and difficulties
+    - Fix basic Lorem indexing
+
+- Debug all manuals
+    1. Test english charcters
+    2. Test korean characters
+    3. Test invalid syntax, characters.
+    4. Test macro argument's default attribute
+
+0. KEEP IN MIND : Escape rule is strange
+    ```
+    $assert(\,\) -> This doesn't invoked at all
+    ```
+    -> Check PS.r4d manual because escape character is strange in the document.
+
+* [x] Renamed things
+    - Regex -> sub
+    - Slice -> Range
+    - sub   -> Slice
+    - ifque => queif
+
+* [ ] Consider implemtnting consecutive macro calls for sc and sl flags
+
+#### BUG
+
 * [ ] Inner panics on certain cenarios
 ```
 $println^($inner({},1,$content~()))
@@ -46,74 +188,13 @@ for following
         }
     }
 ```
-* [ ] Change deterred macro map
-* [ ] There are multiple macros that utilizes args to vec directory or simply
-  utilize args.is-empty which might cause inconsistent behaviour. Check them.
-* [ ] Check unnecessary `to_string`
-* [ ] Capture to support capture group
-* [ ] For chunk -> Apply this also to foldreg
-```
-Iter through lines and aggregate regexed chunk and apply macro to it
-$forchunk(start_regex,end_regex,macro_body,src)
-```
-* [ ] Extract inner
-```
-let macro_name =  std::mem::take(&mut args[0]);
-let mut formula = std::mem::take(&mut args[1]);
-===
-let macro_name =  args[0];
-let mut formula = args[1];
-```
-* [ ] Split by
-* [x] Ditch trim! macro because it is literally unnecessary
-* [x] Implement inner macro
-* [ ] Make some autotmated way to update shits...
-* [ ] Update `args_with_len`
-```
-let args = Utils::get_split_arguments_or_error("x", args, y, &mut ArgParser::new())?;
-```
-* [ ] Argparser rerturn cow vector rather than string vector
-* [ ] Add a feature to use rope instead of simple string ( Crop crate )
-    -> For example if skip expansion flag was given OR text size is bigger than
-    1K ( which is a standard point where rope out-performs normal string )
-        -> text size standard for crop usage should be supplied as arguments
-        and saved to processor ` --rope 1000 ` means use crop from 1000 byte
-        sizes.
-* [ ] use `get_split_arguments_or_error` for arg splitting
-    * [x] FunctionMacroMap
-    * [ ] DeterredMacroMap
-* [ ] Check insula's logic throughly
-* [ ] Escape rule is very outrageous
-```
-\\ -> \\
-\ -> NONE WHAT?
-```
-* [x] Learn how to use cow
+
+* [x] Bug: insulav and insulah was not stripping
 * [x] Fixed a bug whree skip_expansion was not working
 * [x] Syscmd is inconsistent
     * [x] quote enclosed value has to be sent separately. Currently arguments
     * [x] Rad inside rad squeezes output -> It was other bug
-* [ ] Check if all macros can handle empty arguments without panicking.
-- Update manuals one by one
-- Update all "None" variatns of manuals
-- Add new macros that is immediately necessary for daily use
-- Fix bugs that was found during manual update
-    - Regardless of bug size and difficulties
-    - Fix basic Lorem indexing
 
-- Debug all manuals
-    1. Test english charcters
-    2. Test korean characters
-    3. Test invalid syntax, characters.
-    4. Test macro argument's default attribute
-
-0. KEEP IN MIND : Escape rule is strange
-    ```
-    $assert(\,\) -> This doesn't invoked at all
-    ```
-    -> Check PS.r4d manual because escape character is strange in the document.
-
-#### BUG
 
 * [ ] Trim input is really... necessary. I mean it is required to do lots of
   things... but hey it is 4.0 and you really fucking needs it.
@@ -139,7 +220,6 @@ $forline-($sq($a_LN(),$:()))
   analyzing shits.
 
 * [x] Consider reverting changes for greedy and greedy strip
-* [x] Bug: insulav and insulah was not stripping
 
 * [ ] How come insula doesn't print any insulav or insulah for help message?
 * [ ] Improve repl's error code
@@ -201,6 +281,7 @@ $forline-($sq($a_LN(),$:()))
 
 #### Macro ( macro )
 
+* [x] Add slicel
 * [x] Make alignby with complicated rules supportted
     * [ ] Notify users that align with comma will work strange
     * [ ] Rename macros that execute on lines that has no l suffix
@@ -258,9 +339,18 @@ $forline-($sq($a_LN(),$:()))
 
 #### Performance
 
+* [x] use `get_split_arguments_or_error` for arg splitting
+    * [x] FunctionMacroMap
+    * [x] DeterredMacroMap
+* [x] Ditch trim! macro because it is literally unnecessary
+* [x] Implement inner macro
+* [x] Update `args_with_len`
+* [x] Argparser rerturn cow vector rather than string vector
+
 * [ ] Macro to return cow rather than string? Is it that performant?
 * [ ] Try removing unnecessary clone calls
-* [ ] Mie and pie insert_str is inefficient.
+* [-] Mie and pie insert_str is inefficient. -> Not so necessarily
+    -> Push_str is also O(n) Sadly
 * [ ] Check for alignby performance maybe duplicate
 * [ ] Rer iteration cache to a concrete struct for better maintainability
 * Think about ditching textwrap
