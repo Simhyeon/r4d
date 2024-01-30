@@ -1868,6 +1868,15 @@ $assert(def,$slice(3,5,abcdef))".to_string()),
                 ),
             ),
             (
+                "slicel".to_owned(),
+                FMacroSign::new(
+                    "slicel",
+                    ["a_start_index^", "a_end_index^", "a_lines"],
+                    Self::slice_lines,
+                    None
+                ),
+            ),
+            (
                 "surr".to_owned(),
                 FMacroSign::new(
                     "surr",

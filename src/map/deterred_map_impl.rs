@@ -903,8 +903,26 @@ impl DeterredMacroMap {
     ///
     /// $stream(macro_name)
     /// $consume()
-    pub(crate) fn consume(_: &str, level: usize, p: &mut Processor) -> RadResult<Option<String>> {
-        p.state.relay.pop();
+    pub(crate) fn consume(
+        args: &str,
+        level: usize,
+        p: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = ArgParser::new().args_to_vec(args, ',', SplitVariant::GreedyStrip);
+
+        let consume_immediate = if let Some(val) = args.first() {
+            Utils::is_arg_true(val.trim())?
+        } else {
+            false
+        };
+
+        if consume_immediate {
+            // This remove last element from stack
+            p.state.relay.pop();
+        } else {
+            p.insert_queue("$consume(true)");
+            return Ok(None);
+        }
 
         let mut ap = ArgParser::new().no_strip();
         ap.set_strip(true);

@@ -1946,25 +1946,68 @@ impl FunctionMacroMap {
 
         let source = &args[2];
 
-        let mut min: Option<usize> = None;
-        let mut max: Option<usize> = None;
+        let mut min: usize = 0;
+        let mut max: isize = 0;
 
         let start = args[0].trim();
         let end = args[1].trim();
 
         if let Ok(num) = start.parse::<usize>() {
-            min.replace(num);
+            min = num;
         } else if !start.is_empty() {
-            return Err(RadError::InvalidArgument(format!("Slice's min value should be non zero positive integer or empty value but given \"{}\"", start)));
+            return Err(RadError::InvalidArgument(format!(
+                "Slice's min value should be non zero positive integer but given \"{}\"",
+                start
+            )));
         }
 
-        if let Ok(num) = end.parse::<usize>() {
-            max.replace(num);
+        if let Ok(num) = end.parse::<isize>() {
+            max = num;
         } else if !end.is_empty() {
-            return Err(RadError::InvalidArgument(format!("Slice's max value should be non zero positive integer or empty value but given \"{}\"", end)));
+            return Err(RadError::InvalidArgument(format!(
+                "Slice's max value should be singed integer or empty value but given \"{}\"",
+                end
+            )));
         }
 
-        Ok(Some(Utils::utf8_substring(source, min, max)))
+        Ok(Some(Utils::utf8_slice(source, min, max)?.to_string()))
+    }
+
+    /// Get a sublines(indexed) from given lines
+    ///
+    /// # Usage
+    ///
+    /// $slicel(0,5,GivenLines)
+    pub(crate) fn slice_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("slicel", &args, 3, None)?;
+
+        let source = &args[2];
+
+        let mut min: Option<isize> = None;
+        let mut max: Option<isize> = None;
+
+        let start = args[0].trim();
+        let end = args[1].trim();
+
+        if let Ok(num) = start.parse::<isize>() {
+            min.replace(num);
+        } else if start != "_" && !start.is_empty() {
+            return Err(RadError::InvalidArgument(format!(
+                "Slicel's min value should be non zero positive integer but given \"{}\"",
+                start
+            )));
+        }
+
+        if let Ok(num) = end.parse::<isize>() {
+            max.replace(num);
+        } else if end != "_" && !end.is_empty() {
+            return Err(RadError::InvalidArgument(format!(
+                "Slicel's max value should be singed integer or empty value but given \"{}\"",
+                end
+            )));
+        }
+
+        Ok(Some(Utils::sub_lines(source, min, max)?.to_string()))
     }
 
     /// Get a substring(indexed) until a pattern
@@ -3012,7 +3055,7 @@ impl FunctionMacroMap {
         if args[0].is_empty() {
             return Ok(Some("0".to_string()));
         }
-        let line_count = args[0].split('\n').count();
+        let line_count = args[0].matches('\n').count();
         Ok(Some(line_count.to_string()))
     }
 
@@ -3183,13 +3226,14 @@ impl FunctionMacroMap {
     ///
     /// $halt()
     pub(crate) fn halt_relay(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("halt", &args, 1, None)?;
+        let args = NewArgParser::new().args_to_vec(args, ',', SplitVariant::GreedyStrip);
 
-        let halt_immediate = if args[0].is_empty() {
-            false
+        let halt_immediate = if let Some(val) = args.first() {
+            Utils::is_arg_true(val.trim())?
         } else {
-            Utils::is_arg_true(args[0].trim())?
+            false
         };
+
         if halt_immediate {
             // This remove last element from stack
             p.state.relay.pop();
