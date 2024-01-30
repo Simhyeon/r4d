@@ -5,6 +5,7 @@ use crate::common::{ProcessInput, RadResult};
 use crate::error::RadError;
 use crate::logger::WarningType;
 use crate::{NewArgParser, Processor, WriteOption};
+use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::borrow::Cow;
@@ -258,41 +259,311 @@ impl Utils {
         ))
     }
 
+    pub(crate) fn ascii_slice(source: &str, min: usize, max: isize) -> RadResult<&str> {
+        unimplemented!();
+        Ok("")
+    }
+
     /// Get a substring of utf8 encoded text.
-    pub(crate) fn utf8_substring(source: &str, min: Option<usize>, max: Option<usize>) -> String {
-        let mut result = String::new();
-        if let Some(min) = min {
-            if let Some(max) = max {
-                // Both
-                for (idx, ch) in source.chars().enumerate() {
-                    if idx >= min && idx <= max {
-                        result.push(ch);
-                    }
+    pub(crate) fn utf8_slice(source: &str, min: usize, max: isize) -> RadResult<Cow<'_, str>> {
+        let mut min_byte_index: Option<usize> = None;
+        let mut max_byte_index: Option<usize> = None;
+        // This doesn't allocate
+        if max >= 0 {
+            for (char_index, (byte_index, _)) in source.char_indices().enumerate() {
+                if char_index == min {
+                    min_byte_index.replace(byte_index);
                 }
-            } else {
-                // no max
-                for (idx, ch) in source.chars().enumerate() {
-                    if idx >= min {
-                        result.push(ch);
-                    }
+
+                if char_index == max as usize {
+                    max_byte_index.replace(byte_index);
+                }
+
+                if min_byte_index.is_some() && max_byte_index.is_some() {
+                    break;
                 }
             }
         } else {
-            // No min
-            if let Some(max) = max {
-                // at least max
-                for (idx, ch) in source.chars().enumerate() {
-                    if idx <= max {
-                        result.push(ch);
-                    }
-                }
-            } else {
-                // Nothing
-                return source.to_owned();
+            // This does allocate, sadly
+            // and return early if possible
+            let chars = source.char_indices().collect::<Vec<_>>();
+            if let Some(min) = chars.get(min) {
+                min_byte_index.replace(min.0);
+            }
+
+            // THis is preferred way because usize is bigger than isize
+            // Thus chars.len() should not be casted as isize
+            // rather subtracter should be casted as usize
+            if let Some(max) = chars.get(chars.len() - max.unsigned_abs()) {
+                max_byte_index.replace(max.0);
             }
         }
 
-        result
+        match (min_byte_index, max_byte_index) {
+            (Some(a), Some(b)) => Ok(source[a..=b].into()),
+            _ => Err(RadError::InvalidArgument(
+                "Given slice index is not in the boundary of string length".to_string(),
+            )),
+        }
+    }
+
+    /// Get a sub lines from text
+    ///
+    /// None means end of slice
+    pub(crate) fn sub_lines(
+        source: &str,
+        min_src: Option<isize>,
+        max_src: Option<isize>,
+    ) -> RadResult<&str> {
+        let mut raw_min: isize = 0;
+        let mut raw_max: isize = 0;
+        let mut min_index: usize = 0; // Converted value corresponds to real index
+        let mut max_index: usize = 0; // Converted value corresponds to real index
+        let mut min_byte_index: Option<usize> = None; // Byte index from str
+        let mut max_byte_index: Option<usize> = None; // Byte index from str
+
+        // ABOUT: Trailing newline
+        //
+        // Shell doesn't have trailing newline
+        // while text editor has trailing newline
+        // therefore following situations should be considered
+
+        // ----------
+        // >>>>>>>>>>
+        // <NEWLINE LOGICS>
+        // ----------
+        let (ending_newline, strip_count) = if source.ends_with("\r\n") {
+            (true, 2)
+        } else if source.ends_with('\n') {
+            (true, 1)
+        } else {
+            (false, 0)
+        };
+
+        let final_index = source.len() - 1;
+        let chain_src = [(final_index, "\n")]; // Attach additional newline
+
+        let chained = if ending_newline {
+            chain_src.into_iter().rev().skip(1).rev() // Remove it
+        } else {
+            // This is required because of type coercion
+            #[deny(clippy::iter_skip_zero)]
+            chain_src.into_iter().rev().skip(0).rev() // Retain it
+        };
+
+        // Final iterator that is used globally
+        let mut lines_indices = source
+            .match_indices('\n')
+            .chain(chained)
+            .enumerate()
+            .peekable();
+
+        // ----------
+        // <<<<<<<<<<
+        // </NEWLINE LOGICS>
+        // ----------
+
+        // --------------------
+        // ABOUT : Early return cases
+        //
+        // [1] _,_
+        // [2] 0,0
+        // [3] 0,_
+
+        // ----------
+        // >>>>>>>>>>
+        // <SPECIAL SYNTAX CHECK>
+        // ----------
+
+        if min_src.is_none() {
+            if max_src.is_none() {
+                // -> Both min and max is '_'
+                //
+                // This is valid and
+                // return final line early
+
+                let lines_indices_collected = lines_indices.collect::<Vec<_>>();
+
+                let sliced = if lines_indices_collected.len() <= 1 {
+                    source
+                } else {
+                    let (_, (idx, _)) = lines_indices_collected
+                        .get(lines_indices_collected.len() - 2)
+                        .unwrap();
+                    &source[idx + 1..]
+                };
+
+                if ending_newline {
+                    return Ok(&sliced[..sliced.len() - strip_count]);
+                } else {
+                    return Ok(sliced);
+                }
+            } else {
+                // Min = '_'
+                // Max = positive number or negative number ( Real number )
+                // This is not valid
+                return Err(RadError::InvalidArgument(
+                "Given slice index is not in the boundary of lines length. '_' min index cannot be used with real max index number".to_string(),
+            ));
+            }
+        }
+
+        // ----------
+        // </SPECIAL SYNTAX CHECK>
+        // <<<<<<<<<<
+        // ----------
+
+        // ----------
+        // <ZERO CHECK>
+        // <<<<<<<<<<
+        // ----------
+        // Min and max is both 0
+        // Simply return first line without processing
+        let min_temp = min_src.unwrap_or(10);
+        if min_temp == max_src.unwrap_or(10) && min_temp == 0 {
+            return Ok(match source.split_once('\n') {
+                None => source,
+                Some((prefix, _)) => prefix,
+            });
+        }
+        // ----------
+        // </ZERO CHECK>
+        // <<<<<<<<<<
+        // ----------
+
+        // ----------
+        // Early set values and possibly early return
+        // ----------
+        if let Some(0) = min_src {
+            min_byte_index.replace(0);
+        }
+        if max_src.is_none() {
+            max_byte_index.replace(final_index);
+        }
+
+        if min_byte_index.is_some() && max_byte_index.is_some() {
+            return Ok(source);
+        }
+        // ----------
+        // : END OF EARLY RETURN CASES
+        // ----------
+
+        let lines_indices_collected: Vec<(usize, (usize, &str))>;
+
+        // MIN MAX
+        // _   _   -> Early return
+        // _   +   -> Error
+        // _   -   -> Error
+        // From 3x3 cases all none('_') cases were already addressed
+        raw_min = min_src.expect("Logical error and should not happen");
+
+        // ----------
+        // [NORMALIZE] min and max index ( Usize )
+        // Optinoally collect iterator to valid allocation
+
+        // Max byte index is real number
+        // -> Not '_'
+        // Only find min index
+        if max_byte_index.is_some() {
+            max_index = usize::MAX; // This value is not used rather it's a placeholder
+            if raw_min >= 0 {
+                min_index = raw_min as usize;
+            } else {
+                lines_indices_collected = lines_indices.clone().collect();
+                min_index = lines_indices_collected.len() - raw_min.unsigned_abs() - 1;
+            }
+        } else {
+            raw_max = max_src.expect("Logical error and should not happen");
+            if raw_min < 0 || raw_max < 0 {
+                lines_indices_collected = lines_indices.clone().collect();
+                if raw_min < 0 {
+                    min_index = lines_indices_collected.len() - raw_min.unsigned_abs() - 1;
+                }
+                if raw_max < 0 {
+                    max_index = lines_indices_collected.len() - raw_max.unsigned_abs() - 1;
+                }
+            }
+            // Max is not real number
+            if raw_min >= 0 {
+                min_index = raw_min as usize;
+            }
+
+            if raw_max >= 0 {
+                max_index = raw_max as usize;
+            }
+        }
+        // ----------
+        // </NORMALIZE>
+        // ----------
+
+        // Global iteration
+        while let Some((line_index, (byte_index, _))) = lines_indices.next() {
+            // Min byte is known +
+            // final newline is not existent +
+            // max value is same with lines length
+            // = slice until last
+            if lines_indices.peek().is_none()
+                && !ending_newline
+                && max_byte_index.is_none()
+                && line_index == max_index.saturating_sub(2)
+            {
+                if let Some(min) = min_byte_index {
+                    let sliced = &source[min..];
+                    if ending_newline {
+                        return Ok(&sliced[..sliced.len() - strip_count]);
+                    } else {
+                        return Ok(sliced);
+                    }
+                }
+            }
+
+            if min_byte_index.is_none() && line_index == min_index.saturating_sub(1) {
+                min_byte_index.replace(byte_index + 1);
+            }
+
+            if max_byte_index.is_none() && max_index == line_index {
+                max_byte_index.replace(byte_index);
+            }
+
+            if min_byte_index.is_some() && max_byte_index.is_some() {
+                break;
+            }
+        }
+
+        // TODO REmove this
+        //
+        // log
+        // eprintln!("RAW : MIN : {:#?} MAX : {:#?}", raw_min, raw_max);
+        // eprintln!("INDEX : MIN : {:#?} MAX : {:#?}", min_index, max_index);
+        // eprintln!(
+        //     "BINDEX : MIN : {:#?} MAX : {:#?}",
+        //     min_byte_index, max_byte_index
+        // );
+        //
+        // eprintln!("LEN : {}", source.len());
+
+        // TODO
+        // Back up lines were here
+
+        match (min_byte_index, max_byte_index) {
+            (Some(a), Some(b)) => {
+                if a > b {
+                    return Err(RadError::InvalidArgument(
+                        "Given slice index is not in the boundary of lines length".to_string(),
+                    ));
+                }
+
+                let sliced = &source[a..=b];
+                if ending_newline {
+                    Ok(&sliced[..sliced.len() - strip_count])
+                } else {
+                    Ok(sliced)
+                }
+            }
+            _ => Err(RadError::InvalidArgument(
+                "Given slice index is not in the boundary of lines length".to_string(),
+            )),
+        }
     }
 
     /// Print text as green if possible
