@@ -2,7 +2,6 @@
 
 use super::ProcessorState;
 use crate::auth::{AuthState, AuthType};
-use crate::common::ContainerType;
 #[cfg(feature = "debug")]
 use crate::common::DiffOption;
 use crate::common::SignatureType;
@@ -10,6 +9,7 @@ use crate::common::{
     CommentType, ErrorBehaviour, FlowControl, Hygiene, LocalMacro, MacroFragment, MacroType,
     ProcessInput, ProcessType, RelayTarget, WriteOption,
 };
+use crate::common::{ContainerType, MacroAttribute};
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
@@ -2076,7 +2076,7 @@ impl<'processor> Processor<'processor> {
             // Also update original arguments for better debugging
             #[cfg(feature = "debug")]
             {
-                frag.processed_args = args.clone();
+                frag.args = args.clone();
             }
         } else {
             // Is deterred macro
@@ -2109,9 +2109,17 @@ impl<'processor> Processor<'processor> {
             // Set processed_args some helpful message
             #[cfg(feature = "debug")]
             {
+                frag.args = args.clone();
                 frag.processed_args =
                     String::from("It is unavailable to retrieve args from deterred macro")
             }
+        }
+
+        #[cfg(feature = "debug")]
+        {
+            // Print a log information
+            self.debugger
+                .print_log(&frag.name, &args, frag, &mut self.logger)?;
         }
 
         // Find local macro
@@ -2127,7 +2135,7 @@ impl<'processor> Processor<'processor> {
         }
         // SPECIAL MACROS
         if name == MACRO_SPECIAL_ANON && self.map.get_anon_macro().is_some() {
-            let result = self.invoke_runtime(level, None, &args)?;
+            let result = self.invoke_runtime(level, None, &frag.attribute, &args)?;
             return Ok(result);
         }
 
@@ -2160,7 +2168,7 @@ impl<'processor> Processor<'processor> {
                 }
             }
 
-            let result = self.invoke_runtime(level, Some(name), &args)?;
+            let result = self.invoke_runtime(level, Some(name), &frag.attribute, &args)?;
             return Ok(result);
         }
         // Find deterred macro
@@ -2172,7 +2180,8 @@ impl<'processor> Processor<'processor> {
                 }
 
                 // Execute a macro function with arguments and get value
-                let final_result = func(&args, level, self)?.filter(|f| !f.is_empty());
+                let final_result =
+                    func(&args, level, &frag.attribute, self)?.filter(|f| !f.is_empty());
 
                 return Ok(final_result);
             }
@@ -2187,7 +2196,7 @@ impl<'processor> Processor<'processor> {
             // Func always exists, because contains succeeded.
             let func = self.map.function.get_func(name).unwrap();
             //let final_result = func(&args, self)?;
-            let final_result = match func(&args, self) {
+            let final_result = match func(&args, &frag.attribute, self) {
                 Ok(e) => e.filter(|f| !f.is_empty()),
                 Err(err) => {
                     return Err(err);
@@ -2223,6 +2232,7 @@ impl<'processor> Processor<'processor> {
         &mut self,
         level: usize,
         name: Option<&str>,
+        attr: &MacroAttribute,
         arg_values: &str,
     ) -> RadResult<Option<String>> {
         let new_name;
@@ -2247,26 +2257,27 @@ impl<'processor> Processor<'processor> {
 
         let arg_types = &rule.args;
         // Set variable to local macros
-        let args =
-            if let Some(content) = ArgParser::new().args_with_len(arg_values, arg_types.len()) {
-                content
+        let args = if let Some(content) =
+            ArgParser::new().args_with_len(arg_values, attr, arg_types.len())
+        {
+            content
+        } else {
+            // Necessary arg count is bigger than given arguments
+            let err = RadError::InvalidArgument(format!(
+                "{}'s arguments are not sufficient. Given {}, but needs {}",
+                new_name,
+                ArgParser::new()
+                    .args_to_vec(arg_values, attr, b',', SplitVariant::Always)
+                    .len(),
+                arg_types.len()
+            ));
+            if self.state.process_type == ProcessType::Dry {
+                self.log_warning(&err.to_string(), WarningType::Sanity)?;
+                return Ok(None);
             } else {
-                // Necessary arg count is bigger than given arguments
-                let err = RadError::InvalidArgument(format!(
-                    "{}'s arguments are not sufficient. Given {}, but needs {}",
-                    new_name,
-                    ArgParser::new()
-                        .args_to_vec(arg_values, ',', SplitVariant::Always)
-                        .len(),
-                    arg_types.len()
-                ));
-                if self.state.process_type == ProcessType::Dry {
-                    self.log_warning(&err.to_string(), WarningType::Sanity)?;
-                    return Ok(None);
-                } else {
-                    return Err(err);
-                }
-            };
+                return Err(err);
+            }
+        };
 
         for (idx, arg_type) in arg_types.iter().enumerate() {
             //Set arg to be substitued
@@ -2706,10 +2717,6 @@ impl<'processor> Processor<'processor> {
                 frag.args.clone()
             };
 
-            // Print a log information
-            self.debugger
-                .print_log(&frag.name, &args, frag, &mut self.logger)?;
-
             // If debug switch target is break point
             // Set switch to next line.
             self.debugger.break_point(frag)?;
@@ -3148,12 +3155,17 @@ impl<'processor> Processor<'processor> {
     pub(crate) fn parse_and_strip<'a>(
         &mut self,
         ap: &mut ArgParser,
+        attribute: &MacroAttribute,
         level: usize,
         caller: &'a str,
         src: &'a str,
-    ) -> RadResult<String> {
-        let parsed = &self.parse_chunk_args(level, caller, src)?;
-        Ok(ap.strip(parsed))
+    ) -> RadResult<Cow<'a, str>> {
+        if attribute.skip_expansion {
+            Ok(src.into())
+        } else {
+            let parsed = self.parse_chunk_args(level, caller, src)?;
+            Ok(ap.strip(&parsed).to_string().into())
+        }
     }
 
     /// Get a local macro's raw body
@@ -3338,12 +3350,23 @@ impl<'processor> Processor<'processor> {
     /// Expand chunk and strip quotes
     ///
     /// This is intended for end user
-    pub fn expand(&mut self, level: usize, src: &str, strip: bool) -> RadResult<String> {
+    pub fn expand(
+        &mut self,
+        level: usize,
+        src: &str,
+        _: &MacroAttribute,
+        strip: bool,
+    ) -> RadResult<Cow<'_, str>> {
         let parsed = self.parse_chunk_args(level, "", src)?;
         if strip {
-            Ok(ArgParser::new().strip(parsed.as_str()))
+            let mut parser = ArgParser::new();
+
+            // TODO
+            // This needs to be a string becauses parsed should be a string
+            let sliced = parser.strip(&parsed).to_string().into();
+            Ok(sliced)
         } else {
-            Ok(parsed)
+            Ok(parsed.into())
         }
     }
 
@@ -3412,12 +3435,13 @@ impl<'processor> Processor<'processor> {
     pub fn split_arguments<'a>(
         &self,
         source: &'a str,
+        attr: &MacroAttribute,
         target_length: usize,
         no_strip: bool,
     ) -> RadResult<Vec<Cow<'a, str>>> {
         let mut ap = ArgParser::new();
         ap.set_strip(!no_strip);
-        if let Some(args) = ap.args_with_len(source, target_length) {
+        if let Some(args) = ap.args_with_len(source, attr, target_length) {
             Ok(args)
         } else {
             Err(RadError::InvalidArgument(

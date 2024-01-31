@@ -52,7 +52,7 @@ impl LocalMacro {
 }
 
 #[derive(Debug, Default)]
-pub(crate) struct MacroAttribute {
+pub struct MacroAttribute {
     // Macro attributes
     pub pipe_output: bool,
     pub pipe_input: bool,

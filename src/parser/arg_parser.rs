@@ -2,7 +2,10 @@
 //!
 //! Module about argument parsing
 
-use crate::consts::{ESCAPE_CHAR_U8, LIT_CHAR_U8};
+use crate::{
+    common::MacroAttribute,
+    consts::{ESCAPE_CHAR_U8, LIT_CHAR_U8},
+};
 use std::{
     borrow::Cow,
     iter::{Enumerate, Peekable},
@@ -57,11 +60,14 @@ impl NewArgParser {
     }
 
     /// Simply strip literal chunk
-    pub(crate) fn strip(&mut self, args: &str) -> String {
-        self.args_to_vec(args, b',', SplitVariant::GreedyStrip)
-            .first()
-            .map(|s| s.to_string())
-            .unwrap_or_default()
+    pub(crate) fn strip<'a>(&mut self, args: &'a str) -> Cow<'a, str> {
+        let attribute = MacroAttribute::default();
+        let mut stripped = self.args_to_vec(args, &attribute, b',', SplitVariant::GreedyStrip);
+        if let Some(val) = stripped.get_mut(0) {
+            std::mem::take(val)
+        } else {
+            String::new().into()
+        }
     }
 
     /// Check if given length is qualified for given raw arguments
@@ -71,6 +77,7 @@ impl NewArgParser {
     pub(crate) fn args_with_len<'a>(
         &mut self,
         args: &'a str,
+        attribute: &MacroAttribute,
         length: usize,
     ) -> Option<Vec<Cow<'a, str>>> {
         self.reset();
@@ -83,7 +90,7 @@ impl NewArgParser {
             SplitVariant::GreedyStrip
         };
 
-        let args: Vec<_> = self.args_to_vec(args, b',', split_var);
+        let args: Vec<_> = self.args_to_vec(args, attribute, b',', split_var);
 
         if args.len() < length {
             return None;
@@ -95,17 +102,19 @@ impl NewArgParser {
     pub(crate) fn args_to_vec<'a>(
         &mut self,
         arg_values: &'a str,
+        attribute: &MacroAttribute,
         delimiter: u8,
         mut split_var: SplitVariant,
     ) -> Vec<Cow<'a, str>> {
         let mut values: Vec<Cow<'a, str>> = vec![];
         self.reset();
         let mut cursor = ArgCursor::Reference(0, 0);
+        let trim = attribute.trim_input;
 
         // This is totally ok to iterate as char_indices rather than chars
         // because "only ASCII char is matched" so there is zero possibilty that
         // char_indices will make any unexpected side effects.
-        let mut arg_iter = arg_values.as_bytes().into_iter().enumerate().peekable();
+        let mut arg_iter = arg_values.as_bytes().iter().enumerate().peekable();
 
         // Return empty vector without going through logics
         if arg_values.is_empty() {
@@ -118,7 +127,7 @@ impl NewArgParser {
 
             if ch == delimiter {
                 if let Some(v) =
-                    self.branch_delimiter(&mut cursor, ch, idx, &mut split_var, arg_values)
+                    self.branch_delimiter(&mut cursor, ch, idx, &mut split_var, arg_values, trim)
                 {
                     values.push(v);
                 }
@@ -144,7 +153,7 @@ impl NewArgParser {
         } // while end
           // Add last arg
         let sc = if cursor.is_string() { "" } else { arg_values };
-        values.push(cursor.take_value(arg_values.len(), sc));
+        values.push(cursor.take_value(arg_values.len(), sc, trim));
         values
     }
 
@@ -173,6 +182,7 @@ impl NewArgParser {
         index: usize,
         variant: &mut SplitVariant,
         src: &'a str,
+        trim: bool,
     ) -> Option<Cow<'a, str>> {
         let mut ret = None;
         // Either literal or escaped
@@ -191,7 +201,7 @@ impl NewArgParser {
                 SplitVariant::Deterred(count) => {
                     // move to next value
                     let sc = if cursor.is_string() { "" } else { src };
-                    let v = cursor.take_value(index + 1, sc);
+                    let v = cursor.take_value(index + 1, sc, trim);
                     ret.replace(v);
                     let count = *count - 1;
                     if count > 0 {
@@ -208,7 +218,7 @@ impl NewArgParser {
                 SplitVariant::Always => {
                     // move to next value
                     let sc = if cursor.is_string() { "" } else { src };
-                    let v = cursor.take_value(index + 1, sc);
+                    let v = cursor.take_value(index + 1, sc, trim);
                     ret.replace(v);
                 }
             } // Match end
@@ -310,18 +320,29 @@ impl ArgCursor {
     ///
     /// because src is supplied as is while the argument is completely ignored when the inner value
     /// is a string.
-    pub fn take_value<'a>(&mut self, index: usize, src: &'a str) -> Cow<'a, str> {
+    pub fn take_value<'a>(&mut self, index: usize, src: &'a str, trim: bool) -> Cow<'a, str> {
         match self {
             Self::Reference(c, n) => {
-                let val = src[*c..*n].into();
+                let val = &src[*c..*n];
                 *self = Self::Reference(index, index);
-                val
+                if trim {
+                    val.trim().into()
+                } else {
+                    val.into()
+                }
             }
 
             // TODO
             // Check this so that any error can be captured
             // THis is mostsly ok to unwrap because input source is
-            Self::Modified(s) => std::str::from_utf8(s).unwrap().to_string().into(),
+            Self::Modified(s) => {
+                let stred = std::str::from_utf8(std::mem::take(&mut &s[..])).unwrap();
+                if trim {
+                    stred.trim().to_string().into()
+                } else {
+                    stred.to_string().into()
+                }
+            }
         }
     }
 

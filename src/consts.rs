@@ -49,6 +49,11 @@ const COMMENT_CHAR: char = '%';
 pub const ESCAPE_CHAR: char = '\\';
 /// Literal start character
 pub const LIT_CHAR: char = '*';
+/// Escape character
+pub const ESCAPE_CHAR_U8: u8 = b'\\';
+/// Literal start character
+pub const LIT_CHAR_U8: u8 = b'*';
+
 /// Default main caller
 ///
 /// This is default for input

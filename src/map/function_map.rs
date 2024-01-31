@@ -3,7 +3,7 @@
 //! Function macro module includes struct and methods related to function macros
 //! which are technically function pointers.
 
-use crate::common::RadResult;
+use crate::common::{MacroAttribute, RadResult};
 use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
 use crate::{man_fun, Processor};
@@ -14,7 +14,9 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 
 /// Function signature for "function" macro functions
-pub(crate) type FunctionMacroType = fn(&str, &mut Processor) -> RadResult<Option<String>>;
+// pub(crate) type FunctionMacroType = fn(&str, &mut Processor) -> RadResult<Option<String>>;
+pub(crate) type FunctionMacroType =
+    fn(&str, &MacroAttribute, &mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
 /// Collection map for a "function" macro function
@@ -268,15 +270,6 @@ impl FunctionMacroMap {
                     ["a_lvalue", "a_rvalue"],
                     Self::assert,
                     Some(man_fun!("assert.r4d")),
-                ),
-            ),
-            (
-                "assertt".to_owned(),
-                FMacroSign::new(
-                    "assertt",
-                    ["a_lvalue^", "a_rvalue^"],
-                    Self::assert_trimmed,
-                    None,
                 ),
             ),
             (

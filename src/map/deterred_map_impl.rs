@@ -1,5 +1,5 @@
 use crate::auth::AuthType;
-use crate::common::{ContainerType, FileTarget, FlowControl, ProcessInput};
+use crate::common::{ContainerType, FileTarget, FlowControl, MacroAttribute, ProcessInput};
 use crate::common::{ErrorBehaviour, MacroType, RadResult, RelayTarget, STREAM_CONTAINER};
 use crate::consts::MACRO_SPECIAL_ANON;
 use crate::deterred_map::DeterredMacroMap;
@@ -27,6 +27,7 @@ impl DeterredMacroMap {
     pub(crate) fn add_anonymous_macro(
         args: &str,
         _: usize,
+        _: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         p.add_anon_macro(args)?;
@@ -45,13 +46,14 @@ impl DeterredMacroMap {
     pub(crate) fn append(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("append", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("append", &args, attr, 2, Some(&mut ap))?;
 
-        let name = processor.parse_and_strip(&mut ap, level, "append", args[0].trim())?;
-        let target = processor.parse_and_strip(&mut ap, level, "append", args[1].as_ref())?;
+        let name = processor.parse_and_strip(&mut ap, attr, level, "append", args[0].trim())?;
+        let target = processor.parse_and_strip(&mut ap, attr, level, "append", args[1].as_ref())?;
 
         if let Some(name) = processor.contains_local_macro(level, &name) {
             processor.append_local_macro(&name, &target);
@@ -75,15 +77,16 @@ impl DeterredMacroMap {
     pub(crate) fn map_array(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("map", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("map", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let expanded = p.parse_and_strip(&mut ap, level, "map", args[0].trim())?;
+        let expanded = p.parse_and_strip(&mut ap, attr, level, "map", args[0].trim())?;
         let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
-        let src = p.parse_and_strip(&mut ap, level, "map", &args[1])?;
+        let src = p.parse_and_strip(&mut ap, attr, level, "map", &args[1])?;
         let array = src.split(',');
 
         let mut acc = String::new();
@@ -104,15 +107,16 @@ impl DeterredMacroMap {
     pub(crate) fn map_lines(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("mapl", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("mapl", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let expanded = p.parse_and_strip(&mut ap, level, "mapl", args[0].trim())?;
+        let expanded = p.parse_and_strip(&mut ap, attr, level, "mapl", args[0].trim())?;
         let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
-        let src = p.parse_and_strip(&mut ap, level, "mapl", &args[1])?;
+        let src = p.parse_and_strip(&mut ap, attr, level, "mapl", &args[1])?;
         let lines = src.lines();
 
         let mut acc = String::new();
@@ -133,14 +137,17 @@ impl DeterredMacroMap {
     pub(crate) fn map_number(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("mapn", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("mapn", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let mut operation = p.parse_and_strip(&mut ap, level, "mapn", args[0].trim())?;
-        let src = p.parse_and_strip(&mut ap, level, "mapn", args[1].trim())?;
+        let mut operation = p
+            .parse_and_strip(&mut ap, attr, level, "mapn", args[0].trim())?
+            .to_string();
+        let src = &p.parse_and_strip(&mut ap, attr, level, "mapn", args[1].trim())?;
 
         let map_type = if p.contains_macro(&operation, MacroType::Runtime) {
             "macro"
@@ -153,7 +160,7 @@ impl DeterredMacroMap {
 
         let mut new = String::with_capacity(src.len());
         let mut last_match = 0;
-        for caps in NUM_MATCH.captures_iter(&src) {
+        for caps in NUM_MATCH.captures_iter(src) {
             let m = caps.get(0).unwrap();
             new.push_str(&src[last_match..m.start()]);
             let evaluated = match map_type {
@@ -178,23 +185,22 @@ impl DeterredMacroMap {
     pub(crate) fn map_file(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         if !Utils::is_granted("mapf", AuthType::FIN, p)? {
             return Ok(None);
         }
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("mapf", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("mapf", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let macro_src = p.parse_and_strip(&mut ap, level, "mapf", args[0].trim())?;
+        let macro_src = p.parse_and_strip(&mut ap, attr, level, "mapf", args[0].trim())?;
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
-        let file = BufReader::new(std::fs::File::open(p.parse_and_strip(
-            &mut ap,
-            level,
-            "mapf",
-            args[1].trim(),
-        )?)?)
+        let file = BufReader::new(std::fs::File::open(
+            p.parse_and_strip(&mut ap, attr, level, "mapf", args[1].trim())?
+                .as_ref(),
+        )?)
         .lines();
 
         let mut acc = String::new();
@@ -221,17 +227,18 @@ impl DeterredMacroMap {
     pub(crate) fn grep_map(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("grepmap", &args, 4, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("grepmap", &args, attr, 4, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let grep_type = p.parse_and_strip(&mut ap, level, "grepmap", args[0].trim())?;
-        let match_expr = p.parse_and_strip(&mut ap, level, "grepmap", &args[1])?;
-        let macro_src = p.parse_and_strip(&mut ap, level, "grepmap", args[2].trim())?;
+        let grep_type = p.parse_and_strip(&mut ap, attr, level, "grepmap", args[0].trim())?;
+        let match_expr = p.parse_and_strip(&mut ap, attr, level, "grepmap", &args[1])?;
+        let macro_src = p.parse_and_strip(&mut ap, attr, level, "grepmap", args[2].trim())?;
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
-        let source = p.parse_and_strip(&mut ap, level, "grepmap", &args[3])?;
+        let source = p.parse_and_strip(&mut ap, attr, level, "grepmap", &args[3])?;
 
         let bufread = match grep_type.to_lowercase().as_str() {
             "file" => {
@@ -249,7 +256,7 @@ impl DeterredMacroMap {
             }
         };
 
-        if bufread && !std::path::Path::new(&source).exists() {
+        if bufread && !std::path::Path::new(source.as_ref()).exists() {
             return Err(RadError::InvalidArgument(format!(
                 "Cannot find a file \"{}\" ",
                 source
@@ -282,7 +289,7 @@ impl DeterredMacroMap {
                 res.push_str(&expanded);
             }
         } else {
-            let lines = BufReader::new(File::open(std::path::Path::new(&source))?).lines();
+            let lines = BufReader::new(File::open(std::path::Path::new(source.as_ref()))?).lines();
 
             for line in lines {
                 let line = line?;
@@ -312,21 +319,22 @@ impl DeterredMacroMap {
     pub(crate) fn forby(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("forby", &args, 3, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("forby", &args, attr, 3, Some(&mut ap))?;
 
         ap.set_strip(true);
         let mut sums = String::new();
         let body = &args[0];
-        let sep = &processor.parse_and_strip(&mut ap, level, "forby", &args[1])?;
-        let loopable = &processor.parse_and_strip(&mut ap, level, "forby", &args[2])?;
-        for (count, value) in loopable.split_terminator(sep).enumerate() {
+        let sep = &processor.parse_and_strip(&mut ap, attr, level, "forby", &args[1])?;
+        let loopable = &processor.parse_and_strip(&mut ap, attr, level, "forby", &args[2])?;
+        for (count, value) in loopable.split_terminator(sep.as_ref()).enumerate() {
             // This overrides value
             processor.add_new_local_macro(level, "a_LN", &count.to_string());
             processor.add_new_local_macro(level, ":", value);
-            let result = &processor.parse_and_strip(&mut ap, level, "forby", body)?;
+            let result = &processor.parse_and_strip(&mut ap, attr, level, "forby", body)?;
 
             sums.push_str(result);
         }
@@ -345,10 +353,11 @@ impl DeterredMacroMap {
     pub(crate) fn foreach(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("foreach", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("foreach", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
         let mut sums = String::new();
@@ -361,13 +370,13 @@ impl DeterredMacroMap {
             )?;
         }
 
-        let loop_src = processor.parse_and_strip(&mut ap, level, "foreach", &args[1])?;
+        let loop_src = processor.parse_and_strip(&mut ap, attr, level, "foreach", &args[1])?;
         let loopable = loop_src.trim();
         for (count, value) in loopable.split(',').enumerate() {
             // This overrides value
             processor.add_new_local_macro(level, "a_LN", &count.to_string());
             processor.add_new_local_macro(level, ":", value);
-            let result = &processor.parse_and_strip(&mut ap, level, "foreach", body)?;
+            let result = &processor.parse_and_strip(&mut ap, attr, level, "foreach", body)?;
 
             sums.push_str(result);
         }
@@ -386,10 +395,11 @@ impl DeterredMacroMap {
     pub(crate) fn forjoin(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("forjoin", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("forjoin", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
         let mut sums = String::new();
@@ -402,7 +412,7 @@ impl DeterredMacroMap {
             )?;
         }
 
-        let loop_src = processor.parse_and_strip(&mut ap, level, "forjoin", &args[1])?;
+        let loop_src = processor.parse_and_strip(&mut ap, attr, level, "forjoin", &args[1])?;
         let loopable = loop_src.trim().lines().collect::<Vec<_>>();
 
         let mut line_width = 0;
@@ -435,7 +445,7 @@ impl DeterredMacroMap {
             for (idx, item) in value.iter().enumerate() {
                 processor.add_new_local_macro(level, &format!(":{}", idx + 1), item);
             }
-            let result = &processor.parse_and_strip(&mut ap, level, "forjoin", body)?;
+            let result = &processor.parse_and_strip(&mut ap, attr, level, "forjoin", body)?;
 
             sums.push_str(result);
         }
@@ -454,10 +464,11 @@ impl DeterredMacroMap {
     pub(crate) fn for_space(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("forsp", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("forsp", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
         let mut sums = String::new();
@@ -470,13 +481,13 @@ impl DeterredMacroMap {
             )?;
         }
 
-        let loop_src = processor.parse_and_strip(&mut ap, level, "forsp", &args[1])?;
+        let loop_src = processor.parse_and_strip(&mut ap, attr, level, "forsp", &args[1])?;
         let loopable = loop_src.trim();
         for (count, value) in loopable.split_whitespace().enumerate() {
             // This overrides value
             processor.add_new_local_macro(level, "a_LN", &count.to_string());
             processor.add_new_local_macro(level, ":", value);
-            let result = &processor.parse_and_strip(&mut ap, level, "forsp", body)?;
+            let result = &processor.parse_and_strip(&mut ap, attr, level, "forsp", body)?;
 
             sums.push_str(result);
         }
@@ -495,22 +506,23 @@ impl DeterredMacroMap {
     pub(crate) fn forline(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("forline", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("forline", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
         let mut sums = String::new();
         let body = &args[0];
-        let loop_src = processor.parse_and_strip(&mut ap, level, "forline", &args[1])?;
+        let loop_src = processor.parse_and_strip(&mut ap, attr, level, "forline", &args[1])?;
         let mut count = 1;
         for line in Utils::full_lines(loop_src.as_bytes()) {
             let line = line?;
             // This overrides value
             processor.add_new_local_macro(level, "a_LN", &count.to_string());
             processor.add_new_local_macro(level, ":", line.as_str());
-            let result = processor.parse_and_strip(&mut ap, level, "forline", body)?;
+            let result = processor.parse_and_strip(&mut ap, attr, level, "forline", body)?;
             sums.push_str(&result);
             count += 1;
         }
@@ -525,10 +537,11 @@ impl DeterredMacroMap {
     pub(crate) fn forloop(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("forloop", &args, 3, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("forloop", &args, attr, 3, Some(&mut ap))?;
 
         ap.set_strip(true);
         let mut sums = String::new();
@@ -542,11 +555,11 @@ impl DeterredMacroMap {
 
         let body = &args[0];
         let min_src = &processor
-            .parse_and_strip(&mut ap, level, "forloop", &args[1])?
+            .parse_and_strip(&mut ap, attr, level, "forloop", &args[1])?
             .trim()
             .to_string();
         let max_src = &processor
-            .parse_and_strip(&mut ap, level, "forloop", &args[2])?
+            .parse_and_strip(&mut ap, attr, level, "forloop", &args[2])?
             .trim()
             .to_string();
 
@@ -569,7 +582,9 @@ impl DeterredMacroMap {
         let mut result: String;
         for value in min..=max {
             processor.add_new_local_macro(level, ":", &value.to_string());
-            result = processor.parse_and_strip(&mut ap, level, "forloop", body)?;
+            result = processor
+                .parse_and_strip(&mut ap, attr, level, "forloop", body)?
+                .to_string();
 
             sums.push_str(&result);
             result.clear();
@@ -589,15 +604,16 @@ impl DeterredMacroMap {
     pub(crate) fn forcol(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("forcol", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("forcol", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
         let mut sums = String::new();
         let body = &args[0];
-        let loop_src = processor.parse_and_strip(&mut ap, level, "forcol", &args[1])?;
+        let loop_src = processor.parse_and_strip(&mut ap, attr, level, "forcol", &args[1])?;
         let table = dcsv::Reader::new()
             .trim(true)
             .has_header(false)
@@ -616,7 +632,7 @@ impl DeterredMacroMap {
             // This overrides value
             processor.add_new_local_macro(level, "a_LN", &idx.to_string());
             processor.add_new_local_macro(level, ":", &column);
-            let result = processor.parse_and_strip(&mut ap, level, "forcol", body)?;
+            let result = processor.parse_and_strip(&mut ap, attr, level, "forcol", body)?;
             sums.push_str(&result);
         }
         Ok(Some(sums))
@@ -630,11 +646,12 @@ impl DeterredMacroMap {
     pub(crate) fn log_macro_info(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
         let macro_name = &p
-            .parse_and_strip(&mut ap, level, "logm", args)?
+            .parse_and_strip(&mut ap, attr, level, "logm", args)?
             .trim()
             .to_string();
         let body = if let Some(name) = p.contains_local_macro(level, macro_name) {
@@ -659,19 +676,22 @@ impl DeterredMacroMap {
     pub(crate) fn if_cond(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("if", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("if", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let boolean = &processor.parse_and_strip(&mut ap, level, "if", &args[0])?;
+        let boolean = &processor.parse_and_strip(&mut ap, attr, level, "if", &args[0])?;
 
         // Given condition is true
         let cond = Utils::is_arg_true(boolean);
         if let Ok(cond) = cond {
             if cond {
-                let if_expr = processor.parse_and_strip(&mut ap, level, "if", &args[1])?;
+                let if_expr = processor
+                    .parse_and_strip(&mut ap, attr, level, "if", &args[1])?
+                    .to_string();
                 return Ok(Some(if_expr));
             }
         } else {
@@ -692,20 +712,23 @@ impl DeterredMacroMap {
     pub(crate) fn ifelse(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("ifelse", &args, 3, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("ifelse", &args, attr, 3, Some(&mut ap))?;
 
         ap.set_strip(true);
 
-        let boolean = &processor.parse_and_strip(&mut ap, level, "ifelse", &args[0])?;
+        let boolean = &processor.parse_and_strip(&mut ap, attr, level, "ifelse", &args[0])?;
 
         // Given condition is true
         let cond = Utils::is_arg_true(boolean);
         if let Ok(cond) = cond {
             if cond {
-                let if_expr = processor.parse_and_strip(&mut ap, level, "ifelse", &args[1])?;
+                let if_expr = processor
+                    .parse_and_strip(&mut ap, attr, level, "ifelse", &args[1])?
+                    .to_string();
                 return Ok(Some(if_expr));
             }
         } else {
@@ -716,7 +739,9 @@ impl DeterredMacroMap {
         }
 
         // Else state
-        let else_expr = processor.parse_and_strip(&mut ap, level, "ifelse", &args[2])?;
+        let else_expr = processor
+            .parse_and_strip(&mut ap, attr, level, "ifelse", &args[2])?
+            .to_string();
         Ok(Some(else_expr))
     }
 
@@ -728,22 +753,25 @@ impl DeterredMacroMap {
     pub(crate) fn ifdef(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("ifdef", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("ifdef", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
 
         let name = &processor
-            .parse_and_strip(&mut ap, level, "ifdef", &args[0])?
+            .parse_and_strip(&mut ap, attr, level, "ifdef", &args[0])?
             .trim()
             .to_string();
 
         let boolean = processor.contains_macro(name, MacroType::Any);
         // Return true or false by the definition
         if boolean {
-            let if_expr = processor.parse_and_strip(&mut ap, level, "ifdef", &args[1])?;
+            let if_expr = processor
+                .parse_and_strip(&mut ap, attr, level, "ifdef", &args[1])?
+                .to_string();
             return Ok(Some(if_expr));
         }
         Ok(None)
@@ -757,25 +785,30 @@ impl DeterredMacroMap {
     pub(crate) fn ifdefel(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("ifdefel", &args, 3, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("ifdefel", &args, attr, 3, Some(&mut ap))?;
 
         ap.set_strip(true);
 
         let name = &processor
-            .parse_and_strip(&mut ap, level, "ifdefel", &args[0])?
+            .parse_and_strip(&mut ap, attr, level, "ifdefel", &args[0])?
             .trim()
             .to_string();
 
         let boolean = processor.contains_macro(name, MacroType::Any);
         // Return true or false by the definition
         if boolean {
-            let if_expr = processor.parse_and_strip(&mut ap, level, "ifdefel", &args[1])?;
+            let if_expr = processor
+                .parse_and_strip(&mut ap, attr, level, "ifdefel", &args[1])?
+                .to_string();
             Ok(Some(if_expr))
         } else {
-            let else_expr = processor.parse_and_strip(&mut ap, level, "ifdefel", &args[2])?;
+            let else_expr = processor
+                .parse_and_strip(&mut ap, attr, level, "ifdefel", &args[2])?
+                .to_string();
             Ok(Some(else_expr))
         }
     }
@@ -788,18 +821,19 @@ impl DeterredMacroMap {
     pub(crate) fn ifenv(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         if !Utils::is_granted("ifenv", AuthType::ENV, processor)? {
             return Ok(None);
         }
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("ifenv", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("ifenv", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
 
         let name = &processor
-            .parse_and_strip(&mut ap, level, "ifenv", &args[0])?
+            .parse_and_strip(&mut ap, attr, level, "ifenv", &args[0])?
             .trim()
             .to_string();
 
@@ -807,7 +841,9 @@ impl DeterredMacroMap {
 
         // Return true or false by the definition
         if boolean {
-            let if_expr = processor.parse_and_strip(&mut ap, level, "ifenv", &args[1])?;
+            let if_expr = processor
+                .parse_and_strip(&mut ap, attr, level, "ifenv", &args[1])?
+                .to_string();
             return Ok(Some(if_expr));
         }
         Ok(None)
@@ -821,18 +857,19 @@ impl DeterredMacroMap {
     pub(crate) fn ifenvel(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         if !Utils::is_granted("ifenvel", AuthType::ENV, processor)? {
             return Ok(None);
         }
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("ifenvel", &args, 3, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("ifenvel", &args, attr, 3, Some(&mut ap))?;
 
         ap.set_strip(true);
 
         let name = &processor
-            .parse_and_strip(&mut ap, level, "ifenvel", &args[0])?
+            .parse_and_strip(&mut ap, attr, level, "ifenvel", &args[0])?
             .trim()
             .to_string();
 
@@ -840,10 +877,14 @@ impl DeterredMacroMap {
 
         // Return true or false by the definition
         if boolean {
-            let if_expr = processor.parse_and_strip(&mut ap, level, "ifenvel", &args[1])?;
+            let if_expr = processor
+                .parse_and_strip(&mut ap, attr, level, "ifenvel", &args[1])?
+                .to_string();
             Ok(Some(if_expr))
         } else {
-            let else_expr = processor.parse_and_strip(&mut ap, level, "ifenvel", &args[2])?;
+            let else_expr = processor
+                .parse_and_strip(&mut ap, attr, level, "ifenvel", &args[2])?
+                .to_string();
             Ok(Some(else_expr))
         }
     }
@@ -858,6 +899,7 @@ impl DeterredMacroMap {
     pub(crate) fn expand_expression(
         args: &str,
         level: usize,
+        _: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = ArgParser::new().strip(args);
@@ -880,13 +922,14 @@ impl DeterredMacroMap {
     pub(crate) fn assert_fail(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let backup = processor.state.behaviour;
         processor.state.behaviour = ErrorBehaviour::Assert;
 
         let mut ap = ArgParser::new().no_strip();
-        let result = processor.parse_and_strip(&mut ap, level, "fassert", args);
+        let result = processor.parse_and_strip(&mut ap, attr, level, "fassert", args);
         processor.state.behaviour = backup;
         processor.logger.stop_last_tracker();
         if result.is_err() {
@@ -907,9 +950,10 @@ impl DeterredMacroMap {
     pub(crate) fn consume(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_to_vec(args, b',', SplitVariant::GreedyStrip);
+        let args = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::GreedyStrip);
 
         let consume_immediate = if let Some(val) = args.first() {
             Utils::is_arg_true(val.trim())?
@@ -968,6 +1012,7 @@ impl DeterredMacroMap {
     pub(crate) fn queue_content(
         args: &str,
         _: usize,
+        _: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         processor.insert_queue(args);
@@ -982,13 +1027,14 @@ impl DeterredMacroMap {
     pub(crate) fn if_queue_content(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("queif", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("queif", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let boolean = &processor.parse_and_strip(&mut ap, level, "queif", &args[0])?;
+        let boolean = &processor.parse_and_strip(&mut ap, attr, level, "queif", &args[0])?;
         let cond = Utils::is_arg_true(boolean)?;
         if cond {
             processor.insert_queue(&args[1]);
@@ -999,6 +1045,7 @@ impl DeterredMacroMap {
     pub(crate) fn escape_blanks(
         _: &str,
         level: usize,
+        _: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         if level != 1 {
@@ -1018,6 +1065,7 @@ impl DeterredMacroMap {
     pub(crate) fn read_to(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         // Needs both permission
@@ -1027,13 +1075,19 @@ impl DeterredMacroMap {
             return Ok(None);
         }
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("readto", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("readto", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let file_path =
-            PathBuf::from(processor.parse_and_strip(&mut ap, level, "readto", args[0].trim())?);
-        let to_path =
-            PathBuf::from(processor.parse_and_strip(&mut ap, level, "readto", args[1].trim())?);
+        let file_path = PathBuf::from(
+            processor
+                .parse_and_strip(&mut ap, attr, level, "readto", args[0].trim())?
+                .as_ref(),
+        );
+        let to_path = PathBuf::from(
+            processor
+                .parse_and_strip(&mut ap, attr, level, "readto", args[1].trim())?
+                .as_ref(),
+        );
         if file_path == to_path {
             return Err(RadError::InvalidArgument(format!(
                 "readto cannot read from and into a same file \"{}\"",
@@ -1056,6 +1110,7 @@ impl DeterredMacroMap {
             if args.len() >= 3 {
                 raw_include = Utils::is_arg_true(&processor.parse_and_strip(
                     &mut ap,
+                    attr,
                     level,
                     "readto",
                     args[2].trim(),
@@ -1101,17 +1156,21 @@ impl DeterredMacroMap {
     pub(crate) fn read_in(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         if !Utils::is_granted("readin", AuthType::FIN, processor)? {
             return Ok(None);
         }
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("readin", &args, 1, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("readin", &args, attr, 1, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let file_path =
-            PathBuf::from(processor.parse_and_strip(&mut ap, level, "readin", args[0].trim())?);
+        let file_path = PathBuf::from(
+            processor
+                .parse_and_strip(&mut ap, attr, level, "readin", args[0].trim())?
+                .as_ref(),
+        );
         let mut raw_include = false;
         if file_path.is_file() {
             let canonic = file_path.canonicalize()?;
@@ -1123,6 +1182,7 @@ impl DeterredMacroMap {
             if args.len() >= 2 {
                 raw_include = Utils::is_arg_true(&processor.parse_and_strip(
                     &mut ap,
+                    attr,
                     level,
                     "readin",
                     args[1].trim(),
@@ -1171,18 +1231,19 @@ impl DeterredMacroMap {
     pub(crate) fn execute_macro(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("exec", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("exec", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
 
         let macro_name = &processor
-            .parse_and_strip(&mut ap, level, "exec", &args[0])?
+            .parse_and_strip(&mut ap, attr, level, "exec", &args[0])?
             .trim()
             .to_string();
-        let args = processor.parse_and_strip(&mut ap, level, "exec", &args[1])?;
+        let args = processor.parse_and_strip(&mut ap, attr, level, "exec", &args[1])?;
         let result = processor
             .execute_macro(level, "exec", macro_name, &args)?
             .unwrap_or_default();
@@ -1203,15 +1264,16 @@ impl DeterredMacroMap {
     pub(crate) fn spread_data(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("spread", &args, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("spread", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
 
-        let expanded_src = &processor.parse_and_strip(&mut ap, level, "spread", &args[0])?;
-        let expanded_data = &processor.parse_and_strip(&mut ap, level, "spread", &args[1])?;
+        let expanded_src = &processor.parse_and_strip(&mut ap, attr, level, "spread", &args[0])?;
+        let expanded_data = &processor.parse_and_strip(&mut ap, attr, level, "spread", &args[1])?;
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(expanded_src, true)?;
         let macro_data = expanded_data.trim();
 
@@ -1235,7 +1297,7 @@ impl DeterredMacroMap {
         processor.set_debug(false);
 
         // Parse macros
-        let result = processor.parse_and_strip(&mut ap, level, "spread", &result)?;
+        let result = processor.parse_and_strip(&mut ap, attr, level, "spread", &result)?;
 
         // Set custom prompt log to indicate user thatn from macro doesn't support
         // debugging inside macro expansion
@@ -1251,7 +1313,7 @@ impl DeterredMacroMap {
             }
         }
 
-        Ok(Some(result))
+        Ok(Some(result.to_string()))
     }
 
     /// stream
@@ -1260,7 +1322,12 @@ impl DeterredMacroMap {
     ///
     /// $stream(macro_name)
     /// $consume()
-    pub(crate) fn stream(args_src: &str, _: usize, p: &mut Processor) -> RadResult<Option<String>> {
+    pub(crate) fn stream(
+        args_src: &str,
+        _: usize,
+        _: &MacroAttribute,
+        p: &mut Processor,
+    ) -> RadResult<Option<String>> {
         if p.state.stream_state.on_stream {
             return Err(RadError::InvalidArgument(
                 "Stream cannot be nested".to_string(),
@@ -1296,6 +1363,7 @@ impl DeterredMacroMap {
     pub(crate) fn stream_by_lines(
         args_src: &str,
         _: usize,
+        _: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         if p.state.stream_state.on_stream {
@@ -1339,18 +1407,19 @@ impl DeterredMacroMap {
     pub(crate) fn include(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         if !Utils::is_granted("include", AuthType::FIN, processor)? {
             return Ok(None);
         }
         let mut ap = ArgParser::new().no_strip();
-        let args = ap.args_to_vec(args, b',', SplitVariant::Always);
+        let args = ap.args_to_vec(args, attr, b',', SplitVariant::Always);
         ap.set_strip(true);
         if !args.is_empty() {
             let mut file_path = PathBuf::from(
                 &processor
-                    .parse_and_strip(&mut ap, level, "include", &args[0])?
+                    .parse_and_strip(&mut ap, attr, level, "include", &args[0])?
                     .trim(),
             );
             let mut raw_include = false;
@@ -1374,7 +1443,7 @@ impl DeterredMacroMap {
                 // Optionally enable raw mode
                 if args.len() >= 2 {
                     raw_include = Utils::is_arg_true(
-                        &processor.parse_and_strip(&mut ap, level, "include", &args[1])?,
+                        &processor.parse_and_strip(&mut ap, attr, level, "include", &args[1])?,
                     )?;
 
                     // You don't have to backup pause state because include wouldn't be triggered
@@ -1430,6 +1499,7 @@ impl DeterredMacroMap {
     pub(crate) fn incread(
         args: &str,
         level: usize,
+        _: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         if !Utils::is_granted("incread", AuthType::FIN, processor)? {
@@ -1454,13 +1524,14 @@ impl DeterredMacroMap {
     pub(crate) fn temp_include(
         _: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         if !Utils::is_granted("tempin", AuthType::FIN, processor)? {
             return Ok(None);
         }
         let file = processor.get_temp_path().display();
-        let chunk = Self::include(&file.to_string(), level, processor)?;
+        let chunk = Self::include(&file.to_string(), level, attr, processor)?;
         Ok(chunk)
     }
 
@@ -1470,9 +1541,10 @@ impl DeterredMacroMap {
     pub(crate) fn test_logics(
         args: &str,
         level: usize,
+        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().no_strip().args_with_len(args, 3) {
+        if let Some(args) = ArgParser::new().no_strip().args_with_len(args, attr, 3) {
             //processor.log_message(&args[0]);
             //processor.log_message(&args[1]);
             //processor.log_message(&args[2]);

@@ -1,7 +1,7 @@
 //! Utility struct, methods for various operations
 
 use crate::auth::{AuthState, AuthType};
-use crate::common::{ProcessInput, RadResult};
+use crate::common::{MacroAttribute, ProcessInput, RadResult};
 use crate::error::RadError;
 use crate::logger::WarningType;
 use crate::{NewArgParser, Processor, WriteOption};
@@ -69,12 +69,13 @@ impl Utils {
     pub fn get_split_arguments_or_error<'a>(
         macro_name: &'a str,
         arguments: &'a &str,
+        attribute: &MacroAttribute,
         length: usize,
         parser: Option<&mut NewArgParser>,
     ) -> RadResult<Vec<Cow<'a, str>>> {
         if let Some(args) = parser
             .unwrap_or(&mut NewArgParser::new())
-            .args_with_len(arguments, length)
+            .args_with_len(arguments, attribute, length)
         {
             Ok(args)
         } else {
