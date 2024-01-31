@@ -2645,6 +2645,7 @@ impl<'processor> Processor<'processor> {
         if let Err(err) = self.add_rule(frag) {
             self.log_error(&err.to_string())?;
             match self.state.behaviour {
+                ErrorBehaviour::Exit => return Err(RadError::SaneExit),
                 ErrorBehaviour::Interrupt => return Err(err),
                 ErrorBehaviour::Assert => return Err(RadError::AssertFail),
                 // Re-throw error
@@ -2693,6 +2694,7 @@ impl<'processor> Processor<'processor> {
 
                 // Handle empty name error
                 match self.state.behaviour {
+                    ErrorBehaviour::Exit => return Err(RadError::SaneExit),
                     ErrorBehaviour::Assert => return Err(RadError::AssertFail),
                     ErrorBehaviour::Strict | ErrorBehaviour::Interrupt => {
                         return Err(RadError::StrictPanic);
@@ -2774,11 +2776,15 @@ impl<'processor> Processor<'processor> {
         }
 
         if self.state.error_cache.is_none() {
-            self.log_error(&error.to_string())?;
+            match error {
+                RadError::SaneExit => self.log_message(&error.to_string())?,
+                _ => self.log_error(&error.to_string())?,
+            }
             self.state.error_cache.replace(error);
         }
 
         match self.state.behaviour {
+            ErrorBehaviour::Exit => return Err(RadError::SaneExit),
             ErrorBehaviour::Interrupt => return Err(RadError::Interrupt),
             ErrorBehaviour::Assert => return Err(RadError::AssertFail),
             // Re-throw error

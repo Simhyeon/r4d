@@ -1,6 +1,6 @@
 //! Rad is a main binary executable for processing
 
-use r4d::RadResult;
+use r4d::{RadError, RadResult};
 
 /// Main entry for rad binary
 pub fn main() -> RadResult<()> {
@@ -16,12 +16,19 @@ pub fn main() -> RadResult<()> {
         use std::io::Write;
         let mut cli = RadCli::new();
         if let Err(err) = cli.parse() {
-            cli.print_error(&err.to_string())?;
-            writeln!(
-                std::io::stderr(),
-                "Int: Rad panicked with unrecoverable error."
-            )?;
-            std::process::exit(1);
+            match err {
+                RadError::SaneExit => {
+                    std::process::exit(0);
+                }
+                _ => {
+                    cli.print_error(&err.to_string())?;
+                    writeln!(
+                        std::io::stderr(),
+                        "Int: Rad panicked with unrecoverable error."
+                    )?;
+                    std::process::exit(1);
+                }
+            }
         }
     }
 

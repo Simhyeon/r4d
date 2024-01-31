@@ -1387,11 +1387,16 @@ impl FunctionMacroMap {
 
     /// Exit processing
     pub(crate) fn exit(
-        _: &str,
-        _: &MacroAttribute,
-        processor: &mut Processor,
+        args: &str,
+        attr: &MacroAttribute,
+        p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        processor.state.flow_control = FlowControl::Exit;
+        let vec = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+        if !vec.is_empty() && Utils::is_arg_true(vec[0].as_ref())? {
+            p.state.behaviour = ErrorBehaviour::Exit;
+            return Err(RadError::SaneExit);
+        }
+        p.state.flow_control = FlowControl::Exit;
         Ok(None)
     }
 

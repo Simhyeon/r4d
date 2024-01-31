@@ -270,6 +270,8 @@ impl std::fmt::Display for ProcessInput {
 /// Standards of behaviour
 #[derive(PartialEq, Clone, Copy)]
 pub enum ErrorBehaviour {
+    /// No error actually
+    Exit,
     /// Every error is a panic
     Strict,
     /// Every error is pasted as is
