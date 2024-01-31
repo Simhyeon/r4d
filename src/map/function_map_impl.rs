@@ -31,7 +31,9 @@ use std::process::Command;
 use std::str::FromStr;
 use unicode_width::UnicodeWidthStr;
 
-static ISOLATION_SINGLE: [char; 1] = [','];
+static ISOLATION_NO_SPACE_BEFORE: [char; 1] = [';'];
+static ISOLATION_SURR_SPACE: [char; 1] = ['='];
+static ISOLATION_SINGLE_SPACE: [char; 3] = [',', ':', ';'];
 static ISOLATION_CHARS: [char; 6] = ['(', ')', '[', ']', '{', '}'];
 static ISOLATION_CHARS_OPENING: [char; 3] = ['(', '[', '{'];
 static ISOLATION_CHARS_CLOSING: [char; 3] = [')', ']', '}'];
@@ -4779,14 +4781,30 @@ impl FunctionMacroMap {
         let mut iter = args[0].chars().peekable();
         let mut previous: char = '@';
         while let Some(ch) = iter.next() {
+            // Current are
+            // ) } ]
+            // put space before
             if !previous.is_whitespace() && ISOLATION_CHARS_CLOSING.contains(&ch) {
                 formatted.push(' ');
+                previous = ' ';
             }
-            previous = ch;
+
+            // Current is = put space before
+            if !previous.is_whitespace() && ISOLATION_SURR_SPACE.contains(&ch) {
+                formatted.push(' ');
+            }
+
+            // Main logic of pushing
             formatted.push(ch);
+            previous = ch;
+
             if let Some(next_ch) = iter.peek() {
-                if !next_ch.is_whitespace()
-                    && (ISOLATION_CHARS.contains(&ch) || ISOLATION_SINGLE.contains(&ch))
+                if !next_ch.is_whitespace()      // Next is not whitespace
+                    && !previous.is_whitespace()
+                    && !ISOLATION_NO_SPACE_BEFORE.contains(next_ch)
+                    && (ISOLATION_CHARS.contains(&ch)
+                        || ISOLATION_SINGLE_SPACE.contains(&ch)
+                        || ISOLATION_SURR_SPACE.contains(&ch))
                 {
                     formatted.push(' ');
                     previous = ' ';
