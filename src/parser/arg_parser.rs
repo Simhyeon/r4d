@@ -306,6 +306,7 @@ impl NewArgParser {
     // ----------
 }
 
+#[derive(Debug)]
 enum ArgCursor {
     Reference(usize, usize),
     Modified(Vec<u8>),
@@ -316,15 +317,26 @@ impl ArgCursor {
         matches!(self, Self::Modified(_))
     }
 
+    #[allow(dead_code)]
+    pub fn debug(&self, src: &str) {
+        match self {
+            Self::Reference(a, b) => {
+                eprintln!(">>> -{}-", &src[*a..*b]);
+            }
+            Self::Modified(vec) => {
+                eprintln!(">>> -{}-", std::str::from_utf8(vec).unwrap());
+            }
+        }
+    }
+
     /// Use is_string before taking value and supply empty if the inner vaule is string
     ///
     /// because src is supplied as is while the argument is completely ignored when the inner value
     /// is a string.
     pub fn take_value<'a>(&mut self, index: usize, src: &'a str, trim: bool) -> Cow<'a, str> {
-        match self {
+        let ret = match self {
             Self::Reference(c, n) => {
                 let val = &src[*c..*n];
-                *self = Self::Reference(index, index);
                 if trim {
                     val.trim().into()
                 } else {
@@ -336,14 +348,16 @@ impl ArgCursor {
             // Check this so that any error can be captured
             // THis is mostsly ok to unwrap because input source is
             Self::Modified(s) => {
-                let stred = std::str::from_utf8(std::mem::take(&mut &s[..])).unwrap();
+                let stred = std::str::from_utf8(&s[..]).unwrap();
                 if trim {
                     stred.trim().to_string().into()
                 } else {
                     stred.to_string().into()
                 }
             }
-        }
+        };
+        *self = Self::Reference(index, index);
+        ret
     }
 
     pub fn convert_to_modified(&mut self, src: &str) {
@@ -356,9 +370,6 @@ impl ArgCursor {
         match self {
             Self::Reference(_, n) => *n += 1,
             Self::Modified(st) => st.extend_from_slice(ch),
-        }
-        if let Self::Modified(st) = self {
-            st.extend_from_slice(ch);
         }
     }
     pub fn pop(&mut self) {

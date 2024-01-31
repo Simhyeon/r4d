@@ -2710,13 +2710,6 @@ impl<'processor> Processor<'processor> {
         // Debug
         #[cfg(feature = "debug")]
         {
-            // Respect trim input
-            let args = if frag.attribute.pipe_input {
-                self.state.get_pipe("-", true).unwrap_or_default()
-            } else {
-                frag.args.clone()
-            };
-
             // If debug switch target is break point
             // Set switch to next line.
             self.debugger.break_point(frag)?;
