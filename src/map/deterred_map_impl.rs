@@ -909,7 +909,7 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_to_vec(args, ',', SplitVariant::GreedyStrip);
+        let args = ArgParser::new().args_to_vec(args, b',', SplitVariant::GreedyStrip);
 
         let consume_immediate = if let Some(val) = args.first() {
             Utils::is_arg_true(val.trim())?
@@ -1345,7 +1345,7 @@ impl DeterredMacroMap {
             return Ok(None);
         }
         let mut ap = ArgParser::new().no_strip();
-        let args = ap.args_to_vec(args, ',', SplitVariant::Always);
+        let args = ap.args_to_vec(args, b',', SplitVariant::Always);
         ap.set_strip(true);
         if !args.is_empty() {
             let mut file_path = PathBuf::from(

@@ -145,11 +145,20 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "range".to_owned(),
+                "rangeu".to_owned(),
                 FMacroSign::new(
-                    "range",
+                    "rangeu",
                     ["a_min^", "a_max^", "a_array"],
-                    Self::range,
+                    Self::substring_utf8,
+                    Some(man_fun!("range.r4d")),
+                ),
+            ),
+            (
+                "rangea".to_owned(),
+                FMacroSign::new(
+                    "rangea",
+                    ["a_min^", "a_max^", "a_array"],
+                    Self::range_array,
                     Some(man_fun!("range.r4d")),
                 ),
             ),
@@ -1845,9 +1854,9 @@ $strict(lenient)".to_string()),
                 ),
             ),
             (
-                "slice".to_owned(),
+                "range".to_owned(),
                 FMacroSign::new(
-                    "slice",
+                    "range",
                     ["a_start_index^", "a_end_index^", "a_source"],
                     Self::substring,
                     Some("Get a substring with indices.
@@ -1858,21 +1867,30 @@ $strict(lenient)".to_string()),
 
 # Arguments
 
-- a_start_index : A start substring index [Unsigned integer] (trimmed)
-- a_end_index   : A end   substring index [Unsigned integer] (trimmed)
+- a_start_index : A start substring index [signed integer] (trimmed)
+- a_end_index   : A end   substring index [signed integer] (trimmed)
 - a_source      : Source text get to a substring from
 
 # Example
 
-$assert(def,$slice(3,5,abcdef))".to_string()),
+$assert(def,$range(3,5,abcdef))".to_string()),
                 ),
             ),
             (
-                "slicel".to_owned(),
+                "rangel".to_owned(),
                 FMacroSign::new(
-                    "slicel",
+                    "rangel",
                     ["a_start_index^", "a_end_index^", "a_lines"],
-                    Self::slice_lines,
+                    Self::range_lines,
+                    None
+                ),
+            ),
+            (
+                "rangeby".to_owned(),
+                FMacroSign::new(
+                    "rangeby",
+                    ["a_delimeter","a_start_index^", "a_end_index^", "a_lines"],
+                    Self::range_pieces,
                     None
                 ),
             ),

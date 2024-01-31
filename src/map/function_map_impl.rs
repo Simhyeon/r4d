@@ -146,7 +146,7 @@ impl FunctionMacroMap {
         match &p.state.current_input {
             ProcessInput::Stdin => Ok(Some("Stdin".to_string())),
             ProcessInput::File(path) => {
-                let args = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
+                let args = NewArgParser::new().args_to_vec(args, b',', SplitVariant::Always);
                 if !args.is_empty() && !args[0].trim().is_empty() {
                     let print_absolute = Utils::is_arg_true(args[0].trim())?;
                     if print_absolute {
@@ -1040,7 +1040,7 @@ impl FunctionMacroMap {
     ///
     /// $counter(name, type)
     pub(crate) fn change_counter(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
+        let args = NewArgParser::new().args_to_vec(args, b',', SplitVariant::Always);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "counter requires an argument".to_owned(),
@@ -1237,7 +1237,7 @@ impl FunctionMacroMap {
     ///
     /// $path($env(HOME),document,test.docx)
     pub(crate) fn merge_path(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let vec = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
+        let vec = NewArgParser::new().args_to_vec(args, b',', SplitVariant::Always);
 
         let out = vec
             .iter()
@@ -1936,50 +1936,13 @@ impl FunctionMacroMap {
         Ok(Some(replaced))
     }
 
-    /// Get a substring(indexed) from given source
+    /// Get a utf8 code based substring(indexed) from given source
     ///
     /// # Usage
     ///
-    /// $slice(0,5,GivenString)
-    pub(crate) fn substring(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("slice", &args, 3, None)?;
-
-        let source = &args[2];
-
-        let mut min: usize = 0;
-        let mut max: isize = 0;
-
-        let start = args[0].trim();
-        let end = args[1].trim();
-
-        if let Ok(num) = start.parse::<usize>() {
-            min = num;
-        } else if !start.is_empty() {
-            return Err(RadError::InvalidArgument(format!(
-                "Slice's min value should be non zero positive integer but given \"{}\"",
-                start
-            )));
-        }
-
-        if let Ok(num) = end.parse::<isize>() {
-            max = num;
-        } else if !end.is_empty() {
-            return Err(RadError::InvalidArgument(format!(
-                "Slice's max value should be singed integer or empty value but given \"{}\"",
-                end
-            )));
-        }
-
-        Ok(Some(Utils::utf8_slice(source, min, max)?.to_string()))
-    }
-
-    /// Get a sublines(indexed) from given lines
-    ///
-    /// # Usage
-    ///
-    /// $slicel(0,5,GivenLines)
-    pub(crate) fn slice_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("slicel", &args, 3, None)?;
+    /// $rangeu(0,5,안녕하세요ㅎ)
+    pub(crate) fn substring_utf8(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("rangeu", &args, 3, None)?;
 
         let source = &args[2];
 
@@ -1993,7 +1956,7 @@ impl FunctionMacroMap {
             min.replace(num);
         } else if start != "_" && !start.is_empty() {
             return Err(RadError::InvalidArgument(format!(
-                "Slicel's min value should be non zero positive integer but given \"{}\"",
+                "Rangeu's min value should be non zero positive integer but given \"{}\"",
                 start
             )));
         }
@@ -2002,12 +1965,126 @@ impl FunctionMacroMap {
             max.replace(num);
         } else if end != "_" && !end.is_empty() {
             return Err(RadError::InvalidArgument(format!(
-                "Slicel's max value should be singed integer or empty value but given \"{}\"",
+                "Rangeu's max value should be singed integer or empty value but given \"{}\"",
+                end
+            )));
+        }
+
+        Ok(Some(Utils::utf_slice(source, min, max)?.to_string()))
+    }
+
+    /// Get a substring(indexed) from given source
+    ///
+    /// # Usage
+    ///
+    /// $range(0,5,GivenString)
+    pub(crate) fn substring(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("range", &args, 3, None)?;
+
+        let source = &args[2];
+
+        let mut min: Option<isize> = None;
+        let mut max: Option<isize> = None;
+
+        let start = args[0].trim();
+        let end = args[1].trim();
+
+        if let Ok(num) = start.parse::<isize>() {
+            min.replace(num);
+        } else if start != "_" && !start.is_empty() {
+            return Err(RadError::InvalidArgument(format!(
+                "Range's min value should be non zero positive integer but given \"{}\"",
+                start
+            )));
+        }
+
+        if let Ok(num) = end.parse::<isize>() {
+            max.replace(num);
+        } else if end != "_" && !end.is_empty() {
+            return Err(RadError::InvalidArgument(format!(
+                "Range's max value should be singed integer or empty value but given \"{}\"",
+                end
+            )));
+        }
+
+        Ok(Some(Utils::ascii_slice(source, min, max)?.to_string()))
+    }
+
+    /// Get a sublines(indexed) from given lines
+    ///
+    /// # Usage
+    ///
+    /// $rangel(0,5,GivenLines)
+    pub(crate) fn range_lines(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("rangel", &args, 3, None)?;
+
+        let source = &args[2];
+
+        let mut min: Option<isize> = None;
+        let mut max: Option<isize> = None;
+
+        let start = args[0].trim();
+        let end = args[1].trim();
+
+        if let Ok(num) = start.parse::<isize>() {
+            min.replace(num);
+        } else if start != "_" && !start.is_empty() {
+            return Err(RadError::InvalidArgument(format!(
+                "rangel's min value should be non zero positive integer but given \"{}\"",
+                start
+            )));
+        }
+
+        if let Ok(num) = end.parse::<isize>() {
+            max.replace(num);
+        } else if end != "_" && !end.is_empty() {
+            return Err(RadError::InvalidArgument(format!(
+                "rangel's max value should be singed integer or empty value but given \"{}\"",
                 end
             )));
         }
 
         Ok(Some(Utils::sub_lines(source, min, max)?.to_string()))
+    }
+
+    /// Get a sub_piecess(indexed) from given content
+    ///
+    /// # Usage
+    ///
+    /// $rangeby(0,5,Content)
+    pub(crate) fn range_pieces(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("rangeby", &args, 4, None)?;
+
+        let delimiter = &args[0];
+        let source = &args[3];
+
+        let mut min: Option<isize> = None;
+        let mut max: Option<isize> = None;
+
+        let start = args[1].trim();
+        let end = args[2].trim();
+
+        if let Ok(num) = start.parse::<isize>() {
+            min.replace(num);
+        } else if start != "_" && !start.is_empty() {
+            return Err(RadError::InvalidArgument(format!(
+                "rangeby's min value should be non zero positive integer but given \"{}\"",
+                start
+            )));
+        }
+
+        if let Ok(num) = end.parse::<isize>() {
+            max.replace(num);
+        } else if end != "_" && !end.is_empty() {
+            return Err(RadError::InvalidArgument(format!(
+                "rangeby's max value should be singed integer or empty value but given \"{}\"",
+                end
+            )));
+        }
+
+        Ok(Some(
+            Utils::sub_pieces(source, delimiter, min, max)?.to_string(),
+        ))
     }
 
     /// Get a substring(indexed) until a pattern
@@ -2702,9 +2779,9 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $range(1,2,1,2,3,4,5)
-    pub(crate) fn range(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("range", &args, 3, None)?;
+    /// $rangea(1,2,1,2,3,4,5)
+    pub(crate) fn range_array(args: &str, _: &mut Processor) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("rangea", &args, 3, None)?;
 
         let mut min: Option<usize> = None;
         let mut max: Option<usize> = None;
@@ -2715,13 +2792,13 @@ impl FunctionMacroMap {
         if let Ok(num) = start_src.parse::<usize>() {
             min.replace(num);
         } else if !start_src.is_empty() {
-            return Err(RadError::InvalidArgument(format!("Range's min value should be non zero positive integer or empty value but given \"{}\"", start_src)));
+            return Err(RadError::InvalidArgument(format!("Rangea's min value should be non zero positive integer or empty value but given \"{}\"", start_src)));
         }
 
         if let Ok(num) = end_src.parse::<usize>() {
             max.replace(num);
         } else if !end_src.is_empty() {
-            return Err(RadError::InvalidArgument(format!("Ragne's max value should be non zero positive integer or empty value but given \"{}\"", end_src)));
+            return Err(RadError::InvalidArgument(format!("Rangea's max value should be non zero positive integer or empty value but given \"{}\"", end_src)));
         }
 
         let content = &args[2].split(',').collect::<Vec<_>>();
@@ -3067,7 +3144,7 @@ impl FunctionMacroMap {
     ///
     /// $relay(type,argument)
     pub(crate) fn relay(args_src: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = NewArgParser::new().args_to_vec(args_src, ',', SplitVariant::Always);
+        let args = NewArgParser::new().args_to_vec(args_src, b',', SplitVariant::Always);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "relay at least requires an argument".to_owned(),
@@ -3226,7 +3303,7 @@ impl FunctionMacroMap {
     ///
     /// $halt()
     pub(crate) fn halt_relay(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = NewArgParser::new().args_to_vec(args, ',', SplitVariant::GreedyStrip);
+        let args = NewArgParser::new().args_to_vec(args, b',', SplitVariant::GreedyStrip);
 
         let halt_immediate = if let Some(val) = args.first() {
             Utils::is_arg_true(val.trim())?
@@ -3357,7 +3434,7 @@ impl FunctionMacroMap {
     ///
     /// $require(fout)
     pub(crate) fn require_permissions(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let vec = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
+        let vec = NewArgParser::new().args_to_vec(args, b',', SplitVariant::Always);
         if vec.is_empty() {
             p.log_warning(
                 "Require macro used without any arguments.",
@@ -3388,7 +3465,7 @@ impl FunctionMacroMap {
     ///
     /// $strict(lenient)
     pub(crate) fn require_strict(args: &str, p: &mut Processor) -> RadResult<Option<String>> {
-        let vec = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
+        let vec = NewArgParser::new().args_to_vec(args, b',', SplitVariant::Always);
         let mode = &vec[0];
         let trimmed_mode = mode.trim();
         match trimmed_mode.to_lowercase().as_str() {
@@ -3619,7 +3696,7 @@ impl FunctionMacroMap {
     ///
     /// $declare(n1,n2,n3)
     pub(crate) fn declare(args: &str, processor: &mut Processor) -> RadResult<Option<String>> {
-        let names = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
+        let names = NewArgParser::new().args_to_vec(args, b',', SplitVariant::Always);
         let runtime_rules = names
             .iter()
             .map(|name| (name.trim().to_string(), "", ""))
@@ -4239,7 +4316,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("listdir", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        let args = NewArgParser::new().args_to_vec(args, ',', SplitVariant::Always);
+        let args = NewArgParser::new().args_to_vec(args, b',', SplitVariant::Always);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "listdir at least requires an argument".to_owned(),
@@ -4397,7 +4474,7 @@ impl FunctionMacroMap {
         // TODO
         // Improve by not allocating
         let args = NewArgParser::new()
-            .args_to_vec(args, ',', SplitVariant::Always)
+            .args_to_vec(args, b',', SplitVariant::Always)
             .into_iter()
             .map(|s| s.to_string())
             .collect::<Vec<String>>();
