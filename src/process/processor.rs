@@ -2396,6 +2396,12 @@ impl<'processor> Processor<'processor> {
         #[cfg(feature = "debug")]
         self.debugger.write_diff_processed(content)?;
 
+        // On transition no text is written
+        if self.state.relay_transition {
+            self.state.relay_transition = false;
+            return Ok(());
+        }
+
         // This belongs here to evade borrowing rules
         match self
             .state
@@ -2894,6 +2900,8 @@ impl<'processor> Processor<'processor> {
             // not the other way
             if frag.attribute.pipe_output {
                 self.state.add_pipe(None, content);
+                // TODO
+                // Wait.... what? why consume newline?
                 self.state.consume_newline = true;
             } else {
                 remainder.push_str(&content);
@@ -3197,6 +3205,18 @@ impl<'processor> Processor<'processor> {
             })?
             .body;
         Ok(body)
+    }
+
+    /// Extract runtime macro's raw body
+    pub(crate) fn extract_runtime_macro_body(&mut self, macro_name: &str) -> RadResult<String> {
+        let similar = self.get_similar_macro(macro_name, true);
+        let body = &mut self
+            .map
+            .runtime
+            .get_mut(macro_name, self.state.hygiene)
+            .ok_or_else(|| RadError::NoSuchMacroName(macro_name.to_string(), similar))?
+            .body;
+        Ok(std::mem::take(body))
     }
 
     #[inline]
