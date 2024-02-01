@@ -965,7 +965,8 @@ impl DeterredMacroMap {
             // This remove last element from stack
             p.state.relay.pop();
         } else {
-            p.insert_queue("$consume(true)");
+            // TODO This was the fucking problem
+            p.insert_queue(&format!("$consume{}(true)", attr));
             return Ok(None);
         }
 
@@ -973,7 +974,9 @@ impl DeterredMacroMap {
         ap.set_strip(true);
         let macro_src = std::mem::take(&mut p.state.stream_state.macro_src);
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
-        let content = p.get_runtime_macro_body(STREAM_CONTAINER)?.to_owned();
+
+        let body = p.extract_runtime_macro_body(STREAM_CONTAINER)?;
+        let content = Utils::sub_lines(&body, Some(1), None)?;
 
         let result = if p.state.stream_state.as_lines {
             let mut acc = String::new();
@@ -995,11 +998,10 @@ impl DeterredMacroMap {
                 level,
                 "consume",
                 macro_name,
-                &(macro_arguments.clone() + &content),
+                &(macro_arguments.clone() + content),
             )?
         };
 
-        p.replace_macro(STREAM_CONTAINER, &String::default()); // Clean macro
         p.state.stream_state.clear();
         Ok(result)
     }
