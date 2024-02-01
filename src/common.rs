@@ -1,6 +1,7 @@
 //! Common structs, enums for code usage.
 
 use crate::error::RadError;
+use std::fmt::Display;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
@@ -51,7 +52,7 @@ impl LocalMacro {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct MacroAttribute {
     // Macro attributes
     pub pipe_output: bool,
@@ -76,6 +77,35 @@ impl MacroAttribute {
             || self.trim_output
             || self.trim_input
             || self.negate_result
+            || self.skip_expansion
+    }
+}
+
+impl Display for MacroAttribute {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut formatted = String::new();
+        if self.pipe_input {
+            formatted.push('-')
+        }
+        if self.pipe_output {
+            formatted.push('|')
+        }
+        if self.yield_literal {
+            formatted.push('*')
+        }
+        if self.trim_output {
+            formatted.push('^')
+        }
+        if self.trim_input {
+            formatted.push('=')
+        }
+        if self.negate_result {
+            formatted.push('!')
+        }
+        if self.skip_expansion {
+            formatted.push('~')
+        }
+        write!(f, "{}", formatted)
     }
 }
 
