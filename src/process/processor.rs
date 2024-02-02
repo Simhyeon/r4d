@@ -772,6 +772,8 @@ impl<'processor> Processor<'processor> {
     /// Queued objects are not executed immediately but executed only after currently aggregated
     /// macro fragments are fully expanded.
     ///
+    /// This is necessary because halt can be used inside a macro
+    ///
     /// ```rust
     /// let mut proc = r4d::Processor::empty();
     /// proc.insert_queue("$halt()");
@@ -2395,12 +2397,6 @@ impl<'processor> Processor<'processor> {
         // Save to "source" file for debuggin
         #[cfg(feature = "debug")]
         self.debugger.write_diff_processed(content)?;
-
-        // On transition no text is written
-        if self.state.relay_transition {
-            self.state.relay_transition = false;
-            return Ok(());
-        }
 
         // This belongs here to evade borrowing rules
         match self
