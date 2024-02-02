@@ -237,6 +237,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "cont".to_owned(),
+                FMacroSign::new(
+                    "cont",
+                    ["a_op","a_arg"],
+                    Self::container,
+                    None
+                ),
+            ),
+            (
                 "scut".to_owned(),
                 FMacroSign::new(
                     "scut",

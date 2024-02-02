@@ -169,6 +169,7 @@ pub struct Processor<'processor> {
     checker: UnbalancedChecker,
     pub(crate) state: ProcessorState,
     pub(crate) storage: Option<Box<dyn RadStorage>>,
+    pub(crate) var_container: Vec<String>,
     #[cfg(feature = "cindex")]
     pub(crate) indexer: Indexer,
 }
@@ -247,6 +248,7 @@ impl<'processor> Processor<'processor> {
             debugger: Debugger::new(),
             checker: UnbalancedChecker::new(),
             storage: None,
+            var_container: vec![],
             #[cfg(feature = "cindex")]
             indexer: Indexer::new(),
         }
@@ -2337,8 +2339,10 @@ impl<'processor> Processor<'processor> {
                 return Err(RadError::StrictPanic);
             }
 
+            // Trim input for define is applied to each lines
             if frag.attribute.trim_input {
                 body = body
+                    .trim()
                     .lines()
                     .map(|l| l.trim())
                     .fold(String::new(), |mut acc, l| {
@@ -2346,7 +2350,6 @@ impl<'processor> Processor<'processor> {
                         acc.push_str(&self.state.newline);
                         acc
                     })
-                    .trim()
                     .to_string();
             }
 

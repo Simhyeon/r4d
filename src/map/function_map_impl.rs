@@ -2,10 +2,10 @@ use super::function_map::FunctionMacroMap;
 use itertools::Itertools;
 
 use crate::auth::{AuthState, AuthType};
-use crate::common::MacroAttribute;
 use crate::common::{
     AlignType, ErrorBehaviour, FlowControl, MacroType, ProcessInput, RadResult, RelayTarget,
 };
+use crate::common::{MacroAttribute, VarContOperation};
 use crate::consts::{
     LOREM, LOREM_SOURCE, LOREM_WIDTH, MACRO_SPECIAL_LIPSUM, MAIN_CALLER, PATH_SEPARATOR,
 };
@@ -434,6 +434,68 @@ impl FunctionMacroMap {
         }
     }
 
+    /// Container macro
+    ///
+    /// # Usage
+    ///
+    /// $cont(operation,agument)
+    pub(crate) fn container(
+        args: &str,
+        attr: &MacroAttribute,
+        p: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Deterred(1));
+        let op = VarContOperation::from_str(args[0].trim())?;
+        let var = args.get(1).map(|s| s.as_ref()).unwrap_or("");
+        let ret = match op {
+            VarContOperation::Pop => p.var_container.pop(),
+            VarContOperation::Push => {
+                p.var_container.push(var.to_string());
+                None
+            }
+            VarContOperation::Clear => {
+                p.var_container.clear();
+                None
+            }
+            VarContOperation::Print => Some(format!("{:#?}", p.var_container)),
+            VarContOperation::Get => p
+                .var_container
+                .get(var.trim().parse::<usize>().map_err(|_| {
+                    RadError::InvalidArgument(format!(
+                        "Cannt index a container with invalid integer \"{}\"",
+                        var
+                    ))
+                })?)
+                .cloned(),
+            VarContOperation::Set => {
+                match p.var_container.last_mut() {
+                    Some(v) => *v = var.to_string(),
+                    None => {
+                        return Err(RadError::InvalidExecution(
+                            "Set has failed because current container is empty".to_string(),
+                        ))
+                    }
+                }
+                None
+            }
+            VarContOperation::Extend => {
+                if var.is_empty() {
+                    p.log_warning(
+                        "No content was given to extend for container",
+                        WarningType::Sanity,
+                    )?;
+                }
+
+                for item in var.split(',') {
+                    p.var_container.push(item.to_string());
+                }
+                None
+            }
+        };
+
+        Ok(ret)
+    }
+
     /// Trim preceding and trailing whitespaces (' ', '\n', '\t', '\r')
     ///
     /// # Usage
@@ -499,9 +561,10 @@ impl FunctionMacroMap {
         let args = Utils::get_split_arguments_or_error("inner", &args, attr, 3, None)?;
         let rule = args[0].trim().as_bytes();
         if rule.len() != 2 {
-            return Err(RadError::InvalidArgument(
-                "Inner rule should consists of two characters".to_string(),
-            ));
+            return Err(RadError::InvalidArgument(format!(
+                "Inner rule should consists of two characters but given {}",
+                args[0]
+            )));
         }
         let (rs, re) = (rule[0], rule[1]);
         let target = args[1].trim().parse::<usize>().map_err(|_| {

@@ -976,7 +976,6 @@ impl DeterredMacroMap {
                     )?
                     .unwrap_or_default(),
                 );
-                acc.push_str(&p.state.newline);
             }
             Some(acc)
         } else {

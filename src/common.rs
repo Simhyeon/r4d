@@ -5,6 +5,7 @@ use std::fmt::Display;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 // Stream related static strings
 pub(crate) static STREAM_CONTAINER: &str = "!STREAM_CONTAINER";
@@ -475,5 +476,36 @@ impl From<AlignType> for dcsv::CellAlignType {
             AlignType::Center => dcsv::CellAlignType::Center,
             AlignType::Right => dcsv::CellAlignType::Right,
         }
+    }
+}
+
+#[derive(Debug)]
+pub enum VarContOperation {
+    Clear,
+    Extend,
+    Get,
+    Pop,
+    Push,
+    Set,
+    Print,
+}
+
+impl FromStr for VarContOperation {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        return Ok(match s.to_lowercase().as_str() {
+            "print" => Self::Print,
+            "push" => Self::Push,
+            "pop" => Self::Pop,
+            "clear" => Self::Clear,
+            "get" => Self::Get,
+            "set" => Self::Set,
+            "extend" => Self::Extend,
+            _ => {
+                return Err(RadError::InvalidArgument(format!(
+                    "{s} is not a valid container operation"
+                )));
+            }
+        });
     }
 }
