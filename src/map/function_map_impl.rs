@@ -1591,6 +1591,8 @@ impl FunctionMacroMap {
     }
 
     /// Print nothing
+    ///
+    /// $empty()
     pub(crate) fn print_empty(
         _: &str,
         _: &MacroAttribute,
@@ -3370,22 +3372,30 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("foldreg", &args, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("foldreg", &args, attr, 3, None)?;
 
         let mut container = String::new();
         let mut folded = String::new();
         let nl = p.state.newline.to_owned();
-        let reg = p.try_get_or_insert_regex(&args[0])?;
-        for line in Utils::full_lines(args[1].as_bytes()) {
+        let regs = p.try_get_or_insert_multiple_regex(&args[0..2])?;
+        let reg_start = regs[0];
+        let reg_end = regs[1];
+        for line in Utils::full_lines(args[2].as_bytes()) {
             let line = line?;
             // Start new container
-            if reg.find(&line).is_some() {
+            if reg_start.find(&line).is_some() && reg_end.find(&line).is_none() {
                 folded.push_str(std::mem::take(&mut container.as_str()));
+                // Start regex add newline for clarity
                 if !container.is_empty() {
                     folded.push_str(&nl);
                 }
                 container.clear();
                 container.push_str(line.trim_end());
+            } else if reg_start.find(&line).is_none() && reg_end.find(&line).is_some() {
+                container.push_str(&line);
+                folded.push_str(std::mem::take(&mut container.as_str()));
+                // End regex doesn't add newline
+                container.clear();
             } else if !container.is_empty() {
                 container.push_str(line.trim());
             } else {

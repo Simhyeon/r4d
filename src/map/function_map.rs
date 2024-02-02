@@ -620,7 +620,7 @@ impl FunctionMacroMap {
                 "foldreg".to_owned(),
                 FMacroSign::new(
                     "foldreg",
-                    ["a_expr","a_lines"],
+                    ["a_start_expr","a_end_expr","a_lines"],
                     Self::fold_regular_expr,
                     None,
                 ),

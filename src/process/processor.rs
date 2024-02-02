@@ -3369,6 +3369,31 @@ impl<'processor> Processor<'processor> {
         }
     }
 
+    /// Try getting regexes or newly compile
+    ///
+    /// # Return
+    ///
+    /// this returns reference to a existing or compiled regex
+    pub(crate) fn try_get_or_insert_multiple_regex(
+        &mut self,
+        exprs: &[Cow<'_, str>],
+    ) -> RadResult<Vec<&Regex>> {
+        let mut contains = vec![];
+        let mut regexex = vec![];
+        for exp in exprs {
+            contains.push(self.state.regex_cache.contains(exp));
+        }
+        for (idx, cont) in contains.iter().enumerate() {
+            if !cont {
+                self.state.regex_cache.append(exprs[idx].as_ref())?;
+            }
+        }
+        for reg in exprs {
+            regexex.push(self.state.regex_cache.get(reg).unwrap());
+        }
+        Ok(regexex)
+    }
+
     /// Expand chunk and strip quotes
     ///
     /// This is intended for end user
