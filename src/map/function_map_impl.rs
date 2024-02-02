@@ -572,7 +572,10 @@ impl FunctionMacroMap {
         }
         let (rs, re) = (rule[0], rule[1]);
         let target = args[1].trim().parse::<usize>().map_err(|_| {
-            RadError::InvalidArgument("Inner option should be unsinged integer".to_string())
+            RadError::InvalidArgument(format!(
+                "Inner option should be unsinged integer but given \"{}\"",
+                args[1]
+            ))
         })?;
         let src = &args[2];
         let mut cursors: Vec<InnerCursor> = vec![];
@@ -726,11 +729,12 @@ impl FunctionMacroMap {
                     Some(min_amount)
                 }
             }
-            _ => {
+            v => {
                 try_amount = Some(option.parse::<usize>().map_err(|_| {
-                    RadError::InvalidArgument(
-                        "Trimla option should be either min,max or number".to_string(),
-                    )
+                    RadError::InvalidArgument(format!(
+                        "Trimla option should be either min,max or number gut given \"{}\"",
+                        v
+                    ))
                 })?);
                 None
             }
@@ -1249,14 +1253,12 @@ impl FunctionMacroMap {
         if !p.contains_macro(counter_name, MacroType::Runtime) {
             p.add_static_rules(&[(&counter_name, "0")])?;
         }
-        let body = p
-            .get_runtime_macro_body(counter_name)?
-            .parse::<isize>()
-            .map_err(|_| {
-                RadError::UnallowedMacroExecution(
-                    "You cannot call counter on non-number macro values".to_string(),
-                )
-            })?;
+        let body_src = p.get_runtime_macro_body(counter_name)?;
+        let body = body_src.parse::<isize>().map_err(|_| {
+            RadError::UnallowedMacroExecution(format!(
+                "You cannot call counter on non-number macro values which was \"{body_src}\""
+            ))
+        })?;
         match counter_type.to_lowercase().as_ref() {
             "plus" => {
                 p.replace_macro(counter_name, &(body + 1).to_string());
@@ -1511,9 +1513,9 @@ impl FunctionMacroMap {
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
         let count = if !args.is_empty() {
-            args.trim()
-                .parse::<usize>()
-                .map_err(|_| RadError::InvalidArgument("tab requires number".to_string()))?
+            args.trim().parse::<usize>().map_err(|_| {
+                RadError::InvalidArgument(format!("tab requires number but given \"{}\"", args))
+            })?
         } else {
             1
         };
@@ -1522,7 +1524,10 @@ impl FunctionMacroMap {
         match tab_width {
             Ok(value) => {
                 let tab = " ".repeat(value.parse::<usize>().map_err(|_| {
-                    RadError::InvalidCommandOption("RAD_TAB_WIDTH is not a valid value".to_string())
+                    RadError::InvalidCommandOption(format!(
+                        "RAD_TAB_WIDTH is not a valid value which was \"{}\"",
+                        value
+                    ))
                 })?);
                 Ok(Some(tab.repeat(count)))
             }
@@ -1567,9 +1572,9 @@ impl FunctionMacroMap {
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
         let count = if !args.is_empty() {
-            args.trim()
-                .parse::<usize>()
-                .map_err(|_| RadError::InvalidArgument("space requires number".to_string()))?
+            args.trim().parse::<usize>().map_err(|_| {
+                RadError::InvalidArgument(format!("space requires number but given \"{}\"", args))
+            })?
         } else {
             1
         };
@@ -1612,9 +1617,9 @@ impl FunctionMacroMap {
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let count = if !args.is_empty() {
-            args.trim()
-                .parse::<usize>()
-                .map_err(|_| RadError::InvalidArgument("nl requires number".to_string()))?
+            args.trim().parse::<usize>().map_err(|_| {
+                RadError::InvalidArgument(format!("nl requires number but given \"{}\"", args))
+            })?
         } else {
             1
         };
@@ -2029,7 +2034,7 @@ impl FunctionMacroMap {
             }
         } else {
             return Err(RadError::InvalidArgument(
-                "Filler should be an valid utf8 character".to_string(),
+                "Filler should be a valid utf8 character".to_string(),
             ));
         }
 
@@ -2072,12 +2077,13 @@ impl FunctionMacroMap {
         let mut result = String::new();
         let nl = &p.state.newline;
 
-        let tab_width: usize = std::env::var("RAD_TAB_WIDTH")
-            .unwrap_or("4".to_string())
-            .parse::<usize>()
-            .map_err(|_| {
-                RadError::InvalidCommandOption("RAD_TAB_WIDTH is not a valid value".to_string())
-            })?;
+        let tab_width_src = std::env::var("RAD_TAB_WIDTH").unwrap_or("4".to_string());
+        let tab_width = tab_width_src.parse::<usize>().map_err(|_| {
+            RadError::InvalidCommandOption(format!(
+                "RAD_TAB_WIDTH is not a valid value which was \"{}\"",
+                tab_width_src
+            ))
+        })?;
 
         for line in contents.clone() {
             let mut splitted = line.split(separator.as_ref());
@@ -2160,12 +2166,13 @@ impl FunctionMacroMap {
 
         let mut contents = args[1].lines().map(|s| s.to_owned()).collect::<Vec<_>>();
 
-        let tab_width: usize = std::env::var("RAD_TAB_WIDTH")
-            .unwrap_or("4".to_string())
-            .parse::<usize>()
-            .map_err(|_| {
-                RadError::InvalidCommandOption("RAD_TAB_WIDTH is not a valid value".to_string())
-            })?;
+        let tab_width_src = std::env::var("RAD_TAB_WIDTH").unwrap_or("4".to_string());
+        let tab_width = tab_width_src.parse::<usize>().map_err(|_| {
+            RadError::InvalidCommandOption(format!(
+                "RAD_TAB_WIDTH is not a valid value which was \"{}\"",
+                tab_width_src
+            ))
+        })?;
 
         let mut iter = rules.iter();
         while let (Some(count), Some(separator)) = (iter.next(), iter.next()) {
