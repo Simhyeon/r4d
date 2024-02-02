@@ -948,27 +948,13 @@ impl DeterredMacroMap {
     /// $stream(macro_name)
     /// $consume()
     pub(crate) fn consume(
-        args: &str,
+        _: &str,
         level: usize,
-        attr: &MacroAttribute,
+        _: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::GreedyStrip);
-
-        let consume_immediate = if let Some(val) = args.first() {
-            Utils::is_arg_true(val.trim())?
-        } else {
-            false
-        };
-
-        if consume_immediate {
-            // This remove last element from stack
-            p.state.relay.pop();
-        } else {
-            // TODO This was the fucking problem
-            p.insert_queue(&format!("$consume{}(true)", attr));
-            return Ok(None);
-        }
+        // Eagerly pop relay target
+        p.state.relay.pop();
 
         let mut ap = ArgParser::new().no_strip();
         ap.set_strip(true);
@@ -976,7 +962,7 @@ impl DeterredMacroMap {
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
 
         let body = p.extract_runtime_macro_body(STREAM_CONTAINER)?;
-        let content = Utils::sub_lines(&body, Some(1), None)?;
+        let content = &body;
 
         let result = if p.state.stream_state.as_lines {
             let mut acc = String::new();
