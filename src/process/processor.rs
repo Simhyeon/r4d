@@ -2088,7 +2088,7 @@ impl<'processor> Processor<'processor> {
             // Also update original arguments for better debugging
             #[cfg(feature = "debug")]
             {
-                frag.args = args.clone();
+                frag.processed_args = args.clone();
             }
         } else {
             // Is deterred macro
@@ -2121,7 +2121,6 @@ impl<'processor> Processor<'processor> {
             // Set processed_args some helpful message
             #[cfg(feature = "debug")]
             {
-                frag.args = args.clone();
                 frag.processed_args =
                     String::from("It is unavailable to retrieve args from deterred macro")
             }
