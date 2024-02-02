@@ -1637,6 +1637,10 @@ impl<'processor> Processor<'processor> {
             self.state.sandbox = false;
         }
 
+        if !frag.is_empty() {
+            self.log_warning_no_line("Unterminated macro execution exists, which is possibly due to unterminated parenthesis", WarningType::Sanity)?;
+        }
+
         if cont_type != ContainerType::None {
             Ok(cont.filter(|t| !t.is_empty()))
         } else {

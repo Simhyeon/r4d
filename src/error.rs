@@ -10,6 +10,8 @@ use cindex::CIndexError;
 /// Blank implementation for error trait
 impl std::error::Error for RadError {}
 
+// TODO
+// Should this error message respect newline for os types?
 /// R4d's error type
 #[derive(Debug)]
 pub enum RadError {
@@ -87,7 +89,7 @@ impl std::fmt::Display for RadError {
                 txt, atype
             ),
             Self::StrictPanic => "Every error is panicking in strict mode".to_string(),
-            Self::ManualPanic(txt) => format!("Panic triggered with message\n^^^ {} ^^^", txt),
+            Self::ManualPanic(txt) => format!("Panic triggered with message\n \"{}\"", txt),
             Self::StorageError(txt) => format!("Storage error with message\n= {0}", txt),
             #[cfg(feature = "cindex")]
             Self::CIndexError(err) => err.to_string(),

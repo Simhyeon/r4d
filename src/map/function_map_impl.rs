@@ -458,6 +458,10 @@ impl FunctionMacroMap {
                 None
             }
             VarContOperation::Print => Some(format!("{:#?}", p.var_container)),
+            VarContOperation::Ow => {
+                p.var_container = var.split(',').map(|s| s.to_string()).collect();
+                None
+            }
             VarContOperation::Get => p
                 .var_container
                 .get(var.trim().parse::<usize>().map_err(|_| {
