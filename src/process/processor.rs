@@ -769,8 +769,8 @@ impl<'processor> Processor<'processor> {
     ///
     /// This is intended for macro logics not processor logics.
     ///
-    /// Queued objects are not executed immediately but executed only after currently aggregated
-    /// macro fragments are fully expanded.
+    /// Queued objects are not executed immediately but executed only after current line is
+    /// completely expanded.
     ///
     /// This is necessary because halt can be used inside a macro
     ///
@@ -1276,7 +1276,7 @@ impl<'processor> Processor<'processor> {
     /// ```
     pub(crate) fn process_piece(&mut self, frag: &mut MacroFragment) -> RadResult<()> {
         let result = self.execute_macro_with_frag(0, MAIN_CALLER, frag)?;
-        self.write_to(&result.unwrap_or_default(), &ContainerType::None, &mut None)
+        self.write_to_target(&result.unwrap_or_default(), &ContainerType::None, &mut None)
     }
 
     /// Read from standard input
@@ -1585,7 +1585,7 @@ impl<'processor> Processor<'processor> {
                 // This means either macro is not found at all
                 // or previous macro fragment failed with invalid syntax
                 ParseResult::Printable(remainder) => {
-                    self.write_to(&remainder, &cont_type, &mut cont)?;
+                    self.write_to_target(&remainder, &cont_type, &mut cont)?;
 
                     // Test if this works
                     #[cfg(feature = "debug")]
@@ -1597,7 +1597,7 @@ impl<'processor> Processor<'processor> {
                     }
                 }
                 ParseResult::FoundMacro(remainder) => {
-                    self.write_to(&remainder, &cont_type, &mut cont)?;
+                    self.write_to_target(&remainder, &cont_type, &mut cont)?;
                 }
                 // This happens only when given macro involved text should not be printed
                 ParseResult::NoPrint => {}
@@ -1611,6 +1611,16 @@ impl<'processor> Processor<'processor> {
                     break;
                 }
             }
+
+            // Execute queues
+            // Execute queued object
+            let queued = std::mem::take(&mut self.state.queued); // Queue should be emptied after
+            for item in queued {
+                // This invokes parse method
+                let result = self.parse_chunk_args(0, MAIN_CALLER, &item)?;
+                self.write_to_target(&result, &cont_type, &mut cont)?;
+            }
+
             // Increaing number should be followed after evaluation
             // To ensure no panick occurs during user_input_on_line, which is caused by
             // out of index exception from getting current line_cache
@@ -2372,7 +2382,7 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Write text to either file or standard output according to processor's write option
-    fn write_to(
+    fn write_to_target(
         &mut self,
         content: &str,
         cont_type: &ContainerType,
@@ -2751,15 +2761,6 @@ impl<'processor> Processor<'processor> {
         // Clear fragment regardless of success
         frag.clear();
         frag.is_processed = true;
-
-        // Execute queues
-        // Execute queued object
-        let queued = std::mem::take(&mut self.state.queued); // Queue should be emptied after
-        for item in queued {
-            // This invokes parse method
-            let result = self.parse_chunk_args(0, MAIN_CALLER, &item)?;
-            remainder.push_str(&result);
-        }
 
         Ok(())
     }
