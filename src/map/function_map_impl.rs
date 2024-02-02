@@ -3663,7 +3663,6 @@ impl FunctionMacroMap {
             }
         };
         p.state.relay.push(relay_type);
-        p.state.relay_transition = true;
         Ok(None)
     }
 
@@ -3775,8 +3774,8 @@ impl FunctionMacroMap {
         if halt_immediate {
             // This remove last element from stack
             p.state.relay.pop();
-            p.state.relay_transition = true;
         } else {
+            p.state.escape_newline = true;
             p.insert_queue("$halt(true)");
         }
         Ok(None)

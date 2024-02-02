@@ -434,7 +434,9 @@ pub enum Hygiene {
     Aseptic,
 }
 
+// This is mostly useful for include macro
 /// Type of container
+///
 #[derive(Eq, PartialEq)]
 pub enum ContainerType {
     /// Container inside arguments
