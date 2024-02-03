@@ -22,6 +22,7 @@ use crate::{Hygiene, Processor};
 use cindex::OutOption;
 use once_cell::sync::Lazy;
 use regex::Regex;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::BufRead;
@@ -636,35 +637,112 @@ impl FunctionMacroMap {
         Ok(None)
     }
 
-    /// Indent lines
+    /// Append border
     ///
     /// # Usage
     ///
-    /// $indent(*, multi
+    /// $border(*, multi
     /// line
     /// expression
     /// )
-    pub(crate) fn indent_lines(
+    pub(crate) fn decorate_border(
         args: &str,
         attr: &MacroAttribute,
-        p: &mut Processor,
+        _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("indent", &args, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("border", &args, attr, 2, None)?;
+
+        let border_string = &args[0];
+        let iter = Utils::full_lines(args[1].as_ref());
+        let mut max = 0;
+        let ret = iter
+            .map(move |line| {
+                let len = UnicodeWidthStr::width(line);
+                max = max.max(len);
+                (len, line)
+            })
+            .map(|(item_len, item)| {
+                let mut item = item.to_string();
+                // Space is Insufficient
+                if item_len < max {
+                    item.push_str(&"".repeat(max - item_len));
+                }
+                let le = Utils::get_line_ending(&item).len();
+                item.insert_str(item.len().saturating_sub(le), border_string);
+                item
+            })
+            .join("");
+
+        Ok(Some(ret))
+    }
+
+    /// Indent lines before
+    ///
+    /// # Usage
+    ///
+    /// $insertf(*, multi
+    /// line
+    /// expression
+    /// )
+    pub(crate) fn indent_lines_before(
+        args: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("indentb", &args, attr, 2, None)?;
 
         let indenter = &args[0];
-        let mut lines = String::new();
-        let mut iter = args[1].lines().peekable();
-        while let Some(line) = iter.next() {
-            if !line.is_empty() {
-                lines.push_str(indenter);
-                lines.push_str(line);
-            }
-            // Append newline because String.lines() method cuts off all newlines
-            if iter.peek().is_some() {
-                lines.push_str(&p.state.newline);
-            }
-        }
-        Ok(Some(lines))
+        let indented = Utils::full_lines(args[1].as_ref())
+            .map(|line| {
+                if !line.is_empty() {
+                    let mut l = line.to_string();
+                    l.insert_str(0, indenter);
+                    Cow::from(l)
+                } else {
+                    Cow::from("")
+                }
+            })
+            .fold(String::new(), |mut acc, v| {
+                acc.push_str(&v);
+                acc
+            });
+
+        Ok(Some(indented))
+    }
+
+    /// Indent lines after
+    ///
+    /// # Usage
+    ///
+    /// $indentr(*, multi
+    /// line
+    /// expression
+    /// )
+    pub(crate) fn indent_lines_after(
+        args: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("indentr", &args, attr, 2, None)?;
+
+        let indenter = &args[0];
+        let indented = Utils::full_lines(args[1].as_ref())
+            .map(|line| {
+                if !line.is_empty() {
+                    let line_end = Utils::get_line_ending(line).len();
+                    let mut l = line.to_string();
+                    l.insert_str(line.len() - line_end, indenter);
+                    Cow::from(l)
+                } else {
+                    Cow::from("")
+                }
+            })
+            .fold(String::new(), |mut acc, v| {
+                acc.push_str(&v);
+                acc
+            });
+
+        Ok(Some(indented))
     }
 
     /// Trim preceding and trailing whitespaces (' ', '\n', '\t', '\r') but for all lines
@@ -1841,8 +1919,7 @@ impl FunctionMacroMap {
         let mut extracted = String::new();
         // Leading blank spaces from the line itself.
         let mut line_preceding_blank;
-        for line in Utils::full_lines(source.as_bytes()) {
-            let line = line?;
+        for line in Utils::full_lines(source) {
             if let Some((leading, following)) = line.split_once(pattern) {
                 // Don't "rotate" for pattern starting line
                 if leading.trim().is_empty() {
@@ -2650,12 +2727,10 @@ impl FunctionMacroMap {
                 &args[0]
             ))
         })?;
-        let lines = Utils::full_lines(args[1].as_bytes())
-            .map(|line| line.unwrap())
-            .collect::<Vec<String>>();
-        let length = count.min(lines.len());
 
-        Ok(Some(lines[0..length].concat()))
+        Ok(Some(
+            Utils::sub_lines(&args[1], Some(0), Some(count as isize))?.to_string(),
+        ))
     }
 
     /// Get tail of given text
@@ -2741,18 +2816,24 @@ impl FunctionMacroMap {
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("taill", &args, attr, 2, None)?;
 
-        let count = args[0].trim().parse::<usize>().map_err(|_| {
-            RadError::InvalidArgument(format!(
-                "taill requires positive integer number but got \"{}\"",
-                &args[0]
-            ))
-        })?;
-        let lines = Utils::full_lines(args[1].as_bytes())
-            .map(|line| line.unwrap())
-            .collect::<Vec<String>>();
-        let length = count.min(lines.len());
+        let count = args[0]
+            .trim()
+            .parse::<usize>()
+            .map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "taill requires positive integer number but got \"{}\"",
+                    &args[0]
+                ))
+            })?
+            .saturating_sub(1);
 
-        Ok(Some(lines[lines.len() - length..lines.len()].concat()))
+        let min = if count == 0 {
+            None
+        } else {
+            Some(-(count as isize))
+        };
+
+        Ok(Some(Utils::sub_lines(&args[1], min, None)?.to_string()))
     }
 
     /// Sort array
@@ -2845,14 +2926,13 @@ impl FunctionMacroMap {
         // --- Chunk creation
         let mut clogged_chunk_list = vec![];
         let mut container = String::new();
-        for line in Utils::full_lines(content.as_bytes()) {
-            let line = line?;
+        for line in Utils::full_lines(&content) {
             // Has empty leading + has parent
-            if LSPA.captures(&line).is_some() && !container.is_empty() {
-                container.push_str(&line);
+            if LSPA.captures(line).is_some() && !container.is_empty() {
+                container.push_str(line);
             } else {
                 clogged_chunk_list.push(container);
-                container = line;
+                container = line.to_string();
             }
         }
         clogged_chunk_list.push(container);
@@ -3395,10 +3475,9 @@ impl FunctionMacroMap {
         let regs = p.try_get_or_insert_multiple_regex(&args[0..2])?;
         let reg_start = regs[0];
         let reg_end = regs[1];
-        for line in Utils::full_lines(args[2].as_bytes()) {
-            let line = line?;
+        for line in Utils::full_lines(&args[2]) {
             // Start new container
-            if reg_start.find(&line).is_some() && reg_end.find(&line).is_none() {
+            if reg_start.find(line).is_some() && reg_end.find(line).is_none() {
                 folded.push_str(std::mem::take(&mut container.as_str()));
                 // Start regex add newline for clarity
                 if !container.is_empty() {
@@ -3406,15 +3485,15 @@ impl FunctionMacroMap {
                 }
                 container.clear();
                 container.push_str(line.trim_end());
-            } else if reg_start.find(&line).is_none() && reg_end.find(&line).is_some() {
-                container.push_str(&line);
+            } else if reg_start.find(line).is_none() && reg_end.find(line).is_some() {
+                container.push_str(line);
                 folded.push_str(std::mem::take(&mut container.as_str()));
                 // End regex doesn't add newline
                 container.clear();
             } else if !container.is_empty() {
                 container.push_str(line.trim());
             } else {
-                folded.push_str(&line);
+                folded.push_str(line);
             }
         }
         folded.push_str(&container);

@@ -228,6 +228,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "border".to_owned(),
+                FMacroSign::new(
+                    "border",
+                    ["a_border_string","a_content"],
+                    Self::decorate_border,
+                    None,
+                ),
+            ),
+            (
                 "cut".to_owned(),
                 FMacroSign::new(
                     "cut",
@@ -748,11 +757,11 @@ $fassert($test())".to_string()),
                 ),
             ),
             (
-                "indent".to_owned(),
+                "insertf".to_owned(),
                 FMacroSign::new(
-                    "indent",
+                    "insertf",
                     ["a_indenter", "a_lines"],
-                    Self::indent_lines,
+                    Self::indent_lines_before,
                     Some("Indent lines with indenter
 
 # Arguments
@@ -769,6 +778,15 @@ $assert(
 $indent(# ,First
 Second
 Third))".to_string()),
+                ),
+            ),
+            (
+                "inserta".to_owned(),
+                FMacroSign::new(
+                    "inserta",
+                    ["a_indenter", "a_lines"],
+                    Self::indent_lines_after,
+                    None
                 ),
             ),
             (
