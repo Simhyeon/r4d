@@ -1453,7 +1453,7 @@ impl<'processor> Processor<'processor> {
             }
         };
 
-        let line_iter = Utils::full_lines(buffer);
+        let line_iter = Utils::full_lines_from_bytes(buffer);
         let mut frag = MacroFragment::new();
         frag.attribute.pipe_input = true;
         frag.name = macro_name.to_string();
@@ -1545,7 +1545,7 @@ impl<'processor> Processor<'processor> {
         backup: Option<SandboxBackup>,
         cont_type: ContainerType,
     ) -> RadResult<Option<String>> {
-        let mut line_iter = Utils::full_lines(buffer).peekable();
+        let mut line_iter = Utils::full_lines_from_bytes(buffer).peekable();
         let mut lexor = Lexor::new(
             self.get_macro_char(),
             self.get_comment_char(),
@@ -1800,9 +1800,7 @@ impl<'processor> Processor<'processor> {
         self.logger
             .start_new_tracker(TrackType::Body(caller.to_string()));
 
-        for line in Utils::full_lines(chunk.as_bytes()) {
-            let line = line?;
-
+        for line in Utils::full_lines(chunk) {
             // Deny newline
             if self.state.deny_newline {
                 self.state.deny_newline = false;
@@ -1811,7 +1809,7 @@ impl<'processor> Processor<'processor> {
                 }
             }
 
-            let line_result = self.parse_line(&mut lexor, &mut frag, &line, level, caller)?;
+            let line_result = self.parse_line(&mut lexor, &mut frag, line, level, caller)?;
             // Increase line number
             self.logger.inc_line_number();
 
@@ -1845,9 +1843,7 @@ impl<'processor> Processor<'processor> {
         let mut result = String::new();
         self.logger
             .start_new_tracker(TrackType::Argument(caller.to_owned()));
-        for line in Utils::full_lines(chunk.as_bytes()) {
-            let line = line?;
-
+        for line in Utils::full_lines(chunk) {
             // Deny newline
             if self.state.deny_newline {
                 self.state.deny_newline = false;
@@ -1861,7 +1857,7 @@ impl<'processor> Processor<'processor> {
             // However it can detect self calling macros in some cases
             // parse_chunk_body needs this caller but, parse_chunk_args doesn't need because
             // this methods only parses arguments thus, infinite loop is unlikely to happen
-            let line_result = self.parse_line(&mut lexor, &mut frag, &line, level, caller)?;
+            let line_result = self.parse_line(&mut lexor, &mut frag, line, level, caller)?;
             result.push_str(&line_result);
 
             self.logger.inc_line_number();
