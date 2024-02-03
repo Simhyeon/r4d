@@ -1,112 +1,39 @@
 # Todo immediate
 
-* [ ] Trim input !IMPORTANT
-    * [ ] Skip expansion doesn't work for deterred macro
-
-* [ ] Always keep in mind that slicel can fail
-
-* [ ] Surr might be bugged? test later : Argparser is bugged
-    -> This is possibly due to new argparser logic error
-    when \) is supplied or namely literal quotes are bugged...
-* [ ] Add environmnet variable for preventing negative index for slicel
-
-* [ ] Log option shows unappended result before pipe append
+* [ ] Parser error
 ```
- printf 'test' | rad -PL '$indent-(+)' --log
-1:log
-Name    = "indent"
-Attr    =
-Pipe input      : true
-Pipe output     : false
-Trim input      : false
-Trim output     : false
-Literal         : false
-Negation        : false
-Args    = "test"
----
-+test%
+$alignby-(2\* *\1&)
+===
+$alignby-(2\* ) -> WTF?
 ```
 
-* [x] Refactor slice to be much more singular
-    -> Only two positive integer can be optimized, other than that everything
-    has to be collected which is bit inefficient.
+**Think Before adding a new macro so that can it be achieved as continuous macros**
+e.g. inner a can be replaced with capture and inner combination
 
-* [x] Branched that calls Collect directly assumed that lines were simple enurmation
+* [ ] Think about how failed operation should work
+    - Macros that affect processor state shoulud be really careful when it can fail ( Lenient mode )
 
--> Currently it is enumeration of tuple thus the structure should be considerd proeplery
-Cehck if coherently
+* [ ] Implement trim input 
+    * [ ] Execute macro doesn't respect macro framgnet is it desirable? ->
+      Kind of?
+    * [ ] Expand also doesn't utilize attr yet. Is it ok?
+* [ ] maybe `parse_chunk_args` can return cow instead of string
 
-* [ ] Remove unnecessary head, tail, strip bullshits and integate into slice
-  ,range, slicel -> Actually no, those are useful when you don't know the total
-  length. Or... maybe not? -> Implement -index for range than it will be
-  compltely replacable head, headl, tail, taill strip
+* [ ] Make a new slice macro for split and joining
+* [ ] Always keep in mind that rangel can fail
 
-* [ ] Add sliceu ( Slice unicode ) and make slice non allocating
-* [ ] Support _ syntax for slice series
-    * [x] Slicel
-    * [ ] Slice
-
-* [ ] Insulah to use : also
-* [ ] Make a new macro for border?
-```
-% NExt is start line
-// Text           // |
-
-abcde
-ddd
-fff
-gggg
-==
-// -------------------
-// Text           // |
-//                // |
-abcde             // |
-ddd               // |
-fff               // |
-gggg              // |
-```
-
-* [ ] Make an interal data structure for arrays? ( Table )
-    -> Problem I want to split contents into an array but existing array needs
-    to process the whole contents every time when it needs to index.
-    ```
-    $split-($comma*(),a,b,c)
-
-    ```
+* [ ] Add environmnet variable for preventing negative index for slicel(rangel)
+* [ ] Add environmnet variable for insulah to customize split behaviour
 
 * [ ] Change names that are inconsistent or incoherent
-* [ ] Move regexpr to deterred macro
-    -> Don't expand or parse second argument
-    -> Use `split_once(',')` instead
-* [ ] There are multiple macros that utilizes args to vec directory or simply
-  utilize args.is-empty which might cause inconsistent behaviour. Check them.
-    -> THis means such macro doesn't use "argparser" which has an side effect
-* [ ] Check unnecessary `to_string`
-    * [x] FunctionMap
-    * [ ] DeterredMap
-    * [ ] Other
 * [ ] Capture to support capture group
-* [ ] For chunk -> Also apply this logic to foldreg
+* [ ] For chunk
 ```
 Iter through lines and aggregate regexed chunk and apply macro to it
 $forchunk(start_regex,end_regex,macro_body,src)
 ```
-* [ ] Extract inner
-```
-let macro_name =  std::mem::take(&mut args[0]);
-let mut formula = std::mem::take(&mut args[1]);
-===
-let macro_name =  args[0];
-let mut formula = args[1];
-```
 * [ ] Split by
-* [ ] Add a feature to use rope instead of simple string ( Crop crate )
-    -> For example if skip expansion flag was given OR text size is bigger than
-    1K ( which is a standard point where rope out-performs normal string )
-        -> text size standard for crop usage should be supplied as arguments
-        and saved to processor ` --rope 1000 ` means use crop from 1000 byte
-        sizes.
-* [ ] Check insula's logic throughly
+* [ ] Check insulav's logic throughly
 * [ ] Escape rule is very outrageous
 ```
 \\ -> \\
@@ -132,62 +59,9 @@ let mut formula = args[1];
     ```
     -> Check PS.r4d manual because escape character is strange in the document.
 
-* [x] Renamed things
-    - Regex -> sub
-    - Slice -> Range
-    - sub   -> Slice
-    - ifque => queif
-
-* [ ] Consider implemtnting consecutive macro calls for sc and sl flags
-
 #### BUG
 
-* [ ] Inner panics on certain cenarios
-```
-$println^($inner({},1,$content~()))
-```
-
-for following
-
-```
-    pub(crate) fn map_file( args: &str, level: usize, p: &mut Processor,) -> RadResult<Option<String>> {
-        if !Utils::is_granted("mapf", AuthType::FIN, p)? {
-            return Ok(None);
-        }
-        let mut ap = ArgParser::new().no_strip();
-        if let Some(args) = ap.args_with_len(args, 2) {
-            ap.set_strip(true);
-            let macro_src = p.parse_and_strip(&mut ap, level, "mapf", args[0].trim())?;
-            let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
-            let file = BufReader::new(std::fs::File::open(p.parse_and_strip(
-                &mut ap,
-                level,
-                "mapf",
-                args[1].trim(),
-            )?)?)
-            .lines();
-
-            let mut acc = String::new();
-            for line in file {
-                let line = line?;
-                acc.push_str(
-                    &p.execute_macro(
-                        level,
-                        "mapf",
-                        macro_name,
-                        &(macro_arguments.clone() + &line),
-                    )?
-                    .unwrap_or_default(),
-                );
-            }
-            Ok(Some(acc))
-        } else {
-            Err(RadError::InvalidArgument(
-                "mapf requires two arguments".to_owned(),
-            ))
-        }
-    }
-```
+* [x] Inner panics on certain cenarios -> Failed to reproduce just in keep mind yeah...
 
 * [x] Bug: insulav and insulah was not stripping
 * [x] Fixed a bug whree skip_expansion was not working
@@ -195,27 +69,6 @@ for following
     * [x] quote enclosed value has to be sent separately. Currently arguments
     * [x] Rad inside rad squeezes output -> It was other bug
 
-
-* [ ] Trim input is really... necessary. I mean it is required to do lots of
-  things... but hey it is 4.0 and you really fucking needs it.
-```
-$stream(insulav)
-\*
-$assert(true,$istype( uint , 0 ))
-$assert(false,$istype( uint , -1 ))
-$assert(true,$istype( int , 0 ))
-*\
-$consume|()
-
-$define=(sq,
-a_ln a_lc
-=
-$ifelse($eval($a_ln() %  7 == 5),
-$rotatel($comma*(),c,$a_lc()),
-$a_lc()))
-$forline-($sq($a_LN(),$:()))
-=> This yield duplicated new lines
-```
 * [ ] Check macros with single argument so that a function might not be
   analyzing shits.
 
@@ -253,6 +106,7 @@ $forline-($sq($a_LN(),$:()))
 
 #### Documentation
 
+* [ ] Notify that trim can remove empty newline
 * [ ] Illustrate that insula macros are not pretty printer but, rather
   functional macro that creates sufficient spaces and newlines for following
   macro processes
@@ -261,8 +115,8 @@ $forline-($sq($a_LN(),$:()))
 * [ ] Update manuals
     * 24/177
 * [ ] Update repository documentations
-    * [ ] Macro indices
-    * [ ] Macro syntaxes
+    * [ ] macro indices
+    * [ ] macro syntaxes
     * [ ] Hook macro
     * [ ] About extension and abscene of include macro
     * [ ] ETC...
@@ -270,18 +124,41 @@ $forline-($sq($a_LN(),$:()))
 
 #### Features
 
+* [ ] Add a hygiene option for binary
+* [ ] Add an option for Positive regulation which means auth related macros are
+  only executed when it was allowed speicifically by user. Or simply wihout
+  auth macros then
+  -> This is to circumvent harsh hygiene rules and utilize runtieme macros
+
+* [ ] Add regex-file option
+    -> Adding a complicated regex is fucking hard and somtimes very time
+    consuming
+    -> Adding multiple regexes are also tiring
+    ->> However making a literal rule concrete is the first thing to come though.
+
+
+* [ ] Consider implemtnting consecutive macro calls for sc and sl flags
+* [ ] Flag to print all realted environmnet vairables
+* [ ] Panic message is kinda cringe... improve it.
+* [ ] Update template macro...
 * [ ] Check if greedy argument's no-strip behaviour is ideal or not
-* [x] Currently --sc arguments are sent as pipe which is not evaluated at all
-  which might be unexpected behaviour
-    -> Now sc and sl accepts arguments as real arguments not pipe input
-* [x] Ditch evalexpr flag and include it as default
-* [x] Search should be about searching. I don't know if something exists. It is no
-   use when you only prints something just similar. How about showing lists if
-   necessary?
+* [x] Make an interal data structure for arrays? ( Table ) 
+    -> Implemented as cont macro
 
 #### Macro ( macro )
 
-* [x] Add slicel
+* [x] Make a new macro for border?
+* [x] Renamed indent to insertf
+* [x] New macro insertr
+
+* [ ] Add a new macro slice
+    -> This splits string by pattern and slice them without separators
+    -> Think of it as `cut` but returns range
+```
+$slice(pat,1,2,source)
+```
+
+* [x] Add rangel
 * [x] Make alignby with complicated rules supportted
     * [ ] Notify users that align with comma will work strange
     * [ ] Rename macros that execute on lines that has no l suffix
@@ -301,13 +178,12 @@ $forline-($sq($a_LN(),$:()))
 * [ ] Also add non evalexpr variant macro ( inc, dec )
 * [ ] Pretty printer ( Json, toml etc... )
 * [ ] Increaser by alphabets? ( Replacement for possible rer macro )
-* [ ] Inner align? -> Stretch
+* [ ] Inner align? -> _$Stretch_
 ```
 [a,b,c          ]
 =
 [a,     b,     c]
 ```
-
 #### MISC, bug detecting, Ergonomics
 
 * [ ] Should istype support string type? Which means non-digit in this case?
@@ -339,19 +215,30 @@ $forline-($sq($a_LN(),$:()))
 
 #### Performance
 
-* [x] use `get_split_arguments_or_error` for arg splitting
-    * [x] FunctionMacroMap
-    * [x] DeterredMacroMap
-* [x] Ditch trim! macro because it is literally unnecessary
-* [x] Implement inner macro
-* [x] Update `args_with_len`
-* [x] Argparser rerturn cow vector rather than string vector
+* [ ] Add a feature to use rope instead of simple string ( Crop crate )
+    -> For example if skip expansion flag was given OR text size is bigger than
+    1K ( which is a standard point where rope out-performs normal string )
+        -> text size standard for crop usage should be supplied as arguments
+        and saved to processor ` --rope 1000 ` means use crop from 1000 byte
+        sizes.
+
+* [ ] There are multiple macros that utilizes args to vec directory or simply
+  utilize args.is-empty which might cause inconsistent behaviour. Check them.
+    -> THis means such macro doesn't use "argparser" which has an side effect
+* [ ] Check unnecessary `to_string`
+    * [x] FunctionMap
+    * [ ] DeterredMap
+    * [ ] Other
 
 * [ ] Macro to return cow rather than string? Is it that performant?
 * [ ] Try removing unnecessary clone calls
 * [-] Mie and pie insert_str is inefficient. -> Not so necessarily
     -> Push_str is also O(n) Sadly
 * [ ] Check for alignby performance maybe duplicate
+
+* [x] Refactored `full_lines` so that unnecessary allocations happen
+* [x] Remove unnecessary `lines` method to preserve line-ending
+
 * [ ] Rer iteration cache to a concrete struct for better maintainability
 * Think about ditching textwrap
 * Inline small functions
@@ -403,7 +290,6 @@ file.
       message.
       - Because proc macro doesn't support it as syntax
 * [ ] Feature
-    * [ ] Early return
 * [ ] Documentation
     * [ ] About escape rules + parenthesis rule
 * [ ] Test
@@ -413,48 +299,3 @@ $todo_end()
 ### LATER
 
 * [ ] Test hook macro documentaion
-
----------- ---------- ---------- ---------- ---------- ---------- ---------- 
-### How I should handle todos
-
-There are so many todos and I'm getting lost among them.
-
-It's time to rearrange the things.
-
-There are multiple types of todos classified as sorts
-
-- Bug fix
-- Documentations
-- New macro, features
-- Peformance improvement
-
-There are todos that is classified as range
-
-- Affect parsing, expansion
-- Affect several macros
-- Affect an macro
-- Affect nothing
-
-There are todos that is classified as difficulties
-
-- Hard
-- Easy
-
-Bug fix is primary yet todo that needs parsing, expansion logic to be fixed are
-hard and time consuming. And I cannot spend that much time yet or at least not
-often.
-
-### General rule of thumb
-
-1. Update manuals first because I can both check bugs in macros itself and test
-   processing logic's bug
-2. Some immediate, critical bugs should be fixed asap
-3. Bugs detected while writing manuals should be addressed first
-4. Generic outage, bugs should be fixed later.
-5. Manuals should be tested after generic bug fixes
-6. New macros regardless of daily use should be implemented late
-7. Peformance update should come as final
-
-* Bug or unintended yet consistent behaviour should not be fixed at the time,
-  but addressed later with much care.
-    -> However this should be noted for later fix
