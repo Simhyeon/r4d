@@ -219,10 +219,33 @@ impl Utils {
         format!("{}.{}", level, name)
     }
 
+    /// Read full lines from &str
+    pub fn full_lines(input: &str) -> impl Iterator<Item = &str> {
+        let mut index = 0;
+        let mut match_ret = vec![];
+        let mut matched_iter = input.match_indices('\n').peekable();
+        if matched_iter.peek().is_none() {
+            let matched = std::iter::once(input).collect::<Vec<_>>();
+            matched.into_iter()
+        } else {
+            let matched = matched_iter.collect::<Vec<_>>();
+            for (idx, _) in matched {
+                let ret = &input[index..=idx];
+                index = idx + 1;
+                match_ret.push(ret);
+            }
+            // TODO
+            match_ret.push(&input[index..]);
+            match_ret.into_iter()
+        }
+    }
+
     // Shamelessly copied from
     // https://stackoverflow.com/questions/64517785/read-full-lines-from-stdin-including-n-until-end-of-file
     /// Read full lines of bufread iterator which doesn't chop new lines
-    pub fn full_lines(mut input: impl BufRead) -> impl Iterator<Item = std::io::Result<String>> {
+    pub fn full_lines_from_bytes(
+        mut input: impl BufRead,
+    ) -> impl Iterator<Item = std::io::Result<String>> {
         std::iter::from_fn(move || {
             let mut vec = String::new();
             match input.read_line(&mut vec) {
@@ -231,6 +254,17 @@ impl Utils {
                 Err(e) => Some(Err(e)),
             }
         })
+    }
+
+    /// This return empty string if src doesn't end with line ending
+    pub(crate) fn get_line_ending(src: &str) -> &str {
+        if src.ends_with("\r\n") {
+            "\r\n"
+        } else if src.ends_with('\n') {
+            "\n"
+        } else {
+            ""
+        }
     }
 
     /// Check if a character is a blank chracter
