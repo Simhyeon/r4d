@@ -1268,6 +1268,13 @@ impl<'processor> Processor<'processor> {
         self.organize_and_clear_cache()
     }
 
+    /// Directly write to target without any bridges
+    ///
+    /// This method is for internals
+    pub(crate) fn direct_write(&mut self, content: &str) -> RadResult<()> {
+        self.write_to_target(content, &ContainerType::None, &mut None)
+    }
+
     /// Read from piece
     ///
     /// ```rust
@@ -1424,6 +1431,7 @@ impl<'processor> Processor<'processor> {
         buffer: impl std::io::BufRead,
         current_target: Option<&str>,
         macro_input: Vec<&str>,
+        put_newline: bool,
     ) -> RadResult<Option<String>> {
         self.state.stream_state.on_stream = true;
         // Sandboxed environment, backup
@@ -1458,10 +1466,14 @@ impl<'processor> Processor<'processor> {
         frag.attribute.pipe_input = true;
         frag.name = macro_name.to_string();
         frag.args = macro_arguments;
+        let nl = self.state.newline.clone();
         for line in line_iter {
             let line = line?;
             self.state.add_pipe(None, line);
             self.process_piece(&mut frag)?;
+            if put_newline {
+                self.direct_write(&nl)?;
+            }
             self.logger.inc_line_number();
         }
 
