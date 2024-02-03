@@ -955,14 +955,14 @@ impl FunctionMacroMap {
     ///
     /// $syscmd(system command -a arguments)
     pub(crate) fn syscmd(
-        args: &str,
+        arg_src: &str,
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         if !Utils::is_granted("syscmd", AuthType::CMD, p)? {
             return Ok(None);
         }
-        let args = Utils::get_split_arguments_or_error("syscmd", &args, attr, 1, None)?;
+        let args = Utils::get_split_arguments_or_error("syscmd", &arg_src, attr, 1, None)?;
 
         let source = &args[0];
         let arg_vec = Utils::get_whitespace_split_retain_quote_rule(source);
@@ -989,7 +989,15 @@ impl FunctionMacroMap {
         if output.status.success() {
             Ok(Some(String::from_utf8(output.stdout)?))
         } else {
-            Ok(Some(String::from_utf8(output.stderr)?))
+            let error_message = String::from_utf8(output.stderr)?;
+            if p.state.behaviour == ErrorBehaviour::Strict {
+                Err(RadError::InvalidExecution(format!(
+                    "Command \"{}\" failed with message : {}\"{}\"",
+                    arg_src, p.state.newline, error_message
+                )))
+            } else {
+                Ok(Some(error_message))
+            }
         }
     }
 
