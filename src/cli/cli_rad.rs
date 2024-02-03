@@ -288,7 +288,12 @@ impl<'cli> RadCli<'cli> {
                             let mac = mac.map(|s| s.as_str()).collect_vec();
                             let file_stream = std::fs::File::open(src)?;
                             let reader = std::io::BufReader::new(file_stream);
-                            self.processor.stream_by_lines(reader, Some(src), mac)
+                            self.processor.stream_by_lines(
+                                reader,
+                                Some(src),
+                                mac,
+                                args.get_flag("put-newline"),
+                            )
                         } else {
                             self.processor.process_file(src_as_file)
                         };
@@ -337,7 +342,12 @@ impl<'cli> RadCli<'cli> {
                 use std::io::Read;
                 let stdin = std::io::stdin();
                 let mut reader = stdin.lock();
-                self.processor.stream_by_lines(&mut reader, None, mac)?;
+                self.processor.stream_by_lines(
+                    &mut reader,
+                    None,
+                    mac,
+                    args.get_flag("put-newline"),
+                )?;
             } else {
                 self.processor.process_stdin()?;
             }
@@ -486,6 +496,11 @@ impl<'cli> RadCli<'cli> {
                 .value_parser(clap::builder::ValueParser::string())
                 .conflicts_with_all(["pipe", "combination", "literal", "stream-chunk", "INPUT"])
                 .help("Stream contents to a macro execution but by lines"))
+            .arg(Arg::new("put-newline")
+                .action(ArgAction::SetTrue)
+                .long("put-newline")
+                .aliases(["pn"])
+                .help("Put newlines after each stream line's invocation"))
             .arg(Arg::new("script")
                 .long("script")
                 .action(ArgAction::SetTrue)
