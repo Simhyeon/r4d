@@ -1,3 +1,5 @@
+$output(discard)
+
 $pipe(-9 0. a
 -8 1. b
 -7 2. c
@@ -12,39 +14,39 @@ __ 9. j
 
 [1] SS
 9,9
-$assert($slicel=-(9,9),__ 9. j)
+$assert($rangel=-(9,9),__ 9. j)
 
 [2] SS
 -2,-1
-$assert($slicel=-(-2,-1),-2 7. h
+$assert($rangel=-(-2,-1),-2 7. h
 -1 8. i)
 
 [3]
 0,1 SS
-$slicel-(0,1)
-$assert($slicel=-(0,1),-9 0. a
+$rangel-(0,1)
+$assert($rangel=-(0,1),-9 0. a
 -8 1. b)
 
 [4]
 10,_ -> Should fail
-$fassert($slicel-(10,_))
+$fassert($rangel-(10,_))
 
 [5]
 _,_ -> SS
-$assert($slicel-(_,_),__ 9. j)
+$assert($rangel-(_,_),__ 9. j)
 
 9,9 --> SS
-$assert($slicel-(9,9),__ 9. j)
+$assert($rangel-(9,9),__ 9. j)
 
 10,10 --> FF
-$fassert($slicel-(10,10))
+$fassert($rangel-(10,10))
 
 1,2 --> SS
-$assert($slicel-(1,2),-8 1. b
+$assert($rangel-(1,2),-8 1. b
 -7 2. c)
 
 1,_ -> SS
-$assert($slicel-(1,_),-8 1. b
+$assert($rangel-(1,_),-8 1. b
 -7 2. c
 -6 3. d
 -5 4. e
@@ -55,27 +57,27 @@ $assert($slicel-(1,_),-8 1. b
 __ 9. j)
 
 -2,_
-$assert($slicel-(-2,_),-2 7. h
+$assert($rangel-(-2,_),-2 7. h
 -1 8. i
 __ 9. j)
 
 -2,-3 -> FF
-$fassert($slicel-(-2,-3))
+$fassert($rangel-(-2,-3))
 
 9,10
-$fassert($slicel-(9,10))
+$fassert($rangel-(9,10))
 
 -1,9
-$assert($slicel-(-1,9),-1 8. i
+$assert($rangel-(-1,9),-1 8. i
 __ 9. j)
 
 9,_
-$assert($slicel-(9,_),__ 9. j)
+$assert($rangel-(9,_),__ 9. j)
 
 -7,-
-$fassert($slicel-(7,-3))
+$fassert($rangel-(7,-3))
 
 10,_
-$fassert($slicel-(10,_))
+$fassert($rangel-(10,_))
 
-$fassert($slicel-(9,-1))
+$fassert($rangel-(9,-1))
