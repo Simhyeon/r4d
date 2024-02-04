@@ -494,7 +494,7 @@ impl FunctionMacroMap {
                     "inner",
                     ["a_rule^","a_count^","a_src"],
                     Self::get_inner,
-                    None
+                    Some(man_fun!("inner.r4d")),
                 ),
             ),
             (

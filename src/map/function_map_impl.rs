@@ -1,5 +1,4 @@
 use super::function_map::FunctionMacroMap;
-use itertools::Itertools;
 
 use crate::auth::{AuthState, AuthType};
 use crate::common::{
@@ -20,6 +19,7 @@ use crate::{CommentType, NewArgParser, WriteOption};
 use crate::{Hygiene, Processor};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
+use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::borrow::Cow;
@@ -567,12 +567,12 @@ impl FunctionMacroMap {
         let rule = args[0].trim().as_bytes();
         if rule.len() != 2 {
             return Err(RadError::InvalidArgument(format!(
-                "Inner rule should consists of two characters but given {}",
+                "Inner rule should consists of two ascii characters but given {}",
                 args[0]
             )));
         }
         let (rs, re) = (rule[0], rule[1]);
-        let target = args[1].trim().parse::<usize>().map_err(|_| {
+        let target_count = args[1].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
                 "Inner option should be unsinged integer but given \"{}\"",
                 args[1]
@@ -580,61 +580,72 @@ impl FunctionMacroMap {
         })?;
         let src = &args[2];
         let mut cursors: Vec<InnerCursor> = vec![];
-        let mut opened_count = 0usize;
+        let mut opened_count = 0usize; // This only gets increased and don't return to 0
+        let mut current_count = 0usize; // This goes to 0
         for (idx, ch) in src.bytes().enumerate() {
             // Start ch match
             if ch == rs {
-                if opened_count == 0 {
+                if current_count == 0 {
                     // Match start first
                     opened_count += 1;
+                    current_count += 1;
                     cursors.push(InnerCursor {
                         start_index: idx,
-                        end_index: src.len(),
+                        end_index: idx,
                         level: opened_count,
                     });
                 } else if ch == re {
                     // Update count
                     // opened_count -= 1;
                     // End match
-                    if target == opened_count {
+                    if target_count == cursors.last().map(|s| s.level).unwrap_or(0) {
                         let start = cursors.last().unwrap().start_index + 1;
                         return Ok(Some(src[start..idx].to_string()));
+                    } else {
+                        cursors.pop();
+                        current_count -= 1;
                     }
-                    cursors.pop();
                 } else {
+                    // Nested content
                     opened_count += 1;
+                    current_count += 1;
                     cursors.push(InnerCursor {
                         start_index: idx,
                         end_index: idx,
                         level: opened_count,
                     });
                 }
-            } else if ch == re {
-                // opened_count = opened_count.saturating_sub(1);
+            } else if ch == re && current_count > 0 {
                 // End ch match
                 // End match
-                if target == opened_count {
+                if target_count == cursors.last().map(|s| s.level).unwrap_or(0) {
                     let start = cursors.last().unwrap().start_index + 1;
                     return Ok(Some(src[start..idx].to_string()));
-                }
-                if cursors.len() > 1 {
-                    cursors.pop();
                 } else {
-                    cursors.last_mut().unwrap().end_index = idx;
+                    cursors.pop();
+                    current_count -= 1;
+                }
+            }
+            if current_count > 0 {
+                if let Some(cur) = cursors.last_mut() {
+                    cur.end_index = idx;
                 }
             }
         }
 
         for cur in cursors.iter().rev() {
-            if cur.level == target {
+            if cur.level == target_count {
                 let start = cur.start_index + 1;
                 let end = cur.end_index;
                 return Ok(Some(src[start..end].to_string()));
             }
         }
 
-        // No match
-        Ok(None)
+        Err(RadError::InvalidArgument(format!(
+            "Given source does not have corresponding pair \"{}\" with given count \"{}\"",
+            args[0].trim(),
+            target_count,
+        )))
     }
 
     /// Append border
