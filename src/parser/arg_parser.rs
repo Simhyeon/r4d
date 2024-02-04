@@ -6,10 +6,7 @@ use crate::{
     common::MacroAttribute,
     consts::{ESCAPE_CHAR_U8, LIT_CHAR_U8},
 };
-use std::{
-    borrow::Cow,
-    iter::{Enumerate, Peekable},
-};
+use std::borrow::Cow;
 
 /// State indicates whether argument should be parsed greedily or not
 #[derive(Debug)]
@@ -114,14 +111,14 @@ impl NewArgParser {
         // This is totally ok to iterate as char_indices rather than chars
         // because "only ASCII char is matched" so there is zero possibilty that
         // char_indices will make any unexpected side effects.
-        let mut arg_iter = arg_values.as_bytes().iter().enumerate().peekable();
+        let arg_iter = arg_values.as_bytes().iter().enumerate();
 
         // Return empty vector without going through logics
         if arg_values.is_empty() {
             return vec![];
         }
 
-        while let Some((idx, &ch)) = arg_iter.next() {
+        for (idx, &ch) in arg_iter {
             // Check parenthesis
             self.check_parenthesis(&mut cursor, ch, &arg_values);
 
@@ -132,12 +129,12 @@ impl NewArgParser {
                     values.push(v);
                 }
             } else if ch == ESCAPE_CHAR_U8 {
-                self.branch_escape_char(&mut cursor, ch, arg_iter.peek());
+                self.branch_escape_char(&mut cursor, ch, &arg_values);
             } else {
                 // This pushes value in the end, so use continue not push the value
                 if ch == LIT_CHAR_U8 {
                     // '*'
-                    self.branch_literal_char(&mut cursor, ch, &mut arg_iter, &arg_values);
+                    self.branch_literal_char(&mut cursor, ch, &arg_values);
                 } else {
                     // Non literal character are just pushed
                     cursor.push(&[ch]);
@@ -226,77 +223,67 @@ impl NewArgParser {
         ret
     }
 
+    // \\ -> \\
+    // \( -> (
+    // \) -> )
+    // \, -> ,
+
     /// Branch on escape character found
-    fn branch_escape_char(&mut self, cursor: &mut ArgCursor, ch: u8, next: Option<&(usize, &u8)>) {
-        if self.previous.unwrap_or(b' ') == ESCAPE_CHAR_U8 {
-            self.no_previous = true;
-        } else if let Some((_, &LIT_CHAR_U8)) = next {
-            if !self.strip_literal || self.lit_count > 0 {
+    fn branch_escape_char(&mut self, cursor: &mut ArgCursor, ch: u8, src: &&str) {
+        // Next is escape char and not inside lit_count
+        // *\
+        if self.previous.unwrap_or(b' ') == LIT_CHAR_U8 {
+            self.lit_count = self.lit_count.saturating_sub(1);
+            self.no_previous = true; // This prevetns *\* from expanding into end and both start of
+                                     // literal character
+                                     // Ideally *\* should be represented as end of literal chunk
+                                     // and with a surplus character of asterisk.
+            if self.lit_count == 0 {
+                // Lit end was outter most one
+                if self.strip_literal {
+                    cursor.convert_to_modified(src);
+
+                    // Remove \
+                    cursor.pop();
+                } else {
+                    cursor.push(&[ch]);
+                }
+            } else {
+                // Inside other literal rules
                 cursor.push(&[ch]);
             }
-            // if next is literal character and previous was not a escape character
-            // Do nothing
         } else {
-            // If literal print everything without escaping
-            // or next is anything simply add
+            // Simply put escape character as part of arguments
             cursor.push(&[ch]);
         }
     } // end function
 
     /// Branch on literal character found
-    fn branch_literal_char(
-        &mut self,
-        cursor: &mut ArgCursor,
-        ch: u8,
-        arg_iter: &mut Peekable<Enumerate<std::slice::Iter<'_, u8>>>,
-        src: &&str,
-    ) {
+    ///
+    /// Literal character in this term means '*'
+    fn branch_literal_char(&mut self, cursor: &mut ArgCursor, ch: u8, src: &&str) {
         if self.previous.unwrap_or(b'0') == ESCAPE_CHAR_U8 {
             self.lit_count += 1;
             // If lit character was given inside literal
             // e.g. \* '\*' *\ -> the one inside quotes
             if self.lit_count > 1 {
                 cursor.push(&[ch]);
-            }
-            // First lit character in given args
-            // Simply ignore character and don't set previous
-            else {
+            } else {
+                // First lit character in given args
+                // Simply ignore character and don't set previous
                 self.no_previous = true;
+
+                // If no strip
+                // Push all literal specifier characters
                 if !self.strip_literal {
                     cursor.push(&[ch]);
-                }
-            }
-        } else if let Some((_, ch_next)) = arg_iter.peek() {
-            // Next is escape char and not inside lit_count
-            // *\
-            if *ch_next == &ESCAPE_CHAR_U8 && self.lit_count >= 1 {
-                self.lit_count -= 1;
-                arg_iter.next(); // Conume next escape_char
-                                 // Lit end was outter most one
-                if self.lit_count == 0 {
-                    self.no_previous = true;
-                    if !self.strip_literal {
-                        cursor.convert_to_modified(src);
-                        cursor.push(&[LIT_CHAR_U8]);
-                        cursor.push(&[ESCAPE_CHAR_U8]);
-                    }
-                }
-                // Inside other literal rules
-                else {
+                } else {
                     cursor.convert_to_modified(src);
-                    cursor.push(&[LIT_CHAR_U8]);
-                    cursor.push(&[ESCAPE_CHAR_U8]);
-                    self.no_previous = true;
+                    // If strip then strip all related charaters
+                    cursor.pop();
                 }
             }
-            // When *\ Comes first without matching pair
-            // This is just a string without any meaning
-            else {
-                cursor.push(&[ch]);
-            }
-        }
-        // Meaningless literal charcter are just pushed
-        else {
+        } else {
             cursor.push(&[ch]);
         }
     } // end function
