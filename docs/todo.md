@@ -1,11 +1,14 @@
 # Todo immediate
 
-* [ ] Parser error
-```
-$alignby-(2\* *\1&)
-===
-$alignby-(2\* ) -> WTF?
-```
+* [ ] Possibly improve lexor...? -> I'm afraid :(
+
+* [ ] Try to retain existing newlines as much as possible
+* [ ] Add macro arguments for macro source
+
+* [ ] Maintain consistencies over indexing and counting arguments
+    -> Because some are 0 starting and some are 1 starting
+
+* [ ] Sub works very strange
 
 **Think Before adding a new macro so that can it be achieved as continuous macros**
 e.g. inner a can be replaced with capture and inner combination
@@ -214,6 +217,8 @@ $slice(pat,1,2,source)
 * [ ] Should rad support awk like operations?
 
 #### Performance
+
+* [ ] Become a no nester :).
 
 * [ ] Add a feature to use rope instead of simple string ( Crop crate )
     -> For example if skip expansion flag was given OR text size is bigger than
