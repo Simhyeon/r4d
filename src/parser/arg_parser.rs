@@ -6,7 +6,12 @@ use crate::{
     common::MacroAttribute,
     consts::{ESCAPE_CHAR_U8, LIT_CHAR_U8},
 };
+use once_cell::sync::Lazy;
+use regex::Regex;
 use std::borrow::Cow;
+
+pub static MACRO_START_MATCH: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"^\$\S*\($"#).expect("Failed to create name regex"));
 
 /// State indicates whether argument should be parsed greedily or not
 #[derive(Debug)]
@@ -21,7 +26,7 @@ pub enum SplitVariant {
 pub struct NewArgParser {
     previous: Option<u8>,
     lit_count: usize,
-    paren_count: usize,
+    paren_stack: Vec<ParenStack>,
     no_previous: bool,
     strip_literal: bool,
 }
@@ -32,7 +37,7 @@ impl NewArgParser {
         Self {
             previous: None,
             lit_count: 0,
-            paren_count: 0,
+            paren_stack: vec![],
             no_previous: false,
             strip_literal: true,
         }
@@ -160,10 +165,27 @@ impl NewArgParser {
             cursor.convert_to_modified(src);
             cursor.pop();
             self.previous.replace(b'0');
-        } else if ch == b'(' {
-            self.paren_count += 1;
-        } else if ch == b')' && self.paren_count > 0 {
-            self.paren_count -= 1;
+            return;
+        }
+
+        // Early return
+        if self.lit_count != 0 {
+            return;
+        }
+
+        if ch == b'(' {
+            let stack = if MACRO_START_MATCH.find(cursor.peek_value(src)).is_some() {
+                ParenStack {
+                    macro_invocation: true,
+                }
+            } else {
+                ParenStack {
+                    macro_invocation: false,
+                }
+            };
+            self.paren_stack.push(stack);
+        } else if ch == b')' && !self.paren_stack.is_empty() {
+            self.paren_stack.pop();
         }
     }
 
@@ -189,7 +211,7 @@ impl NewArgParser {
             cursor.convert_to_modified(src);
             cursor.pop();
             cursor.push(&[ch]);
-        } else if self.paren_count > 0 {
+        } else if self.on_invoke() {
             // If quote is inside parenthesis, simply push it into a value
             cursor.push(&[ch]);
         } else {
@@ -291,6 +313,17 @@ impl NewArgParser {
     // End of branch methods
     // </BRANCH>
     // ----------
+
+    /// Check if macro invocation chunk is on process
+    ///
+    /// This is used for delimiter escaping
+    fn on_invoke(&self) -> bool {
+        if self.paren_stack.is_empty() {
+            return false;
+        }
+
+        self.paren_stack.last().unwrap().macro_invocation
+    }
 }
 
 #[derive(Debug)]
@@ -316,7 +349,15 @@ impl ArgCursor {
         }
     }
 
-    /// Use is_string before taking value and supply empty if the inner vaule is string
+    /// Peek value without taking
+    pub fn peek_value<'a>(&'a self, src: &'a str) -> &str {
+        match self {
+            Self::Reference(s, e) => &src[*s..*e],
+            Self::Modified(v) => std::str::from_utf8(&v[..]).unwrap(),
+        }
+    }
+
+    /// Use "is_string" before taking value and supply empty if the inner vaule is string
     ///
     /// because src is supplied as is while the argument is completely ignored when the inner value
     /// is a string.
@@ -364,4 +405,8 @@ impl ArgCursor {
             st.pop();
         }
     }
+}
+
+pub struct ParenStack {
+    macro_invocation: bool,
 }
