@@ -54,7 +54,6 @@ mod package;
 mod process;
 
 mod parser;
-pub(crate) use parser::DefineParser;
 pub(crate) use parser::{NewArgParser, SplitVariant};
 
 mod map;

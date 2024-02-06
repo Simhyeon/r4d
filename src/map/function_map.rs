@@ -1920,18 +1920,7 @@ $assert(def,$range(3,5,abcdef))".to_string()),
                     "surr",
                     ["a_start_pair","a_end_pair","a_content"],
                     Self::surround_with_pair,
-                    Some("Surround given contents with a given pair
-
-# Arguments
-
-- a_start_pair : A start pair
-- a_end_pair   : A end pair
-- a_content    : Text to surround with
-
-# Example
-
-$assert(<div>dividivi dip</div>,$enl()
-$surr(<div>,</div>,dividivi dip))".to_string()),
+                    Some(man_fun!("surr.r4d")),
                 ),
             ),
             (
@@ -1940,7 +1929,7 @@ $surr(<div>,</div>,dividivi dip))".to_string()),
                     "squz",
                     ["a_content"],
                     Self::squeeze_line,
-                    None,
+                    Some(man_fun!("squz.r4d")),
                 ),
             ),
             (
@@ -1949,15 +1938,7 @@ $surr(<div>,</div>,dividivi dip))".to_string()),
                     "tab",
                     ["a_amount?^"],
                     Self::print_tab,
-                    Some("Print tabs
-
-# Arguments
-
-- a_amount : Amount of tabs to print [Unsigned integer] ( trimmed )
-
-# Example
-
-$tab(2)".to_string()),
+                    Some(man_fun!("tab.r4d")),
                 ),
             ),
             (
@@ -2048,18 +2029,7 @@ $assert(HellO_WOrld,$tr(-how,_HOW,hello-world))".to_string()),
                     "trim",
                     ["a_text"],
                     Self::trim,
-                    Some(
-"Trim text. This removes leading and trailing newlines, tabs and spaces
-
-# Arguments
-
-- a_text : Text to trim
-
-# Example
-
-$assert(Middle,$trim(
-    Middle
-))".to_string()),
+                    Some(man_fun!("trim.r4d")),
                 ),
             ),
             (

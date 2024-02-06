@@ -20,6 +20,10 @@ use crate::common::RelayTarget;
 pub static NUM_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to create number regex"));
 
+/// Number matches
+pub static NAME_MATCH: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"^[a-zA-Z]+[a-zA-Z0-9_]*$"#).expect("Failed to create name regex"));
+
 // ----------
 // MACRO RULES
 // ----------
@@ -66,6 +70,49 @@ use colored::*;
 pub(crate) struct Utils;
 
 impl Utils {
+    // TODO
+    // Check name validatity
+    pub fn split_definition(src: &str, trim_body: bool) -> RadResult<(&str, &str, &str)> {
+        if let Some((header, body)) = src.split_once('=') {
+            if let Some((name, args)) = header.split_once(',') {
+                let name = name.trim();
+                if NAME_MATCH.find(name).is_none() {
+                    return Err(RadError::InvalidMacroDefinition(format!(
+                        "Given name \"{}\" doesn't conform with macro definition rules.",
+                        name
+                    )));
+                }
+                for item in args.split_whitespace() {
+                    if NAME_MATCH.find(item).is_none() {
+                        return Err(RadError::InvalidMacroDefinition(format!(
+                            "Given argument \"{}\" doesn't conform with macro definition rules.",
+                            item
+                        )));
+                    }
+                }
+                return Ok((
+                    name.trim(),
+                    args.trim(),
+                    if trim_body { body.trim() } else { body },
+                ));
+            }
+
+            // Check name validity
+            let name = header.trim();
+            if NAME_MATCH.find(name).is_none() {
+                return Err(RadError::InvalidMacroDefinition(format!(
+                    "Given name \"{}\" doesn't conform with macro definition rules.",
+                    name
+                )));
+            }
+
+            // No argument
+            Ok((name, "", if trim_body { body.trim() } else { body }))
+        } else {
+            Err(RadError::InvalidMacroDefinition(format!("Macro definition \"{}\" doesn't include a syntax \"=\" which concludes to invalid definition.", src)))
+        }
+    }
+
     pub fn get_split_arguments_or_error<'a>(
         macro_name: &'a str,
         arguments: &'a &str,
@@ -268,6 +315,7 @@ impl Utils {
     }
 
     /// Check if a character is a blank chracter
+    // TODO remove this and use is_ascii_whitespace
     pub(crate) fn is_blank_char(ch: char) -> bool {
         ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
     }

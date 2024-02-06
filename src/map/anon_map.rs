@@ -1,5 +1,5 @@
-use crate::parser::DefineParser;
 use crate::runtime_map::RuntimeMacro;
+use crate::utils::Utils;
 use crate::{RadError, RadResult};
 
 #[derive(Default)]
@@ -16,13 +16,7 @@ impl AnonMap {
         let mut full_body = "anon,".to_string();
         full_body.push_str(body);
 
-        let (_, arg, body) = DefineParser::new()
-            .parse_define(&full_body)
-            .ok_or_else(|| {
-                RadError::InvalidMacroDefinition(
-                    "Invalid definition for anonymous macro".to_string(),
-                )
-            })?;
+        let (_, arg, body) = Utils::split_definition(full_body.as_str(), false)?;
         let rt_macro = RuntimeMacro::new("anon", &arg, &body, false);
         self.macros.push(rt_macro);
         Ok(())

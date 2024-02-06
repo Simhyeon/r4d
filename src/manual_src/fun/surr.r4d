@@ -1,0 +1,39 @@
+Surround given contents with a given pair
+
+# Note
+
+- Use surr macro when you need to dynamically search texts and apply
+  surrounding operation.
+- In other words, surr typically shines when used with other map seires.
+
+# Arguments
+
+- a_start_pair : A start pair
+- a_end_pair   : A end pair
+- a_content    : Text to surround with
+
+# Demo
+
+```
+$stream(pipe)
+<p>
+I have 2 berries and 3 pennies. My father has 300 cattles in his farm.
+</p>
+$consume()
+$mapn-(surr <i> </i>)
+===
+<p>
+I have <i>2</i> berries and <i>3</i> pennies. My father has <i>300</i> cattles in his farm.
+</p>
+```
+
+# Example
+
+$assert=(
+    <div>dividivi dip</div>,
+    $surr=^(
+        <div>,
+        </div>,
+        dividivi dip
+    )
+)

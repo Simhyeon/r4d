@@ -144,16 +144,17 @@ impl DeterredMacroMap {
         let args = Utils::get_split_arguments_or_error("mapn", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let mut operation = p
-            .parse_and_strip(&mut ap, attr, level, "mapn", args[0].trim())?
-            .to_string();
+        let mut operation = String::new();
+        let op_src = p.parse_and_strip(&mut ap, attr, level, "mapn", args[0].trim())?;
         let src = &p.parse_and_strip(&mut ap, attr, level, "mapn", args[1].trim())?;
+        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&op_src, true)?;
 
-        let map_type = if p.contains_macro(&operation, MacroType::Runtime) {
+        let map_type = if p.contains_macro(macro_name, MacroType::Any) {
             "macro"
         } else if operation.contains('n') {
             "formula"
         } else {
+            operation = op_src.to_string();
             operation.insert(0, 'n');
             "formula"
         };
@@ -165,7 +166,12 @@ impl DeterredMacroMap {
             new.push_str(&src[last_match..m.start()]);
             let evaluated = match map_type {
                 "macro" => p
-                    .execute_macro(level, "mapn", &operation, m.as_str())?
+                    .execute_macro(
+                        level,
+                        "mapn",
+                        macro_name,
+                        &(macro_arguments.clone() + m.as_str()),
+                    )?
                     .unwrap_or_default(),
                 "formula" => eval(&operation.replace('n', m.as_str()))?.to_string(),
                 _ => unreachable!(),

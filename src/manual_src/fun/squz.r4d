@@ -1,0 +1,23 @@
+Squeeze contents. In other word, remove all whitespaces
+
+# Note
+
+- Use "cond" series when you need to retain singular spaces
+- Use "squash" when you need to remove only newlines
+
+# Arguments
+
+- a_content : Content to squeeze
+
+# Demo
+
+```
+let value = [a, b , c, d, e , f];
+===
+letvalue=[a,b,c,d,e,f];
+```
+
+# Example
+
+$assert=(abcd,$squz=(a   b		c
+d))

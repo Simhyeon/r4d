@@ -1,0 +1,33 @@
+Trim text. This removes leading and trailing white spaces
+
+# Note
+
+- This relays content to Rust's trim method. Thus it will cover handful of
+  known cases of "whitespaces". However it is not 100% garuanteed to elimiate
+  all UTF characters that can be displayed as blank.
+- You can automtacilly apply trim to macro output with macro attribute "^"
+- You can automtacilly apply trim to arguments with macro attribute "="
+
+# Arguments
+
+- a_text : Text to trim
+
+# Demo
+
+```
+$trim($tab(1)$space(1)$nl(2)
+a b c d e
+$tab(1)$space(1)$nl(2))
+% This includes multiple U+3000 ( namely CJK space ) 
+% characters before and after centered text
+$trim(　　　안녕하세요　　　)
+===
+a b c d e
+안녕하세요
+```
+
+# Example
+
+$assert(a b c d e,$trim($tab(1)$space(1)$nl(2)
+a b c d e
+$tab(1)$space(1)$nl(2)))

@@ -26,7 +26,6 @@ use crate::runtime_map::RuntimeMacro;
 use crate::sigmap::SignatureMap;
 use crate::storage::{RadStorage, StorageOutput};
 use crate::utils::Utils;
-use crate::DefineParser;
 use crate::NewArgParser as ArgParser;
 use crate::SplitVariant;
 use crate::{consts::*, RadResult};
@@ -157,7 +156,6 @@ static MAC_NAME: Lazy<Regex> =
 /// ```
 pub struct Processor<'processor> {
     map: MacroMap,
-    define_parser: DefineParser,
     pub(crate) write_option: WriteOption<'processor>,
     pub(crate) logger: Logger<'processor>,
     cache: String,
@@ -239,7 +237,6 @@ impl<'processor> Processor<'processor> {
             map,
             cache: String::new(),
             write_option: WriteOption::Terminal,
-            define_parser: DefineParser::new(),
             logger,
             state,
             #[cfg(feature = "hook")]
@@ -2051,21 +2048,7 @@ impl<'processor> Processor<'processor> {
         let level = level + 1;
 
         // Assign local variables
-        let (name, mut raw_args) = (&frag.name, frag.args.clone());
-
-        if frag.attribute.trim_input {
-            raw_args = raw_args
-                .lines()
-                .map(|l| l.trim())
-                .fold(String::new(), |mut acc, l| {
-                    acc.push_str(l);
-                    acc.push_str(&self.state.newline);
-                    acc
-                })
-                .strip_suffix(&self.state.newline)
-                .unwrap_or_default()
-                .to_string();
-        }
+        let (name, raw_args) = (&frag.name, frag.args.clone());
 
         let mut args;
         if !self.map.is_deterred_macro(name) || self.state.process_type == ProcessType::Dry {
@@ -2324,73 +2307,45 @@ impl<'processor> Processor<'processor> {
     ///
     /// This doesn't clear fragment
     fn add_rule(&mut self, frag: &MacroFragment) -> RadResult<()> {
-        if let Some((name, args, mut body)) = self.define_parser.parse_define(&frag.args) {
-            if name.is_empty() {
-                let err =
-                    RadError::InvalidMacroDefinition("Cannot define an empty macro".to_string());
-                return Err(err);
-            }
-            // Strict mode
-            // Overriding is prohibited
-            if self.state.behaviour == ErrorBehaviour::Strict
-                && self
-                    .map
-                    .contains_macro(&name, MacroType::Any, self.state.hygiene)
-            {
-                // It is safe to unwrap
-                let mac_name = if frag.args.contains(',') {
-                    frag.args.split(',').next().unwrap()
-                } else {
-                    frag.args.split('=').next().unwrap()
-                };
-                let err = RadError::UnallowedMacroExecution(format!(
-                    "Can't override exsiting macro : \"{}\"",
-                    mac_name
-                ));
-                self.log_error(&err.to_string())?;
-                return Err(RadError::StrictPanic);
-            }
-
-            // Trim input for define is applied to each lines
-            if frag.attribute.trim_input {
-                body = body
-                    .trim()
-                    .lines()
-                    .map(|l| l.trim())
-                    .fold(String::new(), |mut acc, l| {
-                        acc.push_str(l);
-                        acc.push_str(&self.state.newline);
-                        acc
-                    })
-                    .to_string();
-            }
-
-            self.map
-                .register_runtime(&name, &args, &body, self.state.hygiene)?;
-
-            // Dry run if such mode is set
-            if self.state.process_type == ProcessType::Dry {
-                let err = RadError::InvalidArgument(format!("Macro \"{}\" has invalid body", name));
-                let res = self
-                    .process_string(None, &format!("${}({})", name, args.replace(' ', ",")))
-                    .map_err(|_| &err);
-
-                if res.is_err() {
-                    self.log_warning(&err.to_string(), WarningType::Sanity)?;
-                }
-            }
-        } else {
+        let (name, args, body) = Utils::split_definition(&frag.args, frag.attribute.trim_input)?;
+        if name.is_empty() {
+            let err = RadError::InvalidMacroDefinition("Cannot define an empty macro".to_string());
+            return Err(err);
+        }
+        // Strict mode
+        // Overriding is prohibited
+        if self.state.behaviour == ErrorBehaviour::Strict
+            && self
+                .map
+                .contains_macro(name, MacroType::Any, self.state.hygiene)
+        {
             // It is safe to unwrap
-            let name = if frag.args.contains(',') {
+            let mac_name = if frag.args.contains(',') {
                 frag.args.split(',').next().unwrap()
             } else {
                 frag.args.split('=').next().unwrap()
             };
-            let err = RadError::InvalidMacroDefinition(format!(
-                "Invalid macro definition format for a macro : \"{}\"",
-                name
+            let err = RadError::UnallowedMacroExecution(format!(
+                "Can't override exsiting macro : \"{}\"",
+                mac_name
             ));
-            return Err(err);
+            self.log_error(&err.to_string())?;
+            return Err(RadError::StrictPanic);
+        }
+
+        self.map
+            .register_runtime(name, args, body, self.state.hygiene)?;
+
+        // Dry run if such mode is set
+        if self.state.process_type == ProcessType::Dry {
+            let err = RadError::InvalidArgument(format!("Macro \"{}\" has invalid body", name));
+            let res = self
+                .process_string(None, &format!("${}({})", name, args.replace(' ', ",")))
+                .map_err(|_| &err);
+
+            if res.is_err() {
+                self.log_warning(&err.to_string(), WarningType::Sanity)?;
+            }
         }
         Ok(())
     }

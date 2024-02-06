@@ -1,0 +1,27 @@
+Print tabs
+
+# Note
+
+- If environment variable RAD_TAB_WIDTH is set as unsigned
+  integer, "tab" macro will print tab as corresponding spaces
+  instead of literal "\t"
+
+# Arguments
+
+- a_amount : Amount of tabs to print [Unsigned integer] ( trimmed )
+
+# Demo
+
+```
+% Assume that RAD_TAB_WIDTH was not set
+$len($tab(2))
+% Assume that RAD_TAB_WIDTH was set as 5
+$len($tab(2))
+===
+2
+10
+```
+
+# Example
+
+$assert($tab(2),		)

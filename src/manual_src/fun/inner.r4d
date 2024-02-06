@@ -1,0 +1,57 @@
+Get inner content within enclosers.
+
+# Note
+
+Inner rules consists of two ASCII charcters. Currently rules doesn't support
+support non ascii UTF strings.
+
+First rule charcter means opening character while the other means closing
+charcter
+
+e.g. {} : "{" is the opening charcter and "}" is the closing charcter
+
+You can also use same characters for enclosers. For example, "||" or "''"
+
+# Arguments
+
+- a_rule  : Rele-set for encloser        (trimmed)
+- a_count : Position of encloser to find (trimmed)
+- a_src   : Source content
+
+# Demo
+
+```
+"menu": {
+    "id": "file",
+    "value": "File",
+    "popup": {
+        "menuitem": [
+            { "value": "New"  , "onclick": "CreateNewDoc()" },
+            { "value": "Open" , "onclick": "OpenDoc()"      },
+            { "value": "Close", "onclick": "CloseDoc()"     }
+        ]
+    }
+}
+===
+% With rad --sc inner '{},4'
+ "value": "Open" , "onclick": "OpenDoc()"      
+% With rad --sc inner '"",9'
+New
+```
+
+# Example
+
+```
+$static(src,"menu": {
+    "id": "file",
+    "value": "File",
+    "popup": {
+        "menuitem": [
+            { "value": "New"  , "onclick": "CreateNewDoc()" },
+            { "value": "Open" , "onclick": "OpenDoc()"      },
+            { "value": "Close", "onclick": "CloseDoc()"     }
+        ]
+    }
+})
+$assert=($inner*^({},4,$src()),"value": "Open" , "onclick": "OpenDoc()")
+```
