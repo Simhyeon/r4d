@@ -1,6 +1,6 @@
 use crate::runtime_map::RuntimeMacro;
 use crate::utils::Utils;
-use crate::{RadError, RadResult};
+use crate::RadResult;
 
 #[derive(Default)]
 pub(crate) struct AnonMap {
@@ -17,7 +17,7 @@ impl AnonMap {
         full_body.push_str(body);
 
         let (_, arg, body) = Utils::split_definition(full_body.as_str(), false)?;
-        let rt_macro = RuntimeMacro::new("anon", &arg, &body, false);
+        let rt_macro = RuntimeMacro::new("anon", arg, body, false);
         self.macros.push(rt_macro);
         Ok(())
     }

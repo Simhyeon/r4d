@@ -2810,7 +2810,7 @@ impl<'processor> Processor<'processor> {
                     Ok(boolean) => content = (!boolean).to_string(),
                     Err(_) => {
                         if self.state.behaviour == ErrorBehaviour::Strict {
-                            return Err(RadError::StorageError(format!(
+                            return Err(RadError::InvalidExecution(format!(
                                 "Tried to negate value, \"{}\" which is not a boolean",
                                 content
                             )));

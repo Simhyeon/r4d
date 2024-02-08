@@ -530,8 +530,7 @@ impl FunctionMacroMap {
                     "istype",
                     ["a_content"],
                     Self::isolate_horizontal,
-                    None,
-                    // Some(man_fun!("insluah.r4d")),
+                    Some(man_fun!("insulah.r4d")),
                 ),
             ),
             (
@@ -913,17 +912,7 @@ $assert($len(가나다),$len(ABC))".to_string()),
                     "ulen",
                     ["a_string"],
                     Self::unicode_len,
-                    Some("Get a unicode length of text.
-
-# Return : Unsigned integer
-
-# Arguments
-
-- a_string : Text to get unicode length
-
-# Example
-
-$assert($ulen(가나다),$ulen(ABCDEF))".to_string()),
+                    Some(man_fun!("ulen.r4d")),
                 ),
             ),
             (
@@ -932,53 +921,7 @@ $assert($ulen(가나다),$ulen(ABCDEF))".to_string()),
                     "let",
                     ["a_macro_name^", "a_value^"],
                     Self::bind_to_local,
-                    Some(
-"Bind a local macro. Every local macro gets removed after a macro expansion ends
-
-# Arguments
-
-- a_macro_name : A macro name to create ( trimmed )
-- a_value      : A value to bind to ( trimmed )
-
-# Example
-
-$define(let_test=
-    $let(lc,
-        --Bound Value--
-    )
-    $assert(1,$countl($lc()))
-)
-$let_test()
-% Cannot access local macro outside the scope
-$fassert($lc())".to_string()),
-                ),
-            ),
-            (
-                "letr".to_owned(),
-                FMacroSign::new(
-                    "letr",
-                    ["a_macro_name^", "a_value"],
-                    Self::bind_to_local_raw,
-                    Some(
-"Bind a local macro with raw value. Every local macro gets removed after a macro 
-expansion ends.
-
-# Arguments
-
-- a_macro_name : A macro name to make ( trimmed )
-- a_value      : A value to bind to which is not trimmed
-
-# Example
-
-$define(letr_test=
-    $letr(lc,
-        --Bound Value--
-    )
-    $assert(3,$countl($lc()))
-)
-$letr_test()
-% Cannot access local macro outside the scope
-$fassert($lc())".to_string()),
+                    Some(man_fun!("let.r4d")),
                 ),
             ),
             (
@@ -987,15 +930,7 @@ $fassert($lc())".to_string()),
                     "lipsum",
                     ["a_word_count^"],
                     Self::lipsum_words,
-                    Some("Create placeholder text. The order of placeholder is always same.
-
-# Arguments
-
-- a_word_count : Word counts of placeholder ( trimmed )
-
-# Example
-
-$assert(Lorem ipsum dolor,$lipsum(3))".to_string()),
+                    Some(man_fun!("lipsum.r4d")),
                 ),
             ),
             (
@@ -1004,15 +939,7 @@ $assert(Lorem ipsum dolor,$lipsum(3))".to_string()),
                     "lipsumr",
                     ["a_word_count^"],
                     Self::lipsum_repeat,
-                    Some("Create placeholder text. The order of placeholder is always same.
-
-# Arguments
-
-- a_word_count : Word counts of placeholder ( trimmed )
-
-# Example
-
-$assert(Lorem ipsum dolor,$lipsum(3))".to_string()),
+                    Some(man_fun!("lipsumr.r4d")),
                 ),
             ),
             (
@@ -1058,15 +985,7 @@ $loge(This should not be reached)".to_string()),
                     "lower",
                     ["a_text"],
                     Self::lower,
-                    Some("Get lowercase english text
-
-# Arguments
-
-- a_text: Text to transform
-
-# Example
-
-$assert(abcde,$lower(AbCdE))".to_string()),
+                    Some(man_fun!("lower.r4d")),
                 ),
             ),
             (
@@ -1075,13 +994,7 @@ $assert(abcde,$lower(AbCdE))".to_string()),
                     "lp",
                     ESR,
                     Self::left_parenthesis,
-                    Some("Left parenthesis
-
-# Arguments
-
-# Example
-
-$assert(\\(,$lp())".to_string()),
+                    Some(man_fun!("lp.r4d"))
                 ),
             ),
             (
@@ -1703,13 +1616,7 @@ $require(fin,fout)".to_string()),
                     "rp",
                     ESR,
                     Self::right_parenthesis,
-                    Some("right parenthesis
-
-# Arguments
-
-# Example
-
-$assert(\\),$rp())".to_string()),
+                    Some(man_fun!("rp.r4d")),
                 ),
             ),
             (
@@ -1792,15 +1699,7 @@ c))".to_string()),
                     "space",
                     ["a_amount?^"],
                     Self::space,
-                    Some("Print spaces
-
-# Arguments
-
-- a_amount : Amount of spaces [Unsigned integer] ( trimmed )
-
-# Example
-
-$assert(    ,$space(4))".to_string()),
+                    Some(man_fun!("space.r4d")),
                 ),
             ),
             (
@@ -1826,32 +1725,6 @@ $counter(ct)
 $counter(ct)
 $assert(2,$ddf())
 $assert(0,$stt())".to_string()),
-                ),
-            ),
-            (
-                "staticr".to_owned(),
-                FMacroSign::new(
-                    "staticr",
-                    ["a_macro_name^", "a_value"],
-                    Self::define_static_raw,
-                    Some(
-"Create a static macro with raw value. A static macro is eagerly expanded unlike 
-define
-
-# Arguments
-
-- a_macro_name : A macro to create ( trimmed )
-- a_expr       : An expression to bind to which is not trimmed
-
-# Example
-
-$define(ct=0)
-$define(ddf=$ct())
-$staticr(stt,$ct() )
-$counter(ct)
-$counter(ct)
-$assert(2,$ddf())
-$assert(0 ,$stt())".to_string()),
                 ),
             ),
             (
@@ -2176,15 +2049,7 @@ $assert(Hello,$until($space(),Hello World))".to_string()),
                     "upper",
                     ["a_text"],
                     Self::capitalize,
-                    Some("Get uppercase english text
-
-# Arguments
-
-- a_text: Text to transform
-
-# Example
-
-$assert(ABCDE,$upper(aBcDe))".to_string()),
+                    Some(man_fun!("upper.r4d"))
                 ),
             ),
             // THis is simply a placeholder

@@ -585,14 +585,17 @@ impl DeterredMacroMap {
             )));
         };
         let mut result: String;
+        let mut counter = 1;
         for value in min..=max {
             processor.add_new_local_macro(level, ":", &value.to_string());
+            processor.add_new_local_macro(level, "a_LN", &counter.to_string());
             result = processor
                 .parse_and_strip(&mut ap, attr, level, "forloop", body)?
                 .to_string();
 
             sums.push_str(&result);
             result.clear();
+            counter += 1;
         }
 
         // Clear local macro
