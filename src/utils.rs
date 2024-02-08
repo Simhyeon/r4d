@@ -1038,7 +1038,12 @@ impl Utils {
     /// Count new lines
     #[allow(dead_code)]
     pub(crate) fn count_sentences(s: &str) -> usize {
-        s.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1
+        let count = s.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;
+        if s.ends_with('\n') {
+            count - 1
+        } else {
+            count
+        }
     }
 
     #[cfg(feature = "debug")]
