@@ -1,0 +1,24 @@
+Get a length of text. This counts length as utf8 characters
+
+# Return : Unsigned integer
+
+# Note
+
+- This might be different from what user expect since length has different
+  meanings in different contexts. For example, Non ASCII text "안녕하세요"
+  has length of 5 while ascii text 'hello' also has length of 5.
+- If you simply want "displayed" length, use "ulen" macro.
+
+# Arguments
+
+- a_string : Text to get length from
+
+# Demo
+
+```
+TODO
+```
+
+# Example
+
+$assert($len(가나다),$len(ABC))

@@ -1,0 +1,17 @@
+Get a unicode length of text.
+
+# Return : Unsigned integer
+
+# Arguments
+
+- a_string : Text to get unicode length
+
+# Demo
+
+```
+TODO
+```
+
+# Example
+
+$assert($ulen(가나다),$ulen(ABCDEF))

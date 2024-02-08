@@ -1,0 +1,25 @@
+right parenthesis
+
+# Note
+
+- This macro is for semantic structure, if you prefer simpler stroke, use
+  escaped parenthesis for literal input
+
+  e.g. "\)" will be interpreted as literal ")"
+
+# Demo
+
+```
+nombre: ( Some more explanation )
+number: ( some dubious expression with extra )
+$lp()
+>>>
+rad --sc align '$rp()' OR rad --sc align '\)'
+===
+nombre: ( Some more explanation              )
+number: ( some dubious expression with extra )
+```
+
+# Example
+
+$assert(\),$rp())

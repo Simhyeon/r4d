@@ -1,0 +1,25 @@
+Print left parenthesis
+
+# Note
+
+- This macro is for semantic structure, if you prefer simpler stroke, use
+  escaped parenthesis for literal input
+
+  e.g. "\(" will be interpreted as literal "("
+
+# Demo
+
+```
+Expression: ( Some more explanation )
+number: ( some dubious expression )
+$lp()
+>>>
+rad --sc align '$lp()' OR rad --sc align '\('
+===
+Expression: ( Some more explanation )
+number:     ( some dubious expression )
+```
+
+# Example
+
+$assert(\(,$lp())

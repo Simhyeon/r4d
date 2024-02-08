@@ -1,0 +1,29 @@
+Bind a local macro. 
+
+# Note
+
+- Local macro overrides an existing macro without wiping it.
+- Every local macro gets removed after a macro expansion ends
+
+# Arguments
+
+- a_macro_name : A macro name to create ( trimmed )
+- a_value      : A value to bind to     ( trimmed )
+
+# Demo
+
+```
+TODO
+```
+
+# Example
+
+$define(let_test=
+    $let=(
+   	lc,
+        --Bound Value--
+    )
+    $assert(1,$countl($lc()))
+)
+$let_test()
+$fassert($lc())

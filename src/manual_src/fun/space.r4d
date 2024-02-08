@@ -1,0 +1,21 @@
+Print spaces
+
+# Arguments
+
+- a_amount : Amount of spaces [Unsigned integer] ( trimmed )
+
+# Note
+
+```
+$wrap|(30,$lipsum(15))
+$forline-($space($a_LN())$:())
+===
+ Lorem ipsum dolor sit amet
+  consectetur adipiscing elit.
+   In rhoncus sapien iaculis
+    sapien congue a
+```
+
+# Example
+
+$assert(    ,$space(4))

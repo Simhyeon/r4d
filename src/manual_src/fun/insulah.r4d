@@ -1,0 +1,23 @@
+Isolate content horizontally.
+
+# Note
+
+- This doesn't pretty print.
+- Utilize this macro for isolating enclosed contents before processing.
+
+# Demo
+
+```
+$stream(insulah)
+{"value":"New","onclick":"CreateNewDoc(doc)","onhover":"showdesc()"},
+$consume()
+===
+{ "value": "New", "onclick": "CreateNewDoc( doc )", "onhover": "showdesc()" },
+```
+
+# Example
+
+$assert=(
+    \*tab = { "v": "f( arg )", "e": [ a, b, c ], "w": [ c ] }*\,
+    $insulah(tab={"v":"f(arg)","e":[a,b,c],"w":[c]})
+)

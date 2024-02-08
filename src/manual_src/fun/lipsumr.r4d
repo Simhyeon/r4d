@@ -1,0 +1,25 @@
+Create placeholder text, repeated by specific boundary.
+
+# Note
+
+- Lipsumr doesn't use random seed rather it copy paste static text repeatedly
+
+# Arguments
+
+- a_word_count : Word counts of placeholder ( trimmed )
+
+# Demo
+
+```
+$forloop^($lipsumr($eval($a_LN() * 3))$nl(),1,3)
+===
+Lorem ipsum dolor
+sit amet consectetur adipiscing elit. In
+rhoncus sapien iaculis sapien congue a dictum urna malesuada.
+```
+
+# Example
+
+$assert(Lorem ipsum dolor,$lipsumr(3))
+$assert(sit amet consectetur,$lipsumr(3))
+$assert(adipiscing elit. In,$lipsumr(3))

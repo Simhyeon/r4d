@@ -1,0 +1,36 @@
+Returns a negated value of a given boolean. Yields error when a given value is 
+not a boolean
+
+# Note
+
+- Use macro attribute "!" if you want simpler negation
+- Use not macro when you can spare extra verbosity but need emphasis
+
+# Return : boolean
+
+# Arguments
+
+- a_boolean : A boolean value to negate [boolean] ( trimmed )
+
+# Demo
+
+```
+$complicated_macro_result|()
+$pipe(false)
+$if($not-(),$panic(No way))
+===
+[31merror[0m: Panic triggered with message
+ "No way" 
+ --> [INPUT = Stdin]:2:2 >> (MACRO = if):1:2
+[31merror[0m: Process Interrupted
+Int: Rad panicked with unrecoverable error.
+```
+
+$not-()
+
+# Example
+
+$assert(false,$not(true))
+$assert(true,$not(false))
+$assert(false,$not(1))
+$assert(true,$not(0))

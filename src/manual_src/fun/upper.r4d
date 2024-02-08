@@ -1,0 +1,21 @@
+Get uppercase English text
+
+# Arguments
+
+- a_text: Text to transform
+
+# Demo
+
+```
+$pipe(abc_cde)
+$declare(user_input_as_env_name)
+$rename(user_input_as_env_name,uie)
+$repl(uie,$upper-())
+$uie()
+===
+ABC_CDE
+```
+
+# Example
+
+$assert(ABCDE,$upper(aBcDe))

@@ -1,0 +1,20 @@
+Get lowercase english text
+
+# Arguments
+
+- a_text: Text to transform
+
+# Demo
+
+```
+$pipe(Salutation)
+$lower-|()
+$range-|(0,2)
+$if($eq-(sal),Hello World!)
+===
+Hello Worl!
+```
+
+# Example
+
+$assert(abcde,$lower(AbCdE))
