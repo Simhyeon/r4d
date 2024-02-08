@@ -32,7 +32,6 @@ use std::process::Command;
 use std::str::FromStr;
 use unicode_width::UnicodeWidthStr;
 
-static ISOLATION_NO_SPACE_BEFORE: [char; 1] = [';'];
 static ISOLATION_SURR_SPACE: [char; 1] = ['='];
 static ISOLATION_SINGLE_SPACE: [char; 3] = [',', ':', ';'];
 static ISOLATION_CHARS: [char; 6] = ['(', ')', '[', ']', '{', '}'];
@@ -2862,14 +2861,14 @@ impl FunctionMacroMap {
         let order_type = args[0].trim();
         let content = &mut args[1].split(',').collect::<Vec<&str>>();
         match order_type.to_lowercase().as_str() {
-            "asec" => content.sort_unstable(),
-            "desc" => {
+            "a" | "asec" => content.sort_unstable(),
+            "d" | "desc" => {
                 content.sort_unstable();
                 content.reverse()
             }
             _ => {
                 return Err(RadError::InvalidArgument(format!(
-                    "Sort requires either asec or desc but given \"{}\"",
+                    "Sort requires either asec(a) or desc(d) but given \"{}\"",
                     order_type
                 )))
             }
@@ -3762,7 +3761,7 @@ impl FunctionMacroMap {
         if args[0].is_empty() {
             return Ok(Some("0".to_string()));
         }
-        let line_count = args[0].matches('\n').count();
+        let line_count = Utils::count_sentences(&args[0]);
         Ok(Some(line_count.to_string()))
     }
 
@@ -4525,26 +4524,6 @@ impl FunctionMacroMap {
         Ok(None)
     }
 
-    /// Declare a local macro raw
-    ///
-    /// Local macro gets deleted after macro execution
-    ///
-    /// # Usage
-    ///
-    /// $letr(name,value)
-    pub(crate) fn bind_to_local_raw(
-        args: &str,
-        attr: &MacroAttribute,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("letr", &args, attr, 2, None)?;
-
-        let name = args[0].trim();
-        let value = &args[1];
-        processor.add_new_local_macro(1, name, value);
-        Ok(None)
-    }
-
     /// Clear volatile macros
     pub(crate) fn clear(
         _: &str,
@@ -4629,44 +4608,6 @@ impl FunctionMacroMap {
 
         let name = args[0].trim();
         let value = args[1].trim();
-        // Macro name already exists
-        if processor.contains_macro(name, MacroType::Any) {
-            // Strict mode prevents overriding
-            // Return error
-            if processor.state.behaviour == ErrorBehaviour::Strict {
-                return Err(RadError::InvalidMacroDefinition(format!(
-                    "Creating a static macro with a name already existing : \"{}\"",
-                    name
-                )));
-            } else {
-                // Its warn-able anyway
-                processor.log_warning(
-                    &format!(
-                        "Creating a static macro with a name already existing : \"{}\"",
-                        name
-                    ),
-                    WarningType::Sanity,
-                )?;
-            }
-        }
-        processor.add_static_rules(&[(name, &value)])?;
-        Ok(None)
-    }
-
-    /// Define a static macro raw
-    ///
-    /// # Usage
-    ///
-    /// $staticr(name,value)
-    pub(crate) fn define_static_raw(
-        args: &str,
-        attr: &MacroAttribute,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("staticr", &args, attr, 2, None)?;
-
-        let name = args[0].trim();
-        let value = &args[1];
         // Macro name already exists
         if processor.contains_macro(name, MacroType::Any) {
             // Strict mode prevents overriding
@@ -4968,35 +4909,43 @@ impl FunctionMacroMap {
         let mut formatted = String::new();
         let mut iter = args[0].chars().peekable();
         let mut previous: char = '@';
+        let mut put_after = false;
         while let Some(ch) = iter.next() {
-            // Current are
-            // ) } ]
-            // put space before
-            if !previous.is_whitespace() && ISOLATION_CHARS_CLOSING.contains(&ch) {
+            // --New-- code
+            if previous.is_whitespace() {
+                if !ch.is_whitespace() {
+                    formatted.push(ch);
+                }
+                previous = ch;
+                continue;
+            }
+            if ISOLATION_SINGLE_SPACE.contains(&ch) {
+                put_after = true;
+            }
+
+            if ISOLATION_CHARS_OPENING.contains(&ch)
+                && !ISOLATION_CHARS_CLOSING.contains(iter.peek().unwrap_or(&' '))
+            {
+                put_after = true;
+            }
+
+            if !ISOLATION_CHARS_OPENING.contains(&previous) && ISOLATION_CHARS_CLOSING.contains(&ch)
+            {
                 formatted.push(' ');
-                previous = ' ';
             }
 
             // Current is = put space before
-            if !previous.is_whitespace() && ISOLATION_SURR_SPACE.contains(&ch) {
+            if ISOLATION_SURR_SPACE.contains(&ch) {
                 formatted.push(' ');
+                put_after = true;
             }
 
-            // Main logic of pushing
             formatted.push(ch);
             previous = ch;
 
-            if let Some(next_ch) = iter.peek() {
-                if !next_ch.is_whitespace()      // Next is not whitespace
-                    && !previous.is_whitespace()
-                    && !ISOLATION_NO_SPACE_BEFORE.contains(next_ch)
-                    && (ISOLATION_CHARS.contains(&ch)
-                        || ISOLATION_SINGLE_SPACE.contains(&ch)
-                        || ISOLATION_SURR_SPACE.contains(&ch))
-                {
-                    formatted.push(' ');
-                    previous = ' ';
-                }
+            if put_after {
+                formatted.push(' ');
+                put_after = false;
             }
         }
 
