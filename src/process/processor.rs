@@ -14,6 +14,7 @@ use crate::common::{ContainerType, MacroAttribute};
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
+use crate::env::{MacEnv, MACRO_ENV};
 use crate::error::RadError;
 use crate::extension::{ExtMacroBuilder, ExtMacroType};
 #[cfg(feature = "hook")]
@@ -168,6 +169,7 @@ pub struct Processor<'processor> {
     pub(crate) state: ProcessorState,
     pub(crate) storage: Option<Box<dyn RadStorage>>,
     pub(crate) var_container: Vec<String>,
+    pub(crate) env: MacEnv,
     #[cfg(feature = "cindex")]
     pub(crate) indexer: Indexer,
 }
@@ -216,6 +218,12 @@ impl<'processor> Processor<'processor> {
         Self::new_processor(false)
     }
 
+    /// Read environment varaibles into processor
+    pub fn add_env(&mut self) -> RadResult<()> {
+        self.env = MacEnv::new()?;
+        Ok(())
+    }
+
     /// Internal function to create Processor struct
     ///
     /// This creates a complete processor that can parse and create output without any extra
@@ -246,6 +254,7 @@ impl<'processor> Processor<'processor> {
             checker: UnbalancedChecker::new(),
             storage: None,
             var_container: vec![],
+            env: MacEnv::default(),
             #[cfg(feature = "cindex")]
             indexer: Indexer::new(),
         }
