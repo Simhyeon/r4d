@@ -107,6 +107,8 @@ impl<'cli> RadCli<'cli> {
             .melt_files(&self.rules)?
             .discard(args.get_flag("discard"));
 
+        processor.add_env()?;
+
         // Early return-able procedures
         // - Help
         // - Compile

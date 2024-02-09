@@ -2,6 +2,7 @@
 
 use crate::auth::{AuthState, AuthType};
 use crate::common::{MacroAttribute, ProcessInput, RadResult};
+use crate::env::PROC_ENV;
 use crate::error::RadError;
 use crate::logger::WarningType;
 use crate::{NewArgParser, Processor, WriteOption};
@@ -303,6 +304,10 @@ impl Utils {
         })
     }
 
+    pub(crate) fn str_without_line_ending(src: &str) -> &str {
+        src.strip_suffix(Self::get_line_ending(src)).unwrap_or(src)
+    }
+
     /// This return empty string if src doesn't end with line ending
     pub(crate) fn get_line_ending(src: &str) -> &str {
         if src.ends_with("\r\n") {
@@ -318,6 +323,25 @@ impl Utils {
     // TODO remove this and use is_ascii_whitespace
     pub(crate) fn is_blank_char(ch: char) -> bool {
         ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
+    }
+
+    /// Check if a character is true without panic
+    ///
+    /// In this contenxt, true and non zero number is 'true' while false and zero number is false
+    pub(crate) fn is_arg_true_infallable(arg: &str) -> bool {
+        let arg = arg.trim();
+        if let Ok(value) = arg.parse::<usize>() {
+            if value == 0 {
+                return false;
+            } else {
+                return true;
+            }
+        } else if arg.to_lowercase() == "true" {
+            return true;
+        } else if arg.to_lowercase() == "false" {
+            return false;
+        }
+        false
     }
 
     /// Check if a character is true
@@ -995,7 +1019,7 @@ impl Utils {
     /// Print text as green if possible
     #[allow(unused_variables)]
     pub fn green(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
-        if cfg!(feature = "color") {
+        if cfg!(feature = "color") && PROC_ENV.no_color_print {
             #[cfg(feature = "color")]
             if !to_file {
                 return Box::new(string.green());
@@ -1007,7 +1031,7 @@ impl Utils {
     /// Print text as red if possible
     #[allow(unused_variables)]
     pub fn red(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
-        if cfg!(feature = "color") {
+        if cfg!(feature = "color") && PROC_ENV.no_color_print {
             #[cfg(feature = "color")]
             if !to_file {
                 return Box::new(string.red());
@@ -1019,7 +1043,7 @@ impl Utils {
     /// Print text as yellow if possible
     #[allow(unused_variables)]
     pub fn yellow(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
-        if cfg!(feature = "color") {
+        if cfg!(feature = "color") && PROC_ENV.no_color_print {
             #[cfg(feature = "color")]
             if !to_file {
                 return Box::new(string.yellow());

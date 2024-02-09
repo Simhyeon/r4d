@@ -24,6 +24,7 @@ pub enum RadError {
     UnsoundExecution(String),
     InvalidExecution(String),
     InvalidCommandOption(String),
+    InvalidMacroEnvironment(String),
     EnvError(std::env::VarError),
     InvalidMacroReference(String),
     NoSuchMacroName(String, Option<String>),
@@ -62,6 +63,7 @@ impl std::fmt::Display for RadError {
             Self::UnsoundExecution(err) => format!("Critical unsound execution error \n= {}", err),
             Self::InvalidExecution(err) => format!("Invalid execution error \n= {}", err),
             Self::InvalidCommandOption(command) => format!("Invalid command option\n= {}", command),
+            Self::InvalidMacroEnvironment(err) => format!("Invalid macro environment\n= {}", err),
             Self::EnvError(env) => format!("Invalid environment name\n= {}", env),
             Self::InvalidMacroReference(err) => format!("Invalid macro reference\n= {}", err),
             Self::NoSuchMacroName(given, candidate) => match candidate {

@@ -4,6 +4,7 @@
 //! or debug logs.
 
 use crate::common::{ProcessInput, RadResult, WriteOption};
+use crate::env::PROC_ENV;
 use crate::utils::Utils;
 use crate::{consts::*, RadError};
 use std::fmt::Write;
@@ -141,11 +142,14 @@ impl<'logger> Logger<'logger> {
 
     /// Construct log position from trexter tracks
     fn construct_log_position(&self) -> RadResult<String> {
+        // THis is for debugging the rad program
         #[cfg(debug_assertions)]
         if std::env::var("DEBUG_TRACE").is_ok() {
             eprintln!("{:#?}", self.tracker_stack);
         }
-        if std::env::var("RAD_BACKTRACE").is_ok() {
+
+        // This is for deubbing the rad script.
+        if PROC_ENV.backtrace {
             let mut track_iter = self.tracker_stack.stack.iter();
             let input = track_iter.next().unwrap().get_distance();
             let mut trace = format!(
