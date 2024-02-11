@@ -84,11 +84,38 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "peel".to_owned(),
+                FMacroSign::new(
+                    "peel",
+                    [ "a_level","a_src"],
+                    Self::peel,
+                    None,
+                ),
+            ),
+            (
+                "lineup".to_owned(),
+                FMacroSign::new(
+                    "lineup",
+                    ["a_lineup_type", "a_lines"],
+                    Self::line_up,
+                    None
+                ),
+            ),
+            (
                 "align".to_owned(),
                 FMacroSign::new(
                     "align",
                     ["a_separator", "a_lines"],
                     Self::align_by_separator,
+                    Some(man_fun!("align.r4d"))
+                ),
+            ),
+            (
+                "alignr".to_owned(),
+                FMacroSign::new(
+                    "alignr",
+                    ["a_separator", "a_lines"],
+                    Self::align_by_separator_match_rear,
                     Some(man_fun!("align.r4d"))
                 ),
             ),
@@ -426,12 +453,12 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "declare".to_owned(),
+                "decl".to_owned(),
                 FMacroSign::new(
-                    "declare",
+                    "decl",
                     ["a_macro_names^"],
                     Self::declare,
-                    Some(man_fun!("declare.r4d")),
+                    Some(man_fun!("decl.r4d")),
                 ),
             ),
             (
@@ -602,8 +629,7 @@ impl FunctionMacroMap {
                     "foldlc",
                     ["a_count","a_lines"],
                     Self::fold_lines_by_count,
-                    None,
-                    // Some(),
+                    Some(man_fun!("foldlc.r4d")),
                 ),
             ),
             (
@@ -701,6 +727,10 @@ $assert(12345,$cont^())".to_string()),
                     ["a_count^", "a_content"],
                     Self::head,
                     Some("Crop head texts from given content
+
+# Note 
+
+This macro slices by utf characters. Use range if you need simple ASCII slice.
 
 # Arguments
 

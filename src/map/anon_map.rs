@@ -16,7 +16,7 @@ impl AnonMap {
         let mut full_body = "anon,".to_string();
         full_body.push_str(body);
 
-        let (_, arg, body) = Utils::split_definition(full_body.as_str(), false)?;
+        let (_, arg, body) = Utils::split_definition(full_body.as_str())?;
         let rt_macro = RuntimeMacro::new("anon", arg, body, false);
         self.macros.push(rt_macro);
         Ok(())

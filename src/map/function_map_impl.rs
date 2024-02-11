@@ -2,7 +2,8 @@ use super::function_map::FunctionMacroMap;
 
 use crate::auth::{AuthState, AuthType};
 use crate::common::{
-    AlignType, ErrorBehaviour, FlowControl, MacroType, ProcessInput, RadResult, RelayTarget,
+    AlignType, ErrorBehaviour, FlowControl, LineUpType, MacroType, ProcessInput, RadResult,
+    RelayTarget,
 };
 use crate::common::{MacroAttribute, VarContOperation};
 use crate::consts::{
@@ -37,6 +38,9 @@ static ISOLATION_SINGLE_SPACE: [char; 3] = [',', ':', ';'];
 static ISOLATION_CHARS: [char; 6] = ['(', ')', '[', ']', '{', '}'];
 static ISOLATION_CHARS_OPENING: [char; 3] = ['(', '[', '{'];
 static ISOLATION_CHARS_CLOSING: [char; 3] = [')', ']', '}'];
+
+static BYTE_CHARS_OPENING: [u8; 3] = [b'(', b'[', b'{'];
+static BYTE_CHARS_CLOSING: [u8; 3] = [b')', b']', b'}'];
 
 /// Regex for leading and following spaces
 static LSPA: Lazy<Regex> = Lazy::new(|| Regex::new(r"(^[^\S\r\n]+)").unwrap());
@@ -1475,6 +1479,51 @@ impl FunctionMacroMap {
         Ok(None)
     }
 
+    /// Peel enclosed value
+    ///
+    /// # Usage
+    ///
+    /// $peel(level,Value)
+    pub(crate) fn peel(
+        args: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("peel", &args, attr, 2, None)?;
+
+        let target_level = args[0].trim().parse::<usize>().map_err(|_| {
+            RadError::InvalidArgument(format!(
+                "peel requires unsinged integer but given \"{}\"",
+                args[0]
+            ))
+        })?;
+        let src = &args[1];
+        let mut chunk_index = 0;
+        let mut paren_index = 0;
+        let mut level = 0;
+        let mut previous = &b' ';
+        let result: String;
+
+        for (idx, ch) in src.as_bytes().iter().enumerate() {
+            if level == 0 && previous.is_ascii_whitespace() && !ch.is_ascii_whitespace() {
+                chunk_index = idx;
+            }
+            if BYTE_CHARS_OPENING.contains(ch) {
+                level += 1;
+                if target_level == level {
+                    paren_index = idx;
+                }
+            } else if BYTE_CHARS_CLOSING.contains(ch) && target_level == level {
+                result = src[..chunk_index].to_string() + &src[paren_index + 1..idx];
+                return Ok(Some(result));
+            }
+            // Start ch match
+            previous = ch;
+        }
+
+        Ok(Some(src.to_string()))
+    }
+
     /// Get environment variable with given name
     ///
     /// # Usage
@@ -1606,7 +1655,7 @@ impl FunctionMacroMap {
     pub(crate) fn print_tab(
         args: &str,
         _: &MacroAttribute,
-        _: &mut Processor,
+        p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let count = if !args.is_empty() {
             args.trim().parse::<usize>().map_err(|_| {
@@ -1616,18 +1665,13 @@ impl FunctionMacroMap {
             1
         };
 
-        let tab_width = std::env::var("RAD_TAB_WIDTH");
+        let tab_width = p.env.rad_tab_width;
         match tab_width {
-            Ok(value) => {
-                let tab = " ".repeat(value.parse::<usize>().map_err(|_| {
-                    RadError::InvalidCommandOption(format!(
-                        "RAD_TAB_WIDTH is not a valid value which was \"{}\"",
-                        value
-                    ))
-                })?);
+            Some(value) => {
+                let tab = " ".repeat(value);
                 Ok(Some(tab.repeat(count)))
             }
-            Err(_) => Ok(Some("\t".repeat(count))),
+            None => Ok(Some("\t".repeat(count))),
         }
     }
 
@@ -2079,7 +2123,7 @@ impl FunctionMacroMap {
         Ok(None)
     }
 
-    /// Ailgn texts
+    /// Pad texts with characters
     ///
     /// # Usage
     ///
@@ -2153,12 +2197,15 @@ impl FunctionMacroMap {
         Ok(Some(formatted))
     }
 
+    // TODO
+    // This is original align
+    // This should be named to alignr
     /// Ailgn texts by separator
     ///
     /// # Usage
     ///
-    /// $align(%, contents to align)
-    pub(crate) fn align_by_separator(
+    /// $alignr(%, contents to align)
+    pub(crate) fn align_by_separator_match_rear(
         args: &str,
         attr: &MacroAttribute,
         p: &mut Processor,
@@ -2172,13 +2219,7 @@ impl FunctionMacroMap {
         let mut result = String::new();
         let nl = &p.state.newline;
 
-        let tab_width_src = std::env::var("RAD_TAB_WIDTH").unwrap_or("4".to_string());
-        let tab_width = tab_width_src.parse::<usize>().map_err(|_| {
-            RadError::InvalidCommandOption(format!(
-                "RAD_TAB_WIDTH is not a valid value which was \"{}\"",
-                tab_width_src
-            ))
-        })?;
+        let tab_width = p.env.rad_tab_width.unwrap_or(4);
 
         for line in contents.clone() {
             let mut splitted = line.split(separator.as_ref());
@@ -2208,6 +2249,88 @@ impl FunctionMacroMap {
                 )?;
             } else {
                 write!(result, "{}{}", line, nl)?;
+            }
+        }
+        Ok(Some(result))
+    }
+
+    /// Ailgn texts by separator
+    ///
+    /// # Usage
+    ///
+    /// $align(%, contents to align)
+    pub(crate) fn align_by_separator(
+        args: &str,
+        attr: &MacroAttribute,
+        p: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        use std::fmt::Write;
+        let args = Utils::get_split_arguments_or_error("align", &args, attr, 2, None)?;
+
+        let separator = &args[0];
+        let (c1, c2) = Utils::full_lines(&args[1]).tee();
+        let mut min_length = 0;
+        let mut result = String::new();
+        let mut put_after = "";
+
+        let tab_width = p.env.rad_tab_width.unwrap_or(4);
+
+        for line in c1 {
+            let mut splitted = line.split(separator.as_ref());
+            let leading = splitted.next().unwrap();
+
+            let width = if leading.trim().len() != leading.len() {
+                UnicodeWidthStr::width(leading.trim())
+                    + leading.trim().matches('\t').count() * (tab_width - 1)
+            } else {
+                UnicodeWidthStr::width(leading) + leading.matches('\t').count() * (tab_width - 1)
+            };
+            if leading != line {
+                if put_after.is_empty() && width > min_length {
+                    if leading.trim().len() != leading.len() {
+                        put_after = " ";
+                    } else {
+                        put_after = "";
+                    }
+                }
+
+                min_length = min_length.max(width);
+            }
+        }
+        for line in c2 {
+            let splitted = line.split_once(separator.as_ref());
+            if splitted.is_some() {
+                let (leading, following) = splitted.unwrap();
+                let width = UnicodeWidthStr::width(leading.trim())
+                    + leading.trim().matches('\t').count() * (tab_width - 1);
+
+                if width >= min_length {
+                    // Bigger, trim it
+                    // found matching line
+                    write!(
+                        result,
+                        "{}{}{}{}",
+                        leading.trim(),
+                        put_after,
+                        separator,
+                        following
+                    )?;
+                } else {
+                    // Smaller, increase it
+                    // found matching line
+
+                    write!(
+                        result,
+                        "{}{}{}{}{}",
+                        leading.trim(),
+                        " ".repeat(min_length - width),
+                        put_after,
+                        separator,
+                        following,
+                    )?;
+                }
+            } else {
+                write!(result, "{}", line)?;
             }
         }
         Ok(Some(result))
@@ -2261,13 +2384,7 @@ impl FunctionMacroMap {
 
         let mut contents = args[1].lines().map(|s| s.to_owned()).collect::<Vec<_>>();
 
-        let tab_width_src = std::env::var("RAD_TAB_WIDTH").unwrap_or("4".to_string());
-        let tab_width = tab_width_src.parse::<usize>().map_err(|_| {
-            RadError::InvalidCommandOption(format!(
-                "RAD_TAB_WIDTH is not a valid value which was \"{}\"",
-                tab_width_src
-            ))
-        })?;
+        let tab_width = p.env.rad_tab_width.unwrap_or(4);
 
         let mut iter = rules.iter();
         while let (Some(count), Some(separator)) = (iter.next(), iter.next()) {
@@ -2318,6 +2435,128 @@ impl FunctionMacroMap {
 
         let result = contents.join(&p.state.newline);
 
+        Ok(Some(result))
+    }
+
+    /// Line up content start with given options
+    ///
+    /// # Usage
+    ///
+    /// $lineup(%, contents to line up)
+    pub(crate) fn line_up(
+        arg_src: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("lineup", &arg_src, attr, 2, None)?;
+
+        let line_up_type = LineUpType::from_str(&args[0])?;
+        let c1 = Utils::full_lines(&args[1]);
+        let mut standard_width = usize::MAX;
+        let mut curr = 0;
+        let mut result = String::new();
+
+        #[inline]
+        fn set_minimal_standard_width<'a, T>(
+            iter: T,
+            standard_indent_width: &mut usize,
+        ) -> Vec<(usize, &'a str, usize)>
+        where
+            T: Iterator<Item = &'a str>,
+        {
+            iter.enumerate()
+                .map(|(idx, line)| {
+                    let prefix = if let Some(leading) = LSPA.captures(line) {
+                        let mut len = leading.get(0).unwrap().len();
+                        if len != 0 && !line.trim_start().is_empty() {
+                            *standard_indent_width = *standard_indent_width.min(&mut len);
+                        }
+                        len
+                    } else {
+                        // 1. Line consists of only blank characters.
+                        // 2. Line starts from 0 index
+                        // Such lines are totally ignored.
+                        0
+                    };
+                    (idx, line, prefix)
+                })
+                .collect::<Vec<_>>()
+        }
+        #[inline]
+        fn set_maximal_standard_width<'a, T>(
+            iter: T,
+            standard_indent_width: &mut usize,
+        ) -> Vec<(usize, &'a str, usize)>
+        where
+            T: Iterator<Item = &'a str>,
+        {
+            *standard_indent_width = 0; // Start from 0 to set maximal value
+            iter.enumerate()
+                .map(|(idx, line)| {
+                    let mut len = UnicodeWidthStr::width(line);
+                    *standard_indent_width = *standard_indent_width.max(&mut len);
+                    (idx, line, len)
+                })
+                .collect::<Vec<_>>()
+        }
+
+        // Set standard_width
+        let c2 = if let LineUpType::Right = line_up_type {
+            let ret = set_maximal_standard_width(c1, &mut standard_width);
+            if standard_width == 0 {
+                return Ok(Some(args[1].to_string()));
+            }
+            ret
+        } else {
+            let ret = set_minimal_standard_width(c1, &mut standard_width);
+            if standard_width == usize::MAX {
+                return Ok(Some(args[1].to_string()));
+            }
+            ret
+        };
+
+        let c3 = if let LineUpType::Hierarchy = line_up_type {
+            c2.into_iter()
+                .sorted_by(|(_, _, a), (_, _, b)| a.cmp(b))
+                .map(|(idx, line, prefix)| {
+                    if prefix == 0 || line.trim_start().is_empty() {
+                        return (idx, line, 0);
+                    }
+                    curr += 1;
+                    (idx, line, curr)
+                })
+                .sorted_by(|(a, _, _), (b, _, _)| a.cmp(b))
+                .collect::<Vec<_>>()
+        } else {
+            c2
+        };
+
+        // Reform lines
+        // Target value is
+        // 1. Offset for hierarchy type
+        // 2. Prefix spaces for Left type
+        // 3. Current length for right type
+        for (_, line, target_value) in c3 {
+            match line_up_type {
+                LineUpType::Hierarchy => {
+                    let line_start = target_value * standard_width;
+                    let line = " ".repeat(line_start) + line.trim_start();
+                    result.push_str(&line);
+                }
+                LineUpType::Left => {
+                    let start = if target_value > standard_width {
+                        target_value - standard_width
+                    } else {
+                        0
+                    };
+                    result.push_str(&line[start..]);
+                }
+                LineUpType::Right => {
+                    result.push_str(&" ".repeat(standard_width - target_value));
+                    result.push_str(line);
+                }
+            };
+        }
         Ok(Some(result))
     }
 
@@ -2713,10 +2952,14 @@ impl FunctionMacroMap {
                 &args[0]
             ))
         })?;
-        let content = args[1].chars().collect::<Vec<_>>();
-        let length = count.min(content.len());
 
-        Ok(Some(content[0..length].iter().collect()))
+        if count == 0 {
+            return Ok(None);
+        }
+
+        let res = Utils::utf_slice(&args[1], Some(0), Some(count.saturating_sub(1) as isize))?;
+
+        Ok(Some(res.to_string()))
     }
 
     /// Get head of given text but for lines
@@ -2738,8 +2981,12 @@ impl FunctionMacroMap {
             ))
         })?;
 
+        if count == 0 {
+            return Ok(None);
+        }
+
         Ok(Some(
-            Utils::sub_lines(&args[1], Some(0), Some(count as isize))?.to_string(),
+            Utils::sub_lines(&args[1], Some(0), Some(count as isize - 1))?.to_string(),
         ))
     }
 
@@ -2755,20 +3002,20 @@ impl FunctionMacroMap {
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("tail", &args, attr, 2, None)?;
 
-        let count = args[0].trim().parse::<usize>().map_err(|_| {
+        let count_src = args[0].trim().parse::<usize>().map_err(|_| {
             RadError::InvalidArgument(format!(
                 "tail requires positive integer number but got \"{}\"",
                 &args[0]
             ))
         })?;
-        let content = &args[1].chars().collect::<Vec<_>>();
-        let length = count.min(content.len());
+        if count_src == 0 {
+            return Ok(None);
+        }
+        let min_count = -(count_src as isize - 1);
 
-        Ok(Some(
-            content[content.len() - length..content.len()]
-                .iter()
-                .collect(),
-        ))
+        let res = Utils::utf_slice(&args[1], Some(min_count), None)?;
+
+        Ok(Some(res.to_string()))
     }
 
     /// Surround a text with given pair
@@ -2826,21 +3073,21 @@ impl FunctionMacroMap {
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("taill", &args, attr, 2, None)?;
 
-        let count = args[0]
-            .trim()
-            .parse::<usize>()
-            .map_err(|_| {
-                RadError::InvalidArgument(format!(
-                    "taill requires positive integer number but got \"{}\"",
-                    &args[0]
-                ))
-            })?
-            .saturating_sub(1);
+        let count = args[0].trim().parse::<usize>().map_err(|_| {
+            RadError::InvalidArgument(format!(
+                "taill requires positive integer number but got \"{}\"",
+                &args[0]
+            ))
+        })?;
+
+        if count == 0 {
+            return Ok(None);
+        }
 
         let min = if count == 0 {
             None
         } else {
-            Some(-(count as isize))
+            Some(-(count as isize - 1))
         };
 
         Ok(Some(Utils::sub_lines(&args[1], min, None)?.to_string()))
@@ -3374,14 +3621,20 @@ impl FunctionMacroMap {
     pub(crate) fn fold(
         args: &str,
         attr: &MacroAttribute,
-        _: &mut Processor,
+        p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("fold", &args, attr, 1, None)?;
 
-        let content = args[0].split(',').fold(String::new(), |mut acc, a| {
-            acc.push_str(a);
-            acc
-        });
+        let content = args[0]
+            .split(',')
+            .enumerate()
+            .fold(String::new(), |mut acc, (idx, a)| {
+                if idx != 0 && p.env.fold_with_space {
+                    acc.push(' ');
+                }
+                acc.push_str(a);
+                acc
+            });
         Ok(Some(content))
     }
 
@@ -3400,14 +3653,20 @@ impl FunctionMacroMap {
     pub(crate) fn fold_line(
         args: &str,
         attr: &MacroAttribute,
-        _: &mut Processor,
+        p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("foldl", &args, attr, 1, None)?;
 
-        let content = args[0].lines().fold(String::new(), |mut acc, a| {
-            acc.push_str(a);
-            acc
-        });
+        let content = args[0]
+            .lines()
+            .enumerate()
+            .fold(String::new(), |mut acc, (idx, a)| {
+                if idx != 0 && p.env.fold_with_space {
+                    acc.push(' ');
+                }
+                acc.push_str(a);
+                acc
+            });
 
         Ok(Some(content))
     }
@@ -3427,16 +3686,22 @@ impl FunctionMacroMap {
     pub(crate) fn fold_by(
         args: &str,
         attr: &MacroAttribute,
-        _: &mut Processor,
+        p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("foldby", &args, attr, 2, None)?;
 
         let sep = &args[0];
-        let content = args[1].lines().fold(String::new(), |mut acc, a| {
-            acc.push_str(a);
-            acc.push_str(sep);
-            acc
-        });
+        let content = args[1]
+            .lines()
+            .enumerate()
+            .fold(String::new(), |mut acc, (idx, a)| {
+                if idx != 0 && p.env.fold_with_space {
+                    acc.push(' ');
+                }
+                acc.push_str(a);
+                acc.push_str(sep);
+                acc
+            });
 
         Ok(Some(content))
     }
@@ -3454,14 +3719,20 @@ impl FunctionMacroMap {
     pub(crate) fn foldt(
         args: &str,
         attr: &MacroAttribute,
-        _: &mut Processor,
+        p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("foldt", &args, attr, 1, None)?;
 
-        let content = args[0].lines().fold(String::new(), |mut acc, a| {
-            acc.push_str(a.trim());
-            acc
-        });
+        let content = args[0]
+            .lines()
+            .enumerate()
+            .fold(String::new(), |mut acc, (idx, a)| {
+                if idx != 0 && p.env.fold_with_space {
+                    acc.push(' ');
+                }
+                acc.push_str(a.trim());
+                acc
+            });
 
         Ok(Some(content))
     }
@@ -3482,10 +3753,11 @@ impl FunctionMacroMap {
         let mut container = String::new();
         let mut folded = String::new();
         let nl = p.state.newline.to_owned();
+        let fold_with_space = p.env.fold_with_space;
         let regs = p.try_get_or_insert_multiple_regex(&args[0..2])?;
         let reg_start = regs[0];
         let reg_end = regs[1];
-        for line in Utils::full_lines(&args[2]) {
+        for (idx, line) in Utils::full_lines(&args[2]).enumerate() {
             // Start new container
             if reg_start.find(line).is_some() && reg_end.find(line).is_none() {
                 folded.push_str(std::mem::take(&mut container.as_str()));
@@ -3501,6 +3773,9 @@ impl FunctionMacroMap {
                 // End regex doesn't add newline
                 container.clear();
             } else if !container.is_empty() {
+                if idx != 0 && fold_with_space {
+                    container.push(' ');
+                }
                 container.push_str(line.trim());
             } else {
                 folded.push_str(line);
@@ -4405,7 +4680,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $declare(n1,n2,n3)
+    /// $decl(n1,n2,n3)
     pub(crate) fn declare(
         args: &str,
         attr: &MacroAttribute,
@@ -4828,10 +5103,14 @@ impl FunctionMacroMap {
         })?;
         let mut formatted = String::new();
 
-        for (idx, line) in args[1].lines().enumerate() {
-            write!(formatted, "{}", line)?;
-            if idx % count == 0 {
-                write!(formatted, "{}", p.state.newline)?;
+        for (idx, line) in Utils::full_lines(&args[1]).enumerate() {
+            if (idx + 1) % count == 0 {
+                if idx != 0 && p.env.fold_with_space {
+                    write!(formatted, " ")?;
+                }
+                write!(formatted, "{}", line)?;
+            } else {
+                write!(formatted, "{}", Utils::str_without_line_ending(line))?;
             }
         }
 
@@ -4919,18 +5198,21 @@ impl FunctionMacroMap {
                 previous = ch;
                 continue;
             }
-            if ISOLATION_SINGLE_SPACE.contains(&ch) {
-                put_after = true;
-            }
 
-            if ISOLATION_CHARS_OPENING.contains(&ch)
-                && !ISOLATION_CHARS_CLOSING.contains(iter.peek().unwrap_or(&' '))
+            let next_ch = iter.peek().unwrap_or(&' ');
+
+            if ISOLATION_SINGLE_SPACE.contains(&ch)
+                && !ISOLATION_SINGLE_SPACE.contains(next_ch)
+                && !ISOLATION_SINGLE_SPACE.contains(&previous)
             {
                 put_after = true;
             }
 
-            if !ISOLATION_CHARS_OPENING.contains(&previous) && ISOLATION_CHARS_CLOSING.contains(&ch)
-            {
+            if ISOLATION_CHARS_OPENING.contains(&ch) && !ISOLATION_CHARS.contains(next_ch) {
+                put_after = true;
+            }
+
+            if ISOLATION_CHARS_CLOSING.contains(&ch) && !ISOLATION_CHARS.contains(&previous) {
                 formatted.push(' ');
             }
 
@@ -4944,7 +5226,9 @@ impl FunctionMacroMap {
             previous = ch;
 
             if put_after {
-                formatted.push(' ');
+                if !next_ch.is_whitespace() {
+                    formatted.push(' ');
+                }
                 put_after = false;
             }
         }
