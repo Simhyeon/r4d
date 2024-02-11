@@ -71,9 +71,20 @@ use colored::*;
 pub(crate) struct Utils;
 
 impl Utils {
+    /// Trim each lines while retaining newline
+    pub fn trim_each_lines(src: &str) -> String {
+        let mut formatted = String::new();
+        for line in Utils::full_lines(src) {
+            let end = Utils::get_line_ending(line);
+            formatted.push_str(line.trim());
+            formatted.push_str(end);
+        }
+        formatted
+    }
+
     // TODO
     // Check name validatity
-    pub fn split_definition(src: &str, trim_body: bool) -> RadResult<(&str, &str, &str)> {
+    pub fn split_definition(src: &str) -> RadResult<(&str, &str, &str)> {
         if let Some((header, body)) = src.split_once('=') {
             if let Some((name, args)) = header.split_once(',') {
                 let name = name.trim();
@@ -91,11 +102,7 @@ impl Utils {
                         )));
                     }
                 }
-                return Ok((
-                    name.trim(),
-                    args.trim(),
-                    if trim_body { body.trim() } else { body },
-                ));
+                return Ok((name.trim(), args.trim(), body));
             }
 
             // Check name validity
@@ -108,7 +115,7 @@ impl Utils {
             }
 
             // No argument
-            Ok((name, "", if trim_body { body.trim() } else { body }))
+            Ok((name, "", body))
         } else {
             Err(RadError::InvalidMacroDefinition(format!("Macro definition \"{}\" doesn't include a syntax \"=\" which concludes to invalid definition.", src)))
         }
@@ -331,11 +338,7 @@ impl Utils {
     pub(crate) fn is_arg_true_infallable(arg: &str) -> bool {
         let arg = arg.trim();
         if let Ok(value) = arg.parse::<usize>() {
-            if value == 0 {
-                return false;
-            } else {
-                return true;
-            }
+            return value != 0;
         } else if arg.to_lowercase() == "true" {
             return true;
         } else if arg.to_lowercase() == "false" {
@@ -461,7 +464,8 @@ impl Utils {
 
         if max_dex >= len || min_dex > max_dex {
             return Err(RadError::InvalidArgument(
-                "Given index is out of range".to_string(),
+                "Could not get valid slice from source because given index is out of range"
+                    .to_string(),
             ));
         }
 
@@ -1019,7 +1023,7 @@ impl Utils {
     /// Print text as green if possible
     #[allow(unused_variables)]
     pub fn green(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
-        if cfg!(feature = "color") && PROC_ENV.no_color_print {
+        if cfg!(feature = "color") && !PROC_ENV.no_color_print {
             #[cfg(feature = "color")]
             if !to_file {
                 return Box::new(string.green());
@@ -1031,7 +1035,7 @@ impl Utils {
     /// Print text as red if possible
     #[allow(unused_variables)]
     pub fn red(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
-        if cfg!(feature = "color") && PROC_ENV.no_color_print {
+        if cfg!(feature = "color") && !PROC_ENV.no_color_print {
             #[cfg(feature = "color")]
             if !to_file {
                 return Box::new(string.red());
@@ -1043,7 +1047,7 @@ impl Utils {
     /// Print text as yellow if possible
     #[allow(unused_variables)]
     pub fn yellow(string: &str, to_file: bool) -> Box<dyn std::fmt::Display> {
-        if cfg!(feature = "color") && PROC_ENV.no_color_print {
+        if cfg!(feature = "color") && !PROC_ENV.no_color_print {
             #[cfg(feature = "color")]
             if !to_file {
                 return Box::new(string.yellow());
