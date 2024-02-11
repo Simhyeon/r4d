@@ -1,8 +1,11 @@
 Split text with space separator into an array
 
+# Note
+
 - This macro splits text by one or more blank characters ( space, tab, newline )
 - However it is not gauranteed to work with miscellaenous unicode blank
   characters
+- Use apart macro if you want to split text as separator inclusive
 
 # Arguments
 

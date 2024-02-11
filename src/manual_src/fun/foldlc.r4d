@@ -1,0 +1,39 @@
+Fold lines but by counts
+
+# Arguments
+
+- a_count : Count of lines to merge as chunk
+- a_lines : Lines to fold
+
+# Demo
+
+```
+(
+    "findm".to_owned(),
+    FMacroSign::new(
+        "findm",
+        ["a_expr", "a_source"]
+    )
+),
+(
+    "floor".to_owned(),
+    FMacroSign::new(
+        "floor",
+        ["a_number^"]
+    )
+)
+>>>
+rad --sc foldlc 7 | rad --sc condl
+===
+( "findm".to_owned(), FMacroSign::new( "findm", ["a_expr", "a_source"] )),
+( "floor".to_owned(), FMacroSign::new( "floor", ["a_number^"] ))
+```
+
+# Example
+
+$assert(12$nl()34$nl()56,$foldlc(2,1
+2
+3
+4
+5
+6))
