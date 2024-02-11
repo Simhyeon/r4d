@@ -233,6 +233,11 @@ impl<'cli> RadCli<'cli> {
             self.processor.add_pass_through("anon");
         }
 
+        // Print env
+        if args.get_flag("print_env") {
+            self.processor.print_env()?;
+        }
+
         // print permission
         self.processor.print_permission()?;
 
@@ -503,6 +508,11 @@ impl<'cli> RadCli<'cli> {
                 .long("put-newline")
                 .aliases(["pn"])
                 .help("Put newlines after each stream line's invocation"))
+            .arg(Arg::new("print_env")
+                .action(ArgAction::SetTrue)
+                .long("put-env")
+                .aliases(["pe"])
+                .help("Print environmnet variables"))
             .arg(Arg::new("script")
                 .long("script")
                 .action(ArgAction::SetTrue)

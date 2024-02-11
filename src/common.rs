@@ -511,3 +511,24 @@ impl FromStr for VarContOperation {
         });
     }
 }
+
+#[derive(Eq, PartialEq, Debug)]
+pub enum LineUpType {
+    Hierarchy,
+    Left,
+    Right,
+}
+impl std::str::FromStr for LineUpType {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "h" | "hierarchy" => Ok(Self::Hierarchy),
+            "l" | "left" => Ok(Self::Left),
+            "r" | "Right" => Ok(Self::Right),
+            _ => Err(RadError::InvalidCommandOption(format!(
+                "Line up type : \"{}\" is not available.",
+                s
+            ))),
+        }
+    }
+}

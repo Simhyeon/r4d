@@ -4,8 +4,9 @@ use std::env;
 use crate::{RadError, RadResult};
 use once_cell::sync::Lazy;
 
-pub static PROC_ENV: Lazy<ProcEnv> = Lazy::new(|| ProcEnv::new());
+pub static PROC_ENV: Lazy<ProcEnv> = Lazy::new(ProcEnv::new);
 
+#[derive(Debug)]
 pub struct ProcEnv {
     pub(crate) no_color_print: bool,
     pub(crate) backtrace: bool,
@@ -20,9 +21,12 @@ impl ProcEnv {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct MacEnv {
     pub rad_tab_width: Option<usize>,
+    // TODO
+    #[allow(dead_code)]
+    pub(crate) fold_with_space: bool,
 }
 
 impl MacEnv {
@@ -35,7 +39,10 @@ impl MacEnv {
             })?),
             Err(_) => None,
         };
-        Ok(Self { rad_tab_width })
+        Ok(Self {
+            rad_tab_width,
+            fold_with_space: set_env_safely("RAD_FOLD_SPACE"),
+        })
     }
 }
 

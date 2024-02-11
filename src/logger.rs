@@ -281,6 +281,16 @@ impl<'logger> Logger<'logger> {
         )
     }
 
+    /// Log message
+    pub(crate) fn log_no_line(&mut self, log_msg: &str) -> RadResult<()> {
+        self.write_formatted_log_msg_without_line(
+            "ENV",
+            log_msg,
+            #[cfg(feature = "color")]
+            Utils::green,
+        )
+    }
+
     /// Log error
     pub(crate) fn elog(&mut self, log_msg: &str) -> RadResult<()> {
         self.stat.error_count += 1;

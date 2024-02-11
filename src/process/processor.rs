@@ -14,7 +14,7 @@ use crate::common::{ContainerType, MacroAttribute};
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
 use crate::debugger::Debugger;
-use crate::env::{MacEnv, MACRO_ENV};
+use crate::env::{MacEnv, PROC_ENV};
 use crate::error::RadError;
 use crate::extension::{ExtMacroBuilder, ExtMacroType};
 #[cfg(feature = "hook")]
@@ -891,6 +891,19 @@ impl<'processor> Processor<'processor> {
             status_with_header.push_str(&status);
             self.log_warning_no_line(&status_with_header, WarningType::Security)?;
         }
+        Ok(())
+    }
+
+    /// Print current environment variables
+    ///
+    /// ```rust
+    /// let mut proc = r4d::Processor::empty();
+    /// proc.print_env().expect("Failed to print env data");
+    /// ```
+    #[allow(dead_code)]
+    pub fn print_env(&mut self) -> RadResult<()> {
+        let envs = format!("{:#?}{}{:#?}", *PROC_ENV, LINE_ENDING, self.env);
+        self.logger.log_no_line(&envs)?;
         Ok(())
     }
 
@@ -2316,7 +2329,7 @@ impl<'processor> Processor<'processor> {
     ///
     /// This doesn't clear fragment
     fn add_rule(&mut self, frag: &MacroFragment) -> RadResult<()> {
-        let (name, args, body) = Utils::split_definition(&frag.args, frag.attribute.trim_input)?;
+        let (name, args, body) = Utils::split_definition(&frag.args)?;
         if name.is_empty() {
             let err = RadError::InvalidMacroDefinition("Cannot define an empty macro".to_string());
             return Err(err);
@@ -2342,8 +2355,17 @@ impl<'processor> Processor<'processor> {
             return Err(RadError::StrictPanic);
         }
 
-        self.map
-            .register_runtime(name, args, body, self.state.hygiene)?;
+        if frag.attribute.trim_input {
+            self.map.register_runtime(
+                name,
+                args,
+                &Utils::trim_each_lines(body.trim()),
+                self.state.hygiene,
+            )?;
+        } else {
+            self.map
+                .register_runtime(name, args, body, self.state.hygiene)?;
+        }
 
         // Dry run if such mode is set
         if self.state.process_type == ProcessType::Dry {
