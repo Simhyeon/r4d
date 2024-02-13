@@ -2489,18 +2489,21 @@ impl FunctionMacroMap {
         }
 
         // Set standard_width
-        let c2 = if let LineUpType::Right = line_up_type {
-            let ret = set_maximal_standard_width(c1, &mut standard_width);
-            if standard_width == 0 {
-                return Ok(Some(args[1].to_string()));
+        let c2 = match line_up_type {
+            LineUpType::Right | LineUpType::ParralelRight => {
+                let ret = set_maximal_standard_width(c1, &mut standard_width);
+                if standard_width == 0 {
+                    return Ok(Some(args[1].to_string()));
+                }
+                ret
             }
-            ret
-        } else {
-            let ret = set_minimal_standard_width(c1, &mut standard_width);
-            if standard_width == usize::MAX {
-                return Ok(Some(args[1].to_string()));
+            _ => {
+                let ret = set_minimal_standard_width(c1, &mut standard_width);
+                if standard_width == usize::MAX {
+                    return Ok(Some(args[1].to_string()));
+                }
+                ret
             }
-            ret
         };
 
         let c3 = if let LineUpType::Hierarchy = line_up_type {
@@ -2526,8 +2529,8 @@ impl FunctionMacroMap {
         // Reform lines
         // Target value is
         // 1. Offset for hierarchy type
-        // 2. Prefix spaces for Left type
-        // 3. Current length for right type
+        // 2. Prefix spaces for Left, ParralelLeft type
+        // 3. Current length for right, ParralelRight type
         for (_, line, target_value) in c3 {
             match line_up_type {
                 LineUpType::Hierarchy => {
@@ -2542,6 +2545,10 @@ impl FunctionMacroMap {
                         0
                     };
                     result.push_str(&line[start..]);
+                }
+                LineUpType::ParralelRight | LineUpType::ParralelLeft => {
+                    result.push_str(&" ".repeat(standard_width));
+                    result.push_str(line.trim_start());
                 }
                 LineUpType::Right => {
                     result.push_str(&" ".repeat(standard_width - target_value));

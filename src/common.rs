@@ -494,7 +494,7 @@ pub enum VarContOperation {
 impl FromStr for VarContOperation {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        return Ok(match s.to_lowercase().as_str() {
+        Ok(match s.to_lowercase().as_str() {
             "print" => Self::Print,
             "push" => Self::Push,
             "pop" => Self::Pop,
@@ -508,7 +508,7 @@ impl FromStr for VarContOperation {
                     "{s} is not a valid container operation"
                 )));
             }
-        });
+        })
     }
 }
 
@@ -517,6 +517,8 @@ pub enum LineUpType {
     Hierarchy,
     Left,
     Right,
+    ParralelRight,
+    ParralelLeft,
 }
 impl std::str::FromStr for LineUpType {
     type Err = RadError;
@@ -525,6 +527,8 @@ impl std::str::FromStr for LineUpType {
             "h" | "hierarchy" => Ok(Self::Hierarchy),
             "l" | "left" => Ok(Self::Left),
             "r" | "Right" => Ok(Self::Right),
+            "pr" | "parralel-right" => Ok(Self::ParralelRight),
+            "pl" | "parralel-left" => Ok(Self::ParralelLeft),
             _ => Err(RadError::InvalidCommandOption(format!(
                 "Line up type : \"{}\" is not available.",
                 s
