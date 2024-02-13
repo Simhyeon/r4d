@@ -58,6 +58,11 @@ impl<'logger> Logger<'logger> {
         self.write_option = write_option;
     }
 
+    /// Retrieve tracker stack level
+    pub fn get_tracker_level(&self) -> usize {
+        self.tracker_stack.stack.len()
+    }
+
     // ----Tracker methods----
 
     /// Create new tracker instance

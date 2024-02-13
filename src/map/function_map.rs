@@ -93,30 +93,30 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "lineup".to_owned(),
+                "align".to_owned(),
                 FMacroSign::new(
-                    "lineup",
-                    ["a_lineup_type", "a_lines"],
-                    Self::line_up,
+                    "align",
+                    ["a_align_type", "a_contetn"],
+                    Self::align,
                     None
                 ),
             ),
             (
-                "align".to_owned(),
+                "lineup".to_owned(),
                 FMacroSign::new(
-                    "align",
+                    "lineup",
                     ["a_separator", "a_lines"],
-                    Self::align_by_separator,
-                    Some(man_fun!("align.r4d"))
+                    Self::lineup_by_separator,
+                    None,
                 ),
             ),
             (
-                "alignr".to_owned(),
+                "lineupr".to_owned(),
                 FMacroSign::new(
-                    "alignr",
+                    "lineupr",
                     ["a_separator", "a_lines"],
-                    Self::align_by_separator_match_rear,
-                    Some(man_fun!("align.r4d"))
+                    Self::lineup_by_separator_match_rear,
+                    Some(man_fun!("lineupr.r4d"))
                 ),
             ),
             (
@@ -129,12 +129,12 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "alignby".to_owned(),
+                "lineupm".to_owned(),
                 FMacroSign::new(
-                    "alignby",
+                    "lineupm",
                     ["a_rules", "a_lines"],
-                    Self::align_by_rules,
-                    Some(man_fun!("alignby.r4d"))
+                    Self::lineup_by_rules,
+                    Some(man_fun!("lineupm.r4d"))
                 ),
             ),
             (
@@ -1468,11 +1468,11 @@ $relay(temp)$halt()".to_string()),
                 ),
             ),
             (
-                "rer".to_owned(),
+                "reo".to_owned(),
                 FMacroSign::new(
-                    "rer",
+                    "reo",
                     ["a_list_contents"],
-                    Self::rearrange,
+                    Self::reorder,
                     Some("Rearrange order of lists
 
 # Arguments
@@ -1481,7 +1481,7 @@ $relay(temp)$halt()".to_string()),
 
 # Example
 
-$assert($rer(8. a
+$assert($reo(8. a
 2. b
 3. c
 1. d)$enl()
@@ -2663,7 +2663,6 @@ $assert(1 + 2 = 3,$evalk(1 + 2 ))"
                 FMacroSign::new("mie", ["a_expr"], Self::macro_ire, None),
             );
         }
-        #[cfg(feature = "textwrap")]
         map.insert(
             "wrap".to_owned(),
             FMacroSign::new(

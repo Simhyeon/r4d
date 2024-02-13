@@ -11,6 +11,7 @@ use crate::WarningType;
 use crate::{Processor, RadError};
 use dcsv::VCont;
 use evalexpr::eval;
+use itertools::Itertools;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -283,13 +284,19 @@ impl DeterredMacroMap {
 
         if !bufread {
             for cap in reg.captures_iter(&source) {
-                let captured = cap.get(0).map_or("", |m| m.as_str());
+                let mut cap = cap.iter();
+                cap.next();
+                // TODO Make an env to make unmatched group an error
+                let captured = cap
+                    .filter(|s| s.is_some())
+                    .map(|s| s.unwrap().as_str())
+                    .join(" ");
                 let expanded = p
                     .execute_macro(
                         level,
                         "grepmap",
                         macro_name,
-                        &(macro_arguments.clone() + captured),
+                        &(macro_arguments.clone() + &captured),
                     )?
                     .unwrap_or_default();
                 res.push_str(&expanded);
@@ -300,13 +307,19 @@ impl DeterredMacroMap {
             for line in lines {
                 let line = line?;
                 for cap in reg.captures_iter(&line) {
-                    let captured = cap.get(0).map_or("", |m| m.as_str());
+                    let mut cap = cap.iter();
+                    cap.next();
+                    // TODO Make an env to make unmatched group an error
+                    let captured = cap
+                        .filter(|s| s.is_some())
+                        .map(|s| s.unwrap().as_str())
+                        .join(" ");
                     let expanded = p
                         .execute_macro(
                             level,
                             "grepmap",
                             macro_name,
-                            &(macro_arguments.clone() + captured),
+                            &(macro_arguments.clone() + &captured),
                         )?
                         .unwrap_or_default();
                     res.push_str(&expanded);
@@ -911,6 +924,9 @@ impl DeterredMacroMap {
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = ArgParser::new().strip(args);
+        if args.trim().is_empty() {
+            processor.log_warning("Expanding empty value", WarningType::Sanity)?;
+        }
         let result = processor.parse_chunk_args(level, "", &args)?;
 
         Ok(if result.is_empty() {
@@ -937,9 +953,14 @@ impl DeterredMacroMap {
         processor.state.behaviour = ErrorBehaviour::Assert;
 
         let mut ap = ArgParser::new().no_strip();
+        let prev_level = processor.logger.get_tracker_level();
         let result = processor.parse_and_strip(&mut ap, attr, level, "fassert", args);
         processor.state.behaviour = backup;
-        processor.logger.stop_last_tracker();
+
+        // If tracker level is same, then it means plain text was supplied.
+        if processor.logger.get_tracker_level() != prev_level {
+            processor.logger.stop_last_tracker();
+        }
         if result.is_err() {
             processor.track_assertion(true)?;
             Ok(None)
@@ -1010,6 +1031,9 @@ impl DeterredMacroMap {
         _: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
+        if args.trim().is_empty() {
+            processor.log_warning("Queuing empty value", WarningType::Sanity)?;
+        }
         processor.insert_queue(args);
         Ok(None)
     }

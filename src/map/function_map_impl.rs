@@ -604,10 +604,10 @@ impl FunctionMacroMap {
                     if target_count == cursors.last().map(|s| s.level).unwrap_or(0) {
                         let start = cursors.last().unwrap().start_index + 1;
                         return Ok(Some(src[start..idx].to_string()));
-                    } else {
-                        cursors.pop();
-                        current_count -= 1;
                     }
+
+                    cursors.pop();
+                    current_count -= 1;
                 } else {
                     // Nested content
                     opened_count += 1;
@@ -624,10 +624,9 @@ impl FunctionMacroMap {
                 if target_count == cursors.last().map(|s| s.level).unwrap_or(0) {
                     let start = cursors.last().unwrap().start_index + 1;
                     return Ok(Some(src[start..idx].to_string()));
-                } else {
-                    cursors.pop();
-                    current_count -= 1;
                 }
+                cursors.pop();
+                current_count -= 1;
             }
             if current_count > 0 {
                 if let Some(cur) = cursors.last_mut() {
@@ -2156,9 +2155,9 @@ impl FunctionMacroMap {
                 return Err(RadError::InvalidArgument(
                     "Filler cannot be a newline character".to_string(),
                 ));
-            } else {
-                filler_char = ch.to_string();
             }
+
+            filler_char = ch.to_string();
         } else {
             return Err(RadError::InvalidArgument(
                 "Filler should be a valid utf8 character".to_string(),
@@ -2185,18 +2184,18 @@ impl FunctionMacroMap {
         Ok(Some(formatted))
     }
 
-    /// Ailgn texts by separator
+    /// Line up texts by separator but match to rearest
     ///
     /// # Usage
     ///
-    /// $alignr(%, contents to align)
-    pub(crate) fn align_by_separator_match_rear(
+    /// $lineupr(%, contents to lineup)
+    pub(crate) fn lineup_by_separator_match_rear(
         args: &str,
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         use std::fmt::Write;
-        let args = Utils::get_split_arguments_or_error("align", &args, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("lineup", &args, attr, 2, None)?;
 
         let separator = &args[0];
         let (c1, c2) = Utils::full_lines(&args[1]).tee();
@@ -2237,18 +2236,18 @@ impl FunctionMacroMap {
         Ok(Some(result))
     }
 
-    /// Ailgn texts by separator
+    /// Lineup texts by separator
     ///
     /// # Usage
     ///
-    /// $align(%, contents to align)
-    pub(crate) fn align_by_separator(
+    /// $lineup(%, contents to lineup)
+    pub(crate) fn lineup_by_separator(
         args: &str,
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         use std::fmt::Write;
-        let args = Utils::get_split_arguments_or_error("align", &args, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("lineup", &args, attr, 2, None)?;
 
         let separator = &args[0];
         let (c1, c2) = Utils::full_lines(&args[1]).tee();
@@ -2345,23 +2344,23 @@ impl FunctionMacroMap {
         ))
     }
 
-    /// Ailgn texts by rules
+    /// lineup texts multiple times
     ///
     /// # Usage
     ///
-    /// $alignby(rules, contents to align)
-    pub(crate) fn align_by_rules(
+    /// $lineupm(rules, contents to lineup)
+    pub(crate) fn lineup_by_rules(
         args: &str,
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("alignby", &args, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("lineupm", &args, attr, 2, None)?;
 
         let rules = args[0].trim().chars().collect::<Vec<_>>();
 
         if rules.len() % 2 != 0 {
             return Err(RadError::InvalidCommandOption(format!(
-                "alignby needs specific syntax for rules but given \"{}\"",
+                "lineupm needs specific syntax for rules but given \"{}\"",
                 args[0]
             )));
         }
@@ -2380,11 +2379,11 @@ impl FunctionMacroMap {
                     args[0]
                 ))
             })?;
-            align_step(&mut contents, *separator, count as usize, tab_width)?;
+            lineup_step(&mut contents, *separator, count as usize, tab_width)?;
         }
 
         #[inline]
-        fn align_step(
+        fn lineup_step(
             contents: &mut [String],
             separator: char,
             count: usize,
@@ -2424,17 +2423,18 @@ impl FunctionMacroMap {
         Ok(Some(result))
     }
 
-    /// Line up content start with given options
+    /// Align lines with given options
     ///
     /// # Usage
     ///
-    /// $lineup(%, contents to line up)
-    pub(crate) fn line_up(
+    /// TYPE : hierarchy, right, left
+    /// $align(TYPE, contents to align)
+    pub(crate) fn align(
         arg_src: &str,
         attr: &MacroAttribute,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("lineup", &arg_src, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("align", &arg_src, attr, 2, None)?;
 
         let line_up_type = LineUpType::from_str(&args[0])?;
         let c1 = Utils::full_lines(&args[1]);
@@ -3260,7 +3260,7 @@ impl FunctionMacroMap {
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("indexl", &args, attr, 2, None)?;
 
-        let content = &mut args[1].lines();
+        let content = &mut Utils::full_lines(&args[1]);
         let index = args[0].trim().parse::<isize>().map_err(|_| {
             RadError::InvalidArgument(format!(
                 "indexl requires to be an integer but got \"{}\"",
@@ -3765,10 +3765,11 @@ impl FunctionMacroMap {
         _: &MacroAttribute,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        #[cfg(windows)]
-        return Ok(Some("windows".to_owned()));
-        #[cfg(not(windows))]
-        return Ok(Some("unix".to_owned()));
+        if cfg!(target_os = "windows") {
+            Ok(Some("windows".to_owned()))
+        } else {
+            Ok(Some("unix".to_owned()))
+        }
     }
 
     // TODO Move this to deterred macro
@@ -3795,7 +3796,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $capture(expr,Array)
+    /// $capture(expr,Content)
     pub(crate) fn capture(
         args: &str,
         attr: &MacroAttribute,
@@ -4097,7 +4098,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $rer(
+    /// $reo(
     /// 3.
     /// 2.
     /// 1.
@@ -4105,14 +4106,14 @@ impl FunctionMacroMap {
     ///     7]
     ///     8]
     /// )
-    pub(crate) fn rearrange(
+    pub(crate) fn reorder(
         args: &str,
         attr: &MacroAttribute,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("rer", &args, attr, 1, None)?;
+        let args = Utils::get_split_arguments_or_error("reo", &args, attr, 1, None)?;
 
-        let mut rer_hash = RerHash::default();
+        let mut reo_hash = ReoHash::default();
         let mut blank_str: &str; // Container
 
         // TODO
@@ -4129,7 +4130,7 @@ impl FunctionMacroMap {
             if let Some(captured) = BLANKHASH_MATCH.captures(line) {
                 blank_str = captured.get(1).map_or("", |m| m.as_str());
                 let index_id = captured.get(2).map_or("", |m| m.as_str());
-                let blank = rer_hash.try_insert(blank_str, index_id)?;
+                let blank = reo_hash.try_insert(blank_str, index_id)?;
                 iteration_cache.push((blank, ll));
             }
         }
@@ -4150,12 +4151,12 @@ impl FunctionMacroMap {
                 // ---
                 // Different index from prior line OR different indentation
                 if index != index_cache || blank_cache != blank {
-                    counter = rer_hash.get_current_count(blank, index);
+                    counter = reo_hash.get_current_count(blank, index);
 
                     // This means list items go up
                     if blank_cache > blank {
                         // Reset previous cache
-                        rer_hash.update_counter(blank_cache, &index_cache, 1);
+                        reo_hash.update_counter(blank_cache, &index_cache, 1);
                     }
                 } else {
                     counter += 1;
@@ -4169,7 +4170,7 @@ impl FunctionMacroMap {
                         format!("{}{}{}{}", leading_part, counter, index, following_part),
                     )
                     .to_string();
-                rer_hash.update_counter(blank, index, counter + 1);
+                reo_hash.update_counter(blank, index, counter + 1);
                 lines[ll] = replaced;
             }
         }
@@ -4661,21 +4662,26 @@ impl FunctionMacroMap {
 
         // Check overriding. Warn or yield error
         for (name, _, _) in runtime_rules.iter() {
+            if name.trim().is_empty() {
+                processor.log_warning(
+                    "Declaring a macro with blank charcters is not valid",
+                    WarningType::Sanity,
+                )?;
+            }
             if processor.contains_macro(name, MacroType::Any) {
                 if processor.state.behaviour == ErrorBehaviour::Strict {
                     return Err(RadError::InvalidMacroDefinition(format!(
                         "Declaring a macro with a name already existing : \"{}\"",
                         name
                     )));
-                } else {
-                    processor.log_warning(
-                        &format!(
-                            "Declaring a macro with a name already existing : \"{}\"",
-                            name
-                        ),
-                        WarningType::Sanity,
-                    )?;
                 }
+                processor.log_warning(
+                    &format!(
+                        "Declaring a macro with a name already existing : \"{}\"",
+                        name
+                    ),
+                    WarningType::Sanity,
+                )?;
             }
         }
 
@@ -4859,16 +4865,15 @@ impl FunctionMacroMap {
                     "Creating a static macro with a name already existing : \"{}\"",
                     name
                 )));
-            } else {
-                // Its warn-able anyway
-                processor.log_warning(
-                    &format!(
-                        "Creating a static macro with a name already existing : \"{}\"",
-                        name
-                    ),
-                    WarningType::Sanity,
-                )?;
             }
+            // Its warn-able anyway
+            processor.log_warning(
+                &format!(
+                    "Creating a static macro with a name already existing : \"{}\"",
+                    name
+                ),
+                WarningType::Sanity,
+            )?;
         }
         processor.add_static_rules(&[(name, &value)])?;
         Ok(None)
@@ -5158,10 +5163,7 @@ impl FunctionMacroMap {
         let mut put_after = false;
         while let Some(ch) = iter.next() {
             // --New-- code
-            if previous.is_whitespace() {
-                if !ch.is_whitespace() {
-                    formatted.push(ch);
-                }
+            if previous.is_whitespace() && ch.is_whitespace() {
                 previous = ch;
                 continue;
             }
@@ -5184,7 +5186,7 @@ impl FunctionMacroMap {
             }
 
             // Current is = put space before
-            if ISOLATION_SURR_SPACE.contains(&ch) {
+            if ISOLATION_SURR_SPACE.contains(&ch) && !previous.is_whitespace() {
                 formatted.push(' ');
                 put_after = true;
             }
@@ -5473,7 +5475,6 @@ impl FunctionMacroMap {
     /// * Usage
     ///
     /// $wrap(80, Content goes here)
-    #[cfg(feature = "textwrap")]
     pub(crate) fn wrap(
         args: &str,
         attr: &MacroAttribute,
@@ -5612,11 +5613,11 @@ impl FunctionMacroMap {
 
 /// Counter for total list items
 #[derive(Default, Debug)]
-struct RerHash {
+struct ReoHash {
     index_hash: HashMap<String, ListCounterByLevel>,
 }
 
-impl RerHash {
+impl ReoHash {
     pub fn update_counter(&mut self, blank: usize, index: &str, counter: usize) {
         *self
             .index_hash
