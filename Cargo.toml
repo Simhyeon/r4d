@@ -31,7 +31,7 @@ doctest = false
 default = ["rchash"]
 basic = ["clap", "dep:filetime","rad_ext_template?/binary"]
 binary = ["basic","debug", "full", "color"]
-full = [ "chrono", "textwrap", "cindex"]
+full = [ "chrono", "cindex"]
 
 # ETC
 debug = [ "dep:crossterm", "dep:similar" ]
@@ -65,7 +65,7 @@ crossterm = {version = "0.27.0", optional = true}
 filetime = { version = "0.2.22", optional = true }
 rad_ext_template = { version="0.3.0", optional = true}
 similar = { version = "2.3.0", optional = true}
-textwrap = { version = "0.16.0", optional = true}
+textwrap = "0.16.0"
 
 [package.metadata.deb]
 features = ["binary"]
