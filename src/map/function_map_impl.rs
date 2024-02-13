@@ -770,19 +770,11 @@ impl FunctionMacroMap {
     pub(crate) fn triml(
         args: &str,
         attr: &MacroAttribute,
-        p: &mut Processor,
+        _: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("triml", &args, attr, 1, None)?;
 
-        let mut lines = String::new();
-        let mut iter = args[0].lines().peekable();
-        while let Some(line) = iter.next() {
-            lines.push_str(line.trim());
-            // Append newline because String.lines() method cuts off all newlines
-            if iter.peek().is_some() {
-                lines.push_str(&p.state.newline);
-            }
-        }
+        let lines = Utils::trim_each_lines(&args[0]);
         Ok(Some(lines))
     }
 
@@ -798,7 +790,7 @@ impl FunctionMacroMap {
     pub(crate) fn trimla(
         args: &str,
         attr: &MacroAttribute,
-        p: &mut Processor,
+        _: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("trimla", &args, attr, 2, None)?;
 
@@ -833,8 +825,8 @@ impl FunctionMacroMap {
         };
 
         let mut lines = String::new();
-        let mut source_iter = source.lines().peekable();
-        while let Some(line) = source_iter.next() {
+        let source_iter = Utils::full_lines(source).peekable();
+        for line in source_iter {
             if line.trim_start().is_empty() {
                 lines.push_str(line);
             } else {
@@ -845,14 +837,10 @@ impl FunctionMacroMap {
                             let space_amount = line.len() - line.trim_start().len();
                             line[amount.min(space_amount)..].to_string()
                         }
-                        None => line.trim().to_string(),
+                        None => line.trim_start().to_string(),
                     },
                 };
                 lines.push_str(&trimmed);
-            }
-            // Append newline because String.lines() method cuts off all newlines
-            if source_iter.peek().is_some() {
-                lines.push_str(&p.state.newline);
             }
         }
         Ok(Some(lines))
@@ -2197,9 +2185,6 @@ impl FunctionMacroMap {
         Ok(Some(formatted))
     }
 
-    // TODO
-    // This is original align
-    // This should be named to alignr
     /// Ailgn texts by separator
     ///
     /// # Usage
@@ -2214,14 +2199,13 @@ impl FunctionMacroMap {
         let args = Utils::get_split_arguments_or_error("align", &args, attr, 2, None)?;
 
         let separator = &args[0];
-        let contents = args[1].lines();
+        let (c1, c2) = Utils::full_lines(&args[1]).tee();
         let mut max_length = 0usize;
         let mut result = String::new();
-        let nl = &p.state.newline;
 
         let tab_width = p.env.rad_tab_width.unwrap_or(4);
 
-        for line in contents.clone() {
+        for line in c1 {
             let mut splitted = line.split(separator.as_ref());
             let leading = splitted.next().unwrap();
             let width =
@@ -2230,7 +2214,7 @@ impl FunctionMacroMap {
                 max_length = max_length.max(width);
             }
         }
-        for line in contents {
+        for line in c2 {
             let splitted = line.split_once(separator.as_ref());
             if splitted.is_some() {
                 let (leading, following) = splitted.unwrap();
@@ -2240,15 +2224,14 @@ impl FunctionMacroMap {
                 // found matching line
                 write!(
                     result,
-                    "{}{}{}{}{}",
+                    "{}{}{}{}",
                     leading,
                     " ".repeat(max_length - width),
                     separator,
                     following,
-                    nl
                 )?;
             } else {
-                write!(result, "{}{}", line, nl)?;
+                write!(result, "{}", line)?;
             }
         }
         Ok(Some(result))
@@ -2356,6 +2339,7 @@ impl FunctionMacroMap {
             .use_space_delimiter(true)
             .data_from_stream(contents.as_bytes())?;
 
+        // TODO Check newline sanity
         Ok(Some(
             data.get_formatted_string(&p.state.newline, align_type.into()),
         ))
@@ -2382,7 +2366,9 @@ impl FunctionMacroMap {
             )));
         }
 
-        let mut contents = args[1].lines().map(|s| s.to_owned()).collect::<Vec<_>>();
+        let mut contents = Utils::full_lines(&args[1])
+            .map(|s| s.to_owned())
+            .collect::<Vec<_>>();
 
         let tab_width = p.env.rad_tab_width.unwrap_or(4);
 
@@ -2433,7 +2419,7 @@ impl FunctionMacroMap {
             Ok(())
         }
 
-        let result = contents.join(&p.state.newline);
+        let result = contents.join("");
 
         Ok(Some(result))
     }
@@ -3132,15 +3118,15 @@ impl FunctionMacroMap {
     pub(crate) fn sort_lines(
         args: &str,
         attr: &MacroAttribute,
-        p: &mut Processor,
+        _: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("sortl", &args, attr, 2, None)?;
 
         let order_type = args[0].trim();
-        let content = &mut args[1].lines().collect::<Vec<&str>>();
+        let content = &mut Utils::full_lines(&args[1]).collect::<Vec<&str>>();
         match order_type.to_lowercase().as_str() {
-            "asec" => content.sort_unstable(),
-            "desc" => {
+            "a" | "asec" => content.sort_unstable(),
+            "d" | "desc" => {
                 content.sort_unstable();
                 content.reverse()
             }
@@ -3152,7 +3138,7 @@ impl FunctionMacroMap {
             }
         }
 
-        Ok(Some(content.join(&p.state.newline)))
+        Ok(Some(content.join("")))
     }
 
     /// Sort lists ( chunks )
@@ -3390,7 +3376,7 @@ impl FunctionMacroMap {
     pub(crate) fn stripf_line(
         args: &str,
         attr: &MacroAttribute,
-        p: &mut Processor,
+        _: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("stripfl", &args, attr, 2, None)?;
 
@@ -3406,7 +3392,7 @@ impl FunctionMacroMap {
             return Ok(Some(args[1].to_string()));
         }
 
-        let lines = content.lines().collect::<Vec<_>>();
+        let lines = Utils::full_lines(content).collect::<Vec<_>>();
         let line_count = lines.len();
 
         if count > line_count {
@@ -3417,16 +3403,10 @@ impl FunctionMacroMap {
 
         let result = lines[count..].iter().fold(String::new(), |mut acc, a| {
             acc.push_str(a);
-            acc.push_str(&p.state.newline);
             acc
         });
 
-        Ok(Some(
-            result
-                .strip_suffix(&p.state.newline)
-                .map(|s| s.to_string())
-                .unwrap_or(result),
-        ))
+        Ok(Some(result))
     }
 
     /// Strip rear lines
@@ -3437,7 +3417,7 @@ impl FunctionMacroMap {
     pub(crate) fn stripr_line(
         args: &str,
         attr: &MacroAttribute,
-        p: &mut Processor,
+        _: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("striprl", &args, attr, 2, None)?;
 
@@ -3453,7 +3433,7 @@ impl FunctionMacroMap {
             return Ok(Some(args[1].to_string()));
         }
 
-        let lines = content.lines().collect::<Vec<_>>();
+        let lines = Utils::full_lines(content).collect::<Vec<_>>();
         let line_count = lines.len();
 
         if count > line_count {
@@ -3466,16 +3446,10 @@ impl FunctionMacroMap {
             .iter()
             .fold(String::new(), |mut acc, a| {
                 acc.push_str(a);
-                acc.push_str(&p.state.newline);
                 acc
             });
 
-        Ok(Some(
-            result
-                .strip_suffix(&p.state.newline)
-                .map(|s| s.to_string())
-                .unwrap_or(result),
-        ))
+        Ok(Some(result))
     }
 
     /// Strip rear
@@ -3535,6 +3509,7 @@ impl FunctionMacroMap {
         let reg = p.try_get_or_insert_regex(expr)?;
 
         let mut acc = String::new();
+        // TODO CHeck lines method sanity
         for line in content.lines() {
             let last_item = reg.captures_iter(line).last();
             // Last item
@@ -3560,20 +3535,20 @@ impl FunctionMacroMap {
     pub(crate) fn separate(
         args: &str,
         attr: &MacroAttribute,
-        p: &mut Processor,
+        _: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("sep", &args, attr, 1, None)?;
 
         let content = &args[0];
-        let mut separated = vec![];
-        let mut iter = content.lines().peekable();
+        let mut formatted = String::with_capacity(content.len());
+        let mut iter = Utils::full_lines(content).peekable();
         while let Some(line) = iter.next() {
-            separated.push(line);
-            if !line.is_empty() && !iter.peek().unwrap_or(&"0").is_empty() {
-                separated.push("");
+            formatted.push_str(line);
+            if !line.trim().is_empty() && !iter.peek().unwrap_or(&"0").trim().is_empty() {
+                formatted.push_str(Utils::get_line_ending(line));
             }
         }
-        Ok(Some(separated.join(&p.state.newline)))
+        Ok(Some(formatted))
     }
 
     /// Get range from array
@@ -3752,7 +3727,6 @@ impl FunctionMacroMap {
 
         let mut container = String::new();
         let mut folded = String::new();
-        let nl = p.state.newline.to_owned();
         let fold_with_space = p.env.fold_with_space;
         let regs = p.try_get_or_insert_multiple_regex(&args[0..2])?;
         let reg_start = regs[0];
@@ -3761,11 +3735,6 @@ impl FunctionMacroMap {
             // Start new container
             if reg_start.find(line).is_some() && reg_end.find(line).is_none() {
                 folded.push_str(std::mem::take(&mut container.as_str()));
-                // Start regex add newline for clarity
-                if !container.is_empty() {
-                    folded.push_str(&nl);
-                }
-                container.clear();
                 container.push_str(line.trim_end());
             } else if reg_start.find(line).is_none() && reg_end.find(line).is_some() {
                 container.push_str(line);
@@ -3835,6 +3804,8 @@ impl FunctionMacroMap {
         let args = Utils::get_split_arguments_or_error("capture", &args, attr, 2, None)?;
 
         let expr = &args[0];
+        // TODO
+        // Env : to separate it by comma
         let nl = p.state.newline.clone();
         let reg = p.try_get_or_insert_regex(expr)?;
         let acc = reg
@@ -3887,17 +3858,15 @@ impl FunctionMacroMap {
         let args = Utils::get_split_arguments_or_error("grepl", &args, attr, 2, None)?;
 
         let expr = &args[0];
-        let nl = p.state.newline.clone();
         let reg = p.try_get_or_insert_regex(expr)?;
-        let content = args[1].lines();
+        let content = Utils::full_lines(&args[1]);
         let grepped = content
             .filter(|l| reg.is_match(l))
             .fold(String::new(), |mut acc, l| {
                 acc.push_str(l);
-                acc.push_str(&nl);
                 acc
             });
-        Ok(grepped.strip_suffix(&nl).map(|s| s.to_owned()))
+        Ok(Some(grepped))
     }
 
     /// Grepf
@@ -3934,14 +3903,14 @@ impl FunctionMacroMap {
         let reader = std::io::BufReader::new(file_stream);
 
         let mut vec = vec![];
-        for line in reader.lines() {
+        for line in Utils::full_lines_from_bytes(reader) {
             let line = line?;
             if reg.is_match(&line) {
                 vec.push(line);
             }
         }
 
-        Ok(Some(vec.join(&p.state.newline)))
+        Ok(Some(vec.join("")))
     }
 
     /// Condense
@@ -3969,19 +3938,18 @@ impl FunctionMacroMap {
     pub(crate) fn condense_by_lines(
         args: &str,
         attr: &MacroAttribute,
-        p: &mut Processor,
+        _: &mut Processor,
     ) -> RadResult<Option<String>> {
         use std::fmt::Write;
         let args = Utils::get_split_arguments_or_error("condl", &args, attr, 1, None)?;
 
         let content = &args[0];
         let mut acc = String::new();
-        let mut itr = content.lines().peekable();
-        while let Some(line) = itr.next() {
-            write!(&mut acc, "{}", line.split_whitespace().join(" "),)?;
-            if itr.peek().is_some() {
-                write!(&mut acc, "{}", &p.state.newline)?;
-            }
+        let itr = Utils::full_lines(content).peekable();
+        for line in itr {
+            let line_ending = Utils::get_line_ending(line);
+            write!(&mut acc, "{}", line.split_whitespace().join(" "))?;
+            write!(&mut acc, "{}", line_ending)?;
         }
         Ok(Some(acc))
     }
@@ -4140,7 +4108,7 @@ impl FunctionMacroMap {
     pub(crate) fn rearrange(
         args: &str,
         attr: &MacroAttribute,
-        p: &mut Processor,
+        _: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("rer", &args, attr, 1, None)?;
 
@@ -4150,10 +4118,9 @@ impl FunctionMacroMap {
         // TODO
         // Should I really collect it for indexing?
         // Can it be improved?
-        let mut lines = args[0]
-            .lines()
+        let mut lines = Utils::full_lines(&args[0])
             .map(|s| s.to_string())
-            .collect::<Vec<String>>();
+            .collect::<Vec<_>>();
         // TODO
         // Refactor iteration_cache into a separate struct
         let mut iteration_cache: Vec<(usize, usize)> = Vec::new();
@@ -4206,7 +4173,7 @@ impl FunctionMacroMap {
                 lines[ll] = replaced;
             }
         }
-        Ok(Some(lines.join(&p.state.newline)))
+        Ok(Some(lines.join("")))
     }
 
     /// Disable relaying
