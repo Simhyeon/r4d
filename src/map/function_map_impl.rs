@@ -693,7 +693,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $insertf(*, multi
+    /// $indentl(*, multi
     /// line
     /// expression
     /// )
@@ -702,7 +702,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("indentb", &args, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("indentl", &args, attr, 2, None)?;
 
         let indenter = &args[0];
         let indented = Utils::full_lines(args[1].as_ref())
@@ -723,20 +723,20 @@ impl FunctionMacroMap {
         Ok(Some(indented))
     }
 
-    /// Indent lines after
+    /// Attach content after lines
     ///
     /// # Usage
     ///
-    /// $indentr(*, multi
+    /// $attachl(*, multi
     /// line
     /// expression
     /// )
-    pub(crate) fn indent_lines_after(
+    pub(crate) fn attach_lines_after(
         args: &str,
         attr: &MacroAttribute,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("indentr", &args, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("attachl", &args, attr, 2, None)?;
 
         let indenter = &args[0];
         let indented = Utils::full_lines(args[1].as_ref())
@@ -777,21 +777,21 @@ impl FunctionMacroMap {
         Ok(Some(lines))
     }
 
-    /// Trim lines with given amount
+    /// Trim lines ( exdent ) with given amount
     ///
     /// # Usage
     ///
-    /// $trimla(min,
+    /// $exdent(min,
     /// \t multi
     /// \t line
     /// \t expression
     /// )
-    pub(crate) fn trimla(
+    pub(crate) fn exdent(
         args: &str,
         attr: &MacroAttribute,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("trimla", &args, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("exdent", &args, attr, 2, None)?;
 
         let option = args[0].trim();
         let source = &args[1];
@@ -815,7 +815,7 @@ impl FunctionMacroMap {
             v => {
                 try_amount = Some(option.parse::<usize>().map_err(|_| {
                     RadError::InvalidArgument(format!(
-                        "Trimla option should be either min,max or number gut given \"{}\"",
+                        "Exdent option should be either min,max or number gut given \"{}\"",
                         v
                     ))
                 })?);
@@ -2292,7 +2292,7 @@ impl FunctionMacroMap {
                     write!(
                         result,
                         "{}{}{}{}",
-                        leading.trim(),
+                        leading.trim_end(),
                         put_after,
                         separator,
                         following
@@ -2304,7 +2304,7 @@ impl FunctionMacroMap {
                     write!(
                         result,
                         "{}{}{}{}{}",
-                        leading.trim(),
+                        leading.trim_end(),
                         " ".repeat(min_length - width),
                         put_after,
                         separator,
@@ -2432,7 +2432,7 @@ impl FunctionMacroMap {
     pub(crate) fn align(
         arg_src: &str,
         attr: &MacroAttribute,
-        _: &mut Processor,
+        p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("align", &arg_src, attr, 2, None)?;
 
@@ -2452,16 +2452,18 @@ impl FunctionMacroMap {
         {
             iter.enumerate()
                 .map(|(idx, line)| {
+                    // TODO Fix this
                     let prefix = if let Some(leading) = LSPA.captures(line) {
                         let mut len = leading.get(0).unwrap().len();
-                        if len != 0 && !line.trim_start().is_empty() {
+                        if len != 0 && *standard_indent_width != 0 {
                             *standard_indent_width = *standard_indent_width.min(&mut len);
                         }
                         len
                     } else {
-                        // 1. Line consists of only blank characters.
-                        // 2. Line starts from 0 index
-                        // Such lines are totally ignored.
+                        if !line.trim_start().is_empty() {
+                            // Line starts from 0 index
+                            *standard_indent_width = 0;
+                        }
                         0
                     };
                     (idx, line, prefix)
@@ -2502,6 +2504,10 @@ impl FunctionMacroMap {
         };
 
         let c3 = if let LineUpType::Hierarchy = line_up_type {
+            if standard_width == 0 {
+                standard_width = p.env.rad_tab_width.unwrap_or(4);
+            }
+
             c2.into_iter()
                 .sorted_by(|(_, _, a), (_, _, b)| a.cmp(b))
                 .map(|(idx, line, prefix)| {

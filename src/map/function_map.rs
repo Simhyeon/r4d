@@ -786,9 +786,9 @@ $fassert($test())".to_string()),
                 ),
             ),
             (
-                "insertf".to_owned(),
+                "indentl".to_owned(),
                 FMacroSign::new(
-                    "insertf",
+                    "indentl",
                     ["a_indenter", "a_lines"],
                     Self::indent_lines_before,
                     Some("Indent lines with indenter
@@ -804,17 +804,17 @@ $assert(
 # First
 # Second
 # Third,
-$indent(# ,First
+$indentl(# ,First
 Second
 Third))".to_string()),
                 ),
             ),
             (
-                "inserta".to_owned(),
+                "attachl".to_owned(),
                 FMacroSign::new(
-                    "inserta",
+                    "attachl",
                     ["a_indenter", "a_lines"],
-                    Self::indent_lines_after,
+                    Self::attach_lines_after,
                     None
                 ),
             ),
@@ -1973,13 +1973,14 @@ $assert(Upper$nl()Middle$nl()Last,$triml(    Upper
                 ),
             ),
             (
-                "trimla".to_owned(),
+                "exdent".to_owned(),
                 FMacroSign::new(
-                    "trimla",
+                    "exdent",
                     ["a_trim_option^","a_lines"],
-                    Self::trimla,
-                    Some("Triml with given amount
+                    Self::exdent,
+                    Some("Outdent (exdent) with given amount
 
+- Technically this trims preceding spaces
 - Trims by line but with given amount.
 - If given an integer, it will try to trim blank characters as much as given 
 amount
@@ -1995,7 +1996,7 @@ for this macro
 
 # Example
 
-$trimla(min,$space(1)First
+$exdent(min,$space(1)First
 $space(2)Second
 $space(3)Third)
 % ===
@@ -2005,7 +2006,7 @@ $space(3)Third)
 %   Third
 
 
-$trimla(3,$space(2)First
+$exdent(3,$space(2)First
 $space(3)Second
 $space(5)Third)
 % ===
