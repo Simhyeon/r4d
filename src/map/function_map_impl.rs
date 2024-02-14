@@ -1097,6 +1097,7 @@ impl FunctionMacroMap {
         if processor.contains_macro(name, MacroType::Any) {
             processor.undefine_macro(name, MacroType::Any);
         } else {
+            // TODO
             processor.log_error(&format!(
                 "Macro \"{}\" doesn't exist, therefore cannot undefine",
                 name
@@ -1556,7 +1557,7 @@ impl FunctionMacroMap {
         let value = &args[1];
 
         if p.state.behaviour == ErrorBehaviour::Strict && std::env::var(name).is_ok() {
-            return Err(RadError::InvalidArgument(format!(
+            return Err(RadError::UnsoundExecution(format!(
                 "You cannot override environment variable in strict mode. Failed to set \"{}\"",
                 name
             )));
@@ -1801,7 +1802,7 @@ impl FunctionMacroMap {
                 return Ok(Some(value.to_owned()));
             }
         }
-        Err(RadError::InvalidArgument(format!(
+        Err(RadError::InvalidExecution(format!(
             "Invalid path : {}",
             path.display()
         )))
@@ -1869,7 +1870,7 @@ impl FunctionMacroMap {
                 return Ok(Some(value.to_owned()));
             }
         }
-        Err(RadError::InvalidArgument(format!(
+        Err(RadError::InvalidExecution(format!(
             "Invalid path : {}",
             path.display()
         )))
@@ -2359,7 +2360,7 @@ impl FunctionMacroMap {
         let rules = args[0].trim().chars().collect::<Vec<_>>();
 
         if rules.len() % 2 != 0 {
-            return Err(RadError::InvalidCommandOption(format!(
+            return Err(RadError::InvalidArgument(format!(
                 "lineupm needs specific syntax for rules but given \"{}\"",
                 args[0]
             )));
@@ -2902,7 +2903,7 @@ impl FunctionMacroMap {
             // file. Thus canonicalize can possibly yield error
             let path = std::env::current_dir()?.join(file_name);
             if path.exists() && !path.is_file() {
-                return Err(RadError::InvalidArgument(format!(
+                return Err(RadError::InvalidExecution(format!(
                     "Failed to write \"{}\". Fileout cannot write to a directory",
                     path.display()
                 )));
@@ -2918,7 +2919,7 @@ impl FunctionMacroMap {
                     .open(path)?
             } else {
                 if !path.exists() {
-                    return Err(RadError::InvalidArgument(format!("Failed to write \"{}\". Fileout without truncate option needs exsiting non-directory file",path.display())));
+                    return Err(RadError::InvalidExecution(format!("Failed to write \"{}\". Fileout without truncate option needs exsiting non-directory file",path.display())));
                 }
 
                 OpenOptions::new().append(true).open(path)?
@@ -3145,7 +3146,7 @@ impl FunctionMacroMap {
             }
             _ => {
                 return Err(RadError::InvalidArgument(format!(
-                    "Sortl requires either asec or desc but given \"{}\"",
+                    "Sortl requires either asec(a) or desc(d) but given \"{}\"",
                     order_type
                 )))
             }
@@ -3194,8 +3195,8 @@ impl FunctionMacroMap {
         clogged_chunk_list.push(container);
         // ---
         match order_type.to_lowercase().as_str() {
-            "asec" => clogged_chunk_list.sort_unstable(),
-            "desc" => {
+            "a" | "asec" => clogged_chunk_list.sort_unstable(),
+            "d" | "desc" => {
                 clogged_chunk_list.sort_unstable();
                 clogged_chunk_list.reverse()
             }
@@ -3905,7 +3906,7 @@ impl FunctionMacroMap {
             let canonic = path.canonicalize()?;
             Utils::check_file_sanity(p, &canonic)?;
         } else {
-            return Err(RadError::InvalidArgument(format!(
+            return Err(RadError::InvalidExecution(format!(
                 "grepf requires a real file to read from but \"{}\" doesn't exist",
                 file
             )));
@@ -4080,16 +4081,8 @@ impl FunctionMacroMap {
                     ));
                 }
                 if !p.contains_macro(&target, MacroType::Runtime) {
-                    let sim = p.get_similar_macro(&target, true);
-                    let adder = if let Some(mac) = sim {
-                        format!(" Did you mean {mac}?")
-                    } else {
-                        String::default()
-                    };
-                    return Err(RadError::InvalidMacroReference(format!(
-                        "Cannot relay to non-exsitent macro or non-runtime macro \"{}\".{adder}",
-                        target
-                    )));
+                    let sim = p.get_similar_macro(&target, true); // For relay only runtime
+                    return Err(RadError::NoSuchMacroName(target.to_string(), sim));
                 }
                 RelayTarget::Macro(args[1].to_string())
             }
@@ -4723,7 +4716,7 @@ impl FunctionMacroMap {
         let file_name = Path::new(name);
 
         if !file_name.is_file() {
-            return Err(RadError::InvalidArgument(format!(
+            return Err(RadError::InvalidExecution(format!(
                 "Dump requires a real file to dump but given file \"{}\" doesn't exist",
                 file_name.display()
             )));
@@ -4755,6 +4748,8 @@ impl FunctionMacroMap {
         if !processor.set_documentation(macro_name, content)
             && processor.state.behaviour == ErrorBehaviour::Strict
         {
+            // Document can only be applied to
+            // runtime macro
             let err = RadError::NoSuchMacroName(
                 macro_name.to_string(),
                 processor.get_similar_macro(macro_name, true),
@@ -4874,7 +4869,7 @@ impl FunctionMacroMap {
             // Strict mode prevents overriding
             // Return error
             if processor.state.behaviour == ErrorBehaviour::Strict {
-                return Err(RadError::InvalidMacroDefinition(format!(
+                return Err(RadError::UnsoundExecution(format!(
                     "Creating a static macro with a name already existing : \"{}\"",
                     name
                 )));
@@ -4941,10 +4936,10 @@ impl FunctionMacroMap {
         let name = args[0].trim();
         let target = &args[1];
         if !processor.replace_macro(name, target) {
-            return Err(RadError::InvalidArgument(format!(
-                "{} doesn't exist, thus cannot replace it's content",
-                name
-            )));
+            return Err(RadError::NoSuchMacroName(
+                name.to_owned(),
+                processor.get_similar_macro(target, true), // Only runtime macro can be replaced.
+            ));
         }
         Ok(None)
     }
@@ -5264,7 +5259,7 @@ impl FunctionMacroMap {
         let path = args[0].trim();
         let path = Path::new(path);
         if !path.exists() {
-            return Err(RadError::InvalidArgument(format!(
+            return Err(RadError::InvalidExecution(format!(
                 "Cannot source non-existent file \"{}\"",
                 path.display()
             )));
@@ -5289,7 +5284,7 @@ impl FunctionMacroMap {
                     }
                 }
             } else {
-                return Err(RadError::InvalidArgument(format!(
+                return Err(RadError::InvalidExecution(format!(
                     "Invalid line in source file, line \"{}\" \n = \"{}\"",
                     idx, line
                 )));
@@ -5315,7 +5310,7 @@ impl FunctionMacroMap {
         let path = args[0].trim();
         let path = Path::new(path);
         if !path.exists() {
-            return Err(RadError::InvalidArgument(format!(
+            return Err(RadError::InvalidExecution(format!(
                 "Cannot import from non-existent file \"{}\"",
                 path.display()
             )));
@@ -5365,7 +5360,7 @@ impl FunctionMacroMap {
                 PathBuf::from(val.trim())
             };
             if !path.exists() {
-                return Err(RadError::InvalidArgument(format!(
+                return Err(RadError::InvalidExecution(format!(
                     "Cannot list non-existent directory \"{}\"",
                     path.display()
                 )));
@@ -5408,7 +5403,12 @@ impl FunctionMacroMap {
         let args = Utils::get_split_arguments_or_error("unicode", &args, attr, 1, None)?;
 
         let unicode_character = args[0].trim();
-        let unicode_hex = u32::from_str_radix(unicode_character, 16)?;
+        let unicode_hex = u32::from_str_radix(unicode_character, 16).map_err(|_| {
+            RadError::InvalidArgument(format!(
+                "Could not convert given value \"{}\" into a u32 unicode value",
+                args[0]
+            ))
+        })?;
         Ok(Some(
             char::from_u32(unicode_hex)
                 .ok_or_else(|| {
@@ -5495,7 +5495,12 @@ impl FunctionMacroMap {
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("wrap", &args, attr, 2, None)?;
 
-        let width = args[0].trim().parse::<usize>()?;
+        let width = args[0].trim().parse::<usize>().map_err(|_| {
+            RadError::InvalidArgument(format!(
+                "Could not convert given value \"{}\" into a number",
+                args[0]
+            ))
+        })?;
         let content = &args[1];
         let result = textwrap::fill(content, width);
         Ok(Some(result))
@@ -5572,7 +5577,7 @@ impl FunctionMacroMap {
 
         let table_name = args[0].trim();
         if processor.indexer.contains_table(table_name) {
-            return Err(RadError::InvalidArgument(format!(
+            return Err(RadError::InvalidExecution(format!(
                 "Cannot register exsiting table : \"{}\"",
                 args[0]
             )));
@@ -5692,7 +5697,7 @@ impl FromStr for BlankHash {
             } else if ch == ' ' {
                 hash.index += SPACE_SIZE;
             } else {
-                return Err(RadError::InvalidCommandOption(format!(
+                return Err(RadError::InvalidConversion(format!(
                     "Could not create a BlankHash from string possibly due to \
             incorrect input : Source string \"{}\"",
                     s

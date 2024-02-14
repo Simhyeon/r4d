@@ -16,7 +16,7 @@ impl Formatter {
     /// - github
     /// - wikitext
     /// - html
-    pub fn csv_to_table(table_format: &str, data: &str, newline: &str) -> RadResult<String> {
+    pub(crate) fn csv_to_table(table_format: &str, data: &str, newline: &str) -> RadResult<String> {
         let data = dcsv::Reader::new()
             .trim(true)
             .ignore_empty_row(true)
@@ -32,7 +32,7 @@ impl Formatter {
             "wikitext" => Formatter::wikitext_table(&data, newline)?,
             "html" => Formatter::html_table(&data, newline)?,
             _ => {
-                return Err(RadError::UnsupportedTableFormat(format!(
+                return Err(RadError::InvalidConversion(format!(
                     "Unsupported table format : {}",
                     table_format
                 )))

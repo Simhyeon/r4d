@@ -15,41 +15,92 @@ impl std::error::Error for RadError {}
 /// R4d's error type
 #[derive(Debug)]
 pub enum RadError {
-    SaneExit,
-    Interrupt,
-    HookMacroFail(String),
-    InvalidConversion(String),
-    UnallowedChar(String),
+    // ----------
+    // Following errors are the errors that macro logics and yield.
+    // In other words, macros cannot yield other logics other than followings.
+    // Yet other logics ( processing, debugging etc. ) can yield any error from this enum.
+    /// Failure of assertion
     AssertFail,
+    /// Error behaviour which was specifically enforced by a user.
     UnsoundExecution(String),
+    /// Invalid exeuction means macro processing has failed to achieve expected result.
     InvalidExecution(String),
-    InvalidCommandOption(String),
-    InvalidMacroEnvironment(String),
-    EnvError(std::env::VarError),
-    InvalidMacroReference(String),
-    NoSuchMacroName(String, Option<String>),
-    InvalidMacroDefinition(String),
-    InvalidRegex(regex::Error),
-    InvalidFormula(evalexpr::EvalexprError),
+    /// Invalid argument means argument is invalid before processing
+    ///
+    /// This error can also mean "ingredients" associated with macro argument is tot valid
     InvalidArgument(String),
-    InvalidArgInt(std::num::ParseIntError),
-    InvalidArgBoolean(std::str::ParseBoolError),
+    /// Macro is not availble for execution due to variadic situation
+    UnallowedMacroExecution(String),
+    /// Error when macro with such name doesn't exist
+    ///
+    /// This error types accepts similar macro name and display it to user.
+    NoSuchMacroName(String, Option<String>),
+    /// Error when processor fails to define a macro
+    InvalidMacroDefinition(String),
+    /// Used by panic macro
+    ///
+    /// This error is recaptured as Interrupt by processor
+    ManualPanic(String),
+    // ----------
+
+    // ----------
+    // <GENERAL>
+    /// Given macro environment is not valid
+    InvalidMacroEnvironment(String),
+    /// Conversion of env::VarError
+    EnvError(std::env::VarError),
+    /// Error when processor fails get reference of
+    ///
+    /// This error indicates that given macro name doesn't fit the standard of the processor
+    /// requires. Mostly empty macro name but also includes when processor interanl changed without
+    /// proper care or attribute is wrong etc...
+    InvalidMacroReference(String),
+    /// Error on file operation
     InvalidFile(String),
+    /// Storage operation failed
+    StorageError(String),
+    /// Hook failure
+    HookMacroFail(String),
+    /// When raw string input fails conver to specific type
+    ///
+    /// This should not be directly invoked from macro logics but from implemented methods.
+    InvalidConversion(String),
+    /// Invalid character while processing
+    UnallowedChar(String),
+    /// Required permission was not authorized to user
+    PermissionDenied(String, AuthType),
+    /// Strict panic
+    StrictPanic,
+    // </GENERAL>
+
+    // <Preocedure flow related>
+    /// Invoked by exit macro
+    SaneExit,
+    /// Invoked by panic macro
+    Interrupt,
+    // </Procedure>
+
+    // <BIN>
+    /// Error behaviour occured from command line binary
+    #[cfg(feature = "clap")]
+    InvalidCommandOption(String),
+    // </BIN>
+
+    // Crate specific || Conversion
+    // Namely,
+    // <MISC>
+    /// Conversion of regex error
+    InvalidRegex(regex::Error),
+    /// Conversion of evalexpr error
+    InvalidFormula(evalexpr::EvalexprError),
     StdIo(std::io::Error),
     FmtError(std::fmt::Error),
     Utf8Err(std::string::FromUtf8Error),
-    UnsupportedTableFormat(String),
     BincodeError(String),
-    PermissionDenied(String, AuthType),
-    StrictPanic,
-    ManualPanic(String),
-    StorageError(String),
     #[cfg(feature = "cindex")]
     CIndexError(CIndexError),
-    UnallowedMacroExecution(String),
     DcsvError(dcsv::DcsvError),
-    #[cfg(feature = "clap")]
-    RadoError(String),
+    // </MISC>
 }
 impl std::fmt::Display for RadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -62,7 +113,6 @@ impl std::fmt::Display for RadError {
             Self::AssertFail => "Assert failed".to_string(),
             Self::UnsoundExecution(err) => format!("Critical unsound execution error \n= {}", err),
             Self::InvalidExecution(err) => format!("Invalid execution error \n= {}", err),
-            Self::InvalidCommandOption(command) => format!("Invalid command option\n= {}", command),
             Self::InvalidMacroEnvironment(err) => format!("Invalid macro environment\n= {}", err),
             Self::EnvError(env) => format!("Invalid environment name\n= {}", env),
             Self::InvalidMacroReference(err) => format!("Invalid macro reference\n= {}", err),
@@ -78,13 +128,10 @@ impl std::fmt::Display for RadError {
             Self::InvalidRegex(err) => format!("Failed regex operation\n= {}", err),
             Self::InvalidFormula(err) => format!("Invalid formula\n= {}", err),
             Self::InvalidArgument(arg) => format!("Invalid argument\n= {}", arg),
-            Self::InvalidArgInt(err) => format!("Invalid argument type\n= {}", err),
-            Self::InvalidArgBoolean(err) => format!("Invalid argument type\n= {}", err),
             Self::InvalidFile(file) => format!("File,\"{}\", does not exist", file),
             Self::StdIo(err) => format!("Standard IO error\n= {}", err),
             Self::FmtError(err) => format!("Formatting error\n= {}", err),
             Self::Utf8Err(err) => format!("Failed to convert to utf8 string\n= {}", err),
-            Self::UnsupportedTableFormat(txt) => format!("Unsupported table format\n= {}", txt),
             Self::BincodeError(txt) => format!("Failed frozen operation\n= {}", txt),
             Self::PermissionDenied(txt, atype) => format!(
                 "Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.",
@@ -100,7 +147,7 @@ impl std::fmt::Display for RadError {
             }
             Self::DcsvError(err) => format!("{}", err),
             #[cfg(feature = "clap")]
-            Self::RadoError(err) => format!("Rado error \n= {}", err),
+            Self::InvalidCommandOption(command) => format!("Invalid command option\n= {}", command),
         };
         write!(f, "{}", text)
     }
@@ -124,18 +171,6 @@ impl From<dcsv::DcsvError> for RadError {
 impl From<evalexpr::EvalexprError> for RadError {
     fn from(err: evalexpr::EvalexprError) -> Self {
         Self::InvalidFormula(err)
-    }
-}
-
-impl From<std::num::ParseIntError> for RadError {
-    fn from(err: std::num::ParseIntError) -> Self {
-        Self::InvalidArgInt(err)
-    }
-}
-
-impl From<std::str::ParseBoolError> for RadError {
-    fn from(err: std::str::ParseBoolError) -> Self {
-        Self::InvalidArgBoolean(err)
     }
 }
 

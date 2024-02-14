@@ -193,7 +193,7 @@ impl std::str::FromStr for CommentType {
             "start" => Self::Start,
             "any" => Self::Any,
             _ => {
-                return Err(RadError::InvalidCommandOption(format!(
+                return Err(RadError::InvalidConversion(format!(
                     "Comment type : \"{}\" is not available.",
                     s
                 )));
@@ -461,7 +461,7 @@ impl std::str::FromStr for AlignType {
             "l" | "left" => Ok(Self::Left),
             "r" | "right" => Ok(Self::Right),
             "c" | "center" => Ok(Self::Center),
-            _ => Err(RadError::InvalidCommandOption(format!(
+            _ => Err(RadError::InvalidConversion(format!(
                 "Align type : \"{}\" is not available.",
                 s
             ))),
@@ -504,7 +504,7 @@ impl FromStr for VarContOperation {
             "set" => Self::Set,
             "extend" => Self::Extend,
             _ => {
-                return Err(RadError::InvalidArgument(format!(
+                return Err(RadError::InvalidConversion(format!(
                     "{s} is not a valid container operation"
                 )));
             }
@@ -529,7 +529,7 @@ impl std::str::FromStr for LineUpType {
             "r" | "Right" => Ok(Self::Right),
             "pr" | "parralel-right" => Ok(Self::ParralelRight),
             "pl" | "parralel-left" => Ok(Self::ParralelLeft),
-            _ => Err(RadError::InvalidCommandOption(format!(
+            _ => Err(RadError::InvalidConversion(format!(
                 "Line up type : \"{}\" is not available.",
                 s
             ))),

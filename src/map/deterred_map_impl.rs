@@ -53,18 +53,19 @@ impl DeterredMacroMap {
         let mut ap = ArgParser::new();
         let args = Utils::get_split_arguments_or_error("append", &args, attr, 2, Some(&mut ap))?;
 
-        let name = processor.parse_and_strip(&mut ap, attr, level, "append", args[0].trim())?;
-        let target = processor.parse_and_strip(&mut ap, attr, level, "append", args[1].as_ref())?;
+        let name = &processor.parse_and_strip(&mut ap, attr, level, "append", args[0].trim())?;
+        let target =
+            &processor.parse_and_strip(&mut ap, attr, level, "append", args[1].as_ref())?;
 
-        if let Some(name) = processor.contains_local_macro(level, &name) {
-            processor.append_local_macro(&name, &target);
-        } else if processor.contains_macro(&name, MacroType::Runtime) {
-            processor.append_macro(&name, &target);
+        if let Some(name) = processor.contains_local_macro(level, name) {
+            processor.append_local_macro(&name, target);
+        } else if processor.contains_macro(name, MacroType::Runtime) {
+            processor.append_macro(name, target);
         } else {
-            return Err(RadError::InvalidArgument(format!(
-                "Macro \"{}\" doesn't exist",
-                name
-            )));
+            return Err(RadError::NoSuchMacroName(
+                name.to_string(),
+                processor.get_similar_macro(name, true), // Only runtime
+            ));
         }
 
         Ok(None)
@@ -264,7 +265,7 @@ impl DeterredMacroMap {
         };
 
         if bufread && !std::path::Path::new(source.as_ref()).exists() {
-            return Err(RadError::InvalidArgument(format!(
+            return Err(RadError::InvalidExecution(format!(
                 "Cannot find a file \"{}\" ",
                 source
             )));
@@ -441,7 +442,7 @@ impl DeterredMacroMap {
                 let splitted = s.split(',').collect::<Vec<_>>();
                 if splitted.is_empty() {
                     return Err(RadError::InvalidArgument(format!(
-                        "Forjoin cannot process {} as valid array",
+                        "Forjoin cannot process {} as a valid array",
                         s
                     )));
                 } else if line_width == 0 {
@@ -674,16 +675,16 @@ impl DeterredMacroMap {
         let macro_name = &p
             .parse_and_strip(&mut ap, attr, level, "logm", args)?
             .trim()
-            .to_string();
+            .to_owned();
         let body = if let Some(name) = p.contains_local_macro(level, macro_name) {
             p.get_local_macro_body(&name)?.to_string()
         } else if let Ok(body) = p.get_runtime_macro_body(macro_name) {
             body.to_string()
         } else {
-            return Err(RadError::InvalidArgument(format!(
-                "Macro \"{}\" doesn't exist",
-                &macro_name
-            )));
+            return Err(RadError::NoSuchMacroName(
+                macro_name.to_owned(),
+                p.get_similar_macro(macro_name, true), // Only runtime
+            ));
         };
         p.log_message(&body)?;
         Ok(None)
@@ -1160,7 +1161,7 @@ impl DeterredMacroMap {
             processor.state.relay.pop(); // Pop relay
             Ok(chunk)
         } else {
-            Err(RadError::InvalidArgument(format!(
+            Err(RadError::InvalidExecution(format!(
                 "readto cannot read non-file \"{}\"",
                 file_path.display()
             )))
@@ -1235,7 +1236,7 @@ impl DeterredMacroMap {
             processor.state.input_stack.remove(&canonic); // Collect stack
             Ok(chunk)
         } else {
-            Err(RadError::InvalidArgument(format!(
+            Err(RadError::InvalidExecution(format!(
                 "readin cannot read non-file \"{}\"",
                 file_path.display()
             )))
@@ -1348,7 +1349,7 @@ impl DeterredMacroMap {
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         if p.state.stream_state.on_stream {
-            return Err(RadError::InvalidArgument(
+            return Err(RadError::UnallowedMacroExecution(
                 "Stream cannot be nested".to_string(),
             ));
         }
@@ -1386,7 +1387,7 @@ impl DeterredMacroMap {
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         if p.state.stream_state.on_stream {
-            return Err(RadError::InvalidArgument(
+            return Err(RadError::UnallowedMacroExecution(
                 "Stream series cannot be nested".to_string(),
             ));
         }
@@ -1495,7 +1496,7 @@ impl DeterredMacroMap {
                     "File path : \"{}\" doesn't exist or not a file",
                     file_path.display()
                 );
-                Err(RadError::InvalidArgument(formatted))
+                Err(RadError::InvalidExecution(formatted))
             }
         } else {
             Err(RadError::InvalidArgument(

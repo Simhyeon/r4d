@@ -278,7 +278,7 @@ impl<'processor> Processor<'processor> {
         if let Ok(option) = WriteOption::file(target_file.as_ref(), open_option) {
             self.write_option = option;
         } else {
-            return Err(RadError::InvalidCommandOption(format!(
+            return Err(RadError::InvalidExecution(format!(
                 "Could not create file \"{}\"",
                 target_file.as_ref().display()
             )));
@@ -316,7 +316,7 @@ impl<'processor> Processor<'processor> {
         if let Ok(file) = WriteOption::file(target_file.as_ref(), file) {
             self.logger.set_write_option(Some(file));
         } else {
-            return Err(RadError::InvalidCommandOption(format!(
+            return Err(RadError::InvalidExecution(format!(
                 "Could not create file \"{}\"",
                 target_file.as_ref().display()
             )));
@@ -1074,7 +1074,7 @@ impl<'processor> Processor<'processor> {
     /// ```
     pub fn add_runtime_rules(&mut self, rules: &[(impl AsRef<str>, &str, &str)]) -> RadResult<()> {
         if self.state.hygiene == Hygiene::Aseptic {
-            let err = RadError::UnallowedMacroExecution(format!(
+            let err = RadError::UnsoundExecution(format!(
                 "Cannot register macros : \"{:?}\" in aseptic mode",
                 rules.iter().map(|(s, _, _)| s.as_ref()).collect::<Vec<_>>()
             ));
@@ -1130,7 +1130,7 @@ impl<'processor> Processor<'processor> {
         rules: &[(impl AsRef<str>, impl AsRef<str>)],
     ) -> RadResult<()> {
         if self.state.hygiene == Hygiene::Aseptic {
-            let err = RadError::UnallowedMacroExecution(format!(
+            let err = RadError::UnsoundExecution(format!(
                 "Cannot register macros : \"{:?}\" in aseptic mode",
                 rules.iter().map(|(s, _)| s.as_ref()).collect::<Vec<_>>()
             ));
@@ -2347,7 +2347,7 @@ impl<'processor> Processor<'processor> {
             } else {
                 frag.args.split('=').next().unwrap()
             };
-            let err = RadError::UnallowedMacroExecution(format!(
+            let err = RadError::UnsoundExecution(format!(
                 "Can't override exsiting macro : \"{}\"",
                 mac_name
             ));
@@ -2369,7 +2369,8 @@ impl<'processor> Processor<'processor> {
 
         // Dry run if such mode is set
         if self.state.process_type == ProcessType::Dry {
-            let err = RadError::InvalidArgument(format!("Macro \"{}\" has invalid body", name));
+            let err =
+                RadError::InvalidMacroDefinition(format!("Macro \"{}\" has invalid body", name));
             let res = self
                 .process_string(None, &format!("${}({})", name, args.replace(' ', ",")))
                 .map_err(|_| &err);
@@ -2396,7 +2397,7 @@ impl<'processor> Processor<'processor> {
         // Save to container if it is an argument
         if cont_type == &ContainerType::Argument {
             if container.is_none() {
-                return Err(RadError::UnsoundExecution(
+                return Err(RadError::InvalidExecution(
                     "Argument container type should always have valid container. This is a programming error".to_string(),
                 ));
             }
@@ -3070,7 +3071,7 @@ impl<'processor> Processor<'processor> {
     fn set_file(&mut self, file: &str) -> RadResult<()> {
         let path = Path::new(file);
         if !path.exists() {
-            Err(RadError::InvalidCommandOption(format!(
+            Err(RadError::InvalidFile(format!(
                 "File, \"{}\" doesn't exist, therefore cannot be read by r4d.",
                 path.display()
             )))
@@ -3638,9 +3639,11 @@ impl<'processor> Processor<'processor> {
 
     /// Replace macro's content
     ///
-    /// This exits for internal macro logic.
+    /// - This exits for internal macro logic.
+    /// - This will do nothing if macro doesn't exist
+    /// - Only runtime macro's body can be replaced with
     ///
-    /// This will do nothing if macro doesn't exist
+    /// # Example
     ///
     /// ```rust
     /// let mut proc = r4d::Processor::new();
