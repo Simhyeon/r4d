@@ -70,15 +70,24 @@ impl MacroAttribute {
         *self = Self::default();
     }
 
-    /// Check if fragment has attribute
-    pub(crate) fn has_attribute(&self) -> bool {
-        self.pipe_input
-            || self.pipe_output
-            || self.yield_literal
-            || self.trim_output
-            || self.trim_input
-            || self.negate_result
-            || self.skip_expansion
+    pub(crate) fn set(&mut self, attr: char) -> bool {
+        match attr {
+            '|' => self.pipe_output = true,
+            '*' => self.yield_literal = true,
+            '!' => self.negate_result = true,
+            '=' => self.trim_input = true,
+            '^' => self.trim_output = true,
+            '-' => self.pipe_input = true,
+            '~' => self.skip_expansion = true,
+            _ => return false,
+        }
+        true
+    }
+
+    pub(crate) fn set_from_string(&mut self, attributes: &str) {
+        for ch in attributes.chars() {
+            self.set(ch);
+        }
     }
 }
 
@@ -117,6 +126,7 @@ pub(crate) struct MacroFragment {
     pub name: String,
     pub args: String,
     // This yield processed_args information which is not needed for normal operation.
+    /// Argument that includes piped value
     #[cfg(feature = "debug")]
     pub processed_args: String,
     pub attribute: MacroAttribute,
@@ -155,11 +165,6 @@ impl MacroFragment {
     /// This also enables user to check if fragment has been cleared or not
     pub(crate) fn is_empty(&self) -> bool {
         self.whole_string.len() == 0
-    }
-
-    /// Check if fragment has attribute
-    pub(crate) fn has_attribute(&self) -> bool {
-        self.attribute.has_attribute()
     }
 }
 

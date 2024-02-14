@@ -26,7 +26,7 @@ use crate::package::StaticScript;
 use crate::runtime_map::RuntimeMacro;
 use crate::sigmap::SignatureMap;
 use crate::storage::{RadStorage, StorageOutput};
-use crate::utils::Utils;
+use crate::utils::{RadStr, Utils};
 use crate::NewArgParser as ArgParser;
 use crate::SplitVariant;
 use crate::{consts::*, RadResult};
@@ -353,7 +353,8 @@ impl<'processor> Processor<'processor> {
                 "\"{}\" is not allowed",
                 character
             )));
-        } else if self.get_macro_char() == character {
+        }
+        if self.get_macro_char() == character {
             // macro char and comment char should not be equal
             return Err(RadError::UnallowedChar(format!(
                 "\"{}\" is already defined for macro character",
@@ -386,10 +387,10 @@ impl<'processor> Processor<'processor> {
                 "\"{}\" is not allowed",
                 macro_character
             )));
-        } else {
-            self.state.macro_char.replace(macro_character);
-            self.state.comment_char.replace(comment_char);
         }
+
+        self.state.macro_char.replace(macro_character);
+        self.state.comment_char.replace(comment_char);
         Ok(self)
     }
 
@@ -408,13 +409,15 @@ impl<'processor> Processor<'processor> {
                 "\"{}\" is not allowed",
                 character
             )));
-        } else if self.get_comment_char() == character {
+        }
+        if self.get_comment_char() == character {
             // macro char and comment char should not be equal
             return Err(RadError::UnallowedChar(format!(
                 "\"{}\" is already defined for comment character",
                 character
             )));
         }
+
         self.state.macro_char.replace(character);
         Ok(self)
     }
@@ -1081,9 +1084,8 @@ impl<'processor> Processor<'processor> {
             if self.state.behaviour == ErrorBehaviour::Strict {
                 self.log_error(&err.to_string())?;
                 return Err(RadError::StrictPanic);
-            } else {
-                self.log_warning(&err.to_string(), WarningType::Security)?;
             }
+            self.log_warning(&err.to_string(), WarningType::Security)?;
         }
         for (name, args, body) in rules {
             let name = name.as_ref().trim();
@@ -1137,9 +1139,8 @@ impl<'processor> Processor<'processor> {
             if self.state.behaviour == ErrorBehaviour::Strict {
                 self.log_error(&err.to_string())?;
                 return Err(err);
-            } else {
-                self.log_warning(&err.to_string(), WarningType::Sanity)?;
             }
+            self.log_warning(&err.to_string(), WarningType::Sanity)?;
         }
         for (name, body) in rules {
             let name = name.as_ref().trim();
@@ -1831,7 +1832,7 @@ impl<'processor> Processor<'processor> {
         self.logger
             .start_new_tracker(TrackType::Body(caller.to_string()));
 
-        for line in Utils::full_lines(chunk) {
+        for line in chunk.full_lines() {
             // Deny newline
             if self.state.deny_newline {
                 self.state.deny_newline = false;
@@ -1874,7 +1875,7 @@ impl<'processor> Processor<'processor> {
         let mut result = String::new();
         self.logger
             .start_new_tracker(TrackType::Argument(caller.to_owned()));
-        for line in Utils::full_lines(chunk) {
+        for line in chunk.full_lines() {
             // Deny newline
             if self.state.deny_newline {
                 self.state.deny_newline = false;
@@ -1936,7 +1937,8 @@ impl<'processor> Processor<'processor> {
             if self.state.escape_newline {
                 if ch == '\r' && ch_iter.peek().unwrap_or(&'0') == &'\n' {
                     continue;
-                } else if ch == '\n' {
+                }
+                if ch == '\n' {
                     self.state.escape_newline = false;
                     continue;
                 }
@@ -2202,7 +2204,7 @@ impl<'processor> Processor<'processor> {
             return Ok(result);
         }
         // Find deterred macro
-        else if self.map.is_deterred_macro(name) {
+        if self.map.is_deterred_macro(name) {
             if let Some(func) = self.map.deterred.get_deterred_macro(name) {
                 // On dry run, macro is not expanded but only checks if found macro exists
                 if self.state.process_type == ProcessType::Dry {
@@ -2304,9 +2306,9 @@ impl<'processor> Processor<'processor> {
             if self.state.process_type == ProcessType::Dry {
                 self.log_warning(&err.to_string(), WarningType::Sanity)?;
                 return Ok(None);
-            } else {
-                return Err(err);
             }
+
+            return Err(err);
         };
 
         for (idx, arg_type) in arg_types.iter().enumerate() {
@@ -2356,12 +2358,8 @@ impl<'processor> Processor<'processor> {
         }
 
         if frag.attribute.trim_input {
-            self.map.register_runtime(
-                name,
-                args,
-                &Utils::trim_each_lines(body.trim()),
-                self.state.hygiene,
-            )?;
+            self.map
+                .register_runtime(name, args, &body.trim_each_lines(), self.state.hygiene)?;
         } else {
             self.map
                 .register_runtime(name, args, body, self.state.hygiene)?;
@@ -2564,26 +2562,7 @@ impl<'processor> Processor<'processor> {
                 if frag.name.is_empty() {
                     self.logger.append_track(String::from("Macro start"));
                 }
-                match ch {
-                    '|' => frag.attribute.pipe_output = true,
-                    '*' => frag.attribute.yield_literal = true,
-                    '!' => frag.attribute.negate_result = true,
-                    '=' => frag.attribute.trim_input = true,
-                    '^' => frag.attribute.trim_output = true,
-                    '-' => frag.attribute.pipe_input = true,
-                    '~' => frag.attribute.skip_expansion = true,
-                    _ => {
-                        // This is mostly not reached because it is captured as non-exsitent name
-                        if frag.has_attribute() {
-                            let err = RadError::InvalidMacroReference(format!(
-                                "Invalid macro attribute : \"{}\"",
-                                ch
-                            ));
-                            return Err(err);
-                        }
-                        frag.name.push(ch);
-                    }
-                }
+                frag.attribute.set(ch);
             }
             Cursor::Arg => frag.args.push(ch),
             _ => unreachable!(),
@@ -2618,9 +2597,9 @@ impl<'processor> Processor<'processor> {
                 if self.state.behaviour == ErrorBehaviour::Strict {
                     self.log_error(&err.to_string())?;
                     return Err(RadError::StrictPanic);
-                } else {
-                    self.log_warning(&err.to_string(), WarningType::Security)?;
                 }
+
+                self.log_warning(&err.to_string(), WarningType::Security)?;
             } else {
                 if level != 0 && self.state.process_type == ProcessType::Freeze {
                     self.log_warning(
@@ -2838,7 +2817,7 @@ impl<'processor> Processor<'processor> {
 
             // Negate result
             if frag.attribute.negate_result {
-                match Utils::is_arg_true(content.trim()) {
+                match content.is_arg_true() {
                     Ok(boolean) => content = (!boolean).to_string(),
                     Err(_) => {
                         if self.state.behaviour == ErrorBehaviour::Strict {
@@ -2846,15 +2825,15 @@ impl<'processor> Processor<'processor> {
                                 "Tried to negate value, \"{}\" which is not a boolean",
                                 content
                             )));
-                        } else {
-                            self.log_warning(
-                                &format!(
-                                    "Tried to negate value, \"{}\" which is not a boolean",
-                                    content
-                                ),
-                                WarningType::Sanity,
-                            )?;
                         }
+
+                        self.log_warning(
+                            &format!(
+                                "Tried to negate value, \"{}\" which is not a boolean",
+                                content
+                            ),
+                            WarningType::Sanity,
+                        )?;
                     }
                 }
             }
@@ -3694,7 +3673,7 @@ impl<'processor> Processor<'processor> {
     /// assert_eq!(true,proc.is_true("true").expect("Failed to convert"));
     /// ```
     pub fn is_true(&self, src: &str) -> RadResult<bool> {
-        Utils::is_arg_true(src)
+        src.is_arg_true()
     }
 
     // </EXT>

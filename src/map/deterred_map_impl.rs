@@ -1,11 +1,13 @@
 use crate::auth::AuthType;
-use crate::common::{ContainerType, FileTarget, FlowControl, MacroAttribute, ProcessInput};
+use crate::common::{
+    ContainerType, FileTarget, FlowControl, MacroAttribute, MacroFragment, ProcessInput,
+};
 use crate::common::{ErrorBehaviour, MacroType, RadResult, RelayTarget, STREAM_CONTAINER};
 use crate::consts::MACRO_SPECIAL_ANON;
 use crate::deterred_map::DeterredMacroMap;
 use crate::formatter::Formatter;
 use crate::parser::SplitVariant;
-use crate::utils::{Utils, NUM_MATCH};
+use crate::utils::{RadStr, Utils, NUM_MATCH};
 use crate::NewArgParser as ArgParser;
 use crate::WarningType;
 use crate::{Processor, RadError};
@@ -308,9 +310,9 @@ impl DeterredMacroMap {
             for line in lines {
                 let line = line?;
                 for cap in reg.captures_iter(&line) {
+                    // TODO Make an env to make unmatched group an error
                     let mut cap = cap.iter();
                     cap.next();
-                    // TODO Make an env to make unmatched group an error
                     let captured = cap
                         .filter(|s| s.is_some())
                         .map(|s| s.unwrap().as_str())
@@ -445,7 +447,8 @@ impl DeterredMacroMap {
                         "Forjoin cannot process {} as a valid array",
                         s
                     )));
-                } else if line_width == 0 {
+                }
+                if line_width == 0 {
                     // Initial state
                     line_width = splitted.len();
                 } else if line_width != splitted.len() {
@@ -537,7 +540,7 @@ impl DeterredMacroMap {
         let body = &args[0];
         let loop_src = processor.parse_and_strip(&mut ap, attr, level, "forline", &args[1])?;
         let mut count = 1;
-        for line in Utils::full_lines(&loop_src) {
+        for line in loop_src.full_lines() {
             // This overrides value
             processor.add_new_local_macro(level, "a_LN", &count.to_string());
             processor.add_new_local_macro(level, ":", line);
@@ -708,7 +711,7 @@ impl DeterredMacroMap {
         let boolean = &processor.parse_and_strip(&mut ap, attr, level, "if", &args[0])?;
 
         // Given condition is true
-        let cond = Utils::is_arg_true(boolean);
+        let cond = boolean.is_arg_true();
         if let Ok(cond) = cond {
             if cond {
                 let if_expr = processor
@@ -745,7 +748,7 @@ impl DeterredMacroMap {
         let boolean = &processor.parse_and_strip(&mut ap, attr, level, "ifelse", &args[0])?;
 
         // Given condition is true
-        let cond = Utils::is_arg_true(boolean);
+        let cond = boolean.is_arg_true();
         if let Ok(cond) = cond {
             if cond {
                 let if_expr = processor
@@ -1055,7 +1058,7 @@ impl DeterredMacroMap {
 
         ap.set_strip(true);
         let boolean = &processor.parse_and_strip(&mut ap, attr, level, "queif", &args[0])?;
-        let cond = Utils::is_arg_true(boolean)?;
+        let cond = boolean.is_arg_true()?;
         if cond {
             processor.insert_queue(&args[1]);
         }
@@ -1128,13 +1131,9 @@ impl DeterredMacroMap {
 
             // Optionally enable raw mode
             if args.len() >= 3 {
-                raw_include = Utils::is_arg_true(&processor.parse_and_strip(
-                    &mut ap,
-                    attr,
-                    level,
-                    "readto",
-                    args[2].trim(),
-                )?)?;
+                raw_include = processor
+                    .parse_and_strip(&mut ap, attr, level, "readto", args[2].trim())?
+                    .is_arg_true()?;
 
                 // You don't have to backup pause state because include wouldn't be triggered
                 // at the first place, if paused was true
@@ -1200,13 +1199,9 @@ impl DeterredMacroMap {
 
             // Optionally enable raw mode
             if args.len() >= 2 {
-                raw_include = Utils::is_arg_true(&processor.parse_and_strip(
-                    &mut ap,
-                    attr,
-                    level,
-                    "readin",
-                    args[1].trim(),
-                )?)?;
+                raw_include = processor
+                    .parse_and_strip(&mut ap, attr, level, "readin", args[1].trim())?
+                    .is_arg_true()?;
 
                 // You don't have to backup pause state because include wouldn't be triggered
                 // at the first place, if paused was true
@@ -1247,7 +1242,7 @@ impl DeterredMacroMap {
     ///
     /// # Usage
     ///
-    /// $exec(macro_name,macro_args)
+    /// $exec(macro_name,attrs,macro_args)
     pub(crate) fn execute_macro(
         args: &str,
         level: usize,
@@ -1255,7 +1250,7 @@ impl DeterredMacroMap {
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("exec", &args, attr, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("exec", &args, attr, 3, Some(&mut ap))?;
 
         ap.set_strip(true);
 
@@ -1263,9 +1258,14 @@ impl DeterredMacroMap {
             .parse_and_strip(&mut ap, attr, level, "exec", &args[0])?
             .trim()
             .to_string();
-        let args = processor.parse_and_strip(&mut ap, attr, level, "exec", &args[1])?;
+        let attrs = &processor.parse_and_strip(&mut ap, attr, level, "exec", &args[1])?;
+        let args = processor.parse_and_strip(&mut ap, attr, level, "exec", &args[2])?;
+        let mut frag = MacroFragment::new();
+        frag.args = args.to_string();
+        frag.name = macro_name.to_string();
+        frag.attribute.set_from_string(attrs);
         let result = processor
-            .execute_macro(level, "exec", macro_name, &args)?
+            .execute_macro_with_frag(level, "exec", &mut frag)?
             .unwrap_or_default();
         Ok(Some(result))
     }
@@ -1462,9 +1462,9 @@ impl DeterredMacroMap {
 
                 // Optionally enable raw mode
                 if args.len() >= 2 {
-                    raw_include = Utils::is_arg_true(
-                        &processor.parse_and_strip(&mut ap, attr, level, "include", &args[1])?,
-                    )?;
+                    raw_include = processor
+                        .parse_and_strip(&mut ap, attr, level, "include", &args[1])?
+                        .is_arg_true()?;
 
                     // You don't have to backup pause state because include wouldn't be triggered
                     // at the first place, if paused was true

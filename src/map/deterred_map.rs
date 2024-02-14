@@ -383,7 +383,7 @@ $EB()".to_string()),
                 "exec".to_owned(),
                 DMacroSign::new(
                     "exec",
-                    ["a_macro_name^", "a_macro_args"],
+                    ["a_macro_name^","a_macro_attribute^","a_macro_args"],
                     DeterredMacroMap::execute_macro,
                     Some("Execute a macro with arguments
 
@@ -391,12 +391,13 @@ $EB()".to_string()),
 
 # Arguments
 
-- a_macro_name : A macro name to exectue ( trimmed )
-- a_macro_args : Arguments to be passed to a macro
+- a_macro_name      : A macro name to exectue ( trimmed )
+- a_macro_attribute : A macro name to exectue ( trimmed )
+- a_macro_args      : Arguments to be passed to a macro
 
 # Example
 
-$assert($path(a,b,c),$exec(path,a,b,c))".to_string()),
+$assert($path(a,b,c),$exec(path,,a,b,c))".to_string()),
                 ),
             ),
             (

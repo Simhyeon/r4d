@@ -71,17 +71,6 @@ use colored::*;
 pub(crate) struct Utils;
 
 impl Utils {
-    /// Trim each lines while retaining newline
-    pub fn trim_each_lines(src: &str) -> String {
-        let mut formatted = String::new();
-        for line in Utils::full_lines(src) {
-            let end = Utils::get_line_ending(line);
-            formatted.push_str(line.trim());
-            formatted.push_str(end);
-        }
-        formatted
-    }
-
     // TODO
     // Check name validatity
     pub fn split_definition(src: &str) -> RadResult<(&str, &str, &str)> {
@@ -274,27 +263,6 @@ impl Utils {
         format!("{}.{}", level, name)
     }
 
-    /// Read full lines from &str
-    pub fn full_lines(input: &str) -> impl Iterator<Item = &str> {
-        let mut index = 0;
-        let mut match_ret = vec![];
-        let mut matched_iter = input.match_indices('\n').peekable();
-        if matched_iter.peek().is_none() {
-            let matched = std::iter::once(input).collect::<Vec<_>>();
-            matched.into_iter()
-        } else {
-            let matched = matched_iter.collect::<Vec<_>>();
-            for (idx, _) in matched {
-                let ret = &input[index..=idx];
-                index = idx + 1;
-                match_ret.push(ret);
-            }
-            // TODO
-            match_ret.push(&input[index..]);
-            match_ret.into_iter()
-        }
-    }
-
     // Shamelessly copied from
     // https://stackoverflow.com/questions/64517785/read-full-lines-from-stdin-including-n-until-end-of-file
     /// Read full lines of bufread iterator which doesn't chop new lines
@@ -311,62 +279,10 @@ impl Utils {
         })
     }
 
-    pub(crate) fn str_without_line_ending(src: &str) -> &str {
-        src.strip_suffix(Self::get_line_ending(src)).unwrap_or(src)
-    }
-
-    /// This return empty string if src doesn't end with line ending
-    pub(crate) fn get_line_ending(src: &str) -> &str {
-        if src.ends_with("\r\n") {
-            "\r\n"
-        } else if src.ends_with('\n') {
-            "\n"
-        } else {
-            ""
-        }
-    }
-
     /// Check if a character is a blank chracter
     // TODO remove this and use is_ascii_whitespace
     pub(crate) fn is_blank_char(ch: char) -> bool {
         ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
-    }
-
-    /// Check if a character is true without panic
-    ///
-    /// In this contenxt, true and non zero number is 'true' while false and zero number is false
-    pub(crate) fn is_arg_true_infallable(arg: &str) -> bool {
-        let arg = arg.trim();
-        if let Ok(value) = arg.parse::<usize>() {
-            return value != 0;
-        } else if arg.to_lowercase() == "true" {
-            return true;
-        } else if arg.to_lowercase() == "false" {
-            return false;
-        }
-        false
-    }
-
-    /// Check if a character is true
-    ///
-    /// In this contenxt, true and non zero number is 'true' while false and zero number is false
-    pub(crate) fn is_arg_true(arg: &str) -> RadResult<bool> {
-        let arg = arg.trim();
-        if let Ok(value) = arg.parse::<usize>() {
-            if value == 0 {
-                return Ok(false);
-            } else {
-                return Ok(true);
-            }
-        } else if arg.to_lowercase() == "true" {
-            return Ok(true);
-        } else if arg.to_lowercase() == "false" {
-            return Ok(false);
-        }
-
-        Err(RadError::InvalidArgument(
-            "Neither true nor false".to_owned(),
-        ))
     }
 
     /// Get a substring of utf8 encoded text.
@@ -1242,5 +1158,123 @@ impl Utils {
             }
         }
         Ok(())
+    }
+}
+
+/// Miscellaenous String utilit function
+pub(crate) trait RadStr {
+    fn strip_newline(&self) -> &str;
+    fn get_line_ending(&self) -> &str;
+    fn get_line_ending_always<'a>(&'a self, le: &'a str) -> &'a str;
+    fn full_lines(&self) -> impl Iterator<Item = &str>;
+    fn trim_each_lines(&self) -> String;
+    fn is_arg_true_infallable(&self) -> bool;
+    fn is_arg_true(&self) -> RadResult<bool>;
+}
+
+impl RadStr for str {
+    /// Get line ending without owning.
+    ///
+    /// This return empty string if src doesn't end with line ending
+    fn get_line_ending(&self) -> &str {
+        if self.ends_with("\r\n") {
+            "\r\n"
+        } else if self.ends_with('\n') {
+            "\n"
+        } else {
+            ""
+        }
+    }
+
+    /// Always get line ending
+    fn get_line_ending_always<'a>(&'a self, le: &'a str) -> &'a str {
+        if self.ends_with("\r\n") {
+            "\r\n"
+        } else if self.ends_with('\n') {
+            "\n"
+        } else {
+            le
+        }
+    }
+
+    /// Get &str without newline
+    fn strip_newline(&self) -> &str {
+        if self.ends_with("\r\n") {
+            &self[0..self.len() - 2]
+        } else if self.ends_with('\n') {
+            &self[0..self.len() - 1]
+        } else {
+            self
+        }
+    }
+
+    /// Get lines iterar which doesn' trim newline characters
+    fn full_lines(&self) -> impl Iterator<Item = &str> {
+        let mut index = 0;
+        let mut match_ret = vec![];
+        let mut matched_iter = self.match_indices('\n').peekable();
+        if matched_iter.peek().is_none() {
+            let matched = std::iter::once(self).collect::<Vec<_>>();
+            matched.into_iter()
+        } else {
+            let matched = matched_iter.collect::<Vec<_>>();
+            for (idx, _) in matched {
+                let ret = &self[index..=idx];
+                index = idx + 1;
+                match_ret.push(ret);
+            }
+            // TODO
+            match_ret.push(&self[index..]);
+            match_ret.into_iter()
+        }
+    }
+
+    /// Trim each lines while retaining newline
+    ///
+    /// This returned owned string
+    fn trim_each_lines(&self) -> String {
+        let mut formatted = String::new();
+        for line in self.full_lines() {
+            let end = line.get_line_ending();
+            formatted.push_str(line.trim());
+            formatted.push_str(end);
+        }
+        formatted
+    }
+
+    /// Check if a character is true without panic
+    ///
+    /// In this contenxt, true and non zero number is 'true' while false and zero number is false
+    fn is_arg_true_infallable(&self) -> bool {
+        let arg = self.trim();
+        if let Ok(value) = arg.parse::<usize>() {
+            return value != 0;
+        }
+        if arg.to_lowercase() == "true" {
+            return true;
+        }
+        false
+    }
+
+    /// Check if a character is true
+    ///
+    /// In this contenxt, true and non zero number is 'true' while false and zero number is false
+    fn is_arg_true(&self) -> RadResult<bool> {
+        let arg = self.trim();
+        if let Ok(value) = arg.parse::<usize>() {
+            if value == 0 {
+                return Ok(false);
+            } else {
+                return Ok(true);
+            }
+        } else if arg.to_lowercase() == "true" {
+            return Ok(true);
+        } else if arg.to_lowercase() == "false" {
+            return Ok(false);
+        }
+
+        Err(RadError::InvalidArgument(
+            "Neither true nor false".to_owned(),
+        ))
     }
 }

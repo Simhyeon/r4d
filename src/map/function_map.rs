@@ -336,6 +336,15 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "coll".to_owned(),
+                FMacroSign::new(
+                    "coll",
+                    ["a_pat","a_lines"],
+                    Self::collapse,
+                    None,
+                ),
+            ),
+            (
                 "comment".to_owned(),
                 FMacroSign::new(
                     "comment",
@@ -630,24 +639,6 @@ impl FunctionMacroMap {
                     ["a_count","a_lines"],
                     Self::fold_lines_by_count,
                     Some(man_fun!("foldlc.r4d")),
-                ),
-            ),
-            (
-                "foldt".to_owned(),
-                FMacroSign::new(
-                    "foldt",
-                    ["a_lines"],
-                    Self::foldt,
-                    None,
-                ),
-            ),
-            (
-                "foldby".to_owned(),
-                FMacroSign::new(
-                    "foldby",
-                    ["a_separator","a_content"],
-                    Self::fold_by,
-                    None,
                 ),
             ),
             (

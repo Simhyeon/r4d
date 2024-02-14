@@ -1,4 +1,4 @@
-use crate::utils::Utils;
+use crate::utils::RadStr;
 use std::env;
 
 use crate::{RadError, RadResult};
@@ -10,6 +10,8 @@ pub static PROC_ENV: Lazy<ProcEnv> = Lazy::new(ProcEnv::new);
 pub struct ProcEnv {
     pub(crate) no_color_print: bool,
     pub(crate) backtrace: bool,
+    pub(crate) allow_invalid_declare: bool,
+    pub(crate) allow_invalid_document: bool,
 }
 
 impl ProcEnv {
@@ -17,16 +19,18 @@ impl ProcEnv {
         Self {
             no_color_print: set_env_safely("RAD_NO_COLOR"),
             backtrace: set_env_safely("RAD_BACKTRACE"),
+            allow_invalid_declare: set_env_safely("RAD_ALLOW_E_DECL"),
+            allow_invalid_document: set_env_safely("RAD_ALLOW_E_DOCU"),
         }
     }
 }
 
 #[derive(Default, Debug)]
-pub struct MacEnv {
+pub(crate) struct MacEnv {
     pub rad_tab_width: Option<usize>,
-    // TODO
-    #[allow(dead_code)]
-    pub(crate) fold_with_space: bool,
+    pub fold_space: bool,
+    pub fold_reverse: bool,
+    pub fold_trim: bool,
 }
 
 impl MacEnv {
@@ -41,7 +45,9 @@ impl MacEnv {
         };
         Ok(Self {
             rad_tab_width,
-            fold_with_space: set_env_safely("RAD_FOLD_SPACE"),
+            fold_space: set_env_safely("RAD_FOLD_SPACE"),
+            fold_reverse: set_env_safely("RAD_FOLD_REVERSE"),
+            fold_trim: set_env_safely("RAD_FOLD_TRIM"),
         })
     }
 }
@@ -50,6 +56,6 @@ impl MacEnv {
 fn set_env_safely(name: &str) -> bool {
     env::var(name)
         .ok()
-        .map(|s| Utils::is_arg_true_infallable(&s))
+        .map(|s| s.is_arg_true_infallable())
         .unwrap_or(false)
 }

@@ -19,28 +19,26 @@ pub enum RadError {
     // Following errors are the errors that macro logics and yield.
     // In other words, macros cannot yield other logics other than followings.
     // Yet other logics ( processing, debugging etc. ) can yield any error from this enum.
-    /// Failure of assertion
+    ///Failure of assertion
     AssertFail,
-    /// Error behaviour which was specifically enforced by a user.
-    UnsoundExecution(String),
-    /// Invalid exeuction means macro processing has failed to achieve expected result.
-    InvalidExecution(String),
-    /// Invalid argument means argument is invalid before processing
+    ///Invalid argument means argument is invalid before processing
     ///
-    /// This error can also mean "ingredients" associated with macro argument is tot valid
+    ///This error can also mean "ingredients" associated with macro argument is tot valid
     InvalidArgument(String),
-    /// Macro is not availble for execution due to variadic situation
-    UnallowedMacroExecution(String),
-    /// Error when macro with such name doesn't exist
-    ///
-    /// This error types accepts similar macro name and display it to user.
-    NoSuchMacroName(String, Option<String>),
-    /// Error when processor fails to define a macro
+    ///Invalid exeuction means macro processing has failed to achieve expected result.
+    InvalidExecution(String),
+    ///Error when processor fails to define a macro
     InvalidMacroDefinition(String),
-    /// Used by panic macro
-    ///
-    /// This error is recaptured as Interrupt by processor
+    ///Used by panic macro This error is recaptured as Interrupt by processor
     ManualPanic(String),
+    ///Error when macro with such name doesn't exist
+    ///
+    ///This error types accepts similar macro name and display it to user.
+    NoSuchMacroName(String, Option<String>),
+    ///Macro is not availble for execution due to variadic situation
+    UnallowedMacroExecution(String),
+    ///Error behaviour which was specifically enforced by a user.
+    UnsoundExecution(String),
     // ----------
 
     // ----------
