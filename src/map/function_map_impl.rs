@@ -9,7 +9,7 @@ use crate::common::{MacroAttribute, VarContOperation};
 use crate::consts::{
     LOREM, LOREM_SOURCE, LOREM_WIDTH, MACRO_SPECIAL_LIPSUM, MAIN_CALLER, PATH_SEPARATOR,
 };
-use crate::env::PROC_ENV;
+
 use crate::error::RadError;
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
@@ -3040,7 +3040,7 @@ impl FunctionMacroMap {
         })?;
 
         if count == 0 {
-            return Ok(None);
+            return Ok(Some(String::new()));
         }
 
         let res = Utils::utf_slice(&args[1], Some(0), Some(count.saturating_sub(1) as isize))?;
@@ -3068,7 +3068,7 @@ impl FunctionMacroMap {
         })?;
 
         if count == 0 {
-            return Ok(None);
+            return Ok(Some(String::new()));
         }
 
         Ok(Some(
@@ -3095,7 +3095,7 @@ impl FunctionMacroMap {
             ))
         })?;
         if count_src == 0 {
-            return Ok(None);
+            return Ok(Some(String::new()));
         }
         let min_count = -(count_src as isize - 1);
 
@@ -3167,7 +3167,7 @@ impl FunctionMacroMap {
         })?;
 
         if count == 0 {
-            return Ok(None);
+            return Ok(Some(String::new()));
         }
 
         let min = if count == 0 {
@@ -4721,9 +4721,7 @@ impl FunctionMacroMap {
                 )?;
             }
             if processor.contains_macro(name, MacroType::Any) {
-                if processor.state.behaviour == ErrorBehaviour::Strict
-                    && !PROC_ENV.allow_invalid_declare
-                {
+                if processor.state.behaviour == ErrorBehaviour::Strict {
                     return Err(RadError::InvalidMacroDefinition(format!(
                         "Declaring a macro with a name already existing : \"{}\"",
                         name
@@ -4801,9 +4799,7 @@ impl FunctionMacroMap {
                 processor.get_similar_macro(macro_name, true),
             );
 
-            if processor.state.behaviour == ErrorBehaviour::Strict
-                && !PROC_ENV.allow_invalid_document
-            {
+            if processor.state.behaviour == ErrorBehaviour::Strict {
                 // Return error to processor
                 return Err(err);
             }
@@ -5628,7 +5624,7 @@ impl FunctionMacroMap {
                     if let Some(output) = value {
                         Ok(Some(output.into_printable()))
                     } else {
-                        Ok(None)
+                        Ok(Some(String::new()))
                     }
                 }
             }

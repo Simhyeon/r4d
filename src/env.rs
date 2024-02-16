@@ -8,19 +8,17 @@ pub static PROC_ENV: Lazy<ProcEnv> = Lazy::new(ProcEnv::new);
 
 #[derive(Debug)]
 pub struct ProcEnv {
+    pub(crate) no_consume: bool,
     pub(crate) no_color_print: bool,
     pub(crate) backtrace: bool,
-    pub(crate) allow_invalid_declare: bool,
-    pub(crate) allow_invalid_document: bool,
 }
 
 impl ProcEnv {
     pub fn new() -> Self {
         Self {
+            no_consume: set_env_safely("RAD_NO_CONSUME"),
             no_color_print: set_env_safely("RAD_NO_COLOR"),
             backtrace: set_env_safely("RAD_BACKTRACE"),
-            allow_invalid_declare: set_env_safely("RAD_ALLOW_E_DECL"),
-            allow_invalid_document: set_env_safely("RAD_ALLOW_E_DOCU"),
         }
     }
 }

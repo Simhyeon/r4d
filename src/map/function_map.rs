@@ -656,17 +656,7 @@ impl FunctionMacroMap {
                     "grep",
                     ["a_expr", "a_array"],
                     Self::grep_array,
-                    Some(
-"Extract matched items from given array. This returns all items as array
-
-# Arguments
-
-- a_expr  : A regex expression to match
-- a_lines : An array to get matches from
-
-# Example
-
-$assert(\\*a,b,c*\\,$grep([a-z],a,b,c,1,2))".to_string()),
+                    Some(man_fun!("grep.r4d")),
                 ),
             ),
             (
@@ -675,18 +665,7 @@ $assert(\\*a,b,c*\\,$grep([a-z],a,b,c,1,2))".to_string()),
                     "grepl",
                     ["a_expr", "a_lines"],
                     Self::grep_lines,
-                    Some(
-"Extract matched lines from given lines. This returns all lines that matches 
-a given expression
-
-# Arguments
-
-- a_expr  : A regex expression to match
-- a_lines : Lines to get matches from
-
-# Example
-
-$assert(2,$countl($grepl(Cargo,$syscmd(ls))))".to_string()),
+                    Some(man_fun!("grepl.r4d")),
                 ),
             ),
             (
@@ -695,20 +674,7 @@ $assert(2,$countl($grepl(Cargo,$syscmd(ls))))".to_string()),
                     "halt",
                     ESR,
                     Self::halt_relay,
-                    Some("Halt relaying
-
-- NOTE : Halt is automatically queued by default. Feed an optional argument to 
-configure this behaviour
-- $halt(false) == $halt()
-- use $halt(true) to immediately halt
-
-# Example
-
-$define(cont=)
-$relay(macro,cont)
-12345
-$halt()
-$assert(12345,$cont^())".to_string()),
+                    Some(man_fun!("halt.r4d")),
                 ),
             ),
             (

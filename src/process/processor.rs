@@ -2212,8 +2212,13 @@ impl<'processor> Processor<'processor> {
                 }
 
                 // Execute a macro function with arguments and get value
-                let final_result =
-                    func(&args, level, &frag.attribute, self)?.filter(|f| !f.is_empty());
+                let final_result = func(&args, level, &frag.attribute, self)?.filter(|f| {
+                    if !PROC_ENV.no_consume {
+                        !f.is_empty()
+                    } else {
+                        true
+                    }
+                });
 
                 return Ok(final_result);
             }
@@ -2229,7 +2234,13 @@ impl<'processor> Processor<'processor> {
             let func = self.map.function.get_func(name).unwrap();
             //let final_result = func(&args, self)?;
             let final_result = match func(&args, &frag.attribute, self) {
-                Ok(e) => e.filter(|f| !f.is_empty()),
+                Ok(e) => e.filter(|f| {
+                    if !PROC_ENV.no_consume {
+                        !f.is_empty()
+                    } else {
+                        true
+                    }
+                }),
                 Err(err) => {
                     return Err(err);
                 }
@@ -2562,7 +2573,9 @@ impl<'processor> Processor<'processor> {
                 if frag.name.is_empty() {
                     self.logger.append_track(String::from("Macro start"));
                 }
-                frag.attribute.set(ch);
+                if !frag.attribute.set(ch) {
+                    frag.name.push(ch);
+                }
             }
             Cursor::Arg => frag.args.push(ch),
             _ => unreachable!(),
