@@ -1,0 +1,25 @@
+Crop preceding lines from given content
+
+# Arguments
+
+- a_count : Amount of lines to crop [unsigned integer] ( trimmed )
+- a_lines : Lines to crop from
+
+# Demo
+
+```
+$headl(2
+a
+b
+c
+d)
+===
+a
+b
+```
+
+# Example
+
+$assert(2,$countl($headl( 2 ,a
+b
+c)))

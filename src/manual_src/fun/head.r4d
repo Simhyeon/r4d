@@ -1,0 +1,23 @@
+Crop head texts from given content
+
+# Note 
+
+This macro slices by utf characters. Use range if you need simple ASCII slice.
+
+# Arguments
+
+- a_count   : Amount of characters to crop [unsigned integer] ( trimmed )
+- a_content : Text to crop from
+
+# Demo
+
+```
+$head(0,123456789)
+$head(4,123456789)
+===
+1234
+```
+
+# Example
+
+$assert(Hello~,$head( 6 ,Hello~ World))

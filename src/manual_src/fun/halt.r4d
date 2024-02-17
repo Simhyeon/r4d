@@ -1,0 +1,32 @@
+Halt relaying
+
+# NOTE 
+
+- Also refer relay for full usage
+- Halt is automatically queued by default. Feed an optional argument to
+  configure this behaviour
+- Refer [link] to understand why halt has to be queued.
+- $halt(false) == $halt()
+- use $halt(true) to immediately halt
+
+# Demo
+
+```
+$decl(conto)
+$relay(macro,conto)
+1 2 3 4 5
+6 7 8 9 10
+$halt()
+$conto^()
+===
+1 2 3 4 5
+6 7 8 9 10
+```
+
+# Example
+
+$define(cont=)
+$relay(macro,cont)
+12345
+$halt()
+$assert(12345,$cont^())

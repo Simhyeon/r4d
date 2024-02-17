@@ -1,0 +1,29 @@
+Extract matched lines from given lines. 
+
+# Note
+
+- This returns all lines that matches a given expression
+- Use other macros if you want to capture parts of expression
+
+# Arguments
+
+- a_expr  : A regex expression to match
+- a_lines : Lines to get matches from
+
+# Demo
+
+```
+$stream(grepl ^//)
+// Comment 1
+let test = Test::new();
+// Comment 2
+let var = usize::MAX;
+$consume^()
+===
+// Comment 1
+// Comment 2
+```
+
+# Example
+
+$assert(2,$countl($grepl(Cargo,$syscmd(ls))))

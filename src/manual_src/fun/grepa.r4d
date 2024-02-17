@@ -1,0 +1,23 @@
+Extract matched items from given array. 
+
+# Note
+
+- This returns all items as array
+- If you want to capture specific parts of regex, use other macros
+
+# Arguments
+
+- a_expr  : A regex expression to match
+- a_lines : An array to get matches from
+
+# Demo
+
+```
+$grepa(^[a-zA-Z]+,hello,world,1.0f,235)
+===
+hello,world
+```
+
+# Example
+
+$assert(\\*a,b,c*\\,$grepa([a-z],a,b,c,1,2))
