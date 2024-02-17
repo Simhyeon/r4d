@@ -139,10 +139,19 @@ $assert(a+b+c,$mapf(m,file_name.txt))"
                 ),
             ),
             (
+                "mapfe".to_owned(),
+                DMacroSign::new(
+                    "mapfe",
+                    ["a_expr","a_macro_name^", "a_lines"],
+                    Self::map_file_expr,
+                    None,
+                ),
+            ),
+            (
                 "mapn".to_owned(),
                 DMacroSign::new(
                     "mapn",
-                    ["a_operation","a_source"],
+                    ["a_operation^","a_source"],
                     Self::map_number,
                     None,
                 ),
@@ -332,35 +341,6 @@ clo
 fgh
 
 $consume()".to_string()),
-                ),
-            ),
-            (
-                "grepmap".to_owned(),
-                DMacroSign::new(
-                    "grepmap",
-                    ["a_grep_type^","a_expr", "a_macro_name^", "a_text"],
-                    DeterredMacroMap::grep_map,
-                    Some(
-"Capture expressions and apply a macro to each captured expression
-
-# Auth : FIN
-
-# Note
-
-- If grep type is file, grep operation is executed on per line.
-- If grep type is text, grep operation is executed one whole text.
-
-# Arguments
-
-- a_grep_type  : Grep type to execute. [\"text\", \"file\" ]
-- a_expr       : An expression to match
-- a_macro_name : A macro name to execute on each captured string
-- a_text       : Source text to find expressions
-
-# Example
-
-$define(ss,a_text=$sub(2,,$a_text())$nl())
-$assert(c$nl()d$nl()e,$grepmap^(text,ab.,ss,abc abd abe))".to_string()),
                 ),
             ),
             (
@@ -579,6 +559,15 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
                 "map".to_owned(),
                 DMacroSign::new(
                     "map",
+                    ["a_expr^","a_macro_name^", "a_cont"],
+                    Self::map,
+                    None,
+                ),
+            ),
+            (
+                "mapa".to_owned(),
+                DMacroSign::new(
+                    "mapa",
                     ["a_macro_name^", "a_array"],
                     Self::map_array,
                     Some(
@@ -617,6 +606,15 @@ $assert(a+b+c,$map(m,a,b,c))".to_string()),
 
 $define(m,a_src=$a_src()+)
 $assert(a+b+c,$mapl(m,a$nl()b$nl()c$nl()))".to_string()),
+                ),
+            ),
+            (
+                "maple".to_owned(),
+                DMacroSign::new(
+                    "maple",
+                    ["a_expr","a_macro_name^", "a_lines"],
+                    Self::map_lines_expr,
+                    None,
                 ),
             ),
             (

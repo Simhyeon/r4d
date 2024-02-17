@@ -14,8 +14,9 @@ use crate::{Processor, RadError};
 use dcsv::VCont;
 use evalexpr::eval;
 use itertools::Itertools;
+use regex::Regex;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::BufReader;
 use std::path::PathBuf;
 
 impl DeterredMacroMap {
@@ -73,11 +74,55 @@ impl DeterredMacroMap {
         Ok(None)
     }
 
+    /// Apply map on expressions
+    ///
+    /// # Usage
+    ///
+    /// $map(expr,macro,text)
+    pub(crate) fn map(
+        args: &str,
+        level: usize,
+        attr: &MacroAttribute,
+        p: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("map", &args, attr, 3, Some(&mut ap))?;
+
+        ap.set_strip(true);
+        let match_expr = p.parse_and_strip(&mut ap, attr, level, "map", &args[0])?;
+        let macro_src = p.parse_and_strip(&mut ap, attr, level, "map", args[1].trim())?;
+        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+        let source = p.parse_and_strip(&mut ap, attr, level, "map", &args[2])?;
+
+        if match_expr.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "Regex expression cannot be an empty string".to_string(),
+            ));
+        }
+
+        let mut res = String::new();
+
+        let reg = p.try_get_or_insert_regex(&match_expr)?.clone();
+
+        append_captured_expressions(
+            &reg,
+            &source,
+            &mut res,
+            p,
+            level,
+            "map",
+            macro_name,
+            &macro_arguments,
+        )?;
+
+        Ok(Some(res))
+    }
+
     /// Apply map on array
     ///
     /// # Usage
     ///
-    /// $map(macro_name,array)
+    /// $mapa(macro_name,array)
     pub(crate) fn map_array(
         args: &str,
         level: usize,
@@ -85,18 +130,18 @@ impl DeterredMacroMap {
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("map", &args, attr, 2, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("mapa", &args, attr, 2, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let expanded = p.parse_and_strip(&mut ap, attr, level, "map", args[0].trim())?;
+        let expanded = p.parse_and_strip(&mut ap, attr, level, "mapa", args[0].trim())?;
         let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
-        let src = p.parse_and_strip(&mut ap, attr, level, "map", &args[1])?;
+        let src = p.parse_and_strip(&mut ap, attr, level, "mapa", &args[1])?;
         let array = src.split(',');
 
         let mut acc = String::new();
         for item in array {
             acc.push_str(
-                &p.execute_macro(level, "map", name, &(arguments.clone() + item))?
+                &p.execute_macro(level, "mapa", name, &(arguments.clone() + item))?
                     .unwrap_or_default(),
             );
         }
@@ -121,7 +166,7 @@ impl DeterredMacroMap {
         let expanded = p.parse_and_strip(&mut ap, attr, level, "mapl", args[0].trim())?;
         let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
         let src = p.parse_and_strip(&mut ap, attr, level, "mapl", &args[1])?;
-        let lines = src.lines();
+        let lines = src.full_lines();
 
         let mut acc = String::new();
         for item in lines {
@@ -131,6 +176,61 @@ impl DeterredMacroMap {
             );
         }
         Ok(Some(acc))
+    }
+
+    /// Apply maps on captured expressions from lines
+    ///
+    /// # Usage
+    ///
+    /// $maple(type,expr,macro,text)
+    pub(crate) fn map_lines_expr(
+        args: &str,
+        level: usize,
+        attr: &MacroAttribute,
+        p: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("maple", &args, attr, 3, Some(&mut ap))?;
+
+        ap.set_strip(true);
+        let match_expr = p.parse_and_strip(&mut ap, attr, level, "maple", &args[0])?;
+        let macro_src = p.parse_and_strip(&mut ap, attr, level, "maple", args[1].trim())?;
+        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+        let source = p.parse_and_strip(&mut ap, attr, level, "maple", &args[2])?;
+
+        if match_expr.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "Regex expression cannot be an empty string".to_string(),
+            ));
+        }
+
+        let mut res = String::new();
+
+        // If this regex is not cloned, "capture" should collect captured string into a allocated
+        // vector. Which is generaly worse for performance.
+        let reg = p.try_get_or_insert_regex(&match_expr)?.clone();
+
+        let preserve_non_matched_lines = p.env.map_preserve;
+
+        let mut captured;
+        for line in source.full_lines() {
+            captured = append_captured_expressions(
+                &reg,
+                line,
+                &mut res,
+                p,
+                level,
+                "maple",
+                macro_name,
+                &macro_arguments,
+            )?;
+
+            if preserve_non_matched_lines && !captured {
+                res.push_str(line);
+            }
+        }
+
+        Ok(Some(res))
     }
 
     /// Apply map on numbers
@@ -150,7 +250,7 @@ impl DeterredMacroMap {
         ap.set_strip(true);
         let mut operation = String::new();
         let op_src = p.parse_and_strip(&mut ap, attr, level, "mapn", args[0].trim())?;
-        let src = &p.parse_and_strip(&mut ap, attr, level, "mapn", args[1].trim())?;
+        let src = &p.parse_and_strip(&mut ap, attr, level, "mapn", &args[1])?;
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&op_src, true)?;
 
         let map_type = if p.contains_macro(macro_name, MacroType::Any) {
@@ -207,11 +307,10 @@ impl DeterredMacroMap {
         ap.set_strip(true);
         let macro_src = p.parse_and_strip(&mut ap, attr, level, "mapf", args[0].trim())?;
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
-        let file = BufReader::new(std::fs::File::open(
+        let file = Utils::full_lines_from_bytes(BufReader::new(std::fs::File::open(
             p.parse_and_strip(&mut ap, attr, level, "mapf", args[1].trim())?
                 .as_ref(),
-        )?)
-        .lines();
+        )?));
 
         let mut acc = String::new();
         for line in file {
@@ -229,54 +328,34 @@ impl DeterredMacroMap {
         Ok(Some(acc))
     }
 
-    /// Apply maps on captured expressions
+    /// Apply maps on captured expressions frome file
     ///
     /// # Usage
     ///
-    /// $grepmap(type,expr,macro,text)
-    pub(crate) fn grep_map(
+    /// $mapfe(type,expr,macro,text)
+    pub(crate) fn map_file_expr(
         args: &str,
         level: usize,
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
+        if !Utils::is_granted("mapfe", AuthType::FIN, p)? {
+            return Ok(None);
+        }
         let mut ap = ArgParser::new();
-        let args = Utils::get_split_arguments_or_error("grepmap", &args, attr, 4, Some(&mut ap))?;
+        let args = Utils::get_split_arguments_or_error("mapfe", &args, attr, 3, Some(&mut ap))?;
 
         ap.set_strip(true);
-        let grep_type = p.parse_and_strip(&mut ap, attr, level, "grepmap", args[0].trim())?;
-        let match_expr = p.parse_and_strip(&mut ap, attr, level, "grepmap", &args[1])?;
-        let macro_src = p.parse_and_strip(&mut ap, attr, level, "grepmap", args[2].trim())?;
+        let match_expr = p.parse_and_strip(&mut ap, attr, level, "mapfe", &args[0])?;
+        let macro_src = p.parse_and_strip(&mut ap, attr, level, "mapfe", args[1].trim())?;
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
-        let source = p.parse_and_strip(&mut ap, attr, level, "grepmap", &args[3])?;
+        let source_file = p.parse_and_strip(&mut ap, attr, level, "mapfe", &args[2])?;
 
-        let bufread = match grep_type.to_lowercase().as_str() {
-            "file" => {
-                if !Utils::is_granted("grepmap", AuthType::FIN, p)? {
-                    return Ok(None);
-                }
-                true
-            }
-            "text" => false,
-            _ => {
-                return Err(RadError::InvalidArgument(format!(
-                    "{} is not a valid grep type",
-                    grep_type
-                )))
-            }
-        };
-
-        if bufread && !std::path::Path::new(source.as_ref()).exists() {
+        if !std::path::Path::new(source_file.as_ref()).exists() {
             return Err(RadError::InvalidExecution(format!(
                 "Cannot find a file \"{}\" ",
-                source
+                source_file
             )));
-        }
-
-        if match_expr.is_empty() {
-            return Err(RadError::InvalidArgument(
-                "Regex expression cannot be an empty string".to_string(),
-            ));
         }
 
         let mut res = String::new();
@@ -285,48 +364,26 @@ impl DeterredMacroMap {
         // vector. Which is generaly worse for performance.
         let reg = p.try_get_or_insert_regex(&match_expr)?.clone();
 
-        if !bufread {
-            for cap in reg.captures_iter(&source) {
-                let mut cap = cap.iter();
-                cap.next();
-                // TODO Make an env to make unmatched group an error
-                let captured = cap
-                    .filter(|s| s.is_some())
-                    .map(|s| s.unwrap().as_str())
-                    .join(" ");
-                let expanded = p
-                    .execute_macro(
-                        level,
-                        "grepmap",
-                        macro_name,
-                        &(macro_arguments.clone() + &captured),
-                    )?
-                    .unwrap_or_default();
-                res.push_str(&expanded);
-            }
-        } else {
-            let lines = BufReader::new(File::open(std::path::Path::new(source.as_ref()))?).lines();
+        let preserve_non_matched_lines = p.env.map_preserve;
 
-            for line in lines {
-                let line = line?;
-                for cap in reg.captures_iter(&line) {
-                    // TODO Make an env to make unmatched group an error
-                    let mut cap = cap.iter();
-                    cap.next();
-                    let captured = cap
-                        .filter(|s| s.is_some())
-                        .map(|s| s.unwrap().as_str())
-                        .join(" ");
-                    let expanded = p
-                        .execute_macro(
-                            level,
-                            "grepmap",
-                            macro_name,
-                            &(macro_arguments.clone() + &captured),
-                        )?
-                        .unwrap_or_default();
-                    res.push_str(&expanded);
-                }
+        let lines = Utils::full_lines_from_bytes(BufReader::new(File::open(
+            std::path::Path::new(source_file.as_ref()),
+        )?));
+
+        for line in lines {
+            let line = line?;
+            let captured = append_captured_expressions(
+                &reg,
+                &line,
+                &mut res,
+                p,
+                level,
+                "mapfe",
+                macro_name,
+                &macro_arguments,
+            )?;
+            if preserve_non_matched_lines && !captured {
+                res.push_str(&line);
             }
         }
 
@@ -1578,3 +1635,48 @@ impl DeterredMacroMap {
     // Keyword macros end
     // ----------
 }
+
+// <MISC>
+
+#[inline]
+#[allow(clippy::too_many_arguments)]
+fn append_captured_expressions(
+    reg: &Regex,
+    source: &str,
+    container: &mut String,
+    p: &mut Processor,
+    level: usize,
+    caller: &str,
+    macro_name: &str,
+    macro_arguments: &str,
+) -> RadResult<bool> {
+    let mut capture_occured = false;
+    for cap in reg.captures_iter(source) {
+        capture_occured = true;
+        let mut cap = cap.iter().peekable();
+        let total = cap.next(); // First capture group
+        let captured = if cap.peek().is_some() {
+            cap.filter(|s| s.is_some())
+                .map(|s| s.unwrap().as_str())
+                .join(" ")
+        } else {
+            total
+                .filter(|s| s.is_some())
+                .map(|s| s.unwrap().as_str())
+                .unwrap()
+                .to_string()
+        };
+        let expanded = p
+            .execute_macro(
+                level,
+                caller,
+                macro_name,
+                &(macro_arguments.to_owned() + &captured),
+            )?
+            .unwrap_or_default();
+        container.push_str(&expanded);
+    }
+    Ok(capture_occured)
+}
+
+// </MISC>

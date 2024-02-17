@@ -21,6 +21,7 @@ use crate::{CommentType, NewArgParser, WriteOption};
 use crate::{Hygiene, Processor};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
+use evalexpr::eval;
 use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -390,7 +391,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $mie(expression)
+    /// $mie(macro,expression)
     pub(crate) fn macro_ire(
         args: &str,
         attr: &MacroAttribute,
@@ -3844,17 +3845,17 @@ impl FunctionMacroMap {
         Ok(None)
     }
 
-    /// Capture expressions
+    /// Grep expressions
     ///
     /// # Usage
     ///
-    /// $capture(expr,Content)
-    pub(crate) fn capture(
+    /// $grep(expr,Content)
+    pub(crate) fn grep_expr(
         args: &str,
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("capture", &args, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("grep", &args, attr, 2, None)?;
 
         let expr = &args[0];
         // TODO
@@ -3865,12 +3866,19 @@ impl FunctionMacroMap {
             .captures_iter(&args[1])
             .fold(String::new(), |mut acc, x| {
                 // TODO Make an env to make unmatched group an error
-                let mut cap = x.iter();
-                cap.next();
-                let captured = cap
-                    .filter(|s| s.is_some())
-                    .map(|s| s.unwrap().as_str())
-                    .join(" ");
+                let mut cap = x.iter().peekable();
+                let total = cap.next(); // First capture group
+                let captured = if cap.peek().is_some() {
+                    cap.filter(|s| s.is_some())
+                        .map(|s| s.unwrap().as_str())
+                        .join(" ")
+                } else {
+                    total
+                        .filter(|s| s.is_some())
+                        .map(|s| s.unwrap().as_str())
+                        .unwrap()
+                        .to_string()
+                };
                 acc.push_str(&captured);
                 acc.push_str(&nl);
                 acc
@@ -3882,13 +3890,13 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $grep(expr,Array)
+    /// $grepa(expr,Array)
     pub(crate) fn grep_array(
         args: &str,
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("grep", &args, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("grepa", &args, attr, 2, None)?;
 
         let expr = &args[0];
         let reg = p.try_get_or_insert_regex(expr)?;
@@ -4597,6 +4605,64 @@ impl FunctionMacroMap {
         }
         let max = content.split(',').min().unwrap();
         Ok(Some(max.to_string()))
+    }
+
+    /// Increase source by value
+    ///
+    /// # Usage
+    ///
+    /// $inc(value)
+    /// $inc(value,amount)
+    pub(crate) fn increase_number(
+        args: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+
+        if args.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "inc requires a value to increment".to_owned(),
+            ));
+        }
+
+        let number = &args[0].trim();
+        let amount = if let Some(amt) = args.get(1) {
+            amt.trim()
+        } else {
+            "1"
+        };
+        let ret = eval(&format!("{number} + {amount}"))?;
+        Ok(Some(ret.to_string()))
+    }
+
+    /// Decrease source by value
+    ///
+    /// # Usage
+    ///
+    /// $dec(value)
+    /// $dec(value,amount)
+    pub(crate) fn decrease_number(
+        args: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+
+        if args.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "dec requires a value to increment".to_owned(),
+            ));
+        }
+
+        let number = &args[0];
+        let amount = if let Some(amt) = args.get(1) {
+            amt
+        } else {
+            "1"
+        };
+        let ret = eval(&format!("{number} - {amount}"))?;
+        Ok(Some(ret.to_string()))
     }
 
     /// Get ceiling value

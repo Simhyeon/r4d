@@ -318,15 +318,6 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "capture".to_owned(),
-                FMacroSign::new(
-                    "capture",
-                    ["a_expr", "a_text"],
-                    Self::capture,
-                    Some(man_fun!("capture.r4d")),
-                ),
-            ),
-            (
                 "comma".to_owned(),
                 FMacroSign::new(
                     "comma",
@@ -525,6 +516,24 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "inc".to_owned(),
+                FMacroSign::new(
+                    "inc",
+                    ["a_number^","a_amount?^"],
+                    Self::increase_number,
+                    None
+                ),
+            ),
+            (
+                "dec".to_owned(),
+                FMacroSign::new(
+                    "dec",
+                    ["a_number^","a_amount?^"],
+                    Self::decrease_number,
+                    None
+                ),
+            ),
+            (
                 "inner".to_owned(),
                 FMacroSign::new(
                     "inner",
@@ -654,9 +663,18 @@ impl FunctionMacroMap {
                 "grep".to_owned(),
                 FMacroSign::new(
                     "grep",
+                    ["a_expr", "a_text"],
+                    Self::grep_expr,
+                    Some(man_fun!("grep.r4d")),
+                ),
+            ),
+            (
+                "grepa".to_owned(),
+                FMacroSign::new(
+                    "grepa",
                     ["a_expr", "a_array"],
                     Self::grep_array,
-                    Some(man_fun!("grep.r4d")),
+                    Some(man_fun!("grepa.r4d")),
                 ),
             ),
             (
@@ -683,20 +701,7 @@ impl FunctionMacroMap {
                     "head",
                     ["a_count^", "a_content"],
                     Self::head,
-                    Some("Crop head texts from given content
-
-# Note 
-
-This macro slices by utf characters. Use range if you need simple ASCII slice.
-
-# Arguments
-
-- a_count   : Amount of characters to crop [unsigned integer] ( trimmed )
-- a_content : Text to crop from
-
-# Example
-
-$assert(Hello~,$head( 6 ,Hello~ World))".to_string()),
+                    Some(man_fun!("head.r4d")),
                 ),
             ),
             (
@@ -705,18 +710,7 @@ $assert(Hello~,$head( 6 ,Hello~ World))".to_string()),
                     "headl",
                     ["a_count^", "a_lines"],
                     Self::head_line,
-                    Some("Crop head texts but as lines from given content
-
-# Arguments
-
-- a_count   : Amount of lines to crop [unsigned integer] ( trimmed )
-- a_lines   : Lines to crop from
-
-# Example
-
-$assert(2,$countl($headl( 2 ,a
-b
-c)))".to_string()),
+                    Some(man_fun!("headl.r4d"))
                 ),
             ),
             (

@@ -29,6 +29,7 @@ pub(crate) struct MacEnv {
     pub fold_space: bool,
     pub fold_reverse: bool,
     pub fold_trim: bool,
+    pub map_preserve: bool,
 }
 
 impl MacEnv {
@@ -46,6 +47,7 @@ impl MacEnv {
             fold_space: set_env_safely("RAD_FOLD_SPACE"),
             fold_reverse: set_env_safely("RAD_FOLD_REVERSE"),
             fold_trim: set_env_safely("RAD_FOLD_TRIM"),
+            map_preserve: set_env_safely("RAD_MAP_PRESERVE"),
         })
     }
 }
