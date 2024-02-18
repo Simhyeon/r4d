@@ -3281,53 +3281,48 @@ impl<'processor> Processor<'processor> {
         use std::cmp::Ordering::{Equal, Less};
         let mut min_distance = 1usize;
         let mut current_distance: usize;
-        let mut candidates = HashSet::new();
+        let mut similar_candidates = HashSet::new();
         let mut superset_candidates = HashSet::new();
         let mut has_exact_match = false;
         let sigs = self.map.get_signatures();
         for (idx, mac) in sigs.iter().enumerate() {
+            // Include macro that contains given value
+            if mac.name.contains(macro_name) {
+                superset_candidates.insert(idx);
+            }
             if mac.name == macro_name {
                 has_exact_match = true;
+                superset_candidates.insert(idx);
                 continue;
             }
             current_distance = Utils::levenshtein(&mac.name, macro_name);
             match current_distance.cmp(&min_distance) {
                 Less => {
-                    candidates.clear();
-                    candidates.insert(idx);
+                    similar_candidates.clear();
+                    similar_candidates.insert(idx);
                     min_distance = current_distance; // Update min_distance
                 }
                 Equal => {
-                    candidates.insert(idx);
+                    similar_candidates.insert(idx);
                 }
                 _ => (),
             }
-            // Also include macro that contains given value
-            if mac.name.contains(macro_name) {
-                superset_candidates.insert(idx);
-            }
         }
-        if candidates.is_empty() {
-            Some(
-                superset_candidates
-                    .iter()
-                    .map(|idx| sigs[*idx].name.clone())
-                    .collect(),
-            )
+
+        let mut ret = if has_exact_match {
+            superset_candidates
+                .iter()
+                .map(|idx| sigs[*idx].name.clone())
+                .collect::<Vec<_>>()
         } else {
-            candidates.extend(superset_candidates);
-            let leader = if has_exact_match {
-                vec![macro_name.to_string()]
-            } else {
-                vec![]
-            };
-            Some(
-                leader
-                    .into_iter()
-                    .chain(candidates.iter().map(|idx| sigs[*idx].name.clone()))
-                    .collect(),
-            )
-        }
+            similar_candidates.extend(superset_candidates);
+            similar_candidates
+                .iter()
+                .map(|idx| sigs[*idx].name.clone())
+                .collect::<Vec<_>>()
+        };
+        ret.sort_unstable();
+        Some(ret)
     }
 
     // End of miscellaenous methods
