@@ -3219,12 +3219,24 @@ impl FunctionMacroMap {
     pub(crate) fn sort_lines(
         args: &str,
         attr: &MacroAttribute,
-        _: &mut Processor,
+        p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("sortl", &args, attr, 2, None)?;
 
         let order_type = args[0].trim();
-        let content = &mut args[1].full_lines().collect::<Vec<&str>>();
+        let mut content = args[1].to_string();
+        let mut line_ending = content.get_line_ending();
+        let mut pop_last = false;
+        if line_ending.is_empty() {
+            content.push_str(&p.state.newline);
+            line_ending = &p.state.newline;
+            pop_last = true;
+        }
+        let mut content = content.full_lines().collect::<Vec<&str>>();
+        if pop_last {
+            content.pop();
+        }
+
         match order_type.to_lowercase().as_str() {
             "a" | "asec" => content.sort_unstable(),
             "d" | "desc" => {
@@ -3238,8 +3250,23 @@ impl FunctionMacroMap {
                 )))
             }
         }
+        let mut ret = content
+            .iter()
+            .map(|&s| {
+                if s.get_line_ending().is_empty() {
+                    Cow::Owned(s.to_string() + line_ending)
+                } else {
+                    Cow::Borrowed(s)
+                }
+            })
+            .join("");
 
-        Ok(Some(content.join("")))
+        // Retain original line ending
+        for _ in 0..line_ending.len() {
+            ret.pop();
+        }
+
+        Ok(Some(ret))
     }
 
     /// Sort lists ( chunks )
@@ -3256,30 +3283,40 @@ impl FunctionMacroMap {
 
         let order_type = args[0].trim().to_string();
         let mut content = args[1].to_string();
-        let line_end = if content.ends_with("\r\n") {
-            content.pop();
-            content.pop();
-            "\r\n"
-        } else if content.ends_with('\n') {
-            content.pop();
-            "\n"
-        } else {
+        let mut line_ending = content.get_line_ending();
+        let mut skip_last = false;
+        if line_ending.is_empty() {
             content.push_str(&p.state.newline);
-            ""
-        };
+            line_ending = &p.state.newline;
+            skip_last = true;
+        }
         // --- Chunk creation
         let mut clogged_chunk_list = vec![];
         let mut container = String::new();
-        for line in content.full_lines() {
-            // Has empty leading + has parent
+        let mut iter = content.full_lines().peekable();
+        while let Some(line) = iter.next() {
+            // Skip last when newline was manually appended.
+            if iter.peek().is_none() && skip_last {
+                break;
+            }
+            // Has blank leading characters + has parent
+            // -> Set as children
             if LSPA.captures(line).is_some() && !container.is_empty() {
                 container.push_str(line);
             } else {
-                clogged_chunk_list.push(container);
+                // If not, it is parent object
+
+                // End previous container
+                if !container.is_empty() {
+                    clogged_chunk_list.push(container);
+                }
+                // Start a new container
                 container = line.to_string();
             }
         }
-        clogged_chunk_list.push(container);
+        if !container.is_empty() {
+            clogged_chunk_list.push(container);
+        }
         // ---
         match order_type.to_lowercase().as_str() {
             "a" | "asec" => clogged_chunk_list.sort_unstable(),
@@ -3295,7 +3332,22 @@ impl FunctionMacroMap {
             }
         }
 
-        Ok(Some(clogged_chunk_list.join("") + line_end))
+        let mut ret = clogged_chunk_list
+            .iter_mut()
+            .map(|s| {
+                if s.get_line_ending().is_empty() {
+                    s.push_str(line_ending);
+                }
+                s
+            })
+            .join("");
+
+        // Retain original line ending
+        for _ in 0..line_ending.len() {
+            ret.pop();
+        }
+
+        Ok(Some(ret))
     }
 
     // [1 2 3]
@@ -4651,7 +4703,7 @@ impl FunctionMacroMap {
 
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
-                "dec requires a value to increment".to_owned(),
+                "dec requires a value to decrement".to_owned(),
             ));
         }
 
@@ -4662,6 +4714,97 @@ impl FunctionMacroMap {
             "1"
         };
         let ret = eval(&format!("{number} - {amount}"))?;
+        Ok(Some(ret.to_string()))
+    }
+
+    /// Square
+    ///
+    /// # Usage
+    ///
+    /// $square(value)
+    pub(crate) fn square_number(
+        args: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("square", &args, attr, 1, None)?;
+
+        let number = &args[0];
+        let ret = eval(&format!(" {number} ^ 2"))?;
+        Ok(Some(ret.to_string()))
+    }
+
+    /// Cube
+    ///
+    /// # Usage
+    ///
+    /// $cube(value)
+    pub(crate) fn cube_number(
+        args: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("cube", &args, attr, 1, None)?;
+
+        let number = &args[0];
+        let ret = eval(&format!(" {number} ^ 3"))?;
+        Ok(Some(ret.to_string()))
+    }
+
+    /// Power
+    ///
+    /// # Usage
+    ///
+    /// $pow(value,exponent)
+    pub(crate) fn power_number(
+        args: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("pow", &args, attr, 2, None)?;
+
+        let number = &args[0];
+        let ex = &args[1];
+        let ret = eval(&format!(" {number} ^ {ex}"))?;
+        Ok(Some(ret.to_string()))
+    }
+
+    /// square root
+    ///
+    /// # Usage
+    ///
+    /// $sqrt(value,exponent)
+    pub(crate) fn square_root(
+        args: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("sqrt", &args, attr, 2, None)?;
+
+        let number = &args[0];
+        let ret = eval(&format!("sqrt({number})"))?;
+        Ok(Some(ret.to_string()))
+    }
+
+    /// Round
+    ///
+    /// # Usage
+    ///
+    /// $round(value)
+    pub(crate) fn round_number(
+        args: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("round", &args, attr, 1, None)?;
+
+        let number = &args[0].parse::<f32>().map_err(|_| {
+            RadError::InvalidArgument(format!(
+                "Could not convert given value \"{}\" into a floating point number",
+                args[0]
+            ))
+        })?;
+        let ret = number.round() as isize;
         Ok(Some(ret.to_string()))
     }
 

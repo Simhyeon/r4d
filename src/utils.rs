@@ -1208,7 +1208,7 @@ impl RadStr for str {
         }
     }
 
-    /// Get lines iterar which doesn' trim newline characters
+    /// Get lines iterator which doesn' trim newline characters
     fn full_lines(&self) -> impl Iterator<Item = &str> {
         let mut index = 0;
         let mut match_ret = vec![];

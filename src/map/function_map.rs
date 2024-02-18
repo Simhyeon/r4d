@@ -534,6 +534,51 @@ impl FunctionMacroMap {
                 ),
             ),
             (
+                "square".to_owned(),
+                FMacroSign::new(
+                    "square",
+                    ["a_number^"],
+                    Self::square_number,
+                    None
+                ),
+            ),
+            (
+                "cube".to_owned(),
+                FMacroSign::new(
+                    "cube",
+                    ["a_number^"],
+                    Self::cube_number,
+                    None
+                ),
+            ),
+            (
+                "pow".to_owned(),
+                FMacroSign::new(
+                    "pow",
+                    ["a_number^","a_exponent^"],
+                    Self::power_number,
+                    None
+                ),
+            ),
+            (
+                "sqrt".to_owned(),
+                FMacroSign::new(
+                    "sqrt",
+                    ["a_number^"],
+                    Self::square_root,
+                    None
+                ),
+            ),
+            (
+                "round".to_owned(),
+                FMacroSign::new(
+                    "round",
+                    ["a_number^"],
+                    Self::round_number,
+                    None
+                ),
+            ),
+            (
                 "inner".to_owned(),
                 FMacroSign::new(
                     "inner",
