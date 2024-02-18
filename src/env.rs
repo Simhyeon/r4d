@@ -11,6 +11,7 @@ pub struct ProcEnv {
     pub(crate) no_consume: bool,
     pub(crate) no_color_print: bool,
     pub(crate) backtrace: bool,
+    pub(crate) no_negative_index: bool,
 }
 
 impl ProcEnv {
@@ -18,6 +19,7 @@ impl ProcEnv {
         Self {
             no_consume: set_env_safely("RAD_NO_CONSUME"),
             no_color_print: set_env_safely("RAD_NO_COLOR"),
+            no_negative_index: set_env_safely("RAD_NO_NIN"),
             backtrace: set_env_safely("RAD_BACKTRACE"),
         }
     }
@@ -30,6 +32,7 @@ pub(crate) struct MacEnv {
     pub fold_reverse: bool,
     pub fold_trim: bool,
     pub map_preserve: bool,
+    pub split_for_space: bool,
 }
 
 impl MacEnv {
@@ -48,6 +51,7 @@ impl MacEnv {
             fold_reverse: set_env_safely("RAD_FOLD_REVERSE"),
             fold_trim: set_env_safely("RAD_FOLD_TRIM"),
             map_preserve: set_env_safely("RAD_MAP_PRESERVE"),
+            split_for_space: set_env_safely("RAD_SPLIT_SPACE"),
         })
     }
 }

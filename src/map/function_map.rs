@@ -66,15 +66,6 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "apart".to_owned(),
-                FMacroSign::new(
-                    "apart",
-                    ["a_separator", "a_content"],
-                    Self::apart_by_separator,
-                    Some(man_fun!("apart.r4d"))
-                ),
-            ),
-            (
                 "pad".to_owned(),
                 FMacroSign::new(
                     "pad",
@@ -89,14 +80,14 @@ impl FunctionMacroMap {
                     "peel",
                     [ "a_level","a_src"],
                     Self::peel,
-                    None,
+                    Some(man_fun!("peel.r4d"))
                 ),
             ),
             (
                 "align".to_owned(),
                 FMacroSign::new(
                     "align",
-                    ["a_align_type", "a_contetn"],
+                    ["a_align_type", "a_content"],
                     Self::align,
                     None
                 ),
@@ -608,7 +599,7 @@ impl FunctionMacroMap {
             (
                 "insulav".to_owned(),
                 FMacroSign::new(
-                    "istype",
+                    "insulav",
                     ["a_content"],
                     Self::isolate_vertical,
                     Some(man_fun!("insulav.r4d")),
@@ -617,7 +608,7 @@ impl FunctionMacroMap {
             (
                 "insulah".to_owned(),
                 FMacroSign::new(
-                    "istype",
+                    "insulah",
                     ["a_content"],
                     Self::isolate_horizontal,
                     Some(man_fun!("insulah.r4d")),
@@ -882,7 +873,7 @@ $import(def.r4f)".to_string()),
                     "join",
                     ["a_sep","a_array"],
                     Self::join,
-                    Some("Join an array into a single chunk
+                    Some("Join an array into a single chunk with given separator
 
 # Arguments
 
@@ -900,17 +891,20 @@ $assert(a-b-c,$join(-,a,b,c))".to_string()),
                     "joinl",
                     ["a_sep","a_lines"],
                     Self::join_lines,
-                    None,
-//                     Some("Join lines into a single chunk
-//
-// # Arguments
-//
-// - a_sep   : A separator used for joining
-// - a_array : Source to array to join
-//
-// # Example
-//
-// $assert(a-b-c,$join(-,a,b,c))".to_string()),
+                    Some("Join lines into a single chunk with given separator
+
+# Note
+
+- use foldl if you want to simply fold everything
+
+# Arguments
+
+- a_sep   : A separator used for joining
+- a_array : Source to array to join
+
+# Example
+
+$assert(a-b-c,$joinl(-,a,b,c))".to_string()),
                 ),
             ),
             (

@@ -1,0 +1,24 @@
+Peel enclosed content
+
+# Note
+
+- Use inner if you are only interested in inner contents.
+
+# Arguments
+
+- a_level : Level of enclosers to peel out
+- a_src   : Source to peel
+
+# Demo
+
+```
+let value = crate_name::static_method(arg);
+>>>
+rad -LP '$peel-(1).associated_method();'
+===
+let value = arg.associated_method()
+```
+
+# Example
+
+$assert(a b c e,$peel(2,({a b c e})))

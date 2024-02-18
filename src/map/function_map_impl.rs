@@ -10,6 +10,7 @@ use crate::consts::{
     LOREM, LOREM_SOURCE, LOREM_WIDTH, MACRO_SPECIAL_LIPSUM, MAIN_CALLER, PATH_SEPARATOR,
 };
 
+use crate::env::PROC_ENV;
 use crate::error::RadError;
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
@@ -1210,18 +1211,19 @@ impl FunctionMacroMap {
     pub(crate) fn split(
         args: &str,
         attr: &MacroAttribute,
-        _: &mut Processor,
+        p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("split", &args, attr, 2, None)?;
 
         let sep = args[0].as_ref();
         let text = &args[1];
+        let delimiter = if p.env.split_for_space { ' ' } else { ',' };
 
         let mut result = text
             .split_terminator(sep)
             .fold(String::new(), |mut acc, v| {
                 acc.push_str(v);
-                acc.push(',');
+                acc.push(delimiter);
                 acc
             });
         result.pop();
@@ -1327,15 +1329,16 @@ impl FunctionMacroMap {
     pub(crate) fn space_split(
         args: &str,
         attr: &MacroAttribute,
-        _: &mut Processor,
+        p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = Utils::get_split_arguments_or_error("ssplit", &args, attr, 1, None)?;
 
         let text = args[0].trim();
+        let delimiter = if p.env.split_for_space { ' ' } else { ',' };
 
         let mut result = text.split_whitespace().fold(String::new(), |mut acc, v| {
             acc.push_str(v);
-            acc.push(',');
+            acc.push(delimiter);
             acc
         });
         result.pop();
@@ -2515,7 +2518,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// TYPE : hierarchy, right, left
+    /// TYPE : hierarchy, right, left, pr, pl
     /// $align(TYPE, contents to align)
     pub(crate) fn align(
         arg_src: &str,
@@ -2585,13 +2588,14 @@ impl FunctionMacroMap {
                 }
                 ret
             }
-            _ => {
+            LineUpType::ParralelLeft | LineUpType::Hierarchy => {
                 let ret = set_minimal_standard_width(c1, &mut standard_width);
                 if standard_width == usize::MAX {
                     return Ok(Some(args[1].to_string()));
                 }
                 ret
             }
+            _ => c1.enumerate().map(|(idx, line)| (idx, line, 0)).collect(),
         };
 
         let c3 = if let LineUpType::Hierarchy = line_up_type {
@@ -2627,12 +2631,7 @@ impl FunctionMacroMap {
                     result.push_str(&line);
                 }
                 LineUpType::Left => {
-                    let start = if target_value > standard_width {
-                        target_value - standard_width
-                    } else {
-                        0
-                    };
-                    result.push_str(&line[start..]);
+                    result.push_str(line.trim_start());
                 }
                 LineUpType::ParralelRight | LineUpType::ParralelLeft => {
                     result.push_str(&" ".repeat(standard_width));
@@ -2645,36 +2644,6 @@ impl FunctionMacroMap {
             };
         }
         Ok(Some(result))
-    }
-
-    /// Apart texts by separator
-    ///
-    /// # Usage
-    ///
-    /// $apart(%, contents %to% align)
-    pub(crate) fn apart_by_separator(
-        args: &str,
-        attr: &MacroAttribute,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("apart", &args, attr, 2, None)?;
-
-        let separator = &args[0];
-        let contents = &args[1];
-        let result =
-            contents
-                .split_inclusive(separator.as_ref())
-                .fold(String::new(), |mut acc, a| {
-                    acc.push_str(a.trim());
-                    acc.push_str(&p.state.newline);
-                    acc
-                });
-        Ok(Some(
-            result
-                .strip_suffix(&p.state.newline)
-                .map(|s| s.to_string())
-                .unwrap_or(result),
-        ))
     }
 
     /// Translate given char aray into corresponding char array
@@ -2733,6 +2702,7 @@ impl FunctionMacroMap {
         let end = args[1].trim();
 
         if let Ok(num) = start.parse::<isize>() {
+            check_neg(num)?;
             min.replace(num);
         } else if start != "_" && !start.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2742,6 +2712,7 @@ impl FunctionMacroMap {
         }
 
         if let Ok(num) = end.parse::<isize>() {
+            check_neg(num)?;
             max.replace(num);
         } else if end != "_" && !end.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2774,6 +2745,7 @@ impl FunctionMacroMap {
         let end = args[1].trim();
 
         if let Ok(num) = start.parse::<isize>() {
+            check_neg(num)?;
             min.replace(num);
         } else if start != "_" && !start.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2783,6 +2755,7 @@ impl FunctionMacroMap {
         }
 
         if let Ok(num) = end.parse::<isize>() {
+            check_neg(num)?;
             max.replace(num);
         } else if end != "_" && !end.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2815,6 +2788,7 @@ impl FunctionMacroMap {
         let end = args[1].trim();
 
         if let Ok(num) = start.parse::<isize>() {
+            check_neg(num)?;
             min.replace(num);
         } else if start != "_" && !start.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2824,6 +2798,7 @@ impl FunctionMacroMap {
         }
 
         if let Ok(num) = end.parse::<isize>() {
+            check_neg(num)?;
             max.replace(num);
         } else if end != "_" && !end.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2857,6 +2832,7 @@ impl FunctionMacroMap {
         let end = args[2].trim();
 
         if let Ok(num) = start.parse::<isize>() {
+            check_neg(num)?;
             min.replace(num);
         } else if start != "_" && !start.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2866,6 +2842,7 @@ impl FunctionMacroMap {
         }
 
         if let Ok(num) = end.parse::<isize>() {
+            check_neg(num)?;
             max.replace(num);
         } else if end != "_" && !end.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -3043,8 +3020,9 @@ impl FunctionMacroMap {
         if count == 0 {
             return Ok(Some(String::new()));
         }
+        let index = count.saturating_sub(1) as isize;
 
-        let res = Utils::utf_slice(&args[1], Some(0), Some(count.saturating_sub(1) as isize))?;
+        let res = Utils::utf_slice(&args[1], Some(0), Some(index))?;
 
         Ok(Some(res.to_string()))
     }
@@ -3071,9 +3049,10 @@ impl FunctionMacroMap {
         if count == 0 {
             return Ok(Some(String::new()));
         }
+        let index = count as isize - 1;
 
         Ok(Some(
-            Utils::sub_lines(&args[1], Some(0), Some(count as isize - 1))?.to_string(),
+            Utils::sub_lines(&args[1], Some(0), Some(index))?.to_string(),
         ))
     }
 
@@ -6053,6 +6032,16 @@ fn merge_container(
             .join(joiner)
             + line_end
     }
+}
+
+#[inline]
+fn check_neg(num: isize) -> RadResult<()> {
+    if PROC_ENV.no_negative_index && num.is_negative() {
+        return Err(RadError::UnsoundExecution(
+            "Negative index is an error because environment variable is set".to_string(),
+        ));
+    }
+    Ok(())
 }
 
 // ---
