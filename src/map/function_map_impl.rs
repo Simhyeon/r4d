@@ -3800,14 +3800,14 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $foldreg(expr,1
+    /// $folde(expr,1
     /// 2)
     pub(crate) fn fold_regular_expr(
         args: &str,
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("foldreg", &args, attr, 3, None)?;
+        let args = Utils::get_split_arguments_or_error("folde", &args, attr, 3, None)?;
 
         let mut container = Vec::new();
         let mut folded = String::new();
@@ -3882,13 +3882,13 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $regexpr(name,EXPR)
+    /// $addexpr(name,EXPR)
     pub(crate) fn register_expression(
         args: &str,
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = Utils::get_split_arguments_or_error("regexpr", &args, attr, 2, None)?;
+        let args = Utils::get_split_arguments_or_error("addexpr", &args, attr, 2, None)?;
 
         let name = &args[0];
         let expr = &args[1];

@@ -233,6 +233,85 @@ impl DeterredMacroMap {
         Ok(Some(res))
     }
 
+    /// Map on expression chunk
+    ///
+    /// # Usage
+    ///
+    /// $mape(expr,1
+    /// 2)
+    pub(crate) fn map_expression(
+        args: &str,
+        level: usize,
+        attr: &MacroAttribute,
+        p: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let mut ap = ArgParser::new();
+        let args = Utils::get_split_arguments_or_error("mape", &args, attr, 4, Some(&mut ap))?;
+
+        ap.set_strip(true);
+        let start_expr = p.parse_and_strip(&mut ap, attr, level, "mape", &args[0])?;
+        let end_expr = p.parse_and_strip(&mut ap, attr, level, "mape", &args[1])?;
+        let macro_src = p.parse_and_strip(&mut ap, attr, level, "mape", args[2].trim())?;
+        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+        let source = p.parse_and_strip(&mut ap, attr, level, "mape", &args[3])?;
+
+        if start_expr.is_empty() || end_expr.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "Regex expression cannot be an empty string".to_string(),
+            ));
+        }
+
+        let mut chunk_index = 0usize;
+        let mut folded = String::with_capacity(source.len());
+        let preserve = p.env.map_preserve;
+        let mut on_grep = false;
+
+        let regs = p.try_get_or_insert_multiple_regex(&[start_expr, end_expr])?;
+        let reg_start = regs[0].clone();
+        let reg_end = regs[1].clone();
+
+        let mut iter = source.full_lines_with_index().peekable();
+        while let Some((idx, line)) = iter.next() {
+            // Start a new container
+            if reg_start.find(line).is_some() && reg_end.find(line).is_none() {
+                let previous = &source[chunk_index..idx.saturating_sub(1)];
+                on_grep = true;
+                if !previous.is_empty() {
+                    folded.push_str(
+                        &p.execute_macro(
+                            level,
+                            "mape",
+                            macro_name,
+                            &(macro_arguments.clone() + previous),
+                        )?
+                        .unwrap_or_default(),
+                    );
+                }
+                chunk_index = idx;
+            } else if reg_start.find(line).is_none() && reg_end.find(line).is_some() {
+                let last_index = iter.peek().unwrap_or(&(source.len() - 1, "")).0;
+                let current = &source[chunk_index..last_index];
+                if !current.is_empty() {
+                    folded.push_str(
+                        &p.execute_macro(
+                            level,
+                            "mape",
+                            macro_name,
+                            &(macro_arguments.clone() + current),
+                        )?
+                        .unwrap_or_default(),
+                    );
+                }
+                chunk_index = last_index + 1;
+                on_grep = false;
+            } else if preserve && !on_grep {
+                folded.push_str(line);
+            }
+        }
+
+        Ok(Some(folded))
+    }
+
     /// Apply map on numbers
     ///
     /// # Usage

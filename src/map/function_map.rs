@@ -696,9 +696,9 @@ impl FunctionMacroMap {
                 ),
             ),
             (
-                "foldreg".to_owned(),
+                "folde".to_owned(),
                 FMacroSign::new(
-                    "foldreg",
+                    "folde",
                     ["a_start_expr","a_end_expr","a_lines"],
                     Self::fold_regular_expr,
                     None,
@@ -1524,9 +1524,9 @@ $assert(Hello Rust,$sub(World,Rust,Hello World))".to_string()),
                 ),
             ),
             (
-                "regexpr".to_owned(),
+                "addexpr".to_owned(),
                 FMacroSign::new(
-                    "regexpr",
+                    "addexpr",
                     ["a_name", "a_expr"],
                     Self::register_expression,
                     Some("Register a regular expression
@@ -1543,7 +1543,7 @@ certain capacity reaches.
 
 # Example
 
-$regexpr(greeting,Hello World)
+$addexpr(greeting,Hello World)
 $assert(true,$find(greeting,Hello World))
 $assert(false,$find(greeting,greetings from world))".to_string()),
                 ),
@@ -2423,9 +2423,9 @@ $extract()"
         #[cfg(feature = "cindex")]
         {
             map.insert(
-                "regcsv".to_owned(),
+                "addcsv".to_owned(),
                 FMacroSign::new(
-                    "regcsv",
+                    "addcsv",
                     ["a_table_name^", "a_data^"],
                     Self::cindex_register,
                     Some(
@@ -2440,7 +2440,7 @@ $extract()"
 
 # Example
 
-$regcsv(table1,a,b,c
+$addcsv(table1,a,b,c
 1,2,3)"
                             .to_string(),
                     ),

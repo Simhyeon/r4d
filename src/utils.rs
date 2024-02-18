@@ -1167,6 +1167,7 @@ pub(crate) trait RadStr {
     fn get_line_ending(&self) -> &str;
     fn get_line_ending_always<'a>(&'a self, le: &'a str) -> &'a str;
     fn full_lines(&self) -> impl Iterator<Item = &str>;
+    fn full_lines_with_index(&self) -> impl Iterator<Item = (usize, &str)>;
     fn trim_each_lines(&self) -> String;
     fn is_arg_true_infallable(&self) -> bool;
     fn is_arg_true(&self) -> RadResult<bool>;
@@ -1225,6 +1226,28 @@ impl RadStr for str {
             }
             // TODO
             match_ret.push(&self[index..]);
+            match_ret.into_iter()
+        }
+    }
+
+    /// Get lines iterator which doesn' trim newline characters
+    fn full_lines_with_index(&self) -> impl Iterator<Item = (usize, &str)> {
+        let mut index = 0;
+        let mut match_ret = vec![];
+        let mut matched_iter = self.match_indices('\n').peekable();
+
+        if matched_iter.peek().is_none() {
+            let matched = std::iter::once(self).map(|s| (0, s)).collect::<Vec<_>>();
+            matched.into_iter()
+        } else {
+            let matched = matched_iter.collect::<Vec<_>>();
+            for (idx, _) in matched {
+                let ret = &self[index..=idx];
+                match_ret.push((index, ret));
+                index = idx + 1;
+            }
+            // TODO
+            match_ret.push((index, &self[index..]));
             match_ret.into_iter()
         }
     }

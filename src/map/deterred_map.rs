@@ -565,6 +565,15 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
                 ),
             ),
             (
+                "mape".to_owned(),
+                DMacroSign::new(
+                    "mape",
+                    ["a_start_expr","a_end_expr","a_macro_name^", "a_source"],
+                    Self::map_expression,
+                    None,
+                ),
+            ),
+            (
                 "mapa".to_owned(),
                 DMacroSign::new(
                     "mapa",
