@@ -2721,7 +2721,7 @@ impl FunctionMacroMap {
             )));
         }
 
-        Ok(Some(Utils::utf_slice(source, min, max)?.to_string()))
+        Ok(Some(Utils::utf_slice(source, min, max)?))
     }
 
     /// Get a substring(indexed) from given source
@@ -3024,7 +3024,7 @@ impl FunctionMacroMap {
 
         let res = Utils::utf_slice(&args[1], Some(0), Some(index))?;
 
-        Ok(Some(res.to_string()))
+        Ok(Some(res))
     }
 
     /// Get head of given text but for lines
@@ -3081,7 +3081,7 @@ impl FunctionMacroMap {
 
         let res = Utils::utf_slice(&args[1], Some(min_count), None)?;
 
-        Ok(Some(res.to_string()))
+        Ok(Some(res))
     }
 
     /// Surround a text with given pair

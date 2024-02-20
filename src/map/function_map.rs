@@ -89,7 +89,7 @@ impl FunctionMacroMap {
                     "align",
                     ["a_align_type", "a_content"],
                     Self::align,
-                    None
+                    Some(man_fun!("align.r4d"))
                 ),
             ),
             (
@@ -98,7 +98,7 @@ impl FunctionMacroMap {
                     "lineup",
                     ["a_separator", "a_lines"],
                     Self::lineup_by_separator,
-                    None,
+                    Some(man_fun!("lineup.r4d"))
                 ),
             ),
             (
@@ -170,7 +170,7 @@ impl FunctionMacroMap {
                     "rangeu",
                     ["a_min^", "a_max^", "a_array"],
                     Self::substring_utf8,
-                    Some(man_fun!("range.r4d")),
+                    Some(man_fun!("rangeu.r4d")),
                 ),
             ),
             (
@@ -179,7 +179,7 @@ impl FunctionMacroMap {
                     "rangea",
                     ["a_min^", "a_max^", "a_array"],
                     Self::range_array,
-                    Some(man_fun!("range.r4d")),
+                    Some(man_fun!("rangea.r4d")),
                 ),
             ),
             (
@@ -1772,21 +1772,7 @@ $strict(lenient)".to_string()),
                     "range",
                     ["a_start_index^", "a_end_index^", "a_source"],
                     Self::substring,
-                    Some("Get a substring with indices.
-
-- Out of range index is an error
-- A substring is calculated as char iterator not a byte iterator
-- this operation is technically same with [start_index..end_index]
-
-# Arguments
-
-- a_start_index : A start substring index [signed integer] (trimmed)
-- a_end_index   : A end   substring index [signed integer] (trimmed)
-- a_source      : Source text get to a substring from
-
-# Example
-
-$assert(def,$range(3,5,abcdef))".to_string()),
+                    Some(man_fun!("range.r4d")),
                 ),
             ),
             (

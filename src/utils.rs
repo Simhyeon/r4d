@@ -290,62 +290,41 @@ impl Utils {
         source: &str,
         min: Option<isize>,
         max: Option<isize>,
-    ) -> RadResult<&str> {
-        let len = source.chars().count();
-        let mut min_dex: usize = 0;
-        let mut max_dex: usize = 0;
-        let mut min_byte_index: Option<usize> = None;
-        let mut max_byte_index: Option<usize> = None;
+    ) -> RadResult<String> {
+        let char_len = source.chars().count();
+        let min_dex: usize;
+        let max_dex: usize;
 
         if let Some(mins) = min {
-            match mins.cmp(&0isize) {
-                Ordering::Equal => min_byte_index = Some(0),
-                Ordering::Greater => min_dex = mins.unsigned_abs(),
-                Ordering::Less => min_dex = len - mins.unsigned_abs() - 1,
-            }
+            min_dex = match mins.cmp(&0isize) {
+                Ordering::Equal => 0,
+                Ordering::Greater => mins.unsigned_abs(),
+                Ordering::Less => char_len - mins.unsigned_abs() - 1,
+            };
         } else {
-            min_byte_index = Some(len - 1);
+            min_dex = char_len - 1;
         }
 
         if let Some(maxs) = max {
-            match maxs.cmp(&0isize) {
-                Ordering::Equal => max_byte_index = Some(0),
-                Ordering::Greater => max_dex = maxs.unsigned_abs(),
-                Ordering::Less => max_dex = len - maxs.unsigned_abs() - 1,
-            }
+            max_dex = match maxs.cmp(&0isize) {
+                Ordering::Equal => 0,
+                Ordering::Greater => maxs.unsigned_abs(),
+                Ordering::Less => char_len - maxs.unsigned_abs() - 1,
+            };
         } else {
-            max_byte_index = Some(len - 1);
+            max_dex = char_len - 1;
         }
 
-        if max_dex >= len || min_dex > max_dex {
+        if min_dex > max_dex {
             return Err(RadError::InvalidArgument(
-                "Given index is out of range".to_string(),
+                "Given index is out of range, min index cannot be bigger than max index"
+                    .to_string(),
             ));
         }
-
-        if max_dex == len - 1 {
-            max_byte_index.replace(source.len() - 1);
-        }
-
-        for ((bi, _), (count_index, _)) in source.char_indices().zip(source.chars().enumerate()) {
-            if min_byte_index.is_some() && max_byte_index.is_some() {
-                break;
-            }
-            if count_index == min_dex {
-                min_byte_index.replace(bi);
-            }
-            if count_index == max_dex + 1 {
-                max_byte_index.replace(bi);
-            }
-        }
-
-        if min_byte_index.is_none() || max_byte_index.is_none() {
-            return Err(RadError::InvalidArgument(
-                "Given index is out of range".to_string(),
-            ));
-        }
-
-        Ok(&source[min_byte_index.unwrap()..=max_byte_index.unwrap() - 1])
+        let chars = source.chars().collect::<Vec<_>>()[min_dex..=max_dex]
+            .iter()
+            .collect::<String>();
+        Ok(chars)
     }
 
     // Get a substring of ascii slice
