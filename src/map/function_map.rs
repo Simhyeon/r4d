@@ -1631,6 +1631,15 @@ $require(fin,fout)".to_string()),
                 ),
             ),
             (
+                "rotatei".to_owned(),
+                FMacroSign::new(
+                    "rotatei",
+                    ESR,
+                    Self::rotatei,
+                    None,
+                ),
+            ),
+            (
                 "rp".to_owned(),
                 FMacroSign::new(
                     "rp",

@@ -2132,6 +2132,61 @@ impl FunctionMacroMap {
         Ok(Some(result))
     }
 
+    /// Rotate inner
+    ///
+    /// # Note
+    ///
+    /// - Each pattern has to be unique
+    ///
+    /// # Usage
+    ///
+    /// $rotatei(start,end,sep,source)
+    pub(crate) fn rotatei(
+        args: &str,
+        attr: &MacroAttribute,
+        _: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        let args = Utils::get_split_arguments_or_error("rotatei", &args, attr, 4, None)?;
+
+        let start = &args[0];
+        let end = &args[1];
+        let sep = &args[2];
+        let source = &args[3];
+
+        // Leading blank spaces from the line itself.
+        let first_split = source.split_once(start.as_ref());
+        if first_split.is_none() {
+            return Err(RadError::InvalidArgument(format!(
+                "Given source \"{}\" doesn't include start pattern",
+                source,
+            )));
+        }
+        let (preceding, last) = first_split.unwrap();
+        let last_split = last.split_once(end.as_ref());
+        if last_split.is_none() {
+            return Err(RadError::InvalidArgument(format!(
+                "Given source \"{}\" doesn't include end pattern",
+                source,
+            )));
+        }
+        let (inner, lasting) = last_split.unwrap();
+        let inner_split = inner.split_once(sep.as_ref());
+        if last_split.is_none() {
+            return Err(RadError::InvalidArgument(format!(
+                "Given source \"{}\" doesn't include separator pattern",
+                source,
+            )));
+        }
+        let (before, after) = inner_split.unwrap();
+
+        let result = format!(
+            "{}{}{}{}{}{}{}",
+            preceding, start, after, sep, before, end, lasting
+        );
+
+        Ok(Some(result))
+    }
+
     /// Return a length of the string
     ///
     /// This is O(n) operation.
@@ -2186,7 +2241,7 @@ impl FunctionMacroMap {
         } else {
             if processor.state.behaviour == ErrorBehaviour::Strict {
                 return Err(RadError::UnsoundExecution(format!(
-                    "Macro \"{}\" doesn't exist, therefore cannot rename",
+                    "Macro \"{}\" doesn')t exist, therefore cannot rename",
                     name,
                 )));
             }
