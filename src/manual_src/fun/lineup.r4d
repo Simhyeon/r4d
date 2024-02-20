@@ -1,0 +1,35 @@
+Set up lines by a rule
+
+# Note
+
+- Use lineupr to match against rearest character
+
+# Arguments
+
+- a_separator : A separator string
+- a_lines     : Lines to align
+
+# Demo
+
+```
+$stream(pipe)
+let mut processor = 
+    Processor::new()                            // Make a processor
+    .lenient(true)                  // Disable strict mode
+    .hygiene(Hygiene::Macro) // Enable hygiene mode
+    .pipe_truncate(false) // Disable pipe truncate
+    .write_to_file(Path::new("out.txt"))? // default is stdout
+$consume()
+$lineup-(//)
+===
+let mut processor = 
+    Processor::new()                      // Make a processor
+    .lenient(true)                        // Disable strict mode
+    .hygiene(Hygiene::Macro)              // Enable hygiene mode
+    .pipe_truncate(false)                 // Disable pipe truncate
+    .write_to_file(Path::new("out.txt"))? // default is stdout
+```
+
+# Example
+
+- TODO

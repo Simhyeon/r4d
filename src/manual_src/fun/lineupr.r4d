@@ -1,14 +1,14 @@
-Align lines by a separator
+Set up lines by a separator but match to right most character.
 
 # Arguments
 
-- a_separator : A separator string
-- a_lines     : Lines to align
+- a_separator : A separator
+- a_lines     : Lines to process
 
 # Demo
 
 ```
-$align^(//,
+$lineupr^(//,
 let mut processor = Processor::new() // Make a processor
     .lenient(true) // Disable strict mode
     .hygiene(Hygiene::Macro) // Enable hygiene mode
@@ -28,7 +28,7 @@ $assert=(
 First       %% wow
 Second part %% bob
 Thirdos     %% Howzer,
-$align^=(
+$lineupr^=(
 %%,
 First %% wow
 Second part %% bob
