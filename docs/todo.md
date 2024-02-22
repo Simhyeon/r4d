@@ -1,54 +1,17 @@
+# New todos
+
+I've git reset hard without understanding git...? sadge.
+
+Nothing is lost for code, but docs are lost which is sadge...
+
+* [ ] Change envset to setenv
+* [ ] Hygiene
+* [ ] Type architecture
+
 # Todo immediate
 
-* [ ] Possibly improve lexor...? -> I'm afraid :(
-
-* [ ] Try to retain existing newlines as much as possible
-* [ ] Add macro arguments for macro source
-
-* [ ] Maintain consistencies over indexing and counting arguments
-    -> Because some are 0 starting and some are 1 starting
-
-* [ ] Sub works very strange
-
-**Think Before adding a new macro so that can it be achieved as continuous macros**
-e.g. inner a can be replaced with capture and inner combination
-
-* [ ] Think about how failed operation should work
-    - Macros that affect processor state shoulud be really careful when it can fail ( Lenient mode )
-
-* [ ] Implement trim input 
-    * [ ] Execute macro doesn't respect macro framgnet is it desirable? ->
-      Kind of?
-    * [ ] Expand also doesn't utilize attr yet. Is it ok?
-* [ ] maybe `parse_chunk_args` can return cow instead of string
-
-* [ ] Make a new slice macro for split and joining
-* [ ] Always keep in mind that rangel can fail
-
-* [ ] Add environmnet variable for preventing negative index for slicel(rangel)
-* [ ] Add environmnet variable for insulah to customize split behaviour
-
-* [ ] Change names that are inconsistent or incoherent
-* [ ] Capture to support capture group
-* [ ] For chunk
-```
-Iter through lines and aggregate regexed chunk and apply macro to it
-$forchunk(start_regex,end_regex,macro_body,src)
-```
 * [ ] Split by
 * [ ] Check insulav's logic throughly
-* [ ] Escape rule is very outrageous
-```
-\\ -> \\
-\ -> NONE WHAT?
-```
-* [ ] Check if all macros can handle empty arguments without panicking.
-- Update manuals one by one
-- Update all "None" variatns of manuals
-- Add new macros that is immediately necessary for daily use
-- Fix bugs that was found during manual update
-    - Regardless of bug size and difficulties
-    - Fix basic Lorem indexing
 
 - Debug all manuals
     1. Test english charcters
@@ -56,14 +19,10 @@ $forchunk(start_regex,end_regex,macro_body,src)
     3. Test invalid syntax, characters.
     4. Test macro argument's default attribute
 
-0. KEEP IN MIND : Escape rule is strange
-    ```
-    $assert(\,\) -> This doesn't invoked at all
-    ```
-    -> Check PS.r4d manual because escape character is strange in the document.
 
 #### BUG
 
+* Check PS.r4d manual because escape character is strange in the document.
 * [x] Inner panics on certain cenarios -> Failed to reproduce just in keep mind yeah...
 
 * [x] Bug: insulav and insulah was not stripping
@@ -149,6 +108,12 @@ $forchunk(start_regex,end_regex,macro_body,src)
     -> Implemented as cont macro
 
 #### Macro ( macro )
+
+* [ ] For chunk
+```
+Iter through lines and aggregate regexed chunk and apply macro to it
+$forchunk(start_regex,end_regex,macro_body,src)
+```
 
 * [x] Make a new macro for border?
 * [x] Renamed indent to insertf
@@ -275,9 +240,8 @@ but simply collecting is often faster.
 
 * [ ] Should after and until macro support regex? because it doesn't for now
 
-### TODO
+### todo-previous
 
-$todo_start()
 * [ ] Refactor
 Totally change internal logic. Currently every text is processed as sequences.
 Yet this approach has both pros and cons. Especially when you have to process a
@@ -299,8 +263,9 @@ file.
     * [ ] About escape rules + parenthesis rule
 * [ ] Test
     * [ ] Test windows build
-$todo_end()
 
 ### LATER
 
 * [ ] Test hook macro documentaion
+
+### Temporary done
