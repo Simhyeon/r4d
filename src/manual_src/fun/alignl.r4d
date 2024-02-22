@@ -1,0 +1,111 @@
+Align lines given options
+
+# Note
+
+- Refer following demo for detailed align types and usages.
+
+# Arguments
+
+- a_align_type : Align type for cells ( trimmed  ) [ r, l, pr, pl, h ]
+- a_lines      : Lines to align       ( trimmed )
+
+# Demo
+
+There are 5 types of alignment. You can use shorthand type e.g. "r"
+
+1. Right (r)
+
+```
+Lorem 
+    ipsum
+        dolor
+            sit
+                amet
+>>>
+rad --sc align right
+===
+              Lorem 
+               ipsum
+               dolor
+                 sit
+                amet
+```
+
+2. Left (l)
+
+```
+Lorem 
+    ipsum
+        dolor
+            sit
+                amet
+>>>
+rad --sc alignl left
+===
+Lorem 
+ipsum
+dolor
+sit
+amet
+```
+
+3. Parralel-left (pl)
+
+```
+    Lorem 
+        ipsum
+            dolor
+                sit
+                    amet
+>>>
+rad --sc alignl pl
+===
+    Lorem 
+    ipsum
+    dolor
+    sit
+    amet
+```
+
+4. Parralel-right (pr)
+
+```
+    Lorem 
+        ipsum
+            dolor
+                sit
+                    amet
+>>>
+rad --sc alignl pr
+===
+                        Lorem 
+                        ipsum
+                        dolor
+                        sit
+                        amet
+```
+
+5. Hierarchy (h)
+
+- Hierarchy alignment uses tab_width which is 4 by defuault if not set.
+- It will use top most element's preceding spaces as standard width if there are
+
+```
+Lorem 
+        ipsum
+                    dolor
+                sit
+                    amet
+>>>
+rad --sc alignl h
+===
+Lorem 
+    ipsum
+            dolor
+        sit
+                amet
+```
+
+# Example
+
+-> TODO
