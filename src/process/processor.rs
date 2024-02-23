@@ -27,7 +27,7 @@ use crate::runtime_map::RuntimeMacro;
 use crate::sigmap::SignatureMap;
 use crate::storage::{RadStorage, StorageOutput};
 use crate::utils::{RadStr, Utils};
-use crate::NewArgParser as ArgParser;
+use crate::ArgParser;
 use crate::SplitVariant;
 use crate::{consts::*, RadResult};
 use crate::{lexor::*, stake};

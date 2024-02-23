@@ -8,7 +8,7 @@ use crate::deterred_map::DeterredMacroMap;
 use crate::formatter::Formatter;
 use crate::parser::SplitVariant;
 use crate::utils::{RadStr, Utils, NUM_MATCH};
-use crate::NewArgParser as ArgParser;
+use crate::ArgParser;
 use crate::WarningType;
 use crate::{Processor, RadError};
 use dcsv::VCont;

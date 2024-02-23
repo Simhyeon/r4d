@@ -1,6 +1,6 @@
 use crate::common::MacroAttribute;
 use crate::utils::{RadStr, Utils};
-use crate::NewArgParser;
+use crate::ArgParser;
 
 #[test]
 fn test() {

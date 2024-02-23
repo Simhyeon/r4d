@@ -18,7 +18,7 @@ use crate::hookmap::HookType;
 use crate::logger::WarningType;
 use crate::utils::{RadStr, Utils, NUM_MATCH};
 use crate::SplitVariant;
-use crate::{CommentType, NewArgParser, WriteOption};
+use crate::{ArgParser, CommentType, WriteOption};
 use crate::{Hygiene, Processor};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
@@ -176,7 +176,7 @@ impl FunctionMacroMap {
         match &p.state.current_input {
             ProcessInput::Stdin => Ok(Some("Stdin".to_string())),
             ProcessInput::File(path) => {
-                let args = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+                let args = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
                 if !args.is_empty() && !args[0].trim().is_empty() {
                     let print_absolute = args[0].is_arg_true()?;
                     if print_absolute {
@@ -451,7 +451,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Deterred(1));
+        let args = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Amount(1));
         let op = VarContOperation::from_str(args[0].trim())?;
         let var = args.get(1).map(|s| s.as_ref()).unwrap_or("");
         let ret = match op {
@@ -1397,7 +1397,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+        let args = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "counter requires an argument".to_owned(),
@@ -1674,7 +1674,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let vec = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+        let vec = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
         if !vec.is_empty() && vec[0].is_arg_true()? {
             p.state.behaviour = ErrorBehaviour::Exit;
             return Err(RadError::SaneExit);
@@ -1695,7 +1695,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let vec = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+        let vec = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
 
         let out = vec
             .iter()
@@ -1968,7 +1968,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let pipe = if let Some(args) = NewArgParser::new().args_with_len(args, attr, 1) {
+        let pipe = if let Some(args) = ArgParser::new().args_with_len(args, attr, 1) {
             let name = args[0].trim();
             if name.is_empty() {
                 let out = processor.state.get_pipe("-", false);
@@ -4174,7 +4174,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = NewArgParser::new().args_to_vec(args_src, attr, b',', SplitVariant::Always);
+        let args = ArgParser::new().args_to_vec(args_src, attr, b',', SplitVariant::Always);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "relay at least requires an argument".to_owned(),
@@ -4333,7 +4333,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::GreedyStrip);
+        let args = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Greedy);
 
         let halt_immediate = if let Some(val) = args.first() {
             val.is_arg_true()?
@@ -4490,7 +4490,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let vec = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+        let vec = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
         if vec.is_empty() {
             p.log_warning(
                 "Require macro used without any arguments.",
@@ -4525,7 +4525,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let vec = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+        let vec = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
         let mode = &vec[0];
         let trimmed_mode = mode.trim();
         match trimmed_mode.to_lowercase().as_str() {
@@ -4704,7 +4704,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+        let args = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
 
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
@@ -4733,7 +4733,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+        let args = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
 
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
@@ -4949,7 +4949,7 @@ impl FunctionMacroMap {
         attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let names = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+        let names = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
         let runtime_rules = names
             .iter()
             .map(|name| (name.trim().to_string(), "", ""))
@@ -5645,7 +5645,7 @@ impl FunctionMacroMap {
         if !Utils::is_granted("listdir", AuthType::FIN, processor)? {
             return Ok(None);
         }
-        let args = NewArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
+        let args = ArgParser::new().args_to_vec(args, attr, b',', SplitVariant::Always);
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
                 "listdir at least requires an argument".to_owned(),
@@ -5832,7 +5832,7 @@ impl FunctionMacroMap {
     ) -> RadResult<Option<String>> {
         // TODO
         // Improve by not allocating
-        let args = NewArgParser::new()
+        let args = ArgParser::new()
             .args_to_vec(args, attr, b',', SplitVariant::Always)
             .into_iter()
             .map(|s| s.to_string())

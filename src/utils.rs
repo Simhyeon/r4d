@@ -5,7 +5,7 @@ use crate::common::{MacroAttribute, ProcessInput, RadResult};
 use crate::env::PROC_ENV;
 use crate::error::RadError;
 use crate::logger::WarningType;
-use crate::{NewArgParser, Processor, WriteOption};
+use crate::{ArgParser, Processor, WriteOption};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::borrow::Cow;
@@ -115,10 +115,10 @@ impl Utils {
         arguments: &'a &str,
         attribute: &MacroAttribute,
         length: usize,
-        parser: Option<&mut NewArgParser>,
+        parser: Option<&mut ArgParser>,
     ) -> RadResult<Vec<Cow<'a, str>>> {
         if let Some(args) = parser
-            .unwrap_or(&mut NewArgParser::new())
+            .unwrap_or(&mut ArgParser::new())
             .args_with_len(arguments, attribute, length)
         {
             Ok(args)

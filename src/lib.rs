@@ -49,20 +49,23 @@
 //! page](https://github.com/simhyeon/r4d/blob/master/docs/usage.md) or in
 //! [Processor](crate::Processor)
 
+mod argument;
 mod error;
 mod package;
 mod process;
 
 mod parser;
-pub(crate) use parser::{NewArgParser, SplitVariant};
+pub(crate) use parser::{ArgParser, SplitVariant};
 
 mod map;
+pub(crate) use argument::Argable;
 pub(crate) use map::deterred_map;
 pub(crate) use map::function_map;
 #[cfg(feature = "hook")]
 pub(crate) use map::hookmap;
 pub(crate) use map::runtime_map;
 pub(crate) use map::sigmap;
+pub(crate) use utils::RadStr;
 
 pub(crate) mod auth;
 pub(crate) mod common;
