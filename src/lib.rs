@@ -58,7 +58,7 @@ mod parser;
 pub(crate) use parser::{ArgParser, SplitVariant};
 
 mod map;
-pub(crate) use argument::Argable;
+pub(crate) use argument::{Argable, Parameter};
 pub(crate) use map::deterred_map;
 pub(crate) use map::function_map;
 #[cfg(feature = "hook")]

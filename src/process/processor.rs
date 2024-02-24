@@ -1,6 +1,7 @@
 //! Main macro processing struct module
 
 use super::ProcessorState;
+use crate::argument::{ArgType, MacroInput};
 use crate::auth::{AuthState, AuthType};
 #[cfg(feature = "debug")]
 use crate::common::DiffOption;
@@ -27,10 +28,10 @@ use crate::runtime_map::RuntimeMacro;
 use crate::sigmap::SignatureMap;
 use crate::storage::{RadStorage, StorageOutput};
 use crate::utils::{RadStr, Utils};
-use crate::ArgParser;
 use crate::SplitVariant;
 use crate::{consts::*, RadResult};
 use crate::{lexor::*, stake};
+use crate::{ArgParser, Parameter};
 #[cfg(feature = "cindex")]
 use cindex::Indexer;
 use once_cell::sync::Lazy;
@@ -1096,6 +1097,7 @@ impl<'processor> Processor<'processor> {
                 ));
                 return Err(err);
             }
+            #[cfg(not(feature = "refactor"))]
             self.map.runtime.macros.insert(
                 name.to_owned(),
                 RuntimeMacro {
@@ -1104,6 +1106,23 @@ impl<'processor> Processor<'processor> {
                         .split_whitespace()
                         .map(|s| s.to_owned())
                         .collect::<Vec<String>>(),
+                    body: body.to_string(),
+                    desc: None,
+                    is_static: false,
+                },
+            );
+            #[cfg(feature = "refactor")]
+            self.map.runtime.macros.insert(
+                name.to_owned(),
+                RuntimeMacro {
+                    name: name.to_owned(),
+                    params: args
+                        .split_whitespace()
+                        .map(|s| Parameter {
+                            name: s.to_owned(),
+                            arg_type: ArgType::Text,
+                        })
+                        .collect::<Vec<Parameter>>(),
                     body: body.to_string(),
                     desc: None,
                     is_static: false,
@@ -1151,11 +1170,23 @@ impl<'processor> Processor<'processor> {
                 ));
                 return Err(err);
             }
+            #[cfg(not(feature = "refactor"))]
             self.map.runtime.macros.insert(
                 name.to_owned(),
                 RuntimeMacro {
                     name: name.to_owned(),
                     args: vec![],
+                    body: body.as_ref().to_owned(),
+                    desc: None,
+                    is_static: true,
+                },
+            );
+            #[cfg(feature = "refactor")]
+            self.map.runtime.macros.insert(
+                name.to_owned(),
+                RuntimeMacro {
+                    name: name.to_owned(),
+                    params: vec![],
                     body: body.as_ref().to_owned(),
                     desc: None,
                     is_static: true,
@@ -2212,7 +2243,21 @@ impl<'processor> Processor<'processor> {
                 }
 
                 // Execute a macro function with arguments and get value
+                #[cfg(not(feature = "refactor"))]
                 let final_result = func(&args, level, &frag.attribute, self)?.filter(|f| {
+                    if !PROC_ENV.no_consume {
+                        !f.is_empty()
+                    } else {
+                        true
+                    }
+                });
+
+                // TODO TT
+                // Should add input arg type
+                #[cfg(feature = "refactor")]
+                let input = MacroInput::new(&args).attr(frag.attribute);
+                #[cfg(feature = "refactor")]
+                let final_result = func(input, level, self)?.filter(|f| {
                     if !PROC_ENV.no_consume {
                         !f.is_empty()
                     } else {
@@ -2233,7 +2278,18 @@ impl<'processor> Processor<'processor> {
             // Func always exists, because contains succeeded.
             let func = self.map.function.get_func(name).unwrap();
             //let final_result = func(&args, self)?;
-            let final_result = match func(&args, &frag.attribute, self) {
+
+            #[cfg(not(feature = "refactor"))]
+            let res = func(&args, &frag.attribute, self);
+
+            #[cfg(feature = "refactor")]
+            let input = MacroInput::new(&args)
+                .attr(frag.attribute)
+                .parameter(&self.map.get_signature(name).unwrap().params);
+            #[cfg(feature = "refactor")]
+            let res = func(input, self);
+
+            let final_result = match res {
                 Ok(e) => e.filter(|f| {
                     if !PROC_ENV.no_consume {
                         !f.is_empty()
@@ -2298,10 +2354,14 @@ impl<'processor> Processor<'processor> {
             return Ok(Some(rule.body));
         }
 
-        let arg_types = &rule.args;
+        #[cfg(not(feature = "refactor"))]
+        let arg_names = &rule.args;
+        #[cfg(feature = "refactor")]
+        let arg_names = &rule.params;
+
         // Set variable to local macros
         let args = if let Some(content) =
-            ArgParser::new().args_with_len(arg_values, attr, arg_types.len())
+            ArgParser::new().args_with_len(arg_values, attr, arg_names.len())
         {
             content
         } else {
@@ -2312,7 +2372,7 @@ impl<'processor> Processor<'processor> {
                 ArgParser::new()
                     .args_to_vec(arg_values, attr, b',', SplitVariant::Always)
                     .len(),
-                arg_types.len()
+                arg_names.len()
             ));
             if self.state.process_type == ProcessType::Dry {
                 self.log_warning(&err.to_string(), WarningType::Sanity)?;
@@ -2322,9 +2382,16 @@ impl<'processor> Processor<'processor> {
             return Err(err);
         };
 
-        for (idx, arg_type) in arg_types.iter().enumerate() {
+        #[cfg(not(feature = "refactor"))]
+        for (idx, name) in arg_names.iter().enumerate() {
             //Set arg to be substitued
-            self.map.add_local_macro(level + 1, arg_type, &args[idx]);
+            self.map.add_local_macro(level + 1, name, &args[idx]);
+        }
+
+        #[cfg(feature = "refactor")]
+        for (idx, param) in arg_names.iter().enumerate() {
+            //Set arg to be substitued
+            self.map.add_local_macro(level + 1, &param.name, &args[idx]);
         }
 
         // Process the rule body
@@ -2936,7 +3003,12 @@ impl<'processor> Processor<'processor> {
             .entry(name.to_string())
             .or_insert(RuntimeMacro {
                 name: name.to_string(),
+
+                #[cfg(not(feature = "refactor"))]
                 args: vec![],
+                #[cfg(feature = "refactor")]
+                params: vec![],
+
                 body: String::new(),
                 desc: None,
                 is_static: true,

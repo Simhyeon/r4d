@@ -1,5 +1,6 @@
 use super::function_map::FunctionMacroMap;
 
+use crate::argument::MacroInput;
 use crate::auth::{AuthState, AuthType};
 use crate::common::{
     AlignType, ErrorBehaviour, FlowControl, LineUpType, MacroType, ProcessInput, RadResult,
@@ -5935,6 +5936,18 @@ impl FunctionMacroMap {
             .indexer
             .index_raw(args[0].trim(), OutOption::Value(&mut value))?;
         Ok(Some(value.trim().to_string()))
+    }
+
+    #[cfg(feature = "refactor")]
+    pub(crate) fn placeholder(
+        input: MacroInput,
+        processor: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        use crate::parser::NewArgParser;
+        let args = NewArgParser::new().args_with_len(input)?;
+        let v = args.get_text(0)?;
+
+        Ok(Some(v.to_string()))
     }
 }
 

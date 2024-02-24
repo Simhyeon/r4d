@@ -1,8 +1,9 @@
 //! Macro collection for deterred macros
+use crate::argument::{ArgType, MacroInput};
 use crate::common::{MacroAttribute, RadResult};
 use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
-use crate::Processor;
+use crate::{Parameter, Processor};
 #[cfg(feature = "rustc_hash")]
 use rustc_hash::FxHashMap as HashMap;
 #[cfg(not(feature = "rustc_hash"))]
@@ -11,8 +12,13 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 
 /// Functino signature for a deterred macro function
+#[cfg(not(feature = "refactor"))]
 pub(crate) type DFunctionMacroType =
     fn(&str, usize, &MacroAttribute, &mut Processor) -> RadResult<Option<String>>;
+
+#[cfg(feature = "refactor")]
+pub(crate) type DFunctionMacroType =
+    fn(MacroInput, usize, &mut Processor) -> RadResult<Option<String>>;
 
 /// Collection map for a deterred macro function
 #[derive(Clone)]
@@ -20,6 +26,74 @@ pub struct DeterredMacroMap {
     pub(crate) macros: HashMap<String, DMacroSign>,
 }
 
+#[cfg(feature = "refactor")]
+impl DeterredMacroMap {
+    /// Creates empty map
+    pub fn empty() -> Self {
+        Self {
+            macros: HashMap::new(),
+        }
+    }
+
+    /// Create a new instance with default macros
+    pub fn new() -> Self {
+        let map = HashMap::from_iter(IntoIterator::into_iter([(
+            "include".to_owned(),
+            DMacroSign::new(
+                "include",
+                [(ArgType::CText, "a_test")],
+                Self::placeholder,
+                None,
+            ),
+        )]));
+
+        Self { macros: map }
+    }
+
+    /// Get Function pointer from map
+    pub fn get_deterred_macro(&self, name: &str) -> Option<&DFunctionMacroType> {
+        if let Some(mac) = self.macros.get(name) {
+            Some(&mac.logic)
+        } else {
+            None
+        }
+    }
+
+    /// Get Function pointer from map
+    pub(crate) fn get_signature(&self, name: &str) -> Option<&DMacroSign> {
+        self.macros.get(name)
+    }
+
+    /// Check if map contains the name
+    pub fn contains(&self, name: &str) -> bool {
+        self.macros.contains_key(name)
+    }
+
+    /// Undefine a deterred macro
+    pub fn undefine(&mut self, name: &str) {
+        self.macros.remove(name);
+    }
+
+    /// Rename a deterred macro
+    pub fn rename(&mut self, name: &str, target: &str) -> bool {
+        if let Some(func) = self.macros.remove(name) {
+            self.macros.insert(target.to_owned(), func);
+            return true;
+        }
+        false
+    }
+
+    /// Add new extension macro as deterred macro
+    pub fn new_ext_macro(&mut self, ext: ExtMacroBuilder) {
+        // TODO TT
+        // if let Some(ExtMacroBody::Deterred(mac_ref)) = ext.macro_body {
+        //     let sign = DMacroSign::new(&ext.macro_name, &ext.args, mac_ref, ext.macro_desc);
+        //     self.macros.insert(ext.macro_name, sign);
+        // }
+    }
+}
+
+#[cfg(not(feature = "refactor"))]
 impl DeterredMacroMap {
     /// Creates empty map
     pub fn empty() -> Self {
@@ -960,8 +1034,19 @@ $expand(\\*1,2,3*\\)".to_string()),
     }
 }
 
+#[derive(Clone)]
+#[cfg(feature = "refactor")]
+pub(crate) struct DMacroSign {
+    name: String,
+    params: Vec<Parameter>,
+    pub logic: DFunctionMacroType,
+    #[allow(dead_code)]
+    desc: Option<String>,
+}
+
 /// Keyword Macro signature
 #[derive(Clone)]
+#[cfg(not(feature = "refactor"))]
 pub(crate) struct DMacroSign {
     name: String,
     args: Vec<String>,
@@ -970,6 +1055,7 @@ pub(crate) struct DMacroSign {
     desc: Option<String>,
 }
 
+#[cfg(not(feature = "refactor"))]
 impl DMacroSign {
     pub fn new(
         name: &str,
@@ -990,6 +1076,7 @@ impl DMacroSign {
     }
 }
 
+#[cfg(not(feature = "refactor"))]
 impl std::fmt::Display for DMacroSign {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut inner = self
@@ -1002,12 +1089,65 @@ impl std::fmt::Display for DMacroSign {
     }
 }
 
+#[cfg(not(feature = "refactor"))]
 impl From<&DMacroSign> for crate::sigmap::MacroSignature {
     fn from(ms: &DMacroSign) -> Self {
         Self {
             variant: crate::sigmap::MacroVariant::Deterred,
             name: ms.name.to_owned(),
             args: ms.args.to_owned(),
+            expr: ms.to_string(),
+            desc: ms.desc.clone(),
+        }
+    }
+}
+
+// ------ REFACTOR
+
+#[cfg(feature = "refactor")]
+impl DMacroSign {
+    pub fn new(
+        name: &str,
+        params: impl IntoIterator<Item = (ArgType, impl AsRef<str>)>,
+        logic: DFunctionMacroType,
+        desc: Option<String>,
+    ) -> Self {
+        let params = params
+            .into_iter()
+            .map(|(t, s)| Parameter {
+                name: s.as_ref().to_string(),
+                arg_type: t,
+            })
+            .collect::<Vec<Parameter>>();
+        Self {
+            name: name.to_owned(),
+            params,
+            logic,
+            desc,
+        }
+    }
+}
+
+#[cfg(feature = "refactor")]
+impl std::fmt::Display for DMacroSign {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut inner = self
+            .params
+            .iter()
+            .fold(String::new(), |acc, arg| acc + &arg.to_string() + ",");
+        // This removes last "," character
+        inner.pop();
+        write!(f, "${}({})", self.name, inner)
+    }
+}
+
+#[cfg(feature = "refactor")]
+impl From<&DMacroSign> for crate::sigmap::MacroSignature {
+    fn from(ms: &DMacroSign) -> Self {
+        Self {
+            variant: crate::sigmap::MacroVariant::Deterred,
+            name: ms.name.to_owned(),
+            params: ms.params.to_owned(),
             expr: ms.to_string(),
             desc: ms.desc.clone(),
         }

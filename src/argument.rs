@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt::Display;
 use std::path::PathBuf;
 
 use crate::common::MacroAttribute;
@@ -7,8 +8,9 @@ use crate::RadResult;
 use crate::RadStr;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug)]
 pub(crate) struct MacroInput<'a> {
-    pub arg_types: Vec<ArgType>,
+    pub params: Vec<Parameter>,
     pub attr: MacroAttribute,
     pub args: &'a str,
 }
@@ -16,14 +18,14 @@ pub(crate) struct MacroInput<'a> {
 impl<'a> MacroInput<'a> {
     pub fn new(args: &'a str) -> Self {
         Self {
-            arg_types: Vec::new(),
+            params: Vec::new(),
             attr: MacroAttribute::default(),
             args,
         }
     }
 
-    pub fn arg_type(mut self, arg_types: &[ArgType]) -> Self {
-        self.arg_types = arg_types.to_vec();
+    pub fn parameter(mut self, params: &[Parameter]) -> Self {
+        self.params = params.to_vec();
         self
     }
 
@@ -32,15 +34,21 @@ impl<'a> MacroInput<'a> {
         self
     }
 
-    pub fn len(&self) -> usize {
-        self.arg_types.len()
+    pub fn type_len(&self) -> usize {
+        self.params.len()
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Parameter {
-    name: String,
-    arg_type: ArgType,
+pub(crate) struct Parameter {
+    pub name: String,
+    pub arg_type: ArgType,
+}
+
+impl Display for Parameter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} : {:#?}", self.name, self.arg_type)
+    }
 }
 
 pub(crate) trait Argable<'a> {
@@ -76,6 +84,7 @@ impl<'a> Argable<'a> for Cow<'a, str> {
     }
 }
 
+#[derive(Debug)]
 pub enum Argument<'a> {
     Text(Cow<'a, str>),
     Bool(bool),
@@ -98,6 +107,7 @@ pub enum ArgType {
     Uint,
 }
 
+#[derive(Debug)]
 pub struct ParsedArguments<'a> {
     args: Vec<Argument<'a>>,
 }

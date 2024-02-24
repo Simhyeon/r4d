@@ -1,3 +1,4 @@
+use crate::argument::MacroInput;
 use crate::auth::AuthType;
 use crate::common::{
     ContainerType, FileTarget, FlowControl, MacroAttribute, MacroFragment, ProcessInput,
@@ -1691,19 +1692,14 @@ impl DeterredMacroMap {
         Ok(chunk)
     }
 
-    #[allow(unused_variables)]
-    #[cfg(debug_assertions)]
-    #[allow(dead_code)]
-    pub(crate) fn test_logics(
-        args: &str,
+    #[cfg(feature = "refactor")]
+    pub(crate) fn placeholder(
+        input: MacroInput,
         level: usize,
-        attr: &MacroAttribute,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if let Some(args) = ArgParser::new().no_strip().args_with_len(args, attr, 3) {
-            //processor.log_message(&args[0]);
-            //processor.log_message(&args[1]);
-            //processor.log_message(&args[2]);
+        use crate::parser::NewArgParser as ArgParser;
+        if let Ok(args) = ArgParser::new().no_strip().args_with_len(input) {
             Ok(None)
         } else {
             Err(RadError::InvalidArgument(

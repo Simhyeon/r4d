@@ -1,6 +1,7 @@
 //! Signature map module
 
 use crate::consts::LINE_ENDING;
+use crate::Parameter;
 #[cfg(feature = "rustc_hash")]
 use rustc_hash::FxHashMap as HashMap;
 use serde::{Deserialize, Serialize};
@@ -33,6 +34,7 @@ pub enum MacroVariant {
 
 /// Macro signature struct
 #[derive(Debug, Serialize, Deserialize)]
+#[cfg(not(feature = "refactor"))]
 pub struct MacroSignature {
     pub variant: MacroVariant,
     pub name: String,
@@ -41,6 +43,7 @@ pub struct MacroSignature {
     pub desc: Option<String>,
 }
 
+#[cfg(not(feature = "refactor"))]
 impl std::fmt::Display for MacroSignature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -54,6 +57,45 @@ Description >>
             self.variant,
             self.name,
             self.args,
+            self.expr,
+            self.desc
+                .as_ref()
+                .map(|d| d
+                    .lines()
+                    .map(|line| "    ".to_owned() + line)
+                    .collect::<Vec<_>>()
+                    .join(LINE_ENDING))
+                .unwrap_or_default()
+        )
+    }
+}
+
+// TODO TT
+/// Macro signature struct
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg(feature = "refactor")]
+pub struct MacroSignature {
+    pub variant: MacroVariant,
+    pub name: String,
+    pub params: Vec<Parameter>,
+    pub expr: String,
+    pub desc: Option<String>,
+}
+
+#[cfg(feature = "refactor")]
+impl std::fmt::Display for MacroSignature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Macro Type  : {:#?}
+Macro Name  : {}
+Parameters  : {:?}
+Usage       : {}
+Description >> 
+{}",
+            self.variant,
+            self.name,
+            self.params,
             self.expr,
             self.desc
                 .as_ref()

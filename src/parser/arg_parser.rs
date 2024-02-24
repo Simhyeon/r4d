@@ -407,9 +407,9 @@ impl NewArgParser {
         &mut self,
         input: MacroInput<'a>,
     ) -> RadResult<ParsedArguments<'a>> {
-        let length = input.len();
+        let length = input.type_len();
         if length == 0 && !input.args.is_empty() {
-            return Err(RadError::InvalidArgument("Empty argument".to_string()));
+            return Err(RadError::InvalidArgument("Empty argument - 1".to_string()));
         }
         self.split_variant = if length > 1 {
             SplitVariant::Amount(length - 1)
@@ -433,8 +433,8 @@ impl NewArgParser {
         input: MacroInput<'a>,
     ) -> RadResult<Vec<Argument<'a>>> {
         let mut values: Vec<Argument> = vec![];
-        let mut cursor = ArgCursor::Reference(0, 0);
-        let (start, end) = (0, 0);
+        self.cursor = ArgCursor::Reference(0, 0);
+        let (mut start, mut end) = (0, 0);
         let trim = input.attr.trim_input;
 
         // This is totally ok to iterate as char_indices rather than chars
@@ -444,11 +444,11 @@ impl NewArgParser {
 
         // TODO TT
         // If arg_type is empty, every type is treated as text
-        let mut at_iter = input.arg_types.iter();
+        let mut at_iter = input.params.iter();
 
         // Return empty vector without going through logics
         if input.args.is_empty() {
-            return Err(RadError::InvalidArgument("Empty arguments".to_string()));
+            return Err(RadError::InvalidArgument("Empty argument - 2".to_string()));
         }
 
         for (idx, &ch) in arg_iter {
@@ -456,14 +456,21 @@ impl NewArgParser {
             self.check_parenthesis(ch, &input.args);
 
             if ch == self.delimiter {
-                let ret = self.branch_delimiter(ch, idx, &mut (start, end), input.args);
-                let value: Cow<'_, str> = if let Some(v) = ret {
-                    v.into()
-                } else {
-                    input.args[start..end].into()
-                };
-                let arg = Self::validate_arg(*at_iter.next().unwrap(), value)?;
-                values.push(arg);
+                // TODO TT
+                // This is not a neat solution it works...
+                let mut skip = false;
+                let ret =
+                    self.branch_delimiter(ch, idx, &mut skip, (&mut start, &mut end), input.args);
+
+                if !skip {
+                    let value: Cow<'_, str> = if let Some(v) = ret {
+                        v.into()
+                    } else {
+                        input.args[start..end].into()
+                    };
+                    let arg = Self::validate_arg(at_iter.next().unwrap().arg_type, value)?;
+                    values.push(arg);
+                }
             } else if ch == ESCAPE_CHAR_U8 {
                 self.branch_escape_char(ch, &input.args);
             } else {
@@ -473,7 +480,7 @@ impl NewArgParser {
                     self.branch_literal_char(ch, &input.args);
                 } else {
                     // Non literal character are just pushed
-                    cursor.push(&[ch]);
+                    self.cursor.push(&[ch]);
                 }
             }
 
@@ -485,16 +492,19 @@ impl NewArgParser {
             }
         } // while end
           // Add last arg
-        let sc = if cursor.is_string() { "" } else { input.args };
-        let value: Cow<'_, str> = if let Some(v) =
-            cursor.get_cursor_range_or_get_string(input.args.len(), trim, &mut (start, end))
-        {
+        let value: Cow<'_, str> = if let Some(v) = self.cursor.get_cursor_range_or_get_string(
+            input.args.len(),
+            trim,
+            (&mut start, &mut end),
+        ) {
             v.into()
         } else {
-            sc[start..end].into()
+            input.args[start..end].into()
         };
-        let arg = Self::validate_arg(*at_iter.next().unwrap(), value)?;
-        values.push(arg);
+
+        let type_checked_arg = Self::validate_arg(at_iter.next().unwrap().arg_type, value)?;
+
+        values.push(type_checked_arg);
         Ok(values)
     }
 
@@ -503,7 +513,8 @@ impl NewArgParser {
         &mut self,
         ch: u8,
         index: usize,
-        range: &mut (usize, usize),
+        skip_split: &mut bool,
+        range: (&mut usize, &mut usize),
         src: &str,
     ) -> Option<String> {
         let mut ret = None;
@@ -536,6 +547,7 @@ impl NewArgParser {
                 // Push everything to current item, index, value or you name it
                 SplitVariant::Greedy => {
                     self.cursor.push(&[ch]);
+                    *skip_split = true;
                 }
                 SplitVariant::Always => {
                     ret = self
@@ -706,7 +718,7 @@ impl ArgCursor {
         &mut self,
         index: usize,
         trim: bool,
-        (start, end): &mut (usize, usize),
+        (start, end): (&mut usize, &mut usize),
     ) -> Option<String> {
         let ret = match self {
             Self::Reference(c, n) => {

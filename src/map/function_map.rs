@@ -3,10 +3,11 @@
 //! Function macro module includes struct and methods related to function macros
 //! which are technically function pointers.
 
+use crate::argument::{ArgType, MacroInput};
 use crate::common::{MacroAttribute, RadResult};
 use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
-use crate::{man_fun, Processor};
+use crate::{man_fun, Parameter, Processor};
 #[cfg(feature = "rustc_hash")]
 use rustc_hash::FxHashMap as HashMap;
 #[cfg(not(feature = "rustc_hash"))]
@@ -15,8 +16,12 @@ use std::iter::FromIterator;
 
 /// Function signature for "function" macro functions
 // pub(crate) type FunctionMacroType = fn(&str, &mut Processor) -> RadResult<Option<String>>;
+#[cfg(not(feature = "refactor"))]
 pub(crate) type FunctionMacroType =
     fn(&str, &MacroAttribute, &mut Processor) -> RadResult<Option<String>>;
+
+#[cfg(feature = "refactor")]
+pub(crate) type FunctionMacroType = fn(MacroInput, &mut Processor) -> RadResult<Option<String>>;
 
 #[derive(Clone)]
 /// Collection map for a "function" macro function
@@ -24,6 +29,89 @@ pub(crate) struct FunctionMacroMap {
     pub(crate) macros: HashMap<String, FMacroSign>,
 }
 
+#[cfg(feature = "refactor")]
+impl FunctionMacroMap {
+    /// Creates empty map
+    pub fn empty() -> Self {
+        Self {
+            macros: HashMap::default(),
+        }
+    }
+    pub fn new() -> Self {
+        // Create hashmap of functions
+        let mut map = HashMap::from_iter(IntoIterator::into_iter([(
+            "p".to_owned(),
+            FMacroSign::new(
+                "p",
+                [(ArgType::CText, "a_name")],
+                Self::placeholder,
+                Some(man_fun!("pipe.r4d")),
+            ),
+        )]));
+
+        // Return struct
+        Self { macros: map }
+    }
+
+    /// Add new macro extension from macro builder
+    pub(crate) fn new_ext_macro(&mut self, ext: ExtMacroBuilder) {
+        // TODO TT
+        // Fix it later
+        // if let Some(ExtMacroBody::Function(mac_ref)) = ext.macro_body {
+        //     let sign = FMacroSign::new(&ext.macro_name, &ext.args, mac_ref, ext.macro_desc);
+        //     self.macros.insert(ext.macro_name, sign);
+        // }
+    }
+
+    /// Check if a given macro exists
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Name of the macro to find
+    pub fn contains(&self, name: &str) -> bool {
+        self.macros.contains_key(name)
+    }
+
+    /// Get function reference by name
+    pub fn get_func(&self, name: &str) -> Option<&FunctionMacroType> {
+        if let Some(sig) = self.macros.get(name) {
+            Some(&sig.logic)
+        } else {
+            None
+        }
+    }
+
+    /// Get Function pointer from map
+    pub(crate) fn get_signature(&self, name: &str) -> Option<&FMacroSign> {
+        self.macros.get(name)
+    }
+
+    /// Undefine a macro
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Macro name to undefine
+    pub fn undefine(&mut self, name: &str) {
+        self.macros.remove(name);
+    }
+
+    /// Rename a macro
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Source macro name to find
+    /// * `target` - Target macro name to apply
+    pub fn rename(&mut self, name: &str, target: &str) -> bool {
+        if let Some(func) = self.macros.remove(name) {
+            self.macros.insert(target.to_owned(), func);
+            true
+        } else {
+            false
+        }
+    }
+}
+
+#[cfg(not(feature = "refactor"))]
 impl FunctionMacroMap {
     /// Creates empty map
     pub fn empty() -> Self {
@@ -2758,6 +2846,42 @@ rhoncus*\\,$wrap(20,$lipsum(10)))"
 }
 
 /// Function Macro signature
+#[cfg(feature = "refactor")]
+#[derive(Clone)]
+pub(crate) struct FMacroSign {
+    name: String,
+    params: Vec<Parameter>,
+    pub logic: FunctionMacroType,
+    #[allow(dead_code)]
+    pub desc: Option<String>,
+}
+
+#[cfg(feature = "refactor")]
+impl FMacroSign {
+    pub fn new(
+        name: &str,
+        params: impl IntoIterator<Item = (ArgType, impl AsRef<str>)>,
+        logic: FunctionMacroType,
+        desc: Option<String>,
+    ) -> Self {
+        let params = params
+            .into_iter()
+            .map(|(t, s)| Parameter {
+                name: s.as_ref().to_string(),
+                arg_type: t,
+            })
+            .collect::<Vec<Parameter>>();
+        Self {
+            name: name.to_owned(),
+            params,
+            logic,
+            desc,
+        }
+    }
+}
+
+/// Function Macro signature
+#[cfg(not(feature = "refactor"))]
 #[derive(Clone)]
 pub(crate) struct FMacroSign {
     name: String,
@@ -2767,6 +2891,7 @@ pub(crate) struct FMacroSign {
     pub desc: Option<String>,
 }
 
+#[cfg(not(feature = "refactor"))]
 impl FMacroSign {
     pub fn new(
         name: &str,
@@ -2787,6 +2912,7 @@ impl FMacroSign {
     }
 }
 
+#[cfg(not(feature = "refactor"))]
 impl std::fmt::Display for FMacroSign {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut inner = self
@@ -2799,6 +2925,7 @@ impl std::fmt::Display for FMacroSign {
     }
 }
 
+#[cfg(not(feature = "refactor"))]
 impl From<&FMacroSign> for crate::sigmap::MacroSignature {
     fn from(bm: &FMacroSign) -> Self {
         Self {
@@ -2808,5 +2935,31 @@ impl From<&FMacroSign> for crate::sigmap::MacroSignature {
             expr: bm.to_string(),
             desc: bm.desc.clone(),
         }
+    }
+}
+
+#[cfg(feature = "refactor")]
+impl From<&FMacroSign> for crate::sigmap::MacroSignature {
+    fn from(bm: &FMacroSign) -> Self {
+        Self {
+            variant: crate::sigmap::MacroVariant::Function,
+            name: bm.name.to_owned(),
+            params: bm.params.to_owned(),
+            expr: bm.to_string(),
+            desc: bm.desc.clone(),
+        }
+    }
+}
+
+#[cfg(feature = "refactor")]
+impl std::fmt::Display for FMacroSign {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut inner = self
+            .params
+            .iter()
+            .fold(String::new(), |acc, arg| acc + &arg.to_string() + ",");
+        // This removes last "," character
+        inner.pop();
+        write!(f, "${}({})", self.name, inner)
     }
 }
