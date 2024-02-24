@@ -28,6 +28,7 @@ doctest = false
 [features]
 # Binary related 
 # For some reaons that I dont' know, clap cannot be enabled with dep: prefix
+refactor = []
 default = ["rchash"]
 basic = ["clap", "dep:filetime","rad_ext_template?/binary"]
 binary = ["basic","debug", "full", "color"]
