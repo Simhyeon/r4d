@@ -304,7 +304,7 @@ impl std::fmt::Display for ProcessInput {
 }
 
 /// Standards of behaviour
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum ErrorBehaviour {
     /// No error actually
     Exit,
@@ -318,6 +318,21 @@ pub enum ErrorBehaviour {
     Assert,
     /// Special behaviour of panic
     Interrupt,
+}
+
+impl std::str::FromStr for ErrorBehaviour {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "lenient" => Ok(ErrorBehaviour::Lenient),
+            "purge" => Ok(ErrorBehaviour::Purge),
+            "strict" => Ok(ErrorBehaviour::Strict),
+            _ => Err(RadError::InvalidArgument(format!(
+                "\"{}\" is not a valid error type",
+                s
+            ))),
+        }
+    }
 }
 
 /// Type of processing
@@ -539,5 +554,52 @@ impl std::str::FromStr for LineUpType {
                 s
             ))),
         }
+    }
+}
+pub enum RelayType {
+    Temp,
+    File,
+    Macro,
+}
+
+impl std::str::FromStr for RelayType {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let t = match s.to_lowercase().as_str() {
+            "temp" | "t" => Self::Temp,
+            "file" | "f" => Self::File,
+            "macro" | "m" => Self::Macro,
+            _ => {
+                return Err(RadError::InvalidArgument(format!(
+                    "Given type \"{}\" is not a valid relay target",
+                    s
+                )))
+            }
+        };
+        Ok(t)
+    }
+}
+
+pub enum OutputType {
+    Terminal,
+    File,
+    Discard,
+}
+
+impl std::str::FromStr for OutputType {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let t = match s.to_lowercase().as_ref() {
+            "terminal" => Self::Terminal,
+            "file" => Self::File,
+            "discard" => Self::Discard,
+            _ => {
+                return Err(RadError::InvalidArgument(format!(
+                    "Given type \"{}\" is not a valid output type",
+                    s
+                )))
+            }
+        };
+        Ok(t)
     }
 }

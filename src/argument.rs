@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::Display;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::common::MacroAttribute;
 use crate::RadStr;
@@ -38,6 +38,7 @@ impl<'a> ExInput<'a> {
 #[derive(Debug)]
 pub(crate) struct MacroInput<'a> {
     pub params: Vec<Parameter>,
+    pub optional: Option<Parameter>,
     pub attr: MacroAttribute,
     pub args: &'a str,
 }
@@ -46,6 +47,7 @@ impl<'a> MacroInput<'a> {
     pub fn new(args: &'a str) -> Self {
         Self {
             params: Vec::new(),
+            optional: None,
             attr: MacroAttribute::default(),
             args,
         }
@@ -53,6 +55,11 @@ impl<'a> MacroInput<'a> {
 
     pub fn parameter(mut self, params: &[Parameter]) -> Self {
         self.params = params.to_vec();
+        self
+    }
+
+    pub fn optional(mut self, param: Parameter) -> Self {
+        self.optional.replace(param);
         self
     }
 
@@ -180,6 +187,14 @@ impl<'a> ParsedCursors<'a> {
         }
     }
 
+    pub fn get_path(&'a self, p: &mut Processor, input: ExInput) -> RadResult<PathBuf> {
+        let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
+        match expanded.to_arg(ArgType::Path) {
+            Ok(Argument::Path(val)) => Ok(val),
+            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+        }
+    }
+
     pub fn get_uint(&'a self, p: &mut Processor, input: ExInput) -> RadResult<usize> {
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
         match expanded.to_arg(ArgType::Uint) {
@@ -237,6 +252,14 @@ impl<'a> ParsedArguments<'a> {
         Self { args }
     }
 
+    pub fn len(&self) -> usize {
+        self.args.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.args.is_empty()
+    }
+
     // ---- GETTERS
     pub fn get(&'a self, index: usize) -> RadResult<&Argument<'a>> {
         match self.args.get(index) {
@@ -248,6 +271,13 @@ impl<'a> ParsedArguments<'a> {
     pub fn get_bool(&'a self, index: usize) -> RadResult<bool> {
         match self.args.get(index) {
             Some(Argument::Bool(val)) => Ok(*val),
+            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+        }
+    }
+
+    pub fn get_path(&'a self, index: usize) -> RadResult<&'a Path> {
+        match self.args.get(index) {
+            Some(Argument::Path(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidArgument("".to_string())),
         }
     }
@@ -287,7 +317,7 @@ impl<'a> ParsedArguments<'a> {
         }
     }
 
-    pub fn get_custom<T>(&'a self, index: usize, f: fn(&str) -> RadResult<T>) -> RadResult<T> {
+    pub fn get_enum<T>(&'a self, index: usize, f: fn(&str) -> RadResult<T>) -> RadResult<T> {
         let arg = match self.args.get(index) {
             Some(val) => Ok(val),
             None => Err(crate::RadError::InvalidArgument("".to_string())),

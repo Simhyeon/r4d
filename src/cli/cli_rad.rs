@@ -81,7 +81,7 @@ impl<'cli> RadCli<'cli> {
 
     /// Parse arguments and run processor
     fn run_processor(&mut self, args: &clap::ArgMatches) -> RadResult<()> {
-        self.parse_options(args);
+        self.parse_options(args)?;
 
         // Build processor
         #[allow(unused_mut)]
@@ -416,7 +416,7 @@ impl<'cli> RadCli<'cli> {
     }
 
     /// Parse processor options
-    fn parse_options(&mut self, args: &clap::ArgMatches) {
+    fn parse_options(&mut self, args: &clap::ArgMatches) -> RadResult<()> {
         // ========
         // Sub options
         // custom rules
@@ -437,12 +437,18 @@ impl<'cli> RadCli<'cli> {
 
         // Permission
         if let Some(auths) = args.get_one::<String>("allow") {
-            self.allow_auth = auths.split('+').filter_map(AuthType::from).collect()
+            self.allow_auth = auths
+                .split('+')
+                .map(AuthType::from_str)
+                .collect::<RadResult<Vec<AuthType>>>()?;
         }
 
         // Permission with warning
         if let Some(auths) = args.get_one::<String>("allow_warn") {
-            self.allow_auth_warn = auths.split('+').filter_map(AuthType::from).collect()
+            self.allow_auth_warn = auths
+                .split('+')
+                .map(AuthType::from_str)
+                .collect::<RadResult<Vec<AuthType>>>()?;
         }
 
         // Permission all
@@ -455,6 +461,7 @@ impl<'cli> RadCli<'cli> {
             self.allow_auth_warn =
                 vec![AuthType::FIN, AuthType::FOUT, AuthType::ENV, AuthType::CMD];
         }
+        Ok(())
     }
 
     /// Create argument requirements

@@ -1,12 +1,13 @@
+use crate::argument::{ArgType, MacroInput};
 use crate::common::MacroAttribute;
+use crate::function_map::FMacroSign;
 use crate::utils::{RadStr, Utils};
-use crate::ArgParser;
+use crate::{ArgParser, Processor, RadResult};
 
+fn yo(i: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+    Ok(None)
+}
 #[test]
 fn test() {
-    let ret = "a b c d e f g
-1 2 3 4 5 6 7 "
-        .full_lines_with_index()
-        .collect::<Vec<_>>();
-    eprintln!("{:#?}", ret);
+    let test = FMacroSign::new("", [(ArgType::Text, "d")], yo, Some("".to_string()));
 }

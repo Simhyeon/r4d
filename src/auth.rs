@@ -10,6 +10,7 @@
 //! - env
 
 use crate::consts::LINE_ENDING;
+use crate::RadError;
 use std::fmt::Write;
 
 #[derive(Debug)]
@@ -105,18 +106,23 @@ impl std::fmt::Display for AuthType {
     }
 }
 
-impl AuthType {
-    /// Convert str slice into AuthType
-    pub fn from(string: &str) -> Option<Self> {
-        match string.to_lowercase().as_str() {
-            "env" => Some(Self::ENV),
-            "fin" => Some(Self::FIN),
-            "fout" => Some(Self::FOUT),
-            "cmd" => Some(Self::CMD),
-            _ => None,
+impl std::str::FromStr for AuthType {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "env" => Ok(Self::ENV),
+            "fin" => Ok(Self::FIN),
+            "fout" => Ok(Self::FOUT),
+            "cmd" => Ok(Self::CMD),
+            _ => Err(RadError::InvalidArgument(format!(
+                "Given type \"{}\" is not a valid auth type",
+                s
+            ))),
         }
     }
+}
 
+impl AuthType {
     /// Convert usize integer into a auth type
     pub fn from_usize(number: usize) -> Option<Self> {
         match number {

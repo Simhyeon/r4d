@@ -104,7 +104,7 @@ pub const PATH_SEPARATOR: &str = "/";
 pub const RDB_HELP: &str = include_str!("debug_help_message.txt");
 
 /// Empty String aRray
-pub const ESR: [&str; 0] = [];
+pub const ESR: [(crate::argument::ArgType, &str); 0] = [];
 
 /// Define keyword
 pub const DEFINE_KEYWORD: &str = "define";

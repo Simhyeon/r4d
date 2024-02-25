@@ -110,28 +110,6 @@ impl Utils {
         }
     }
 
-    pub fn get_split_arguments_or_error<'a>(
-        macro_name: &'a str,
-        arguments: &'a &str,
-        attribute: &MacroAttribute,
-        length: usize,
-        parser: Option<&mut ArgParser>,
-    ) -> RadResult<Vec<Cow<'a, str>>> {
-        if let Some(args) = parser
-            .unwrap_or(&mut ArgParser::new())
-            .args_with_len(arguments, attribute, length)
-        {
-            Ok(args)
-        } else {
-            let error_message = match length {
-                0 => format!("{} does not require any arguments", macro_name),
-                1 => format!("{} requires an argument", macro_name),
-                _ => format!("{} requires {} arguments", macro_name, length),
-            };
-            Err(RadError::InvalidArgument(error_message))
-        }
-    }
-
     /// Split string by whitespaces but respect spaces within commas and strip commas
     ///
     /// # Example

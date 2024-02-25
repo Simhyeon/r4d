@@ -6,11 +6,11 @@ use crate::{
     argument::{ArgCursor, ArgType, Argument, MacroInput, ParsedArguments, ParsedCursors},
     common::MacroAttribute,
     consts::{ESCAPE_CHAR_U8, LIT_CHAR_U8},
-    RadError, RadResult,
+    Parameter, RadError, RadResult,
 };
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::borrow::Cow;
+use std::{borrow::Cow, slice::Iter};
 
 pub static MACRO_START_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"^\$\S*\($"#).expect("Failed to create name regex"));
@@ -426,9 +426,29 @@ impl NewArgParser {
     }
 
     /// Check if given length is qualified for given raw arguments
-    ///
-    /// If length is qualified it returns vector of arguments
     pub(crate) fn args_with_len(mut self, input: MacroInput) -> RadResult<ParsedArguments> {
+        let length = input.type_len();
+        if length == 0 && !input.args.is_empty() {
+            return Err(RadError::InvalidArgument("Empty argument - 1".to_string()));
+        }
+        self.split_variant = if length > 1 {
+            SplitVariant::Amount(length - 1)
+        } else {
+            SplitVariant::Greedy
+        };
+
+        let args = self.to_arg_list(input)?;
+
+        if args.len() < length {
+            return Err(RadError::InvalidArgument(
+                "Insufficient arguments".to_string(),
+            ));
+        }
+        Ok(ParsedArguments::with_args(args))
+    }
+
+    /// Check if given length is qualified for given raw arguments
+    pub(crate) fn args_with_optional(mut self, input: MacroInput) -> RadResult<ParsedArguments> {
         let length = input.type_len();
         if length == 0 && !input.args.is_empty() {
             return Err(RadError::InvalidArgument("Empty argument - 1".to_string()));
@@ -506,10 +526,7 @@ impl NewArgParser {
     }
 
     /// Split raw arguments into a vector
-    pub(crate) fn to_arg_list<'a>(
-        &'_ mut self,
-        input: MacroInput<'a>,
-    ) -> RadResult<Vec<Argument<'a>>> {
+    fn to_arg_list<'a>(&'_ mut self, input: MacroInput<'a>) -> RadResult<Vec<Argument<'a>>> {
         let mut values: Vec<Argument> = vec![];
         self.cursor = ArgCursor::Reference(0, 0);
         let (mut start, mut end) = (0, 0);
@@ -523,6 +540,22 @@ impl NewArgParser {
         // TODO TT
         // If arg_type is empty, every type is treated as text
         let mut at_iter = input.params.iter();
+
+        #[inline]
+        fn get_next_type(
+            iter: &mut Iter<'_, Parameter>,
+            optional: &Option<Parameter>,
+        ) -> RadResult<ArgType> {
+            if let Some(v) = iter.next() {
+                Ok(v.arg_type)
+            } else if let Some(p) = optional {
+                Ok(p.arg_type)
+            } else {
+                Err(RadError::InvalidExecution(
+                    "Argument doesn't match argument type".to_string(),
+                ))
+            }
+        }
 
         // Return empty vector without going through logics
         if input.args.is_empty() {
@@ -546,7 +579,8 @@ impl NewArgParser {
                     } else {
                         input.args[start..end].into()
                     };
-                    let arg = Self::validate_arg(at_iter.next().unwrap().arg_type, value)?;
+                    let arg =
+                        Self::validate_arg(get_next_type(&mut at_iter, &input.optional)?, value)?;
                     values.push(arg);
                 }
             } else if ch == ESCAPE_CHAR_U8 {
@@ -580,7 +614,8 @@ impl NewArgParser {
             input.args[start..end].into()
         };
 
-        let type_checked_arg = Self::validate_arg(at_iter.next().unwrap().arg_type, value)?;
+        let type_checked_arg =
+            Self::validate_arg(get_next_type(&mut at_iter, &input.optional)?, value)?;
 
         values.push(type_checked_arg);
         Ok(values)
