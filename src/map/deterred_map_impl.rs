@@ -1,4 +1,4 @@
-use crate::argument::MacroInput;
+use crate::argument::{ExInput, MacroInput};
 use crate::auth::AuthType;
 use crate::common::{
     ContainerType, FileTarget, FlowControl, MacroAttribute, MacroFragment, ProcessInput,
@@ -20,6 +20,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
+#[cfg(not(feature = "refactor"))]
 impl DeterredMacroMap {
     // ----------
     // Keyword Macros start
@@ -1692,25 +1693,27 @@ impl DeterredMacroMap {
         Ok(chunk)
     }
 
-    #[cfg(feature = "refactor")]
-    pub(crate) fn placeholder(
-        input: MacroInput,
-        level: usize,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        use crate::parser::NewArgParser as ArgParser;
-        if let Ok(args) = ArgParser::new().no_strip().args_with_len(input) {
-            Ok(None)
-        } else {
-            Err(RadError::InvalidArgument(
-                "Insufficient argumetns for test".to_owned(),
-            ))
-        }
-    }
     // Keyword macros end
     // ----------
 }
 
+#[cfg(feature = "refactor")]
+impl DeterredMacroMap {
+    pub(crate) fn placeholder(
+        input: MacroInput,
+        level: usize,
+        p: &mut Processor,
+    ) -> RadResult<Option<String>> {
+        use crate::parser::NewArgParser as ArgParser;
+
+        let cursors = ArgParser::new().no_strip().cursors_with_len(input)?;
+        let arg = cursors.get_bool(p, ExInput::new(0, "pd").level(level))?;
+        if arg {
+            let res = cursors.get_text(p, ExInput::new(0, "pd").level(level))?;
+        }
+        Ok(Some(format!("{:#?}", arg)))
+    }
+}
 // <MISC>
 
 #[inline]

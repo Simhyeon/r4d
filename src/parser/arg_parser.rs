@@ -3,7 +3,7 @@
 //! Module about argument parsing
 
 use crate::{
-    argument::{ArgType, Argument, MacroInput, ParsedArguments},
+    argument::{ArgCursor, ArgType, Argument, MacroInput, ParsedArguments, ParsedCursors},
     common::MacroAttribute,
     consts::{ESCAPE_CHAR_U8, LIT_CHAR_U8},
     RadError, RadResult,
@@ -395,18 +395,16 @@ impl NewArgParser {
     }
 
     /// Simply strip literal chunk
-    pub(crate) fn strip<'a>(&mut self, args: &'a str) -> RadResult<ParsedArguments<'a>> {
-        self.args_with_len(MacroInput::new(args))
+    pub(crate) fn strip(self, args: &str) -> RadResult<String> {
+        self.args_with_len(MacroInput::new(args))?
+            .get_text(0)
+            .map(|s| s.to_string())
     }
 
     /// Check if given length is qualified for given raw arguments
     ///
     /// If length is qualified it returns vector of arguments
-    /// if not, "None" is returned instead.
-    pub(crate) fn args_with_len<'a>(
-        &mut self,
-        input: MacroInput<'a>,
-    ) -> RadResult<ParsedArguments<'a>> {
+    pub(crate) fn cursors_with_len(mut self, input: MacroInput) -> RadResult<ParsedCursors> {
         let length = input.type_len();
         if length == 0 && !input.args.is_empty() {
             return Err(RadError::InvalidArgument("Empty argument - 1".to_string()));
@@ -417,7 +415,31 @@ impl NewArgParser {
             SplitVariant::Greedy
         };
 
-        let args = self.args_to_vec(input)?;
+        let curs = self.to_cursor_list(&input)?;
+
+        if curs.len() < length {
+            return Err(RadError::InvalidArgument(
+                "Insufficient arguments".to_string(),
+            ));
+        }
+        Ok(ParsedCursors::new(input.args).with_cursors(curs))
+    }
+
+    /// Check if given length is qualified for given raw arguments
+    ///
+    /// If length is qualified it returns vector of arguments
+    pub(crate) fn args_with_len(mut self, input: MacroInput) -> RadResult<ParsedArguments> {
+        let length = input.type_len();
+        if length == 0 && !input.args.is_empty() {
+            return Err(RadError::InvalidArgument("Empty argument - 1".to_string()));
+        }
+        self.split_variant = if length > 1 {
+            SplitVariant::Amount(length - 1)
+        } else {
+            SplitVariant::Greedy
+        };
+
+        let args = self.to_arg_list(input)?;
 
         if args.len() < length {
             return Err(RadError::InvalidArgument(
@@ -427,8 +449,64 @@ impl NewArgParser {
         Ok(ParsedArguments::with_args(args))
     }
 
+    /// Split raw arguments into cursors
+    pub(crate) fn to_cursor_list(&mut self, input: &MacroInput) -> RadResult<Vec<ArgCursor>> {
+        let mut values: Vec<ArgCursor> = vec![];
+        self.cursor = ArgCursor::Reference(0, 0);
+        let (mut start, mut end) = (0, 0);
+
+        // This is totally ok to iterate as char_indices rather than chars
+        // because "only ASCII char is matched" so there is zero possibilty that
+        // char_indices will make any unexpected side effects.
+        let arg_iter = input.args.as_bytes().iter().enumerate();
+
+        // Return empty vector without going through logics
+        if input.args.is_empty() {
+            return Err(RadError::InvalidArgument("Empty argument - 2".to_string()));
+        }
+
+        for (idx, &ch) in arg_iter {
+            // Check parenthesis
+            self.check_parenthesis(ch, &input.args);
+
+            if ch == self.delimiter {
+                // TODO TT
+                // This is not a neat solution it works...
+                let mut skip = false;
+                self.branch_delimiter(ch, idx, &mut skip, (&mut start, &mut end), input.args);
+
+                if !skip {
+                    let value = self.cursor.take(idx + 1);
+                    values.push(value);
+                }
+            } else if ch == ESCAPE_CHAR_U8 {
+                self.branch_escape_char(ch, &input.args);
+            } else {
+                // This pushes value in the end, so use continue not push the value
+                if ch == LIT_CHAR_U8 {
+                    // '*'
+                    self.branch_literal_char(ch, &input.args);
+                } else {
+                    // Non literal character are just pushed
+                    self.cursor.push(&[ch]);
+                }
+            }
+
+            if self.no_previous {
+                self.previous.replace(b'0');
+                self.no_previous = false;
+            } else {
+                self.previous.replace(ch);
+            }
+        } // while end
+          // Add last arg
+        let value = self.cursor.take(input.args.len());
+        values.push(value);
+        Ok(values)
+    }
+
     /// Split raw arguments into a vector
-    pub(crate) fn args_to_vec<'a>(
+    pub(crate) fn to_arg_list<'a>(
         &'_ mut self,
         input: MacroInput<'a>,
     ) -> RadResult<Vec<Argument<'a>>> {
@@ -675,122 +753,13 @@ impl NewArgParser {
 
         self.paren_stack.last().unwrap().macro_invocation
     }
+
     // -- <TEST>
     fn validate_arg(arg_type: ArgType, source: Cow<'_, str>) -> RadResult<Argument> {
         use crate::Argable;
         source.to_arg(arg_type)
     }
     // -- </TEST>
-}
-
-#[derive(Debug)]
-enum ArgCursor {
-    Reference(usize, usize),
-    Modified(Vec<u8>),
-}
-
-impl ArgCursor {
-    pub fn is_string(&self) -> bool {
-        matches!(self, Self::Modified(_))
-    }
-
-    #[allow(dead_code)]
-    pub fn debug(&self, src: &str) {
-        match self {
-            Self::Reference(a, b) => {
-                eprintln!(">>> -{}-", &src[*a..*b]);
-            }
-            Self::Modified(vec) => {
-                eprintln!(">>> -{}-", std::str::from_utf8(vec).unwrap());
-            }
-        }
-    }
-
-    /// Peek value without taking
-    pub fn peek_value<'a>(&'a self, src: &'a str) -> &str {
-        match self {
-            Self::Reference(s, e) => &src[*s..*e],
-            Self::Modified(v) => std::str::from_utf8(&v[..]).unwrap(),
-        }
-    }
-
-    pub fn get_cursor_range_or_get_string(
-        &mut self,
-        index: usize,
-        trim: bool,
-        (start, end): (&mut usize, &mut usize),
-    ) -> Option<String> {
-        let ret = match self {
-            Self::Reference(c, n) => {
-                *start = *c;
-                *end = *n;
-                return None;
-            }
-
-            // TODO
-            // Check this so that any error can be captured
-            // THis is mostsly ok to unwrap because input source is
-            Self::Modified(s) => {
-                let stred = std::str::from_utf8(&s[..]).unwrap();
-                if trim {
-                    stred.trim().to_string().into()
-                } else {
-                    stred.to_string().into()
-                }
-            }
-        };
-        *self = Self::Reference(index, index);
-        ret
-    }
-
-    /// Use "is_string" before taking value and supply empty if the inner vaule is string
-    ///
-    /// because src is supplied as is while the argument is completely ignored when the inner value
-    /// is a string.
-    pub fn take_value<'a>(&'_ mut self, index: usize, src: &'a str, trim: bool) -> Cow<'a, str> {
-        let ret = match self {
-            Self::Reference(c, n) => {
-                let val = &src[*c..*n];
-                if trim {
-                    val.trim().into()
-                } else {
-                    val.into()
-                }
-            }
-
-            // TODO
-            // Check this so that any error can be captured
-            // THis is mostsly ok to unwrap because input source is
-            Self::Modified(s) => {
-                let stred = std::str::from_utf8(&s[..]).unwrap();
-                if trim {
-                    stred.trim().to_string().into()
-                } else {
-                    stred.to_string().into()
-                }
-            }
-        };
-        *self = Self::Reference(index, index);
-        ret
-    }
-
-    pub fn convert_to_modified(&mut self, src: &str) {
-        if let Self::Reference(c, n) = self {
-            *self = Self::Modified(src[*c..*n].into())
-        }
-    }
-
-    pub fn push(&mut self, ch: &[u8]) {
-        match self {
-            Self::Reference(_, n) => *n += 1,
-            Self::Modified(st) => st.extend_from_slice(ch),
-        }
-    }
-    pub fn pop(&mut self) {
-        if let Self::Modified(st) = self {
-            st.pop();
-        }
-    }
 }
 
 pub struct ParenStack {

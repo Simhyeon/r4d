@@ -1,6 +1,7 @@
 //! Main macro processing struct module
 
 use super::ProcessorState;
+use crate::argument::ExInput;
 use crate::argument::{ArgType, MacroInput};
 use crate::auth::{AuthState, AuthType};
 #[cfg(feature = "debug")]
@@ -2255,7 +2256,9 @@ impl<'processor> Processor<'processor> {
                 // TODO TT
                 // Should add input arg type
                 #[cfg(feature = "refactor")]
-                let input = MacroInput::new(&args).attr(frag.attribute);
+                let input = MacroInput::new(&args)
+                    .attr(frag.attribute)
+                    .parameter(&self.map.get_signature(name).unwrap().params);
                 #[cfg(feature = "refactor")]
                 let final_result = func(input, level, self)?.filter(|f| {
                     if !PROC_ENV.no_consume {
@@ -3221,6 +3224,7 @@ impl<'processor> Processor<'processor> {
     /// Parse chunk and strip quotes
     ///
     /// This is for internal logic
+    #[cfg(not(feature = "refactor"))]
     pub(crate) fn parse_and_strip<'a>(
         &mut self,
         ap: &mut ArgParser,

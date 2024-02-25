@@ -38,10 +38,10 @@ impl DeterredMacroMap {
     /// Create a new instance with default macros
     pub fn new() -> Self {
         let map = HashMap::from_iter(IntoIterator::into_iter([(
-            "include".to_owned(),
+            "pd".to_owned(),
             DMacroSign::new(
-                "include",
-                [(ArgType::CText, "a_test")],
+                "pd",
+                [(ArgType::Bool, "a_bb"), (ArgType::CText, "a_test")],
                 Self::placeholder,
                 None,
             ),
