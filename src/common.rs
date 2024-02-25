@@ -557,7 +557,6 @@ impl std::str::FromStr for LineUpType {
     }
 }
 pub enum RelayType {
-    Temp,
     File,
     Macro,
 }
@@ -566,7 +565,6 @@ impl std::str::FromStr for RelayType {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let t = match s.to_lowercase().as_str() {
-            "temp" | "t" => Self::Temp,
             "file" | "f" => Self::File,
             "macro" | "m" => Self::Macro,
             _ => {
@@ -596,6 +594,28 @@ impl std::str::FromStr for OutputType {
             _ => {
                 return Err(RadError::InvalidArgument(format!(
                     "Given type \"{}\" is not a valid output type",
+                    s
+                )))
+            }
+        };
+        Ok(t)
+    }
+}
+
+pub enum OrderType {
+    Ascending,
+    Descending,
+}
+
+impl std::str::FromStr for OrderType {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let t = match s.to_lowercase().as_ref() {
+            "a" | "ascending" => Self::Ascending,
+            "d" | "descending" => Self::Descending,
+            _ => {
+                return Err(RadError::InvalidArgument(format!(
+                    "Given type \"{}\" is not a valid order type",
                     s
                 )))
             }

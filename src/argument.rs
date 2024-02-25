@@ -58,8 +58,8 @@ impl<'a> MacroInput<'a> {
         self
     }
 
-    pub fn optional(mut self, param: Parameter) -> Self {
-        self.optional.replace(param);
+    pub fn optional(mut self, param: Option<Parameter>) -> Self {
+        self.optional = param;
         self
     }
 
@@ -77,6 +77,15 @@ impl<'a> MacroInput<'a> {
 pub(crate) struct Parameter {
     pub name: String,
     pub arg_type: ArgType,
+}
+
+impl Parameter {
+    pub fn new(at: ArgType, name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            arg_type: at,
+        }
+    }
 }
 
 impl Display for Parameter {
