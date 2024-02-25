@@ -422,7 +422,9 @@ impl NewArgParser {
                 "Insufficient arguments".to_string(),
             ));
         }
-        Ok(ParsedCursors::new(input.args).with_cursors(curs))
+        Ok(ParsedCursors::new(input.args)
+            .with_cursors(curs)
+            .with_params(input.params.clone()))
     }
 
     /// Check if given length is qualified for given raw arguments
@@ -526,7 +528,7 @@ impl NewArgParser {
     }
 
     /// Split raw arguments into a vector
-    fn to_arg_list<'a>(&'_ mut self, input: MacroInput<'a>) -> RadResult<Vec<Argument<'a>>> {
+    fn to_arg_list<'a>(&mut self, input: MacroInput<'a>) -> RadResult<Vec<Argument<'a>>> {
         let mut values: Vec<Argument> = vec![];
         self.cursor = ArgCursor::Reference(0, 0);
         let (mut start, mut end) = (0, 0);
@@ -542,14 +544,14 @@ impl NewArgParser {
         let mut at_iter = input.params.iter();
 
         #[inline]
-        fn get_next_type(
-            iter: &mut Iter<'_, Parameter>,
-            optional: &Option<Parameter>,
-        ) -> RadResult<ArgType> {
+        fn get_next_type<'b>(
+            iter: &mut Iter<'b, Parameter>,
+            optional: Option<&'b Parameter>,
+        ) -> RadResult<&'b Parameter> {
             if let Some(v) = iter.next() {
-                Ok(v.arg_type)
+                Ok(v)
             } else if let Some(p) = optional {
-                Ok(p.arg_type)
+                Ok(p)
             } else {
                 Err(RadError::InvalidExecution(
                     "Argument doesn't match argument type".to_string(),
@@ -579,8 +581,10 @@ impl NewArgParser {
                     } else {
                         input.args[start..end].into()
                     };
-                    let arg =
-                        Self::validate_arg(get_next_type(&mut at_iter, &input.optional)?, value)?;
+                    let arg = Self::validate_arg(
+                        get_next_type(&mut at_iter, input.optional.as_ref())?,
+                        value,
+                    )?;
                     values.push(arg);
                 }
             } else if ch == ESCAPE_CHAR_U8 {
@@ -615,7 +619,7 @@ impl NewArgParser {
         };
 
         let type_checked_arg =
-            Self::validate_arg(get_next_type(&mut at_iter, &input.optional)?, value)?;
+            Self::validate_arg(get_next_type(&mut at_iter, input.optional.as_ref())?, value)?;
 
         values.push(type_checked_arg);
         Ok(values)
@@ -790,9 +794,9 @@ impl NewArgParser {
     }
 
     // -- <TEST>
-    fn validate_arg(arg_type: ArgType, source: Cow<'_, str>) -> RadResult<Argument> {
+    fn validate_arg<'a>(param: &Parameter, source: Cow<'a, str>) -> RadResult<Argument<'a>> {
         use crate::Argable;
-        source.to_arg(arg_type)
+        source.to_arg(param)
     }
     // -- </TEST>
 }

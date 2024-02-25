@@ -95,30 +95,30 @@ impl Display for Parameter {
 }
 
 pub(crate) trait Argable<'a> {
-    fn to_arg(self, arg_type: ArgType) -> RadResult<Argument<'a>>;
+    fn to_arg(self, param: &Parameter) -> RadResult<Argument<'a>>;
     fn to_expanded(&self, p: &mut Processor, input: &ExInput) -> RadResult<String>;
 }
 
 impl<'a> Argable<'a> for Cow<'a, str> {
-    fn to_arg(self, arg_type: ArgType) -> RadResult<Argument<'a>> {
-        let arg = match arg_type {
+    fn to_arg(self, param: &Parameter) -> RadResult<Argument<'a>> {
+        let arg = match param.arg_type {
             ArgType::Bool => Argument::Bool(self.is_arg_true()?),
             ArgType::Int => Argument::Int(self.trim().parse::<isize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
-                    "Could not convert given value \"{}\" into a number",
-                    self
+                    "[Arg : {}] : Could not convert given value \"{}\" into a number",
+                    param.name, self
                 ))
             })?),
             ArgType::Uint => Argument::Uint(self.trim().parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
-                    "Could not convert given value \"{}\" into a positive number",
-                    self
+                    "[Arg : {}] : Could not convert given value \"{}\" into a positive number",
+                    param.name, self
                 ))
             })?),
             ArgType::Float => Argument::Float(self.trim().parse::<f32>().map_err(|_| {
                 RadError::InvalidArgument(format!(
-                    "Could not convert given value \"{}\" into a floating point number",
-                    self
+                    "[Arg : {}] : Could not convert given value \"{}\" into a floating point number",
+                    param.name, self
                 ))
             })?),
             ArgType::Path | ArgType::File => Argument::Path(PathBuf::from(self.as_ref())),
@@ -159,6 +159,7 @@ pub enum ArgType {
 #[derive(Debug)]
 pub struct ParsedCursors<'a> {
     src: &'a str,
+    params: Vec<Parameter>,
     cursors: Vec<ArgCursor>,
 }
 
@@ -166,14 +167,23 @@ impl<'a> ParsedCursors<'a> {
     pub fn new(src: &'a str) -> Self {
         Self {
             src,
+            params: Vec::new(),
             cursors: Vec::new(),
         }
     }
+
+    pub fn with_params(mut self, params: Vec<Parameter>) -> Self {
+        self.params = params;
+        self
+    }
+
     pub fn with_cursors(mut self, cursors: Vec<ArgCursor>) -> Self {
         self.cursors = cursors;
         self
     }
 
+    // TODO TT
+    // Notify the value that user tried to get
     fn get(&self, index: usize) -> RadResult<Cow<'a, str>> {
         let cursor = self
             .cursors
@@ -187,10 +197,14 @@ impl<'a> ParsedCursors<'a> {
         }
     }
 
+    // TODO TT
+    //
+    // Currently I'm simply unwrapping, but getting params can always fail.
+
     // Getter
     pub fn get_bool(&'a self, p: &mut Processor, input: ExInput) -> RadResult<bool> {
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
-        match expanded.to_arg(ArgType::Bool) {
+        match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Bool(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidArgument("".to_string())),
         }
@@ -198,7 +212,7 @@ impl<'a> ParsedCursors<'a> {
 
     pub fn get_path(&'a self, p: &mut Processor, input: ExInput) -> RadResult<PathBuf> {
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
-        match expanded.to_arg(ArgType::Path) {
+        match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Path(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidArgument("".to_string())),
         }
@@ -206,7 +220,7 @@ impl<'a> ParsedCursors<'a> {
 
     pub fn get_uint(&'a self, p: &mut Processor, input: ExInput) -> RadResult<usize> {
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
-        match expanded.to_arg(ArgType::Uint) {
+        match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Uint(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidArgument("".to_string())),
         }
@@ -214,7 +228,7 @@ impl<'a> ParsedCursors<'a> {
 
     pub fn get_int(&'a self, p: &mut Processor, input: ExInput) -> RadResult<isize> {
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
-        match expanded.to_arg(ArgType::Int) {
+        match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Int(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidArgument("".to_string())),
         }
@@ -222,7 +236,7 @@ impl<'a> ParsedCursors<'a> {
 
     pub fn get_float(&'a self, p: &mut Processor, input: ExInput) -> RadResult<f32> {
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
-        match expanded.to_arg(ArgType::Float) {
+        match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Float(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidArgument("".to_string())),
         }
