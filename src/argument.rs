@@ -392,7 +392,7 @@ impl ArgCursor {
             Self::Reference(c, n) => {
                 *start = *c;
                 *end = *n;
-                return None;
+                None
             }
 
             // TODO

@@ -504,7 +504,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "inner",
-[(ArgType::CText,"a_rule^"),(ArgType::Uint,"a_count^"),(ArgType::Text,"a_src"),],
+                    [(ArgType::CText,"a_rule^"),(ArgType::Uint,"a_count^"),(ArgType::Text,"a_src"),],
                     Self::get_inner,
                     Some(man_fun!("inner.r4d")),
                 )
