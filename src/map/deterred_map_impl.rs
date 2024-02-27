@@ -1581,8 +1581,8 @@ impl DeterredMacroMap {
         // TODO TT
         //
         // Change this to inline method
-        let cond = cursors.get_bool(p, 0).unwrap_or(false);
-        Self::include_inner(p, level, file, cond)
+        let raw_include = cursors.get_bool(p, 0).unwrap_or(false);
+        Self::include_inner(p, level, file, raw_include)
     }
 
     // Keyword macros end

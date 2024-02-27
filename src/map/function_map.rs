@@ -1186,7 +1186,7 @@ $assert(/first/second,$parent(/first/second/last.txt))".to_string()),
             (
                 FMacroSign::new(
                     "path",
-                    ESR,
+                    [(ArgType::Text,"a_path")],
                     Self::merge_path,
                     Some("Merge given paths
 
@@ -1208,7 +1208,7 @@ $assert(/first/second,$parent(/first/second/last.txt))".to_string()),
 $assert(a/b,$path(a,b))
 $assert(/a/b,$path(/a,b))
 $assert(a/b,$path(a/,b))".to_string()),
-                    ).optional(Parameter::new(ArgType::Text,"a_array^"))
+                    ).optional(Parameter::new(ArgType::Text,"a_sub_path"))
             ),
             (
                 FMacroSign::new(
@@ -2612,6 +2612,7 @@ impl From<&FMacroSign> for crate::sigmap::MacroSignature {
             variant: crate::sigmap::MacroVariant::Function,
             name: bm.name.to_owned(),
             params: bm.params.to_owned(),
+            optional: bm.optional.clone(),
             expr: bm.to_string(),
             desc: bm.desc.clone(),
         }
@@ -2620,13 +2621,19 @@ impl From<&FMacroSign> for crate::sigmap::MacroSignature {
 
 impl std::fmt::Display for FMacroSign {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut inner = self
-            .params
-            .iter()
-            .fold(String::new(), |acc, arg| acc + &arg.to_string() + ",");
+        let mut inner = self.params.iter().fold(String::new(), |acc, param| {
+            acc + &param.arg_type.to_string() + ","
+        });
         // This removes last "," character
         inner.pop();
-        write!(f, "${}({})", self.name, inner)
+        let basic_usage = format!("${}({}", self.name, inner); // Without ending brace
+        let ret = write!(f, "{})", basic_usage);
+        let sep = if inner.is_empty() { "" } else { ", " };
+        if let Some(op) = self.optional.as_ref() {
+            write!(f, "|| {}{}{}?)", basic_usage, sep, op.arg_type)
+        } else {
+            ret
+        }
     }
 }
 

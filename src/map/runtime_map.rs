@@ -34,10 +34,9 @@ impl RuntimeMacro {
 
 impl std::fmt::Display for RuntimeMacro {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut inner = self
-            .params
-            .iter()
-            .fold(String::new(), |acc, arg| acc + &arg.to_string() + ",");
+        let mut inner = self.params.iter().fold(String::new(), |acc, param| {
+            acc + &param.arg_type.to_string() + ","
+        });
         // This removes last "," character
         inner.pop();
         write!(f, "${}({})", self.name, inner)
@@ -55,6 +54,7 @@ impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
             variant,
             name: mac.name.to_owned(),
             params: mac.params.to_owned(),
+            optional: None,
             expr: mac.to_string(),
             desc: mac.desc.clone(),
         }

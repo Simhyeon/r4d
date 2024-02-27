@@ -39,23 +39,38 @@ pub struct MacroSignature {
     pub variant: MacroVariant,
     pub name: String,
     pub params: Vec<Parameter>,
+    pub optional: Option<Parameter>,
     pub expr: String,
     pub desc: Option<String>,
 }
 
 impl std::fmt::Display for MacroSignature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let params = if self.params.is_empty() {
+            "[NONE]".to_owned()
+        } else {
+            self.params
+                .iter()
+                .map(|p| format!("{} : {}", p.name, p.arg_type))
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
         write!(
             f,
             "Macro Type  : {:#?}
 Macro Name  : {}
-Parameters  : {:?}
+Parameters  : {}
 Usage       : {}
 Description >> 
 {}",
             self.variant,
             self.name,
-            self.params,
+            params
+                + &self
+                    .optional
+                    .as_ref()
+                    .map(|p| format!(", {}? : {}", p.name, p.arg_type))
+                    .unwrap_or_default(),
             self.expr,
             self.desc
                 .as_ref()

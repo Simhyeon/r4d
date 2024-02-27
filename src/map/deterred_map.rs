@@ -31,11 +31,11 @@ impl DeterredMacroMap {
 
     /// Create a new instance with default macros
     pub fn new() -> Self {
-        let map = Self::from_iter(IntoIterator::into_iter([
+        Self::from_iter(IntoIterator::into_iter([
             (
                 DMacroSign::new(
                     "include",
-                    [(ArgType::Text,"a_filename^"),(ArgType::Text, "a_raw_mode^+?")],
+                    [(ArgType::Path,"a_filename")],
                     Self::include,
                     Some(
                         "Include a file
@@ -57,12 +57,12 @@ $include(file_path)
 $include(file_path, true)"
                             .to_string(),
                     ),
-                )
+                ).optional(Parameter::new(ArgType::Bool, "a_raw_mode"))
             ),
             (
                 DMacroSign::new(
                     "incread",
-[(ArgType::Text,"a_filename^"),(ArgType::Text, "a_raw_mode^+?"),],
+                    [(ArgType::Path,"a_filename")],
                     Self::incread,
                     Some(
                         "Alwasy include a file as \"read\"
@@ -83,7 +83,7 @@ $incread|(file_path)
 $-()"
                             .to_string(),
                     ),
-                )
+                ).optional(Parameter::new(ArgType::Bool, "a_raw_mode"))
             ),
             (
                 DMacroSign::new(
@@ -106,7 +106,7 @@ $-()"
 $tempin()"
                             .to_string(),
                     ),
-                )
+                ).optional(Parameter::new(ArgType::Bool, "a_raw_mode"))
             ),
             (
                 DMacroSign::new(
@@ -875,9 +875,7 @@ $ifque(true,halt(false))".to_string()),
 $expand(\\*1,2,3*\\)".to_string()),
                 )
             ),
-        ]));
-
-        map
+        ]))
     }
 
     /// Get Function pointer from map
@@ -927,6 +925,7 @@ $expand(\\*1,2,3*\\)".to_string()),
 pub(crate) struct DMacroSign {
     name: String,
     params: Vec<Parameter>,
+    optional: Option<Parameter>,
     pub logic: DFunctionMacroType,
     #[allow(dead_code)]
     desc: Option<String>,
@@ -949,9 +948,15 @@ impl DMacroSign {
         Self {
             name: name.to_owned(),
             params,
+            optional: None,
             logic,
             desc,
         }
+    }
+
+    pub fn optional(mut self, param: Parameter) -> Self {
+        self.optional.replace(param);
+        self
     }
 }
 
@@ -959,13 +964,19 @@ impl DMacroSign {
 
 impl std::fmt::Display for DMacroSign {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut inner = self
-            .params
-            .iter()
-            .fold(String::new(), |acc, arg| acc + &arg.to_string() + ",");
+        let mut inner = self.params.iter().fold(String::new(), |acc, param| {
+            acc + &param.arg_type.to_string() + ","
+        });
         // This removes last "," character
         inner.pop();
-        write!(f, "${}({})", self.name, inner)
+        let basic_usage = format!("${}({}", self.name, inner); // Without ending brace
+        let ret = write!(f, "{})", basic_usage);
+        let sep = if inner.is_empty() { "" } else { ", " };
+        if let Some(op) = self.optional.as_ref() {
+            write!(f, "  ||  {}{}{}?)", basic_usage, sep, op.arg_type)
+        } else {
+            ret
+        }
     }
 }
 
@@ -975,6 +986,7 @@ impl From<&DMacroSign> for crate::sigmap::MacroSignature {
             variant: crate::sigmap::MacroVariant::Deterred,
             name: ms.name.to_owned(),
             params: ms.params.to_owned(),
+            optional: ms.optional.clone(),
             expr: ms.to_string(),
             desc: ms.desc.clone(),
         }

@@ -212,6 +212,22 @@ pub enum ArgType {
     Uint,
 }
 
+impl Display for ArgType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text = match self {
+            Self::Bool => "Bool",
+            Self::CText => "CText",
+            Self::Enum => "Enum",
+            Self::Float => "Float",
+            Self::Int => "Int",
+            Self::Path => "Path",
+            Self::Text => "Text",
+            Self::Uint => "Uint",
+        };
+        write!(f, "{}", text)
+    }
+}
+
 impl FromStr for ArgType {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -306,7 +322,11 @@ impl<'a> ParsedCursors<'a> {
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
         match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Bool(val)) => Ok(val),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
@@ -317,7 +337,11 @@ impl<'a> ParsedCursors<'a> {
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
         match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Path(val)) => Ok(val),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
@@ -328,7 +352,11 @@ impl<'a> ParsedCursors<'a> {
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
         match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Uint(val)) => Ok(val),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
@@ -339,7 +367,11 @@ impl<'a> ParsedCursors<'a> {
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
         match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Int(val)) => Ok(val),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
@@ -350,7 +382,11 @@ impl<'a> ParsedCursors<'a> {
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
         match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Float(val)) => Ok(val),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
@@ -408,67 +444,101 @@ impl<'a> ParsedArguments<'a> {
     pub fn get(&'a self, index: usize) -> RadResult<&Argument<'a>> {
         match self.args.get(index) {
             Some(val) => Ok(val),
-            None => Err(crate::RadError::InvalidArgument("".to_string())),
+            None => Err(crate::RadError::InvalidExecution(
+                "Argument index out of range".to_string(),
+            )),
         }
     }
 
     pub fn get_bool(&'a self, index: usize) -> RadResult<bool> {
         match self.args.get(index) {
             Some(Argument::Bool(val)) => Ok(*val),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
     pub fn get_path(&'a self, index: usize) -> RadResult<&'a Path> {
         match self.args.get(index) {
             Some(Argument::Path(val)) => Ok(val),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
     pub fn get_text(&'a self, index: usize) -> RadResult<&str> {
         match self.args.get(index) {
             Some(Argument::Text(val)) => Ok(val),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
     pub fn get_ctext(&'a self, index: usize) -> RadResult<&str> {
         match self.args.get(index) {
             Some(Argument::Text(val)) => Ok(val.trim()),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
     pub fn get_uint(&'a self, index: usize) -> RadResult<usize> {
         match self.args.get(index) {
             Some(Argument::Uint(val)) => Ok(*val),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
     pub fn get_int(&'a self, index: usize) -> RadResult<isize> {
         match self.args.get(index) {
             Some(Argument::Int(val)) => Ok(*val),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
     pub fn get_float(&'a self, index: usize) -> RadResult<f32> {
         match self.args.get(index) {
             Some(Argument::Float(val)) => Ok(*val),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }
     }
 
     pub fn get_enum<T>(&'a self, index: usize, f: fn(&str) -> RadResult<T>) -> RadResult<T> {
         let arg = match self.args.get(index) {
             Some(val) => Ok(val),
-            None => Err(crate::RadError::InvalidArgument("".to_string())),
+            None => Err(crate::RadError::InvalidExecution("".to_string())),
         }?;
         let source = match arg {
             Argument::Text(text) => Ok(text),
-            _ => Err(crate::RadError::InvalidArgument("".to_string())),
+            _ => Err(crate::RadError::InvalidExecution(
+                "Failed to get correct argument \
+as given type. You should use proper getter for the type"
+                    .to_string(),
+            )),
         }?;
 
         // Conert to custom type
