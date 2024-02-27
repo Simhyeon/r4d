@@ -392,10 +392,10 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "decl",
-                    [(ArgType::CText,"a_macro_names^"),],
+                    [(ArgType::CText,"a_macro_names"),],
                     Self::declare,
                     Some(man_fun!("decl.r4d")),
-                ).optional( Parameter::new(ArgType::CText,"a_macro_names^") )
+                )
             ),
             (
                 FMacroSign::new(
@@ -448,10 +448,10 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "inc",
-                    [(ArgType::CText,"a_number^"),(ArgType::Uint,"a_amount?^")],
+                    [(ArgType::CText,"a_number")],
                     Self::increase_number,
                     None
-                )
+                ).optional(Parameter::new(ArgType::Uint,"a_amount"))
             ),
             (
                 FMacroSign::new(

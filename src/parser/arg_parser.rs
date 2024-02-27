@@ -98,9 +98,9 @@ impl ArgParser {
     ///
     /// If length is qualified it returns vector of arguments
     pub(crate) fn cursors_with_len(mut self, input: MacroInput) -> RadResult<ParsedCursors> {
-        self.strip_literal = false;
-        let length = input.type_len();
-        if length == 0 && !input.args.is_empty() {
+        let len_src = input.type_len();
+        let length = len_src + if input.optional.is_some() { 1 } else { 0 };
+        if input.args.trim().is_empty() {
             return Err(RadError::InvalidArgument(format!(
                 "Macro [{}] received empty arguments",
                 input.name
@@ -114,11 +114,11 @@ impl ArgParser {
 
         let curs = self.get_cursor_list(&input)?;
 
-        if curs.len() < length {
+        if curs.len() < len_src {
             return Err(RadError::InvalidArgument(format!(
                 "Macro [{}] requires [{}] arguments but given [{}] arguments",
                 input.name,
-                length,
+                len_src,
                 curs.len()
             )));
         }
@@ -131,8 +131,9 @@ impl ArgParser {
 
     /// Check if given length is qualified for given raw arguments
     pub(crate) fn args_with_len(mut self, input: MacroInput) -> RadResult<ParsedArguments> {
-        let length = input.type_len();
-        if length == 0 && !input.args.is_empty() {
+        let len_src = input.type_len();
+        let length = len_src + if input.optional.is_some() { 1 } else { 0 };
+        if input.args.trim().is_empty() {
             return Err(RadError::InvalidArgument(format!(
                 "Macro [{}] received empty arguments",
                 input.name
@@ -147,11 +148,11 @@ impl ArgParser {
         let name = input.name;
         let args = self.get_arg_list(input)?;
 
-        if args.len() < length {
+        if args.len() < len_src {
             return Err(RadError::InvalidArgument(format!(
                 "Macro [{}] requires [{}] arguments but given [{}] arguments",
                 name,
-                length,
+                len_src,
                 args.len()
             )));
         }
@@ -160,8 +161,9 @@ impl ArgParser {
 
     /// Check if given length is qualified for given raw arguments
     pub(crate) fn texts_with_len(mut self, input: MacroInput) -> RadResult<Vec<Cow<'_, str>>> {
-        let length = input.type_len();
-        if length == 0 && !input.args.is_empty() {
+        let len_src = input.type_len();
+        let length = len_src + if input.optional.is_some() { 1 } else { 0 };
+        if input.args.trim().is_empty() {
             return Err(RadError::InvalidArgument(format!(
                 "Macro [{}] received empty arguments",
                 input.name
@@ -176,11 +178,11 @@ impl ArgParser {
         let name = input.name;
         let args = self.get_text_list(input)?;
 
-        if args.len() < length {
+        if args.len() < len_src {
             return Err(RadError::InvalidArgument(format!(
                 "Macro [{}] requires [{}] arguments but given [{}] arguments",
                 name,
-                length,
+                len_src,
                 args.len()
             )));
         }

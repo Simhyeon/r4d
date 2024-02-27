@@ -528,12 +528,8 @@ as given type. You should use proper getter for the type"
     }
 
     pub fn get_enum<T>(&'a self, index: usize, f: fn(&str) -> RadResult<T>) -> RadResult<T> {
-        let arg = match self.args.get(index) {
-            Some(val) => Ok(val),
-            None => Err(crate::RadError::InvalidExecution("".to_string())),
-        }?;
-        let source = match arg {
-            Argument::Text(text) => Ok(text),
+        let source = match self.args.get(index) {
+            Some(Argument::Text(text)) => Ok(text),
             _ => Err(crate::RadError::InvalidExecution(
                 "Failed to get correct argument \
 as given type. You should use proper getter for the type"
@@ -541,7 +537,7 @@ as given type. You should use proper getter for the type"
             )),
         }?;
 
-        // Conert to custom type
+        // Convert to custom type
         f(source)
     }
 }

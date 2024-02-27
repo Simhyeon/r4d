@@ -1,0 +1,12 @@
+Increae number by one or by given amount
+
+# Return : number
+
+# Demo
+
+```
+$inc(2)
+$inc(2,2)
+```
+
+# Example

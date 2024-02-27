@@ -2213,11 +2213,13 @@ impl<'processor> Processor<'processor> {
                     return Ok(None);
                 }
 
+                let sig = self.map.get_signature(name).unwrap();
                 // TODO TT
                 // Should add input arg type
                 let input = MacroInput::new(name, &args)
                     .attr(frag.attribute)
-                    .parameter(&self.map.get_signature(name).unwrap().params);
+                    .optional(sig.optional)
+                    .parameter(&sig.params);
 
                 let final_result = func(input, level, self)?.filter(|f| {
                     if !PROC_ENV.no_consume {
@@ -2241,9 +2243,11 @@ impl<'processor> Processor<'processor> {
             let func = self.map.function.get_func(name).unwrap();
             //let final_result = func(&args, self)?;
 
+            let sig = self.map.get_signature(name).unwrap();
             let input = MacroInput::new(name, &args)
                 .attr(frag.attribute)
-                .parameter(&self.map.get_signature(name).unwrap().params);
+                .optional(sig.optional)
+                .parameter(&sig.params);
             let res = func(input, self);
 
             let final_result = match res {
