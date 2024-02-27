@@ -1,3 +1,50 @@
+# Type architecture -> This is huge
+
+* [x] Completely ditch ExInput from end user, that will be used by me only
+* [x] Now it compiles ! :)
+* [x] Insufficient argument error code should be the role of argparser
+* [x] argparser's &&str is unnecessary
+* [x] New macro def
+* [x] Runtime macro type validity
+* [ ] Currently man page sucks to read
+* [ ] Consider strip for cases
+* [ ] Function map
+    * [ ] Make error codes much more intuitive
+        * [ ] -> Not yet for deterred macro
+    * [ ] Refactor reverse-array
+    * [ ] Refactor list-directory-files
+    * [ ] Check unnecessary ctext
+    * [ ] Find a way to display if optional is multiple or not
+    * [ ] Subverge relay to relay and relay temp
+    * [ ] Refactor qualify-value method
+    * [ ] FN `new_ext_macro(&mut self, ext: ExtMacroBuilder)` is currently
+      disabled 
+* [x] Removed counter macro -> use mie instead
+* [ ] Rearrange processor's lex branch method's arguments
+* [ ] Map exression (mape) is completely broken... damn...
+* [  ] Bug
+
+```
+$define(typefy,a_src=
+    $forline=(
+        $let(line_number,$a_LN())
+        $let(line_src,$:())
+        $logm(line_src),
+        $a_src()
+    )
+)
+Doesn't yield a_LN and $:() why is that?
+```
+
+* [ ] Refactor function macros first
+
+* [ ] ArgType
+* [ ] Argument
+* [ ] Parameter
+
+* [ ] Bug : Peel removes following text after "to be peeled".
+* [ ] Rearrange modules and struct and enums.
+
 # New todos
 
 I've git reset hard without understanding git...? sadge.
@@ -6,7 +53,8 @@ Nothing is lost for code, but docs are lost which is sadge...
 
 * [ ] Change envset to setenv
 * [ ] Hygiene
-* [ ] Type architecture
+* [ ] Peelmap
+* [ ] Possibly insert?
 
 # Todo immediate
 
