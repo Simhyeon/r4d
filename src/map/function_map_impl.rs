@@ -10,7 +10,7 @@ use crate::common::{RelayType, VarContOperation};
 use crate::consts::{
     LOREM, LOREM_SOURCE, LOREM_WIDTH, MACRO_SPECIAL_LIPSUM, MAIN_CALLER, PATH_SEPARATOR,
 };
-use crate::parser::NewArgParser as ArgParser;
+use crate::parser::{ArgParser, SplitVariant};
 
 use crate::env::PROC_ENV;
 use crate::error::RadError;
@@ -71,9 +71,11 @@ static REPLACER_MATCH: Lazy<Regex> = Lazy::new(|| {
 /// Two lines match
 static TWO_NL_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"(\n|\r\n)\s*(\n|\r\n)"#).expect("Failed to create tow nl regex"));
-/// Path separator match
-static PATH_MATCH: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"(\\|/)"#).expect("Failed to create path separator matches"));
+
+// TODO TT
+// /// Path separator match
+// static PATH_MATCH: Lazy<Regex> =
+//     Lazy::new(|| Regex::new(r#"(\\|/)"#).expect("Failed to create path separator matches"));
 
 // Macros implemnation
 impl FunctionMacroMap {
@@ -155,7 +157,7 @@ impl FunctionMacroMap {
         match &p.state.current_input {
             ProcessInput::Stdin => Ok(Some("Stdin".to_string())),
             ProcessInput::File(path) => {
-                let args = ArgParser::new().args_with_optional(input)?;
+                let args = ArgParser::new().args_with_len(input)?;
                 if !args.is_empty() {
                     let print_absolute = args.get_bool(0)?;
                     if print_absolute {
@@ -394,7 +396,7 @@ impl FunctionMacroMap {
     ///
     /// $cont(operation,argument: Optional)
     pub(crate) fn container(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_optional(input)?;
+        let args = ArgParser::new().args_with_len(input)?;
         let op = args.get_enum(0, VarContOperation::from_str)?;
         let var = args.get_text(1).unwrap_or("");
         let ret = match op {
@@ -1046,7 +1048,7 @@ impl FunctionMacroMap {
     }
 
     /// Placeholder for define
-    pub(crate) fn define_type(_: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
+    pub(crate) fn define_macro(_: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         Ok(None)
     }
 
@@ -1413,8 +1415,8 @@ impl FunctionMacroMap {
 
     /// Exit processing
     pub(crate) fn exit(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_optional(input)?;
-        if !args.is_empty() && args.get_bool(0)? {
+        let args = ArgParser::new().args_with_len(input)?;
+        if let Ok(true) = args.get_bool(0) {
             p.state.behaviour = ErrorBehaviour::Exit;
             return Err(RadError::SaneExit);
         }
@@ -1430,7 +1432,9 @@ impl FunctionMacroMap {
     ///
     /// $path($env(HOME),document,test.docx)
     pub(crate) fn merge_path(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        let vec = ArgParser::new().args_with_optional(input)?;
+        let vec = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
 
         let out = (0..vec.len())
             .map(|idx| {
@@ -1459,7 +1463,7 @@ impl FunctionMacroMap {
     ///
     /// $tab()
     pub(crate) fn print_tab(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_optional(input)?;
+        let args = ArgParser::new().args_with_len(input)?;
         let count = if let Ok(c) = args.get_uint(0) { c } else { 1 };
 
         let tab_width = p.env.rad_tab_width;
@@ -1496,7 +1500,7 @@ impl FunctionMacroMap {
     ///
     /// $space()
     pub(crate) fn space(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_optional(input)?;
+        let args = ArgParser::new().args_with_len(input)?;
         let count = if let Ok(c) = args.get_uint(0) { c } else { 1 };
 
         Ok(Some(" ".repeat(count)))
@@ -1524,7 +1528,7 @@ impl FunctionMacroMap {
     ///
     /// $nl()
     pub(crate) fn newline(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_optional(input)?;
+        let args = ArgParser::new().args_with_len(input)?;
         let count = if let Ok(c) = args.get_uint(0) { c } else { 1 };
 
         Ok(Some(p.state.newline.repeat(count)))
@@ -1637,7 +1641,7 @@ impl FunctionMacroMap {
         input: MacroInput,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_optional(input)?;
+        let args = ArgParser::new().args_with_len(input)?;
         let pipe = if let Ok(name) = args.get_ctext(0) {
             if name.is_empty() {
                 let out = processor.state.get_pipe("-", false);
@@ -3493,7 +3497,7 @@ impl FunctionMacroMap {
         let reader = std::io::BufReader::new(file_stream);
 
         let mut vec = vec![];
-        for line in Utils::full_lines_from_bytes(reader) {
+        for line in Utils::full_lines(reader) {
             let line = line?;
             if reg.is_match(&line) {
                 vec.push(line);
@@ -3605,6 +3609,7 @@ impl FunctionMacroMap {
         )?;
 
         let relay_target = match relay_type {
+            // TODO TT
             // RelayType::Temp => {
             //     if !Utils::is_granted("relay", AuthType::FOUT, p)? {
             //         return Ok(None);
@@ -3732,7 +3737,7 @@ impl FunctionMacroMap {
     ///
     /// $halt()
     pub(crate) fn halt_relay(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_optional(input)?;
+        let args = ArgParser::new().args_with_len(input)?;
 
         let halt_immediate = if let Ok(val) = args.get_bool(0) {
             val
@@ -3864,7 +3869,7 @@ impl FunctionMacroMap {
         input: MacroInput,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_optional(input)?;
+        let args = ArgParser::new().args_with_len(input)?;
         if args.is_empty() {
             p.log_warning(
                 "Require macro used without any arguments.",
@@ -4029,7 +4034,7 @@ impl FunctionMacroMap {
         input: MacroInput,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_optional(input)?;
+        let args = ArgParser::new().args_with_len(input)?;
 
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
@@ -4057,7 +4062,7 @@ impl FunctionMacroMap {
         input: MacroInput,
         _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_optional(input)?;
+        let args = ArgParser::new().args_with_len(input)?;
 
         if args.is_empty() {
             return Err(RadError::InvalidArgument(
@@ -4211,7 +4216,10 @@ impl FunctionMacroMap {
         input: MacroInput,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_optional(input)?;
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
+
         let runtime_rules = (0..args.len())
             .map(|idx| {
                 let value = args.get_ctext(idx)?;
@@ -4778,7 +4786,7 @@ impl FunctionMacroMap {
             let line = line?;
             let idx = idx + 1; // 1 starting index is more human friendly
             if let Some((name, body)) = line.split_once('=') {
-                match processor.parse_chunk_args(0, MAIN_CALLER, body) {
+                match processor.parse_chunk(0, MAIN_CALLER, body) {
                     Ok(body) => processor.add_static_rules(&[(name, body)])?,
                     Err(err) => {
                         processor.log_error(&format!(
@@ -4836,7 +4844,7 @@ impl FunctionMacroMap {
     //     if !Utils::is_granted("listdir", AuthType::FIN, processor)? {
     //         return Ok(None);
     //     }
-    //     let args = ArgParser::new().args_with_optional(input)?;
+    //     let args = ArgParser::new().args_with_len(input)?;
     //     if args.is_empty() {
     //         return Err(RadError::InvalidArgument(
     //             "listdir at least requires an argument".to_owned(),
@@ -5004,7 +5012,7 @@ impl FunctionMacroMap {
         // TODO
         // Improve by not allocating
         let args = ArgParser::new()
-            .args_with_optional(input)
+            .args_with_len(input)
             .into_iter()
             .enumerate()
             .map(|(i, s)| s.get_text(i).unwrap().to_string())

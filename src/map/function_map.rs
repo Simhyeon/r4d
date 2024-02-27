@@ -1906,12 +1906,12 @@ $assert(Hello,$until($space(),Hello World))".to_string()),
                     Some(man_fun!("upper.r4d"))
                 )
             ),
-            // THis is simply a placeholder
+            // THis is a placeholder for documentaion
             (
                 FMacroSign::new(
-                    "define",
+                    "def",
 [(ArgType::Text,"a_define_statement"),],
-                    Self::define_type,
+                    Self::define_macro,
                     Some("Define a macro
 
 # Arguments
@@ -1926,8 +1926,8 @@ any characters except special characters.
 
 # Example
 
-$define(test=Test)
-$define(demo,a_1 a_2=$a_1() $a_2())
+$def(test=Test)
+$def(demo,a_1 a_2=$a_1() $a_2())
 $assert($test(),Test)
 $assert(wow cow,$demo(wow,cow))".to_string()),
                 )

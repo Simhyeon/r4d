@@ -32,48 +32,9 @@ pub enum MacroVariant {
     Static,
 }
 
-/// Macro signature struct
-#[derive(Debug, Serialize, Deserialize)]
-#[cfg(not(feature = "refactor"))]
-pub struct MacroSignature {
-    pub variant: MacroVariant,
-    pub name: String,
-    pub args: Vec<String>,
-    pub expr: String,
-    pub desc: Option<String>,
-}
-
-#[cfg(not(feature = "refactor"))]
-impl std::fmt::Display for MacroSignature {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Macro Type  : {:#?}
-Macro Name  : {}
-Arguments   : {:?}
-Usage       : {}
-Description >> 
-{}",
-            self.variant,
-            self.name,
-            self.args,
-            self.expr,
-            self.desc
-                .as_ref()
-                .map(|d| d
-                    .lines()
-                    .map(|line| "    ".to_owned() + line)
-                    .collect::<Vec<_>>()
-                    .join(LINE_ENDING))
-                .unwrap_or_default()
-        )
-    }
-}
-
 // TODO TT
 /// Macro signature struct
 #[derive(Debug, Serialize, Deserialize)]
-#[cfg(feature = "refactor")]
 pub struct MacroSignature {
     pub variant: MacroVariant,
     pub name: String,
@@ -82,7 +43,6 @@ pub struct MacroSignature {
     pub desc: Option<String>,
 }
 
-#[cfg(feature = "refactor")]
 impl std::fmt::Display for MacroSignature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

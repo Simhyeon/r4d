@@ -107,4 +107,4 @@ pub const RDB_HELP: &str = include_str!("debug_help_message.txt");
 pub const ESR: [(crate::argument::ArgType, &str); 0] = [];
 
 /// Define keyword
-pub const DEFINE_KEYWORD: &str = "define";
+pub const DEFINE_KEYWORD: &str = "def";

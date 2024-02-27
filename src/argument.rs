@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use crate::common::MacroAttribute;
 use crate::RadStr;
@@ -9,19 +10,25 @@ use serde::{Deserialize, Serialize};
 
 pub(crate) struct ExInput<'a> {
     pub index: usize,
-    pub macro_name: &'a str,
     pub trim: bool,
+
+    pub macro_name: &'a str,
     pub level: usize,
 }
 
 impl<'a> ExInput<'a> {
-    pub fn new(index: usize, macro_name: &'a str) -> Self {
+    pub fn new(macro_name: &'a str) -> Self {
         Self {
-            index,
-            macro_name,
+            index: 0,
             level: 0,
+            macro_name,
             trim: false,
         }
+    }
+
+    pub fn index(mut self, index: usize) -> Self {
+        self.index = index;
+        self
     }
 
     pub fn level(mut self, level: usize) -> Self {
@@ -36,19 +43,21 @@ impl<'a> ExInput<'a> {
 }
 
 #[derive(Debug)]
-pub(crate) struct MacroInput<'a> {
+pub struct MacroInput<'a> {
     pub params: Vec<Parameter>,
     pub optional: Option<Parameter>,
     pub attr: MacroAttribute,
+    pub name: &'a str,
     pub args: &'a str,
 }
 
 impl<'a> MacroInput<'a> {
-    pub fn new(args: &'a str) -> Self {
+    pub fn new(name: &'a str, args: &'a str) -> Self {
         Self {
             params: Vec::new(),
             optional: None,
             attr: MacroAttribute::default(),
+            name,
             args,
         }
     }
@@ -74,7 +83,7 @@ impl<'a> MacroInput<'a> {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub(crate) struct Parameter {
+pub struct Parameter {
     pub name: String,
     pub arg_type: ArgType,
 }
@@ -93,35 +102,83 @@ impl Display for Parameter {
         write!(f, "{} : {:#?}", self.name, self.arg_type)
     }
 }
+pub(crate) trait ArgableStr<'a> {
+    fn is_argable(&self, param: &Parameter) -> RadResult<()>;
+}
+impl<'a> ArgableStr<'a> for str {
+    fn is_argable(&self, param: &Parameter) -> RadResult<()> {
+        match param.arg_type {
+            ArgType::Bool => {
+                self.is_arg_true().map_err(|_| {
+                    RadError::InvalidArgument(format!(
+                        "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Bool]",
+                        param.name, self
+                    ))
+                })?;
+            }
+            ArgType::Int => {
+                self.trim().parse::<isize>().map_err(|_| {
+                    RadError::InvalidArgument(format!(
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Int]",
+                        param.name, self
+                    ))
+                })?;
+            }
+            ArgType::Uint => {
+                self.trim().parse::<usize>().map_err(|_| {
+                    RadError::InvalidArgument(format!(
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [UInt]",
+                        param.name, self
+                    ))
+                })?;
+            }
+            ArgType::Float => {
+                self.trim().parse::<f32>().map_err(|_| {
+                    RadError::InvalidArgument(format!(
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Float]",
+                        param.name, self
+                ))
+                })?;
+            }
+            _ => (),
+        };
+        Ok(())
+    }
+}
 
-pub(crate) trait Argable<'a> {
+pub(crate) trait ArgableCow<'a> {
     fn to_arg(self, param: &Parameter) -> RadResult<Argument<'a>>;
     fn to_expanded(&self, p: &mut Processor, input: &ExInput) -> RadResult<String>;
 }
 
-impl<'a> Argable<'a> for Cow<'a, str> {
+impl<'a> ArgableCow<'a> for Cow<'a, str> {
     fn to_arg(self, param: &Parameter) -> RadResult<Argument<'a>> {
         let arg = match param.arg_type {
-            ArgType::Bool => Argument::Bool(self.is_arg_true()?),
+            ArgType::Bool => Argument::Bool(self.is_arg_true().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Bool]",
+                    param.name, self
+                ))
+            })?),
             ArgType::Int => Argument::Int(self.trim().parse::<isize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
-                    "[Arg : {}] : Could not convert given value \"{}\" into a number",
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Int]",
                     param.name, self
                 ))
             })?),
             ArgType::Uint => Argument::Uint(self.trim().parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
-                    "[Arg : {}] : Could not convert given value \"{}\" into a positive number",
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [UInt]",
                     param.name, self
                 ))
             })?),
             ArgType::Float => Argument::Float(self.trim().parse::<f32>().map_err(|_| {
                 RadError::InvalidArgument(format!(
-                    "[Arg : {}] : Could not convert given value \"{}\" into a floating point number",
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Float]",
                     param.name, self
                 ))
             })?),
-            ArgType::Path | ArgType::File => Argument::Path(PathBuf::from(self.as_ref())),
+            ArgType::Path => Argument::Path(PathBuf::from(self.as_ref())),
             ArgType::CText | ArgType::Text | ArgType::Enum => Argument::Text(self),
         };
         Ok(arg)
@@ -129,7 +186,7 @@ impl<'a> Argable<'a> for Cow<'a, str> {
 
     fn to_expanded(&self, p: &mut Processor, input: &ExInput) -> RadResult<String> {
         let arg = if input.trim { self.trim() } else { self };
-        p.parse_chunk_args(input.level, input.macro_name, arg)
+        p.parse_chunk(input.level, input.macro_name, arg)
     }
 }
 
@@ -148,7 +205,6 @@ pub enum ArgType {
     Bool,
     CText,
     Enum,
-    File,
     Float,
     Int,
     Path,
@@ -156,9 +212,34 @@ pub enum ArgType {
     Uint,
 }
 
+impl FromStr for ArgType {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let ret = match s.trim().to_lowercase().as_str() {
+            "b" | "bool" => Self::Bool,
+            "c" | "ctext" => Self::CText,
+            "e" | "enum" => Self::Enum,
+            "f" | "float" => Self::Float,
+            "i" | "int" => Self::Int,
+            "p" | "path" => Self::Path,
+            "t" | "text" => Self::Text,
+            "u" | "uint" => Self::Uint,
+            _ => {
+                return Err(RadError::InvalidArgument(format!(
+                    "Given type \"{}\" is not a valid argument type",
+                    s
+                )))
+            }
+        };
+        Ok(ret)
+    }
+}
+
 #[derive(Debug)]
 pub struct ParsedCursors<'a> {
     src: &'a str,
+    level: usize,
+    macro_name: String,
     params: Vec<Parameter>,
     cursors: Vec<ArgCursor>,
 }
@@ -169,7 +250,19 @@ impl<'a> ParsedCursors<'a> {
             src,
             params: Vec::new(),
             cursors: Vec::new(),
+            level: 0,
+            macro_name: String::new(),
         }
+    }
+
+    pub(crate) fn level(mut self, level: usize) -> Self {
+        self.level = level;
+        self
+    }
+
+    pub(crate) fn macro_name(mut self, name: String) -> Self {
+        self.macro_name = name;
+        self
     }
 
     pub fn with_params(mut self, params: Vec<Parameter>) -> Self {
@@ -180,6 +273,10 @@ impl<'a> ParsedCursors<'a> {
     pub fn with_cursors(mut self, cursors: Vec<ArgCursor>) -> Self {
         self.cursors = cursors;
         self
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.cursors.is_empty()
     }
 
     // TODO TT
@@ -202,7 +299,10 @@ impl<'a> ParsedCursors<'a> {
     // Currently I'm simply unwrapping, but getting params can always fail.
 
     // Getter
-    pub fn get_bool(&'a self, p: &mut Processor, input: ExInput) -> RadResult<bool> {
+    pub fn get_bool(&'a self, p: &mut Processor, index: usize) -> RadResult<bool> {
+        let input = ExInput::new(&self.macro_name)
+            .index(index)
+            .level(self.level);
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
         match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Bool(val)) => Ok(val),
@@ -210,7 +310,10 @@ impl<'a> ParsedCursors<'a> {
         }
     }
 
-    pub fn get_path(&'a self, p: &mut Processor, input: ExInput) -> RadResult<PathBuf> {
+    pub fn get_path(&'a self, p: &mut Processor, index: usize) -> RadResult<PathBuf> {
+        let input = ExInput::new(&self.macro_name)
+            .index(index)
+            .level(self.level);
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
         match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Path(val)) => Ok(val),
@@ -218,7 +321,10 @@ impl<'a> ParsedCursors<'a> {
         }
     }
 
-    pub fn get_uint(&'a self, p: &mut Processor, input: ExInput) -> RadResult<usize> {
+    pub fn get_uint(&'a self, p: &mut Processor, index: usize) -> RadResult<usize> {
+        let input = ExInput::new(&self.macro_name)
+            .index(index)
+            .level(self.level);
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
         match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Uint(val)) => Ok(val),
@@ -226,7 +332,10 @@ impl<'a> ParsedCursors<'a> {
         }
     }
 
-    pub fn get_int(&'a self, p: &mut Processor, input: ExInput) -> RadResult<isize> {
+    pub fn get_int(&'a self, p: &mut Processor, index: usize) -> RadResult<isize> {
+        let input = ExInput::new(&self.macro_name)
+            .index(index)
+            .level(self.level);
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
         match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Int(val)) => Ok(val),
@@ -234,7 +343,10 @@ impl<'a> ParsedCursors<'a> {
         }
     }
 
-    pub fn get_float(&'a self, p: &mut Processor, input: ExInput) -> RadResult<f32> {
+    pub fn get_float(&'a self, p: &mut Processor, index: usize) -> RadResult<f32> {
+        let input = ExInput::new(&self.macro_name)
+            .index(index)
+            .level(self.level);
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
         match expanded.to_arg(&self.params[input.index]) {
             Ok(Argument::Float(val)) => Ok(val),
@@ -242,22 +354,31 @@ impl<'a> ParsedCursors<'a> {
         }
     }
 
-    pub fn get_text(&'a self, p: &mut Processor, input: ExInput) -> RadResult<String> {
+    pub fn get_text(&'a self, p: &mut Processor, index: usize) -> RadResult<String> {
+        let input = ExInput::new(&self.macro_name)
+            .index(index)
+            .level(self.level);
         self.get(input.index)?.to_expanded(p, &input)
     }
 
-    pub fn get_ctext(&'a self, p: &mut Processor, mut input: ExInput) -> RadResult<String> {
-        input.trim = true;
+    pub fn get_ctext(&'a self, p: &mut Processor, index: usize) -> RadResult<String> {
+        let input = ExInput::new(&self.macro_name)
+            .index(index)
+            .level(self.level)
+            .trim();
         self.get(input.index)?.to_expanded(p, &input)
     }
 
     pub fn get_custom<T>(
         &'a self,
         p: &mut Processor,
-        mut input: ExInput,
+        index: usize,
         f: fn(&str) -> RadResult<T>,
     ) -> RadResult<T> {
-        input.trim = true;
+        let input = ExInput::new(&self.macro_name)
+            .index(index)
+            .level(self.level)
+            .trim();
         let source = self.get(input.index)?.to_expanded(p, &input)?;
 
         // Conert to custom type
@@ -356,7 +477,7 @@ impl<'a> ParsedArguments<'a> {
 }
 
 #[derive(Debug)]
-pub(crate) enum ArgCursor {
+pub enum ArgCursor {
     Reference(usize, usize),
     Modified(Vec<u8>),
 }

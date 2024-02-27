@@ -1,11 +1,12 @@
 //! Utility struct, methods for various operations
 
+use crate::argument::ArgType;
 use crate::auth::{AuthState, AuthType};
-use crate::common::{MacroAttribute, ProcessInput, RadResult};
+use crate::common::{ProcessInput, RadResult};
 use crate::env::PROC_ENV;
 use crate::error::RadError;
 use crate::logger::WarningType;
-use crate::{ArgParser, Processor, WriteOption};
+use crate::{Parameter, Processor, WriteOption};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::borrow::Cow;
@@ -13,6 +14,7 @@ use std::cmp::Ordering;
 use std::ffi::OsStr;
 use std::io::BufRead;
 use std::path::Path;
+use std::str::FromStr;
 
 use crate::common::RelayTarget;
 
@@ -21,7 +23,6 @@ use crate::common::RelayTarget;
 pub static NUM_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to create number regex"));
 
-/// Number matches
 pub static NAME_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"^[a-zA-Z]+[a-zA-Z0-9_]*$"#).expect("Failed to create name regex"));
 
@@ -73,8 +74,9 @@ pub(crate) struct Utils;
 impl Utils {
     // TODO
     // Check name validatity
-    pub fn split_definition(src: &str) -> RadResult<(&str, &str, &str)> {
+    pub fn split_macro_definition(src: &str) -> RadResult<(&str, Vec<Parameter>, &str)> {
         if let Some((header, body)) = src.split_once('=') {
+            // THis form is a,b=c
             if let Some((name, args)) = header.split_once(',') {
                 let name = name.trim();
                 if NAME_MATCH.find(name).is_none() {
@@ -83,17 +85,32 @@ impl Utils {
                         name
                     )));
                 }
-                for item in args.split_whitespace() {
-                    if NAME_MATCH.find(item).is_none() {
+                let mut error = false;
+                let mut params = vec![];
+                for item in args.split(',') {
+                    if let Some((name, arg_type)) = item.split_once(':') {
+                        let name = name.trim();
+                        if NAME_MATCH.find(name).is_none() {
+                            error = true;
+                        } else {
+                            let arg_type = ArgType::from_str(arg_type)?;
+                            params.push(Parameter::new(arg_type, name));
+                        }
+                    } else {
+                        error = true;
+                    }
+
+                    if error {
                         return Err(RadError::InvalidMacroDefinition(format!(
                             "Given argument \"{}\" doesn't conform with macro definition rules.",
                             item
                         )));
                     }
                 }
-                return Ok((name.trim(), args.trim(), body));
+                return Ok((name.trim(), params, body));
             }
 
+            // THis form is a=b
             // Check name validity
             let name = header.trim();
             if NAME_MATCH.find(name).is_none() {
@@ -104,7 +121,7 @@ impl Utils {
             }
 
             // No argument
-            Ok((name, "", body))
+            Ok((name, vec![], body))
         } else {
             Err(RadError::InvalidMacroDefinition(format!("Macro definition \"{}\" doesn't include a syntax \"=\" which concludes to invalid definition.", src)))
         }
@@ -244,9 +261,7 @@ impl Utils {
     // Shamelessly copied from
     // https://stackoverflow.com/questions/64517785/read-full-lines-from-stdin-including-n-until-end-of-file
     /// Read full lines of bufread iterator which doesn't chop new lines
-    pub fn full_lines_from_bytes(
-        mut input: impl BufRead,
-    ) -> impl Iterator<Item = std::io::Result<String>> {
+    pub fn full_lines(mut input: impl BufRead) -> impl Iterator<Item = std::io::Result<String>> {
         std::iter::from_fn(move || {
             let mut vec = String::new();
             match input.read_line(&mut vec) {
@@ -450,17 +465,17 @@ impl Utils {
 
                 if ending_newline {
                     return Ok(&sliced[..sliced.len() - strip_count]);
-                } else {
-                    return Ok(sliced);
                 }
-            } else {
-                // Min = '_'
-                // Max = positive number or negative number ( Real number )
-                // This is not valid
-                return Err(RadError::InvalidArgument(
+
+                return Ok(sliced);
+            }
+
+            // Min = '_'
+            // Max = positive number or negative number ( Real number )
+            // This is not valid
+            return Err(RadError::InvalidArgument(
                 "Given slice index is not in the boundary of lines length. '_' min index cannot be used with real max index number".to_string(),
             ));
-            }
         }
 
         // ----------
@@ -575,11 +590,12 @@ impl Utils {
             {
                 if let Some(min) = min_byte_index {
                     let sliced = &source[min..];
+
                     if ending_newline {
                         return Ok(&sliced[..sliced.len() - strip_count]);
-                    } else {
-                        return Ok(sliced);
                     }
+
+                    return Ok(sliced);
                 }
             }
 
@@ -725,17 +741,17 @@ impl Utils {
 
                 if ending_delimiter {
                     return Ok(&sliced[..sliced.len() - strip_count]);
-                } else {
-                    return Ok(sliced);
                 }
-            } else {
-                // Min = '_'
-                // Max = positive number or negative number ( Real number )
-                // This is not valid
-                return Err(RadError::InvalidArgument(
+
+                return Ok(sliced);
+            }
+
+            // Min = '_'
+            // Max = positive number or negative number ( Real number )
+            // This is not valid
+            return Err(RadError::InvalidArgument(
                 "Given slice index is not in the boundary of lines length. '_' min index cannot be used with real max index number".to_string(),
             ));
-            }
         }
 
         // ----------
@@ -852,9 +868,9 @@ impl Utils {
                     let sliced = &source[min..];
                     if ending_delimiter {
                         return Ok(&sliced[..sliced.len() - strip_count]);
-                    } else {
-                        return Ok(sliced);
                     }
+
+                    return Ok(sliced);
                 }
             }
 
@@ -1244,12 +1260,15 @@ impl RadStr for str {
         if let Ok(value) = arg.parse::<usize>() {
             if value == 0 {
                 return Ok(false);
-            } else {
-                return Ok(true);
             }
-        } else if arg.to_lowercase() == "true" {
             return Ok(true);
-        } else if arg.to_lowercase() == "false" {
+        }
+
+        if arg.to_lowercase() == "true" {
+            return Ok(true);
+        }
+
+        if arg.to_lowercase() == "false" {
             return Ok(false);
         }
 

@@ -1,7 +1,6 @@
 //! Main macro processing struct module
 
 use super::ProcessorState;
-use crate::argument::ExInput;
 use crate::argument::{ArgType, MacroInput};
 use crate::auth::{AuthState, AuthType};
 #[cfg(feature = "debug")]
@@ -29,7 +28,6 @@ use crate::runtime_map::RuntimeMacro;
 use crate::sigmap::SignatureMap;
 use crate::storage::{RadStorage, StorageOutput};
 use crate::utils::{RadStr, Utils};
-use crate::SplitVariant;
 use crate::{consts::*, RadResult};
 use crate::{lexor::*, stake};
 use crate::{ArgParser, Parameter};
@@ -38,7 +36,6 @@ use cindex::Indexer;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufReader, Read, Write};
@@ -1098,21 +1095,6 @@ impl<'processor> Processor<'processor> {
                 ));
                 return Err(err);
             }
-            #[cfg(not(feature = "refactor"))]
-            self.map.runtime.macros.insert(
-                name.to_owned(),
-                RuntimeMacro {
-                    name: name.to_owned(),
-                    args: args
-                        .split_whitespace()
-                        .map(|s| s.to_owned())
-                        .collect::<Vec<String>>(),
-                    body: body.to_string(),
-                    desc: None,
-                    is_static: false,
-                },
-            );
-            #[cfg(feature = "refactor")]
             self.map.runtime.macros.insert(
                 name.to_owned(),
                 RuntimeMacro {
@@ -1171,18 +1153,6 @@ impl<'processor> Processor<'processor> {
                 ));
                 return Err(err);
             }
-            #[cfg(not(feature = "refactor"))]
-            self.map.runtime.macros.insert(
-                name.to_owned(),
-                RuntimeMacro {
-                    name: name.to_owned(),
-                    args: vec![],
-                    body: body.as_ref().to_owned(),
-                    desc: None,
-                    is_static: true,
-                },
-            );
-            #[cfg(feature = "refactor")]
             self.map.runtime.macros.insert(
                 name.to_owned(),
                 RuntimeMacro {
@@ -1513,7 +1483,7 @@ impl<'processor> Processor<'processor> {
             }
         };
 
-        let line_iter = Utils::full_lines_from_bytes(buffer);
+        let line_iter = Utils::full_lines(buffer);
         let mut frag = MacroFragment::new();
         frag.attribute.pipe_input = true;
         frag.name = macro_name.to_string();
@@ -1609,7 +1579,7 @@ impl<'processor> Processor<'processor> {
         backup: Option<SandboxBackup>,
         cont_type: ContainerType,
     ) -> RadResult<Option<String>> {
-        let mut line_iter = Utils::full_lines_from_bytes(buffer).peekable();
+        let mut line_iter = Utils::full_lines(buffer).peekable();
         let mut lexor = Lexor::new(
             self.get_macro_char(),
             self.get_comment_char(),
@@ -1683,7 +1653,7 @@ impl<'processor> Processor<'processor> {
             let queued = std::mem::take(&mut self.state.queued); // Queue should be emptied after
             for item in queued {
                 // This invokes parse method
-                let result = self.parse_chunk_args(0, MAIN_CALLER, &item)?;
+                let result = self.parse_chunk(0, MAIN_CALLER, &item)?;
                 self.write_to_target(&result, &cont_type, &mut cont)?;
             }
 
@@ -1889,8 +1859,8 @@ impl<'processor> Processor<'processor> {
         Ok(result)
     } // parse_chunk end
 
-    /// Parse chunk args by separating it into lines which implements BufRead
-    pub(crate) fn parse_chunk_args(
+    /// Parse chunk(string) by separating it into lines which implements BufRead
+    pub(crate) fn parse_chunk(
         &mut self,
         level: usize,
         caller: &str,
@@ -2113,7 +2083,7 @@ impl<'processor> Processor<'processor> {
             if !frag.attribute.skip_expansion {
                 // This parses and processes arguments
                 // and macro should be evaluated after
-                args = self.parse_chunk_args(level, name, &raw_args)?;
+                args = self.parse_chunk(level, name, &raw_args)?;
             } else {
                 args = raw_args;
             }
@@ -2243,23 +2213,12 @@ impl<'processor> Processor<'processor> {
                     return Ok(None);
                 }
 
-                // Execute a macro function with arguments and get value
-                #[cfg(not(feature = "refactor"))]
-                let final_result = func(&args, level, &frag.attribute, self)?.filter(|f| {
-                    if !PROC_ENV.no_consume {
-                        !f.is_empty()
-                    } else {
-                        true
-                    }
-                });
-
                 // TODO TT
                 // Should add input arg type
-                #[cfg(feature = "refactor")]
-                let input = MacroInput::new(&args)
+                let input = MacroInput::new(name, &args)
                     .attr(frag.attribute)
                     .parameter(&self.map.get_signature(name).unwrap().params);
-                #[cfg(feature = "refactor")]
+
                 let final_result = func(input, level, self)?.filter(|f| {
                     if !PROC_ENV.no_consume {
                         !f.is_empty()
@@ -2282,14 +2241,9 @@ impl<'processor> Processor<'processor> {
             let func = self.map.function.get_func(name).unwrap();
             //let final_result = func(&args, self)?;
 
-            #[cfg(not(feature = "refactor"))]
-            let res = func(&args, &frag.attribute, self);
-
-            #[cfg(feature = "refactor")]
-            let input = MacroInput::new(&args)
+            let input = MacroInput::new(name, &args)
                 .attr(frag.attribute)
                 .parameter(&self.map.get_signature(name).unwrap().params);
-            #[cfg(feature = "refactor")]
             let res = func(input, self);
 
             let final_result = match res {
@@ -2357,41 +2311,26 @@ impl<'processor> Processor<'processor> {
             return Ok(Some(rule.body));
         }
 
-        #[cfg(not(feature = "refactor"))]
-        let arg_names = &rule.args;
-        #[cfg(feature = "refactor")]
         let arg_names = &rule.params;
 
         // Set variable to local macros
-        let args = if let Some(content) =
-            ArgParser::new().args_with_len(arg_values, attr, arg_names.len())
-        {
-            content
-        } else {
-            // Necessary arg count is bigger than given arguments
-            let err = RadError::InvalidArgument(format!(
-                "{}'s arguments are not sufficient. Given {}, but needs {}",
-                new_name,
-                ArgParser::new()
-                    .args_to_vec(arg_values, attr, b',', SplitVariant::Always)
-                    .len(),
-                arg_names.len()
-            ));
-            if self.state.process_type == ProcessType::Dry {
-                self.log_warning(&err.to_string(), WarningType::Sanity)?;
-                return Ok(None);
-            }
+        // TODO TT
+        let args = match ArgParser::new().texts_with_len(
+            MacroInput::new(new_name, arg_values)
+                .attr(*attr)
+                .parameter(&rule.params),
+        ) {
+            Ok(content) => content,
+            Err(err) => {
+                if self.state.process_type == ProcessType::Dry {
+                    self.log_warning(&err.to_string(), WarningType::Sanity)?;
+                    return Ok(None);
+                }
 
-            return Err(err);
+                return Err(err);
+            }
         };
 
-        #[cfg(not(feature = "refactor"))]
-        for (idx, name) in arg_names.iter().enumerate() {
-            //Set arg to be substitued
-            self.map.add_local_macro(level + 1, name, &args[idx]);
-        }
-
-        #[cfg(feature = "refactor")]
         for (idx, param) in arg_names.iter().enumerate() {
             //Set arg to be substitued
             self.map.add_local_macro(level + 1, &param.name, &args[idx]);
@@ -2412,7 +2351,7 @@ impl<'processor> Processor<'processor> {
     ///
     /// This doesn't clear fragment
     fn add_rule(&mut self, frag: &MacroFragment) -> RadResult<()> {
-        let (name, args, body) = Utils::split_definition(&frag.args)?;
+        let (name, params, body) = Utils::split_macro_definition(&frag.args)?;
         if name.is_empty() {
             let err = RadError::InvalidMacroDefinition("Cannot define an empty macro".to_string());
             return Err(err);
@@ -2438,20 +2377,42 @@ impl<'processor> Processor<'processor> {
             return Err(RadError::StrictPanic);
         }
 
+        // Pre clone values for later usage
+        let dry_run_parameter = if self.state.process_type == ProcessType::Dry {
+            Some(params.clone())
+        } else {
+            None
+        };
+
         if frag.attribute.trim_input {
-            self.map
-                .register_runtime(name, args, &body.trim_each_lines(), self.state.hygiene)?;
+            self.map.register_runtime(
+                name,
+                params,
+                &body.trim().trim_each_lines(),
+                self.state.hygiene,
+            )?;
         } else {
             self.map
-                .register_runtime(name, args, body, self.state.hygiene)?;
+                .register_runtime(name, params, body, self.state.hygiene)?;
         }
 
         // Dry run if such mode is set
-        if self.state.process_type == ProcessType::Dry {
+        if let Some(params) = dry_run_parameter {
             let err =
                 RadError::InvalidMacroDefinition(format!("Macro \"{}\" has invalid body", name));
             let res = self
-                .process_string(None, &format!("${}({})", name, args.replace(' ', ",")))
+                .process_string(
+                    None,
+                    &format!(
+                        "${}({})",
+                        name,
+                        params
+                            .iter()
+                            .map(|s| s.name.as_str())
+                            .collect::<Vec<_>>()
+                            .join(",")
+                    ),
+                )
                 .map_err(|_| &err);
 
             if res.is_err() {
@@ -3006,12 +2967,7 @@ impl<'processor> Processor<'processor> {
             .entry(name.to_string())
             .or_insert(RuntimeMacro {
                 name: name.to_string(),
-
-                #[cfg(not(feature = "refactor"))]
-                args: vec![],
-                #[cfg(feature = "refactor")]
                 params: vec![],
-
                 body: String::new(),
                 desc: None,
                 is_static: true,
@@ -3219,26 +3175,6 @@ impl<'processor> Processor<'processor> {
             }
         };
         Ok(path)
-    }
-
-    /// Parse chunk and strip quotes
-    ///
-    /// This is for internal logic
-    #[cfg(not(feature = "refactor"))]
-    pub(crate) fn parse_and_strip<'a>(
-        &mut self,
-        ap: &mut ArgParser,
-        attribute: &MacroAttribute,
-        level: usize,
-        caller: &'a str,
-        src: &'a str,
-    ) -> RadResult<Cow<'a, str>> {
-        if attribute.skip_expansion {
-            Ok(src.into())
-        } else {
-            let parsed = self.parse_chunk_args(level, caller, src)?;
-            Ok(ap.strip(&parsed).to_string().into())
-        }
     }
 
     /// Get a local macro's raw body
@@ -3455,24 +3391,9 @@ impl<'processor> Processor<'processor> {
     /// Expand chunk and strip quotes
     ///
     /// This is intended for end user
-    pub fn expand(
-        &mut self,
-        level: usize,
-        src: &str,
-        _: &MacroAttribute,
-        strip: bool,
-    ) -> RadResult<Cow<'_, str>> {
-        let parsed = self.parse_chunk_args(level, "", src)?;
-        if strip {
-            let mut parser = ArgParser::new();
-
-            // TODO
-            // This needs to be a string becauses parsed should be a string
-            let sliced = parser.strip(&parsed).to_string().into();
-            Ok(sliced)
-        } else {
-            Ok(parsed.into())
-        }
+    pub fn expand(&mut self, level: usize, src: &str, _: &MacroAttribute) -> RadResult<String> {
+        let parsed = self.parse_chunk(level, "", src)?;
+        Ok(parsed)
     }
 
     /// Get static macro contents
@@ -3525,34 +3446,6 @@ impl<'processor> Processor<'processor> {
     pub fn print_error(&mut self, error: &str) -> RadResult<()> {
         self.log_error(error)?;
         Ok(())
-    }
-
-    /// Split arguments as vector
-    ///
-    /// This is designed for end user
-    ///
-    /// This doesn't strip literal quotes from vector
-    ///
-    /// ```rust
-    /// let mut proc = r4d::Processor::new();
-    /// proc.split_arguments("a,b", 2,false).expect("Failed to split arguments");
-    /// ```
-    pub fn split_arguments<'a>(
-        &self,
-        source: &'a str,
-        attr: &MacroAttribute,
-        target_length: usize,
-        no_strip: bool,
-    ) -> RadResult<Vec<Cow<'a, str>>> {
-        let mut ap = ArgParser::new();
-        ap.set_strip(!no_strip);
-        if let Some(args) = ap.args_with_len(source, attr, target_length) {
-            Ok(args)
-        } else {
-            Err(RadError::InvalidArgument(
-                "Insufficient arguments.".to_string(),
-            ))
-        }
     }
 
     /// Check auth information

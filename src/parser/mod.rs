@@ -2,4 +2,4 @@
 
 mod arg_parser;
 
-pub use arg_parser::{ArgParser, NewArgParser, SplitVariant};
+pub use arg_parser::{ArgParser, SplitVariant};

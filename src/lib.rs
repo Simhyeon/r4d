@@ -55,10 +55,10 @@ mod package;
 mod process;
 
 mod parser;
-pub(crate) use parser::{ArgParser, SplitVariant};
+pub(crate) use parser::ArgParser;
 
 mod map;
-pub(crate) use argument::{ArgCursor, Argable, Parameter};
+pub(crate) use argument::{ArgableCow, ArgableStr, Parameter};
 pub(crate) use map::deterred_map;
 pub(crate) use map::function_map;
 #[cfg(feature = "hook")]
@@ -80,6 +80,7 @@ pub(crate) mod storage;
 #[macro_use]
 pub(crate) mod utils;
 
+pub use argument::{ParsedArguments, ParsedCursors};
 pub use auth::AuthType;
 pub use common::{CommentType, DiffOption, Hygiene, MacroType, RadResult, WriteOption};
 pub use error::RadError;

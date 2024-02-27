@@ -193,7 +193,7 @@ pub enum CommentType {
 impl std::str::FromStr for CommentType {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let comment_type = match s.to_lowercase().as_str() {
+        let comment_type = match s.trim().to_lowercase().as_str() {
             "none" => Self::None,
             "start" => Self::Start,
             "any" => Self::Any,
@@ -222,7 +222,7 @@ pub enum DiffOption {
 impl std::str::FromStr for DiffOption {
     type Err = RadError;
     fn from_str(text: &str) -> Result<Self, Self::Err> {
-        let var = match text.to_lowercase().as_str() {
+        let var = match text.trim().to_lowercase().as_str() {
             "none" => Self::None,
             "all" => Self::All,
             "change" => Self::Change,
@@ -260,7 +260,7 @@ pub enum SignatureType {
 
 impl SignatureType {
     pub fn from_str(text: &str) -> RadResult<Self> {
-        let variant = match text.to_lowercase().as_str() {
+        let variant = match text.trim().to_lowercase().as_str() {
             "all" => Self::All,
             "function" => Self::Function,
             "runtime" => Self::Runtime,
@@ -323,7 +323,7 @@ pub enum ErrorBehaviour {
 impl std::str::FromStr for ErrorBehaviour {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
+        match s.trim().to_lowercase().as_str() {
             "lenient" => Ok(ErrorBehaviour::Lenient),
             "purge" => Ok(ErrorBehaviour::Purge),
             "strict" => Ok(ErrorBehaviour::Strict),
@@ -477,7 +477,7 @@ pub enum AlignType {
 impl std::str::FromStr for AlignType {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
+        match s.trim().to_lowercase().as_str() {
             "l" | "left" => Ok(Self::Left),
             "r" | "right" => Ok(Self::Right),
             "c" | "center" => Ok(Self::Center),
@@ -514,7 +514,7 @@ pub enum VarContOperation {
 impl FromStr for VarContOperation {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.to_lowercase().as_str() {
+        Ok(match s.trim().to_lowercase().as_str() {
             "print" => Self::Print,
             "push" => Self::Push,
             "pop" => Self::Pop,
@@ -543,7 +543,7 @@ pub enum LineUpType {
 impl std::str::FromStr for LineUpType {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
+        match s.trim().to_lowercase().as_str() {
             "h" | "hierarchy" => Ok(Self::Hierarchy),
             "l" | "left" => Ok(Self::Left),
             "r" | "Right" => Ok(Self::Right),
@@ -564,7 +564,7 @@ pub enum RelayType {
 impl std::str::FromStr for RelayType {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let t = match s.to_lowercase().as_str() {
+        let t = match s.trim().to_lowercase().as_str() {
             "file" | "f" => Self::File,
             "macro" | "m" => Self::Macro,
             _ => {
@@ -587,7 +587,7 @@ pub enum OutputType {
 impl std::str::FromStr for OutputType {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let t = match s.to_lowercase().as_ref() {
+        let t = match s.trim().to_lowercase().as_ref() {
             "terminal" => Self::Terminal,
             "file" => Self::File,
             "discard" => Self::Discard,
@@ -610,7 +610,7 @@ pub enum OrderType {
 impl std::str::FromStr for OrderType {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let t = match s.to_lowercase().as_ref() {
+        let t = match s.trim().to_lowercase().as_ref() {
             "a" | "ascending" => Self::Ascending,
             "d" | "descending" => Self::Descending,
             _ => {
