@@ -44,7 +44,7 @@ impl DeterredMacroMap {
     ///
     /// # Usage
     ///
-    /// $append(macro_name,Content,tailer)
+    /// $append(macro_name,Content)
     pub(crate) fn append(
         input: MacroInput,
         level: usize,
@@ -88,7 +88,7 @@ impl DeterredMacroMap {
             .cursors_with_len(input)?;
 
         let match_expr = cursors.get_text(p, 0)?;
-        let macro_src = cursors.get_text(p, 1)?;
+        let macro_src = cursors.get_ctext(p, 1)?;
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
         let source = cursors.get_text(p, 2)?;
 
@@ -326,7 +326,7 @@ impl DeterredMacroMap {
             .cursors_with_len(input)?;
 
         let mut operation = String::new();
-        let op_src = cursors.get_text(p, 0)?;
+        let op_src = cursors.get_ctext(p, 0)?;
         let src = cursors.get_text(p, 1)?;
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&op_src, true)?;
 
@@ -382,7 +382,7 @@ impl DeterredMacroMap {
             .macro_name("mapf")
             .cursors_with_len(input)?;
 
-        let macro_src = cursors.get_text(p, 0)?;
+        let macro_src = cursors.get_ctext(p, 0)?;
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
         let file = Utils::full_lines(BufReader::new(std::fs::File::open(
             cursors.get_path(p, 1)?,
@@ -423,7 +423,7 @@ impl DeterredMacroMap {
             .cursors_with_len(input)?;
 
         let match_expr = cursors.get_text(p, 0)?;
-        let macro_src = cursors.get_text(p, 1)?;
+        let macro_src = cursors.get_ctext(p, 1)?;
         let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
         let source_file = cursors.get_path(p, 2)?;
 
@@ -705,25 +705,9 @@ impl DeterredMacroMap {
         //     )?;
         // }
 
-        let min_src = cursors.get_ctext(p, 1)?;
-        let max_src = cursors.get_ctext(p, 2)?;
+        let min = cursors.get_uint(p, 1)?;
+        let max = cursors.get_uint(p, 2)?;
 
-        let min = if let Ok(num) = min_src.parse::<usize>() {
-            num
-        } else {
-            return Err(RadError::InvalidArgument(format!(
-                "Forloop's min value should be non zero positive integer but given {}",
-                min_src
-            )));
-        };
-        let max = if let Ok(num) = max_src.parse::<usize>() {
-            num
-        } else {
-            return Err(RadError::InvalidArgument(format!(
-                "Forloop's max value should be non zero positive integer but given \"{}\"",
-                max_src
-            )));
-        };
         let mut counter = 1;
         for value in min..=max {
             p.add_new_local_macro(level, ":", &value.to_string());
@@ -1298,7 +1282,7 @@ impl DeterredMacroMap {
             .cursors_with_len(input)?;
 
         let macro_name = cursors.get_ctext(p, 0)?;
-        let attrs = cursors.get_text(p, 1)?;
+        let attrs = cursors.get_ctext(p, 1)?;
         let args = cursors.get_text(p, 2)?;
         let mut frag = MacroFragment::new();
         frag.args = args.to_string();
@@ -1387,7 +1371,9 @@ impl DeterredMacroMap {
         }
         p.state.stream_state.on_stream = true;
 
-        let name = input.args.trim();
+        let ap = ArgParser::new().no_strip();
+        let cursors = ap.cursors_with_len(input)?;
+        let name = cursors.get_ctext(p, 0)?;
 
         if name.is_empty() {
             return Err(RadError::InvalidArgument(
@@ -1397,7 +1383,7 @@ impl DeterredMacroMap {
 
         p.log_warning("Streaming text content to a macro", WarningType::Security)?;
 
-        p.state.stream_state.macro_src = name.to_string();
+        p.state.stream_state.macro_src = name;
 
         p.add_container_macro(STREAM_CONTAINER)?;
         let rtype = RelayTarget::Macro(STREAM_CONTAINER.to_string());
@@ -1425,7 +1411,9 @@ impl DeterredMacroMap {
         p.state.stream_state.on_stream = true;
         p.state.stream_state.as_lines = true;
 
-        let name = input.args.trim();
+        let ap = ArgParser::new().no_strip();
+        let cursors = ap.cursors_with_len(input)?;
+        let name = cursors.get_ctext(p, 0)?;
 
         if name.is_empty() {
             return Err(RadError::InvalidArgument(
@@ -1435,7 +1423,7 @@ impl DeterredMacroMap {
 
         p.log_warning("Streaming text content to a macro", WarningType::Security)?;
 
-        p.state.stream_state.macro_src = name.to_string();
+        p.state.stream_state.macro_src = name;
 
         p.add_container_macro(STREAM_CONTAINER)?;
         let rtype = RelayTarget::Macro(STREAM_CONTAINER.to_string());

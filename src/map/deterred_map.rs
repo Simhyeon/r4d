@@ -111,7 +111,7 @@ $tempin()"
             (
                 DMacroSign::new(
                     "mapf",
-[(ArgType::Text,"a_macro_name^"),(ArgType::Text, "a_file^"),],
+[(ArgType::CText,"a_macro_name^"),(ArgType::Path, "a_file^"),],
                     Self::map_file,
                     Some(
                         "Execute macro on each lines of a file
@@ -138,7 +138,7 @@ $assert(a+b+c,$mapf(m,file_name.txt))"
             (
                 DMacroSign::new(
                     "mapfe",
-[(ArgType::Text,"a_expr"),(ArgType::Text,"a_macro_name^"),(ArgType::Text, "a_lines"),],
+[(ArgType::Text,"a_expr"),(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_lines"),],
                     Self::map_file_expr,
                     None,
                 )
@@ -146,7 +146,7 @@ $assert(a+b+c,$mapf(m,file_name.txt))"
             (
                 DMacroSign::new(
                     "mapn",
-[(ArgType::Text,"a_operation^"),(ArgType::Text,"a_source"),],
+[(ArgType::CText,"a_operation^"),(ArgType::Text,"a_source"),],
                     Self::map_number,
                     None,
                 )
@@ -154,7 +154,7 @@ $assert(a+b+c,$mapf(m,file_name.txt))"
             (
                 DMacroSign::new(
                     "readto",
-[(ArgType::Text,"a_from_file^"),(ArgType::Text, "a_to_file^"),(ArgType::Text, "a_raw_mode?+^"),],
+[(ArgType::Path,"a_from_file^"),(ArgType::Path, "a_to_file^")],
                     DeterredMacroMap::read_to,
                     Some(
                         "Read from a file as bufread and paste into a file
@@ -174,12 +174,12 @@ $assert(a+b+c,$mapf(m,file_name.txt))"
 $readto(from.txt,into.txt)"
                             .to_string(),
                     ),
-                )
+                ).optional(Parameter::new(ArgType::Bool, "a_raw_mode"))
             ),
             (
                 DMacroSign::new(
                     "readin",
-[(ArgType::Text,"a_file?^"),(ArgType::Text, "a_raw_mode^+?"),],
+                    [(ArgType::Path,"a_file?^")],
                     DeterredMacroMap::read_in,
                     Some(
                         "Read from a file as \"Bufread\"
@@ -198,12 +198,12 @@ $readto(from.txt,into.txt)"
 $readin(file.txt)"
                             .to_string(),
                     ),
-                )
+                ).optional(Parameter::new(ArgType::Bool, "a_raw_mode"))
             ),
             (
                 DMacroSign::new(
                     "ifenv",
-[(ArgType::Text,"a_env_name^"),(ArgType::Text, "a_if_expr"),],
+[(ArgType::CText,"a_env_name^"),(ArgType::Text, "a_if_expr"),],
                     DeterredMacroMap::ifenv,
                     Some(
                         "Execute an expression if an environment variable is set
@@ -230,7 +230,7 @@ $assert(I'm alive,$ifenv(HOME,I'm alive))"
             (
                 DMacroSign::new(
                     "ifenvel",
-[(ArgType::Text,"a_env_name^"),(ArgType::Text, "a_if_expr"),(ArgType::Text, "a_else_expr"),],
+[(ArgType::CText,"a_env_name^"),(ArgType::Text, "a_if_expr"),(ArgType::Text, "a_else_expr"),],
                     DeterredMacroMap::ifenvel,
                     Some(
                         "Execute an expression by whether environment variable is set or not
@@ -261,7 +261,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             (
                 DMacroSign::new(
                     "append",
-[(ArgType::Text,"a_macro_name^"),(ArgType::Text, "a_content"),(ArgType::Text,"a_trailer+"),],
+[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_content")],
                     Self::append,
                     Some(
 "Append contents to a macro. If the macro doesn't exist, yields error
@@ -276,25 +276,20 @@ append if not.
 
 - a_macro_name : a macro name to append to ( trimmed )
 - a_content    : contents to be added
-- a_trailer    : A trailer to append before content ( Optional ) 
 
 # Example
 
 $define(container=Before)
 $append(container,$space()After)
 $assert($container(),Before After)
-
-$define(arr=)
-$append(arr,first,$comma())
-$append(arr,second,$comma())
-$assert($arr(),first,second)".to_string(),
+".to_string(),
                     ),
                 )
             ),
             (
                 DMacroSign::new(
                     "anon",
-[(ArgType::Text,"a_macro"),],
+[(ArgType::Text,"a_macro_definition"),],
                     Self::add_anonymous_macro,
                     Some("Create an anonymous macro and return it's name
 
@@ -349,7 +344,7 @@ $EB()".to_string()),
             (
                 DMacroSign::new(
                     "exec",
-[(ArgType::Text,"a_macro_name^"),(ArgType::Text,"a_macro_attribute^"),(ArgType::Text,"a_macro_args"),],
+[(ArgType::CText,"a_macro_name^"),(ArgType::CText,"a_macro_attribute^"),(ArgType::Text,"a_macro_args"),],
                     DeterredMacroMap::execute_macro,
                     Some("Execute a macro with arguments
 
@@ -369,7 +364,7 @@ $assert($path(a,b,c),$exec(path,,a,b,c))".to_string()),
             (
                 DMacroSign::new(
                     "fassert",
-[(ArgType::Text,"a_expr"),],
+                    [(ArgType::Text,"a_expr"),],
                     DeterredMacroMap::assert_fail,
                     Some("Assert succeeds when text expansion yields error
 
@@ -508,7 +503,7 @@ $assert(a+b+c+,$forline($:()+,a$nl()b$nl()c))".to_string()),
             (
                 DMacroSign::new(
                     "forloop",
-[(ArgType::Text,"a_body"),(ArgType::Text,"a_min^"),(ArgType::Text, "a_max^"),],
+[(ArgType::Text,"a_body"),(ArgType::Uint,"a_min^"),(ArgType::Uint, "a_max^"),],
                     DeterredMacroMap::forloop,
                     Some("Iterate around given range (min,max). 
 
@@ -536,7 +531,7 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
             (
                 DMacroSign::new(
                     "map",
-[(ArgType::Text,"a_expr^"),(ArgType::Text,"a_macro_name^"),(ArgType::Text, "a_cont"),],
+                    [(ArgType::Text,"a_expr^"),(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_text"),],
                     Self::map,
                     None,
                 )
@@ -544,7 +539,7 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
             (
                 DMacroSign::new(
                     "mape",
-[(ArgType::Text,"a_start_expr"),(ArgType::Text,"a_end_expr"),(ArgType::Text,"a_macro_name^"),(ArgType::Text, "a_source"),],
+[(ArgType::Text,"a_start_expr"),(ArgType::Text,"a_end_expr"),(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_source"),],
                     Self::map_expression,
                     None,
                 )
@@ -552,7 +547,7 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
             (
                 DMacroSign::new(
                     "mapa",
-[(ArgType::Text,"a_macro_name^"),(ArgType::Text, "a_array"),],
+[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_array"),],
                     Self::map_array,
                     Some(
 "Execute macro on each array item
@@ -573,7 +568,7 @@ $assert(a+b+c,$map(m,a,b,c))".to_string()),
             (
                 DMacroSign::new(
                     "mapl",
-[(ArgType::Text,"a_macro_name^"),(ArgType::Text, "a_lines"),],
+[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_lines"),],
                     Self::map_lines,
                     Some(
 "Execute macro on each line
@@ -594,7 +589,7 @@ $assert(a+b+c,$mapl(m,a$nl()b$nl()c$nl()))".to_string()),
             (
                 DMacroSign::new(
                     "maple",
-[(ArgType::Text,"a_expr"),(ArgType::Text,"a_macro_name^"),(ArgType::Text, "a_lines"),],
+[(ArgType::Text,"a_expr"),(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_lines"),],
                     Self::map_lines_expr,
                     None,
                 )
@@ -602,7 +597,7 @@ $assert(a+b+c,$mapl(m,a$nl()b$nl()c$nl()))".to_string()),
             (
                 DMacroSign::new(
                     "spread",
-[(ArgType::Text,"a_macro_name^"),(ArgType::Text, "a_csv_value^"),],
+[(ArgType::CText,"a_macro_name^"),(ArgType::CText, "a_csv_value^"),],
                     Self::spread_data,
                     Some(
 "Execute a macro multiple times with given data chunk. Each csv line represents 
@@ -633,7 +628,7 @@ $assert=(
             (
                 DMacroSign::new(
                     "stream",
-[(ArgType::Text,"a_macro_name^"),],
+[(ArgType::CText,"a_macro_name^"),],
                     Self::stream,
                     Some("Stream texts to macro invocaiton
 
@@ -659,7 +654,7 @@ $consume()".to_string()),
             (
                 DMacroSign::new(
                     "streaml",
-[(ArgType::Text,"a_macro_name^"),],
+[(ArgType::CText,"a_macro_name^"),],
                     Self::stream_by_lines,
                     Some("Stream texts to macro invocaiton but by lines
 
@@ -685,7 +680,7 @@ $consume()".to_string()),
             (
                 DMacroSign::new(
                     "if",
-[(ArgType::Text,"a_cond?^"),(ArgType::Text, "a_if_expr"),],
+[(ArgType::Bool,"a_cond?^"),(ArgType::Text, "a_if_expr"),],
                     DeterredMacroMap::if_cond,
                     Some(
 "Check condition and then execute an expression if the condition is true
@@ -709,7 +704,7 @@ $assert(I'm true,$if(true,I'm true))".to_string(),
             (
                 DMacroSign::new(
                     "ifelse",
-[(ArgType::Text,"a_cond?^"),(ArgType::Text, "a_if_expr"),(ArgType::Text, "a_else_expr"),],
+[(ArgType::Bool,"a_cond?^"),(ArgType::Text, "a_if_expr"),(ArgType::Text, "a_else_expr"),],
                     DeterredMacroMap::ifelse,
                     Some(
 "Check condition and execute a different expression by the condition
@@ -736,7 +731,7 @@ $assert(I'm false,$ifelse(false,I'm true,I'm false))".to_string(),
             (
                 DMacroSign::new(
                     "ifdef",
-[(ArgType::Text,"a_macro_name^"),(ArgType::Text, "a_if_expr"),],
+[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_if_expr"),],
                     DeterredMacroMap::ifdef,
                     Some("Execute an expression if macro is defined
 
@@ -758,7 +753,7 @@ $assert(I'm defined,$ifdef(define,I'm defined))".to_string()),
             (
                 DMacroSign::new(
                     "ifdefel",
-[(ArgType::Text,"a_macro_name^"),(ArgType::Text, "a_if_expr"),(ArgType::Text, "a_else_expr"),],
+[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_if_expr"),(ArgType::Text, "a_else_expr"),],
                     DeterredMacroMap::ifdefel,
                     Some(
 "Execute an expression by whether macro is defined or not
@@ -784,7 +779,7 @@ $assert(I'm NOT defined,$ifdefel(defuo,I'm defined,I'm NOT defined))".to_string(
             (
                 DMacroSign::new(
                     "logm",
-[(ArgType::Text,"a_macro_name^"),],
+[(ArgType::CText,"a_macro_name^"),],
                     Self::log_macro_info,
                     Some(
 "Log a macro information. Either print a macro body of a local or a runtime 
@@ -830,7 +825,7 @@ $que(halt(false))".to_string()),
             (
                 DMacroSign::new(
                     "queif",
-[(ArgType::Text,"a_bool?^"),(ArgType::Text, "a_content"),],
+[(ArgType::Bool,"a_bool?^"),(ArgType::Text, "a_content"),],
                     DeterredMacroMap::if_queue_content,
                     Some("If true, then queue expressions
 
