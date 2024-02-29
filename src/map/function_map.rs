@@ -3,9 +3,9 @@
 //! Function macro module includes struct and methods related to function macros
 //! which are technically function pointers.
 
-use crate::argument::{ArgType, MacroInput};
-use crate::common::RadResult;
-use crate::consts::ESR;
+use crate::argument::{MacroInput, ValueType};
+use crate::common::*;
+use crate::consts::{ESR, RET_ETABLE};
 use crate::extension::ExtMacroBuilder;
 use crate::{man_fun, Parameter, Processor};
 #[cfg(feature = "rustc_hash")]
@@ -40,7 +40,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "-",
-                    [(ArgType::CText,"a_pipe_name?^")],
+                    [(ValueType::CText,"a_pipe_name")],
                     Self::get_pipe,
                     Some(man_fun!("pipe.r4d")),
                 )
@@ -56,7 +56,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "after",
-                    [(ArgType::Text,"a_pattern"),(ArgType::Text, "a_content"),],
+                    [(ValueType::Text,"a_pattern"),(ValueType::Text, "a_content"),],
                     Self::get_slice_after,
                     Some(man_fun!("after.r4d"))
                 )
@@ -64,15 +64,18 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "pad",
-                    [(ArgType::Enum,"a_type"),(ArgType::Uint,"a_width"),(ArgType::Text,"a_fill"),(ArgType::Text,"a_text"),],
+                    [(ValueType::Enum,"a_type"),(ValueType::Uint,"a_width"),(ValueType::Text,"a_fill"),(ValueType::Text,"a_text"),],
                     Self::pad_string,
                     Some(man_fun!("pad.r4d"))
+                ).enum_table(
+                    ETable::new("a_type")
+                        .candidates(&["l","left","r","right","c","center"])
                 )
             ),
             (
                 FMacroSign::new(
                     "peel",
-                    [(ArgType::Uint,"a_level"),(ArgType::Text,"a_src"),],
+                    [(ValueType::Uint,"a_level"),(ValueType::Text,"a_src"),],
                     Self::peel,
                     Some(man_fun!("peel.r4d"))
                 )
@@ -80,15 +83,24 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "align",
-[(ArgType::Enum,"a_align_type"),(ArgType::Text, "a_content"),],
+                    [(ValueType::Enum,"a_align_type"),(ValueType::Text, "a_content"),],
                     Self::align,
                     Some(man_fun!("align.r4d"))
+                ).enum_table(
+                    ETable::new("a_align_type")
+                        .candidates(&[
+                            "h", "hierarchy",
+                            "l", "left",
+                            "r", "Right",
+                            "pr", "parralel-right",
+                            "pl", "parralel-left" 
+                        ])
                 )
             ),
             (
                 FMacroSign::new(
                     "lineup",
-[(ArgType::Text,"a_separator"),(ArgType::Text, "a_lines"),],
+                    [(ValueType::Text,"a_separator"),(ValueType::Text, "a_lines"),],
                     Self::lineup_by_separator,
                     Some(man_fun!("lineup.r4d"))
                 )
@@ -96,7 +108,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "lineupr",
-[(ArgType::Text,"a_separator"),(ArgType::Text, "a_lines"),],
+[(ValueType::Text,"a_separator"),(ValueType::Text, "a_lines"),],
                     Self::lineup_by_separator_match_rear,
                     Some(man_fun!("lineupr.r4d"))
                 )
@@ -104,15 +116,22 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "alignc",
-[(ArgType::Enum,"a_align_type"),(ArgType::Text,"a_content"),],
+                    [(ValueType::Enum,"a_align_type"),(ValueType::Text,"a_content"),],
                     Self::align_columns,
                     Some(man_fun!("alignc.r4d"))
+                ).enum_table(
+                    ETable::new("a_align_type")
+                        .candidates(&[
+                            "l", "left",
+                            "r", "right", 
+                            "c", "center"
+                        ])
                 )
             ),
             (
                 FMacroSign::new(
                     "lineupm",
-[(ArgType::Text,"a_rules"),(ArgType::Text, "a_lines"),],
+                    [(ValueType::Text,"a_rules"),(ValueType::Text, "a_lines"),],
                     Self::lineup_by_rules,
                     Some(man_fun!("lineupm.r4d"))
                 )
@@ -120,31 +139,31 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "gt",
-[(ArgType::Text,"a_lvalue"),(ArgType::Text, "a_rvalue"),],
+[(ValueType::Text,"a_lvalue"),(ValueType::Text, "a_rvalue"),],
                     Self::greater_than,
                     Some(man_fun!("gt.r4d")),
-                )
+                ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
                     "gte",
-[(ArgType::Text,"a_lvalue"),(ArgType::Text, "a_rvalue"),],
+[(ValueType::Text,"a_lvalue"),(ValueType::Text, "a_rvalue"),],
                     Self::greater_than_or_equal,
                     Some(man_fun!("gte.r4d")),
-                )
+                ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
                     "eq",
-                    [(ArgType::Text,"a_lvalue"),(ArgType::Text, "a_rvalue")],
+                    [(ValueType::Text,"a_lvalue"),(ValueType::Text, "a_rvalue")],
                     Self::are_values_equal,
                     Some(man_fun!("eq.r4d")),
-                )
+                ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
                     "sep",
-[(ArgType::Text,"a_content"),],
+[(ValueType::Text,"a_content"),],
                     Self::separate,
                     Some(man_fun!("sep.r4d")),
                 )
@@ -152,7 +171,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "rangeu",
-[(ArgType::Int,"a_min^"),(ArgType::Int, "a_max^"),(ArgType::Text, "a_array"),],
+[(ValueType::Int,"a_min"),(ValueType::Int, "a_max"),(ValueType::Text, "a_array"),],
                     Self::substring_utf8,
                     Some(man_fun!("rangeu.r4d")),
                 )
@@ -160,7 +179,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "rangea",
-[(ArgType::Int,"a_min^"),(ArgType::Int, "a_max^"),(ArgType::Text, "a_array"),],
+[(ValueType::Int,"a_min"),(ValueType::Int, "a_max"),(ValueType::Text, "a_array"),],
                     Self::range_array,
                     Some(man_fun!("rangea.r4d")),
                 )
@@ -168,7 +187,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "split",
-[(ArgType::Text,"a_sep"),(ArgType::Text, "a_text"),],
+[(ValueType::Text,"a_sep"),(ValueType::Text, "a_text"),],
                     Self::split,
                     Some(man_fun!("split.r4d")),
                 )
@@ -176,7 +195,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "strip",
-[(ArgType::Uint,"a_count^"),(ArgType::Text,"a_content"),],
+[(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
                     Self::strip,
                     Some(man_fun!("strip.r4d")),
                 )
@@ -184,7 +203,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "striper",
-[(ArgType::Text,"a_expr^"),(ArgType::Text,"a_content"),],
+[(ValueType::Text,"a_expr"),(ValueType::Text,"a_content"),],
                     Self::strip_expression_from_rear,
                     Some(man_fun!("striper.r4d")),
                 )
@@ -192,7 +211,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "stripf",
-[(ArgType::Uint,"a_count^"),(ArgType::Text,"a_content"),],
+[(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
                     Self::stripf,
                     Some(man_fun!("stripf.r4d")),
                 )
@@ -200,7 +219,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "stripr",
-[(ArgType::Uint,"a_count^"),(ArgType::Text,"a_content"),],
+[(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
                     Self::stripr,
                     Some(man_fun!("stripr.r4d")),
                 )
@@ -208,7 +227,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "stripfl",
-[(ArgType::Uint,"a_count^"),(ArgType::Text,"a_content"),],
+[(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
                     Self::stripf_line,
                     Some(man_fun!("stripfl.r4d")),
                 )
@@ -216,7 +235,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "striprl",
-[(ArgType::Uint,"a_count^"),(ArgType::Text,"a_content"),],
+[(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
                     Self::stripr_line,
                     Some(man_fun!("striprl.r4d")),
                 )
@@ -224,7 +243,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "border",
-[(ArgType::Text,"a_border_string"),(ArgType::Text,"a_content"),],
+[(ValueType::Text,"a_border_string"),(ValueType::Text,"a_content"),],
                     Self::decorate_border,
                     None,
                 )
@@ -232,7 +251,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "cut",
-[(ArgType::Text,"a_sep"),(ArgType::Uint, "a_index"),(ArgType::Text,"a_text"),],
+[(ValueType::Text,"a_sep"),(ValueType::Uint, "a_index"),(ValueType::Text,"a_text"),],
                     Self::split_and_cut,
                     Some(man_fun!("cut.r4d")),
                 )
@@ -240,15 +259,27 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "cont",
-[(ArgType::Enum,"a_op"),(ArgType::Text,"a_arg"),],
+                    [(ValueType::Enum,"a_op"),(ValueType::Text,"a_arg"),],
                     Self::container,
                     None
+                ).enum_table(
+                    ETable::new("a_op")
+                        .candidates(&[
+                            "print",
+                            "push",
+                            "pop",
+                            "clear",
+                            "get",
+                            "ow",
+                            "set",
+                            "extend"
+                        ])
                 )
             ),
             (
                 FMacroSign::new(
                     "scut",
-[(ArgType::Uint,"a_index"),(ArgType::Text,"a_text"),],
+[(ValueType::Uint,"a_index"),(ValueType::Text,"a_text"),],
                     Self::split_whitespace_and_cut,
                     Some(man_fun!("scut.r4d")),
                 )
@@ -256,7 +287,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "ssplit",
-[(ArgType::Text,"a_text^"),],
+[(ValueType::Text,"a_text"),],
                     Self::space_split,
                     Some(man_fun!("ssplit.r4d")),
                 )
@@ -264,7 +295,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "squash",
-[(ArgType::Text,"a_text"),],
+[(ValueType::Text,"a_text"),],
                     Self::squash,
                     Some(man_fun!("squash.r4d")),
                 )
@@ -272,10 +303,10 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "assert",
-[(ArgType::Text,"a_lvalue"),(ArgType::Text, "a_rvalue"),],
+[(ValueType::Text,"a_lvalue"),(ValueType::Text, "a_rvalue"),],
                     Self::assert,
                     Some(man_fun!("assert.r4d")),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
@@ -288,7 +319,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "coll",
-[(ArgType::Text,"a_pat"),(ArgType::Text,"a_lines"),],
+[(ValueType::Text,"a_pat"),(ValueType::Text,"a_lines"),],
                     Self::collapse,
                     None,
                 )
@@ -296,15 +327,22 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "comment",
-[(ArgType::Enum,"a_comment_type^"),],
+                    [(ValueType::Enum,"a_comment_type"),],
                     Self::require_comment,
                     Some(man_fun!("comment.r4d")),
-                )
+                ).enum_table(
+                    ETable::new("a_comment_type")
+                        .candidates(&[
+                            "none",
+                            "start",
+                            "any"
+                        ])
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "cond",
-[(ArgType::Text,"a_text"),],
+                    [(ValueType::Text,"a_text"),],
                     Self::condense,
                     Some(man_fun!("cond.r4d")),
                 )
@@ -312,7 +350,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "condl",
-[(ArgType::Text,"a_lines"),],
+                    [(ValueType::Text,"a_lines"),],
                     Self::condense_by_lines,
                     Some(man_fun!("condl.r4d")),
                 )
@@ -320,15 +358,15 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "ceil",
-[(ArgType::Float,"a_number^"),],
+                    [(ValueType::Float,"a_number"),],
                     Self::get_ceiling,
                     Some(man_fun!("ceil.r4d")),
-                )
+                ).ret(ValueType::Int)
             ),
             (
                 FMacroSign::new(
                     "chars",
-[(ArgType::Text,"a_text^"),],
+                    [(ValueType::Text,"a_text"),],
                     Self::chars_array,
                     Some(man_fun!("chars.r4d")),
                 )
@@ -336,7 +374,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "chomp",
-[(ArgType::Text,"a_content"),],
+                    [(ValueType::Text,"a_content"),],
                     Self::chomp,
                     Some(man_fun!("chomp.r4d")),
                 )
@@ -347,12 +385,12 @@ impl FunctionMacroMap {
                     ESR,
                     Self::clear,
                     Some(man_fun!("clear.r4d")),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "comp",
-[(ArgType::Text,"a_content"),],
+                    [(ValueType::Text,"a_content"),],
                     Self::compress,
                     Some(man_fun!("comp.r4d")),
                 )
@@ -360,26 +398,26 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "count",
-[(ArgType::Text,"a_array"),],
+                    [(ValueType::Text,"a_array"),],
                     Self::count,
                     Some(man_fun!("count.r4d")),
-                )
+                ).ret(ValueType::Uint)
             ),
             (
                 FMacroSign::new(
                     "countw",
-[(ArgType::Text,"a_array"),],
+                    [(ValueType::Text,"a_array"),],
                     Self::count_word,
                     Some(man_fun!("countw.r4d")),
-                )
+                ).ret(ValueType::Uint)
             ),
             (
                 FMacroSign::new(
                     "countl",
-[(ArgType::Text,"a_lines"),],
+                    [(ValueType::Text,"a_lines"),],
                     Self::count_lines,
                     Some(man_fun!("countl.r4d")),
-                )
+                ).ret(ValueType::Uint)
             ),
             (
                 FMacroSign::new(
@@ -387,31 +425,31 @@ impl FunctionMacroMap {
                     ESR,
                     Self::deny_newline,
                     Some(man_fun!("dnl.r4d")),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "decl",
-                    [(ArgType::CText,"a_macro_names"),],
+                    [(ValueType::CText,"a_macro_names"),],
                     Self::declare,
                     Some(man_fun!("decl.r4d")),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "docu",
-[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_doc"),],
+                    [(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_doc"),],
                     Self::document,
                     Some(man_fun!("docu.r4d")),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "dump",
-[(ArgType::Text,"a_file_name^"),],
+                    [(ValueType::Text,"a_file_name"),],
                     Self::dump_file_content,
                     Some(man_fun!("dump.r4d")),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
@@ -419,7 +457,7 @@ impl FunctionMacroMap {
                     ESR,
                     Self::print_empty,
                     Some(man_fun!("empty.r4d")),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
@@ -427,7 +465,7 @@ impl FunctionMacroMap {
                     ESR,
                     Self::escape_newline,
                     Some(man_fun!("enl.r4d"))
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
@@ -435,7 +473,7 @@ impl FunctionMacroMap {
                     ESR,
                     Self::escape,
                     Some(man_fun!("escape.r4d")),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
@@ -443,20 +481,20 @@ impl FunctionMacroMap {
                     ESR,
                     Self::exit,
                     Some(man_fun!("exit.r4d")),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "inc",
-                    [(ArgType::CText,"a_number")],
+                    [(ValueType::CText,"a_number")],
                     Self::increase_number,
                     None
-                ).optional(Parameter::new(ArgType::Uint,"a_amount"))
+                ).optional(Parameter::new(ValueType::Uint,"a_amount"))
             ),
             (
                 FMacroSign::new(
                     "dec",
-[(ArgType::CText,"a_number^"),(ArgType::Uint,"a_amount?^"),],
+[(ValueType::CText,"a_number"),(ValueType::Uint,"a_amount"),],
                     Self::decrease_number,
                     None
                 )
@@ -464,7 +502,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "square",
-[(ArgType::Text,"a_number^"),],
+[(ValueType::Text,"a_number"),],
                     Self::square_number,
                     None
                 )
@@ -472,7 +510,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "cube",
-[(ArgType::Text,"a_number^"),],
+[(ValueType::Text,"a_number"),],
                     Self::cube_number,
                     None
                 )
@@ -480,7 +518,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "pow",
-[(ArgType::Text,"a_number^"),(ArgType::Text,"a_exponent^"),],
+[(ValueType::Text,"a_number"),(ValueType::Text,"a_exponent"),],
                     Self::power_number,
                     None
                 )
@@ -488,7 +526,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "sqrt",
-[(ArgType::Text,"a_number^"),],
+[(ValueType::Text,"a_number"),],
                     Self::square_root,
                     None
                 )
@@ -496,15 +534,15 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "round",
-[(ArgType::Float,"a_number^"),],
+[(ValueType::Float,"a_number"),],
                     Self::round_number,
                     None
-                )
+                ).ret(ValueType::Uint)
             ),
             (
                 FMacroSign::new(
                     "inner",
-                    [(ArgType::CText,"a_rule^"),(ArgType::Uint,"a_count^"),(ArgType::Text,"a_src"),],
+                    [(ValueType::CText,"a_rule"),(ValueType::Uint,"a_count"),(ValueType::Text,"a_src"),],
                     Self::get_inner,
                     Some(man_fun!("inner.r4d")),
                 )
@@ -515,20 +553,21 @@ impl FunctionMacroMap {
                     ESR,
                     Self::print_current_input,
                     Some(man_fun!("input.r4d")),
-                ).optional( Parameter::new(ArgType::Bool,"a_absolute?+"))
+                ).optional( Parameter::new(ValueType::Bool,"a_absolute?+"))
+                .ret(ValueType::Path)
             ),
             (
                 FMacroSign::new(
                     "isempty",
-[(ArgType::Text,"a_value"),],
+[(ValueType::Text,"a_value"),],
                     Self::is_empty,
                     Some(man_fun!("isempty.r4d")),
-                )
+                ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
                     "insulav",
-[(ArgType::Text,"a_content"),],
+[(ValueType::Text,"a_content"),],
                     Self::isolate_vertical,
                     Some(man_fun!("insulav.r4d")),
                 )
@@ -536,7 +575,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "insulah",
-[(ArgType::Text,"a_content"),],
+                    [(ValueType::Text,"a_content"),],
                     Self::isolate_horizontal,
                     Some(man_fun!("insulah.r4d")),
                 )
@@ -544,47 +583,47 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "istype",
-[(ArgType::Text,"a_type^"),(ArgType::Text,"a_value^"),],
+[(ValueType::Text,"a_type"),(ValueType::Text,"a_value"),],
                     Self::qualify_value,
                     Some(man_fun!("istype.r4d")),
-                )
+                ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
                     "iszero",
-[(ArgType::CText,"a_value^"),],
+[(ValueType::CText,"a_value"),],
                     Self::is_zero,
                     Some(man_fun!("iszero.r4d")),
-                )
+                ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
                     "find",
-[(ArgType::Text,"a_expr"),(ArgType::Text, "a_source"),],
+[(ValueType::Text,"a_expr"),(ValueType::Text, "a_source"),],
                     Self::find_occurence,
                     Some(man_fun!("find.r4d")),
-                )
+                ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
                     "findm",
-[(ArgType::Text,"a_expr"),(ArgType::Text, "a_source"),],
+[(ValueType::Text,"a_expr"),(ValueType::Text, "a_source"),],
                     Self::find_multiple_occurence,
                     Some(man_fun!("findm.r4d")),
-                )
+                ).ret(ValueType::Uint)
             ),
             (
                 FMacroSign::new(
                     "floor",
-[(ArgType::Float,"a_number^"),],
+[(ValueType::Float,"a_number"),],
                     Self::get_floor,
                     Some(man_fun!("floor.r4d")),
-                )
+                ).ret(ValueType::Uint)
             ),
             (
                 FMacroSign::new(
                     "fold",
-[(ArgType::Text,"a_array"),],
+[(ValueType::Text,"a_array"),],
                     Self::fold,
                     Some(man_fun!("fold.r4d")),
                 )
@@ -592,7 +631,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "foldl",
-[(ArgType::Text,"a_lines"),],
+[(ValueType::Text,"a_lines"),],
                     Self::fold_line,
                     Some(man_fun!("foldl.r4d")),
                 )
@@ -600,7 +639,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "foldlc",
-[(ArgType::Text,"a_count"),(ArgType::Text,"a_lines"),],
+[(ValueType::Text,"a_count"),(ValueType::Text,"a_lines"),],
                     Self::fold_lines_by_count,
                     Some(man_fun!("foldlc.r4d")),
                 )
@@ -608,7 +647,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "folde",
-[(ArgType::Text,"a_start_expr"),(ArgType::Text,"a_end_expr"),(ArgType::Text,"a_lines"),],
+[(ValueType::Text,"a_start_expr"),(ValueType::Text,"a_end_expr"),(ValueType::Text,"a_lines"),],
                     Self::fold_regular_expr,
                     None,
                 )
@@ -616,7 +655,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "grep",
-[(ArgType::Text,"a_expr"),(ArgType::Text, "a_text"),],
+[(ValueType::Text,"a_expr"),(ValueType::Text, "a_text"),],
                     Self::grep_expr,
                     Some(man_fun!("grep.r4d")),
                 )
@@ -624,7 +663,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "grepa",
-[(ArgType::Text,"a_expr"),(ArgType::Text, "a_array"),],
+[(ValueType::Text,"a_expr"),(ValueType::Text, "a_array"),],
                     Self::grep_array,
                     Some(man_fun!("grepa.r4d")),
                 )
@@ -632,7 +671,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "grepl",
-[(ArgType::Text,"a_expr"),(ArgType::Text, "a_lines"),],
+[(ValueType::Text,"a_expr"),(ValueType::Text, "a_lines"),],
                     Self::grep_lines,
                     Some(man_fun!("grepl.r4d")),
                 )
@@ -643,12 +682,12 @@ impl FunctionMacroMap {
                     ESR,
                     Self::halt_relay,
                     Some(man_fun!("halt.r4d")),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "head",
-[(ArgType::Uint,"a_count^"),(ArgType::Text, "a_content"),],
+[(ValueType::Uint,"a_count"),(ValueType::Text, "a_content"),],
                     Self::head,
                     Some(man_fun!("head.r4d")),
                 )
@@ -656,7 +695,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "headl",
-[(ArgType::Uint,"a_count^"),(ArgType::Text, "a_lines"),],
+[(ValueType::Uint,"a_count"),(ValueType::Text, "a_lines"),],
                     Self::head_line,
                     Some(man_fun!("headl.r4d"))
                 )
@@ -664,7 +703,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "hygiene",
-[(ArgType::Bool,"a_hygiene?^"),],
+[(ValueType::Bool,"a_hygiene"),],
                     Self::toggle_hygiene,
                     Some("Toggle hygiene mode. This enables macro hygiene.
 
@@ -681,12 +720,12 @@ $hygiene(true)
 $define(test=Test)
 % test macro is cleared and doesn't exsit
 $fassert($test())".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "indentl",
-[(ArgType::Text,"a_indenter"),(ArgType::Text, "a_lines"),],
+[(ValueType::Text,"a_indenter"),(ValueType::Text, "a_lines"),],
                     Self::indent_lines_before,
                     Some("Indent lines with indenter
 
@@ -709,7 +748,7 @@ Third))".to_string()),
             (
                 FMacroSign::new(
                     "attachl",
-[(ArgType::Text,"a_indenter"),(ArgType::Text, "a_lines"),],
+[(ValueType::Text,"a_indenter"),(ValueType::Text, "a_lines"),],
                     Self::attach_lines_after,
                     None
                 )
@@ -717,7 +756,7 @@ Third))".to_string()),
             (
                 FMacroSign::new(
                     "index",
-[(ArgType::Uint,"a_index^"),(ArgType::Text, "a_array"),],
+[(ValueType::Uint,"a_index"),(ValueType::Text, "a_array"),],
                     Self::index_array,
                     Some("Get an indexed value from an array
 
@@ -737,7 +776,7 @@ $assert(ef,$index(2,ab,cd,ef))".to_string()),
             (
                 FMacroSign::new(
                     "indexl",
-[(ArgType::Uint,"a_index^"),(ArgType::Text, "a_lines"),],
+[(ValueType::Uint,"a_index"),(ValueType::Text, "a_lines"),],
                     Self::index_lines,
                     Some("Get an indexed line from lines
 
@@ -757,7 +796,7 @@ $assert(line 2,$indexl(1,line 1$nl()line 2$nl()))".to_string()),
             (
                 FMacroSign::new(
                     "import",
-[(ArgType::Path,"a_file^"),],
+[(ValueType::Path,"a_file"),],
                     Self::import_frozen_file,
                     Some("Import a frozen file at runtime
 
@@ -771,12 +810,12 @@ unless accessed from library
 # Example
 
 $import(def.r4f)".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "join",
-[(ArgType::Text,"a_sep"),(ArgType::Text,"a_array"),],
+[(ValueType::Text,"a_sep"),(ValueType::Text,"a_array"),],
                     Self::join,
                     Some("Join an array into a single chunk with given separator
 
@@ -793,7 +832,7 @@ $assert(a-b-c,$join(-,a,b,c))".to_string()),
             (
                 FMacroSign::new(
                     "joinl",
-[(ArgType::Text,"a_sep"),(ArgType::Text,"a_lines"),],
+[(ValueType::Text,"a_sep"),(ValueType::Text,"a_lines"),],
                     Self::join_lines,
                     Some("Join lines into a single chunk with given separator
 
@@ -814,7 +853,7 @@ $assert(a-b-c,$joinl(-,a,b,c))".to_string()),
             (
                 FMacroSign::new(
                     "len",
-[(ArgType::Text,"a_string"),],
+[(ValueType::Text,"a_string"),],
                     Self::len,
                     Some("Get a length of text. This counts utf8 characters not ascii.
 
@@ -827,28 +866,28 @@ $assert(a-b-c,$joinl(-,a,b,c))".to_string()),
 # Example
 
 $assert($len(가나다),$len(ABC))".to_string()),
-                )
+                ).ret(ValueType::Uint)
             ),
             (
                 FMacroSign::new(
                     "ulen",
-[(ArgType::Text,"a_string"),],
+[(ValueType::Text,"a_string"),],
                     Self::unicode_len,
                     Some(man_fun!("ulen.r4d")),
-                )
+                ).ret(ValueType::Uint)
             ),
             (
                 FMacroSign::new(
                     "let",
-[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_value"),],
+[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_value"),],
                     Self::bind_to_local,
                     Some(man_fun!("let.r4d")),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "lipsum",
-[(ArgType::Uint,"a_word_count^"),],
+[(ValueType::Uint,"a_word_count"),],
                     Self::lipsum_words,
                     Some(man_fun!("lipsum.r4d")),
                 )
@@ -856,7 +895,7 @@ $assert($len(가나다),$len(ABC))".to_string()),
             (
                 FMacroSign::new(
                     "lipsumr",
-[(ArgType::Uint,"a_word_count^"),],
+[(ValueType::Uint,"a_word_count"),],
                     Self::lipsum_repeat,
                     Some(man_fun!("lipsumr.r4d")),
                 )
@@ -864,7 +903,7 @@ $assert($len(가나다),$len(ABC))".to_string()),
             (
                 FMacroSign::new(
                     "log",
-[(ArgType::Text,"a_msg"),],
+[(ValueType::Text,"a_msg"),],
                     Self::log_message,
                     Some("Log a message to console
 
@@ -874,13 +913,13 @@ $assert($len(가나다),$len(ABC))".to_string()),
 
 # Example
 
-$log($value_i_want_to_check^())".to_string()),
-                )
+$log($value_i_want_to_check())".to_string()),
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "loge",
-[(ArgType::Text,"a_msg"),],
+[(ValueType::Text,"a_msg"),],
                     Self::log_error_message,
                     Some("Log an error message to console
 
@@ -894,12 +933,12 @@ trigger a panic.
 # Example
 
 $loge(This should not be reached)".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "lower",
-[(ArgType::Text,"a_text"),],
+[(ValueType::Text,"a_text"),],
                     Self::lower,
                     Some(man_fun!("lower.r4d")),
                 )
@@ -915,7 +954,7 @@ $loge(This should not be reached)".to_string()),
             (
                 FMacroSign::new(
                     "lt",
-[(ArgType::Text,"a_lvalue"),(ArgType::Text, "a_rvalue"),],
+[(ValueType::Text,"a_lvalue"),(ValueType::Text, "a_rvalue"),],
                     Self::less_than,
                     Some("Check if lvalue is less than rvalue
 
@@ -930,12 +969,12 @@ $loge(This should not be reached)".to_string()),
 
 $assert(false,$lt(c,b))
 $assert(false,$lt(text,text))".to_string()),
-                )
+                ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
                     "lte",
-[(ArgType::Text,"a_lvalue"),(ArgType::Text, "a_rvalue"),],
+[(ValueType::Text,"a_lvalue"),(ValueType::Text, "a_rvalue"),],
                     Self::less_than_or_equal,
                     Some("Check if lvalue is less than or equal to rvalue
 
@@ -950,7 +989,7 @@ $assert(false,$lt(text,text))".to_string()),
 
 $assert(true,$lte(b,c))
 $assert(true,$lte(text,text))".to_string()),
-                )
+                ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
@@ -967,7 +1006,7 @@ $assert(true,$lte(text,text))".to_string()),
 
 $assert(eIsBigger,$max(aIsSmall,cIsMiddle,eIsBigger))
 $assert(5,$max(1,2,3,4,5))".to_string()),
-                ).optional( Parameter::new(ArgType::Text,"a_array"))
+                ).optional( Parameter::new(ValueType::Text,"a_array"))
             ),
             (
                 FMacroSign::new(
@@ -984,12 +1023,12 @@ $assert(5,$max(1,2,3,4,5))".to_string()),
 
 $assert(aIsSmall,$min(aIsSmall,cIsMiddle,eIsBigger))
 $assert(1,$min(1,2,3,4,5))".to_string()),
-                ).optional( Parameter::new(ArgType::Text,"a_array"))
+                ).optional( Parameter::new(ValueType::Text,"a_array"))
             ),
             (
                 FMacroSign::new(
                     "name",
-[(ArgType::Path,"a_path"),],
+[(ValueType::Path,"a_path"),],
                     Self::get_name,
                     Some("Get a name from a given path including an extension
 
@@ -1002,12 +1041,12 @@ $assert(1,$min(1,2,3,4,5))".to_string()),
 # Example
 
 $assert(auto.sh,$name(/path/to/file/auto.sh))".to_string()),
-                )
+                ).ret(ValueType::Path)
             ),
             (
                 FMacroSign::new(
                     "nassert",
-[(ArgType::Text,"a_lvalue"),(ArgType::Text, "a_rvalue"),],
+[(ValueType::Text,"a_lvalue"),(ValueType::Text, "a_rvalue"),],
                     Self::assert_ne,
                     Some("Compare left and right values. Panics if values are equal
 
@@ -1019,12 +1058,12 @@ $assert(auto.sh,$name(/path/to/file/auto.sh))".to_string()),
 # Example
 
 $nassert(1,2)".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "not",
-[(ArgType::Bool,"a_boolean?^"),],
+[(ValueType::Bool,"a_boolean"),],
                     Self::not,
                     Some(
 "Returns a negated value of a given boolean. Yields error when a given value is 
@@ -1042,12 +1081,12 @@ $assert(false,$not(true))
 $assert(true,$not(false))
 $assert(false,$not(1))
 $assert(true,$not(0))".to_string()),
-                )
+                ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
                     "num",
-[(ArgType::Text,"a_text"),],
+[(ValueType::Text,"a_text"),],
                     Self::get_number,
                     Some(
 "Extract number parts from given text. If there are multiple numbers, only 
@@ -1083,25 +1122,21 @@ $assert(30,$num(30k/h for 3 hours))".to_string()),
 % This may not hold true if a newline is configured by a user
 $assert($nl(),
 )".to_string()),
-                ).optional( Parameter::new(ArgType::Text,"a_amount+^"))
+                ).optional( Parameter::new(ValueType::Text,"a_amount+"))
             ),
             (
                 FMacroSign::new(
                     "notat",
-[(ArgType::Uint,"a_number^"),(ArgType::Enum, "a_type^"),],
+                    [(ValueType::Uint,"a_number"),(ValueType::Enum, "a_type"),],
                     Self::change_notation,
-                    Some("Chagne notation of a number
-
-# Arguments
-
-- a_number   : A number to change notation
-- a_type     : A type of notation [\"bin\",\"oct\",\"hex\"] ( trimmed )
-
-# Example
-
-$assert(10111,$notat(23,bin))
-$assert(27,$notat(23,oct))
-$assert(17,$notat(23,hex))".to_string()),
+                    Some(man_fun!("notat.r4d"))
+                ).enum_table(
+                    ETable::new("a_type")
+                        .candidates(&[
+                            "bin",
+                            "oct",
+                            "hex"
+                        ])
                 )
             ),
             (
@@ -1122,7 +1157,7 @@ $assert(unix,$ostype())".to_string()),
             (
                 FMacroSign::new(
                     "require",
-[(ArgType::Enum,"a_output_type^"),],
+                    [(ValueType::Enum,"a_output_type"),],
                     Self::require_output,
                     Some(
 " Require output type
@@ -1134,12 +1169,19 @@ $assert(unix,$ostype())".to_string()),
 # Example
 
 ".to_string()),
-                )
+                ).enum_table(
+                    ETable::new("a_output_type")
+                        .candidates(&[
+                            "Terminal",
+                            "File",
+                            "Discard"
+                        ])
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "panic",
-[(ArgType::Text,"a_msg"),],
+[(ValueType::Text,"a_msg"),],
                     Self::manual_panic,
                     Some("Forefully shutdown macro processing
 
@@ -1158,12 +1200,12 @@ execution is ignored.
 # Example
 
 $panic(This should not be reached)".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "parent",
-[(ArgType::Path,"a_path"),],
+[(ValueType::Path,"a_path"),],
                     Self::get_parent,
                     Some("Get a parent from a given path.
 
@@ -1181,12 +1223,12 @@ value, but not a none value if a path is a single node.
 $fassert($parent(/))
 $assert($empty(),$parent(node))
 $assert(/first/second,$parent(/first/second/last.txt))".to_string()),
-                )
+                ).ret(ValueType::Path)
             ),
             (
                 FMacroSign::new(
                     "path",
-                    [(ArgType::Text,"a_path")],
+                    [(ValueType::Text,"a_path")],
                     Self::merge_path,
                     Some("Merge given paths
 
@@ -1208,12 +1250,13 @@ $assert(/first/second,$parent(/first/second/last.txt))".to_string()),
 $assert(a/b,$path(a,b))
 $assert(/a/b,$path(/a,b))
 $assert(a/b,$path(a/,b))".to_string()),
-                    ).optional(Parameter::new(ArgType::Text,"a_sub_path"))
+                    ).optional(Parameter::new(ValueType::Text,"a_sub_path"))
+                    .ret(ValueType::Path)
             ),
             (
                 FMacroSign::new(
                     "pause",
-[(ArgType::Bool,"a_pause?^"),],
+[(ValueType::Bool,"a_pause"),],
                     Self::pause,
                     Some(
 "Pause macro expansions from the invocation. Paused processor will only expand 
@@ -1235,7 +1278,7 @@ $pause(false)
 
 $nassert(2,$i())
 $assert(1,$i())".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
@@ -1248,7 +1291,7 @@ $assert(1,$i())".to_string()),
             (
                 FMacroSign::new(
                     "pipe",
-[(ArgType::Text,"a_value"),],
+[(ValueType::Text,"a_value"),],
                     Self::pipe,
                     Some("Pipe a given value into an unnamed pipe
 
@@ -1260,12 +1303,12 @@ $assert(1,$i())".to_string()),
 
 $pipe(Text)
 $assert(Text,$-())".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "pipeto",
-[(ArgType::CText,"a_pipe_name^"),(ArgType::Text, "a_value"),],
+[(ValueType::CText,"a_pipe_name"),(ValueType::Text, "a_value"),],
                     Self::pipe_to,
                     Some("Pipe a given value to a named pipe
 
@@ -1278,12 +1321,12 @@ $assert(Text,$-())".to_string()),
 
 $pipeto(yum,YUM)
 $assert($-(yum),YUM)".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "prec",
-[(ArgType::Float,"a_number^"),(ArgType::Uint, "a_precision^"),],
+[(ValueType::Float,"a_number"),(ValueType::Uint, "a_precision"),],
                     Self::prec,
                     Some("Convert a float number with given precision
 
@@ -1302,7 +1345,7 @@ $assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
             (
                 FMacroSign::new(
                     "println",
-[(ArgType::Text,"a_message"),],
+[(ValueType::Text,"a_message"),],
                     Self::print_message,
                     Some("print message -> discard option is ignored for this macro + it has trailing new line for pretty foramtting".to_owned()),
                 )
@@ -1310,30 +1353,31 @@ $assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
             (
                 FMacroSign::new(
                     "relay",
-[(ArgType::Enum,"a_target_type^"),(ArgType::CText, "a_target^"),],
+                    [(ValueType::CText, "a_target"),],
                     Self::relay,
-                    Some(
-"Start relaying to a target. Relay redirects all following text to the relay 
-target. NOTE, relay is not evaluated inside arguments.
-
-# Auth : FOUT is required for relay target \"file\" and \"temp\"
-
-# Arguments
-
-- a_target_type : A type of a relay target [\"macro\",\"file\", \"temp\"] (trimmed)
-- a_target      : A name of a target. Ignored in temp type ( trimmed )
-
-# Example
-
-$relay(file,out.md)$halt()
-$relay(macro,container)$halt()
-$relay(temp)$halt()".to_string()),
-                )
+                    Some(man_fun!("relay.r4d")),
+                ).no_ret()
+            ),
+            (
+                FMacroSign::new(
+                    "relayt",
+                    [(ValueType::CText, "a_target"),],
+                    Self::relayt,
+                    None
+                ).no_ret()
+            ),
+            (
+                FMacroSign::new(
+                    "relayf",
+                    [(ValueType::CText, "a_target"),],
+                    Self::relayf,
+                    None
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "reo",
-[(ArgType::Text,"a_list_contents"),],
+[(ValueType::Text,"a_list_contents"),],
                     Self::reorder,
                     Some("Rearrange order of lists
 
@@ -1356,7 +1400,7 @@ $assert($reo(8. a
             (
                 FMacroSign::new(
                     "rev",
-[(ArgType::Text,"a_array"),],
+[(ValueType::Text,"a_array"),],
                     Self::reverse_array,
                     Some("Reverse order of an array
 
@@ -1372,7 +1416,7 @@ $assert(\\*3,2,1*\\,$rev(1,2,3))".to_string()),
             (
                 FMacroSign::new(
                     "sub",
-[(ArgType::Text,"a_expr"),(ArgType::Text, "a_target"),(ArgType::Text, "a_source"),],
+[(ValueType::Text,"a_expr"),(ValueType::Text, "a_target"),(ValueType::Text, "a_source"),],
                     Self::regex_sub,
                     Some("Apply a regular expression substitution to a source
 
@@ -1390,7 +1434,7 @@ $assert(Hello Rust,$sub(World,Rust,Hello World))".to_string()),
             (
                 FMacroSign::new(
                     "addexpr",
-[(ArgType::CText,"a_name"),(ArgType::Text, "a_expr"),],
+[(ValueType::CText,"a_name"),(ValueType::Text, "a_expr"),],
                     Self::register_expression,
                     Some("Register a regular expression
 
@@ -1409,12 +1453,12 @@ certain capacity reaches.
 $addexpr(greeting,Hello World)
 $assert(true,$find(greeting,Hello World))
 $assert(false,$find(greeting,greetings from world))".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "rename",
-[(ArgType::CText,"a_macro_name^"),(ArgType::CText, "a_new_name^"),],
+[(ValueType::CText,"a_macro_name"),(ValueType::CText, "a_new_name"),],
                     Self::rename_call,
                     Some("Rename a macro with a new name
 
@@ -1428,12 +1472,12 @@ $assert(false,$find(greeting,greetings from world))".to_string()),
 $define(test=Test)
 $rename(test,demo)
 $assert($demo(),Test)".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "repeat",
-[(ArgType::Uint,"a_count^"),(ArgType::Text, "a_source"),],
+[(ValueType::Uint,"a_count"),(ValueType::Text, "a_source"),],
                     Self::repeat,
                     Some("Repeat given source by given counts
 
@@ -1446,13 +1490,13 @@ $assert($demo(),Test)".to_string()),
 
 $assert(R4d
 R4d
-R4d,$repeat^(3,R4d$nl()))".to_string()),
+R4d,$repeat(3,R4d$nl()))".to_string()),
                 )
             ),
             (
                 FMacroSign::new(
                     "repl",
-[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_new_value"),],
+[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_new_value"),],
                     Self::replace,
                     Some("Replace a macro's contents with new values
 
@@ -1467,31 +1511,37 @@ $define(demo=Demo)
 $assert(Demo,$demo())
 $repl(demo,DOMO)
 $assert(DOMO,$demo())".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "require",
-[(ArgType::Enum,"a_permissions^"),],
+                    [(ValueType::Enum,"a_permissions"),],
                     Self::require_permissions,
-                    Some(
-" Require permissions
-
-# Arguments
-
-- a_permissions : A permission array to require (trimmed) [ \"fin\", \"fout\", \"cmd\", \"env\" ]
-
-# Example
-
-$require(fin,fout)".to_string()),
-                )
+                    Some(man_fun!("require.r4d")),
+                ).enum_table(
+                    ETable::new("a_permissions")
+                        .candidates(&[
+                            "env",
+                            "fin",
+                            "fout",
+                            "cmd" 
+                        ])
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "rotatel",
-[(ArgType::Text,"a_pattern"),(ArgType::Enum, "a_orientation"),(ArgType::Text, "a_content"),],
+                    [(ValueType::Text,"a_pattern"),(ValueType::Enum, "a_orientation"),(ValueType::Text, "a_content"),],
                     Self::rotatel,
                     None,
+                ).enum_table(
+                    ETable::new("a_orientation")
+                        .candidates(&[
+                            "Left",
+                            "Right",
+                            "Center",
+                        ])
                 )
             ),
             (
@@ -1513,7 +1563,7 @@ $require(fin,fout)".to_string()),
             (
                 FMacroSign::new(
                     "source",
-[(ArgType::Path,"a_file^"),],
+[(ValueType::Path,"a_file"),],
                     Self::source_static_file,
                     Some(
 "Source an env file. The sourced file is eagerly expanded (As if it was static 
@@ -1532,12 +1582,12 @@ number=$eval(1+2)
 # Example
 
 $source(def.env)".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "sort",
-[(ArgType::Enum,"a_sort_type^"),(ArgType::Text,"a_array"),],
+                    [(ValueType::Enum,"a_sort_type"),(ValueType::Text,"a_array"),],
                     Self::sort_array,
                     Some("Sort an array
 
@@ -1550,12 +1600,18 @@ $source(def.env)".to_string()),
 
 $assert(\\*0,1,3,4,6,7,9*\\,$enl()
 $sort(asec,3,6,7,4,1,9,0))".to_string()),
+                ).enum_table(
+                    ETable::new("a_sort_type")
+                        .candidates(&[
+                            "a" , "asce",
+                            "d" , "desc"
+                        ])
                 )
             ),
             (
                 FMacroSign::new(
                     "sortl",
-[(ArgType::Enum,"a_sort_type^"),(ArgType::Text,"a_lines"),],
+                    [(ValueType::Enum,"a_sort_type"),(ValueType::Text,"a_lines"),],
                     Self::sort_lines,
                     Some("Sort lines
 
@@ -1570,14 +1626,26 @@ $assert(f$nl()e$nl()d$nl()c,$sortl(desc,f
 e
 d
 c))".to_string()),
+                ).enum_table(
+                    ETable::new("a_sort_type")
+                        .candidates(&[
+                            "a" , "asce",
+                            "d" , "desc"
+                        ])
                 )
             ),
             (
                 FMacroSign::new(
                     "sortc",
-[(ArgType::Enum,"a_sort_type^"),(ArgType::Text,"a_content"),],
+                    [(ValueType::Enum,"a_sort_type"),(ValueType::Text,"a_content"),],
                     Self::sort_chunk,
                     None,
+                ).enum_table(
+                    ETable::new("a_sort_type")
+                        .candidates(&[
+                            "a" , "asce",
+                            "d" , "desc"
+                        ])
                 )
             ),
             (
@@ -1587,13 +1655,13 @@ c))".to_string()),
                     Self::space,
                     Some(man_fun!("space.r4d")),
                 ).optional(Parameter::new(
-                    ArgType::Uint,"a_amount?"
+                    ValueType::Uint,"a_amount"
                 ))
             ),
             (
                 FMacroSign::new(
                     "static",
-                    [(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_expr^"),],
+                    [(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_expr"),],
                     Self::define_static,
                     Some(
 "Create a static macro. A static macro is eagerly expanded unlike define
@@ -1612,12 +1680,12 @@ $counter(ct)
 $counter(ct)
 $assert(2,$ddf())
 $assert(0,$stt())".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "strict",
-[(ArgType::Enum,"a_mode^"),],
+                    [(ValueType::Enum,"a_mode"),],
                     Self::require_strict,
                     Some(
 "Check strict mode
@@ -1630,12 +1698,19 @@ $assert(0,$stt())".to_string()),
 
 $strict()
 $strict(lenient)".to_string()),
-                )
+                ).enum_table(
+                    ETable::new("a_mode")
+                        .candidates(&[
+                            "leninet",
+                            "purge",
+                            "strict",
+                        ])
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "range",
-[(ArgType::CText,"a_start_index^"),(ArgType::CText, "a_end_index^"),(ArgType::Text, "a_source"),],
+[(ValueType::CText,"a_start_index"),(ValueType::CText, "a_end_index"),(ValueType::Text, "a_source"),],
                     Self::substring,
                     Some(man_fun!("range.r4d")),
                 )
@@ -1643,7 +1718,7 @@ $strict(lenient)".to_string()),
             (
                 FMacroSign::new(
                     "rangel",
-[(ArgType::CText,"a_start_index^"),(ArgType::CText, "a_end_index^"),(ArgType::Text, "a_lines"),],
+[(ValueType::CText,"a_start_index"),(ValueType::CText, "a_end_index"),(ValueType::Text, "a_lines"),],
                     Self::range_lines,
                     None
                 )
@@ -1651,7 +1726,7 @@ $strict(lenient)".to_string()),
             (
                 FMacroSign::new(
                     "rangeby",
-[(ArgType::Text,"a_delimeter"),(ArgType::CText,"a_start_index^"),(ArgType::CText, "a_end_index^"),(ArgType::Text, "a_lines"),],
+[(ValueType::Text,"a_delimeter"),(ValueType::CText,"a_start_index"),(ValueType::CText, "a_end_index"),(ValueType::Text, "a_lines"),],
                     Self::range_pieces,
                     None
                 )
@@ -1659,7 +1734,7 @@ $strict(lenient)".to_string()),
             (
                 FMacroSign::new(
                     "surr",
-[(ArgType::Text,"a_start_pair"),(ArgType::Text,"a_end_pair"),(ArgType::Text,"a_content"),],
+[(ValueType::Text,"a_start_pair"),(ValueType::Text,"a_end_pair"),(ValueType::Text,"a_content"),],
                     Self::surround_with_pair,
                     Some(man_fun!("surr.r4d")),
                 )
@@ -1667,7 +1742,7 @@ $strict(lenient)".to_string()),
             (
                 FMacroSign::new(
                     "squz",
-[(ArgType::Text,"a_content"),],
+[(ValueType::Text,"a_content"),],
                     Self::squeeze_line,
                     Some(man_fun!("squz.r4d")),
                 )
@@ -1678,12 +1753,12 @@ $strict(lenient)".to_string()),
                     ESR,
                     Self::print_tab,
                     Some(man_fun!("tab.r4d")),
-                ).optional(Parameter::new(ArgType::Uint,"a_amount?^"))
+                ).optional(Parameter::new(ValueType::Uint,"a_amount"))
             ),
             (
                 FMacroSign::new(
                     "tail",
-[(ArgType::Uint,"a_count^"),(ArgType::Text, "a_content"),],
+[(ValueType::Uint,"a_count"),(ValueType::Text, "a_content"),],
                     Self::tail,
                     Some("Get last parts of texts
 
@@ -1700,7 +1775,7 @@ $assert(World,$tail( 5 ,Hello~ World))".to_string()),
             (
                 FMacroSign::new(
                     "taill",
-[(ArgType::Uint,"a_count^"),(ArgType::Text, "a_content"),],
+[(ValueType::Uint,"a_count"),(ValueType::Text, "a_content"),],
                     Self::tail_line,
                     Some("Get last lines of texts
 
@@ -1719,7 +1794,7 @@ c))".to_string()),
             (
                 FMacroSign::new(
                     "table",
-[(ArgType::Enum,"a_table_form^"),(ArgType::CText, "a_csv_value^"),],
+                    [(ValueType::Enum,"a_table_form"),(ValueType::CText, "a_csv_value"),],
                     Self::table,
                     Some(
 "Construct a formatted table. Available table forms are \"github,html,wikitext\"
@@ -1738,12 +1813,19 @@ $assert=(
     $table(github,a,b,
     1,2,3)
 )".to_string()),
+                ).enum_table(
+                    ETable::new("a_table_form")
+                        .candidates(&[
+                            "github",
+                            "html",
+                            "wikitext",
+                        ])
                 )
             ),
             (
                 FMacroSign::new(
                     "tr",
-[(ArgType::Text,"a_chars"),(ArgType::Text, "a_sub"),(ArgType::Text,"a_source"),],
+[(ValueType::Text,"a_chars"),(ValueType::Text, "a_sub"),(ValueType::Text,"a_source"),],
                     Self::translate,
                     Some("Translate characters. Usage similar to core util tr
 
@@ -1761,7 +1843,7 @@ $assert(HellO_WOrld,$tr(-how,_HOW,hello-world))".to_string()),
             (
                 FMacroSign::new(
                     "trim",
-[(ArgType::Text,"a_text"),],
+[(ValueType::Text,"a_text"),],
                     Self::trim,
                     Some(man_fun!("trim.r4d")),
                 )
@@ -1769,7 +1851,7 @@ $assert(HellO_WOrld,$tr(-how,_HOW,hello-world))".to_string()),
             (
                 FMacroSign::new(
                     "trimf",
-[(ArgType::Text,"a_text"),],
+[(ValueType::Text,"a_text"),],
                     Self::trimf,
                     None
                 )
@@ -1777,7 +1859,7 @@ $assert(HellO_WOrld,$tr(-how,_HOW,hello-world))".to_string()),
             (
                 FMacroSign::new(
                     "trimr",
-[(ArgType::Text,"a_text"),],
+[(ValueType::Text,"a_text"),],
                     Self::trimr,
                     None
                 )
@@ -1785,7 +1867,7 @@ $assert(HellO_WOrld,$tr(-how,_HOW,hello-world))".to_string()),
             (
                 FMacroSign::new(
                     "triml",
-[(ArgType::Text,"a_content"),],
+[(ValueType::Text,"a_content"),],
                     Self::triml,
                     Some("Trim values by lines. Trim is applied to each lines
 
@@ -1803,7 +1885,7 @@ $assert(Upper$nl()Middle$nl()Last,$triml(    Upper
             (
                 FMacroSign::new(
                     "exdent",
-[(ArgType::CText,"a_trim_option^"),(ArgType::Text,"a_lines"),],
+[(ValueType::CText,"a_trim_option"),(ValueType::Text,"a_lines"),],
                     Self::exdent,
                     Some("Outdent (exdent) with given amount
 
@@ -1846,7 +1928,7 @@ $space(5)Third)
             (
                 FMacroSign::new(
                     "undef",
-[(ArgType::CText,"a_macro_name^"),],
+[(ValueType::CText,"a_macro_name"),],
                     Self::undefine_call,
                     Some("Undefine a macro
 
@@ -1863,12 +1945,12 @@ $space(5)Third)
 $define(test=Test)
 $undef(test)
 $fassert($test())".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "unicode",
-[(ArgType::CText,"a_value^"),],
+[(ValueType::CText,"a_value"),],
                     Self::paste_unicode,
                     Some("Creates a unicode character from a hex number without prefix
 
@@ -1884,7 +1966,7 @@ $assert(☺,$unicode(263a))".to_string()),
             (
                 FMacroSign::new(
                     "until",
-[(ArgType::Text,"a_pattern"),(ArgType::Text, "a_content"),],
+[(ValueType::Text,"a_pattern"),(ValueType::Text, "a_content"),],
                     Self::get_slice_until,
                     Some("Get a substring unitl a pattern
 
@@ -1901,7 +1983,7 @@ $assert(Hello,$until($space(),Hello World))".to_string()),
             (
                 FMacroSign::new(
                     "upper",
-[(ArgType::Text,"a_text"),],
+[(ValueType::Text,"a_text"),],
                     Self::capitalize,
                     Some(man_fun!("upper.r4d"))
                 )
@@ -1910,7 +1992,7 @@ $assert(Hello,$until($space(),Hello World))".to_string()),
             (
                 FMacroSign::new(
                     "def",
-[(ArgType::Text,"a_define_statement"),],
+[(ValueType::Text,"a_define_statement"),],
                     Self::define_macro,
                     Some("Define a macro
 
@@ -1930,12 +2012,12 @@ $def(test=Test)
 $def(demo,a_1 a_2=$a_1() $a_2())
 $assert($test(),Test)
 $assert(wow cow,$demo(wow,cow))".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "env",
-[(ArgType::CText,"a_env_name^"),],
+[(ValueType::CText,"a_env_name"),],
                     Self::get_env,
                     Some(
                         "Get an environment variable
@@ -1956,7 +2038,7 @@ $assert(/home/user/dir,$env(HOME))"
             (
                 FMacroSign::new(
                     "setenv",
-[(ArgType::CText,"a_env_name^"),(ArgType::Text, "a_env_value"),],
+[(ValueType::CText,"a_env_name"),(ValueType::Text, "a_env_value"),],
                     Self::set_env,
                     Some(
                         "Set an environment variable
@@ -1973,12 +2055,12 @@ $assert(/home/user/dir,$env(HOME))"
 $envset(HOME,/tmp)"
                             .to_string(),
                     )
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "abs",
-[(ArgType::Path,"a_path^"),],
+[(ValueType::Path,"a_path"),],
                     Self::absolute_path,
                     Some(
                         "Get an absolute path. This requires a path to be a real path.
@@ -2001,7 +2083,7 @@ $assert(/home/user/cwd/test.md,$abs(test.md))"
             (
                 FMacroSign::new(
                     "exist",
-[(ArgType::Path,"a_filename^"),],
+[(ValueType::Path,"a_filename"),],
                     Self::file_exists,
                     Some(
                         "Chck if file exists
@@ -2017,12 +2099,12 @@ $assert(/home/user/cwd/test.md,$abs(test.md))"
 $exist(file.txt)"
                             .to_string(),
                     )
-                )
+                ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
                     "grepf",
-[(ArgType::Text,"a_expr"),(ArgType::Path, "a_file^"),],
+[(ValueType::Text,"a_expr"),(ValueType::Path, "a_file"),],
                     Self::grep_file,
                     Some(
                         "Extract matched lines from given file. This returns all items as lines
@@ -2044,7 +2126,7 @@ $countl($grepf(file.txt))"
             (
                 FMacroSign::new(
                     "syscmd",
-[(ArgType::CText,"a_command"),],
+[(ValueType::CText,"a_command"),],
                     Self::syscmd,
                     Some(
                         "Execute a sysctem command
@@ -2077,7 +2159,7 @@ $assert(Linux,$syscmd(uname))"
             (
                 FMacroSign::new(
                     "tempout",
-[(ArgType::Text,"a_content"),],
+[(ValueType::Text,"a_content"),],
                     Self::temp_out,
                     Some(
                         "Write to a temporary file
@@ -2097,12 +2179,12 @@ $assert(Linux,$syscmd(uname))"
 $tempout(Content)"
                             .to_string(),
                     )
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "tempto",
-[(ArgType::Path,"a_filename^"),],
+[(ValueType::Path,"a_filename"),],
                     Self::set_temp_target,
                     Some(
                         "Change a temporary file path
@@ -2123,7 +2205,7 @@ file doesn't exist
 $tempto(/new/path)"
                             .to_string(),
                     )
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
@@ -2144,12 +2226,12 @@ $tempto(/new/path)"
 $assert(/tmp/rad.txt,$temp())"
                             .to_string(),
                     )
-                )
+                ).ret(ValueType::Path)
             ),
             (
                 FMacroSign::new(
                     "fileout",
-[(ArgType::Path,"a_filename^"),(ArgType::Bool, "a_truncate?^"),(ArgType::Text, "a_content"),],
+[(ValueType::Path,"a_filename"),(ValueType::Bool, "a_truncate"),(ValueType::Text, "a_content"),],
                     Self::file_out,
                     Some(
                         "Write content to a file
@@ -2167,12 +2249,12 @@ $assert(/tmp/rad.txt,$temp())"
 $fileout(/tmp/some_file.txt,true,Hello World)"
                             .to_string(),
                     )
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
                     "update",
-[(ArgType::Text,"a_text"),],
+[(ValueType::Text,"a_text"),],
                     Self::update_storage,
                     Some(
                         "Update a storage
@@ -2186,7 +2268,7 @@ $fileout(/tmp/some_file.txt,true,Hello World)"
 $update(text to be pushed)"
                             .to_string(),
                     )
-                )
+                ).no_ret()
             ),
             (
                 FMacroSign::new(
@@ -2201,7 +2283,7 @@ $update(text to be pushed)"
 $extract()"
                             .to_string(),
                     ),
-                )
+                ).no_ret()
             ),
         ]));
 
@@ -2212,8 +2294,8 @@ $extract()"
                 FMacroSign::new(
                     "addcsv",
                     [
-                        (ArgType::CText, "a_table_name^"),
-                        (ArgType::CText, "a_data^"),
+                        (ValueType::CText, "a_table_name"),
+                        (ValueType::CText, "a_data"),
                     ],
                     Self::cindex_register,
                     Some(
@@ -2232,13 +2314,14 @@ $addcsv(table1,a,b,c
 1,2,3)"
                             .to_string(),
                     ),
-                ),
+                )
+                .no_ret(),
             );
             map.macros.insert(
                 "dropcsv".to_string(),
                 FMacroSign::new(
                     "dropcsv",
-                    [(ArgType::CText, "a_table_name^")],
+                    [(ValueType::CText, "a_table_name")],
                     Self::cindex_drop,
                     Some(
                         "Drop a csv table
@@ -2252,13 +2335,14 @@ $addcsv(table1,a,b,c
 $dropcsv(table1)"
                             .to_string(),
                     ),
-                ),
+                )
+                .no_ret(),
             );
             map.macros.insert(
                 "query".to_string(),
                 FMacroSign::new(
                     "query",
-                    [(ArgType::CText, "a_query^")],
+                    [(ValueType::CText, "a_query")],
                     Self::cindex_query,
                     Some(
                         "Query a csv table
@@ -2319,7 +2403,7 @@ $date()"
                 "hms".to_string(),
                 FMacroSign::new(
                     "hms",
-                    [(ArgType::Uint, "a_second^")],
+                    [(ValueType::Uint, "a_second")],
                     Self::hms,
                     Some(
                         "Get given sesconds in hh:mm:ss format
@@ -2342,7 +2426,7 @@ $assert(00:33:40,$hms(2020))"
                 "ftime".to_string(),
                 FMacroSign::new(
                     "ftime",
-                    [(ArgType::Path, "a_file")],
+                    [(ValueType::Path, "a_file")],
                     Self::get_file_time,
                     Some(
                         "Get a file's last modified time.
@@ -2367,7 +2451,7 @@ $ftime(some_file.txt)
                 "eval".to_string(),
                 FMacroSign::new(
                     "eval",
-                    [(ArgType::Text, "a_expr")],
+                    [(ValueType::Text, "a_expr")],
                     Self::eval,
                     Some(
                         "Evaluate a given expression
@@ -2394,7 +2478,7 @@ $assert(true,$eval(\"string\" == \"string\"))"
                 "evalk".to_string(),
                 FMacroSign::new(
                     "evalk",
-                    [(ArgType::Text, "a_expr")],
+                    [(ValueType::Text, "a_expr")],
                     Self::eval_keep,
                     Some(
                         "Evaluate an expression while keeping source text
@@ -2416,7 +2500,7 @@ $assert(1 + 2 = 3,$evalk(1 + 2 ))"
                 "evalf".to_string(),
                 FMacroSign::new(
                     "evalf",
-                    [(ArgType::Text, "a_expr")],
+                    [(ValueType::Text, "a_expr")],
                     Self::evalf,
                     Some(
                         "Evaluate a given expression
@@ -2439,25 +2523,25 @@ $assert(1 + 2 = 3,$evalk(1 + 2 ))"
                 "evalkf".to_string(),
                 FMacroSign::new(
                     "evalkf",
-                    [(ArgType::Text, "a_expr")],
+                    [(ValueType::Text, "a_expr")],
                     Self::eval_keep_as_float,
                     None,
                 ),
             );
             map.macros.insert(
                 "pie".to_string(),
-                FMacroSign::new("pie", [(ArgType::Text, "a_expr")], Self::pipe_ire, None),
+                FMacroSign::new("pie", [(ValueType::Text, "a_expr")], Self::pipe_ire, None),
             );
             map.macros.insert(
                 "mie".to_string(),
-                FMacroSign::new("mie", [(ArgType::Text, "a_expr")], Self::macro_ire, None),
+                FMacroSign::new("mie", [(ValueType::Text, "a_expr")], Self::macro_ire, None),
             );
         }
         map.macros.insert(
             "wrap".to_string(),
             FMacroSign::new(
                 "wrap",
-                [(ArgType::Uint, "a_width^"), (ArgType::Text, "a_text")],
+                [(ValueType::Uint, "a_width"), (ValueType::Text, "a_text")],
                 Self::wrap,
                 Some(
                     "Wrap text by width
@@ -2486,24 +2570,26 @@ rhoncus*\\,$wrap(20,$lipsum(10)))"
                 FMacroSign::new(
                     "hookon",
                     [
-                        (ArgType::Enum, "a_macro_type^"),
-                        (ArgType::CText, "a_target_name^"),
+                        (ValueType::Enum, "a_macro_type"),
+                        (ValueType::CText, "a_target_name"),
                     ],
                     Self::hook_enable,
                     Some("Enable hook which is enabled by library extension".to_string()),
-                ),
+                )
+                .enum_table(ETable::new("a_macro_type").candidates(&["macro", "char"])),
             );
             map.macros.insert(
                 "hookoff".to_string(),
                 FMacroSign::new(
                     "hookoff",
                     [
-                        (ArgType::Enum, "a_macro_type^"),
-                        (ArgType::CText, "a_target_name^"),
+                        (ValueType::Enum, "a_macro_type"),
+                        (ValueType::CText, "a_target_name"),
                     ],
                     Self::hook_disable,
                     Some("Disable hook".to_string()),
-                ),
+                )
+                .enum_table(ETable::new("a_macro_type").candidates(&["macro", "char"])),
             );
         }
         map
@@ -2572,15 +2658,17 @@ pub(crate) struct FMacroSign {
     name: String,
     params: Vec<Parameter>,
     optional: Option<Parameter>,
+    enum_table: ETMap,
     pub logic: FunctionMacroType,
     #[allow(dead_code)]
     pub desc: Option<String>,
+    pub ret: Option<ValueType>,
 }
 
 impl FMacroSign {
     pub fn new(
         name: &str,
-        params: impl IntoIterator<Item = (ArgType, impl AsRef<str>)>,
+        params: impl IntoIterator<Item = (ValueType, impl AsRef<str>)>,
         logic: FunctionMacroType,
         desc: Option<String>,
     ) -> Self {
@@ -2595,13 +2683,30 @@ impl FMacroSign {
             name: name.to_owned(),
             params,
             optional: None,
+            enum_table: ETMap::default(),
             logic,
             desc,
+            ret: Some(ValueType::Text),
         }
+    }
+
+    pub fn no_ret(mut self) -> Self {
+        self.ret = None;
+        self
+    }
+
+    pub fn ret(mut self, ret_type: ValueType) -> Self {
+        self.ret.replace(ret_type);
+        self
     }
 
     pub fn optional(mut self, param: Parameter) -> Self {
         self.optional.replace(param);
+        self
+    }
+
+    pub fn enum_table(mut self, table: (String, ETable)) -> Self {
+        self.enum_table.tables.insert(table.0, table.1);
         self
     }
 }
@@ -2613,8 +2718,10 @@ impl From<&FMacroSign> for crate::sigmap::MacroSignature {
             name: bm.name.to_owned(),
             params: bm.params.to_owned(),
             optional: bm.optional.clone(),
+            enum_table: bm.enum_table.clone(),
             expr: bm.to_string(),
             desc: bm.desc.clone(),
+            return_type: bm.ret,
         }
     }
 }
@@ -2628,9 +2735,9 @@ impl std::fmt::Display for FMacroSign {
         inner.pop();
         let basic_usage = format!("${}({}", self.name, inner); // Without ending brace
         let ret = write!(f, "{})", basic_usage);
-        let sep = if inner.is_empty() { "" } else { ", " };
+        let sep = if inner.is_empty() { "" } else { "," };
         if let Some(op) = self.optional.as_ref() {
-            write!(f, "|| {}{}{}?)", basic_usage, sep, op.arg_type)
+            write!(f, " || {}{}{}?)", basic_usage, sep, op.arg_type)
         } else {
             ret
         }

@@ -61,6 +61,7 @@ pub const MAIN_CALLER: &str = "@MAIN@";
 
 pub const MACRO_SPECIAL_ANON: &str = "_ANON_";
 pub const MACRO_SPECIAL_LIPSUM: &str = "_LIPSUM_";
+pub const RET_ETABLE: &str = "_RET_";
 
 // Numbers
 // Macro attributes * ^ = - | ~
@@ -104,7 +105,7 @@ pub const PATH_SEPARATOR: &str = "/";
 pub const RDB_HELP: &str = include_str!("debug_help_message.txt");
 
 /// Empty String aRray
-pub const ESR: [(crate::argument::ArgType, &str); 0] = [];
+pub const ESR: [(crate::argument::ValueType, &str); 0] = [];
 
 /// Define keyword
 pub const DEFINE_KEYWORD: &str = "def";

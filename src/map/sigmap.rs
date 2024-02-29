@@ -1,7 +1,8 @@
 //! Signature map module
 
-use crate::consts::LINE_ENDING;
+use crate::argument::ValueType;
 use crate::Parameter;
+use crate::{common::ETMap, consts::LINE_ENDING};
 #[cfg(feature = "rustc_hash")]
 use rustc_hash::FxHashMap as HashMap;
 use serde::{Deserialize, Serialize};
@@ -40,10 +41,14 @@ pub struct MacroSignature {
     pub name: String,
     pub params: Vec<Parameter>,
     pub optional: Option<Parameter>,
+    pub enum_table: ETMap,
     pub expr: String,
     pub desc: Option<String>,
+    pub return_type: Option<ValueType>,
 }
 
+// TODO TT
+// Display value table for such parameters
 impl std::fmt::Display for MacroSignature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let params = if self.params.is_empty() {
@@ -51,7 +56,7 @@ impl std::fmt::Display for MacroSignature {
         } else {
             self.params
                 .iter()
-                .map(|p| format!("{} : {}", p.name, p.arg_type))
+                .map(|p| format!("'{}' : {}", p.name, p.arg_type))
                 .collect::<Vec<_>>()
                 .join(", ")
         };
@@ -60,6 +65,7 @@ impl std::fmt::Display for MacroSignature {
             "Macro Type  : {:#?}
 Macro Name  : {}
 Parameters  : {}
+Return      : {}
 Usage       : {}
 Description >> 
 {}",
@@ -69,8 +75,11 @@ Description >>
                 + &self
                     .optional
                     .as_ref()
-                    .map(|p| format!(", {}? : {}", p.name, p.arg_type))
+                    .map(|p| format!(", '{}'? : {}", p.name, p.arg_type))
                     .unwrap_or_default(),
+            self.return_type
+                .map(|s| s.to_string())
+                .unwrap_or("[NONE]".to_string()),
             self.expr,
             self.desc
                 .as_ref()

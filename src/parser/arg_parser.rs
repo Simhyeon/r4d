@@ -4,6 +4,7 @@
 
 use crate::{
     argument::{ArgCursor, Argument, MacroInput, ParsedArguments, ParsedCursors},
+    common::ETMap,
     consts::{ESCAPE_CHAR_U8, LIT_CHAR_U8},
     Parameter, RadError, RadResult,
 };
@@ -190,6 +191,8 @@ impl ArgParser {
     }
 
     /// Split raw arguments into cursors
+    ///
+    /// THis is used for parsing deterred macro arguments
     pub(crate) fn get_cursor_list(&mut self, input: &MacroInput) -> RadResult<Vec<ArgCursor>> {
         let mut values: Vec<ArgCursor> = vec![];
         self.cursor = ArgCursor::Reference(0, 0);
@@ -249,6 +252,8 @@ impl ArgParser {
     }
 
     /// Split raw arguments into a vector
+    ///
+    /// This is used for parsing aruments ofr runtime macro
     fn get_text_list<'a>(&mut self, input: MacroInput<'a>) -> RadResult<Vec<Cow<'a, str>>> {
         let mut values: Vec<Cow<'a, str>> = vec![];
         self.cursor = ArgCursor::Reference(0, 0);
@@ -355,6 +360,8 @@ impl ArgParser {
     }
 
     /// Split raw arguments into a vector
+    ///
+    /// THis is used for parsing function macros
     fn get_arg_list<'a>(&mut self, input: MacroInput<'a>) -> RadResult<Vec<Argument<'a>>> {
         let mut values: Vec<Argument> = vec![];
         self.cursor = ArgCursor::Reference(0, 0);
@@ -414,6 +421,7 @@ impl ArgParser {
                     let arg = Self::validate_arg(
                         get_next_type(&mut at_iter, input.optional.as_ref())?,
                         value,
+                        input.enum_table,
                     )?;
                     values.push(arg);
                 }
@@ -448,8 +456,11 @@ impl ArgParser {
             input.args[start..end].into()
         };
 
-        let type_checked_arg =
-            Self::validate_arg(get_next_type(&mut at_iter, input.optional.as_ref())?, value)?;
+        let type_checked_arg = Self::validate_arg(
+            get_next_type(&mut at_iter, input.optional.as_ref())?,
+            value,
+            input.enum_table,
+        )?;
 
         values.push(type_checked_arg);
         Ok(values)
@@ -629,9 +640,21 @@ impl ArgParser {
         Ok(())
     }
 
-    fn validate_arg<'a>(param: &Parameter, source: Cow<'a, str>) -> RadResult<Argument<'a>> {
+    fn validate_arg<'a>(
+        param: &Parameter,
+        source: Cow<'a, str>,
+        etable: Option<&ETMap>,
+    ) -> RadResult<Argument<'a>> {
         use crate::ArgableCow;
-        source.to_arg(param)
+        let et = if let Some(etos) = etable {
+            etos.tables.get(&param.name)
+        } else {
+            None
+        };
+        source.to_arg(
+            param, // TODO TT
+            et,
+        )
     }
 }
 

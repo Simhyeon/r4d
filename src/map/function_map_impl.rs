@@ -2,11 +2,11 @@ use super::function_map::FunctionMacroMap;
 
 use crate::argument::MacroInput;
 use crate::auth::{AuthState, AuthType};
+use crate::common::VarContOperation;
 use crate::common::{
     AlignType, ErrorBehaviour, FlowControl, LineUpType, MacroType, OrderType, OutputType,
     ProcessInput, RadResult, RelayTarget,
 };
-use crate::common::{RelayType, VarContOperation};
 use crate::consts::{
     LOREM, LOREM_SOURCE, LOREM_WIDTH, MACRO_SPECIAL_LIPSUM, MAIN_CALLER, PATH_SEPARATOR,
 };
@@ -3594,55 +3594,85 @@ impl FunctionMacroMap {
     /// $relay(type,argument)
     pub(crate) fn relay(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
-        if args.is_empty() {
-            return Err(RadError::InvalidArgument(
-                "relay at least requires an argument".to_owned(),
-            ));
-        }
 
-        let relay_type = args.get_enum(0, RelayType::from_str)?;
-        let target = args.get_ctext(1)?;
+        let target = args.get_ctext(0)?;
 
         p.log_warning(
             &format!("Relaying text content to \"{}\"", target),
             WarningType::Security,
         )?;
 
-        let relay_target = match relay_type {
-            // TODO TT
-            // RelayType::Temp => {
-            //     if !Utils::is_granted("relay", AuthType::FOUT, p)? {
-            //         return Ok(None);
-            //     }
-            //     RelayTarget::Temp
-            // }
-            RelayType::File => {
-                use crate::common::FileTarget;
-                if !Utils::is_granted("relay", AuthType::FOUT, p)? {
-                    return Ok(None);
-                }
-                if target.is_empty() {
-                    return Err(RadError::InvalidArgument(
-                        "relay requires second argument as file name for file relaying".to_owned(),
-                    ));
-                }
-                let file_target = FileTarget::from_path(Path::new(&target))?;
-                RelayTarget::File(file_target)
-            }
-            RelayType::Macro => {
-                if target.is_empty() {
-                    return Err(RadError::InvalidArgument(
-                        "relay requires second argument as macro name for macro relaying"
-                            .to_owned(),
-                    ));
-                }
-                if !p.contains_macro(target, MacroType::Runtime) {
-                    let sim = p.get_similar_macro(target, true); // For relay only runtime
-                    return Err(RadError::NoSuchMacroName(target.to_string(), sim));
-                }
-                RelayTarget::Macro(target.to_string())
-            }
-        };
+        if target.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "relay requires second argument as macro name for macro relaying".to_owned(),
+            ));
+        }
+        if !p.contains_macro(target, MacroType::Runtime) {
+            let sim = p.get_similar_macro(target, true); // For relay only runtime
+            return Err(RadError::NoSuchMacroName(target.to_string(), sim));
+        }
+        let relay_target = RelayTarget::Macro(target.to_string());
+
+        p.state.relay.push(relay_target);
+        Ok(None)
+    }
+
+    /// Relay all text into temporary file
+    ///
+    /// Every text including non macro calls are all sent to relay target
+    ///
+    /// # Usage
+    ///
+    /// $relayt(type,argument)
+    pub(crate) fn relayt(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let args = ArgParser::new().args_with_len(input)?;
+
+        let target = args.get_ctext(0)?;
+
+        p.log_warning(
+            &format!("Relaying text content to \"{}\"", target),
+            WarningType::Security,
+        )?;
+
+        if !Utils::is_granted("relayt", AuthType::FOUT, p)? {
+            return Ok(None);
+        }
+        let relay_target = RelayTarget::Temp;
+
+        p.state.relay.push(relay_target);
+        Ok(None)
+    }
+
+    /// Relay all text to file
+    ///
+    /// Every text including non macro calls are all sent to relay target
+    ///
+    /// # Usage
+    ///
+    /// $relayf(argument)
+    pub(crate) fn relayf(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let args = ArgParser::new().args_with_len(input)?;
+
+        let target = args.get_ctext(0)?;
+
+        p.log_warning(
+            &format!("Relaying text content to \"{}\"", target),
+            WarningType::Security,
+        )?;
+
+        use crate::common::FileTarget;
+        if !Utils::is_granted("relayf", AuthType::FOUT, p)? {
+            return Ok(None);
+        }
+        if target.is_empty() {
+            return Err(RadError::InvalidArgument(
+                "relay requires second argument as file name for file relaying".to_owned(),
+            ));
+        }
+        let file_target = FileTarget::from_path(Path::new(&target))?;
+
+        let relay_target = RelayTarget::File(file_target);
+
         p.state.relay.push(relay_target);
         Ok(None)
     }

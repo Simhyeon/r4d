@@ -1,6 +1,6 @@
 //! Utility struct, methods for various operations
 
-use crate::argument::ArgType;
+use crate::argument::ValueType;
 use crate::auth::{AuthState, AuthType};
 use crate::common::{ProcessInput, RadResult};
 use crate::env::PROC_ENV;
@@ -93,7 +93,7 @@ impl Utils {
                         if NAME_MATCH.find(name).is_none() {
                             error = true;
                         } else {
-                            let arg_type = ArgType::from_str(arg_type)?;
+                            let arg_type = ValueType::from_str(arg_type)?;
                             params.push(Parameter::new(arg_type, name));
                         }
                     } else {

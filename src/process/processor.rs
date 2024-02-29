@@ -1,7 +1,7 @@
 //! Main macro processing struct module
 
 use super::ProcessorState;
-use crate::argument::{ArgType, MacroInput};
+use crate::argument::{MacroInput, ValueType};
 use crate::auth::{AuthState, AuthType};
 #[cfg(feature = "debug")]
 use crate::common::DiffOption;
@@ -1103,7 +1103,7 @@ impl<'processor> Processor<'processor> {
                         .split_whitespace()
                         .map(|s| Parameter {
                             name: s.to_owned(),
-                            arg_type: ArgType::Text,
+                            arg_type: ValueType::Text,
                         })
                         .collect::<Vec<Parameter>>(),
                     body: body.to_string(),
@@ -2214,11 +2214,10 @@ impl<'processor> Processor<'processor> {
                 }
 
                 let sig = self.map.get_signature(name).unwrap();
-                // TODO TT
-                // Should add input arg type
                 let input = MacroInput::new(name, &args)
                     .attr(frag.attribute)
                     .optional(sig.optional)
+                    .enum_table(&sig.enum_table)
                     .parameter(&sig.params);
 
                 let final_result = func(input, level, self)?.filter(|f| {
@@ -2228,6 +2227,22 @@ impl<'processor> Processor<'processor> {
                         true
                     }
                 });
+
+                match sig.return_type {
+                    Some(ret_type) => {
+                        ret_type.is_valid_return_type(
+                            final_result.as_ref(),
+                            sig.enum_table.tables.get(RET_ETABLE),
+                        )?;
+                    }
+                    None => {
+                        if final_result.is_some() {
+                            return Err(RadError::InvalidExecution(
+                                    format!( "Return type out of sync. Expected : [NONE] type but got value \"{}\"", final_result.unwrap())
+                            ));
+                        }
+                    }
+                }
 
                 return Ok(final_result);
             }
@@ -2247,6 +2262,7 @@ impl<'processor> Processor<'processor> {
             let input = MacroInput::new(name, &args)
                 .attr(frag.attribute)
                 .optional(sig.optional)
+                .enum_table(&sig.enum_table)
                 .parameter(&sig.params);
             let res = func(input, self);
 
@@ -2262,6 +2278,24 @@ impl<'processor> Processor<'processor> {
                     return Err(err);
                 }
             };
+
+            match sig.return_type {
+                Some(ret_type) => {
+                    ret_type.is_valid_return_type(
+                        final_result.as_ref(),
+                        sig.enum_table.tables.get(RET_ETABLE),
+                    )?;
+                }
+                None => {
+                    if final_result.is_some() {
+                        return Err(RadError::InvalidExecution(format!(
+                            "Return type out of sync. Expected : [NONE] type but got value \"{}\"",
+                            final_result.unwrap()
+                        )));
+                    }
+                }
+            }
+
             Ok(final_result)
         }
         // No macros found to evaluate

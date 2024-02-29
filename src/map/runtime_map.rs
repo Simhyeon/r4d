@@ -2,7 +2,10 @@
 //!
 //! Runtime macro is defined on runtime.
 
-use crate::{common::Hygiene, Parameter};
+use crate::{
+    common::{ETMap, Hygiene},
+    Parameter,
+};
 #[cfg(feature = "rustc_hash")]
 use rustc_hash::FxHashMap as HashMap;
 use serde::{Deserialize, Serialize};
@@ -55,8 +58,10 @@ impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
             name: mac.name.to_owned(),
             params: mac.params.to_owned(),
             optional: None,
+            enum_table: ETMap::default(),
             expr: mac.to_string(),
             desc: mac.desc.clone(),
+            return_type: Some(crate::argument::ValueType::Text),
         }
     }
 }

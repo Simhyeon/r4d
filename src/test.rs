@@ -1,4 +1,4 @@
-use crate::argument::{ArgType, MacroInput};
+use crate::argument::{MacroInput, ValueType};
 use crate::common::MacroAttribute;
 use crate::function_map::FMacroSign;
 use crate::utils::{RadStr, Utils};
@@ -9,5 +9,5 @@ fn yo(i: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
 }
 #[test]
 fn test() {
-    let test = FMacroSign::new("", [(ArgType::Text, "d")], yo, Some("".to_string()));
+    let test = FMacroSign::new("", [(ValueType::Text, "d")], yo, Some("".to_string()));
 }

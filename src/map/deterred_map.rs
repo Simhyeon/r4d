@@ -1,6 +1,6 @@
 //! Macro collection for deterred macros
-use crate::argument::{ArgType, MacroInput};
-use crate::common::RadResult;
+use crate::argument::{MacroInput, ValueType};
+use crate::common::{ETMap, ETable, RadResult};
 use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
 use crate::{Parameter, Processor};
@@ -35,7 +35,7 @@ impl DeterredMacroMap {
             (
                 DMacroSign::new(
                     "include",
-                    [(ArgType::Path,"a_filename")],
+                    [(ValueType::Path,"a_filename")],
                     Self::include,
                     Some(
                         "Include a file
@@ -57,12 +57,12 @@ $include(file_path)
 $include(file_path, true)"
                             .to_string(),
                     ),
-                ).optional(Parameter::new(ArgType::Bool, "a_raw_mode"))
+                ).optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
             ),
             (
                 DMacroSign::new(
                     "incread",
-                    [(ArgType::Path,"a_filename")],
+                    [(ValueType::Path,"a_filename")],
                     Self::incread,
                     Some(
                         "Alwasy include a file as \"read\"
@@ -83,7 +83,7 @@ $incread|(file_path)
 $-()"
                             .to_string(),
                     ),
-                ).optional(Parameter::new(ArgType::Bool, "a_raw_mode"))
+                ).optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
             ),
             (
                 DMacroSign::new(
@@ -106,12 +106,12 @@ $-()"
 $tempin()"
                             .to_string(),
                     ),
-                ).optional(Parameter::new(ArgType::Bool, "a_raw_mode"))
+                ).optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
             ),
             (
                 DMacroSign::new(
                     "mapf",
-[(ArgType::CText,"a_macro_name^"),(ArgType::Path, "a_file^"),],
+[(ValueType::CText,"a_macro_name"),(ValueType::Path, "a_file"),],
                     Self::map_file,
                     Some(
                         "Execute macro on each lines of a file
@@ -138,7 +138,7 @@ $assert(a+b+c,$mapf(m,file_name.txt))"
             (
                 DMacroSign::new(
                     "mapfe",
-[(ArgType::Text,"a_expr"),(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_lines"),],
+[(ValueType::Text,"a_expr"),(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_lines"),],
                     Self::map_file_expr,
                     None,
                 )
@@ -146,7 +146,7 @@ $assert(a+b+c,$mapf(m,file_name.txt))"
             (
                 DMacroSign::new(
                     "mapn",
-[(ArgType::CText,"a_operation^"),(ArgType::Text,"a_source"),],
+[(ValueType::CText,"a_operation"),(ValueType::Text,"a_source"),],
                     Self::map_number,
                     None,
                 )
@@ -154,7 +154,7 @@ $assert(a+b+c,$mapf(m,file_name.txt))"
             (
                 DMacroSign::new(
                     "readto",
-[(ArgType::Path,"a_from_file^"),(ArgType::Path, "a_to_file^")],
+[(ValueType::Path,"a_from_file"),(ValueType::Path, "a_to_file")],
                     DeterredMacroMap::read_to,
                     Some(
                         "Read from a file as bufread and paste into a file
@@ -174,12 +174,13 @@ $assert(a+b+c,$mapf(m,file_name.txt))"
 $readto(from.txt,into.txt)"
                             .to_string(),
                     ),
-                ).optional(Parameter::new(ArgType::Bool, "a_raw_mode"))
+                ).optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
+                    .no_ret()
             ),
             (
                 DMacroSign::new(
                     "readin",
-                    [(ArgType::Path,"a_file?^")],
+                    [(ValueType::Path,"a_file")],
                     DeterredMacroMap::read_in,
                     Some(
                         "Read from a file as \"Bufread\"
@@ -198,12 +199,12 @@ $readto(from.txt,into.txt)"
 $readin(file.txt)"
                             .to_string(),
                     ),
-                ).optional(Parameter::new(ArgType::Bool, "a_raw_mode"))
+                ).optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
             ),
             (
                 DMacroSign::new(
                     "ifenv",
-[(ArgType::CText,"a_env_name^"),(ArgType::Text, "a_if_expr"),],
+[(ValueType::CText,"a_env_name"),(ValueType::Text, "a_if_expr"),],
                     DeterredMacroMap::ifenv,
                     Some(
                         "Execute an expression if an environment variable is set
@@ -230,7 +231,7 @@ $assert(I'm alive,$ifenv(HOME,I'm alive))"
             (
                 DMacroSign::new(
                     "ifenvel",
-[(ArgType::CText,"a_env_name^"),(ArgType::Text, "a_if_expr"),(ArgType::Text, "a_else_expr"),],
+[(ValueType::CText,"a_env_name"),(ValueType::Text, "a_if_expr"),(ValueType::Text, "a_else_expr"),],
                     DeterredMacroMap::ifenvel,
                     Some(
                         "Execute an expression by whether environment variable is set or not
@@ -261,7 +262,7 @@ $assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
             (
                 DMacroSign::new(
                     "append",
-[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_content")],
+[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_content")],
                     Self::append,
                     Some(
 "Append contents to a macro. If the macro doesn't exist, yields error
@@ -284,12 +285,12 @@ $append(container,$space()After)
 $assert($container(),Before After)
 ".to_string(),
                     ),
-                )
+                ).no_ret()
             ),
             (
                 DMacroSign::new(
                     "anon",
-[(ArgType::Text,"a_macro_definition"),],
+[(ValueType::Text,"a_macro_definition"),],
                     Self::add_anonymous_macro,
                     Some("Create an anonymous macro and return it's name
 
@@ -339,12 +340,12 @@ $consume()".to_string()),
 # Example
 
 $EB()".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 DMacroSign::new(
                     "exec",
-[(ArgType::CText,"a_macro_name^"),(ArgType::CText,"a_macro_attribute^"),(ArgType::Text,"a_macro_args"),],
+[(ValueType::CText,"a_macro_name"),(ValueType::CText,"a_macro_attribute"),(ValueType::Text,"a_macro_args"),],
                     DeterredMacroMap::execute_macro,
                     Some("Execute a macro with arguments
 
@@ -364,7 +365,7 @@ $assert($path(a,b,c),$exec(path,,a,b,c))".to_string()),
             (
                 DMacroSign::new(
                     "fassert",
-                    [(ArgType::Text,"a_expr"),],
+                    [(ValueType::Text,"a_expr"),],
                     DeterredMacroMap::assert_fail,
                     Some("Assert succeeds when text expansion yields error
 
@@ -377,12 +378,12 @@ $assert($path(a,b,c),$exec(path,,a,b,c))".to_string()),
 # Example
 
 $fassert($eval(Text is not allowd))".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 DMacroSign::new(
                     "forby",
-[(ArgType::Text,"a_body"),(ArgType::Text, "a_sep"),(ArgType::Text,"a_text"),],
+[(ValueType::Text,"a_body"),(ValueType::Text, "a_sep"),(ValueType::Text,"a_text"),],
                     DeterredMacroMap::forby,
                     Some(
                         "Iterate around text separated by separator.
@@ -410,7 +411,7 @@ $assert(a+b+c+,$forby($:()+,-,a-b-c))".to_string(),
             (
                 DMacroSign::new(
                     "foreach",
-[(ArgType::Text,"a_body"),(ArgType::Text, "a_array^"),],
+[(ValueType::Text,"a_body"),(ValueType::Text, "a_array"),],
                     DeterredMacroMap::foreach,
                     Some(
                         "Iterate around given array.
@@ -436,7 +437,7 @@ $assert(a+b+c+,$foreach($:()+,a,b,c))".to_string(),
             (
                 DMacroSign::new(
                     "forjoin",
-[(ArgType::Text,"a_body"),(ArgType::Text, "a_joined_array^"),],
+[(ValueType::Text,"a_body"),(ValueType::Text, "a_joined_array"),],
                     DeterredMacroMap::forjoin,
                     None,
                 )
@@ -444,7 +445,7 @@ $assert(a+b+c+,$foreach($:()+,a,b,c))".to_string(),
             (
                 DMacroSign::new(
                     "forsp",
-[(ArgType::Text,"a_body"),(ArgType::Text, "a_words^"),],
+[(ValueType::Text,"a_body"),(ValueType::Text, "a_words"),],
                     DeterredMacroMap::for_space,
                     Some(
                         "Iterate around given words.
@@ -470,7 +471,7 @@ An iterated value is bound to macro \":\"
             (
                 DMacroSign::new(
                     "forline",
-[(ArgType::Text,"a_body"),(ArgType::Text,"a_lines"),],
+[(ValueType::Text,"a_body"),(ValueType::Text,"a_lines"),],
                     DeterredMacroMap::forline,
                     Some(
 "Loop around given lines separated by newline chraracter. 
@@ -495,7 +496,7 @@ $assert(a+b+c+,$forline($:()+,a$nl()b$nl()c))".to_string()),
             (
                 DMacroSign::new(
                     "forcol",
-[(ArgType::Text,"a_body"),(ArgType::Text,"a_table"),],
+[(ValueType::Text,"a_body"),(ValueType::Text,"a_table"),],
                     DeterredMacroMap::forcol,
                     None,
                 )
@@ -503,7 +504,7 @@ $assert(a+b+c+,$forline($:()+,a$nl()b$nl()c))".to_string()),
             (
                 DMacroSign::new(
                     "forloop",
-[(ArgType::Text,"a_body"),(ArgType::Uint,"a_min^"),(ArgType::Uint, "a_max^"),],
+[(ValueType::Text,"a_body"),(ValueType::Uint,"a_min"),(ValueType::Uint, "a_max"),],
                     DeterredMacroMap::forloop,
                     Some("Iterate around given range (min,max). 
 
@@ -531,7 +532,7 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
             (
                 DMacroSign::new(
                     "map",
-                    [(ArgType::Text,"a_expr^"),(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_text"),],
+                    [(ValueType::Text,"a_expr"),(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_text"),],
                     Self::map,
                     None,
                 )
@@ -539,7 +540,7 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
             (
                 DMacroSign::new(
                     "mape",
-[(ArgType::Text,"a_start_expr"),(ArgType::Text,"a_end_expr"),(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_source"),],
+[(ValueType::Text,"a_start_expr"),(ValueType::Text,"a_end_expr"),(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_source"),],
                     Self::map_expression,
                     None,
                 )
@@ -547,7 +548,7 @@ $assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
             (
                 DMacroSign::new(
                     "mapa",
-[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_array"),],
+[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_array"),],
                     Self::map_array,
                     Some(
 "Execute macro on each array item
@@ -568,7 +569,7 @@ $assert(a+b+c,$map(m,a,b,c))".to_string()),
             (
                 DMacroSign::new(
                     "mapl",
-[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_lines"),],
+[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_lines"),],
                     Self::map_lines,
                     Some(
 "Execute macro on each line
@@ -589,7 +590,7 @@ $assert(a+b+c,$mapl(m,a$nl()b$nl()c$nl()))".to_string()),
             (
                 DMacroSign::new(
                     "maple",
-[(ArgType::Text,"a_expr"),(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_lines"),],
+[(ValueType::Text,"a_expr"),(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_lines"),],
                     Self::map_lines_expr,
                     None,
                 )
@@ -597,7 +598,7 @@ $assert(a+b+c,$mapl(m,a$nl()b$nl()c$nl()))".to_string()),
             (
                 DMacroSign::new(
                     "spread",
-[(ArgType::CText,"a_macro_name^"),(ArgType::CText, "a_csv_value^"),],
+[(ValueType::CText,"a_macro_name"),(ValueType::CText, "a_csv_value"),],
                     Self::spread_data,
                     Some(
 "Execute a macro multiple times with given data chunk. Each csv line represents 
@@ -628,7 +629,7 @@ $assert=(
             (
                 DMacroSign::new(
                     "stream",
-[(ArgType::CText,"a_macro_name^"),],
+[(ValueType::CText,"a_macro_name"),],
                     Self::stream,
                     Some("Stream texts to macro invocaiton
 
@@ -649,12 +650,12 @@ clo
 fgh
 
 $consume()".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 DMacroSign::new(
                     "streaml",
-[(ArgType::CText,"a_macro_name^"),],
+[(ValueType::CText,"a_macro_name"),],
                     Self::stream_by_lines,
                     Some("Stream texts to macro invocaiton but by lines
 
@@ -675,12 +676,12 @@ clo
 fgh
 
 $consume()".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 DMacroSign::new(
                     "if",
-[(ArgType::Bool,"a_cond?^"),(ArgType::Text, "a_if_expr"),],
+[(ValueType::Bool,"a_cond"),(ValueType::Text, "a_if_expr"),],
                     DeterredMacroMap::if_cond,
                     Some(
 "Check condition and then execute an expression if the condition is true
@@ -704,7 +705,7 @@ $assert(I'm true,$if(true,I'm true))".to_string(),
             (
                 DMacroSign::new(
                     "ifelse",
-[(ArgType::Bool,"a_cond?^"),(ArgType::Text, "a_if_expr"),(ArgType::Text, "a_else_expr"),],
+[(ValueType::Bool,"a_cond"),(ValueType::Text, "a_if_expr"),(ValueType::Text, "a_else_expr"),],
                     DeterredMacroMap::ifelse,
                     Some(
 "Check condition and execute a different expression by the condition
@@ -731,7 +732,7 @@ $assert(I'm false,$ifelse(false,I'm true,I'm false))".to_string(),
             (
                 DMacroSign::new(
                     "ifdef",
-[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_if_expr"),],
+[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_if_expr"),],
                     DeterredMacroMap::ifdef,
                     Some("Execute an expression if macro is defined
 
@@ -753,7 +754,7 @@ $assert(I'm defined,$ifdef(define,I'm defined))".to_string()),
             (
                 DMacroSign::new(
                     "ifdefel",
-[(ArgType::CText,"a_macro_name^"),(ArgType::Text, "a_if_expr"),(ArgType::Text, "a_else_expr"),],
+[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_if_expr"),(ValueType::Text, "a_else_expr"),],
                     DeterredMacroMap::ifdefel,
                     Some(
 "Execute an expression by whether macro is defined or not
@@ -779,7 +780,7 @@ $assert(I'm NOT defined,$ifdefel(defuo,I'm defined,I'm NOT defined))".to_string(
             (
                 DMacroSign::new(
                     "logm",
-[(ArgType::CText,"a_macro_name^"),],
+[(ValueType::CText,"a_macro_name"),],
                     Self::log_macro_info,
                     Some(
 "Log a macro information. Either print a macro body of a local or a runtime 
@@ -795,12 +796,12 @@ macro.
 
 $define(test=Test)
 $logm(test)".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 DMacroSign::new(
                     "que",
-[(ArgType::Text,"a_expr"),],
+[(ValueType::Text,"a_expr"),],
                     DeterredMacroMap::queue_content,
                     Some(
 "Que an expression. Queued expressions are expanded when the macro finishes
@@ -820,12 +821,12 @@ Que does not evalute inner contents and simply put expression into a queue.
 # Example
 
 $que(halt(false))".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 DMacroSign::new(
                     "queif",
-[(ArgType::Bool,"a_bool?^"),(ArgType::Text, "a_content"),],
+[(ValueType::Bool,"a_bool"),(ValueType::Text, "a_content"),],
                     DeterredMacroMap::if_queue_content,
                     Some("If true, then queue expressions
 
@@ -848,12 +849,12 @@ Que does not evalute inner contents and simply put expression into a queue.
 # Example
 
 $ifque(true,halt(false))".to_string()),
-                )
+                ).no_ret()
             ),
             (
                 DMacroSign::new(
                     "expand",
-[(ArgType::Text,"a_literal_expr"),],
+[(ValueType::Text,"a_literal_expr"),],
                     DeterredMacroMap::expand_expression,
                     Some("Expand expression 
 
@@ -921,15 +922,17 @@ pub(crate) struct DMacroSign {
     name: String,
     params: Vec<Parameter>,
     optional: Option<Parameter>,
+    pub enum_table: ETMap,
     pub logic: DFunctionMacroType,
     #[allow(dead_code)]
     desc: Option<String>,
+    pub ret: Option<ValueType>,
 }
 
 impl DMacroSign {
     pub fn new(
         name: &str,
-        params: impl IntoIterator<Item = (ArgType, impl AsRef<str>)>,
+        params: impl IntoIterator<Item = (ValueType, impl AsRef<str>)>,
         logic: DFunctionMacroType,
         desc: Option<String>,
     ) -> Self {
@@ -944,9 +947,26 @@ impl DMacroSign {
             name: name.to_owned(),
             params,
             optional: None,
+            enum_table: ETMap::default(),
             logic,
             desc,
+            ret: Some(ValueType::Text),
         }
+    }
+
+    pub fn no_ret(mut self) -> Self {
+        self.ret = None;
+        self
+    }
+
+    pub fn ret(mut self, ret_type: ValueType) -> Self {
+        self.ret.replace(ret_type);
+        self
+    }
+
+    pub fn enum_table(mut self, table: (String, ETable)) -> Self {
+        self.enum_table.tables.insert(table.0, table.1);
+        self
     }
 
     pub fn optional(mut self, param: Parameter) -> Self {
@@ -982,8 +1002,10 @@ impl From<&DMacroSign> for crate::sigmap::MacroSignature {
             name: ms.name.to_owned(),
             params: ms.params.to_owned(),
             optional: ms.optional.clone(),
+            enum_table: ms.enum_table.clone(),
             expr: ms.to_string(),
             desc: ms.desc.clone(),
+            return_type: ms.ret,
         }
     }
 }

@@ -1,11 +1,17 @@
 //! Common structs, enums for code usage.
 
 use crate::error::RadError;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+
+#[cfg(feature = "rustc_hash")]
+use rustc_hash::FxHashMap as HashMap;
+#[cfg(not(feature = "rustc_hash"))]
+use std::collections::HashMap;
 
 // Stream related static strings
 pub(crate) static STREAM_CONTAINER: &str = "!STREAM_CONTAINER";
@@ -556,27 +562,6 @@ impl std::str::FromStr for LineUpType {
         }
     }
 }
-pub enum RelayType {
-    File,
-    Macro,
-}
-
-impl std::str::FromStr for RelayType {
-    type Err = RadError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let t = match s.trim().to_lowercase().as_str() {
-            "file" | "f" => Self::File,
-            "macro" | "m" => Self::Macro,
-            _ => {
-                return Err(RadError::InvalidArgument(format!(
-                    "Given type \"{}\" is not a valid relay target",
-                    s
-                )))
-            }
-        };
-        Ok(t)
-    }
-}
 
 pub enum OutputType {
     Terminal,
@@ -611,8 +596,8 @@ impl std::str::FromStr for OrderType {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let t = match s.trim().to_lowercase().as_ref() {
-            "a" | "ascending" => Self::Ascending,
-            "d" | "descending" => Self::Descending,
+            "a" | "asce" => Self::Ascending,
+            "d" | "desc" => Self::Descending,
             _ => {
                 return Err(RadError::InvalidArgument(format!(
                     "Given type \"{}\" is not a valid order type",
@@ -621,5 +606,30 @@ impl std::str::FromStr for OrderType {
             }
         };
         Ok(t)
+    }
+}
+
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
+pub struct ETMap {
+    pub tables: HashMap<String, ETable>,
+}
+
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
+pub struct ETable {
+    arg_name: String,
+    pub candidates: Vec<String>,
+}
+
+impl ETable {
+    pub fn new(name: &str) -> Self {
+        Self {
+            arg_name: name.to_string(),
+            candidates: Vec::default(),
+        }
+    }
+
+    pub fn candidates(mut self, cand: &[&str]) -> (String, Self) {
+        self.candidates = cand.iter().map(|s| s.to_string()).collect();
+        (self.arg_name.clone(), self)
     }
 }

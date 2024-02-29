@@ -1,9 +1,11 @@
+use itertools::Itertools;
 use std::borrow::Cow;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use crate::common::MacroAttribute;
+use crate::common::{ETMap, ETable, MacroAttribute};
+use crate::consts::RET_ETABLE;
 use crate::RadStr;
 use crate::{Processor, RadError, RadResult};
 use serde::{Deserialize, Serialize};
@@ -46,6 +48,7 @@ impl<'a> ExInput<'a> {
 pub struct MacroInput<'a> {
     pub params: Vec<Parameter>,
     pub optional: Option<Parameter>,
+    pub enum_table: Option<&'a ETMap>,
     pub attr: MacroAttribute,
     pub name: &'a str,
     pub args: &'a str,
@@ -57,9 +60,15 @@ impl<'a> MacroInput<'a> {
             params: Vec::new(),
             optional: None,
             attr: MacroAttribute::default(),
+            enum_table: None,
             name,
             args,
         }
+    }
+
+    pub fn enum_table(mut self, table: &'a ETMap) -> Self {
+        self.enum_table.replace(table);
+        self
     }
 
     pub fn parameter(mut self, params: &[Parameter]) -> Self {
@@ -85,11 +94,11 @@ impl<'a> MacroInput<'a> {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Parameter {
     pub name: String,
-    pub arg_type: ArgType,
+    pub arg_type: ValueType,
 }
 
 impl Parameter {
-    pub fn new(at: ArgType, name: &str) -> Self {
+    pub fn new(at: ValueType, name: &str) -> Self {
         Self {
             name: name.to_string(),
             arg_type: at,
@@ -108,7 +117,7 @@ pub(crate) trait ArgableStr<'a> {
 impl<'a> ArgableStr<'a> for str {
     fn is_argable(&self, param: &Parameter) -> RadResult<()> {
         match param.arg_type {
-            ArgType::Bool => {
+            ValueType::Bool => {
                 self.is_arg_true().map_err(|_| {
                     RadError::InvalidArgument(format!(
                         "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Bool]",
@@ -116,7 +125,7 @@ impl<'a> ArgableStr<'a> for str {
                     ))
                 })?;
             }
-            ArgType::Int => {
+            ValueType::Int => {
                 self.trim().parse::<isize>().map_err(|_| {
                     RadError::InvalidArgument(format!(
                     "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Int]",
@@ -124,7 +133,7 @@ impl<'a> ArgableStr<'a> for str {
                     ))
                 })?;
             }
-            ArgType::Uint => {
+            ValueType::Uint => {
                 self.trim().parse::<usize>().map_err(|_| {
                     RadError::InvalidArgument(format!(
                     "[Parameter: {}] : Could not convert a given value \"{}\" into a type [UInt]",
@@ -132,7 +141,7 @@ impl<'a> ArgableStr<'a> for str {
                     ))
                 })?;
             }
-            ArgType::Float => {
+            ValueType::Float => {
                 self.trim().parse::<f32>().map_err(|_| {
                     RadError::InvalidArgument(format!(
                     "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Float]",
@@ -147,39 +156,65 @@ impl<'a> ArgableStr<'a> for str {
 }
 
 pub(crate) trait ArgableCow<'a> {
-    fn to_arg(self, param: &Parameter) -> RadResult<Argument<'a>>;
+    fn to_arg(self, param: &Parameter, candidates: Option<&ETable>) -> RadResult<Argument<'a>>;
     fn to_expanded(&self, p: &mut Processor, input: &ExInput) -> RadResult<String>;
 }
 
 impl<'a> ArgableCow<'a> for Cow<'a, str> {
-    fn to_arg(self, param: &Parameter) -> RadResult<Argument<'a>> {
+    fn to_arg(self, param: &Parameter, candidates: Option<&ETable>) -> RadResult<Argument<'a>> {
         let arg = match param.arg_type {
-            ArgType::Bool => Argument::Bool(self.is_arg_true().map_err(|_| {
+            ValueType::Bool => Argument::Bool(self.is_arg_true().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Bool]",
                     param.name, self
                 ))
             })?),
-            ArgType::Int => Argument::Int(self.trim().parse::<isize>().map_err(|_| {
+            ValueType::Int => Argument::Int(self.trim().parse::<isize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Int]",
                     param.name, self
                 ))
             })?),
-            ArgType::Uint => Argument::Uint(self.trim().parse::<usize>().map_err(|_| {
+            ValueType::Uint => Argument::Uint(self.trim().parse::<usize>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "[Parameter: {}] : Could not convert a given value \"{}\" into a type [UInt]",
                     param.name, self
                 ))
             })?),
-            ArgType::Float => Argument::Float(self.trim().parse::<f32>().map_err(|_| {
+            ValueType::Float => Argument::Float(self.trim().parse::<f32>().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Float]",
                     param.name, self
                 ))
             })?),
-            ArgType::Path => Argument::Path(PathBuf::from(self.as_ref())),
-            ArgType::CText | ArgType::Text | ArgType::Enum => Argument::Text(self),
+            ValueType::Path => Argument::Path(PathBuf::from(self.as_ref())),
+            ValueType::CText | ValueType::Text => Argument::Text(self),
+            ValueType::Enum => {
+                if candidates.is_none() {
+                    return Err(RadError::InvalidExecution(format!(
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Enum] because etable was empty.",
+                    param.name, self
+                )));
+                }
+
+                let tab = candidates.unwrap();
+                let comparator = self.to_lowercase();
+                let err = tab
+                    .candidates
+                    .iter()
+                    .filter(|&s| s == &comparator)
+                    .collect_vec()
+                    .is_empty();
+
+                if err {
+                    return Err(RadError::InvalidArgument(format!(
+                        "[Parameter: {}] : Could not convert a given value \"{}\" into a value among {:?}",
+                        param.name, self, tab.candidates
+                    )));
+                }
+
+                Argument::Text(self)
+            }
         };
         Ok(arg)
     }
@@ -199,9 +234,8 @@ pub enum Argument<'a> {
     Path(PathBuf),
     Float(f32),
 }
-
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum ArgType {
+pub enum ValueType {
     Bool,
     CText,
     Enum,
@@ -212,7 +246,36 @@ pub enum ArgType {
     Uint,
 }
 
-impl Display for ArgType {
+impl ValueType {
+    pub fn is_valid_return_type(
+        &self,
+        src: Option<&String>,
+        etable: Option<&ETable>,
+    ) -> RadResult<()> {
+        if src.is_none() {
+            return Err(RadError::InvalidExecution(format!(
+                "Return type out of sync. Expected : \"{}\" type but got empty value",
+                self,
+            )));
+        }
+        let src: Cow<'_, str> = src.unwrap().into();
+        if let Err(RadError::InvalidArgument(stros)) =
+            src.to_arg(&Parameter::new(*self, RET_ETABLE), etable)
+        {
+            return Err(RadError::InvalidExecution(
+                stros
+                    + &format!(
+                        "
+= Expected a return type [{}] but validation failed",
+                        self
+                    ),
+            ));
+        }
+        Ok(())
+    }
+}
+
+impl Display for ValueType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
             Self::Bool => "Bool",
@@ -228,7 +291,7 @@ impl Display for ArgType {
     }
 }
 
-impl FromStr for ArgType {
+impl FromStr for ValueType {
     type Err = RadError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let ret = match s.trim().to_lowercase().as_str() {
@@ -320,7 +383,7 @@ impl<'a> ParsedCursors<'a> {
             .index(index)
             .level(self.level);
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
-        match expanded.to_arg(&self.params[input.index]) {
+        match expanded.to_arg(&self.params[input.index], None) {
             Ok(Argument::Bool(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidExecution(
                 "Failed to get correct argument \
@@ -335,7 +398,7 @@ as given type. You should use proper getter for the type"
             .index(index)
             .level(self.level);
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
-        match expanded.to_arg(&self.params[input.index]) {
+        match expanded.to_arg(&self.params[input.index], None) {
             Ok(Argument::Path(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidExecution(
                 "Failed to get correct argument \
@@ -350,7 +413,7 @@ as given type. You should use proper getter for the type"
             .index(index)
             .level(self.level);
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
-        match expanded.to_arg(&self.params[input.index]) {
+        match expanded.to_arg(&self.params[input.index], None) {
             Ok(Argument::Uint(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidExecution(
                 "Failed to get correct argument \
@@ -365,7 +428,7 @@ as given type. You should use proper getter for the type"
             .index(index)
             .level(self.level);
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
-        match expanded.to_arg(&self.params[input.index]) {
+        match expanded.to_arg(&self.params[input.index], None) {
             Ok(Argument::Int(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidExecution(
                 "Failed to get correct argument \
@@ -380,7 +443,7 @@ as given type. You should use proper getter for the type"
             .index(index)
             .level(self.level);
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
-        match expanded.to_arg(&self.params[input.index]) {
+        match expanded.to_arg(&self.params[input.index], None) {
             Ok(Argument::Float(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidExecution(
                 "Failed to get correct argument \
