@@ -1,0 +1,9 @@
+Require permissions
+
+# Arguments
+
+- a_permissions : A permission array to require (trimmed) [ \"fin\", \"fout\", \"cmd\", \"env\" ]
+
+# Example
+
+$require(fin,fout)

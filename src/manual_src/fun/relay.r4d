@@ -1,0 +1,15 @@
+Start relaying to a target. Relay redirects all following text to the relay 
+target. NOTE, relay is not evaluated inside arguments.
+
+# Auth : FOUT is required for relay target \"file\" and \"temp\"
+
+# Arguments
+
+- a_target_type : A type of a relay target [\"macro\",\"file\", \"temp\"] (trimmed)
+- a_target      : A name of a target. Ignored in temp type ( trimmed )
+
+# Example
+
+$relay(file,out.md)$halt()
+$relay(macro,container)$halt()
+$relay(temp)$halt()

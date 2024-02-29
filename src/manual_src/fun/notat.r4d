@@ -1,0 +1,12 @@
+Chagne notation of a number
+
+# Arguments
+
+- a_number   : A number to change notation
+- a_type     : A type of notation [\"bin\",\"oct\",\"hex\"] ( trimmed )
+
+# Example
+
+$assert(10111,$notat(23,bin))
+$assert(27,$notat(23,oct))
+$assert(17,$notat(23,hex))
