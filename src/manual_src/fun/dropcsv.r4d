@@ -1,0 +1,9 @@
+Drop a csv table
+
+# Arguments
+
+- a_table_name : A csv table name to drop ( trimmed )
+
+# Example
+
+$dropcsv(table1)

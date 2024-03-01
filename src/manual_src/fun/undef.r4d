@@ -1,0 +1,15 @@
+Undefine a macro
+
+- This undefines all macros that has a given name
+- \"Define\" macro cannot be undefined
+- Undef doesn't yield error when a macro doesn't exist
+
+# Arguments
+
+- a_macro_name : A name of a macro to undefine ( trimmed )
+
+# Example
+
+$define(test=Test)
+$undef(test)
+$fassert($test())

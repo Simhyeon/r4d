@@ -1,0 +1,17 @@
+Register a regular expression
+
+- NOTE : A registered name will not be able to be matched directly
+- Every regex operation creates regex cache, while registered expression will 
+not be cached but saved permanently. Unregistered caches will be cleared if 
+certain capacity reaches.
+
+# Arguments
+
+- a_name : A name of the regex expression. This is not trimmed
+- a_epxr : An expression to bind to
+
+# Example
+
+$addexpr(greeting,Hello World)
+$assert(true,$find(greeting,Hello World))
+$assert(false,$find(greeting,greetings from world))

@@ -1,0 +1,17 @@
+Execute an expression if an environment variable is set
+
+# Auth : ENV
+
+# Expansion order
+
+1. a_env_name : Expanded on time
+2. a_if_expr  : Only when env_name is defined
+
+# Arguments
+
+- a_env_name   : An environment variable to check ( trimmed )
+- a_if_expr    : An expression to expand if env exists
+
+# Example
+
+$assert(I'm alive,$ifenv(HOME,I'm alive))

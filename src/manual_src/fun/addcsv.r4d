@@ -1,0 +1,13 @@
+Register a csv table
+
+- Querying can be only applied to registered table.
+
+# Arguments
+
+- a_table_name : A table name to be registered ( trimmed )
+- a_data       : Csv data ( trimmed )
+
+# Example
+
+$addcsv(table1,a,b,c
+1,2,3)

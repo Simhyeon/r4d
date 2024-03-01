@@ -1,0 +1,14 @@
+Read from a file as \"Bufread\"
+
+# Auth : FIN
+
+# NOT deterred
+
+# Arguments
+
+- a_file : A file to read from ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
+
+# Example
+
+$readin(file.txt)

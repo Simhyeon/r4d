@@ -1,0 +1,16 @@
+Get a parent from a given path.
+
+- NOTE : This yields an error if a path is a root and will return an empty 
+value, but not a none value if a path is a single node.
+
+# Return : path
+
+# Arguments
+
+- a_path : A Path to extract parent from
+
+# Example
+
+$fassert($parent(/))
+$assert($empty(),$parent(node))
+$assert(/first/second,$parent(/first/second/last.txt))

@@ -1,0 +1,19 @@
+Stream texts to macro invocaiton but by lines
+
+# This is technically a wrapper around relay macro
+
+# Arguments
+
+- a_macro_name : A macro target that following texts are relayed to ( trimmed )
+
+# Example
+
+$streaml(trim)
+
+abc
+
+clo
+
+fgh
+
+$consume()

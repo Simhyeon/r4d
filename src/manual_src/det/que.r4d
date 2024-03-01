@@ -1,0 +1,17 @@
+Que an expression. Queued expressions are expanded when the macro finishes
+
+Use a que macro when macros do operations that do not return a string AND you 
+need to make sure the operation should happen only after all string manipulation 
+ended. Halt is queued by default.
+
+Que does not evalute inner contents and simply put expression into a queue.
+
+# NO expansion at all
+
+# Arguments
+
+- a_expr : An expression to queue
+
+# Example
+
+$que(halt(false))

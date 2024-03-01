@@ -1,0 +1,15 @@
+Consume streaming
+
+# Arguments are not expanded at all
+
+# Example
+
+$stream(squash)
+
+abc
+
+clo
+
+fgh
+
+$consume()

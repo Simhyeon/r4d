@@ -1,0 +1,17 @@
+Execute macro on each lines of a file
+
+# Note : mapf macro doesn't expand lines from a file.
+
+# Auth : FIN
+
+# NOT Deterred
+
+# Arguments
+
+- a_macro_name : A macro name to execute ( trimmed ) 
+- a_file       : A file to get lines iterator ( trimmed )
+
+# Example
+
+$define(m,a_src=$a_src()+)
+$assert(a+b+c,$mapf(m,file_name.txt))

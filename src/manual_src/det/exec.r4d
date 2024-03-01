@@ -1,0 +1,13 @@
+Execute a macro with arguments
+
+# NOT deterred
+
+# Arguments
+
+- a_macro_name      : A macro name to exectue ( trimmed )
+- a_macro_attribute : A macro name to exectue ( trimmed )
+- a_macro_args      : Arguments to be passed to a macro
+
+# Example
+
+$assert($path(a,b,c),$exec(path,,a,b,c))

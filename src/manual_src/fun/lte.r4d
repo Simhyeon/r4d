@@ -1,0 +1,13 @@
+Check if lvalue is less than or equal to rvalue
+
+# Return : Boolean
+
+# Arguments
+
+- a_lvalue : A left value to compare
+- a_rvalue : A right value to compare
+
+# Example
+
+$assert(true,$lte(b,c))
+$assert(true,$lte(text,text))

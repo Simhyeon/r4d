@@ -1,0 +1,16 @@
+Source an env file. The sourced file is eagerly expanded (As if it was static 
+defined)
+
+Syntax of source-able file is same with .env file
+
+e.g |
+demo=DEMO
+number=$eval(1+2)
+
+# Arguments
+
+- a_file : A file to source ( trimmed )
+
+# Example
+
+$source(def.env)

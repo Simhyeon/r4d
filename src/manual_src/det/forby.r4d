@@ -1,0 +1,19 @@
+Iterate around text separated by separator.
+
+Iterated value is bound to macro \":\"
+
+# Expansion order
+
+1. a_sep  : Expanded on time
+2. a_text : Expanded on time
+3. a_body : Split text by separator, and expanded by per item.
+
+# Arguments
+
+- a_body : A body to be pasted as iterated item
+- a_sep  : A separator to split a text
+- a_text : Text to split by separator
+
+# Example
+
+$assert(a+b+c+,$forby($:()+,-,a-b-c))

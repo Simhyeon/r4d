@@ -1,0 +1,8 @@
+Get operating system type
+
+- R4d only supports windows and *nix systems.
+- This return either \"windows\" or \"unix\"
+
+# Example
+
+$assert(unix,$ostype())

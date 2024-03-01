@@ -1,0 +1,15 @@
+Iterate around given words.
+
+An iterated value is bound to macro \":\"
+ 
+# Expansion order
+
+1. a_words : Expanded on time
+2. a_body : Split array by comma, and expanded by per item.
+
+# Arguments
+
+- a_body  : A body to be pasted as iterated item
+- a_words : Words to iterate ( trimmed )
+
+# Example

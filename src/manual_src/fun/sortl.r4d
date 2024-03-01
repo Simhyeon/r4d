@@ -1,0 +1,13 @@
+Sort lines
+
+# Arguments
+
+- a_sort_type : A sort type [\"asec\",\"desc\"] (trimmed)
+- a_lines     : Lines to sort
+
+# Example
+
+$assert(f$nl()e$nl()d$nl()c,$sortl(desc,f
+e
+d
+c))

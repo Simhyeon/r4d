@@ -1,0 +1,12 @@
+Extract matched lines from given file. This returns all items as lines
+
+- NOTE : The grep operation is executed on per line and doesn't expand lines
+
+# Arguments
+
+- a_expr  : A regex expression to match
+- a_lines : A file get matches from
+
+# Example
+
+$countl($grepf(file.txt))

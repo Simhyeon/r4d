@@ -1,0 +1,17 @@
+Iterate around given array.
+
+An iterated value is bound to macro \":\"
+ 
+# Expansion order
+
+1. a_array : Expanded on time
+2. a_body : Split array by comma, and expanded by per item.
+
+# Arguments
+
+- a_body  : A body to be pasted as iterated item
+- a_array : An array to iterate ( trimmed )
+
+# Example
+
+$assert(a+b+c+,$foreach($:()+,a,b,c))

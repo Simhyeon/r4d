@@ -1,0 +1,18 @@
+Append contents to a macro. If the macro doesn't exist, yields error
+
+- If given a \"trailer\", the macro checks if target macro has a trailer and 
+append if not.
+- If a macro body is empty, trailer is not appended
+
+# NOT deterred
+
+# Arguments
+
+- a_macro_name : a macro name to append to ( trimmed )
+- a_content    : contents to be added
+
+# Example
+
+$define(container=Before)
+$append(container,$space()After)
+$assert($container(),Before After)

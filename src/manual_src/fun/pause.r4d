@@ -1,0 +1,19 @@
+Pause macro expansions from the invocation. Paused processor will only expand 
+$pause(false)
+
+- NOTE : Pause is not flow control but a processor state, thus the state will 
+sustain for the whole processing.
+
+# Arguments
+
+- a_pause : Whether to pause or not [boolean] ( trimmed )
+
+# Example
+
+$counter(i)
+$pause(true)
+$counter(i)
+$pause(false)
+
+$nassert(2,$i())
+$assert(1,$i())

@@ -1,0 +1,12 @@
+Set an environment variable
+
+# Auth : ENV
+
+# Arguments
+
+- a_env_name  : An environment variable name to set (trimmed)
+- a_env_value : A value to set
+
+# Example
+
+$envset(HOME,/tmp)

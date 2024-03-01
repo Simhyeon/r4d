@@ -5,7 +5,7 @@
 
 use crate::argument::{MacroInput, ValueType};
 use crate::common::*;
-use crate::consts::{ESR, RET_ETABLE};
+use crate::consts::ESR;
 use crate::extension::ExtMacroBuilder;
 use crate::{man_fun, Parameter, Processor};
 #[cfg(feature = "rustc_hash")]
@@ -705,21 +705,7 @@ impl FunctionMacroMap {
                     "hygiene",
 [(ValueType::Bool,"a_hygiene"),],
                     Self::toggle_hygiene,
-                    Some("Toggle hygiene mode. This enables macro hygiene.
-
-- On \"macro\" hygiene, every newly defined runtime macro is cleared after a 
-first level macro invocation.
-
-# Arguments
-
-- a_hygiene : Whether to enable macro hygiene mode [boolean] (trimmed)
-
-# Example
-
-$hygiene(true)
-$define(test=Test)
-% test macro is cleared and doesn't exsit
-$fassert($test())".to_string()),
+                    Some(man_fun!("hygiene.r4d")),
                 ).no_ret()
             ),
             (
@@ -727,22 +713,7 @@ $fassert($test())".to_string()),
                     "indentl",
 [(ValueType::Text,"a_indenter"),(ValueType::Text, "a_lines"),],
                     Self::indent_lines_before,
-                    Some("Indent lines with indenter
-
-# Arguments
-
-- a_indenter : An expression to put before lines
-- a_lines    : Lines to prepend indenter
-
-# Example
-
-$assert(
-# First
-# Second
-# Third,
-$indentl(# ,First
-Second
-Third))".to_string()),
+                    Some(man_fun!("indentl.r4d")),
                 )
             ),
             (
@@ -758,19 +729,7 @@ Third))".to_string()),
                     "index",
 [(ValueType::Uint,"a_index"),(ValueType::Text, "a_array"),],
                     Self::index_array,
-                    Some("Get an indexed value from an array
-
-- A positive integer works as a normal index number
-- A negative integer works as an index from end ( -1 == len -1 )
-
-# Arguments
-
-- a_index : An index to get [Signed integer] ( trimmed )
-- a_array : Data source to index from
-
-# Example
-
-$assert(ef,$index(2,ab,cd,ef))".to_string()),
+                    Some(man_fun!("index.r4d")),
                 )
             ),
             (
@@ -778,19 +737,7 @@ $assert(ef,$index(2,ab,cd,ef))".to_string()),
                     "indexl",
 [(ValueType::Uint,"a_index"),(ValueType::Text, "a_lines"),],
                     Self::index_lines,
-                    Some("Get an indexed line from lines
-
-- A positive integer works as a normal index number
-- A negative integer works as an index from end ( -1 == len -1 )
-
-# Arguments
-
-- a_index : An index to get [Signed integer] ( trimmed )
-- a_liens : Lines to index from
-
-# Example
-
-$assert(line 2,$indexl(1,line 1$nl()line 2$nl()))".to_string()),
+                    Some(man_fun!("indexl.r4d")),
                 )
             ),
             (
@@ -798,18 +745,7 @@ $assert(line 2,$indexl(1,line 1$nl()line 2$nl()))".to_string()),
                     "import",
 [(ValueType::Path,"a_file"),],
                     Self::import_frozen_file,
-                    Some("Import a frozen file at runtime
-
-- Import always include the macros as non-volatile form, thus never cleared 
-unless accessed from library
-
-# Arguments
-
-- a_file: A file name to import from [path] (trimmed)
-
-# Example
-
-$import(def.r4f)".to_string()),
+                    Some(man_fun!("import.r4d")),
                 ).no_ret()
             ),
             (
@@ -817,16 +753,7 @@ $import(def.r4f)".to_string()),
                     "join",
 [(ValueType::Text,"a_sep"),(ValueType::Text,"a_array"),],
                     Self::join,
-                    Some("Join an array into a single chunk with given separator
-
-# Arguments
-
-- a_sep   : A separator used for joining
-- a_array : Source to array to join
-
-# Example
-
-$assert(a-b-c,$join(-,a,b,c))".to_string()),
+                    Some(man_fun!("join.r4d")),
                 )
             ),
             (
@@ -834,20 +761,7 @@ $assert(a-b-c,$join(-,a,b,c))".to_string()),
                     "joinl",
 [(ValueType::Text,"a_sep"),(ValueType::Text,"a_lines"),],
                     Self::join_lines,
-                    Some("Join lines into a single chunk with given separator
-
-# Note
-
-- use foldl if you want to simply fold everything
-
-# Arguments
-
-- a_sep   : A separator used for joining
-- a_array : Source to array to join
-
-# Example
-
-$assert(a-b-c,$joinl(-,a,b,c))".to_string()),
+                    Some(man_fun!("joinl.r4d")),
                 )
             ),
             (
@@ -855,17 +769,7 @@ $assert(a-b-c,$joinl(-,a,b,c))".to_string()),
                     "len",
 [(ValueType::Text,"a_string"),],
                     Self::len,
-                    Some("Get a length of text. This counts utf8 characters not ascii.
-
-# Return : Unsigned integer
-
-# Arguments
-
-- a_string : Text to get length from
-
-# Example
-
-$assert($len(가나다),$len(ABC))".to_string()),
+                    Some(man_fun!("len.r4d")),
                 ).ret(ValueType::Uint)
             ),
             (
@@ -905,15 +809,7 @@ $assert($len(가나다),$len(ABC))".to_string()),
                     "log",
 [(ValueType::Text,"a_msg"),],
                     Self::log_message,
-                    Some("Log a message to console
-
-# Arguments
-
-- a_msg : A message to log to console
-
-# Example
-
-$log($value_i_want_to_check())".to_string()),
+                    Some(man_fun!("log.r4d")),
                 ).no_ret()
             ),
             (
@@ -921,18 +817,7 @@ $log($value_i_want_to_check())".to_string()),
                     "loge",
 [(ValueType::Text,"a_msg"),],
                     Self::log_error_message,
-                    Some("Log an error message to console
-
-- This prints error in non-breaking manner. Even in strict mode, this doesn't 
-trigger a panic.
-
-# Arguments
-
-- a_msg : An error message to log to console
-
-# Example
-
-$loge(This should not be reached)".to_string()),
+                    Some(man_fun!("loge.r4d")),
                 ).no_ret()
             ),
             (
@@ -956,19 +841,7 @@ $loge(This should not be reached)".to_string()),
                     "lt",
 [(ValueType::Text,"a_lvalue"),(ValueType::Text, "a_rvalue"),],
                     Self::less_than,
-                    Some("Check if lvalue is less than rvalue
-
-# Return : Boolean
-
-# Arguments
-
-- a_lvalue : A left value to compare
-- a_rvalue : A right value to compare
-
-# Example
-
-$assert(false,$lt(c,b))
-$assert(false,$lt(text,text))".to_string()),
+                    Some(man_fun!("lt.r4d")),
                 ).ret(ValueType::Bool)
             ),
             (
@@ -976,19 +849,7 @@ $assert(false,$lt(text,text))".to_string()),
                     "lte",
 [(ValueType::Text,"a_lvalue"),(ValueType::Text, "a_rvalue"),],
                     Self::less_than_or_equal,
-                    Some("Check if lvalue is less than or equal to rvalue
-
-# Return : Boolean
-
-# Arguments
-
-- a_lvalue : A left value to compare
-- a_rvalue : A right value to compare
-
-# Example
-
-$assert(true,$lte(b,c))
-$assert(true,$lte(text,text))".to_string()),
+                    Some(man_fun!("lte.r4d")),
                 ).ret(ValueType::Bool)
             ),
             (
@@ -996,16 +857,7 @@ $assert(true,$lte(text,text))".to_string()),
                     "max",
                     ESR,
                     Self::get_max,
-                    Some("Get a max value from a given array
-
-# Arguments
-
-- a_array : An array to get the highest value from
-
-# Example
-
-$assert(eIsBigger,$max(aIsSmall,cIsMiddle,eIsBigger))
-$assert(5,$max(1,2,3,4,5))".to_string()),
+                    Some(man_fun!("max.r4d")),
                 ).optional( Parameter::new(ValueType::Text,"a_array"))
             ),
             (
@@ -1013,16 +865,7 @@ $assert(5,$max(1,2,3,4,5))".to_string()),
                     "min",
                     ESR,
                     Self::get_min,
-                    Some("Get a min value from a given array
-
- # Arguments
-
-- a_array : An array to get the lowest value from
-
-# Example
-
-$assert(aIsSmall,$min(aIsSmall,cIsMiddle,eIsBigger))
-$assert(1,$min(1,2,3,4,5))".to_string()),
+                    Some(man_fun!("min.r4d")),
                 ).optional( Parameter::new(ValueType::Text,"a_array"))
             ),
             (
@@ -1030,17 +873,7 @@ $assert(1,$min(1,2,3,4,5))".to_string()),
                     "name",
 [(ValueType::Path,"a_path"),],
                     Self::get_name,
-                    Some("Get a name from a given path including an extension
-
-# Return : path
-
-# Arguments
-
-- a_path : A path to get a name from
-
-# Example
-
-$assert(auto.sh,$name(/path/to/file/auto.sh))".to_string()),
+                    Some(man_fun!("name.r4d")),
                 ).ret(ValueType::Path)
             ),
             (
@@ -1048,16 +881,7 @@ $assert(auto.sh,$name(/path/to/file/auto.sh))".to_string()),
                     "nassert",
 [(ValueType::Text,"a_lvalue"),(ValueType::Text, "a_rvalue"),],
                     Self::assert_ne,
-                    Some("Compare left and right values. Panics if values are equal
-
-# Arguments
-
-- a_lvalue : A left  value
-- a_rvalue : A right value
-
-# Example
-
-$nassert(1,2)".to_string()),
+                    Some(man_fun!("nassert.r4d")),
                 ).no_ret()
             ),
             (
@@ -1065,22 +889,7 @@ $nassert(1,2)".to_string()),
                     "not",
 [(ValueType::Bool,"a_boolean"),],
                     Self::not,
-                    Some(
-"Returns a negated value of a given boolean. Yields error when a given value is 
-not a boolean
-
-# Return : boolean
-
-# Arguments
-
-- a_boolean : A boolean value to negate [boolean] ( trimmed )
-
-# Example
-
-$assert(false,$not(true))
-$assert(true,$not(false))
-$assert(false,$not(1))
-$assert(true,$not(0))".to_string()),
+                    Some(man_fun!("not.r4d")),
                 ).ret(ValueType::Bool)
             ),
             (
@@ -1088,18 +897,7 @@ $assert(true,$not(0))".to_string()),
                     "num",
 [(ValueType::Text,"a_text"),],
                     Self::get_number,
-                    Some(
-"Extract number parts from given text. If there are multiple numbers, only 
-extract the first
-
-# Arguments
-
-- a_text : Text to extract number from
-
-# Example
-
-$assert(34,$num(34sec))
-$assert(30,$num(30k/h for 3 hours))".to_string()),
+                    Some(man_fun!("num.r4d")),
                 )
             ),
             (
@@ -1107,21 +905,7 @@ $assert(30,$num(30k/h for 3 hours))".to_string()),
                     "nl",
                     ESR,
                     Self::newline,
-                    Some(
-"Print platform specific newlines. Its behaviour can be configured.
-
-- CRLF is returned on windows
-- LF is returned on *nix systems.
-
-# Arguments
-
-- a_amount : Amount of newlines [Unsigned integer] ( trimmed )
-
-# Example
-
-% This may not hold true if a newline is configured by a user
-$assert($nl(),
-)".to_string()),
+                    Some(man_fun!("nl.r4d")),
                 ).optional( Parameter::new(ValueType::Text,"a_amount+"))
             ),
             (
@@ -1144,31 +928,15 @@ $assert($nl(),
                     "ostype",
                     ESR,
                     Self::get_os_type,
-                    Some("Get operating system type
-
-- R4d only supports windows and *nix systems.
-- This return either \"windows\" or \"unix\"
-
-# Example
-
-$assert(unix,$ostype())".to_string()),
+                    Some(man_fun!("ostype.r4d")),
                 )
             ),
             (
                 FMacroSign::new(
-                    "require",
+                    "output",
                     [(ValueType::Enum,"a_output_type"),],
                     Self::require_output,
-                    Some(
-" Require output type
-
-# Arguments
-
-- a_output_type : A output type to require (trimmed) []
-
-# Example
-
-".to_string()),
+                    Some(man_fun!("output.r4d")),
                 ).enum_table(
                     ETable::new("a_output_type")
                         .candidates(&[
@@ -1183,23 +951,7 @@ $assert(unix,$ostype())".to_string()),
                     "panic",
 [(ValueType::Text,"a_msg"),],
                     Self::manual_panic,
-                    Some("Forefully shutdown macro processing
-
-# NOTE
-
-Despite of the macro name, this means panicky state of macro processing not a 
-cli program itself. Thus rad gracefully return an error code.
-
-Panic macro's behaviour is not a flowcontrol therefore every input after the 
-execution is ignored.
-
-# Arguments
-
-- a_msg : A message to print as an error
-
-# Example
-
-$panic(This should not be reached)".to_string()),
+                    Some(man_fun!("panic.r4d")),
                 ).no_ret()
             ),
             (
@@ -1207,22 +959,7 @@ $panic(This should not be reached)".to_string()),
                     "parent",
 [(ValueType::Path,"a_path"),],
                     Self::get_parent,
-                    Some("Get a parent from a given path.
-
-- NOTE : This yields an error if a path is a root and will return an empty 
-value, but not a none value if a path is a single node.
-
-# Return : path
-
-# Arguments
-
-- a_path : A Path to extract parent from
-
-# Example
-
-$fassert($parent(/))
-$assert($empty(),$parent(node))
-$assert(/first/second,$parent(/first/second/last.txt))".to_string()),
+                    Some(man_fun!("parent.r4d")),
                 ).ret(ValueType::Path)
             ),
             (
@@ -1230,26 +967,7 @@ $assert(/first/second,$parent(/first/second/last.txt))".to_string()),
                     "path",
                     [(ValueType::Text,"a_path")],
                     Self::merge_path,
-                    Some("Merge given paths
-
-- This respects a platform path separator
-- Users cannot override platform specific separator for this macro.
-- Paths with colliding separator cannot be merged.
-    e.g) a/ + /b cannot be merged
-
-# Return : path
-
-# Demo
-
-# Arguments
-
-- a_array : A path array to merge ( trimmed )
-
-# Example
-
-$assert(a/b,$path(a,b))
-$assert(/a/b,$path(/a,b))
-$assert(a/b,$path(a/,b))".to_string()),
+                    Some(man_fun!("path.r4d")),
                     ).optional(Parameter::new(ValueType::Text,"a_sub_path"))
                     .ret(ValueType::Path)
             ),
@@ -1258,26 +976,7 @@ $assert(a/b,$path(a/,b))".to_string()),
                     "pause",
 [(ValueType::Bool,"a_pause"),],
                     Self::pause,
-                    Some(
-"Pause macro expansions from the invocation. Paused processor will only expand 
-$pause(false)
-
-- NOTE : Pause is not flow control but a processor state, thus the state will 
-sustain for the whole processing.
-
-# Arguments
-
-- a_pause : Whether to pause or not [boolean] ( trimmed )
-
-# Example
-
-$counter(i)
-$pause(true)
-$counter(i)
-$pause(false)
-
-$nassert(2,$i())
-$assert(1,$i())".to_string()),
+                    Some(man_fun!("pause.r4d")),
                 ).no_ret()
             ),
             (
@@ -1293,16 +992,7 @@ $assert(1,$i())".to_string()),
                     "pipe",
 [(ValueType::Text,"a_value"),],
                     Self::pipe,
-                    Some("Pipe a given value into an unnamed pipe
-
-# Arguments
-
-- a_value : A value to pipe
-
-# Example
-
-$pipe(Text)
-$assert(Text,$-())".to_string()),
+                    Some(man_fun!("pipe.r4d")),
                 ).no_ret()
             ),
             (
@@ -1310,17 +1000,7 @@ $assert(Text,$-())".to_string()),
                     "pipeto",
 [(ValueType::CText,"a_pipe_name"),(ValueType::Text, "a_value"),],
                     Self::pipe_to,
-                    Some("Pipe a given value to a named pipe
-
-# Arguments
-
-- a_pipe_name : A name of pipe container ( trimmed )
-- a_value     : A value to pipe
-
-# Example
-
-$pipeto(yum,YUM)
-$assert($-(yum),YUM)".to_string()),
+                    Some(man_fun!("pipeto.r4d")),
                 ).no_ret()
             ),
             (
@@ -1328,18 +1008,7 @@ $assert($-(yum),YUM)".to_string()),
                     "prec",
 [(ValueType::Float,"a_number"),(ValueType::Uint, "a_precision"),],
                     Self::prec,
-                    Some("Convert a float number with given precision
-
-# Return : Float
-
-# Arguments
-
-- a_number    : A number to process ( trimmed )
-- a_precision : A precision number to apply to number ( trimmed )
-
-# Example
-
-$assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
+                    Some(man_fun!("prec.r4d")),
                 )
             ),
             (
@@ -1347,7 +1016,7 @@ $assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
                     "println",
 [(ValueType::Text,"a_message"),],
                     Self::print_message,
-                    Some("print message -> discard option is ignored for this macro + it has trailing new line for pretty foramtting".to_owned()),
+                    Some("print message -> discard option is ignored for this macro + it has trailing new line for pretty foramtting".to_string()),
                 )
             ),
             (
@@ -1379,22 +1048,7 @@ $assert(0.30,$prec($eval(0.1 + 0.2),2))".to_string()),
                     "reo",
 [(ValueType::Text,"a_list_contents"),],
                     Self::reorder,
-                    Some("Rearrange order of lists
-
-# Arguments
-
-- a_list_contents : List contents to rearrange
-
-# Example
-
-$assert($reo(8. a
-2. b
-3. c
-1. d)$enl()
-,1. a
-2. b
-3. c
-4. d)".to_string()),
+                    Some(man_fun!("reo.r4d")),
                 )
             ),
             (
@@ -1402,15 +1056,7 @@ $assert($reo(8. a
                     "rev",
 [(ValueType::Text,"a_array"),],
                     Self::reverse_array,
-                    Some("Reverse order of an array
-
-# Arguments
-
-- a_array : Array to reverse
-
-# Example
-
-$assert(\\*3,2,1*\\,$rev(1,2,3))".to_string()),
+                    Some(man_fun!("rev.r4d")),
                 )
             ),
             (
@@ -1418,17 +1064,7 @@ $assert(\\*3,2,1*\\,$rev(1,2,3))".to_string()),
                     "sub",
 [(ValueType::Text,"a_expr"),(ValueType::Text, "a_target"),(ValueType::Text, "a_source"),],
                     Self::regex_sub,
-                    Some("Apply a regular expression substitution to a source
-
-# Arguments
-
-- a_expr   : A regex expression to match
-- a_target : Text to substitute as
-- a_source : Source text to operate on
-
-# Example
-
-$assert(Hello Rust,$sub(World,Rust,Hello World))".to_string()),
+                    Some(man_fun!("sub.r4d")),
                 )
             ),
             (
@@ -1436,23 +1072,7 @@ $assert(Hello Rust,$sub(World,Rust,Hello World))".to_string()),
                     "addexpr",
 [(ValueType::CText,"a_name"),(ValueType::Text, "a_expr"),],
                     Self::register_expression,
-                    Some("Register a regular expression
-
-- NOTE : A registered name will not be able to be matched directly
-- Every regex operation creates regex cache, while registered expression will 
-not be cached but saved permanently. Unregistered caches will be cleared if 
-certain capacity reaches.
-
-# Arguments
-
-- a_name : A name of the regex expression. This is not trimmed
-- a_epxr : An expression to bind to
-
-# Example
-
-$addexpr(greeting,Hello World)
-$assert(true,$find(greeting,Hello World))
-$assert(false,$find(greeting,greetings from world))".to_string()),
+                    Some(man_fun!("addexpr.r4d")),
                 ).no_ret()
             ),
             (
@@ -1460,18 +1080,7 @@ $assert(false,$find(greeting,greetings from world))".to_string()),
                     "rename",
 [(ValueType::CText,"a_macro_name"),(ValueType::CText, "a_new_name"),],
                     Self::rename_call,
-                    Some("Rename a macro with a new name
-
-# Arguments
-
-- a_macro_name : A macro to change name ( trimmed )
-- a_new_name   : A new macro name to apply ( trimmed )
-
-# Example
-
-$define(test=Test)
-$rename(test,demo)
-$assert($demo(),Test)".to_string()),
+                    Some(man_fun!("rename.r4d")),
                 ).no_ret()
             ),
             (
@@ -1479,18 +1088,7 @@ $assert($demo(),Test)".to_string()),
                     "repeat",
 [(ValueType::Uint,"a_count"),(ValueType::Text, "a_source"),],
                     Self::repeat,
-                    Some("Repeat given source by given counts
-
-# Arguments
-
-- a_count  : Counts of repetition [Unsigned integer] ( trimmed )
-- a_source : Source text to repeat
-
-# Example
-
-$assert(R4d
-R4d
-R4d,$repeat(3,R4d$nl()))".to_string()),
+                    Some(man_fun!("repeat.r4d")),
                 )
             ),
             (
@@ -1498,19 +1096,7 @@ R4d,$repeat(3,R4d$nl()))".to_string()),
                     "repl",
 [(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_new_value"),],
                     Self::replace,
-                    Some("Replace a macro's contents with new values
-
-# Arguments
-
-- a_macro_name : A macro name to replace ( trimmed )
-- a_new_value  : A new value to put
-
-# Example
-
-$define(demo=Demo)
-$assert(Demo,$demo())
-$repl(demo,DOMO)
-$assert(DOMO,$demo())".to_string()),
+                    Some(man_fun!("repl.r4d")),
                 ).no_ret()
             ),
             (
@@ -1565,23 +1151,7 @@ $assert(DOMO,$demo())".to_string()),
                     "source",
 [(ValueType::Path,"a_file"),],
                     Self::source_static_file,
-                    Some(
-"Source an env file. The sourced file is eagerly expanded (As if it was static 
-defined)
-
-Syntax of source-able file is same with .env file
-
-e.g)
-demo=DEMO
-number=$eval(1+2)
-
-# Arguments
-
-- a_file : A file to source ( trimmed )
-
-# Example
-
-$source(def.env)".to_string()),
+                    Some(man_fun!("source.r4d")),
                 ).no_ret()
             ),
             (
@@ -1589,17 +1159,7 @@ $source(def.env)".to_string()),
                     "sort",
                     [(ValueType::Enum,"a_sort_type"),(ValueType::Text,"a_array"),],
                     Self::sort_array,
-                    Some("Sort an array
-
-# Arguments
-
-- a_sort_type : A sort type [\"asec\",\"desc\"] (trimmed)
-- a_array     : An array to sort
-
-# Example
-
-$assert(\\*0,1,3,4,6,7,9*\\,$enl()
-$sort(asec,3,6,7,4,1,9,0))".to_string()),
+                    Some(man_fun!("sort.r4d")),
                 ).enum_table(
                     ETable::new("a_sort_type")
                         .candidates(&[
@@ -1613,19 +1173,7 @@ $sort(asec,3,6,7,4,1,9,0))".to_string()),
                     "sortl",
                     [(ValueType::Enum,"a_sort_type"),(ValueType::Text,"a_lines"),],
                     Self::sort_lines,
-                    Some("Sort lines
-
-# Arguments
-
-- a_sort_type : A sort type [\"asec\",\"desc\"] (trimmed)
-- a_lines     : Lines to sort
-
-# Example
-
-$assert(f$nl()e$nl()d$nl()c,$sortl(desc,f
-e
-d
-c))".to_string()),
+                    Some(man_fun!("sortl.r4d")),
                 ).enum_table(
                     ETable::new("a_sort_type")
                         .candidates(&[
@@ -1663,23 +1211,7 @@ c))".to_string()),
                     "static",
                     [(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_expr"),],
                     Self::define_static,
-                    Some(
-"Create a static macro. A static macro is eagerly expanded unlike define
-
-# Arguments
-
-- a_macro_name : A macro to create ( trimmed )
-- a_expr       : An expression to bind to ( trimmed )
-
-# Example
-
-$define(ct=0)
-$define(ddf=$ct())
-$static(stt,$ct())
-$counter(ct)
-$counter(ct)
-$assert(2,$ddf())
-$assert(0,$stt())".to_string()),
+                    Some(man_fun!("static.r4d")),
                 ).no_ret()
             ),
             (
@@ -1687,17 +1219,7 @@ $assert(0,$stt())".to_string()),
                     "strict",
                     [(ValueType::Enum,"a_mode"),],
                     Self::require_strict,
-                    Some(
-"Check strict mode
-
-# Arguments
-
-- a_mode : A mode to require. Empty means strict ( trimmed ) [ \"lenient\", \"purge\" ]
-
-# Example
-
-$strict()
-$strict(lenient)".to_string()),
+                    Some(man_fun!("strict.r4d")),
                 ).enum_table(
                     ETable::new("a_mode")
                         .candidates(&[
@@ -1760,16 +1282,7 @@ $strict(lenient)".to_string()),
                     "tail",
 [(ValueType::Uint,"a_count"),(ValueType::Text, "a_content"),],
                     Self::tail,
-                    Some("Get last parts of texts
-
-# Arguments
-
-- a_count   : Amount of characters to crop [unsigned integer] ( trimmed )
-- a_content : Text to crop from
-
-# Example
-
-$assert(World,$tail( 5 ,Hello~ World))".to_string()),
+                    Some(man_fun!("tail.r4d")),
                 )
             ),
             (
@@ -1777,18 +1290,7 @@ $assert(World,$tail( 5 ,Hello~ World))".to_string()),
                     "taill",
 [(ValueType::Uint,"a_count"),(ValueType::Text, "a_content"),],
                     Self::tail_line,
-                    Some("Get last lines of texts
-
-# Arguments
-
-- a_count   : Amount of lines to crop [unsigned integer] ( trimmed )
-- a_lines   : Lines to crop from
-
-# Example
-
-$assert(b$nl()c,$taill( 2 ,a
-b
-c))".to_string()),
+                    Some(man_fun!("taill.r4d")),
                 )
             ),
             (
@@ -1796,23 +1298,7 @@ c))".to_string()),
                     "table",
                     [(ValueType::Enum,"a_table_form"),(ValueType::CText, "a_csv_value"),],
                     Self::table,
-                    Some(
-"Construct a formatted table. Available table forms are \"github,html,wikitext\"
-
-# Arguments
-
-- a_table_form : A table format [ \"github\", \"html\", \"wikitext\" ] ( trimmed )
-- a_csv_value  : A value to convert to table ( trimmed )
-
-# Example
-
-$assert=(
-    |a|b|c|
-    |-|-|-|
-    |1|2|3|,$enl()
-    $table(github,a,b,
-    1,2,3)
-)".to_string()),
+                    Some(man_fun!("table.r4d")),
                 ).enum_table(
                     ETable::new("a_table_form")
                         .candidates(&[
@@ -1827,17 +1313,7 @@ $assert=(
                     "tr",
 [(ValueType::Text,"a_chars"),(ValueType::Text, "a_sub"),(ValueType::Text,"a_source"),],
                     Self::translate,
-                    Some("Translate characters. Usage similar to core util tr
-
-# Arguments
-
-- a_chars  : Matching characters
-- a_sub    : Substitute characters
-- a_source : Source text to apply translation
-
-# Example
-
-$assert(HellO_WOrld,$tr(-how,_HOW,hello-world))".to_string()),
+                    Some(man_fun!("tr.r4d")),
                 )
             ),
             (
@@ -1869,17 +1345,7 @@ $assert(HellO_WOrld,$tr(-how,_HOW,hello-world))".to_string()),
                     "triml",
 [(ValueType::Text,"a_content"),],
                     Self::triml,
-                    Some("Trim values by lines. Trim is applied to each lines
-
-# Arguments
-
-- a_text : Text to trim
-
-# Example
-
-$assert(Upper$nl()Middle$nl()Last,$triml(    Upper
-    Middle
-          Last))".to_string()),
+                    Some(man_fun!("triml.r4d")),
                 )
             ),
             (
@@ -1887,42 +1353,7 @@ $assert(Upper$nl()Middle$nl()Last,$triml(    Upper
                     "exdent",
 [(ValueType::CText,"a_trim_option"),(ValueType::Text,"a_lines"),],
                     Self::exdent,
-                    Some("Outdent (exdent) with given amount
-
-- Technically this trims preceding spaces
-- Trims by line but with given amount.
-- If given an integer, it will try to trim blank characters as much as given 
-amount
-- min trims by minimal amount that can be applied to total lines
-- max acts same as triml
-- Tab character is treated as a single character. Don't combine spaces and tabs 
-for this macro
-
-# Arguments
-
-- a_trim_option : A trim behaviour [\"min\", \"max\", Unsigned integer] ( trimmed )
-- a_lines       : Lines to trim
-
-# Example
-
-$exdent(min,$space(1)First
-$space(2)Second
-$space(3)Third)
-% ===
-% Equally strips one space
-% First
-%  Second
-%   Third
-
-
-$exdent(3,$space(2)First
-$space(3)Second
-$space(5)Third)
-% ===
-% Equally tries stripping 3 spaces
-% First
-% Second
-%   Third".to_string()),
+                    Some(man_fun!("exdent.r4d")),
                 )
             ),
             (
@@ -1930,21 +1361,7 @@ $space(5)Third)
                     "undef",
 [(ValueType::CText,"a_macro_name"),],
                     Self::undefine_call,
-                    Some("Undefine a macro
-
-- This undefines all macros that has a given name
-- \"Define\" macro cannot be undefined
-- Undef doesn't yield error when a macro doesn't exist
-
-# Arguments
-
-- a_macro_name : A name of a macro to undefine ( trimmed )
-
-# Example
-
-$define(test=Test)
-$undef(test)
-$fassert($test())".to_string()),
+                    Some(man_fun!("undef.r4d")),
                 ).no_ret()
             ),
             (
@@ -1952,15 +1369,7 @@ $fassert($test())".to_string()),
                     "unicode",
 [(ValueType::CText,"a_value"),],
                     Self::paste_unicode,
-                    Some("Creates a unicode character from a hex number without prefix
-
-# Arguments
-
-- a_value : A value to convert to a unicode character
-
-# Example
-
-$assert(☺,$unicode(263a))".to_string()),
+                    Some(man_fun!("unicode.r4d")),
                 )
             ),
             (
@@ -1968,16 +1377,7 @@ $assert(☺,$unicode(263a))".to_string()),
                     "until",
 [(ValueType::Text,"a_pattern"),(ValueType::Text, "a_content"),],
                     Self::get_slice_until,
-                    Some("Get a substring unitl a pattern
-
-# Arguments
-
-- a_pattern : A pattern to find
-- a_content : A content to get a sub string
-
-# Example
-
-$assert(Hello,$until($space(),Hello World))".to_string()),
+                    Some(man_fun!("until.r4d")),
                 )
             ),
             (
@@ -1994,24 +1394,7 @@ $assert(Hello,$until($space(),Hello World))".to_string()),
                     "def",
 [(ValueType::Text,"a_define_statement"),],
                     Self::define_macro,
-                    Some("Define a macro
-
-# Arguments
-
-Define should follow handful of rules
-
-- Macro name, parameter name should start non number characters.
-- Consequent characters for macro names, parameter names can be underscore or 
-any characters except special characters.
-- Parameters starts with comma and should be separated by whitespaces
-- Macro body starts with equal(=) characters
-
-# Example
-
-$def(test=Test)
-$def(demo,a_1 a_2=$a_1() $a_2())
-$assert($test(),Test)
-$assert(wow cow,$demo(wow,cow))".to_string()),
+                    Some(man_fun!("def.r4d")),
                 ).no_ret()
             ),
             (
@@ -2019,20 +1402,7 @@ $assert(wow cow,$demo(wow,cow))".to_string()),
                     "env",
 [(ValueType::CText,"a_env_name"),],
                     Self::get_env,
-                    Some(
-                        "Get an environment variable
-
-# Auth : ENV
-
-# Arguments
-
-- a_env_name : An environment variable name to get (trimmed)
-
-# Example
-
-$assert(/home/user/dir,$env(HOME))"
-                            .to_string(),
-                    )
+                    Some(man_fun!("env.r4d"))
                 )
             ),
             (
@@ -2040,21 +1410,7 @@ $assert(/home/user/dir,$env(HOME))"
                     "setenv",
 [(ValueType::CText,"a_env_name"),(ValueType::Text, "a_env_value"),],
                     Self::set_env,
-                    Some(
-                        "Set an environment variable
-
-# Auth : ENV
-
-# Arguments
-
-- a_env_name  : An environment variable name to set (trimmed)
-- a_env_value : A value to set
-
-# Example
-
-$envset(HOME,/tmp)"
-                            .to_string(),
-                    )
+                    Some(man_fun!("setenv.r4d"))
                 ).no_ret()
             ),
             (
@@ -2062,22 +1418,7 @@ $envset(HOME,/tmp)"
                     "abs",
 [(ValueType::Path,"a_path"),],
                     Self::absolute_path,
-                    Some(
-                        "Get an absolute path. This requires a path to be a real path.
-
-# Auth : FIN
-
-# Return : path
-
-# Arguments
-
-- a_path : A path to make it absolute ( trimmed )
-
-# Example
-
-$assert(/home/user/cwd/test.md,$abs(test.md))"
-                            .to_string(),
-                    )
+                    Some(man_fun!("abs.r4d"))
                 )
             ),
             (
@@ -2085,42 +1426,15 @@ $assert(/home/user/cwd/test.md,$abs(test.md))"
                     "exist",
 [(ValueType::Path,"a_filename"),],
                     Self::file_exists,
-                    Some(
-                        "Chck if file exists
-
-# Auth : FIN
-
-# Arguments
-
-- a_filename : A file name to audit ( trimmed )
-
-# Example
-
-$exist(file.txt)"
-                            .to_string(),
-                    )
+                    Some(man_fun!("exist.r4d"))
                 ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
                     "grepf",
-[(ValueType::Text,"a_expr"),(ValueType::Path, "a_file"),],
+                    [(ValueType::Text,"a_expr"),(ValueType::Path, "a_file"),],
                     Self::grep_file,
-                    Some(
-                        "Extract matched lines from given file. This returns all items as lines
-
-- NOTE : The grep operation is executed on per line and doesn't expand lines
-
-# Arguments
-
-- a_expr  : A regex expression to match
-- a_lines : A file get matches from
-
-# Example
-
-$countl($grepf(file.txt))"
-                            .to_string(),
-                    )
+                    Some(man_fun!("grepf.r4d"))
                 )
             ),
             (
@@ -2128,32 +1442,7 @@ $countl($grepf(file.txt))"
                     "syscmd",
 [(ValueType::CText,"a_command"),],
                     Self::syscmd,
-                    Some(
-                        "Execute a sysctem command
-
-- Each system command is executed as subprocess of folloiwng platform procedures
-- Windows : cmd /C
-- *Nix    : sh -c
-
-# NOTE
-
-- Syscmd's stdout is redirected to rad's input. Which enables inclusion of 
-system call's result into a desired output.
-- However, due to the inherent feature, you cannot use redirection within 
-syscmd's call.
-- Therefore code such as $syscmd(ls > file) will not work as expected.
-
-# Auth : CMD
-
-# Arguments
-
-- a_command : A command to exectute
-
-# Example
-
-$assert(Linux,$syscmd(uname))"
-                            .to_string(),
-                    )
+                    Some(man_fun!("syscmd.r4d"))
                 )
             ),
             (
@@ -2161,24 +1450,7 @@ $assert(Linux,$syscmd(uname))"
                     "tempout",
 [(ValueType::Text,"a_content"),],
                     Self::temp_out,
-                    Some(
-                        "Write to a temporary file
-
-- A default temporary path is folloiwng
-- Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
-- *nix    : /tmp/rad.txt
-
-# Auth: FOUT
-
-# Arguments
-
-- a_content : Content to write to a temporary file
-
-# Example
-
-$tempout(Content)"
-                            .to_string(),
-                    )
+                    Some(man_fun!("tempout.r4d"))
                 ).no_ret()
             ),
             (
@@ -2186,25 +1458,7 @@ $tempout(Content)"
                     "tempto",
 [(ValueType::Path,"a_filename"),],
                     Self::set_temp_target,
-                    Some(
-                        "Change a temporary file path
-
-- NOTE : A temporary file name is merged to a temporary directory. You cannot 
-set a temporary file outside of a temporary directory.
-- This macro needs FOUT permission because it creates a temporary file if the 
-file doesn't exist
-
-# Auth: FOUT
-
-# Arguments
-
-- a_filename : A new temporary file path ( trimmed )
-
-# Example
-
-$tempto(/new/path)"
-                            .to_string(),
-                    )
+                    Some(man_fun!("tempto.r4d"))
                 ).no_ret()
             ),
             (
@@ -2212,20 +1466,7 @@ $tempto(/new/path)"
                     "temp",
                     ESR,
                     Self::get_temp_path,
-                    Some(
-                        "Get a temporary file path
-
-- A default temporary path is folloiwng
-- Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
-- *nix    : /tmp/rad.txt
-
-# Auth: FIN
-
-# Example
-
-$assert(/tmp/rad.txt,$temp())"
-                            .to_string(),
-                    )
+                    Some(man_fun!("temp.r4d"))
                 ).ret(ValueType::Path)
             ),
             (
@@ -2233,22 +1474,7 @@ $assert(/tmp/rad.txt,$temp())"
                     "fileout",
 [(ValueType::Path,"a_filename"),(ValueType::Bool, "a_truncate"),(ValueType::Text, "a_content"),],
                     Self::file_out,
-                    Some(
-                        "Write content to a file
-
-# Auth : FOUT
-
-# Arguments
-
-- a_filename : A file name to write ( trimmed )
-- a_truncate : Whether to truncate before writing [boolean] ( trimmed )
-- a_content  : Content to write to the file
-
-# Example
-
-$fileout(/tmp/some_file.txt,true,Hello World)"
-                            .to_string(),
-                    )
+                    Some(man_fun!("fileout.r4d"))
                 ).no_ret()
             ),
             (
@@ -2256,18 +1482,7 @@ $fileout(/tmp/some_file.txt,true,Hello World)"
                     "update",
 [(ValueType::Text,"a_text"),],
                     Self::update_storage,
-                    Some(
-                        "Update a storage
-
-# Arguments
-
-- a_text : Text to update into a storage
-
-# Example
-
-$update(text to be pushed)"
-                            .to_string(),
-                    )
+                    Some(man_fun!("update.r4d"))
                 ).no_ret()
             ),
             (
@@ -2275,14 +1490,7 @@ $update(text to be pushed)"
                     "extract",
                     ESR,
                     Self::extract_storage,
-                    Some(
-                        "Extract from a storage
-
-# Example
-
-$extract()"
-                            .to_string(),
-                    ),
+                    Some(man_fun!("extract.r4d")),
                 ).no_ret()
             ),
         ]));
@@ -2298,22 +1506,7 @@ $extract()"
                         (ValueType::CText, "a_data"),
                     ],
                     Self::cindex_register,
-                    Some(
-                        "Register a csv table
-
-- Querying can be only applied to registered table.
-
-# Arguments
-
-- a_table_name : A table name to be registered ( trimmed )
-- a_data       : Csv data ( trimmed )
-
-# Example
-
-$addcsv(table1,a,b,c
-1,2,3)"
-                            .to_string(),
-                    ),
+                    Some(man_fun!("addcsv.r4d")),
                 )
                 .no_ret(),
             );
@@ -2323,18 +1516,7 @@ $addcsv(table1,a,b,c
                     "dropcsv",
                     [(ValueType::CText, "a_table_name")],
                     Self::cindex_drop,
-                    Some(
-                        "Drop a csv table
-
-# Arguments
-
-- a_table_name : A csv table name to drop ( trimmed )
-
-# Example
-
-$dropcsv(table1)"
-                            .to_string(),
-                    ),
+                    Some(man_fun!("dropcsv.r4d")),
                 )
                 .no_ret(),
             );
@@ -2344,21 +1526,7 @@ $dropcsv(table1)"
                     "query",
                     [(ValueType::CText, "a_query")],
                     Self::cindex_query,
-                    Some(
-                        "Query a csv table
-
-- Syntax of the query resembles SQL
-- Refer cindex for detailed query syntax
-
-# Arguments
-
-- a_query : A query statement ( trimmed )
-
-# Example
-
-$query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
-                            .to_string(),
-                    ),
+                    Some(man_fun!("query.r4d")),
                 ),
             );
         }
@@ -2367,37 +1535,11 @@ $query(SELECT * FROM TABLE WHERE name == john FLAG PHD)"
         {
             map.macros.insert(
                 "time".to_string(),
-                FMacroSign::new(
-                    "time",
-                    ESR,
-                    Self::time,
-                    Some(
-                        "Get current local time
-
-# Example
-
-% HH:mm:ss
-$time()"
-                            .to_string(),
-                    ),
-                ),
+                FMacroSign::new("time", ESR, Self::time, Some(man_fun!("time.r4d"))),
             );
             map.macros.insert(
                 "date".to_string(),
-                FMacroSign::new(
-                    "date",
-                    ESR,
-                    Self::date,
-                    Some(
-                        "Get current local date without timezone
-
-# Example
-
-% yyyy-MM-dd
-$date()"
-                            .to_string(),
-                    ),
-                ),
+                FMacroSign::new("date", ESR, Self::date, Some(man_fun!("date.r4d"))),
             );
             map.macros.insert(
                 "hms".to_string(),
@@ -2405,18 +1547,7 @@ $date()"
                     "hms",
                     [(ValueType::Uint, "a_second")],
                     Self::hms,
-                    Some(
-                        "Get given sesconds in hh:mm:ss format
-
-# Arguments
-
-- a_second : Seconds to convert ( trimmed )
-
-# Example
-
-$assert(00:33:40,$hms(2020))"
-                            .to_string(),
-                    ),
+                    Some(man_fun!("hms.r4d")),
                 ),
             );
         }
@@ -2428,21 +1559,7 @@ $assert(00:33:40,$hms(2020))"
                     "ftime",
                     [(ValueType::Path, "a_file")],
                     Self::get_file_time,
-                    Some(
-                        "Get a file's last modified time.
-
-# Auth: FIN
-
-# Arguments
-
-- a_file : A file to get last modified time ( trimmed )
-
-# Example
-
-$ftime(some_file.txt)
-% 2022-07-07 19:07:06"
-                            .to_string(),
-                    ),
+                    Some(man_fun!("ftime.r4d")),
                 ),
             );
         }
@@ -2453,25 +1570,7 @@ $ftime(some_file.txt)
                     "eval",
                     [(ValueType::Text, "a_expr")],
                     Self::eval,
-                    Some(
-                        "Evaluate a given expression
-
-# NOTE
-
-- This macro redirects expression to evalexpr crate
-- Append point after number if you want floating point operation.
-    e.g. ) 1 / 5 = 0 while 1.0 / 5.0 = 0.2
-
-# Arguments
-
-- a_expr : An expression to evaluate
-
-# Example
-
-$assert(3,$eval(1 + 2))
-$assert(true,$eval(\"string\" == \"string\"))"
-                            .to_string(),
-                    ),
+                    Some(man_fun!("eval.r4d")),
                 ),
             );
             map.macros.insert(
@@ -2480,44 +1579,12 @@ $assert(true,$eval(\"string\" == \"string\"))"
                     "evalk",
                     [(ValueType::Text, "a_expr")],
                     Self::eval_keep,
-                    Some(
-                        "Evaluate an expression while keeping source text
-
-- This macro redirects an expression to evalexpr crate
-
-# Arguments
-
-- a_expr : An expression to evaluate
-
-# Example
-
-$assert(1 + 2 = 3,$evalk(1 + 2 ))"
-                            .to_string(),
-                    ),
+                    Some(man_fun!("evalk.r4d")),
                 ),
             );
             map.macros.insert(
                 "evalf".to_string(),
-                FMacroSign::new(
-                    "evalf",
-                    [(ValueType::Text, "a_expr")],
-                    Self::evalf,
-                    Some(
-                        "Evaluate a given expression
-
-# NOTE
-
-- This macro redirects expression to evalexpr crate
-- Evalf forces floating point form for integers.
-
-# Arguments
-
-- a_expr : An expression to evaluate
-
-# Example"
-                            .to_string(),
-                    ),
-                ),
+                FMacroSign::new("evalf", [(ValueType::Text, "a_expr")], Self::evalf, None),
             );
             map.macros.insert(
                 "evalkf".to_string(),
@@ -2543,23 +1610,7 @@ $assert(1 + 2 = 3,$evalk(1 + 2 ))"
                 "wrap",
                 [(ValueType::Uint, "a_width"), (ValueType::Text, "a_text")],
                 Self::wrap,
-                Some(
-                    "Wrap text by width
-
-# Arguments
-
-- a_width : A width(chars) of given texts ( trimmed )
-- a_text  : Text to wrap
-
-# Example
-
-$assert(\\*Lorem ipsum
-dolor sit amet,
-consectetur
-adipiscing elit. In
-rhoncus*\\,$wrap(20,$lipsum(10)))"
-                        .to_string(),
-                ),
+                Some(man_fun!("wrap.r4d")),
             ),
         );
 

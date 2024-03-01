@@ -1,0 +1,12 @@
+Log an error message to console
+
+- This prints error in non-breaking manner. Even in strict mode, this doesn't 
+trigger a panic.
+
+# Arguments
+
+- a_msg : An error message to log to console
+
+# Example
+
+$loge(This should not be reached)

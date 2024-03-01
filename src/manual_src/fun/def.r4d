@@ -1,0 +1,18 @@
+Define a macro
+
+# Arguments
+
+Define should follow handful of rules
+
+- Macro name, parameter name should start non number characters.
+- Consequent characters for macro names, parameter names can be underscore or 
+any characters except special characters.
+- Parameters starts with comma and should be separated by whitespaces
+- Macro body starts with equal(=) characters
+
+# Example
+
+$def(test=Test)
+$def(demo,a_1 a_2=$a_1() $a_2())
+$assert($test(),Test)
+$assert(wow cow,$demo(wow,cow))

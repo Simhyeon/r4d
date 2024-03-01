@@ -1,0 +1,9 @@
+Get given sesconds in hh:mm:ss format
+
+# Arguments
+
+- a_second : Seconds to convert ( trimmed )
+
+# Example
+
+$assert(00:33:40,$hms(2020))

@@ -1,0 +1,13 @@
+Get an indexed line from lines
+
+- A positive integer works as a normal index number
+- A negative integer works as an index from end ( -1 == len -1 )
+
+# Arguments
+
+- a_index : An index to get [Signed integer] ( trimmed )
+- a_liens : Lines to index from
+
+# Example
+
+$assert(line 2,$indexl(1,line 1$nl()line 2$nl()))

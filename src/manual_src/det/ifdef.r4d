@@ -1,0 +1,15 @@
+Execute an expression if macro is defined
+
+# Expansion order
+
+1. a_macro_name : Expanded on time
+2. a_if_expr    : Only when a_macro_name is defined
+
+# Arguments
+
+- a_macro_name : A macro name to check ( trimmed )
+- a_if_expr    : An expression to expand if the macro is defined
+
+# Example
+
+$assert(I'm defined,$ifdef(define,I'm defined))

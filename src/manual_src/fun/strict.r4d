@@ -1,0 +1,10 @@
+Check strict mode
+
+# Arguments
+
+- a_mode : A mode to require. Empty means strict ( trimmed ) [ \"lenient\", \"purge\" ]
+
+# Example
+
+$strict()
+$strict(lenient)

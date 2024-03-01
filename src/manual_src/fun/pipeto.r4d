@@ -1,0 +1,11 @@
+Pipe a given value to a named pipe
+
+# Arguments
+
+- a_pipe_name : A name of pipe container ( trimmed )
+- a_value     : A value to pipe
+
+# Example
+
+$pipeto(yum,YUM)
+$assert($-(yum),YUM)

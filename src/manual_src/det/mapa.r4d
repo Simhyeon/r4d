@@ -1,0 +1,13 @@
+Execute macro on each array item
+
+# NOT Deterred
+
+# Arguments
+
+- a_macro_name : A macro name to execute ( trimmed ) 
+- a_array      : An array to iterate
+
+# Example
+
+$define(m,a_src=$a_src()+)
+$assert(a+b+c,$map(m,a,b,c))

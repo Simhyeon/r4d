@@ -1,0 +1,8 @@
+ Require output type
+
+# Arguments
+
+- a_output_type : A output type to require (trimmed) []
+
+# Example
+

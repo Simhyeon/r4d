@@ -1,0 +1,18 @@
+Execute an expression by whether macro is defined or not
+
+# Expansion order
+
+1. a_macro_name : Expanded on time
+2. a_if_expr    : Only when a_macro_name is defined
+3. a_else_expr  : Only when a_macro_name is NOT defined
+
+# Arguments
+
+- a_macro_name : A macro name to check ( trimmed )
+- a_if_expr    : An expression to expand if the macro is defined
+- a_else_epxr  : An expression to expand if the macro is NOT defined
+
+# Example
+
+$assert(I'm defined,$ifdefel(define,I'm defined,I'm NOT defined))
+$assert(I'm NOT defined,$ifdefel(defuo,I'm defined,I'm NOT defined))

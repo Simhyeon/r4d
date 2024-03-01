@@ -1,0 +1,16 @@
+Create a static macro. A static macro is eagerly expanded unlike define
+
+# Arguments
+
+- a_macro_name : A macro to create ( trimmed )
+- a_expr       : An expression to bind to ( trimmed )
+
+# Example
+
+$define(ct=0)
+$define(ddf=$ct())
+$static(stt,$ct())
+$counter(ct)
+$counter(ct)
+$assert(2,$ddf())
+$assert(0,$stt())

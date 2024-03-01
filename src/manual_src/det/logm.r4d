@@ -1,0 +1,13 @@
+Log a macro information. Either print a macro body of a local or a runtime 
+macro.
+
+# NOT deterred
+
+# Arguments
+
+- a_macro_name : A macro name to log (trimmed)
+
+# Example
+
+$define(test=Test)
+$logm(test)

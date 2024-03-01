@@ -1,0 +1,11 @@
+Get a name from a given path including an extension
+
+# Return : path
+
+# Arguments
+
+- a_path : A path to get a name from
+
+# Example
+
+$assert(auto.sh,$name(/path/to/file/auto.sh))

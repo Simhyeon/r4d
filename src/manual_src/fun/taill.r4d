@@ -1,0 +1,12 @@
+Get last lines of texts
+
+# Arguments
+
+- a_count   : Amount of lines to crop [unsigned integer] ( trimmed )
+- a_lines   : Lines to crop from
+
+# Example
+
+$assert(b$nl()c,$taill( 2 ,a
+b
+c))

@@ -1,0 +1,13 @@
+Include a temporary file
+
+- A default temporary path is folloiwng
+- Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
+- *nix    : /tmp/rad.txt
+
+# NOT Deterred
+
+# Auth: FIN
+
+# Example
+
+$tempin()

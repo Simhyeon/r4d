@@ -1,0 +1,17 @@
+Loop around given lines separated by newline chraracter. 
+
+An iterated value is bound to macro \":\"
+ 
+# Expansion order
+
+1. a_lines : Expanded on time
+2. a_body  : Split lines by newline, and expanded by per item.
+
+# Arguments
+
+- a_body  : A body to be pasted as iterated item
+- a_lines : Lines to iterate
+
+# Example
+
+$assert(a+b+c+,$forline($:()+,a$nl()b$nl()c))

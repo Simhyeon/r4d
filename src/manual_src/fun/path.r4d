@@ -1,0 +1,20 @@
+Merge given paths
+
+- This respects a platform path separator
+- Users cannot override platform specific separator for this macro.
+- Paths with colliding separator cannot be merged.
+    e.g) a/ + /b cannot be merged
+
+# Return : path
+
+# Demo
+
+# Arguments
+
+- a_array : A path array to merge ( trimmed )
+
+# Example
+
+$assert(a/b,$path(a,b))
+$assert(/a/b,$path(/a,b))
+$assert(a/b,$path(a/,b))

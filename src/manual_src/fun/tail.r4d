@@ -1,0 +1,10 @@
+Get last parts of texts
+
+# Arguments
+
+- a_count   : Amount of characters to crop [unsigned integer] ( trimmed )
+- a_content : Text to crop from
+
+# Example
+
+$assert(World,$tail( 5 ,Hello~ World))

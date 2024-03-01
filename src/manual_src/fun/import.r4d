@@ -1,0 +1,12 @@
+Import a frozen file at runtime
+
+- Import always include the macros as non-volatile form, thus never cleared 
+unless accessed from library
+
+# Arguments
+
+- a_file: A file name to import from [path] (trimmed)
+
+# Example
+
+$import(def.r4f)

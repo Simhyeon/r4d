@@ -1,0 +1,9 @@
+Update a storage
+
+# Arguments
+
+- a_text : Text to update into a storage
+
+# Example
+
+$update(text to be pushed)

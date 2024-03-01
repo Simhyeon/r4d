@@ -1,0 +1,10 @@
+Get a min value from a given array
+
+ # Arguments
+
+- a_array : An array to get the lowest value from
+
+# Example
+
+$assert(aIsSmall,$min(aIsSmall,cIsMiddle,eIsBigger))
+$assert(1,$min(1,2,3,4,5))

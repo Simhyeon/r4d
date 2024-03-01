@@ -3,6 +3,7 @@ use crate::argument::{MacroInput, ValueType};
 use crate::common::{ETMap, ETable, RadResult};
 use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
+use crate::man_det;
 use crate::{Parameter, Processor};
 #[cfg(feature = "rustc_hash")]
 use rustc_hash::FxHashMap as HashMap;
@@ -32,845 +33,320 @@ impl DeterredMacroMap {
     /// Create a new instance with default macros
     pub fn new() -> Self {
         Self::from_iter(IntoIterator::into_iter([
-            (
-                DMacroSign::new(
-                    "include",
-                    [(ValueType::Path,"a_filename")],
-                    Self::include,
-                    Some(
-                        "Include a file
-
-- Include works as bufread in first level and chunk read in nested call.
-- Use readin if you want to enforce bufread
-- If raw mode is enabled include doesn't expand any macros inside the file
-
-# NOT Deterred
-
-# AUTH : FIN
-
-# Arguments
-
-- a_filename : A file name to read ( trimmed )
-- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
-
-$include(file_path)
-$include(file_path, true)"
-                            .to_string(),
-                    ),
-                ).optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
-            ),
-            (
-                DMacroSign::new(
-                    "incread",
-                    [(ValueType::Path,"a_filename")],
-                    Self::incread,
-                    Some(
-                        "Alwasy include a file as \"read\"
-
-- Include works as bufread in first level and chunk read in nested call.
-- Use incread when you need to read on first level.
-
-# NOT Deterred
-
-# AUTH : FIN
-
-# Arguments
-
-- a_filename : A file name to read ( trimmed )
-- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
-
-$incread|(file_path)
-$-()"
-                            .to_string(),
-                    ),
-                ).optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
-            ),
-            (
-                DMacroSign::new(
-                    "tempin",
-                    ESR,
-                    Self::temp_include,
-                    Some(
-                        "Include a temporary file
-
-- A default temporary path is folloiwng
-- Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
-- *nix    : /tmp/rad.txt
-
-# NOT Deterred
-
-# Auth: FIN
-
-# Example
-
-$tempin()"
-                            .to_string(),
-                    ),
-                ).optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
-            ),
-            (
-                DMacroSign::new(
-                    "mapf",
-[(ValueType::CText,"a_macro_name"),(ValueType::Path, "a_file"),],
-                    Self::map_file,
-                    Some(
-                        "Execute macro on each lines of a file
-
-# Note : mapf macro doesn't expand lines from a file.
-
-# Auth : FIN
-
-# NOT Deterred
-
-# Arguments
-
-- a_macro_name : A macro name to execute ( trimmed ) 
-- a_file       : A file to get lines iterator ( trimmed )
-
-# Example
-
-$define(m,a_src=$a_src()+)
-$assert(a+b+c,$mapf(m,file_name.txt))"
-                            .to_string(),
-                    ),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "mapfe",
-[(ValueType::Text,"a_expr"),(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_lines"),],
-                    Self::map_file_expr,
-                    None,
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "mapn",
-[(ValueType::CText,"a_operation"),(ValueType::Text,"a_source"),],
-                    Self::map_number,
-                    None,
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "readto",
-[(ValueType::Path,"a_from_file"),(ValueType::Path, "a_to_file")],
-                    DeterredMacroMap::read_to,
-                    Some(
-                        "Read from a file as bufread and paste into a file
-
-# Auth : FIN + FOUT
-
-# NOT deterred
-
-# Arguments
-
-- a_from_file : A file to read from ( trimmed )
-- a_to_file   : A file to paste into ( trimmed )
-- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
-
-# Example
-
-$readto(from.txt,into.txt)"
-                            .to_string(),
-                    ),
-                ).optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
-                    .no_ret()
-            ),
-            (
-                DMacroSign::new(
-                    "readin",
-                    [(ValueType::Path,"a_file")],
-                    DeterredMacroMap::read_in,
-                    Some(
-                        "Read from a file as \"Bufread\"
-
-# Auth : FIN
-
-# NOT deterred
-
-# Arguments
-
-- a_file : A file to read from ( trimmed )
-- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
-
-# Example
-
-$readin(file.txt)"
-                            .to_string(),
-                    ),
-                ).optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
-            ),
-            (
-                DMacroSign::new(
-                    "ifenv",
-[(ValueType::CText,"a_env_name"),(ValueType::Text, "a_if_expr"),],
-                    DeterredMacroMap::ifenv,
-                    Some(
-                        "Execute an expression if an environment variable is set
-
-# Auth : ENV
-
-# Expansion order
-
-1. a_env_name : Expanded on time
-2. a_if_expr  : Only when env_name is defined
-
-# Arguments
-
-- a_env_name   : An environment variable to check ( trimmed )
-- a_if_expr    : An expression to expand if env exists
-
-# Example
-
-$assert(I'm alive,$ifenv(HOME,I'm alive))"
-                            .to_string(),
-                    ),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "ifenvel",
-[(ValueType::CText,"a_env_name"),(ValueType::Text, "a_if_expr"),(ValueType::Text, "a_else_expr"),],
-                    DeterredMacroMap::ifenvel,
-                    Some(
-                        "Execute an expression by whether environment variable is set or not
-
-# Auth : ENV
-
-# Expansion order
-
-1. a_env_name   : Expanded on time
-2. a_if_expr    : Only when env_name is defined
-3. a_else_expr  : Only when env_name is NOT defined
-
-
-# Arguments
-
-- a_env_name   : An environment variable to check ( trimmed )
-- a_if_expr    : An expression to expand if env exists
-- a_else_expr  : An expression to expand if env doesn't exist
-
-# Example
-
-$assert(I'm alive,$ifenvel(HOME,I'm alive,I'm dead))
-$assert(I'm dead,$ifenvel(EMOH,I'm alive,I'm dead))"
-                            .to_string(),
-                    ),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "append",
-[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_content")],
-                    Self::append,
-                    Some(
-"Append contents to a macro. If the macro doesn't exist, yields error
-
-- If given a \"trailer\", the macro checks if target macro has a trailer and 
-append if not.
-- If a macro body is empty, trailer is not appended
-
-# NOT deterred
-
-# Arguments
-
-- a_macro_name : a macro name to append to ( trimmed )
-- a_content    : contents to be added
-
-# Example
-
-$define(container=Before)
-$append(container,$space()After)
-$assert($container(),Before After)
-".to_string(),
-                    ),
-                ).no_ret()
-            ),
-            (
-                DMacroSign::new(
-                    "anon",
-[(ValueType::Text,"a_macro_definition"),],
-                    Self::add_anonymous_macro,
-                    Some("Create an anonymous macro and return it's name
-
-# Not expanded at all
-
-# Arguments
-
-- a_macro : A macro defintition without name
-
-# Example
-
-$map($anon(a=$a()+),a,b,c)".to_string()),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "consume",
-                    ESR,
-                    Self::consume,
-                    Some("Consume streaming
-
-# Arguments are not expanded at all
-
-# Example
-
-$stream(squash)
-
-abc
-
-clo
-
-fgh
-
-$consume()".to_string()),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "EB",
-                    ESR,
-                    DeterredMacroMap::escape_blanks,
-                    Some(
-"Escape all following blanks until not. This can only be invoked at first level
-
-# NOT deterred
-
-# Example
-
-$EB()".to_string()),
-                ).no_ret()
-            ),
-            (
-                DMacroSign::new(
-                    "exec",
-[(ValueType::CText,"a_macro_name"),(ValueType::CText,"a_macro_attribute"),(ValueType::Text,"a_macro_args"),],
-                    DeterredMacroMap::execute_macro,
-                    Some("Execute a macro with arguments
-
-# NOT deterred
-
-# Arguments
-
-- a_macro_name      : A macro name to exectue ( trimmed )
-- a_macro_attribute : A macro name to exectue ( trimmed )
-- a_macro_args      : Arguments to be passed to a macro
-
-# Example
-
-$assert($path(a,b,c),$exec(path,,a,b,c))".to_string()),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "fassert",
-                    [(ValueType::Text,"a_expr"),],
-                    DeterredMacroMap::assert_fail,
-                    Some("Assert succeeds when text expansion yields error
-
-# NOT deterred
-
-# Arguments
-
-- a_expr: An expression to audit
-
-# Example
-
-$fassert($eval(Text is not allowd))".to_string()),
-                ).no_ret()
-            ),
-            (
-                DMacroSign::new(
-                    "forby",
-[(ValueType::Text,"a_body"),(ValueType::Text, "a_sep"),(ValueType::Text,"a_text"),],
-                    DeterredMacroMap::forby,
-                    Some(
-                        "Iterate around text separated by separator.
-
-Iterated value is bound to macro \":\"
-
-# Expansion order
-
-1. a_sep  : Expanded on time
-2. a_text : Expanded on time
-3. a_body : Split text by separator, and expanded by per item.
-
-# Arguments
-
-- a_body : A body to be pasted as iterated item
-- a_sep  : A separator to split a text
-- a_text : Text to split by separator
-
-# Example
-
-$assert(a+b+c+,$forby($:()+,-,a-b-c))".to_string(),
-                    ),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "foreach",
-[(ValueType::Text,"a_body"),(ValueType::Text, "a_array"),],
-                    DeterredMacroMap::foreach,
-                    Some(
-                        "Iterate around given array.
-
-An iterated value is bound to macro \":\"
- 
-# Expansion order
-
-1. a_array : Expanded on time
-2. a_body : Split array by comma, and expanded by per item.
-
-# Arguments
-
-- a_body  : A body to be pasted as iterated item
-- a_array : An array to iterate ( trimmed )
-
-# Example
-
-$assert(a+b+c+,$foreach($:()+,a,b,c))".to_string(),
-                    ),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "forjoin",
-[(ValueType::Text,"a_body"),(ValueType::Text, "a_joined_array"),],
-                    DeterredMacroMap::forjoin,
-                    None,
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "forsp",
-[(ValueType::Text,"a_body"),(ValueType::Text, "a_words"),],
-                    DeterredMacroMap::for_space,
-                    Some(
-                        "Iterate around given words.
-
-An iterated value is bound to macro \":\"
- 
-# Expansion order
-
-1. a_words : Expanded on time
-2. a_body : Split array by comma, and expanded by per item.
-
-# Arguments
-
-- a_body  : A body to be pasted as iterated item
-- a_words : Words to iterate ( trimmed )
-
-# Example
-
-".to_string(),
-                    ),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "forline",
-[(ValueType::Text,"a_body"),(ValueType::Text,"a_lines"),],
-                    DeterredMacroMap::forline,
-                    Some(
-"Loop around given lines separated by newline chraracter. 
-
-An iterated value is bound to macro \":\"
- 
-# Expansion order
-
-1. a_lines : Expanded on time
-2. a_body  : Split lines by newline, and expanded by per item.
-
-# Arguments
-
-- a_body  : A body to be pasted as iterated item
-- a_lines : Lines to iterate
-
-# Example
-
-$assert(a+b+c+,$forline($:()+,a$nl()b$nl()c))".to_string()),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "forcol",
-[(ValueType::Text,"a_body"),(ValueType::Text,"a_table"),],
-                    DeterredMacroMap::forcol,
-                    None,
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "forloop",
-[(ValueType::Text,"a_body"),(ValueType::Uint,"a_min"),(ValueType::Uint, "a_max"),],
-                    DeterredMacroMap::forloop,
-                    Some("Iterate around given range (min,max). 
-
-An iterated value is bound to macro \":\" 
-
-# Expansion order
-
-
-1. a_min  : Expanded on time
-2. a_max  : Expanded on time
-3. a_body : Creates a range of numbers from min+max pair, and expanded by per 
-item.
-
-# Arguments
-
-- a_body : A body to be pasted as iterated item
-- a_min  : A start index ( trimmed )
-- a_max  : A end index ( trimmed )
-
-# Example
-
-$assert(1+2+3+,$forloop($:()+,1,3))".to_string()),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "map",
-                    [(ValueType::Text,"a_expr"),(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_text"),],
-                    Self::map,
-                    None,
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "mape",
-[(ValueType::Text,"a_start_expr"),(ValueType::Text,"a_end_expr"),(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_source"),],
-                    Self::map_expression,
-                    None,
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "mapa",
-[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_array"),],
-                    Self::map_array,
-                    Some(
-"Execute macro on each array item
-
-# NOT Deterred
-
-# Arguments
-
-- a_macro_name : A macro name to execute ( trimmed ) 
-- a_array      : An array to iterate
-
-# Example
-
-$define(m,a_src=$a_src()+)
-$assert(a+b+c,$map(m,a,b,c))".to_string()),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "mapl",
-[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_lines"),],
-                    Self::map_lines,
-                    Some(
-"Execute macro on each line
-
-# NOT Deterred
-
-# Arguments
-
-- a_macro_name : A macro name to execute ( trimmed ) 
-- a_lines      : A lines to iterate
-
-# Example
-
-$define(m,a_src=$a_src()+)
-$assert(a+b+c,$mapl(m,a$nl()b$nl()c$nl()))".to_string()),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "maple",
-[(ValueType::Text,"a_expr"),(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_lines"),],
-                    Self::map_lines_expr,
-                    None,
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "spread",
-[(ValueType::CText,"a_macro_name"),(ValueType::CText, "a_csv_value"),],
-                    Self::spread_data,
-                    Some(
-"Execute a macro multiple times with given data chunk. Each csv line represents 
-an argument for a macro
-
-# NOT Deterred
-
-# Arguments
-
-- a_macro_name : A macro name to execute ( trimmed ) 
-- a_csv_value  : Arguments table ( trimmed )
-
-# Example
-
-$assert=(
-    text******
-    ***text***
-    ******text,
-    $spread=(
-        align,
-        left,10,*,text
-        center,10,*,text
-        right,10,*,text
-    )
-)".to_string()),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "stream",
-[(ValueType::CText,"a_macro_name"),],
-                    Self::stream,
-                    Some("Stream texts to macro invocaiton
-
-# This is technically a wrapper around relay macro
-
-# Arguments
-
-- a_macro_name : A macro target that following texts are relayed to ( trimmed )
-
-# Example
-
-$stream(squash)
-
-abc
-
-clo
-
-fgh
-
-$consume()".to_string()),
-                ).no_ret()
-            ),
-            (
-                DMacroSign::new(
-                    "streaml",
-[(ValueType::CText,"a_macro_name"),],
-                    Self::stream_by_lines,
-                    Some("Stream texts to macro invocaiton but by lines
-
-# This is technically a wrapper around relay macro
-
-# Arguments
-
-- a_macro_name : A macro target that following texts are relayed to ( trimmed )
-
-# Example
-
-$streaml(trim)
-
-abc
-
-clo
-
-fgh
-
-$consume()".to_string()),
-                ).no_ret()
-            ),
-            (
-                DMacroSign::new(
-                    "if",
-[(ValueType::Bool,"a_cond"),(ValueType::Text, "a_if_expr"),],
-                    DeterredMacroMap::if_cond,
-                    Some(
-"Check condition and then execute an expression if the condition is true
-
-# Expansion order
-
-1. a_cond    : Expanded on time
-2. a_if_expr : Only when a_cond is true
-
-# Arguments
-
-- a_cond    : A condition to audit ( trimmed )
-- a_if_expr : An expression to expand if the condition is true
-
-# Example
-
-$assert(I'm true,$if(true,I'm true))".to_string(),
-                    ),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "ifelse",
-[(ValueType::Bool,"a_cond"),(ValueType::Text, "a_if_expr"),(ValueType::Text, "a_else_expr"),],
-                    DeterredMacroMap::ifelse,
-                    Some(
-"Check condition and execute a different expression by the condition
-
-# Expansion order
-
-1. a_cond      : Expanded on time
-2. a_if_expr   : Only when a_cond is true
-3. a_else_expr : Only when a_cond is false
-
-# Arguments
-
-- a_cond      : A condition to audit ( trimmed )
-- a_if_expr   : An expression to expand if the condition is \"true\"
-- a_else_expr : An expression to expand if the condition is \"false\"
-
-# Example
-
-$assert(I'm true,$ifelse(true,I'm true,I'm false))
-$assert(I'm false,$ifelse(false,I'm true,I'm false))".to_string(),
-                    ),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "ifdef",
-[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_if_expr"),],
-                    DeterredMacroMap::ifdef,
-                    Some("Execute an expression if macro is defined
-
-# Expansion order
-
-1. a_macro_name : Expanded on time
-2. a_if_expr    : Only when a_macro_name is defined
-
-# Arguments
-
-- a_macro_name : A macro name to check ( trimmed )
-- a_if_expr    : An expression to expand if the macro is defined
-
-# Example
-
-$assert(I'm defined,$ifdef(define,I'm defined))".to_string()),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "ifdefel",
-[(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_if_expr"),(ValueType::Text, "a_else_expr"),],
-                    DeterredMacroMap::ifdefel,
-                    Some(
-"Execute an expression by whether macro is defined or not
-
-# Expansion order
-
-1. a_macro_name : Expanded on time
-2. a_if_expr    : Only when a_macro_name is defined
-3. a_else_expr  : Only when a_macro_name is NOT defined
-
-# Arguments
-
-- a_macro_name : A macro name to check ( trimmed )
-- a_if_expr    : An expression to expand if the macro is defined
-- a_else_epxr  : An expression to expand if the macro is NOT defined
-
-# Example
-
-$assert(I'm defined,$ifdefel(define,I'm defined,I'm NOT defined))
-$assert(I'm NOT defined,$ifdefel(defuo,I'm defined,I'm NOT defined))".to_string()),
-                )
-            ),
-            (
-                DMacroSign::new(
-                    "logm",
-[(ValueType::CText,"a_macro_name"),],
-                    Self::log_macro_info,
-                    Some(
-"Log a macro information. Either print a macro body of a local or a runtime 
-macro.
-
-# NOT deterred
-
-# Arguments
-
-- a_macro_name : A macro name to log (trimmed)
-
-# Example
-
-$define(test=Test)
-$logm(test)".to_string()),
-                ).no_ret()
-            ),
-            (
-                DMacroSign::new(
-                    "que",
-[(ValueType::Text,"a_expr"),],
-                    DeterredMacroMap::queue_content,
-                    Some(
-"Que an expression. Queued expressions are expanded when the macro finishes
-
-Use a que macro when macros do operations that do not return a string AND you 
-need to make sure the operation should happen only after all string manipulation 
-ended. Halt is queued by default.
-
-Que does not evalute inner contents and simply put expression into a queue.
-
-# NO expansion at all
-
-# Arguments
-
-- a_expr : An expression to queue
-
-# Example
-
-$que(halt(false))".to_string()),
-                ).no_ret()
-            ),
-            (
-                DMacroSign::new(
-                    "queif",
-[(ValueType::Bool,"a_bool"),(ValueType::Text, "a_content"),],
-                    DeterredMacroMap::if_queue_content,
-                    Some("If true, then queue expressions
-
-Use a que macro when macros do operations that do not return a string AND you 
-need to make sure the operation should happen only after all string manipulation 
-ended. Halt is queued by default.
-
-Que does not evalute inner contents and simply put expression into a queue.
-
-# Expansion order
-
-1. a_bool : Expanded on time
-2. a_expr : NEVER expanded
-
-# Arguments
-
-- a_bool : A condition [boolean] ( trimmed )
-- a_expr : An expression to queue
-
-# Example
-
-$ifque(true,halt(false))".to_string()),
-                ).no_ret()
-            ),
-            (
-                DMacroSign::new(
-                    "expand",
-[(ValueType::Text,"a_literal_expr"),],
-                    DeterredMacroMap::expand_expression,
-                    Some("Expand expression 
-
-# Note
-
-- This will strip a given expression and then expand it.
-
-# Arguments
-
-- a_expr : An expression to expand
-
-# Example
-
-$expand(\\*1,2,3*\\)".to_string()),
-                )
-            ),
+            (DMacroSign::new(
+                "include",
+                [(ValueType::Path, "a_filename")],
+                Self::include,
+                Some(man_det!("include.r4d")),
+            )
+            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))),
+            (DMacroSign::new(
+                "incread",
+                [(ValueType::Path, "a_filename")],
+                Self::incread,
+                Some(man_det!("incread.r4d")),
+            )
+            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))),
+            (DMacroSign::new(
+                "tempin",
+                ESR,
+                Self::temp_include,
+                Some(man_det!("tempin.r4d")),
+            )
+            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))),
+            (DMacroSign::new(
+                "mapf",
+                [
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Path, "a_file"),
+                ],
+                Self::map_file,
+                Some(man_det!("mapf.r4d")),
+            )),
+            (DMacroSign::new(
+                "mapfe",
+                [
+                    (ValueType::Text, "a_expr"),
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Text, "a_lines"),
+                ],
+                Self::map_file_expr,
+                None,
+            )),
+            (DMacroSign::new(
+                "mapn",
+                [
+                    (ValueType::CText, "a_operation"),
+                    (ValueType::Text, "a_source"),
+                ],
+                Self::map_number,
+                None,
+            )),
+            (DMacroSign::new(
+                "readto",
+                [
+                    (ValueType::Path, "a_from_file"),
+                    (ValueType::Path, "a_to_file"),
+                ],
+                DeterredMacroMap::read_to,
+                Some(man_det!("readto.r4d")),
+            )
+            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
+            .no_ret()),
+            (DMacroSign::new(
+                "readin",
+                [(ValueType::Path, "a_file")],
+                DeterredMacroMap::read_in,
+                Some(man_det!("readin.r4d")),
+            )
+            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))),
+            (DMacroSign::new(
+                "ifenv",
+                [
+                    (ValueType::CText, "a_env_name"),
+                    (ValueType::Text, "a_if_expr"),
+                ],
+                DeterredMacroMap::ifenv,
+                Some(man_det!("ifenv.r4d")),
+            )),
+            (DMacroSign::new(
+                "ifenvel",
+                [
+                    (ValueType::CText, "a_env_name"),
+                    (ValueType::Text, "a_if_expr"),
+                    (ValueType::Text, "a_else_expr"),
+                ],
+                DeterredMacroMap::ifenvel,
+                Some(man_det!("ifenvel.r4d")),
+            )),
+            (DMacroSign::new(
+                "append",
+                [
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Text, "a_content"),
+                ],
+                Self::append,
+                Some(man_det!("append.r4d")),
+            )
+            .no_ret()),
+            (DMacroSign::new(
+                "anon",
+                [(ValueType::Text, "a_macro_definition")],
+                Self::add_anonymous_macro,
+                Some(man_det!("anon.r4d")),
+            )),
+            (DMacroSign::new("consume", ESR, Self::consume, Some(man_det!("consume.r4d")))),
+            (DMacroSign::new(
+                "EB",
+                ESR,
+                DeterredMacroMap::escape_blanks,
+                Some(man_det!("EB.r4d")),
+            )
+            .no_ret()),
+            (DMacroSign::new(
+                "exec",
+                [
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::CText, "a_macro_attribute"),
+                    (ValueType::Text, "a_macro_args"),
+                ],
+                DeterredMacroMap::execute_macro,
+                Some(man_det!("exec.r4d")),
+            )),
+            (DMacroSign::new(
+                "fassert",
+                [(ValueType::Text, "a_expr")],
+                DeterredMacroMap::assert_fail,
+                Some(man_det!("fassert.r4d")),
+            )
+            .no_ret()),
+            (DMacroSign::new(
+                "forby",
+                [
+                    (ValueType::Text, "a_body"),
+                    (ValueType::Text, "a_sep"),
+                    (ValueType::Text, "a_text"),
+                ],
+                DeterredMacroMap::forby,
+                Some(man_det!("forby.r4d")),
+            )),
+            (DMacroSign::new(
+                "foreach",
+                [(ValueType::Text, "a_body"), (ValueType::Text, "a_array")],
+                DeterredMacroMap::foreach,
+                Some(man_det!("foreach.r4d")),
+            )),
+            (DMacroSign::new(
+                "forjoin",
+                [
+                    (ValueType::Text, "a_body"),
+                    (ValueType::Text, "a_joined_array"),
+                ],
+                DeterredMacroMap::forjoin,
+                None,
+            )),
+            (DMacroSign::new(
+                "forsp",
+                [(ValueType::Text, "a_body"), (ValueType::Text, "a_words")],
+                DeterredMacroMap::for_space,
+                Some(man_det!("forsp.r4d")),
+            )),
+            (DMacroSign::new(
+                "forline",
+                [(ValueType::Text, "a_body"), (ValueType::Text, "a_lines")],
+                DeterredMacroMap::forline,
+                Some(man_det!("forline.r4d")),
+            )),
+            (DMacroSign::new(
+                "forcol",
+                [(ValueType::Text, "a_body"), (ValueType::Text, "a_table")],
+                DeterredMacroMap::forcol,
+                None,
+            )),
+            (DMacroSign::new(
+                "forloop",
+                [
+                    (ValueType::Text, "a_body"),
+                    (ValueType::Uint, "a_min"),
+                    (ValueType::Uint, "a_max"),
+                ],
+                DeterredMacroMap::forloop,
+                Some(man_det!("forloop.r4d")),
+            )),
+            (DMacroSign::new(
+                "map",
+                [
+                    (ValueType::Text, "a_expr"),
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Text, "a_text"),
+                ],
+                Self::map,
+                None,
+            )),
+            (DMacroSign::new(
+                "mape",
+                [
+                    (ValueType::Text, "a_start_expr"),
+                    (ValueType::Text, "a_end_expr"),
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Text, "a_source"),
+                ],
+                Self::map_expression,
+                None,
+            )),
+            (DMacroSign::new(
+                "mapa",
+                [
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Text, "a_array"),
+                ],
+                Self::map_array,
+                Some(man_det!("mapa.r4d")),
+            )),
+            (DMacroSign::new(
+                "mapl",
+                [
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Text, "a_lines"),
+                ],
+                Self::map_lines,
+                Some(man_det!("mapl.r4d")),
+            )),
+            (DMacroSign::new(
+                "maple",
+                [
+                    (ValueType::Text, "a_expr"),
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Text, "a_lines"),
+                ],
+                Self::map_lines_expr,
+                None,
+            )),
+            (DMacroSign::new(
+                "spread",
+                [
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::CText, "a_csv_value"),
+                ],
+                Self::spread_data,
+                Some(man_det!("spread.r4d")),
+            )),
+            (DMacroSign::new(
+                "stream",
+                [(ValueType::CText, "a_macro_name")],
+                Self::stream,
+                Some(man_det!("stream.r4d")),
+            )
+            .no_ret()),
+            (DMacroSign::new(
+                "streaml",
+                [(ValueType::CText, "a_macro_name")],
+                Self::stream_by_lines,
+                Some(man_det!("streaml.r4d")),
+            )
+            .no_ret()),
+            (DMacroSign::new(
+                "if",
+                [(ValueType::Bool, "a_cond"), (ValueType::Text, "a_if_expr")],
+                DeterredMacroMap::if_cond,
+                Some(man_det!("if.r4d")),
+            )),
+            (DMacroSign::new(
+                "ifelse",
+                [
+                    (ValueType::Bool, "a_cond"),
+                    (ValueType::Text, "a_if_expr"),
+                    (ValueType::Text, "a_else_expr"),
+                ],
+                DeterredMacroMap::ifelse,
+                Some(man_det!("ifelse.r4d")),
+            )),
+            (DMacroSign::new(
+                "ifdef",
+                [
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Text, "a_if_expr"),
+                ],
+                DeterredMacroMap::ifdef,
+                Some(man_det!("ifdef.r4d")),
+            )),
+            (DMacroSign::new(
+                "ifdefel",
+                [
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Text, "a_if_expr"),
+                    (ValueType::Text, "a_else_expr"),
+                ],
+                DeterredMacroMap::ifdefel,
+                Some(man_det!("ifdefel.r4d")),
+            )),
+            (DMacroSign::new(
+                "logm",
+                [(ValueType::CText, "a_macro_name")],
+                Self::log_macro_info,
+                Some(man_det!("logm.r4d")),
+            )
+            .no_ret()),
+            (DMacroSign::new(
+                "que",
+                [(ValueType::Text, "a_expr")],
+                DeterredMacroMap::queue_content,
+                Some(man_det!("que.r4d")),
+            )
+            .no_ret()),
+            (DMacroSign::new(
+                "queif",
+                [(ValueType::Bool, "a_bool"), (ValueType::Text, "a_content")],
+                DeterredMacroMap::if_queue_content,
+                Some(man_det!("queif.r4d")),
+            )
+            .no_ret()),
+            (DMacroSign::new(
+                "expand",
+                [(ValueType::Text, "a_literal_expr")],
+                DeterredMacroMap::expand_expression,
+                Some(man_det!("expand.r4d")),
+            )),
         ]))
     }
 

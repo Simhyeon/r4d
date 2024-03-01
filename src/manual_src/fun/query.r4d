@@ -1,0 +1,12 @@
+Query a csv table
+
+- Syntax of the query resembles SQL
+- Refer cindex for detailed query syntax
+
+# Arguments
+
+- a_query : A query statement ( trimmed )
+
+# Example
+
+$query(SELECT * FROM TABLE WHERE name == john FLAG PHD)

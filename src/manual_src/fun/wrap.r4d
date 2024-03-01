@@ -1,0 +1,14 @@
+Wrap text by width
+
+# Arguments
+
+- a_width : A width(chars) of given texts ( trimmed )
+- a_text  : Text to wrap
+
+# Example
+
+$assert(\\*Lorem ipsum
+dolor sit amet,
+consectetur
+adipiscing elit. In
+rhoncus*\\,$wrap(20,$lipsum(10)))

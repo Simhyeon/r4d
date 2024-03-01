@@ -1,0 +1,16 @@
+Indent lines with indenter
+
+# Arguments
+
+- a_indenter : An expression to put before lines
+- a_lines    : Lines to prepend indenter
+
+# Example
+
+$assert(
+# First
+# Second
+# Third,
+$indentl(# ,First
+Second
+Third))

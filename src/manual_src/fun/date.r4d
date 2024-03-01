@@ -1,0 +1,6 @@
+Get current local date without timezone
+
+# Example
+
+% yyyy-MM-dd
+$date()

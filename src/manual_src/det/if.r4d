@@ -1,0 +1,15 @@
+Check condition and then execute an expression if the condition is true
+
+# Expansion order
+
+1. a_cond    : Expanded on time
+2. a_if_expr : Only when a_cond is true
+
+# Arguments
+
+- a_cond    : A condition to audit ( trimmed )
+- a_if_expr : An expression to expand if the condition is true
+
+# Example
+
+$assert(I'm true,$if(true,I'm true))

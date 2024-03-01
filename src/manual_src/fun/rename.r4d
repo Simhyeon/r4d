@@ -1,0 +1,12 @@
+Rename a macro with a new name
+
+# Arguments
+
+- a_macro_name : A macro to change name ( trimmed )
+- a_new_name   : A new macro name to apply ( trimmed )
+
+# Example
+
+$define(test=Test)
+$rename(test,demo)
+$assert($demo(),Test)

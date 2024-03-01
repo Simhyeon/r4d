@@ -1,0 +1,12 @@
+Repeat given source by given counts
+
+# Arguments
+
+- a_count  : Counts of repetition [Unsigned integer] ( trimmed )
+- a_source : Source text to repeat
+
+# Example
+
+$assert(R4d
+R4d
+R4d,$repeat(3,R4d$nl()))

@@ -1,0 +1,11 @@
+Assert succeeds when text expansion yields error
+
+# NOT deterred
+
+# Arguments
+
+- a_expr: An expression to audit
+
+# Example
+
+$fassert($eval(Text is not allowd))

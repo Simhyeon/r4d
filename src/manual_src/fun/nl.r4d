@@ -1,0 +1,14 @@
+Print platform specific newlines. Its behaviour can be configured.
+
+- CRLF is returned on windows
+- LF is returned on *nix systems.
+
+# Arguments
+
+- a_amount : Amount of newlines [Unsigned integer] ( trimmed )
+
+# Example
+
+% This may not hold true if a newline is configured by a user
+$assert($nl(),
+)

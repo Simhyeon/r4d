@@ -1,0 +1,10 @@
+Get a max value from a given array
+
+# Arguments
+
+- a_array : An array to get the highest value from
+
+# Example
+
+$assert(eIsBigger,$max(aIsSmall,cIsMiddle,eIsBigger))
+$assert(5,$max(1,2,3,4,5))

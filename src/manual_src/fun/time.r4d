@@ -1,0 +1,6 @@
+Get current local time
+
+# Example
+
+% HH:mm:ss
+$time()

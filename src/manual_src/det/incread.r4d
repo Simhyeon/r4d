@@ -1,0 +1,16 @@
+Alwasy include a file as \"read\"
+
+- Include works as bufread in first level and chunk read in nested call.
+- Use incread when you need to read on first level.
+
+# NOT Deterred
+
+# AUTH : FIN
+
+# Arguments
+
+- a_filename : A file name to read ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
+
+$incread|(file_path)
+$-()

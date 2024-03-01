@@ -1,0 +1,9 @@
+Creates a unicode character from a hex number without prefix
+
+# Arguments
+
+- a_value : A value to convert to a unicode character
+
+# Example
+
+$assert(☺,$unicode(263a))

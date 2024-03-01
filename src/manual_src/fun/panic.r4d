@@ -1,0 +1,17 @@
+Forefully shutdown macro processing
+
+# NOTE
+
+Despite of the macro name, this means panicky state of macro processing not a 
+cli program itself. Thus rad gracefully return an error code.
+
+Panic macro's behaviour is not a flowcontrol therefore every input after the 
+execution is ignored.
+
+# Arguments
+
+- a_msg : A message to print as an error
+
+# Example
+
+$panic(This should not be reached)

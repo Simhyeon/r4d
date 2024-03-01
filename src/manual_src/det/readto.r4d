@@ -1,0 +1,15 @@
+Read from a file as bufread and paste into a file
+
+# Auth : FIN + FOUT
+
+# NOT deterred
+
+# Arguments
+
+- a_from_file : A file to read from ( trimmed )
+- a_to_file   : A file to paste into ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
+
+# Example
+
+$readto(from.txt,into.txt)

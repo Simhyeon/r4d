@@ -1,0 +1,21 @@
+Iterate around given range (min,max). 
+
+An iterated value is bound to macro \":\" 
+
+# Expansion order
+
+
+1. a_min  : Expanded on time
+2. a_max  : Expanded on time
+3. a_body : Creates a range of numbers from min+max pair, and expanded by per 
+item.
+
+# Arguments
+
+- a_body : A body to be pasted as iterated item
+- a_min  : A start index ( trimmed )
+- a_max  : A end index ( trimmed )
+
+# Example
+
+$assert(1+2+3+,$forloop($:()+,1,3))

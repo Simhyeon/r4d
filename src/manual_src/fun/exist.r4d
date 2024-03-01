@@ -1,0 +1,11 @@
+Check if file exists
+
+# Auth : FIN
+
+# Arguments
+
+- a_filename : A file name to audit ( trimmed )
+
+# Example
+
+$exist(file.txt)

@@ -1,0 +1,10 @@
+Get a substring unitl a pattern
+
+# Arguments
+
+- a_pattern : A pattern to find
+- a_content : A content to get a sub string
+
+# Example
+
+$assert(Hello,$until($space(),Hello World))

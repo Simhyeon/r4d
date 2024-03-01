@@ -1,0 +1,13 @@
+Replace a macro's contents with new values
+
+# Arguments
+
+- a_macro_name : A macro name to replace ( trimmed )
+- a_new_value  : A new value to put
+
+# Example
+
+$define(demo=Demo)
+$assert(Demo,$demo())
+$repl(demo,DOMO)
+$assert(DOMO,$demo())

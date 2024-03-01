@@ -1,0 +1,11 @@
+Trim values by lines. Trim is applied to each lines
+
+# Arguments
+
+- a_text : Text to trim
+
+# Example
+
+$assert(Upper$nl()Middle$nl()Last,$triml(    Upper
+    Middle
+          Last))

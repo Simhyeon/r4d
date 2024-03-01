@@ -1,0 +1,13 @@
+Get an indexed value from an array
+
+- A positive integer works as a normal index number
+- A negative integer works as an index from end ( -1 == len -1 )
+
+# Arguments
+
+- a_index : An index to get [Signed integer] ( trimmed )
+- a_array : Data source to index from
+
+# Example
+
+$assert(ef,$index(2,ab,cd,ef))

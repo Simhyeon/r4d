@@ -1,0 +1,15 @@
+Toggle hygiene mode. This enables macro hygiene.
+
+- On \"macro\" hygiene, every newly defined runtime macro is cleared after a 
+first level macro invocation.
+
+# Arguments
+
+- a_hygiene : Whether to enable macro hygiene mode [boolean] (trimmed)
+
+# Example
+
+$hygiene(true)
+$define(test=Test)
+% test macro is cleared and doesn't exsit
+$fassert($test())

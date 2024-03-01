@@ -1,0 +1,12 @@
+Convert a float number with given precision
+
+# Return : Float
+
+# Arguments
+
+- a_number    : A number to process ( trimmed )
+- a_precision : A precision number to apply to number ( trimmed )
+
+# Example
+
+$assert(0.30,$prec($eval(0.1 + 0.2),2))

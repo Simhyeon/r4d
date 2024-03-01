@@ -1,0 +1,9 @@
+Log a message to console
+
+# Arguments
+
+- a_msg : A message to log to console
+
+# Example
+
+$log($value_i_want_to_check())

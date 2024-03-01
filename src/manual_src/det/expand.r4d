@@ -1,0 +1,13 @@
+Expand expression 
+
+# Note
+
+- This will strip a given expression and then expand it.
+
+# Arguments
+
+- a_expr : An expression to expand
+
+# Example
+
+$expand(\\*1,2,3*\\)

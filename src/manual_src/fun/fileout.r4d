@@ -1,0 +1,13 @@
+Write content to a file
+
+# Auth : FOUT
+
+# Arguments
+
+- a_filename : A file name to write ( trimmed )
+- a_truncate : Whether to truncate before writing [boolean] ( trimmed )
+- a_content  : Content to write to the file
+
+# Example
+
+$fileout(/tmp/some_file.txt,true,Hello World)

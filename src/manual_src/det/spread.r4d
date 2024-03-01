@@ -1,0 +1,23 @@
+Execute a macro multiple times with given data chunk. Each csv line represents 
+an argument for a macro
+
+# NOT Deterred
+
+# Arguments
+
+- a_macro_name : A macro name to execute ( trimmed ) 
+- a_csv_value  : Arguments table ( trimmed )
+
+# Example
+
+$assert=(
+    text******
+    ***text***
+    ******text,
+    $spread=(
+        align,
+        left,10,*,text
+        center,10,*,text
+        right,10,*,text
+    )
+)

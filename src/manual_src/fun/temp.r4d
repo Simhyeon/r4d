@@ -1,0 +1,11 @@
+Get a temporary file path
+
+- A default temporary path is folloiwng
+- Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
+- *nix    : /tmp/rad.txt
+
+# Auth: FIN
+
+# Example
+
+$assert(/tmp/rad.txt,$temp())

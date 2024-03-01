@@ -1,0 +1,11 @@
+Apply a regular expression substitution to a source
+
+# Arguments
+
+- a_expr   : A regex expression to match
+- a_target : Text to substitute as
+- a_source : Source text to operate on
+
+# Example
+
+$assert(Hello Rust,$sub(World,Rust,Hello World))

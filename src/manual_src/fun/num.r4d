@@ -1,0 +1,11 @@
+Extract number parts from given text. If there are multiple numbers, only 
+extract the first
+
+# Arguments
+
+- a_text : Text to extract number from
+
+# Example
+
+$assert(34,$num(34sec))
+$assert(30,$num(30k/h for 3 hours))

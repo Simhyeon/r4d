@@ -1,0 +1,11 @@
+Translate characters. Usage similar to core util tr
+
+# Arguments
+
+- a_chars  : Matching characters
+- a_sub    : Substitute characters
+- a_source : Source text to apply translation
+
+# Example
+
+$assert(HellO_WOrld,$tr(-how,_HOW,hello-world))

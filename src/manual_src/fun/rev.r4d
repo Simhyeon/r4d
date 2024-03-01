@@ -1,0 +1,9 @@
+Reverse order of an array
+
+# Arguments
+
+- a_array : Array to reverse
+
+# Example
+
+$assert(\\*3,2,1*\\,$rev(1,2,3))

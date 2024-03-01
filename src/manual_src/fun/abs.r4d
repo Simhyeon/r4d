@@ -1,0 +1,13 @@
+Get an absolute path. This requires a path to be a real path.
+
+# Auth : FIN
+
+# Return : path
+
+# Arguments
+
+- a_path : A path to make it absolute ( trimmed )
+
+# Example
+
+$assert(/home/user/cwd/test.md,$abs(test.md))

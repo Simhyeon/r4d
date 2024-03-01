@@ -1,0 +1,7 @@
+Escape all following blanks until not. This can only be invoked at first level
+
+# NOT deterred
+
+# Example
+
+$EB()

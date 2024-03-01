@@ -1,0 +1,18 @@
+Check condition and execute a different expression by the condition
+
+# Expansion order
+
+1. a_cond      : Expanded on time
+2. a_if_expr   : Only when a_cond is true
+3. a_else_expr : Only when a_cond is false
+
+# Arguments
+
+- a_cond      : A condition to audit ( trimmed )
+- a_if_expr   : An expression to expand if the condition is \"true\"
+- a_else_expr : An expression to expand if the condition is \"false\"
+
+# Example
+
+$assert(I'm true,$ifelse(true,I'm true,I'm false))
+$assert(I'm false,$ifelse(false,I'm true,I'm false))

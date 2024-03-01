@@ -1,0 +1,16 @@
+Construct a formatted table. Available table forms are \"github,html,wikitext\"
+
+# Arguments
+
+- a_table_form : A table format [ \"github\", \"html\", \"wikitext\" ] ( trimmed )
+- a_csv_value  : A value to convert to table ( trimmed )
+
+# Example
+
+$assert=(
+    |a|b|c|
+    |-|-|-|
+    |1|2|3|,$enl()
+    $table(github,a,b,
+    1,2,3)
+)

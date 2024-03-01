@@ -1,0 +1,11 @@
+Evaluate an expression while keeping source text
+
+- This macro redirects an expression to evalexpr crate
+
+# Arguments
+
+- a_expr : An expression to evaluate
+
+# Example
+
+$assert(1 + 2 = 3,$evalk(1 + 2 ))

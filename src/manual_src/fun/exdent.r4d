@@ -1,0 +1,36 @@
+Outdent (exdent) with given amount
+
+- Technically this trims preceding spaces
+- Trims by line but with given amount.
+- If given an integer, it will try to trim blank characters as much as given 
+amount
+- min trims by minimal amount that can be applied to total lines
+- max acts same as triml
+- Tab character is treated as a single character. Don't combine spaces and tabs 
+for this macro
+
+# Arguments
+
+- a_trim_option : A trim behaviour [\"min\", \"max\", Unsigned integer] ( trimmed )
+- a_lines       : Lines to trim
+
+# Example
+
+$exdent(min,$space(1)First
+$space(2)Second
+$space(3)Third)
+% ===
+% Equally strips one space
+% First
+%  Second
+%   Third
+
+
+$exdent(3,$space(2)First
+$space(3)Second
+$space(5)Third)
+% ===
+% Equally tries stripping 3 spaces
+% First
+% Second
+%   Third
