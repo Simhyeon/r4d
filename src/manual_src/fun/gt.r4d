@@ -2,8 +2,6 @@ Check if left value is greater than right value
 
 Consider using eval macro if you're trying mathematical evaluation.
 
-# Return : Boolean
-
 # Arguments
 
 - a_lvalue : A left value to compare

@@ -13,6 +13,6 @@ $after(goal : ,My goal : Complete a project)
 Complete a project
 ```
 
-# Example
+# Test
 
 $assert(world,$after($space(),Hello world))

@@ -18,16 +18,17 @@ let mut processor =
     .lenient(true)                  // Disable strict mode
     .hygiene(Hygiene::Macro) // Enable hygiene mode
     .pipe_truncate(false) // Disable pipe truncate
-    .write_to_file(Path::new("out.txt"))? // default is stdout
+    .write_to_file(output_path)? // default is stdout
 $consume()
 $lineup-(//)
 ===
 let mut processor = 
-    Processor::new()                      // Make a processor
-    .lenient(true)                        // Disable strict mode
-    .hygiene(Hygiene::Macro)              // Enable hygiene mode
-    .pipe_truncate(false)                 // Disable pipe truncate
-    .write_to_file(Path::new("out.txt"))? // default is stdout
+    Processor::new()             // Make a processor
+    .lenient(true)               // Disable strict mode
+    .hygiene(Hygiene::Macro)     // Enable hygiene mode
+    .pipe_truncate(false)        // Disable pipe truncate
+    .write_to_file(output_path)? // default is stdout
+
 ```
 
 # Example

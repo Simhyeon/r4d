@@ -23,40 +23,23 @@ $Lineupm(2;3=)
 # Demo
 
 ```
-$stream(lineupm 1$lp()1/)
-let mut processor = Processor::new()
-.set_comment_type(CommentType::Start) // Use comment
-.custom_macro_char('~')? // use custom macro character
-.custom_comment_char('#')? // use custom comment character
-.purge(true) // Purge undefined macro
-.silent(WarningType::Security) // Silents all warnings
-.assert(true) // Enable assertion mode
-.lenient(true) // Disable strict mode
-.hygiene(Hygiene::Macro) // Enable hygiene mode
-.pipe_truncate(false) // Disable pipe truncate
-.write_to_file(Path::new("out.txt"))? // default is stdout
-.error_to_file(Path::new("err.txt"))? // default is stderr
-.unix_new_line(true) // use unix new line for formatting
-.discard(true) // discard all output
-.melt_files(&[Path::new("source.r4d")])? // Read runtime macros from frozen
-$consume|()
-$indent^-($tab(1))
+%---
+% Line up order
+% 1. First a 
+% 2. First b
+% 3. First (
+%---
+
+$stream(lineupm 1a1b1\()
+Hello a world b with salute (!)
+Sejul horiri a lado b (?)
+woki sul a m0cez b falcetenx (-)
+$consume()
 ===
-let mut processor = Processor::new()
-	.set_comment_type(CommentType::Start)    // Use comment
-	.custom_macro_char('~')?                 // use custom macro character
-	.custom_comment_char('#')?               // use custom comment character
-	.purge(true)                             // Purge undefined macro
-	.silent(WarningType::Security)           // Silents all warnings
-	.assert(true)                            // Enable assertion mode
-	.lenient(true)                           // Disable strict mode
-	.hygiene(Hygiene::Macro)                 // Enable hygiene mode
-	.pipe_truncate(false)                    // Disable pipe truncate
-	.write_to_file(Path::new("out.txt"))?    // default is stdout
-	.error_to_file(Path::new("err.txt"))?    // default is stderr
-	.unix_new_line(true)                     // use unix new line for formatting
-	.discard(true)                           // discard all output
-	.melt_files(&[Path::new("source.r4d")])? // Read runtime macros from frozen
+Hello        a world b with salute (!)
+Sejul horiri a lado  b             (?)
+woki sul     a m0cez b falcetenx   (-)
+
 ```
 
-# Example
+# Test

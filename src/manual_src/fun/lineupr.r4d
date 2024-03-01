@@ -8,21 +8,26 @@ Set up lines by a separator but match to right most character.
 # Demo
 
 ```
-$lineupr^(//,
-let mut processor = Processor::new() // Make a processor
-    .lenient(true) // Disable strict mode
+$stream(pipe)
+let mut processor = 
+    Processor::new()                            // Make a processor
+    .lenient(true)                  // Disable strict mode
     .hygiene(Hygiene::Macro) // Enable hygiene mode
     .pipe_truncate(false) // Disable pipe truncate
-    .write_to_file(Path::new("out.txt"))? // default is stdout)
+    .write_to_file(output_path)? // default is stdout
+$consume()
+$lineupr-(//)
 ===
-let mut processor = Processor::new()      // Make a processor
-    .lenient(true)                        // Disable strict mode
-    .hygiene(Hygiene::Macro)              // Enable hygiene mode
-    .pipe_truncate(false)                 // Disable pipe truncate
-    .write_to_file(Path::new("out.txt"))? // default is stdout
+let mut processor = 
+    Processor::new()                            // Make a processor
+    .lenient(true)                              // Disable strict mode
+    .hygiene(Hygiene::Macro)                    // Enable hygiene mode
+    .pipe_truncate(false)                       // Disable pipe truncate
+    .write_to_file(output_path)?                // default is stdout
+
 ```
 
-# Example
+# Test
 
 $assert=(
 First       %% wow
@@ -33,4 +38,3 @@ $lineupr^=(
 First %% wow
 Second part %% bob
 Thirdos %% Howzer
-

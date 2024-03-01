@@ -28,6 +28,6 @@ $consume()
 
 # Example
 
-$assert($alignc(aa bbbb ccccc$nl()1 2 3),$enl()
+$assert($alignc(left,aa bbbb ccccc$nl()1 2 3),$enl()
 aa bbbb ccccc
 1  2    3    )

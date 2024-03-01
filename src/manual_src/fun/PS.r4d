@@ -11,28 +11,22 @@ If you want to get a parent path name use a 'parent' macro.
 
 This macro is usable in a situation where a path is given by input and it has
 to be processed into a platform specific path dynamically without knowing which
-platform the processor resides in.
+platform the processed text resides in.
 
 # Demo
 
 $PS() % Either '\' or '/'
 
 ```
-$static(win_path,0)                      % Windows split path container
-$static(unix_path,0)                     % unix split path container
-$static(given_path,a/b/c/d)              % user given path
-$static(s_path,$split(\\,$given_path())) % Split path, Use two escapes
-
-$ifelse=(
-    $eq!(0,$len($s_path())),
-    $path($PS(),$s_path()),
-    $regex(/,$given_path(),$PS())
-)
+% On Unix
+$PS()
+% On Windows
+$PS()
 ===
-% rad test --comment any | rad --stream-chunk comp
-/a/b/c/d
+/
+\
 ```
 
-# Example
+# Test
 
 $assert(c,$cut($PS(),-1,a/b/c))

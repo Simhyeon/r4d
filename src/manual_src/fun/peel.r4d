@@ -16,7 +16,7 @@ let value = crate_name::static_method(arg);
 >>>
 rad -LP '$peel-(1).associated_method();'
 ===
-let value = arg.associated_method()
+let value = arg.associated_method();
 ```
 
 # Example
