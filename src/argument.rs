@@ -198,7 +198,7 @@ impl<'a> ArgableCow<'a> for Cow<'a, str> {
                 }
 
                 let tab = candidates.unwrap();
-                let comparator = self.to_lowercase();
+                let comparator = self.trim().to_lowercase();
                 let err = tab
                     .candidates
                     .iter()
@@ -387,6 +387,7 @@ impl<'a> ParsedCursors<'a> {
             .index(index)
             .level(self.level);
         let expanded: Cow<'a, str> = self.get(input.index)?.to_expanded(p, &input)?.into();
+
         match expanded.to_arg(&self.params[input.index], None) {
             Ok(Argument::Bool(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidExecution(
@@ -641,7 +642,7 @@ impl ArgCursor {
     /// Peek value without taking
     pub fn peek_value<'a>(&'a self, src: &'a str) -> &str {
         match self {
-            Self::Reference(s, e) => &src[*s..*e],
+            Self::Reference(s, e) => &src[*s..=*e.min(&(src.len() - 1))],
             Self::Modified(v) => std::str::from_utf8(&v[..]).unwrap(),
         }
     }

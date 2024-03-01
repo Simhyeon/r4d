@@ -228,12 +228,11 @@ impl ArgParser {
             if ch == self.delimiter {
                 // TODO TT
                 // This is not a neat solution it works...
-                let mut skip = false;
-                self.branch_delimiter(ch, idx, &mut skip, (&mut start, &mut end), input.args);
+                let mut split = false;
+                self.branch_delimiter(ch, idx, &mut split, (&mut start, &mut end), input.args);
 
-                if !skip {
-                    let value = self.cursor.take(idx + 1);
-                    values.push(value);
+                if split {
+                    values.push(ArgCursor::Reference(start, end));
                 }
             } else if ch == ESCAPE_CHAR_U8 {
                 self.branch_escape_char(ch, input.args);
@@ -310,11 +309,11 @@ impl ArgParser {
             if ch == self.delimiter {
                 // TODO TT
                 // This is not a neat solution it works...
-                let mut skip = false;
+                let mut split = false;
                 let ret =
-                    self.branch_delimiter(ch, idx, &mut skip, (&mut start, &mut end), input.args);
+                    self.branch_delimiter(ch, idx, &mut split, (&mut start, &mut end), input.args);
 
-                if !skip {
+                if split {
                     let value: Cow<'_, str> = if let Some(v) = ret {
                         v.into()
                     } else {
@@ -418,11 +417,11 @@ impl ArgParser {
             if ch == self.delimiter {
                 // TODO TT
                 // This is not a neat solution it works...
-                let mut skip = false;
+                let mut split = false;
                 let ret =
-                    self.branch_delimiter(ch, idx, &mut skip, (&mut start, &mut end), input.args);
+                    self.branch_delimiter(ch, idx, &mut split, (&mut start, &mut end), input.args);
 
-                if !skip {
+                if split {
                     let value: Cow<'_, str> = if let Some(v) = ret {
                         v.into()
                     } else {
@@ -481,7 +480,7 @@ impl ArgParser {
         &mut self,
         ch: u8,
         index: usize,
-        skip_split: &mut bool,
+        do_split: &mut bool,
         range: (&mut usize, &mut usize),
         src: &str,
     ) -> Option<String> {
@@ -510,14 +509,15 @@ impl ArgParser {
                     } else {
                         self.split_variant = SplitVariant::Greedy;
                     }
+                    *do_split = true;
                     self.no_previous = true;
                 }
                 // Push everything to current item, index, value or you name it
                 SplitVariant::Greedy => {
                     self.cursor.push(&[ch]);
-                    *skip_split = true;
                 }
                 SplitVariant::Always => {
+                    *do_split = true;
                     ret = self
                         .cursor
                         .get_cursor_range_or_get_string(index + 1, self.trim, range);
@@ -668,6 +668,7 @@ impl ArgParser {
     }
 }
 
+#[derive(Debug)]
 pub struct ParenStack {
     macro_invocation: bool,
 }

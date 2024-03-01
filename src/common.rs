@@ -552,7 +552,7 @@ impl std::str::FromStr for LineUpType {
         match s.trim().to_lowercase().as_str() {
             "h" | "hierarchy" => Ok(Self::Hierarchy),
             "l" | "left" => Ok(Self::Left),
-            "r" | "Right" => Ok(Self::Right),
+            "r" | "right" => Ok(Self::Right),
             "pr" | "parralel-right" => Ok(Self::ParralelRight),
             "pl" | "parralel-left" => Ok(Self::ParralelLeft),
             _ => Err(RadError::InvalidConversion(format!(

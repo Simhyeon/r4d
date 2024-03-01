@@ -91,9 +91,24 @@ impl FunctionMacroMap {
                         .candidates(&[
                             "h", "hierarchy",
                             "l", "left",
-                            "r", "Right",
+                            "r", "right",
                             "pr", "parralel-right",
                             "pl", "parralel-left" 
+                        ])
+                )
+            ),
+            (
+                FMacroSign::new(
+                    "alignc",
+                    [(ValueType::Enum,"a_align_type"),(ValueType::Text,"a_content"),],
+                    Self::align_columns,
+                    Some(man_fun!("alignc.r4d"))
+                ).enum_table(
+                    ETable::new("a_align_type")
+                        .candidates(&[
+                            "l", "left",
+                            "r", "right", 
+                            "c", "center"
                         ])
                 )
             ),
@@ -111,21 +126,6 @@ impl FunctionMacroMap {
 [(ValueType::Text,"a_separator"),(ValueType::Text, "a_lines"),],
                     Self::lineup_by_separator_match_rear,
                     Some(man_fun!("lineupr.r4d"))
-                )
-            ),
-            (
-                FMacroSign::new(
-                    "alignc",
-                    [(ValueType::Enum,"a_align_type"),(ValueType::Text,"a_content"),],
-                    Self::align_columns,
-                    Some(man_fun!("alignc.r4d"))
-                ).enum_table(
-                    ETable::new("a_align_type")
-                        .candidates(&[
-                            "l", "left",
-                            "r", "right", 
-                            "c", "center"
-                        ])
                 )
             ),
             (
@@ -251,7 +251,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "cut",
-[(ValueType::Text,"a_sep"),(ValueType::Uint, "a_index"),(ValueType::Text,"a_text"),],
+[(ValueType::Text,"a_sep"),(ValueType::Int, "a_index"),(ValueType::Text,"a_text"),],
                     Self::split_and_cut,
                     Some(man_fun!("cut.r4d")),
                 )
@@ -940,9 +940,9 @@ impl FunctionMacroMap {
                 ).enum_table(
                     ETable::new("a_output_type")
                         .candidates(&[
-                            "Terminal",
-                            "File",
-                            "Discard"
+                            "terminal",
+                            "file",
+                            "discard"
                         ])
                 ).no_ret()
             ),
@@ -1124,9 +1124,9 @@ impl FunctionMacroMap {
                 ).enum_table(
                     ETable::new("a_orientation")
                         .candidates(&[
-                            "Left",
-                            "Right",
-                            "Center",
+                            "left",
+                            "right",
+                            "center",
                         ])
                 )
             ),
