@@ -543,7 +543,7 @@ impl ArgParser {
 
         if ch == b'(' {
             let stack = if MACRO_START_MATCH
-                .find(self.cursor.peek_value(src))
+                .find(self.cursor.peek_value(src).trim())
                 .is_some()
             {
                 ParenStack {

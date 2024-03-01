@@ -12,10 +12,10 @@ Consider using eval macro if you're trying mathematical evaluation.
 # Demo
 
 ```
-$static(lv,$eval(20*3))  % Left  value
-$static(rv,$eval(40+20)) % Right value
+$static(lv,$eval(20*3))
+$static(rv,$eval(40+20))
 $if^(
-    $eq($lv(),$rv()),    % This is same with $eval( $lv() = $rv() )
+    $eq($lv(),$rv()),
     Wow so equal
 )
 ===
