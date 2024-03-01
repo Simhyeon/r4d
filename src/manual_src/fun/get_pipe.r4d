@@ -1,0 +1,26 @@
+Gets a piped value. 
+
+# Note
+
+- This truncates an original value by default 
+- Use "--no-truncate" to prevent truncate.
+- Pipe is not affected by hygiene mode
+
+# Arguments
+
+- a_pipe_name : A name of pipe target
+
+# Demo
+
+```
+$pipe(abc)% Pipes to value
+$-()      % This prints piped value which is [abc] in this case
+$-()      % Pipe gets truncated thus nothing is printed.
+===
+abc
+```
+
+# Test
+
+$pipe(Hello)
+$assert(Hello,$-())

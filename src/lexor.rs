@@ -78,7 +78,7 @@ impl Lexor {
                 self.comment_escape = false;
             }
 
-            return LexResult::Ignore;
+            return LexResult::Comment;
         }
         if self.consume_blank && Utils::is_blank_char(ch) {
             return LexResult::Ignore;
@@ -100,7 +100,7 @@ impl Lexor {
             if cch == ch {
                 self.soft_reset();
                 self.comment_escape = true;
-                return LexResult::Ignore;
+                return LexResult::Comment;
             }
         }
 
@@ -245,6 +245,7 @@ pub enum LexResult {
     EndFrag,
     ExitFrag,
     Literal(Cursor),
+    Comment,
 }
 
 /// Cursor that carries state information of lexor

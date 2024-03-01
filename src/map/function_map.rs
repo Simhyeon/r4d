@@ -42,7 +42,7 @@ impl FunctionMacroMap {
                     "-",
                     ESR,
                     Self::get_pipe,
-                    Some(man_fun!("pipe.r4d")),
+                    Some(man_fun!("get_pipe.r4d")),
                 ).optional(Parameter::new(ValueType::CText,"a_pipe_name"))
             ),
             (

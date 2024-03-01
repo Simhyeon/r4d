@@ -1950,6 +1950,8 @@ impl<'processor> Processor<'processor> {
             let lex_result = lexor.lex(ch);
             // Either add character to remainder or fragments
             match lex_result {
+                // Literally does nothing
+                LexResult::Comment => (),
                 LexResult::Ignore => frag.whole_string.push(ch),
                 // If given result is literal
                 LexResult::Literal(cursor) => {
@@ -2532,7 +2534,7 @@ impl<'processor> Processor<'processor> {
     // Start of lex branch methods
     // These are parse's sub methods for eaiser reading
     /// Lex branch with comment exit
-    fn lex_branch_comment_exit(&mut self, frag: &mut MacroFragment, remainder: &mut String) {
+    fn lex_branch_comment(&mut self, frag: &mut MacroFragment, remainder: &mut String) {
         remainder.push_str(&frag.whole_string);
         remainder.push_str(&self.state.newline);
         frag.clear();
