@@ -17,6 +17,6 @@ $strip-($border_padding())
 ~~~~~~ % From 10 to 6
 ```
 
-# Example
+# Test
 
 $assert(llo Wor,$strip(2,Hello World))

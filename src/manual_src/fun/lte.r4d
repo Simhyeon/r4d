@@ -7,7 +7,19 @@ Check if lvalue is less than or equal to rvalue
 - a_lvalue : A left value to compare
 - a_rvalue : A right value to compare
 
-# Example
+# Demo
+
+```
+$lte(1,2)
+$lte(1,1)
+$lte(3,1)
+===
+true
+true
+false
+```
+
+# Test
 
 $assert(true,$lte(b,c))
 $assert(true,$lte(text,text))

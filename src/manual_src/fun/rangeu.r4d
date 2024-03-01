@@ -23,32 +23,30 @@ e.g. $range(-3,_,abcdefg) would return "defg"
 
 # Arguments
 
-- a_start_index : A start substring index [signed integer] (trimmed)
-- a_end_index   : A end   substring index [signed integer] (trimmed)
+- a_start_index : A start substring index
+- a_end_index   : A end   substring index
 - a_source      : Source text get to a substring from
 
 # Note
 
 ```
 % With --no-truncate
-$pipe(안녕하세요세상아.)
-$rangeu-(0,9)
+$pipe(안녕하세요세상아)
+$rangeu-(0,7)
 $rangeu-(2,_)
 $rangeu-(2,-2)
 $rangeu-(-5,-3)
-$rangeu-(-7,_)
+$rangeu-(-5,_)
 $rangeu-(_,_)
 ===
-% With --no-truncate
-$pipe(안녕하세요세상에게.는)
-$rangeu-(_,_)
-$rangeu-(0,9)
-$rangeu-(2,_)
-$rangeu-(2,-2)
-$rangeu-(-5,-3)
-$rangeu-(-7,_)
+안녕하세요세상아
+하세요세상아
+하세요세
+하세요
+하세요세상아
+아
 ```
 
 # Example
 
-$assert(def,$range(3,5,abcdef))
+$assert(세요,$rangeu(3,4,안녕하세요))

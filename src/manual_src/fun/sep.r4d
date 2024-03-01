@@ -1,8 +1,8 @@
-Separate content. This technically doubles newlines.
+Separate lines by adding surplus newlines
 
 # Arguments
 
-- a_content : Content to separate
+- a_lines : Lines to separate
 
 # Demo
 
@@ -19,13 +19,9 @@ packed
 contents
 
 look depressing
-
 ```
 
-# Example
+# Test
 
-$assert(4,$countl($sep(1
+$assert(3,$countl($sep(1
 2)))
-
-$sep(1
-2)
