@@ -102,10 +102,13 @@ impl ArgParser {
         let len_src = input.type_len();
         let length = len_src + if input.optional.is_some() { 1 } else { 0 };
         if input.args.trim().is_empty() {
-            return Err(RadError::InvalidArgument(format!(
-                "Macro [{}] received empty arguments",
-                input.name
-            )));
+            if len_src > 0 {
+                return Err(RadError::InvalidArgument(format!(
+                    "Macro [{}] received empty arguments",
+                    input.name
+                )));
+            }
+            return Ok(ParsedCursors::new(input.name));
         }
         self.split_variant = if length > 1 {
             SplitVariant::Amount(length - 1)
@@ -135,10 +138,13 @@ impl ArgParser {
         let len_src = input.type_len();
         let length = len_src + if input.optional.is_some() { 1 } else { 0 };
         if input.args.trim().is_empty() {
-            return Err(RadError::InvalidArgument(format!(
-                "Macro [{}] received empty arguments",
-                input.name
-            )));
+            if len_src > 0 {
+                return Err(RadError::InvalidArgument(format!(
+                    "Macro [{}] received empty arguments",
+                    input.name
+                )));
+            }
+            return Ok(ParsedArguments::with_args(vec![]));
         }
         self.split_variant = if length > 1 {
             SplitVariant::Amount(length - 1)
@@ -165,11 +171,15 @@ impl ArgParser {
         let len_src = input.type_len();
         let length = len_src + if input.optional.is_some() { 1 } else { 0 };
         if input.args.trim().is_empty() {
-            return Err(RadError::InvalidArgument(format!(
-                "Macro [{}] received empty arguments",
-                input.name
-            )));
+            if len_src > 0 {
+                return Err(RadError::InvalidArgument(format!(
+                    "Macro [{}] received empty arguments",
+                    input.name
+                )));
+            }
+            return Ok(Vec::new());
         }
+
         self.split_variant = if length > 1 {
             SplitVariant::Amount(length - 1)
         } else {

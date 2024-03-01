@@ -40,10 +40,10 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "-",
-                    [(ValueType::CText,"a_pipe_name")],
+                    ESR,
                     Self::get_pipe,
                     Some(man_fun!("pipe.r4d")),
-                )
+                ).optional(Parameter::new(ValueType::CText,"a_pipe_name"))
             ),
             (
                 FMacroSign::new(

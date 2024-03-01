@@ -1,22 +1,26 @@
-Gets a piped value. This truncates an original value by default if not 
-configured as other.
+Gets a piped value. 
 
-Pipe can be used as a temporary container and doesn't get affected by hygiene
-mode.
+# Note
+
+- This truncates an original value by default 
+- Use "--no-truncate" to prevent truncate.
+- Pipe is not affected by hygiene mode
 
 # Arguments
 
-- a_pipe_name : A name of pipe target ( trimmed, optional )
+- a_pipe_name : A name of pipe target
 
 # Demo
 
 ```
-$pipe(abc) % Pipes to value
-$-()       % This prints piped value which is [abc] in this case
-$-()       % Pipe gets truncated thus nothing is printed.
+$pipe(abc)% Pipes to value
+$-()      % This prints piped value which is [abc] in this case
+$-()      % Pipe gets truncated thus nothing is printed.
+===
+abc
 ```
 
-# Exmaple
+# Test
 
 $pipe(Hello)
 $assert(Hello,$-())

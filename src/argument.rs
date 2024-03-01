@@ -234,16 +234,16 @@ pub enum Argument<'a> {
     Path(PathBuf),
     Float(f32),
 }
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ValueType {
     Bool,
-    CText,
-    Enum,
     Float,
+    Uint,
     Int,
     Path,
     Text,
-    Uint,
+    CText,
+    Enum,
 }
 
 impl ValueType {
@@ -253,10 +253,14 @@ impl ValueType {
         etable: Option<&ETable>,
     ) -> RadResult<()> {
         if src.is_none() {
-            return Err(RadError::InvalidExecution(format!(
-                "Return type out of sync. Expected : \"{}\" type but got empty value",
-                self,
-            )));
+            let ret = match self {
+                ValueType::Text | ValueType::CText => Ok(()),
+                _ => Err(RadError::InvalidExecution(format!(
+                    "Return type out of sync. Expected : \"{}\" type but got empty value",
+                    self,
+                ))),
+            };
+            return ret;
         }
         let src: Cow<'_, str> = src.unwrap().into();
         if let Err(RadError::InvalidArgument(stros)) =

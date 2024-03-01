@@ -1663,6 +1663,9 @@ impl FunctionMacroMap {
         } else {
             // "-" Always exsit, thus safe to unwrap
             let out = processor.state.get_pipe("-", false).unwrap_or_default();
+            if out.is_empty() {
+                processor.log_warning("Empty pipe", WarningType::Sanity)?;
+            }
             Some(out)
         };
         Ok(pipe)
