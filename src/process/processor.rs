@@ -1950,10 +1950,6 @@ impl<'processor> Processor<'processor> {
             let lex_result = lexor.lex(ch);
             // Either add character to remainder or fragments
             match lex_result {
-                LexResult::CommentExit => {
-                    self.lex_branch_comment_exit(frag, &mut remainder);
-                    return Ok(remainder);
-                }
                 LexResult::Ignore => frag.whole_string.push(ch),
                 // If given result is literal
                 LexResult::Literal(cursor) => {

@@ -15,13 +15,14 @@ use crate::utils::Utils;
 pub struct Lexor {
     previous_char: Option<char>,
     inner_parse: bool,
-    cursor: Cursor,
+    pub cursor: Cursor,
     literal_count: usize,     // Literal nest level
     parenthesis_count: usize, // Parenthesis nest level
     macro_char: char,
     comment_char: Option<char>,
     consume_previous: bool,
     consume_blank: bool,
+    comment_escape: bool,
 }
 
 impl Lexor {
@@ -42,6 +43,7 @@ impl Lexor {
             comment_char,
             consume_previous: false,
             consume_blank: false,
+            comment_escape: false,
         }
     }
 
@@ -56,6 +58,12 @@ impl Lexor {
     }
 
     /// Reset lexor state
+    fn soft_reset(&mut self) {
+        self.previous_char = None;
+        self.consume_previous = false;
+    }
+
+    /// Reset lexor state
     pub fn reset(&mut self) {
         self.previous_char = None;
         self.cursor = Cursor::None;
@@ -65,6 +73,13 @@ impl Lexor {
 
     /// Validate the character
     pub fn lex(&mut self, ch: char) -> LexResult {
+        if self.comment_escape {
+            if ch == '\n' {
+                self.comment_escape = false;
+            }
+
+            return LexResult::Ignore;
+        }
         if self.consume_blank && Utils::is_blank_char(ch) {
             return LexResult::Ignore;
         } else if self.consume_blank {
@@ -83,8 +98,9 @@ impl Lexor {
         // cch == comment char
         if let Some(cch) = self.comment_char {
             if cch == ch {
-                self.reset();
-                return LexResult::CommentExit;
+                self.soft_reset();
+                self.comment_escape = true;
+                return LexResult::Ignore;
             }
         }
 
@@ -229,7 +245,6 @@ pub enum LexResult {
     EndFrag,
     ExitFrag,
     Literal(Cursor),
-    CommentExit,
 }
 
 /// Cursor that carries state information of lexor
