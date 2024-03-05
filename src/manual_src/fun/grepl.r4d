@@ -13,12 +13,13 @@ Extract matched lines from given lines.
 # Demo
 
 ```
-$stream(grepl ^//)
+% Regex special character ^ is useful within grepl
+$grepl(^//,
 // Comment 1
 let test = Test::new();
 // Comment 2
 let var = usize::MAX;
-$consume^()
+)
 ===
 // Comment 1
 // Comment 2

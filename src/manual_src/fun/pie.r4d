@@ -1,0 +1,33 @@
+Pipe in-replace evaluation (PIE)
+
+# Note
+
+- In replace evaluation means piped value is replaced with given formula's
+  evaluated result.
+- PIE can have optional pipe value, if no keyword "p" was found, pipe value is
+  inserted at the start of the formula.
+  e.g. If the formula is 'p + 1', then "p" is treated as piped value. Otherwise
+  if the formula was '+1', then the formula is expanded to 'p+1'
+
+# Arguments
+
+- a_formula : Formula to apply
+
+# Demo
+
+```
+$pipe(10)
+$pie(+1)
+$-()
+$pie(5+p*10)
+$-()
+>>>
+rad --no-truncate
+===
+11
+115
+```
+
+# Example
+
+

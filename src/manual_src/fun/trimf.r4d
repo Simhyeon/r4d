@@ -1,0 +1,16 @@
+Trim front of the text. This removes leading white spaces
+
+# Arguments
+
+- a_text : Text to trim
+
+# Demo
+
+```
+-$trimf(       a    )-
+===
+-a    -
+```
+
+# Example
+

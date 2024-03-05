@@ -13,7 +13,8 @@ Extract matched items from given array.
 # Demo
 
 ```
-$grepa(^[a-zA-Z]+,hello,world,1.0f,235)
+$addexpr(expr,^[a-zA-Z]+)
+$grepa(expr,hello,world,1.0f,235)
 ===
 hello,world
 ```

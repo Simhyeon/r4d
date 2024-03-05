@@ -1,0 +1,19 @@
+Sort chunks
+
+# Arguments
+
+- a_sort_type : A sort type
+- a_text      : Text source to sort
+
+# Demo
+
+```
+
+```
+
+# Example
+
+$assert(f$nl()e$nl()d$nl()c,$sortl(desc,f
+e
+d
+c))

@@ -2,7 +2,7 @@ Crop preceding lines from given content
 
 # Arguments
 
-- a_count : Amount of lines to crop [unsigned integer] ( trimmed )
+- a_count : Amount of lines to crop
 - a_lines : Lines to crop from
 
 # Demo

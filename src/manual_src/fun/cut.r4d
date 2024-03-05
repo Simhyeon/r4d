@@ -1,4 +1,4 @@
-Split text into an array and get a value by index
+Index a value from a text separated by separator.
 
 # Arguments
 

@@ -1,11 +1,23 @@
 Sort an array
 
+# Note
+
+- Ascending order is what people normally expects.
+
 # Arguments
 
-- a_sort_type : A sort type [\"asec\",\"desc\"] (trimmed)
+- a_sort_type : A sort type 
 - a_array     : An array to sort
+
+# Demo
+
+```
+$sort(asce,3,6,7,4,1,9,0)
+===
+0,1,3,4,6,7,9
+```
 
 # Example
 
 $assert(\\*0,1,3,4,6,7,9*\\,$enl()
-$sort(asec,3,6,7,4,1,9,0))
+$sort(asce,3,6,7,4,1,9,0))

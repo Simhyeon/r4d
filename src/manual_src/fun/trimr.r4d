@@ -1,0 +1,15 @@
+Trim rear of the text. This removes following white spaces
+
+# Arguments
+
+- a_text : Text to trim
+
+# Demo
+
+```
+-$trimr(    a       )-
+===
+-    a-
+```
+
+# Example

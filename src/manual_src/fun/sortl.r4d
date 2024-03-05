@@ -1,9 +1,29 @@
 Sort lines
 
+# Note
+
+- Ascending order is what people normally expects.
+
 # Arguments
 
-- a_sort_type : A sort type [\"asec\",\"desc\"] (trimmed)
+- a_sort_type : A sort type 
 - a_lines     : Lines to sort
+
+# Demo
+
+```
+$sortl=(a,
+c
+a
+d
+b
+)
+===
+a
+b
+c
+d
+``` 
 
 # Example
 

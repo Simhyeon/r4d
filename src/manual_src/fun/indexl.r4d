@@ -5,8 +5,20 @@ Get an indexed line from lines
 
 # Arguments
 
-- a_index : An index to get [Signed integer] ( trimmed )
+- a_index : An index to get
 - a_liens : Lines to index from
+
+# Demo
+
+```
+$indexl(2,aa
+bb
+cc)
+===
+cc
+```
+
+
 
 # Example
 

@@ -8,7 +8,8 @@ Capture all matched expressions delimited by newlines
 # Demo
 
 ```
-$stream(pipe)
+$addexpr(expr,#+.+)
+$grep=(expr,
 # Header 1 
 
 Wow
@@ -20,9 +21,7 @@ Doggy
 ### Header 3
 
 Cute
-
-$consume()
-$capture-(^#+.+)
+)
 ===
 # Header 1 
 ## Header 2

@@ -1,0 +1,31 @@
+Outdent lines with indenter
+
+# Arguments
+
+- a_indenter : An expression to put after lines
+- a_lines    : Lines to append indenter
+
+# Demo
+
+```
+$outdentl(//,
+a
+b
+c
+)
+===
+a//
+b//
+c//
+```
+
+# Example
+
+$assert(
+# First
+# Second
+# Third,
+$indentl(# ,First
+Second
+Third))
+
