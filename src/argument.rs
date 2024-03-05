@@ -221,8 +221,7 @@ impl<'a> ArgableCow<'a> for Cow<'a, str> {
 
     fn to_expanded(&self, p: &mut Processor, input: &ExInput) -> RadResult<String> {
         let arg = if input.trim { self.trim() } else { self };
-        let res = p.parse_chunk(input.level, input.macro_name, arg);
-        res
+        p.parse_chunk(input.level, input.macro_name, arg)
     }
 }
 

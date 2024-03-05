@@ -210,6 +210,14 @@ impl FunctionMacroMap {
             ),
             (
                 FMacroSign::new(
+                    "ssplit",
+                    [(ValueType::Text,"a_text"),],
+                    Self::space_split,
+                    Some(man_fun!("ssplit.r4d")),
+                )
+            ),
+            (
+                FMacroSign::new(
                     "strip",
                     [(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
                     Self::strip,
@@ -219,7 +227,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "striper",
-[(ValueType::Text,"a_expr"),(ValueType::Text,"a_content"),],
+                    [(ValueType::Text,"a_expr"),(ValueType::Text,"a_content"),],
                     Self::strip_expression_from_rear,
                     Some(man_fun!("striper.r4d")),
                 )
@@ -227,7 +235,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "stripf",
-[(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
+                    [(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
                     Self::stripf,
                     Some(man_fun!("stripf.r4d")),
                 )
@@ -235,7 +243,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "stripr",
-[(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
+                    [(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
                     Self::stripr,
                     Some(man_fun!("stripr.r4d")),
                 )
@@ -243,7 +251,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "stripfl",
-[(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
+                    [(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
                     Self::stripf_line,
                     Some(man_fun!("stripfl.r4d")),
                 )
@@ -251,7 +259,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "striprl",
-[(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
+                    [(ValueType::Uint,"a_count"),(ValueType::Text,"a_content"),],
                     Self::stripr_line,
                     Some(man_fun!("striprl.r4d")),
                 )
@@ -259,34 +267,45 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "border",
-[(ValueType::Text,"a_border_string"),(ValueType::Text,"a_content"),],
+                    [(ValueType::Text,"a_border_string"),(ValueType::Text,"a_content"),],
                     Self::decorate_border,
-                    None,
+                    Some(man_fun!("border.r4d")),
                 )
             ),
             (
                 FMacroSign::new(
                     "cut",
-[(ValueType::Text,"a_sep"),(ValueType::Int, "a_index"),(ValueType::Text,"a_text"),],
+                    [(ValueType::Text,"a_sep"),(ValueType::Int, "a_index"),(ValueType::Text,"a_text"),],
                     Self::split_and_cut,
                     Some(man_fun!("cut.r4d")),
                 )
             ),
             (
                 FMacroSign::new(
+                    "scut",
+                    [(ValueType::Int,"a_index"),(ValueType::Text,"a_text"),],
+                    Self::split_whitespace_and_cut,
+                    Some(man_fun!("scut.r4d")),
+                )
+            ),
+            (
+                FMacroSign::new(
                     "cont",
-                    [(ValueType::Enum,"a_op"),(ValueType::Text,"a_arg"),],
+                    [(ValueType::Enum,"a_op")],
                     Self::container,
-                    None
-                ).enum_table(
+                    Some(man_fun!("cont.r4d")),
+                ).optional(Parameter::new(ValueType::Text,"a_arg"))
+                .enum_table(
                     ETable::new("a_op")
                         .candidates(&[
                             "print",
+                            "list",
                             "push",
                             "pop",
                             "clear",
                             "get",
-                            "ow",
+                            "top",
+                            "len",
                             "set",
                             "extend"
                         ])
@@ -294,24 +313,8 @@ impl FunctionMacroMap {
             ),
             (
                 FMacroSign::new(
-                    "scut",
-[(ValueType::Uint,"a_index"),(ValueType::Text,"a_text"),],
-                    Self::split_whitespace_and_cut,
-                    Some(man_fun!("scut.r4d")),
-                )
-            ),
-            (
-                FMacroSign::new(
-                    "ssplit",
-[(ValueType::Text,"a_text"),],
-                    Self::space_split,
-                    Some(man_fun!("ssplit.r4d")),
-                )
-            ),
-            (
-                FMacroSign::new(
                     "squash",
-[(ValueType::Text,"a_text"),],
+                    [(ValueType::Text,"a_text"),],
                     Self::squash,
                     Some(man_fun!("squash.r4d")),
                 )
@@ -319,7 +322,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "assert",
-[(ValueType::Text,"a_lvalue"),(ValueType::Text, "a_rvalue"),],
+                    [(ValueType::Text,"a_lv"),(ValueType::Text, "a_rv"),],
                     Self::assert,
                     Some(man_fun!("assert.r4d")),
                 ).no_ret()
@@ -335,9 +338,9 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "coll",
-[(ValueType::Text,"a_pat"),(ValueType::Text,"a_lines"),],
+                    [(ValueType::Text,"a_pat"),(ValueType::Text,"a_lines"),],
                     Self::collapse,
-                    None,
+                    Some(man_fun!("coll.r4d")),
                 )
             ),
             (
@@ -382,7 +385,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "chars",
-                    [(ValueType::Text,"a_text"),],
+                    [(ValueType::CText,"a_text"),],
                     Self::chars_array,
                     Some(man_fun!("chars.r4d")),
                 )
@@ -445,6 +448,14 @@ impl FunctionMacroMap {
             ),
             (
                 FMacroSign::new(
+                    "enl",
+                    ESR,
+                    Self::escape_newline,
+                    Some(man_fun!("enl.r4d"))
+                ).no_ret()
+            ),
+            (
+                FMacroSign::new(
                     "decl",
                     [(ValueType::CText,"a_macro_names"),],
                     Self::declare,
@@ -459,6 +470,7 @@ impl FunctionMacroMap {
                     Some(man_fun!("docu.r4d")),
                 ).no_ret()
             ),
+            // TODO 
             (
                 FMacroSign::new(
                     "dump",
@@ -477,14 +489,6 @@ impl FunctionMacroMap {
             ),
             (
                 FMacroSign::new(
-                    "enl",
-                    ESR,
-                    Self::escape_newline,
-                    Some(man_fun!("enl.r4d"))
-                ).no_ret()
-            ),
-            (
-                FMacroSign::new(
                     "escape",
                     ESR,
                     Self::escape,
@@ -497,63 +501,64 @@ impl FunctionMacroMap {
                     ESR,
                     Self::exit,
                     Some(man_fun!("exit.r4d")),
-                ).no_ret()
+                ).optional(Parameter::new(ValueType::Bool, "a_hard_exit"))
+                .no_ret()
             ),
             (
                 FMacroSign::new(
                     "inc",
                     [(ValueType::CText,"a_number")],
                     Self::increase_number,
-                    None
+                    Some(man_fun!("inc.r4d")),
                 ).optional(Parameter::new(ValueType::Uint,"a_amount"))
             ),
             (
                 FMacroSign::new(
                     "dec",
-[(ValueType::CText,"a_number"),(ValueType::Uint,"a_amount"),],
+                    [(ValueType::CText,"a_number")],
                     Self::decrease_number,
-                    None
-                )
+                    Some(man_fun!("dec.r4d")),
+                ).optional(Parameter::new(ValueType::Uint,"a_amount"))
             ),
             (
                 FMacroSign::new(
                     "square",
-[(ValueType::Text,"a_number"),],
+                    [(ValueType::Text,"a_number"),],
                     Self::square_number,
-                    None
+                    Some(man_fun!("square.r4d")),
                 )
             ),
             (
                 FMacroSign::new(
                     "cube",
-[(ValueType::Text,"a_number"),],
+                    [(ValueType::Text,"a_number"),],
                     Self::cube_number,
-                    None
+                    Some(man_fun!("cube.r4d")),
                 )
             ),
             (
                 FMacroSign::new(
                     "pow",
-[(ValueType::Text,"a_number"),(ValueType::Text,"a_exponent"),],
+                    [(ValueType::Text,"a_number"),(ValueType::Text,"a_exponent")],
                     Self::power_number,
-                    None
+                    Some(man_fun!("pow.r4d")),
                 )
             ),
             (
                 FMacroSign::new(
                     "sqrt",
-[(ValueType::Text,"a_number"),],
+                    [(ValueType::Text,"a_number"),],
                     Self::square_root,
-                    None
+                    Some(man_fun!("sqrt.r4d")),
                 )
             ),
             (
                 FMacroSign::new(
                     "round",
-[(ValueType::Float,"a_number"),],
+                    [(ValueType::Float,"a_number"),],
                     Self::round_number,
-                    None
-                ).ret(ValueType::Uint)
+                    Some(man_fun!("round.r4d")),
+                ).ret(ValueType::Int)
             ),
             (
                 FMacroSign::new(
@@ -575,15 +580,23 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "isempty",
-[(ValueType::Text,"a_value"),],
+                    [(ValueType::Text,"a_value"),],
                     Self::is_empty,
                     Some(man_fun!("isempty.r4d")),
                 ).ret(ValueType::Bool)
             ),
             (
                 FMacroSign::new(
+                    "istype",
+                    [(ValueType::Text,"a_type"),(ValueType::Text,"a_value"),],
+                    Self::qualify_value,
+                    Some(man_fun!("istype.r4d")),
+                ).ret(ValueType::Bool)
+            ),
+            (
+                FMacroSign::new(
                     "insulav",
-[(ValueType::Text,"a_content"),],
+                    [(ValueType::Text,"a_content"),],
                     Self::isolate_vertical,
                     Some(man_fun!("insulav.r4d")),
                 )
@@ -598,16 +611,8 @@ impl FunctionMacroMap {
             ),
             (
                 FMacroSign::new(
-                    "istype",
-[(ValueType::Text,"a_type"),(ValueType::Text,"a_value"),],
-                    Self::qualify_value,
-                    Some(man_fun!("istype.r4d")),
-                ).ret(ValueType::Bool)
-            ),
-            (
-                FMacroSign::new(
                     "iszero",
-[(ValueType::CText,"a_value"),],
+                    [(ValueType::CText,"a_value"),],
                     Self::is_zero,
                     Some(man_fun!("iszero.r4d")),
                 ).ret(ValueType::Bool)
@@ -615,7 +620,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "find",
-[(ValueType::Text,"a_expr"),(ValueType::Text, "a_source"),],
+                    [(ValueType::Text,"a_expr"),(ValueType::Text, "a_source"),],
                     Self::find_occurence,
                     Some(man_fun!("find.r4d")),
                 ).ret(ValueType::Bool)
@@ -623,7 +628,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "findm",
-[(ValueType::Text,"a_expr"),(ValueType::Text, "a_source"),],
+                    [(ValueType::Text,"a_expr"),(ValueType::Text, "a_source"),],
                     Self::find_multiple_occurence,
                     Some(man_fun!("findm.r4d")),
                 ).ret(ValueType::Uint)
@@ -631,15 +636,15 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "floor",
-[(ValueType::Float,"a_number"),],
+                    [(ValueType::Float,"a_number"),],
                     Self::get_floor,
                     Some(man_fun!("floor.r4d")),
-                ).ret(ValueType::Uint)
+                ).ret(ValueType::Int)
             ),
             (
                 FMacroSign::new(
                     "fold",
-[(ValueType::Text,"a_array"),],
+                    [(ValueType::Text,"a_array"),],
                     Self::fold,
                     Some(man_fun!("fold.r4d")),
                 )
@@ -647,7 +652,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "foldl",
-[(ValueType::Text,"a_lines"),],
+                    [(ValueType::Text,"a_lines")],
                     Self::fold_line,
                     Some(man_fun!("foldl.r4d")),
                 )
@@ -655,7 +660,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "foldlc",
-[(ValueType::Text,"a_count"),(ValueType::Text,"a_lines"),],
+                    [(ValueType::Uint,"a_count"),(ValueType::Text,"a_lines")],
                     Self::fold_lines_by_count,
                     Some(man_fun!("foldlc.r4d")),
                 )
@@ -663,15 +668,16 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "folde",
-[(ValueType::Text,"a_start_expr"),(ValueType::Text,"a_end_expr"),(ValueType::Text,"a_lines"),],
+                    [(ValueType::Text,"a_start_expr"),(ValueType::Text,"a_end_expr"),(ValueType::Text,"a_lines"),],
                     Self::fold_regular_expr,
                     None,
                 )
             ),
+            // TODO
             (
                 FMacroSign::new(
                     "grep",
-[(ValueType::Text,"a_expr"),(ValueType::Text, "a_text"),],
+                    [(ValueType::Text,"a_expr"),(ValueType::Text, "a_text"),],
                     Self::grep_expr,
                     Some(man_fun!("grep.r4d")),
                 )
@@ -679,7 +685,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "grepa",
-[(ValueType::Text,"a_expr"),(ValueType::Text, "a_array"),],
+                    [(ValueType::Text,"a_expr"),(ValueType::Text, "a_array"),],
                     Self::grep_array,
                     Some(man_fun!("grepa.r4d")),
                 )
@@ -775,7 +781,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "joinl",
-[(ValueType::Text,"a_sep"),(ValueType::Text,"a_lines"),],
+                    [(ValueType::Text,"a_sep"),(ValueType::Text,"a_lines"),],
                     Self::join_lines,
                     Some(man_fun!("joinl.r4d")),
                 )
@@ -1597,13 +1603,29 @@ impl FunctionMacroMap {
             );
             map.macros.insert(
                 "pie".to_string(),
-                FMacroSign::new("pie", [(ValueType::Text, "a_expr")], Self::pipe_ire, None)
-                    .no_ret(),
+                FMacroSign::new(
+                    "pie",
+                    [
+                        (ValueType::CText, "a_macro_name"),
+                        (ValueType::Text, "a_expr"),
+                    ],
+                    Self::pipe_ire,
+                    None,
+                )
+                .no_ret(),
             );
             map.macros.insert(
                 "mie".to_string(),
-                FMacroSign::new("mie", [(ValueType::Text, "a_expr")], Self::macro_ire, None)
-                    .no_ret(),
+                FMacroSign::new(
+                    "mie",
+                    [
+                        (ValueType::CText, "a_macro_name"),
+                        (ValueType::Text, "a_expr"),
+                    ],
+                    Self::macro_ire,
+                    None,
+                )
+                .no_ret(),
             );
         }
         map.macros.insert(

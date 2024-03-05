@@ -8,6 +8,7 @@ fn yo(i: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
     Ok(None)
 }
 #[test]
-fn test() {
-    let test = FMacroSign::new("", [(ValueType::Text, "d")], yo, Some("".to_string()));
+fn test() -> RadResult<()> {
+    let ret = evalexpr::eval("math::sqrt(9)")?;
+    Ok(())
 }

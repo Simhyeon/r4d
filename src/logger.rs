@@ -405,10 +405,10 @@ impl<'logger> Logger<'logger> {
             );
             let assert_result = format!(
                 "
-{}
+[{}]
 SUCCESS : {}
-FAIL: {}",
-                Utils::green("Assert", log_to_file),
+FAIL    : {}",
+                Utils::green("Assertion stats", log_to_file),
                 self.stat.assert_success,
                 self.stat.assert_fail
             );

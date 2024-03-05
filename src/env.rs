@@ -25,7 +25,7 @@ impl ProcEnv {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 pub(crate) struct MacEnv {
     pub rad_tab_width: Option<usize>,
     pub fold_space: bool,

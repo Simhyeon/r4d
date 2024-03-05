@@ -2533,14 +2533,6 @@ impl<'processor> Processor<'processor> {
     // <LEX>
     // Start of lex branch methods
     // These are parse's sub methods for eaiser reading
-    /// Lex branch with comment exit
-    fn lex_branch_comment(&mut self, frag: &mut MacroFragment, remainder: &mut String) {
-        remainder.push_str(&frag.whole_string);
-        remainder.push_str(&self.state.newline);
-        frag.clear();
-        frag.is_processed = true;
-    }
-
     /// Lex branch with literal charcter
     fn lex_branch_literal(
         &mut self,

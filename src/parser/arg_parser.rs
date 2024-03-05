@@ -460,9 +460,14 @@ impl ArgParser {
             trim,
             (&mut start, &mut end),
         ) {
+            // Return String
             v.into()
         } else {
-            input.args[start..end].into()
+            let mut src = &input.args[start..end];
+            if trim {
+                src = src.trim();
+            }
+            src.into()
         };
 
         let type_checked_arg = Self::validate_arg(

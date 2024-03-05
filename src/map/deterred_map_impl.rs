@@ -332,11 +332,11 @@ impl DeterredMacroMap {
 
         let map_type = if p.contains_macro(macro_name, MacroType::Any) {
             "macro"
-        } else if operation.contains('n') {
-            "formula"
         } else {
-            operation = op_src.to_string();
-            operation.insert(0, 'n');
+            operation = op_src.clone();
+            if !operation.contains('n') {
+                operation.insert(0, 'n');
+            }
             "formula"
         };
 
@@ -354,7 +354,10 @@ impl DeterredMacroMap {
                         &(macro_arguments.clone() + m.as_str()),
                     )?
                     .unwrap_or_default(),
-                "formula" => eval(&operation.replace('n', m.as_str()))?.to_string(),
+                "formula" => {
+                    let string = operation.replace('n', m.as_str());
+                    eval(&string)?.to_string()
+                }
                 _ => unreachable!(),
             };
             new.push_str(&evaluated);

@@ -511,10 +511,12 @@ pub enum VarContOperation {
     Extend,
     Get,
     Pop,
+    Print,
+    List,
     Push,
     Set,
-    Print,
-    Ow,
+    Top,
+    Len,
 }
 
 impl FromStr for VarContOperation {
@@ -526,7 +528,9 @@ impl FromStr for VarContOperation {
             "pop" => Self::Pop,
             "clear" => Self::Clear,
             "get" => Self::Get,
-            "ow" => Self::Ow,
+            "top" => Self::Top,
+            "len" => Self::Len,
+            "list" => Self::List,
             "set" => Self::Set,
             "extend" => Self::Extend,
             _ => {

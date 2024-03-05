@@ -12,7 +12,7 @@ use crate::consts::{
 };
 use crate::parser::{ArgParser, SplitVariant};
 
-use crate::env::PROC_ENV;
+use crate::env::{MacEnv, PROC_ENV};
 use crate::error::RadError;
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
@@ -358,7 +358,7 @@ impl FunctionMacroMap {
     pub(crate) fn macro_ire(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        let macro_name = args.get_text(0)?;
+        let macro_name = args.get_ctext(0)?;
         let mut formula = args.get_text(1)?.to_string();
         let body = p.get_runtime_macro_body(macro_name)?;
         let replaced = if formula.contains('m') {
@@ -409,11 +409,10 @@ impl FunctionMacroMap {
                 p.var_container.clear();
                 None
             }
-            VarContOperation::Print => Some(format!("{:#?}", p.var_container)),
-            VarContOperation::Ow => {
-                p.var_container = var.split(',').map(|s| s.to_string()).collect();
-                None
-            }
+            VarContOperation::Print => Some(format!("{:?}", p.var_container)),
+            VarContOperation::List => p.var_container.join(",").into(),
+            VarContOperation::Top => p.var_container.last().cloned(),
+            VarContOperation::Len => p.var_container.len().to_string().into(),
             VarContOperation::Get => p
                 .var_container
                 .get(var.trim().parse::<usize>().map_err(|_| {
@@ -853,7 +852,9 @@ impl FunctionMacroMap {
 
         let source = args.get_text(0)?;
         // Chomp and then compress
-        let result = Self::chomp_inner(source, &processor.state.newline).to_string();
+        let result = Self::chomp_inner(source, &processor.state.newline)
+            .trim()
+            .to_string();
 
         Ok(Some(result))
     }
@@ -2249,6 +2250,7 @@ impl FunctionMacroMap {
                 })
                 .collect::<Vec<_>>()
         }
+
         #[inline]
         fn set_maximal_standard_width<'a, T>(
             iter: T,
@@ -2267,9 +2269,34 @@ impl FunctionMacroMap {
                 .collect::<Vec<_>>()
         }
 
+        #[inline]
+        fn set_maximal_whitspace<'a, T>(
+            iter: T,
+            standard_indent_width: &mut usize,
+        ) -> Vec<(usize, &'a str, usize)>
+        where
+            T: Iterator<Item = &'a str>,
+        {
+            *standard_indent_width = 0; // Start from 0 to set maximal value
+            iter.enumerate()
+                .map(|(idx, line)| {
+                    let mut new_start = line.len() - line.trim_start().len();
+                    *standard_indent_width = *standard_indent_width.max(&mut new_start);
+                    (idx, line, 0)
+                })
+                .collect::<Vec<_>>()
+        }
+
         // Set standard_width
         let c2 = match line_up_type {
-            LineUpType::Right | LineUpType::ParralelRight => {
+            LineUpType::ParralelRight => {
+                let ret = set_maximal_whitspace(c1, &mut standard_width);
+                if standard_width == 0 {
+                    return Ok(Some(args.get_text(1)?.to_string()));
+                }
+                ret
+            }
+            LineUpType::Right => {
                 let ret = set_maximal_standard_width(c1, &mut standard_width);
                 if standard_width == 0 {
                     return Ok(Some(args.get_text(1)?.to_string()));
@@ -2321,7 +2348,11 @@ impl FunctionMacroMap {
                 LineUpType::Left => {
                     result.push_str(line.trim_start());
                 }
-                LineUpType::ParralelRight | LineUpType::ParralelLeft => {
+                LineUpType::ParralelLeft => {
+                    result.push_str(&" ".repeat(standard_width));
+                    result.push_str(line.trim_start());
+                }
+                LineUpType::ParralelRight => {
                     result.push_str(&" ".repeat(standard_width));
                     result.push_str(line.trim_start());
                 }
@@ -3250,13 +3281,7 @@ impl FunctionMacroMap {
         let args = ArgParser::new().args_with_len(input)?;
 
         let mut content = args.get_text(0)?.split(',').collect::<Vec<_>>();
-        let res = merge_container(
-            &mut content,
-            p.env.fold_reverse,
-            p.env.fold_space,
-            p.env.fold_trim,
-            &p.state.newline,
-        );
+        let res = merge_container(&mut content, p.env, None);
 
         Ok(Some(res))
     }
@@ -3277,13 +3302,7 @@ impl FunctionMacroMap {
         let args = ArgParser::new().args_with_len(input)?;
 
         let mut content = args.get_text(0)?.lines().collect::<Vec<_>>();
-        let res = merge_container(
-            &mut content,
-            p.env.fold_reverse,
-            p.env.fold_space,
-            p.env.fold_trim,
-            &p.state.newline,
-        );
+        let res = merge_container(&mut content, p.env, Some(&p.state.newline));
 
         Ok(Some(res))
     }
@@ -3303,9 +3322,6 @@ impl FunctionMacroMap {
         let mut container = Vec::new();
         let mut folded = String::new();
 
-        let fold_with_space = p.env.fold_space;
-        let rev = p.env.fold_reverse;
-        let trim = p.env.fold_trim;
         let nl = p.state.newline.clone();
         let values = (0..args.len())
             .map(|idx| {
@@ -3314,6 +3330,7 @@ impl FunctionMacroMap {
             })
             .collect::<RadResult<Vec<_>>>()?;
 
+        let env = p.env;
         let regs = p.try_get_or_insert_multiple_regex(&values[0..2])?;
 
         let reg_start = regs[0];
@@ -3322,23 +3339,11 @@ impl FunctionMacroMap {
         for line in args.get_text(2)?.full_lines() {
             // Start new container
             if reg_start.find(line).is_some() && reg_end.find(line).is_none() {
-                folded.push_str(&merge_container(
-                    &mut container,
-                    rev,
-                    fold_with_space,
-                    trim,
-                    &nl,
-                ));
+                folded.push_str(&merge_container(&mut container, env, Some(&nl)));
                 container.push(line);
             } else if reg_start.find(line).is_none() && reg_end.find(line).is_some() {
                 container.push(line);
-                folded.push_str(&merge_container(
-                    &mut container,
-                    rev,
-                    fold_with_space,
-                    trim,
-                    &nl,
-                ));
+                folded.push_str(&merge_container(&mut container, env, Some(&nl)));
                 // End regex doesn't add newline
                 container.clear();
             } else if !container.is_empty() {
@@ -3349,10 +3354,8 @@ impl FunctionMacroMap {
         }
         folded.push_str(&merge_container(
             &mut container,
-            rev,
-            fold_with_space,
-            trim,
-            &p.state.newline,
+            p.env,
+            Some(&p.state.newline),
         ));
 
         Ok(Some(folded))
@@ -4162,7 +4165,7 @@ impl FunctionMacroMap {
         let args = ArgParser::new().args_with_len(input)?;
 
         let number = args.get_text(0)?;
-        let ret = eval(&format!("sqrt({number})"))?;
+        let ret = eval(&format!("math::sqrt({number})"))?;
         Ok(Some(ret.to_string()))
     }
 
@@ -4584,10 +4587,12 @@ impl FunctionMacroMap {
     ///
     /// $isempty(value)
     pub(crate) fn is_empty(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
-
-        let value = args.get_text(0)?;
-        Ok(Some(value.is_empty().to_string()))
+        let target = if input.attr.trim_input {
+            input.args.trim()
+        } else {
+            input.args
+        };
+        Ok(Some(target.is_empty().to_string()))
     }
 
     /// iszero : Check if value is zero
@@ -4625,13 +4630,7 @@ impl FunctionMacroMap {
                 write!(
                     formatted,
                     "{}",
-                    merge_container(
-                        &mut container,
-                        p.env.fold_reverse,
-                        p.env.fold_space,
-                        p.env.fold_trim,
-                        &p.state.newline,
-                    )
+                    merge_container(&mut container, p.env, Some(&p.state.newline),)
                 )?;
             }
         }
@@ -4639,13 +4638,7 @@ impl FunctionMacroMap {
             write!(
                 formatted,
                 "{}",
-                merge_container(
-                    &mut container,
-                    p.env.fold_reverse,
-                    p.env.fold_space,
-                    p.env.fold_trim,
-                    &p.state.newline,
-                )
+                merge_container(&mut container, p.env, Some(&p.state.newline),)
             )?;
         }
 
@@ -4969,7 +4962,7 @@ impl FunctionMacroMap {
     pub(crate) fn chars_array(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        let arg = args.get_text(0)?;
+        let arg = args.get_ctext(0)?;
         let mut chars = arg.chars().fold(String::new(), |mut acc, ch| {
             acc.push(ch);
             acc.push(',');
@@ -5250,17 +5243,16 @@ struct InnerCursor {
 #[inline]
 fn merge_container(
     container: &mut Vec<&str>,
-    rev: bool,
-    put_space: bool,
-    trim: bool,
-    default_line_end: &str,
+    env: MacEnv,
+    default_line_end: Option<&str>,
 ) -> String {
-    let joiner = if put_space { " " } else { "" };
-    let mapper = if trim { Some(str::trim) } else { None };
+    let joiner = if env.fold_space { " " } else { "" };
+    let mapper = if env.fold_trim { Some(str::trim) } else { None };
     let line_end: &str;
-    if rev {
+    // Reverse fold order
+    if env.fold_reverse {
         if let Some(line_ending) = container.first() {
-            line_end = line_ending.get_line_ending_always(default_line_end);
+            line_end = line_ending.get_line_ending_always(default_line_end.unwrap_or(""));
         } else {
             // Empty vector
             return String::default();
@@ -5280,7 +5272,7 @@ fn merge_container(
             + line_end
     } else {
         if let Some(line_ending) = container.last() {
-            line_end = line_ending.get_line_ending_always(default_line_end);
+            line_end = line_ending.get_line_ending_always(default_line_end.unwrap_or(""));
         } else {
             // Empty vector
             return String::default();
