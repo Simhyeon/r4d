@@ -1,15 +1,11 @@
 Get count of words
 
-# Return : Unsigned integer
-
 # Demo
 
 ```
-$countw()
 $countw(a )
 $countw($lipsum(5))
 ===
-0
 1
 5
 ```

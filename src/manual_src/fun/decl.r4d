@@ -2,27 +2,13 @@ Declare multiple variables separated by commas
 
 # Arguments
 
-- a_macro_names: Macro names array ( trimmed )
+- a_macro_names: Macro names array
 
 # Demo
 
 ```
-$declare(first,second,third)
-
-$append(first,1)
-$append(second,2)
-$append(third,3)
-$append(first,-1)
-$append(second,-2)
-$append(third,-3)
-
-$first()
-$second()
-$third()
+$decl(first,second,third)
 ===
-1-1
-2-2
-3-3
 ```
 
 # Example

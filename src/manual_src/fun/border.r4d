@@ -1,1 +1,32 @@
-Create a right 
+Create right border for given lines 
+
+# Note
+
+- TOOD : Use env to except empty lines 
+
+# Arguments
+
+* a_border_string : Border string to append
+* a_content       : Lines to append border
+
+# Demo
+
+```
+Macro Type  : Function
+Macro Name  : border
+Parameters  : 'a_border_string' : Text, 'a_content' : Text
+Return      : Text
+Usage       : $border(Text,Text)
+Description >>
+>>>
+rad --sc border ' |'
+===
+Macro Type  : Function                                     |
+Macro Name  : border                                       |
+Parameters  : 'a_border_string' : Text, 'a_content' : Text |
+Return      : Text                                         |
+Usage       : $border(Text,Text)                           |
+Description >>                                             |
+```
+
+# Test

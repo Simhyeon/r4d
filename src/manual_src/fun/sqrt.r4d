@@ -1,0 +1,18 @@
+Get square root of a number
+
+# Argument
+
+- a_number   : Number to calculate
+
+# Demo
+
+```
+$sqrt(4)
+$sqrt(9)
+$sqrt(10)
+===
+2
+3
+3.1622776601683795
+```
+

@@ -1,8 +1,6 @@
 Get occurrences of an expression from source. This returns 0 if there are no
 occurrences.
 
-# Return : Unsigned integer
-
 # Arguments
 
 - a_expr   : An expression to match
@@ -11,10 +9,9 @@ occurrences.
 # Demo
 
 ```
-$lipsum|(5)
-$findm-(m)
+$findm(m, There are multiple m's inside this expression)
 ===
-3
+2
 ```
 
 # Example

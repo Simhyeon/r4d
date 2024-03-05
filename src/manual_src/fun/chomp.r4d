@@ -1,4 +1,9 @@
-Remove duplicate newlines from content
+Remove extra newlines from content
+
+# Note
+
+- Technically this replaces three consequtive newline characters into a single
+one
 
 # Arguments
 
@@ -7,7 +12,7 @@ Remove duplicate newlines from content
 # Demo
 
 ```
-$stream(chomp)
+$chomp(
 1
 
 
@@ -15,13 +20,15 @@ $stream(chomp)
 
 
 3
-$consume()$enl()
+)
 ===
+
 1
 
 2
 
 3
+
 ```
 
 # Example

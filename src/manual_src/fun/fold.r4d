@@ -7,16 +7,9 @@ Fold an array into a single value
 # Demo
 
 ```
-$chars|($fold(ab,cd,ef))
-$foreach-($:() : $lipsumr(5)$nl())
+$fold(aa,bb,cc,dd,ee,ff)
 =
-a : Lorem ipsum dolor sit amet
-b : consectetur adipiscing elit. In rhoncus
-c : sapien iaculis sapien congue a
-d : dictum urna malesuada. In hac
-e : habitasse platea dictumst. Quisque dapibus
-f : justo a mollis condimentum sapien
-
+aabbccddeeff
 ```
 
 # Example

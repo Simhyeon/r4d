@@ -2,7 +2,7 @@ Fold lines into a single value
 
 # Note
 
-- Foldl doesn't remove preceding spaces from each lines.
+- Foldl doesn't remove preceding spaces from each lines by default.
 
 # Arguments
 
@@ -11,27 +11,14 @@ Fold lines into a single value
 # Demo
 
 ```
-[1]
-$stream(foldl)
-[
-    a,
-    b,
-    c,
-]
-$consume()
-[2]
-$fold|(
+$foldl(
 [
     a,
     b,
     c,
 ])
-$cond-()
 ===
-[1]
 [    a,    b,    c,]
-[2]
-[ a b c ]
 ```
 
 # Example

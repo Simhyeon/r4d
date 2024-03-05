@@ -1,11 +1,8 @@
 Get counts of lines.
 
-# Return : Unsigned integer
-
 # Demo
 
 ```
-$countl()
 $countl(a)
 $countl(a
 b)
@@ -13,7 +10,6 @@ $countl(a
 
 b)
 ===
-0
 1
 2
 3

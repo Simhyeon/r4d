@@ -1,0 +1,32 @@
+Fold lines with match expressions
+
+# Note
+
+- If start expression is matched again wihout finding ending expression, a new
+  chunk starts. Refer demo for detailed situations.
+
+# Arguments
+
+- a_start_expr : Start expression to start folding
+- a_end_expr   : End expression to stop folding
+- a_lines      : Lines to fold
+
+# Demo
+
+```
+aaa
+    Inner Conntents
+bbb
+aaa
+    Random
+aaa
+    Text
+>>>
+rad --sc folde 'aaa,bbb'
+===
+aaa    Inner Conntentsbbb
+aaa    Random
+aaa    Text
+```
+
+# Example

@@ -1,21 +1,20 @@
-Split text into an array to get a value
+Split text into an array and get a value by index
 
 # Arguments
 
-- a_sep    : A separator string
-- a_index  : An index to cut out
-- a_text   : Text to split
+- a_sep   : A separator string
+- a_index : An index to cut out
+- a_text  : Text to split
 
 # Demo
 
 ```
-$syscmd|(curl wttr.in/Nuremberg?format=3)
-$cut|-(:,1)
-$-^()
+%        0 1 2 3 4
+$cut(|,4,a|b|c|d|e)
 ===
-☀️   +6°C
+e
 ```
 
-# Example
+# Test
 
 $assert(b,$cut(/,-2,a/b/c))

@@ -13,7 +13,7 @@ Deny a next newline.
 # Demo
 
 ```
-$define(ep=)
+$def(ep=)
 % Runtime macro leaves empty line
 [1]
 $ep()

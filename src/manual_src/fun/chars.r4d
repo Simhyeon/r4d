@@ -1,20 +1,17 @@
-Get a characters array from text
+Get characters array from text
 
 # Arguments
 
-- a_text : Text to get a chars array from ( trimmed )
+- a_text : Text to get a chars array from 
 
 # Demo
 
 ```
-$foreach($:(). list $nl(),$chars(abcde))
+$chars(abcde)
+$chars(안녕하세요)
 ===
-a. list 
-b. list 
-c. list 
-d. list 
-e. list 
-
+a,b,c,d,e
+안,녕,하,세,요
 ```
 
 # Example

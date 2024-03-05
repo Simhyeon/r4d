@@ -1,0 +1,17 @@
+Get squared number
+
+# Argument
+
+- a_number : Number to calculate
+
+# Demo
+
+```
+$square(3)
+$square(1.2)
+===
+9
+1.44
+```
+
+# Test

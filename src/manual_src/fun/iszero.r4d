@@ -1,7 +1,5 @@
 Check if a given value is a zero
 
-# Return : Boolean
-
 # Arguments
 
 - a_value : Value to qualify
@@ -9,15 +7,11 @@ Check if a given value is a zero
 # Demo
 
 ```
-$syscmd|(sh dummy.sh)
-$syscmd|(echo $?)
-$if($iszero-!(),$panic(Script failed))
+$iszero(0)
+$iszero(wow)
 ===
-error: Panic triggered with message
-^^^ Script failed ^^^
- --> [INPUT = test]:3:2 >> (MACRO = if):1:2
-error: Process Interrupted
-Int: Rad panicked with unrecoverable error.
+true
+false
 ```
 
 # Example

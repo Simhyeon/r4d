@@ -1,0 +1,16 @@
+Get powered number
+
+# Argument
+
+- a_number   : Number to calculate
+- a_exponent : Exponent
+
+# Demo
+
+```
+$pow(2,3)
+$pow(1.1,3)
+===
+8
+1.3310000000000004
+```

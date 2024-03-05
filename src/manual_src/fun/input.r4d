@@ -3,12 +3,11 @@ Print a current file input.
 # Note
 
 - This macro does not need FIN permission.
-
-# Return : Path
+- Default behaviour is to print relative path
 
 # Arguments
 
-- a_absolute : Whether to print an input path as absolute. Default is false. [boolean] ( trimmed, optional )
+- a_absolute : Whether to print an input path as absolute.
 
 # Demo
 

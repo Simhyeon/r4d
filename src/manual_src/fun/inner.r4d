@@ -3,7 +3,7 @@ Get inner content within enclosers.
 # Note
 
 Inner rules consists of two ASCII charcters. Currently rules doesn't support
-support non ascii UTF strings.
+non ascii charcters.
 
 First rule charcter means opening character while the other means closing
 charcter
@@ -14,16 +14,15 @@ You can also use same characters for enclosers. For example, "||" or "''"
 
 # Arguments
 
-- a_rule  : Rele-set for encloser        (trimmed)
-- a_count : Position of encloser to find (trimmed)
+- a_rule  : Rule set for enclosers
+- a_count : Position of encloser to find
 - a_src   : Source content
 
 # Demo
 
 ```
+$pipe=(
 "menu": {
-    "id": "file",
-    "value": "File",
     "popup": {
         "menuitem": [
             { "value": "New"  , "onclick": "CreateNewDoc()" },
@@ -32,11 +31,14 @@ You can also use same characters for enclosers. For example, "||" or "''"
         ]
     }
 }
+)
+$inner-({},4)
+$inner-("",7)
+>>>
+rad --no-truncate
 ===
-% With rad --sc inner '{},4'
  "value": "Open" , "onclick": "OpenDoc()"      
-% With rad --sc inner '"",9'
-New
+CreateNewDoc()
 ```
 
 # Example

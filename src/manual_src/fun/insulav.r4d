@@ -19,6 +19,7 @@ $stream(insulav)
   }
 }
 $consume()
+===
 ```
 
 # Example

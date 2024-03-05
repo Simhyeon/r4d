@@ -1,0 +1,18 @@
+Decrease number by one or by given amount
+
+# Arguments
+
+- a_number : Number to decrease
+- a_amount : Amount to decrease by
+
+# Demo
+
+```
+$dec(2)
+$dec(2,2)
+===
+1
+0
+```
+
+# Example

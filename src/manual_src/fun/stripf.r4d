@@ -8,11 +8,9 @@ Strip from front
 # Demo
 
 ```
-$static(header_level,4)
-$mie(header_level,+1)
-$stripf($header_level(),#### I'm header four)
+$stripf(5,#### Header content)
 ===
-I'm header four
+Header content
 ```
 
 # Example

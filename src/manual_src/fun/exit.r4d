@@ -1,38 +1,19 @@
-Exit processing from the invocation
+Exit processing from the input
 
-- NOTE : This flow control only sustains for the input
+# NOTE 
+
+- By default, this flow control applies for the current input 
+
+# Argument
+
+- a_hard_exit: Whether to hard exit ( Similar to SIGINT )
 
 # Demo
 
-[1] First.r4d
-
 ```
 $exit()
-
-$mac()
-$mac1()
-$mac2()
-$mac3()
-```
-
-[2] Second.r4d
-
-```
-$fassert()
+$exit(true)
 ===
-```
-
-[3] Result : `rad First.r4d Second.r4d`
-
-```
-$fassert()
-warning: Process exited.
-assert fail:
- --> [INPUT = Second.r4d]:1:2
-error: Assert failed
- --> [INPUT = Second.r4d]:1:2
-error: Every error is panicking in strict mode
-Int: Rad panicked with unrecoverable error.
 ```
 
 # Example

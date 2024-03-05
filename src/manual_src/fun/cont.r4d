@@ -1,0 +1,120 @@
+Use container for multiple operations
+
+# Note
+
+This is kind of an exposed interface for stack operation.
+
+# Arguments
+
+- a_op  : Operation type
+- a_arg : Optional argument for operation
+
+# Demo
+
+## print
+
+```
+% Print as readable form
+$cont(push,Single value to push)
+$cont(print)
+===
+["Single value to push"]
+```
+
+## List
+
+```
+% List as raw data form
+$cont(extend,aaa,bbb,ccc)
+$cont(list)
+===
+aaa,bbb,ccc
+```
+
+## push
+
+```
+% Push a value into the container
+$cont(push,aaa)
+$cont(push,bbb)
+$cont(print)
+===
+["aaa", "bbb"]
+```
+
+## pop
+
+```
+% Pop last item from the container
+$cont(push,aaa)
+$cont(pop)
+===
+aaa
+```
+## clear
+
+```
+% Clear the container
+$cont(push,aaa)
+$cont(print)
+$cont(clear)
+$cont(print)
+===
+["aaa"]
+[]
+```
+
+## get
+
+```
+% Get item from index
+$cont(extend,aaa,bbb,ccc,ddd)
+$cont(get,2)
+===
+ccc
+```
+## top
+
+```
+% Get the most recently added item
+$cont(extend,aaa,bbb,ccc,ddd)
+$cont(top)
+===
+ddd
+```
+
+## set
+
+```
+% Change the lastest item content
+$cont(extend,aaa,bbb,ccc,ddd)
+$cont(set,fff)
+$cont(top)
+===
+fff
+```
+
+## extend
+
+```
+% Extend container by given items
+$cont(extend,aaa,bbb,ccc)
+$cont(print)
+$cont(extend,111,222,333)
+$cont(print)
+===
+["aaa", "bbb", "ccc"]
+["aaa", "bbb", "ccc", "111", "222", "333"]
+```
+
+## len
+
+```
+% Get length of the container
+$cont(extend,aaa,bbb,ccc)
+$cont(len)
+===
+3
+```
+
+# Test

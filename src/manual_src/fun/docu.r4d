@@ -3,7 +3,7 @@ documentation from macros but by --man flag.
 
 # Arguments
 
-- a_macro_name : A macro to append documentation ( trimmed )
+- a_macro_name : A macro to append documentation
 - a_doc        : Documents to append
 
 # Demo

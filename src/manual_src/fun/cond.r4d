@@ -1,6 +1,8 @@
 Condense whitespaces
 
-- This remove any duplicate whitespaces from arguments.
+# Note
+
+- This remove any duplicate whitespaces from text
 - Use condl if line based operation is necessary
 
 # Arguments

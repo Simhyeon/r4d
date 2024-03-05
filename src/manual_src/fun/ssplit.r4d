@@ -5,26 +5,19 @@ Split text with space separator into an array
 - This macro splits text by one or more blank characters ( space, tab, newline )
 - However it is not gauranteed to work with miscellaenous unicode blank
   characters
-- Use apart macro if you want to split text as separator inclusive
 
 # Arguments
 
-- a_text : Text to split ( trimmed )
+- a_text : Text to split
 
 # Demo
 
 ```
-% ARG=a b c d e
-$env|(ARG)
-$foreach^-($a_LN() - $:()$nl())
+$ssplit(aaa bbb ccc ddd eee)
 ===
-0 - a
-1 - b
-2 - c
-3 - d
-4 - e
+aaa,bbb,ccc,ddd,eee
 ```
 
-# Example
+# Test
 
 $assert(6,$count($ssplit(I have  some    spaces   in between)))

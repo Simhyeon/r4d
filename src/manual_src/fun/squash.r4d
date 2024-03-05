@@ -1,11 +1,9 @@
-Squash text by trimming all empty newlines
+Squash text by removing duplicate newlines
 
 # NOTE
 
-- Technically empty newline means a newline that follows a preceding newline.
-- Use squash if you need to remove any duplicate newlines from given text. If
-  partial newlines are necessary, consider other macros such as trim, chomp or
-  comp.
+- If partial newlines are necessary, use other macros like trim, chomp or comp.
+- Chomp retains two newline characters while squash retains only one.
 
 # Arguments
 
@@ -14,18 +12,29 @@ Squash text by trimming all empty newlines
 # DEMO
 
 ```
-% Following text is persistent over squash
+$pipe(
+a
+
+
+
+b
+)
+1. Squash
+$squash-()
+2. Chomp
+$chomp-()
+>>>
+rad --no-truncate
+===
+1. Squash
 a
 b
-% While this doesn't
-$stream(squash)
+2. Chomp
+
 a
 
 b
-$consume()
-===
-a
-b
+
 ```
 
 # Example

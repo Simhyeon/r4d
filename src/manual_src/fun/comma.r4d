@@ -2,14 +2,17 @@ Print a comma
 
 # NOTE
 
-This is a "semantic" purpose macro
+- This is a "semantic" purpose macro
+- Use escaped comma `\,` if you want to use literal comma as arguments but the
+  content has to be positioned other than last argument. For better
+  understanding, refer r4d's internal document from repository.
 
 # Demo
 
 ```
-$define(t=t)
+$def(t=t)
 $append(t,, t)        % Hard to read
-$append(t,$comma() t) % Happier eyelids
+$append(t,$comma() t) % Better readability
 $t()
 ===
 t, t, t

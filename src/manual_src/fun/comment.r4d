@@ -1,15 +1,23 @@
 Requires comment type
 
-If no comment type was set by user, processor panics.
+# Note
+
+- If comment type doesn't match, error occurs.
+- The error is unsound execution error which cannot be alleviated
 
 # Arguments
 
-- a_comment_type: A comment type to require. ( trimmed ) [ "none", "start", "any" ]
+- a_comment_type: A comment type to require.
 
 # Demo
 
 ```
+% If comment type is none or any...
 $comment(start)
+===
+error: Critical unsound execution error 
+= Comment type, "Start" is required but it is not
+Int: Rad panicked with unrecoverable error.
 ```
 
 # Example

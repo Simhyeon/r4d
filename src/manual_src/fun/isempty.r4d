@@ -1,7 +1,5 @@
 Check if a given value is empty
 
-# Return : Boolean
-
 # Arguments
 
 - a_value : A value to qualify
@@ -11,15 +9,9 @@ Check if a given value is empty
 ```
 $isempty()
 $isempty($space())
-$if(
-    $isempty($include(cache.txt)),
-    $loge(Bad situation)
-)
 ===
 true
 false
-error: Bad situation
- --> [INPUT = test]:1:2 >> (MACRO = if):2:6
 ```
 
 # Example

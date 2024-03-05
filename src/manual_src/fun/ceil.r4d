@@ -1,17 +1,18 @@
 Get ceiling of a number
 
-# Return : Signed integer
-
 # Arguments
 
-- a_number : A number to get a ceiling from [float] ( trimmed )
+- a_number : A number to get a ceiling from
 
 # Demo
 
 ```
-$evalk(1 + $ceil(0.9123) )
+$ceil(0.9123)
+$ceil(1.999)
 ===
-1 + 1 = 2
+1
+2
+===
 ```
 
 # Example

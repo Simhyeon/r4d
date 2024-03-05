@@ -1,6 +1,8 @@
-Escape processing from the invocation.
+Escape processing for the input
 
-- NOTE : This flow control only sustains for the input.
+# NOTE 
+#
+- This flow control only sustains for the current input.
 
 # Demo
 
@@ -8,28 +10,11 @@ Escape processing from the invocation.
 
 ```
 $escape()
-
-$fassert()
-```
-
-[2] Second.r4d
-
-```
-$fassert()
+$decl(a)
+$eval(1+1)
 ===
-```
-
-[3] Result : `rad First.r4d Second.r4d`
-
-```
-$fassert()
-warning: Process escaped.
-assert fail:
- --> [INPUT = Second.r4d]:1:2
-error: Assert failed
- --> [INPUT = Second.r4d]:1:2
-error: Every error is panicking in strict mode
-Int: Rad panicked with unrecoverable error.
+$decl(a)
+$eval(1+1)
 ```
 
 # Example

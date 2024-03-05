@@ -1,5 +1,7 @@
 Condense blank spaces by lines
 
+# Note
+
 - This macro applies cond for each lines
 
 # Arguments
@@ -9,18 +11,21 @@ Condense blank spaces by lines
 # Demo
 
 ```
-% With --no-truncate
-$stream(pipe)
-  a  b   c
-  d  e   f
-  g  h   i
-$consume()
+$pipe=(
+  a     b c
+ d    e    f
+  g h       i
+)
+[1]. Cond
 $cond-()
-----------
+[2]. Condl
 $condl-()
+>>>
+rad --no-truncate
 ===
+[1]. Cond
 a b c d e f g h i
-----------
+[2]. Condl
 a b c
 d e f
 g h i

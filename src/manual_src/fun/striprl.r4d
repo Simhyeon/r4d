@@ -8,12 +8,12 @@ Strip rear lines from text
 # Demo
 
 ```
-% Strip examples from manual
-% Although not all example is a single line
-$striprl|(4,$syscmd(rad -M strip))
-$countl-()
+$striprl(2,aaaaa
+bbbbb
+ccccc)
 ===
-22
+aaaaa
+
 ```
 
 # Example

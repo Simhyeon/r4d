@@ -1,4 +1,4 @@
-Apply both trim and chomp (compress) to contents
+Apply both trim and chomp (compress) to text
 
 # Arguments
 
@@ -7,7 +7,7 @@ Apply both trim and chomp (compress) to contents
 # Demo
 
 ```
-$stream(comp)
+$comp(
 a
 
 
@@ -16,7 +16,7 @@ b
 
 c
 
-consume()$enl()
+)
 ===
 a
 

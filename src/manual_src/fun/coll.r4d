@@ -1,0 +1,29 @@
+Collapse chunk that starts with pattern into a single line respectively
+
+# Note
+
+- This macro doesn't join, but collapse lines selectively by given pattern
+- If you want to simply join lines, use `joinl` macro
+
+# Arguments
+
+- a_pat   : Pattern to decide whether the line is collapseable
+- a_lines : Content to collapse
+
+# Demo
+
+```
+$coll=(//,
+// I'm multiline comment
+// that starts with double backward slash
+--> Inner contents
+// Another chunk of comments
+// as multi line
+--> Following contents
+)
+===
+// I'm multiline comment that starts with double backward slash
+--> Inner contents
+// Another chunk of comments as multi line
+--> Following contents
+```

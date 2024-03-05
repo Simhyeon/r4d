@@ -1,4 +1,4 @@
-Fold lines but by counts
+Fold lines by counts
 
 # Arguments
 
@@ -9,24 +9,18 @@ Fold lines but by counts
 
 ```
 (
-    "findm".to_owned(),
-    FMacroSign::new(
-        "findm",
-        ["a_expr", "a_source"]
-    )
+    n: "findm",
+    a: ["a_expr"]
 ),
 (
-    "floor".to_owned(),
-    FMacroSign::new(
-        "floor",
-        ["a_number^"]
-    )
+    n: "all",
+    a: ["a_wow"]
 )
 >>>
-rad --sc foldlc 7 | rad --sc condl
+rad --sc foldlc 4
 ===
-( "findm".to_owned(), FMacroSign::new( "findm", ["a_expr", "a_source"] )),
-( "floor".to_owned(), FMacroSign::new( "floor", ["a_number^"] ))
+(    n: "findm",    a: ["a_expr"]),
+(    n: "all",    a: ["a_wow"])
 ```
 
 # Example

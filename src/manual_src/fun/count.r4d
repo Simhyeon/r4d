@@ -1,14 +1,10 @@
 Get counts of an array
 
-# Return : Unsigned integer
-
 # Demo
 
 ```
-$count()
 $count(a,b,c)
 ===
-0
 3
 ```
 

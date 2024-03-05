@@ -3,13 +3,8 @@ Print empty string. Used for semantic formatting.
 # Demo
 
 ```
-$fileout(important_file.txt,false,id&password)
-
-...
-
-
-% Something may gone wrong
-$nassert($empty(),$include(important_file.txt))
+$def(value=$empty())
+===
 ```
 
 # Example

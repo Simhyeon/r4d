@@ -1,20 +1,17 @@
 Get a floored integer from a given number
 
-# Return : Signed integer
-
 # Arguments
 
-- a_number : A number to get a floor from [float] ( trimmed )
+- a_number : A number to get a floor from
 
 # Demo
 
 ```
-$static( stamina_per_minute,5 )
-$static( time_passed,1567 )
-$evalf|( ($time_passed() / 60.0) * $stamina_per_minute() )
-Current available stamina : $floor-()
+$floor(1.4)
+$floor(-3.41)
 ===
-Current available stamina : 130
+1
+-4
 ```
 
 # Example

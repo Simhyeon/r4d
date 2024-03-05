@@ -8,11 +8,11 @@ Split text by whitespaces and cut an item from the splitted array
 # Demo
 
 ```
-$syscmd|(ls -lah ../../../LICENSE)
-$static(size , $scut-(1) )
-File size is $size()
+$scut(2,aaa bbb ccc ddd)
+$scut(-1,aaa bbb ccc ddd)
 ===
-File size is 1
+ccc
+ddd
 ```
 
 # Example

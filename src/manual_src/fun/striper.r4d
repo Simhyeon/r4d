@@ -11,11 +11,10 @@ Strip expressions from rear
 $stream(striper --)
 local var = "wow" -- I'm comment
 local var2 = "hmm_wow_doggy" -- I'm useless
-$consume|()
-$align-^(=)
+$consume^()
 ===
-local var  = "wow" 
-local var2 = "hmm_wow_doggy"
+local var = "wow" 
+local var2 = "hmm_wow_doggy" 
 ```
 
-# Example
+# Test

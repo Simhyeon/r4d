@@ -1,0 +1,17 @@
+Get rounded number
+
+# Argument
+
+- a_number : Number to calculate
+
+# Demo
+
+```
+$round(4.23)
+$round(3.14)
+$round(5.89)
+===
+4
+3
+6
+```

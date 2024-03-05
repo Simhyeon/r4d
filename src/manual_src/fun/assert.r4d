@@ -1,32 +1,30 @@
-Compare lvalue and rvalue, panics with two values are not equal
+Compare left value and right value, panics with two values are not equal
 
 # NOTE
 
-Use assert flag to accumulate assertion results.
+- Use assert flag (`--assert`) to accumulate assertion results.
 
 # Arguments
 
-- a_lvalue : Left  value to compare
-- a_rvalue : Right value to compare
+- a_lv : Left  value to compare
+- a_rv : Right value to compare
 
 # DEMO
 
 ```
-$static(HO_VAR,$env(HO))
-
-$other_macro|($HO_VAR())
-
-$pipe(HO)
-$assert(HOSE,$-())
+$assert=(aaa, aaa)
+$assert(aaa, aaa) % Space in between
+$assert(aaa,bbb)
 ===
-# Ran with rad --assert --silent
-assert fail:
- --> [INPUT = test]:2:2
-error: found 1 errors
+assert fail:  
+ --> [INPUT = Stdin]:2:2
+assert fail:  
+ --> [INPUT = Stdin]:3:2
+error: found 2 errors
 
-Assert
-SUCCESS : 0
-FAIL: 1
+[Assertion stats]
+SUCCESS : 1
+FAIL    : 2
 ```
 
 # Example

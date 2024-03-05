@@ -1,0 +1,18 @@
+Get cubed number
+
+# Argument
+
+- a_number : Number to calculate
+
+# Demo
+
+```
+$cube(3)
+$cube(1.2)
+===
+27
+1.7279999999999998
+```
+
+# Test
+

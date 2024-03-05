@@ -10,10 +10,7 @@ Dump(truncate) given files' content
 
 ```
 $dump(cache.txt)
-$syscmd(sh complicated_operation.sh)
-$include(cache.txt)
 ==
-abcdefghijklmnop
 ```
 
 # Example

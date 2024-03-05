@@ -1,12 +1,18 @@
 Increae number by one or by given amount
 
-# Return : number
+# Arguments
+
+- a_number : Number to increase
+- a_amount : Amount to increase by
 
 # Demo
 
 ```
 $inc(2)
 $inc(2,2)
+===
+3
+4
 ```
 
 # Example
