@@ -1,26 +1,66 @@
-# Type architecture -> This is huge
+# Manual note ( This has be checked later n )
 
-* [x] Completely ditch ExInput from end user, that will be used by me only
-* [x] Now it compiles ! :)
-* [x] Insufficient argument error code should be the role of argparser
-* [x] argparser's &&str is unnecessary
-* [x] New macro def
-* [x] Runtime macro type validity
-* [ ] Currently man page sucks to read
+* Border : add a new env for border exception rules
+* Cut and scut support `_` syntax -> Change argument type
+* Change clear's manual after binary hygiene is updated
+* dnl,enl logic check
+* Refactor istype
+* insulav and insulah
+* docu macro after complicated runtime definition
+
+* Make naems of Parameter intuitive
+    - Literal pattern should be distinctive from regex pattern
+
+* -> Remove tabs
+
+---
+
+* Search keyword TODO
+* Remove all `# Return`
+
+# todo immediate
+
+* [ ] Permission as macro signature?
+
+* [x] Refactor ParralelRight 
+* [x] Fixed mapn bug
+* [x] Fixed comp bug
+* [x] Fixed sqrt bug
+* [x] Fixed isempty bug
+* [x] Fixed fold 
+
+* [ ] Env to bypass return validation
+* [ ] Env allow empty count
+* [ ] Env to retain newlines for strip series
+* [ ] Env to verbose print for container
+* [ ] Env cont pop no return
+
+* [ ] New valuetype regex so that user knows which value should be requested.
+* [ ] Notify users that trim input is applied after expansion.
+* [ ] --log is not useful in general cases... Paste expanded and split
+  arguments into log message
+* [ ] Update manuals so that you can fix bugs. Especially deterred macro
+* [ ] Possibly change usage syntax
+* [ ] Loop is also buggy.
+
+* [ ] Value that acceps multiple optional value should not be annoted as optional or shoul
+    -> Non... It is better to make a type array for it. Nope... Hmmm. I don't know
+* [ ] Fix type for path or split or yatti yatta.
 * [ ] Consider strip for cases
-* [ ] Function map
-    * [ ] Make error codes much more intuitive
-        * [ ] -> Not yet for deterred macro
-    * [ ] Refactor reverse-array
-    * [ ] Refactor list-directory-files
-    * [ ] Check unnecessary ctext
-    * [ ] Find a way to display if optional is multiple or not
-    * [ ] Subverge relay to relay and relay temp
-    * [ ] Refactor qualify-value method
-    * [ ] FN `new_ext_macro(&mut self, ext: ExtMacroBuilder)` is currently
-      disabled 
+* [ ] `Parse_chunk_arg` to return Cow<'a,str>
+
+* [ ] Make error codes much more intuitive
+* [ ] Refactor reverse-array
+* [ ] Refactor list-directory-files
+* [ ] Check unnecessary ctext
+* [ ] Check type incoherence
+* [ ] Find a way to display if optional is multiple or not
+* [ ] Refactor qualify-value method
+* [ ] FN `new_ext_macro(&mut self, ext: ExtMacroBuilder)` is currently
+  disabled 
 * [x] Removed counter macro -> use mie instead
-* [ ] Rearrange processor's lex branch method's arguments
+* [ ] Env for eval related macros
+
 * [ ] Map exression (mape) is completely broken... damn...
 * [  ] Bug
 
@@ -36,30 +76,10 @@ $define(typefy,a_src=
 Doesn't yield a_LN and $:() why is that?
 ```
 
-* [ ] Refactor function macros first
-
-* [ ] ArgType
-* [ ] Argument
-* [ ] Parameter
-
 * [ ] Bug : Peel removes following text after "to be peeled".
 * [ ] Rearrange modules and struct and enums.
 
-# New todos
-
-I've git reset hard without understanding git...? sadge.
-
-Nothing is lost for code, but docs are lost which is sadge...
-
-* [ ] Change envset to setenv
-* [ ] Hygiene
-* [ ] Peelmap
-* [ ] Possibly insert?
-
-# Todo immediate
-
 * [ ] Split by
-* [ ] Check insulav's logic throughly
 
 - Debug all manuals
     1. Test english charcters
@@ -71,13 +91,6 @@ Nothing is lost for code, but docs are lost which is sadge...
 #### BUG
 
 * Check PS.r4d manual because escape character is strange in the document.
-* [x] Inner panics on certain cenarios -> Failed to reproduce just in keep mind yeah...
-
-* [x] Bug: insulav and insulah was not stripping
-* [x] Fixed a bug whree skip_expansion was not working
-* [x] Syscmd is inconsistent
-    * [x] quote enclosed value has to be sent separately. Currently arguments
-    * [x] Rad inside rad squeezes output -> It was other bug
 
 * [ ] Check macros with single argument so that a function might not be
   analyzing shits.
@@ -94,7 +107,6 @@ Nothing is lost for code, but docs are lost which is sadge...
     While making an experince of function macros comfortable.
     - However, giving an option to override is not necessarily a bad thing.
     Consider adding later.
-* [x] Fixed where chars didn't work at all...
 * [ ] Fix regex register shenenigans
  [ ] Fix deubbing feature bugs
     1. Add assertion information
@@ -110,20 +122,13 @@ Nothing is lost for code, but docs are lost which is sadge...
     * [ ] Diff doesn't work at all
     * [ ] Dryun doesn't detect static macros...
     * [ ] Debugger panics from the start ;( Now it doesn't... like what is wrong with you?
-    * [x] Fix require strict and require comment which doesn't respect vector rules -> auto.sh
     * [ ] Find similar cases
+
 [bugs](./bugs_to_handle.md)
 
 #### Documentation
 
 * [ ] Notify that trim can remove empty newline
-* [ ] Illustrate that insula macros are not pretty printer but, rather
-  functional macro that creates sufficient spaces and newlines for following
-  macro processes
-* [ ] Changed rotate behaviour
-    -> Think of center rotation as "ferris wheel"
-* [ ] Update manuals
-    * 24/177
 * [ ] Update repository documentations
     * [ ] macro indices
     * [ ] macro syntaxes
@@ -134,6 +139,7 @@ Nothing is lost for code, but docs are lost which is sadge...
 
 #### Features
 
+* [ ] --eman option to print manual for environmnet
 * [ ] Add a hygiene option for binary
 * [ ] Add an option for Positive regulation which means auth related macros are
   only executed when it was allowed speicifically by user. Or simply wihout
@@ -146,26 +152,22 @@ Nothing is lost for code, but docs are lost which is sadge...
     -> Adding multiple regexes are also tiring
     ->> However making a literal rule concrete is the first thing to come though.
 
-
 * [ ] Consider implemtnting consecutive macro calls for sc and sl flags
 * [ ] Flag to print all realted environmnet vairables
 * [ ] Panic message is kinda cringe... improve it.
 * [ ] Update template macro...
 * [ ] Check if greedy argument's no-strip behaviour is ideal or not
-* [x] Make an interal data structure for arrays? ( Table ) 
-    -> Implemented as cont macro
 
 #### Macro ( macro )
+
+* [ ] Peelmap
+* [ ] Insertat(index,target,source)
 
 * [ ] For chunk
 ```
 Iter through lines and aggregate regexed chunk and apply macro to it
 $forchunk(start_regex,end_regex,macro_body,src)
 ```
-
-* [x] Make a new macro for border?
-* [x] Renamed indent to insertf
-* [x] New macro insertr
 
 * [ ] Add a new macro slice
     -> This splits string by pattern and slice them without separators
@@ -174,12 +176,10 @@ $forchunk(start_regex,end_regex,macro_body,src)
 $slice(pat,1,2,source)
 ```
 
-* [x] Add rangel
 * [x] Make alignby with complicated rules supportted
-    * [ ] Notify users that align with comma will work strange
     * [ ] Rename macros that execute on lines that has no l suffix
     * [ ] Condl variant to respect leading tabs and spaces 
-    -> Maybe this is a burden of pretty printer
+    -> Maybe this is a burden of pretty printer or env
 * [x] Joinl macro
     * [ ] Add an environmnet variable to set sensible default for eliminating
       empty new lines. Or say, if something can be eaisly achieved by another
@@ -231,6 +231,7 @@ $slice(pat,1,2,source)
 
 #### Performance
 
+* [ ] Rearrange processor's lex branch method's arguments
 * [ ] Become a no nester :).
 
 * [ ] Add a feature to use rope instead of simple string ( Crop crate )
@@ -270,7 +271,6 @@ $slice(pat,1,2,source)
 
 * Remove a pattern such as ...
 ```
-
 let mut lines = content.lines();
 let line_count = lines.count();
 
@@ -317,3 +317,14 @@ file.
 * [ ] Test hook macro documentaion
 
 ### Temporary done
+
+#### Return Type
+
+* [x] Include return value for type signature
+    * [x] Implenet enum table for enum type
+        * [x] Currently about 10 items are left...
+    * [x] Make a ergonomic builder pattern for enum table
+* [x] Also apply enum table for return value
+
+* [x] Subverge relay to relay and relay temp and relay file
+* [x] Fixed a in-body comment bug
