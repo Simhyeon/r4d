@@ -5,6 +5,16 @@ extract the first
 
 - a_text : Text to extract number from
 
+# Demo
+
+```
+$num(60 seconds)
+$num(23 gallons)
+===
+60
+23
+```
+
 # Example
 
 $assert(34,$num(34sec))

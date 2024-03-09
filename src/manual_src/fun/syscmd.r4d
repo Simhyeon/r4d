@@ -1,22 +1,30 @@
 Execute a sysctem command
 
+# NOTE
+
 - Each system command is executed as subprocess of folloiwng platform procedures
 - Windows : cmd /C
 - *Nix    : sh -c
 
-# NOTE
-
 - Syscmd's stdout is redirected to rad's input. Which enables inclusion of 
 system call's result into a desired output.
-- However, due to the inherent feature, you cannot use redirection within 
+- However, due to the inherent limit, you cannot use redirection within 
 syscmd's call.
 - Therefore code such as $syscmd(ls > file) will not work as expected.
-
-# Auth : CMD
 
 # Arguments
 
 - a_command : A command to exectute
+
+# Demo
+
+```
+$syscmd(ls)
+===
+Cargo.lock
+Cargo.toml
+LICENSE
+```
 
 # Example
 

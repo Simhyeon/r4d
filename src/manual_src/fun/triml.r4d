@@ -4,6 +4,26 @@ Trim values by lines. Trim is applied to each lines
 
 - a_text : Text to trim
 
+# Demo
+
+```
+% Trim
+$trim(    a 
+           b
+           c)
+% Trim lines
+$triml(    a 
+           b
+           c)
+===
+a 
+           b
+           c
+a
+b
+c
+```
+
 # Example
 
 $assert(Upper$nl()Middle$nl()Last,$triml(    Upper

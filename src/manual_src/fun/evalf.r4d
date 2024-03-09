@@ -1,4 +1,4 @@
-Evaluate a given expression
+Evaluate a given expression but force floating point expression
 
 # NOTE
 
@@ -14,7 +14,12 @@ Evaluate a given expression
 # Demo
 
 ```
-$eval( 1 + 1 )
+$evalf( 1/3 )
 ===
-2
+0.3333333333333333
 ```
+
+# Example
+
+$assert(3,$eval(1 + 2))
+$assert(true,$eval(\"string\" == \"string\"))

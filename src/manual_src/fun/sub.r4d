@@ -6,6 +6,14 @@ Apply a regular expression substitution to a source
 - a_target : Text to substitute as
 - a_source : Source text to operate on
 
+# Demo
+
+```
+$sub(World,Rust,Hello World)
+===
+Hello Rust
+```
+
 # Example
 
 $assert(Hello Rust,$sub(World,Rust,Hello World))

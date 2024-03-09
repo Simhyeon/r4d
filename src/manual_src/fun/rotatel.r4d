@@ -1,0 +1,62 @@
+Rotate lines
+
+# Note
+
+- This is lines-based operation. If you want singular operation of rotation,
+  use `rotatei`.
+
+# Arguments
+
+- a_pattern     : Pattern to set as basis
+- a_orientation : Orientation for rotation
+- a_content     : Target content
+
+# Demo
+
+## Left rotation 
+
+```
+abc /// Comment 1
+def /// Comment 1
+ghi /// Comment 1
+>>>
+rad --sc rotatel '///,l'
+===
+///Comment 1
+abc 
+///Comment 1
+def 
+///Comment 1
+ghi 
+```
+
+## Right rotation 
+
+```
+abc /// Comment 1
+def /// Comment 1
+ghi /// Comment 1
+>>>
+rad --sc rotatel '///,r'
+===
+abc 
+///Comment 1
+def 
+///Comment 1
+ghi 
+///Comment 1
+```
+
+## Center rotation 
+
+```
+left = right
+v = 2
+b = 4
+>>>
+rad --sc rotatel ' = ,center'
+===
+right = left
+2 = v
+4 = b
+```

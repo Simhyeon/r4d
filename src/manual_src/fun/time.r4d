@@ -1,6 +1,10 @@
 Get current local time
 
-# Example
+# Demo
 
+```
 % HH:mm:ss
 $time()
+===
+21:02:02
+```

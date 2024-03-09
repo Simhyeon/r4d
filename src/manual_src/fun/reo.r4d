@@ -1,8 +1,24 @@
-Rearrange order of lists
+Re-order lists items
 
 # Arguments
 
 - a_list_contents : List contents to rearrange
+
+# Demo
+
+```
+$reo^(
+8. a
+2. b
+3. c
+1. d
+)
+===
+1. a
+2. b
+3. c
+4. d
+```
 
 # Example
 

@@ -1,0 +1,40 @@
+Get a sublines with indices
+
+# Note
+
+- Out of range index is an error
+- Range is inclusive which means lines from start index and last index is
+  both included.
+
+# Speical Syntax
+
+- Range series support special syntax for indexing.
+- "_" means end of the string.
+- Negative index means offset index from end of the string.
+
+e.g. $range(-3,_,abcdefg) would return "defg"
+
+    -> More specifically,
+
+     1 2 3 4 5 6 7
+    -6-5-4-3-2-1 _
+     a b c d e f g
+
+# Arguments
+
+- a_start_index : A start substring index [signed integer] (trimmed)
+- a_end_index   : A end   substring index [signed integer] (trimmed)
+- a_lines       : Lines to get range from
+
+# Demo
+
+```
+$rangel(0,2,a
+b
+c
+d)
+===
+a
+b
+c
+```

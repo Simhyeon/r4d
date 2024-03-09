@@ -7,6 +7,23 @@ Print platform specific newlines. Its behaviour can be configured.
 
 - a_amount : Amount of newlines [Unsigned integer] ( trimmed )
 
+# Demo
+
+```
+[1]
+$nl()
+[2]
+$nl(2)
+===
+[1]
+
+
+[2]
+
+
+
+```
+
 # Example
 
 % This may not hold true if a newline is configured by a user

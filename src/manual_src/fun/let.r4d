@@ -13,7 +13,12 @@ Bind a local macro.
 # Demo
 
 ```
-TODO
+$def(ff=outer_value)
+$def=(test_macro,a_first : text, a_second : text=
+    % < This is not an error even in strict mode >
+    $let(ff,$index(1,$a_first()))
+    $ff()
+)
 ```
 
 # Example

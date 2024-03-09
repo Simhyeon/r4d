@@ -13,10 +13,8 @@ This macro slices by utf characters. Use range if you need simple ASCII slice.
 
 ```
 $head(4,123456789)
-$head(3,가나다라마바사)
 ===
 1234
-가나다
 ```
 
 # Example

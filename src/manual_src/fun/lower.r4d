@@ -7,12 +7,9 @@ Get lowercase english text
 # Demo
 
 ```
-$pipe(Salutation)
-$lower-|()
-$range-|(0,2)
-$if($eq-(sal),Hello World!)
+$lower(I'M SCREAMING)
 ===
-Hello Worl!
+i'm screaming
 ```
 
 # Example

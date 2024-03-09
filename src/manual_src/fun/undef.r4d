@@ -1,15 +1,27 @@
 Undefine a macro
 
+# Note
+
 - This undefines all macros that has a given name
-- \"Define\" macro cannot be undefined
+- \"Def\" macro cannot be undefined
 - Undef doesn't yield error when a macro doesn't exist
 
 # Arguments
 
 - a_macro_name : A name of a macro to undefine ( trimmed )
 
-# Example
+# Demo
 
-$define(test=Test)
-$undef(test)
-$fassert($test())
+```
+$ulen(abcde)
+$undef(ulen)
+$ulen(abcde)
+===
+5
+error: No such macro name as "ulen", Did you mean "len" ? 
+ --> [INPUT = Stdin]:2:2
+error: Every error is panicking in strict mode
+Int: Rad panicked with unrecoverable error.
+```
+
+# Example

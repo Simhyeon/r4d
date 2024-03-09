@@ -12,6 +12,18 @@ execution is ignored.
 
 - a_msg : A message to print as an error
 
+# Demo
+
+```
+$panic(Critical error)
+===
+error: Panic triggered with message
+ "Critical error" 
+ --> [INPUT = Stdin]:1:2
+error: Process Interrupted
+Int: Rad panicked with unrecoverable error.
+```
+
 # Example
 
 $panic(This should not be reached)

@@ -5,6 +5,14 @@ Repeat given source by given counts
 - a_count  : Counts of repetition [Unsigned integer] ( trimmed )
 - a_source : Source text to repeat
 
+# Demo
+
+```
+$repeat(2,wow )
+===
+wow wow 
+```
+
 # Example
 
 $assert(R4d

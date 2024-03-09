@@ -1,11 +1,26 @@
 Extract matched lines from given file. This returns all items as lines
 
-- NOTE : The grep operation is executed on per line and doesn't expand lines
+# Note
+
+- The grep operation is executed on per line and doesn't expand lines
 
 # Arguments
 
-- a_expr  : A regex expression to match
-- a_lines : A file get matches from
+- a_expr : A regex expression to match
+- a_file : A file get matches from
+
+# Demo
+
+```
+$grepf(version,Cargo.toml)
+===
+version = "4.0.0"
+serde = { version = "1.0.193", features = ["derive"]}
+serde_json = { version = "1.0.108"}
+evalexpr = {version = "11.2.0"}
+rustc-hash = { version ="1.1.0", optional = true}
+...
+```
 
 # Example
 

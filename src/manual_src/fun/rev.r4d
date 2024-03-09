@@ -4,6 +4,14 @@ Reverse order of an array
 
 - a_array : Array to reverse
 
+# Demo
+
+```
+$rev(3,2,1)
+===
+1,2,3
+```
+
 # Example
 
 $assert(\\*3,2,1*\\,$rev(1,2,3))

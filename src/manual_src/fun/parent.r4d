@@ -9,6 +9,14 @@ value, but not a none value if a path is a single node.
 
 - a_path : A Path to extract parent from
 
+# Demo
+
+```
+$parent(/file/to/path)
+===
+/file/to
+```
+
 # Example
 
 $fassert($parent(/))

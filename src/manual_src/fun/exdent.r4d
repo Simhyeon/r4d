@@ -1,7 +1,8 @@
-Outdent (exdent) with given amount
+Exdent with given amount
 
-- Technically this trims preceding spaces
-- Trims by line but with given amount.
+# Note
+
+- This macro trims preceding spaces by lines but with given amount.
 - If given an integer, it will try to trim blank characters as much as given 
 amount
 - min trims by minimal amount that can be applied to total lines
@@ -11,7 +12,7 @@ for this macro
 
 # Arguments
 
-- a_trim_option : A trim behaviour [\"min\", \"max\", Unsigned integer] ( trimmed )
+- a_trim_option : A trim behaviour [\"min\", \"max\", Unsigned integer]
 - a_lines       : Lines to trim
 
 # Example

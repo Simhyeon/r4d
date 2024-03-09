@@ -9,6 +9,16 @@ Join lines into a single chunk with given separator
 - a_sep   : A separator used for joining
 - a_array : Source to array to join
 
+# Demo
+
+```
+$joinl(-,a
+b
+c)
+===
+a-b-c
+```
+
 # Example
 
 $assert(a-b-c,$joinl(-,a,b,c))

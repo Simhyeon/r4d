@@ -1,6 +1,13 @@
 Get a unicode length of text.
 
-# Return : Unsigned integer
+# Note
+
+- Unicode length is a length that is a concept similar to physical length.
+- All ASCII characters has length of 1 while other unicode codepoints can have
+  differnt physical length.
+- Unicode length will "look" correct in some fonts while in other cases not.
+- Generally wide character such as CJK's length are treated as 2 while narrow
+  character's length are 1.
 
 # Arguments
 
@@ -9,7 +16,11 @@ Get a unicode length of text.
 # Demo
 
 ```
-TODO
+$ulen(안녕하세요)
+$ulen(abcdefghij)
+===
+10
+10
 ```
 
 # Example

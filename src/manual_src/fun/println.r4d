@@ -1,0 +1,13 @@
+Print message to standard output with trailing newline
+
+# Note
+
+- Discard option is ignored for this macro 
+- It has trailing new line which respects processor flag.
+
+# Demo
+
+```
+$println(I'm always printed to terminal)
+===
+```

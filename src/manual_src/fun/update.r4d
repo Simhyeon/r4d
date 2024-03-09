@@ -1,9 +1,16 @@
 Update a storage
 
+# Note
+
+- Refer repository's storage part to utilize this feature
+
 # Arguments
 
 - a_text : Text to update into a storage
 
-# Example
+# Demo
 
+```
 $update(text to be pushed)
+===
+```

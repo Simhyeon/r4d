@@ -10,16 +10,7 @@ Print left parenthesis
 # Demo
 
 ```
-Expression: ( Some more explanation )
-number: ( some dubious expression )
 $lp()
->>>
-rad --sc align '$lp()' OR rad --sc align '\('
 ===
-Expression: ( Some more explanation )
-number:     ( some dubious expression )
+(
 ```
-
-# Example
-
-$assert(\(,$lp())

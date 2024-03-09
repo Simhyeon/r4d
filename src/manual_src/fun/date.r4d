@@ -2,5 +2,9 @@ Get current local date without timezone
 
 # Example
 
+```
 % yyyy-MM-dd
 $date()
+===
+2024-01-01
+```

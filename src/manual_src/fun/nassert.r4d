@@ -2,8 +2,21 @@ Compare left and right values. Panics if values are equal
 
 # Arguments
 
-- a_lvalue : A left  value
-- a_rvalue : A right value
+- a_lv : A left  value
+- a_rv : A right value
+
+# Demo
+
+```
+$nassert(a,a)
+===
+assert fail:  
+ --> [INPUT = Stdin]:1:2
+error: Assert failed 
+ --> [INPUT = Stdin]:1:2
+error: Every error is panicking in strict mode
+Int: Rad panicked with unrecoverable error.
+```
 
 # Example
 

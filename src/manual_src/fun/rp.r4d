@@ -10,14 +10,9 @@ right parenthesis
 # Demo
 
 ```
-nombre: ( Some more explanation )
-number: ( some dubious expression with extra )
-$lp()
->>>
-rad --sc align '$rp()' OR rad --sc align '\)'
+$rp()
 ===
-nombre: ( Some more explanation              )
-number: ( some dubious expression with extra )
+)
 ```
 
 # Example

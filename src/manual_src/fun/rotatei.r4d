@@ -1,0 +1,18 @@
+Rotate inner content
+
+# Arguments
+
+- a_start  : Start expression
+- a_end    : End expression
+- a_sep    : Separator ( basis ) of rotation
+- a_source : Target text
+
+# Demo
+
+```
+let value = Value::new(integer,text);
+>>>
+rad --sc rotatei '\(,\),\,'
+===
+let value = Value::new(text,integer);
+```

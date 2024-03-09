@@ -1,14 +1,22 @@
 Write to a temporary file
 
+# Note
+
+- This operation overwrites existing temporary file's content
 - A default temporary path is folloiwng
 - Windows : It depends, but %APPDATA%\\Local\\Temp\\rad.txt can be one
 - *nix    : /tmp/rad.txt
 
-# Auth: FOUT
-
 # Arguments
 
 - a_content : Content to write to a temporary file
+
+# Demo
+
+```
+$tempout(content to save to tmp file)
+===
+```
 
 # Example
 

@@ -8,6 +8,15 @@ sustain for the whole processing.
 
 - a_pause : Whether to pause or not [boolean] ( trimmed )
 
+# Demo
+
+```
+$pause(true)
+$eval(1+1)
+===
+$eval(1+1)
+```
+
 # Example
 
 $counter(i)

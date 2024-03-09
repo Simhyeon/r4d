@@ -1,9 +1,22 @@
 Rename a macro with a new name
 
+# Note
+
+- Def cannot be renamed but other function macros can be renamed
+
 # Arguments
 
 - a_macro_name : A macro to change name ( trimmed )
 - a_new_name   : A new macro name to apply ( trimmed )
+
+# Demo
+
+```
+$rename(len,length)
+$length(12345)
+===
+5
+```
 
 # Example
 

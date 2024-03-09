@@ -4,6 +4,14 @@ Get a max value from a given array
 
 - a_array : An array to get the highest value from
 
+# Demo
+
+```
+$max(d,a,b,c)
+===
+d
+```
+
 # Example
 
 $assert(eIsBigger,$max(aIsSmall,cIsMiddle,eIsBigger))

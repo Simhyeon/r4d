@@ -5,6 +5,13 @@ Pipe a given value to a named pipe
 - a_pipe_name : A name of pipe container ( trimmed )
 - a_value     : A value to pipe
 
+# Demo
+
+```
+$pipeto(first,1)
+$pipeto(second,2)
+```
+
 # Example
 
 $pipeto(yum,YUM)

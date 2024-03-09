@@ -1,9 +1,21 @@
 Replace a macro's contents with new values
 
+# Note
+
+- Only runtime macro's body can be replaced
+
 # Arguments
 
 - a_macro_name : A macro name to replace ( trimmed )
 - a_new_value  : A new value to put
+
+```
+$decl(com)
+$repl(com,puter)
+$com()
+===
+puter
+```
 
 # Example
 

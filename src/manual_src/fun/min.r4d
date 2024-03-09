@@ -4,6 +4,14 @@ Get a min value from a given array
 
 - a_array : An array to get the lowest value from
 
+# Demo
+
+```
+$min(d,a,b,c)
+===
+a
+```
+
 # Example
 
 $assert(aIsSmall,$min(aIsSmall,cIsMiddle,eIsBigger))

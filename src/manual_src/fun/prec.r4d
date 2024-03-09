@@ -1,11 +1,18 @@
 Convert a float number with given precision
 
-# Return : Float
-
 # Arguments
 
 - a_number    : A number to process ( trimmed )
 - a_precision : A precision number to apply to number ( trimmed )
+
+# Demo
+
+```
+$prec(2,3.141592)
+===
+$prec(2,3.141592)
+3.14
+```
 
 # Example
 

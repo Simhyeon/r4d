@@ -1,7 +1,5 @@
 Get a length of text. This counts length as utf8 characters
 
-# Return : Unsigned integer
-
 # Note
 
 - This might be different from what user expect since length has different
@@ -16,7 +14,11 @@ Get a length of text. This counts length as utf8 characters
 # Demo
 
 ```
-TODO
+$len(abcde)
+$len(안녕하세요)
+===
+5
+5
 ```
 
 # Example

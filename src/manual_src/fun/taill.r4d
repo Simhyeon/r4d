@@ -5,6 +5,18 @@ Get last lines of texts
 - a_count   : Amount of lines to crop [unsigned integer] ( trimmed )
 - a_lines   : Lines to crop from
 
+# Demo
+
+```
+$taill(2,hello
+world
+trailing)
+===
+world
+trailing
+```
+
+
 # Example
 
 $assert(b$nl()c,$taill( 2 ,a

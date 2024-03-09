@@ -2,7 +2,17 @@
 
 # Arguments
 
-- a_output_type : A output type to require (trimmed) []
+- a_output_type : A output type to require 
+
+# Demo
+
+```
+$output(discard)
+===
+error: Critical unsound execution error 
+= Rad should discard output and yet such flag was not satisfied.
+Int: Rad panicked with unrecoverable error.
+```
 
 # Example
 

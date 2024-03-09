@@ -5,13 +5,15 @@ Merge given paths
 - Paths with colliding separator cannot be merged.
     e.g) a/ + /b cannot be merged
 
-# Return : path
-
-# Demo
-
 # Arguments
 
 - a_array : A path array to merge ( trimmed )
+
+# Demo
+
+```
+
+```
 
 # Example
 

@@ -1,10 +1,14 @@
 Get a file's last modified time.
 
-# Auth: FIN
-
 # Arguments
 
 - a_file : A file to get last modified time ( trimmed )
+
+```
+$ftime(Cargo.toml)
+===
+2024-02-27 06:02:17
+```
 
 # Example
 

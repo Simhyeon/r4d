@@ -1,0 +1,26 @@
+Macro in-replace evaluation (MIE)
+
+# Note
+
+- In replace evaluation means macro body is replaced with given formula's
+  evaluated result.
+- MIE can have optional macro value, if no keyword "m" was found, macro value is
+  inserted at the start of the formula.
+  e.g. If the formula is 'm + 1', then "m" is treated as macro body. Otherwise
+  if the formula was '+1', then the formula is expanded to 'm+1'
+
+# Arguments
+
+- a_macro_name : Name of a macro to modify
+- a_formula    : Formula to apply
+
+# Demo
+
+```
+$def(tet=1)
+$mie(tet,m+1)
+$tet()
+===
+2
+```
+

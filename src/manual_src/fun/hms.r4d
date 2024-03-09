@@ -1,9 +1,12 @@
-Get given sesconds in hh:mm:ss format
+Get given seconds in hh:mm:ss format
 
 # Arguments
 
 - a_second : Seconds to convert ( trimmed )
 
-# Example
-
-$assert(00:33:40,$hms(2020))
+# Demo
+```
+$hms(2020)
+===
+00:33:40
+```

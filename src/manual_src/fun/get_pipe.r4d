@@ -16,8 +16,16 @@ Gets a piped value.
 $pipe(abc)% Pipes to value
 $-()      % This prints piped value which is [abc] in this case
 $-()      % Pipe gets truncated thus nothing is printed.
+$pipeto(v,V)
+$-(v)
 ===
-abc
+abc      V
+
+$pipe(abc)
+$-()      
+$-()      
+$pipeto(v,V)
+$-(v)
 ```
 
 # Test

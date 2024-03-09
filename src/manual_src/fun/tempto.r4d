@@ -1,16 +1,20 @@
 Change a temporary file path
 
-- NOTE : A temporary file name is merged to a temporary directory. You cannot 
+# Note
+
+- A temporary file name is merged to a temporary directory. You cannot 
 set a temporary file outside of a temporary directory.
 - This macro needs FOUT permission because it creates a temporary file if the 
 file doesn't exist
-
-# Auth: FOUT
 
 # Arguments
 
 - a_filename : A new temporary file path ( trimmed )
 
-# Example
+# Demo
 
-$tempto(/new/path)
+```
+% This creates /tmp/new.txt in unix system if the file doesn't exist
+$tempto(new.txt)
+===
+```

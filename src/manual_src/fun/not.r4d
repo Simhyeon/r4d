@@ -6,24 +6,18 @@ not a boolean
 - Use macro attribute "!" if you want simpler negation
 - Use not macro when you can spare extra verbosity but need emphasis
 
-# Return : boolean
-
 # Arguments
 
-- a_boolean : A boolean value to negate [boolean] ( trimmed )
+- a_boolean : A boolean value to negate
 
 # Demo
 
 ```
-$complicated_macro_result|()
-$pipe(false)
-$if($not-(),$panic(No way))
+$not(true)
+$not(1)
 ===
-[31merror[0m: Panic triggered with message
- "No way" 
- --> [INPUT = Stdin]:2:2 >> (MACRO = if):1:2
-[31merror[0m: Process Interrupted
-Int: Rad panicked with unrecoverable error.
+false
+false
 ```
 
 $not-()

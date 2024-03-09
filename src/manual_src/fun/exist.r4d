@@ -1,10 +1,18 @@
 Check if file exists
 
-# Auth : FIN
-
 # Arguments
 
 - a_filename : A file name to audit ( trimmed )
+
+# Demo
+
+```
+$exist(Cargo.toml)
+$exist(Cargos.tomoleo)
+===
+true
+false
+```
 
 # Example
 

@@ -3,13 +3,13 @@ Get a substring with indices but as unicode characters
 # Note
 
 - Out of range index is an error
-- This operation is technically equal to source[start_index..=end_index]
+- This gets substring of unicode characters.
 - Range is inclusive which means characters from start index and last index is
   both included.
 
 # Speical Syntax
 
-- Range seires support special syntax for indexing.
+- Range series support special syntax for indexing.
 - "_" means end of the string.
 - Negative index means offset index from end of the string.
 
@@ -18,8 +18,8 @@ e.g. $range(-3,_,abcdefg) would return "defg"
     -> More specifically,
 
      1 2 3 4 5 6 7
-     a b c d e f g
     -6-5-4-3-2-1 _
+     a b c d e f g
 
 # Arguments
 
@@ -31,7 +31,7 @@ e.g. $range(-3,_,abcdefg) would return "defg"
 
 ```
 % With --no-truncate
-$pipe(안녕하세요세상아)
+$pipe(가나다라마바사아)
 $rangeu-(0,7)
 $rangeu-(2,_)
 $rangeu-(2,-2)
@@ -39,12 +39,12 @@ $rangeu-(-5,-3)
 $rangeu-(-5,_)
 $rangeu-(_,_)
 ===
-안녕하세요세상아
-하세요세상아
-하세요세
-하세요
-하세요세상아
-아
+가나다라마바사아 % 0,7
+다라마바사아     % 2,_
+다라마바         % 2,-2
+다라마           % -5,-3
+다라마바사아     % -5,_
+아               % _,_
 ```
 
 # Example

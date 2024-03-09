@@ -1,5 +1,11 @@
 Extract from a storage
 
-# Example
+# Note
 
+- Refer repository's storage part to utilize this feature
+
+# demo
+
+```
 $extract()
+```

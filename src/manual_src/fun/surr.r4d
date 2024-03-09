@@ -1,4 +1,4 @@
-Surround given contents with a given pair
+Surround contents with a given pair
 
 # Note
 
@@ -15,25 +15,9 @@ Surround given contents with a given pair
 # Demo
 
 ```
-$stream(pipe)
-<p>
-I have 2 berries and 3 pennies. My father has 300 cattles in his farm.
-</p>
-$consume()
-$mapn-(surr <i> </i>)
+$surr(<,>,b)
+$mapn(surr <i> </i>,I have 2 tickets to finish)
 ===
-<p>
-I have <i>2</i> berries and <i>3</i> pennies. My father has <i>300</i> cattles in his farm.
-</p>
+<b>
+I have <i>2</i> tickets to finish
 ```
-
-# Example
-
-$assert=(
-    <div>dividivi dip</div>,
-    $surr=^(
-        <div>,
-        </div>,
-        dividivi dip
-    )
-)

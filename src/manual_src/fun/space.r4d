@@ -4,16 +4,14 @@ Print spaces
 
 - a_amount : Amount of spaces [Unsigned integer] ( trimmed )
 
-# Note
+# Demo
 
 ```
-$wrap|(30,$lipsum(15))
-$forline-($space($a_LN())$:())
+<-$space()->
+<-$space(5)->
 ===
- Lorem ipsum dolor sit amet
-  consectetur adipiscing elit.
-   In rhoncus sapien iaculis
-    sapien congue a
+<- ->
+<-     ->
 ```
 
 # Example

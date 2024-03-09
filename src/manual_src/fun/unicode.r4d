@@ -4,6 +4,14 @@ Creates a unicode character from a hex number without prefix
 
 - a_value : A value to convert to a unicode character
 
+# Demo
+
+```
+$unicode(263a)
+===
+☺
+```
+
 # Example
 
 $assert(☺,$unicode(263a))

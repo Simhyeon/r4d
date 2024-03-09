@@ -7,13 +7,9 @@ Get uppercase English text
 # Demo
 
 ```
-$pipe(abc_cde)
-$declare(user_input_as_env_name)
-$rename(user_input_as_env_name,uie)
-$repl(uie,$upper-())
-$uie()
+$upper(i'm whispering)
 ===
-ABC_CDE
+I'M WHISPERING
 ```
 
 # Example

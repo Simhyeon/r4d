@@ -1,12 +1,16 @@
 Get an absolute path. This requires a path to be a real path.
 
-# Auth : FIN
-
-# Return : path
-
 # Arguments
 
 - a_path : A path to make it absolute ( trimmed )
+
+# Demo
+
+```
+$abs(Cargo.toml)
+===
+/home/user/rust/r4d/Cargo.toml
+```
 
 # Example
 

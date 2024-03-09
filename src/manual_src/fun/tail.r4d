@@ -1,9 +1,17 @@
-Get last parts of texts
+Get last parts of texts by given count
 
 # Arguments
 
-- a_count   : Amount of characters to crop [unsigned integer] ( trimmed )
+- a_count   : Amount of characters to crop 
 - a_content : Text to crop from
+
+# Demo
+
+```
+$tail(2,hello)
+===
+lo
+```
 
 # Example
 

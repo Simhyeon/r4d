@@ -1,11 +1,25 @@
 Log an error message to console
 
+# Note
+
 - This prints error in non-breaking manner. Even in strict mode, this doesn't 
 trigger a panic.
 
 # Arguments
 
 - a_msg : An error message to log to console
+
+# Demo
+
+```
+$loge(Should not happen)
+===
+error: Should not happen 
+ --> [INPUT = Stdin]:1:2
+error: found 1 errors
+===
+```
+
 
 # Example
 

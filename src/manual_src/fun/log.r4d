@@ -4,6 +4,15 @@ Log a message to console
 
 - a_msg : A message to log to console
 
+# Demo
+
+```
+$log(Debugging Please print - 1)
+===
+log: Debugging Please print - 1 
+ --> [INPUT = Stdin]:1:2
+```
+
 # Example
 
 $log($value_i_want_to_check())

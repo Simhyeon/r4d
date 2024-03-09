@@ -1,9 +1,31 @@
-Create a static macro. A static macro is eagerly expanded unlike define
+Create a static macro. A static macro is eagerly expanded unlike def
 
 # Arguments
 
 - a_macro_name : A macro to create ( trimmed )
 - a_expr       : An expression to bind to ( trimmed )
+
+# Demo
+
+```
+% Macro to have dynamic call as body
+$def(in=before)
+$def(out=$in())
+
+% Static also has macro call within body but it is eagerly evaluated
+$static(sout,$in())
+
+% Macro's content has been replaced
+$repl(in,after)
+
+% Static still prints previous value while the latter macro doesn't
+% Because macros' body is lazily expanded on demand.
+$sout()
+$out()
+===
+before
+after
+```
 
 # Example
 

@@ -5,6 +5,14 @@ Get a substring unitl a pattern
 - a_pattern : A pattern to find
 - a_content : A content to get a sub string
 
+# Demo
+
+```
+$until(=,let value_name = Value::new().flag_one();)
+===
+let value_name 
+```
+
 # Example
 
 $assert(Hello,$until($space(),Hello World))
