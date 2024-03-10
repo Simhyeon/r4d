@@ -1,7 +1,5 @@
 Create an anonymous macro and return it's name
 
-# Not expanded at all
-
 # Arguments
 
 - a_macro : A macro defintition without name

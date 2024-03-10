@@ -18,7 +18,7 @@ use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
-use crate::utils::{RadStr, Utils, NUM_MATCH};
+use crate::utils::{RadStr, Utils, NUM_MATCH, UNUM_MATCH};
 use crate::{CommentType, WriteOption};
 use crate::{Hygiene, Processor};
 #[cfg(feature = "cindex")]
@@ -32,7 +32,7 @@ use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::BufRead;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 use std::str::FromStr;
 use unicode_width::UnicodeWidthStr;
@@ -175,13 +175,7 @@ impl FunctionMacroMap {
     ///
     /// $ftime(file_name.txt)
     #[cfg(feature = "chrono")]
-    pub(crate) fn get_file_time(
-        input: MacroInput,
-        processor: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("ftime", AuthType::FIN, processor)? {
-            return Ok(None);
-        }
+    pub(crate) fn get_file_time(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
         let path = args.get_path(0)?;
@@ -257,76 +251,32 @@ impl FunctionMacroMap {
         Ok(Some(result.to_string()))
     }
 
-    /// Evaluate given expression but keep original expression
-    ///
-    /// This returns true, false or evaluated number
-    ///
-    /// # Usage
-    ///
-    /// $evalk(expression)
-    pub(crate) fn eval_keep(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
-
-        // This is the processed raw formula
-        let formula = args.get_text(0)?;
-        let result = format!("{}= {}", formula, evalexpr::eval(formula)?);
-        Ok(Some(result))
-    }
-
     /// Evaluate given expression but force floating point
     ///
     /// This returns true, false or evaluated number
     ///
     /// # Usage
     ///
-    /// $eval(expression)
+    /// $evalf(expression)
     pub(crate) fn evalf(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        let formula = args
-            .get_text(0)?
-            .split_whitespace()
-            .map(|item| {
-                let mut new_str = item.to_string();
-                if item.parse::<isize>().is_ok() {
-                    new_str.push_str(".0");
-                }
-                new_str
-            })
-            .collect::<Vec<_>>()
-            .join(" ");
-        let result = evalexpr::eval(&formula)?;
+        let formula = args.get_text(0)?;
+        let mut new = String::with_capacity(formula.len());
+        let mut last_match = 0;
+        for caps in UNUM_MATCH.captures_iter(formula) {
+            let m = caps.get(0).unwrap();
+            new.push_str(&formula[last_match..m.start()]);
+            if let Ok(num) = m.as_str().parse::<usize>() {
+                new.push_str(&(num.to_string() + ".0"));
+            } else {
+                new.push_str(m.as_str());
+            }
+            last_match = m.end();
+        }
+        new.push_str(&formula[last_match..]);
+        let result = evalexpr::eval(&new)?;
         Ok(Some(result.to_string()))
-    }
-
-    /// Evaluate given expression but keep original expression and force float expression
-    ///
-    /// This returns true, false or evaluated number
-    ///
-    /// # Usage
-    ///
-    /// $evalkf(expression)
-    pub(crate) fn eval_keep_as_float(
-        input: MacroInput,
-        _: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
-
-        // This is the processed raw formula
-        let formula = args
-            .get_text(0)?
-            .split_whitespace()
-            .map(|item| {
-                let mut new_str = item.to_string();
-                if item.parse::<isize>().is_ok() {
-                    new_str.push_str(".0");
-                }
-                new_str
-            })
-            .collect::<Vec<_>>()
-            .join(" ");
-        let result = format!("{}= {}", formula, evalexpr::eval(&formula)?);
-        Ok(Some(result))
     }
 
     /// Pipe in replace evaluation
@@ -975,9 +925,6 @@ impl FunctionMacroMap {
     ///
     /// $syscmd(system command -a arguments)
     pub(crate) fn syscmd(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("syscmd", AuthType::CMD, p)? {
-            return Ok(None);
-        }
         let args = ArgParser::new().args_with_len(input)?;
 
         let source = args.get_ctext(0)?;
@@ -1359,9 +1306,6 @@ impl FunctionMacroMap {
     ///
     /// $env(SHELL)
     pub(crate) fn get_env(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("env", AuthType::ENV, p)? {
-            return Ok(None);
-        }
         let args = ArgParser::new().args_with_len(input)?;
         let env = args.get_ctext(0)?;
         if let Ok(out) = std::env::var(env) {
@@ -1383,9 +1327,6 @@ impl FunctionMacroMap {
     ///
     /// $envset(SHELL,value)
     pub(crate) fn set_env(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("envset", AuthType::ENV, p)? {
-            return Ok(None);
-        }
         let args = ArgParser::new().args_with_len(input)?;
 
         let name = args.get_ctext(0)?;
@@ -1563,7 +1504,7 @@ impl FunctionMacroMap {
     pub(crate) fn get_name(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        let path = Path::new(args.get_text(0)?);
+        let path = args.get_path(0)?;
 
         if let Some(name) = path.file_name() {
             if let Some(value) = name.to_str() {
@@ -1582,10 +1523,6 @@ impl FunctionMacroMap {
     ///
     /// $exist(../canonic_path.txt)
     pub(crate) fn file_exists(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("exist", AuthType::FIN, p)? {
-            return Ok(None);
-        }
-
         let args = ArgParser::new().args_with_len(input)?;
 
         let boolean = args.get_path(0)?.exists();
@@ -1598,10 +1535,6 @@ impl FunctionMacroMap {
     ///
     /// $abs(../canonic_path.txt)
     pub(crate) fn absolute_path(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("abs", AuthType::FIN, p)? {
-            return Ok(None);
-        }
-
         let args = ArgParser::new().args_with_len(input)?;
 
         let path = std::fs::canonicalize(p.get_current_dir()?.join(args.get_path(0)?))?
@@ -1748,16 +1681,12 @@ impl FunctionMacroMap {
                         if !line_preceding_blank.is_empty() {
                             leading = leading.trim_start();
                         }
-                        let line_end = if extracted.ends_with("\r\n") {
+                        if extracted.ends_with("\r\n") {
                             extracted.pop();
                             extracted.pop();
-                            "\r\n"
                         } else if extracted.ends_with('\n') {
                             extracted.pop();
-                            "\n"
-                        } else {
-                            ""
-                        };
+                        }
 
                         let extracted_spl = LSPA
                             .captures(&extracted)
@@ -1785,7 +1714,7 @@ impl FunctionMacroMap {
                         write!(
                             result,
                             "{}{}{}{}{}",
-                            line_preceding_blank, extracted, pattern, leading, line_end
+                            line_preceding_blank, extracted, pattern, leading, line_ending
                         )?;
                     }
                 }
@@ -1893,7 +1822,7 @@ impl FunctionMacroMap {
         } else {
             if processor.state.behaviour == ErrorBehaviour::Strict {
                 return Err(RadError::UnsoundExecution(format!(
-                    "Macro \"{}\" doesn')t exist, therefore cannot rename",
+                    "Macro \"{}\" doesn't exist, therefore cannot be rename",
                     name,
                 )));
             }
@@ -2621,10 +2550,6 @@ impl FunctionMacroMap {
     ///
     /// $tempout(Content)
     pub(crate) fn temp_out(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("tempout", AuthType::FOUT, p)? {
-            return Ok(None);
-        }
-
         let args = ArgParser::new().args_with_len(input)?;
 
         let content = args.get_text(0)?;
@@ -2646,9 +2571,6 @@ impl FunctionMacroMap {
     ///
     /// $fileout(file_name,true,Content)
     pub(crate) fn file_out(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("fileout", AuthType::FOUT, p)? {
-            return Ok(None);
-        }
         let args = ArgParser::new().args_with_len(input)?;
 
         let file_name = args.get_path(0)?;
@@ -3479,13 +3401,8 @@ impl FunctionMacroMap {
     ///
     /// $grepf(EXPR,CONTENT)
     pub(crate) fn grep_file(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        if !Utils::is_granted("grepf", AuthType::FIN, p)? {
-            return Ok(None);
-        }
-
         let args = ArgParser::new().args_with_len(input)?;
-        let file = args.get_path(1)?;
-        let path = Path::new(file);
+        let path = args.get_path(1)?;
 
         if path.exists() {
             let canonic = path.canonicalize()?;
@@ -3493,7 +3410,7 @@ impl FunctionMacroMap {
         } else {
             return Err(RadError::InvalidExecution(format!(
                 "grepf requires a real file to read from but \"{}\" doesn't exist",
-                file.display()
+                path.display()
             )));
         };
 
@@ -3640,9 +3557,6 @@ impl FunctionMacroMap {
             WarningType::Security,
         )?;
 
-        if !Utils::is_granted("relayt", AuthType::FOUT, p)? {
-            return Ok(None);
-        }
         let relay_target = RelayTarget::Temp;
 
         p.state.relay.push(relay_target);
@@ -3657,25 +3571,17 @@ impl FunctionMacroMap {
     ///
     /// $relayf(argument)
     pub(crate) fn relayf(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        use crate::common::FileTarget;
         let args = ArgParser::new().args_with_len(input)?;
 
-        let target = args.get_ctext(0)?;
+        let target = args.get_path(0)?;
 
         p.log_warning(
-            &format!("Relaying text content to \"{}\"", target),
+            &format!("Relaying text content to \"{}\"", target.display()),
             WarningType::Security,
         )?;
 
-        use crate::common::FileTarget;
-        if !Utils::is_granted("relayf", AuthType::FOUT, p)? {
-            return Ok(None);
-        }
-        if target.is_empty() {
-            return Err(RadError::InvalidArgument(
-                "relay requires second argument as file name for file relaying".to_owned(),
-            ));
-        }
-        let file_target = FileTarget::from_path(Path::new(&target))?;
+        let file_target = FileTarget::from_path(target)?;
 
         let relay_target = RelayTarget::File(file_target);
 
@@ -3802,9 +3708,6 @@ impl FunctionMacroMap {
         input: MacroInput,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("tempto", AuthType::FOUT, processor)? {
-            return Ok(None);
-        }
         let args = ArgParser::new().args_with_len(input)?;
 
         let path = &std::env::temp_dir().join(args.get_path(0)?);
@@ -3822,9 +3725,6 @@ impl FunctionMacroMap {
         _: MacroInput,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("temp", AuthType::FIN, processor)? {
-            return Ok(None);
-        }
         Ok(Some(processor.state.temp_target.to_string()))
     }
 
@@ -3905,7 +3805,9 @@ impl FunctionMacroMap {
         input: MacroInput,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
         if args.is_empty() {
             p.log_warning(
                 "Require macro used without any arguments.",
@@ -4033,7 +3935,7 @@ impl FunctionMacroMap {
         let args = ArgParser::new().args_with_len(input)?;
 
         let content = args.get_text(0)?;
-        if content.is_empty() {
+        if content.trim().is_empty() {
             return Err(RadError::InvalidArgument(
                 "max requires an array to process but given empty value".to_owned(),
             ));
@@ -4051,7 +3953,7 @@ impl FunctionMacroMap {
         let args = ArgParser::new().args_with_len(input)?;
 
         let content = args.get_text(0)?;
-        if content.is_empty() {
+        if content.trim().is_empty() {
             return Err(RadError::InvalidArgument(
                 "min requires an array to process but given empty value".to_owned(),
             ));
@@ -4214,8 +4116,8 @@ impl FunctionMacroMap {
     pub(crate) fn prec(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        let number = args.get_float(0)?;
-        let precision = args.get_uint(1)?;
+        let precision = args.get_uint(0)?;
+        let number = args.get_float(1)?;
         let decimal_precision = 10.0f32.powi(precision as i32);
         let converted = f32::trunc(number * decimal_precision) / decimal_precision;
         let formatted = format!("{:.1$}", converted, precision);
@@ -4234,11 +4136,12 @@ impl FunctionMacroMap {
                 "rev requires an argument".to_owned(),
             ))
         } else {
-            let reversed = input.args.rsplit(',').fold(String::new(), |mut acc, a| {
+            let mut reversed = input.args.rsplit(',').fold(String::new(), |mut acc, a| {
                 acc.push_str(a);
                 acc.push(',');
                 acc
             });
+            reversed.pop();
             Ok(Some(reversed))
         }
     }
@@ -4300,16 +4203,11 @@ impl FunctionMacroMap {
     /// $dump(macro,content)
     pub(crate) fn dump_file_content(
         input: MacroInput,
-        p: &mut Processor,
+        _: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("dump", AuthType::FOUT, p)? {
-            return Ok(None);
-        }
-
         let args = ArgParser::new().args_with_len(input)?;
 
-        let name = args.get_ctext(0)?;
-        let file_name = Path::new(name);
+        let file_name = args.get_path(0)?;
 
         if !file_name.is_file() {
             return Err(RadError::InvalidExecution(format!(
@@ -4792,9 +4690,6 @@ impl FunctionMacroMap {
         input: MacroInput,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("source", AuthType::FIN, processor)? {
-            return Ok(None);
-        }
         let args = ArgParser::new().args_with_len(input)?;
 
         let path = args.get_path(0)?;
@@ -4841,9 +4736,6 @@ impl FunctionMacroMap {
         input: MacroInput,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("import", AuthType::FIN, processor)? {
-            return Ok(None);
-        }
         let args = ArgParser::new().args_with_len(input)?;
 
         let path = args.get_path(0)?;

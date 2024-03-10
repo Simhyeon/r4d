@@ -3,7 +3,7 @@ use crate::argument::{MacroInput, ValueType};
 use crate::common::{ETMap, ETable, RadResult};
 use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
-use crate::man_det;
+use crate::{man_det, AuthType};
 use crate::{Parameter, Processor};
 #[cfg(feature = "rustc_hash")]
 use rustc_hash::FxHashMap as HashMap;
@@ -39,49 +39,24 @@ impl DeterredMacroMap {
                 Self::include,
                 Some(man_det!("include.r4d")),
             )
-            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))),
+            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
+            .require_auth(&[AuthType::FIN])),
             (DMacroSign::new(
-                "incread",
+                "read",
                 [(ValueType::Path, "a_filename")],
                 Self::incread,
-                Some(man_det!("incread.r4d")),
+                Some(man_det!("read.r4d")),
             )
-            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))),
+            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
+            .require_auth(&[AuthType::FIN])),
             (DMacroSign::new(
-                "tempin",
-                ESR,
-                Self::temp_include,
-                Some(man_det!("tempin.r4d")),
+                "bufread",
+                [(ValueType::Path, "a_file")],
+                DeterredMacroMap::read_in,
+                Some(man_det!("bufread.r4d")),
             )
-            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))),
-            (DMacroSign::new(
-                "mapf",
-                [
-                    (ValueType::CText, "a_macro_name"),
-                    (ValueType::Path, "a_file"),
-                ],
-                Self::map_file,
-                Some(man_det!("mapf.r4d")),
-            )),
-            (DMacroSign::new(
-                "mapfe",
-                [
-                    (ValueType::Text, "a_expr"),
-                    (ValueType::CText, "a_macro_name"),
-                    (ValueType::Text, "a_lines"),
-                ],
-                Self::map_file_expr,
-                None,
-            )),
-            (DMacroSign::new(
-                "mapn",
-                [
-                    (ValueType::CText, "a_operation"),
-                    (ValueType::Text, "a_source"),
-                ],
-                Self::map_number,
-                None,
-            )),
+            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
+            .require_auth(&[AuthType::FIN])),
             (DMacroSign::new(
                 "readto",
                 [
@@ -92,14 +67,46 @@ impl DeterredMacroMap {
                 Some(man_det!("readto.r4d")),
             )
             .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
-            .no_ret()),
+            .no_ret()
+            .require_auth(&[AuthType::FIN, AuthType::FOUT])),
             (DMacroSign::new(
-                "readin",
-                [(ValueType::Path, "a_file")],
-                DeterredMacroMap::read_in,
-                Some(man_det!("readin.r4d")),
+                "tempin",
+                ESR,
+                Self::temp_include,
+                Some(man_det!("tempin.r4d")),
             )
-            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))),
+            .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
+            .require_auth(&[AuthType::FIN])),
+            (DMacroSign::new(
+                "mapf",
+                [
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Path, "a_file"),
+                ],
+                Self::map_file,
+                Some(man_det!("mapf.r4d")),
+            )
+            .require_auth(&[AuthType::FIN])),
+            (DMacroSign::new(
+                "mapfe",
+                [
+                    (ValueType::Text, "a_expr"),
+                    (ValueType::CText, "a_macro_name"),
+                    (ValueType::Text, "a_lines"),
+                ],
+                Self::map_file_expr,
+                None,
+            )
+            .require_auth(&[AuthType::FIN])),
+            (DMacroSign::new(
+                "mapn",
+                [
+                    (ValueType::CText, "a_operation"),
+                    (ValueType::Text, "a_source"),
+                ],
+                Self::map_number,
+                None,
+            )),
             (DMacroSign::new(
                 "ifenv",
                 [
@@ -108,7 +115,8 @@ impl DeterredMacroMap {
                 ],
                 DeterredMacroMap::ifenv,
                 Some(man_det!("ifenv.r4d")),
-            )),
+            )
+            .require_auth(&[AuthType::ENV])),
             (DMacroSign::new(
                 "ifenvel",
                 [
@@ -118,7 +126,8 @@ impl DeterredMacroMap {
                 ],
                 DeterredMacroMap::ifenvel,
                 Some(man_det!("ifenvel.r4d")),
-            )),
+            )
+            .require_auth(&[AuthType::ENV])),
             (DMacroSign::new(
                 "append",
                 [
@@ -403,6 +412,7 @@ pub(crate) struct DMacroSign {
     #[allow(dead_code)]
     desc: Option<String>,
     pub ret: Option<ValueType>,
+    pub required_auth: Vec<AuthType>,
 }
 
 impl DMacroSign {
@@ -427,11 +437,17 @@ impl DMacroSign {
             logic,
             desc,
             ret: Some(ValueType::Text),
+            required_auth: vec![],
         }
     }
 
     pub fn no_ret(mut self) -> Self {
         self.ret = None;
+        self
+    }
+
+    pub fn require_auth(mut self, auths: &[AuthType]) -> Self {
+        self.required_auth = auths.to_vec();
         self
     }
 
@@ -482,6 +498,7 @@ impl From<&DMacroSign> for crate::sigmap::MacroSignature {
             expr: ms.to_string(),
             desc: ms.desc.clone(),
             return_type: ms.ret,
+            required_auth: ms.required_auth.clone(),
         }
     }
 }

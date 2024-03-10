@@ -10,6 +10,8 @@
 //! - env
 
 use crate::consts::LINE_ENDING;
+use serde::{Deserialize, Serialize};
+
 use crate::RadError;
 use std::fmt::Write;
 
@@ -68,7 +70,7 @@ impl AuthFlags {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 /// Authorization type
 ///
 /// ```text

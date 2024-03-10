@@ -1,0 +1,18 @@
+Read from a file as "Bufread". This always printed read text into outermost
+space.
+
+# NOT deterred
+
+# Arguments
+
+- a_file : A file to read from
+- a_raw_mode : Whehter to escape the read. A default is false 
+
+# Demo
+
+```
+$indentl(*,$bufread(file.txt))
+===
+FILE CONTENT COMES HERE
+*
+```

@@ -4,7 +4,7 @@
 
 use crate::{
     common::{ETMap, Hygiene},
-    Parameter,
+    AuthType, Parameter,
 };
 #[cfg(feature = "rustc_hash")]
 use rustc_hash::FxHashMap as HashMap;
@@ -19,19 +19,36 @@ pub struct RuntimeMacro {
     pub body: String,
     pub desc: Option<String>,
     pub is_static: bool,
+    pub required_auth: Vec<AuthType>,
 }
 
 impl RuntimeMacro {
     /// Create a new macro
-    pub fn new(name: &str, params: Vec<Parameter>, body: &str, is_static: bool) -> Self {
+    pub fn new(name: &str) -> Self {
         // Empty args are no args
         RuntimeMacro {
-            name: name.to_owned(),
-            params,
-            body: body.to_owned(),
+            name: name.trim().to_string(),
+            params: vec![],
+            body: String::new(),
             desc: None,
-            is_static,
+            is_static: false,
+            required_auth: vec![],
         }
+    }
+
+    pub fn is_static(mut self) -> Self {
+        self.is_static = true;
+        self
+    }
+
+    pub fn body(mut self, body: &str) -> Self {
+        self.body = body.to_string();
+        self
+    }
+
+    pub fn params(mut self, params: Vec<Parameter>) -> Self {
+        self.params = params;
+        self
     }
 }
 
@@ -62,6 +79,7 @@ impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
             expr: mac.to_string(),
             desc: mac.desc.clone(),
             return_type: Some(crate::argument::ValueType::Text),
+            required_auth: mac.required_auth.clone(),
         }
     }
 }
@@ -80,6 +98,10 @@ impl RuntimeMacroMap {
             macros: HashMap::new(),
             volatile: HashMap::new(),
         }
+    }
+
+    pub fn insert_macro(&mut self, mac: RuntimeMacro) {
+        self.macros.insert(mac.name.clone(), mac);
     }
 
     /// Clear runtime macros

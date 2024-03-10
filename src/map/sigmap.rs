@@ -1,8 +1,8 @@
 //! Signature map module
 
 use crate::argument::ValueType;
-use crate::Parameter;
 use crate::{common::ETMap, consts::LINE_ENDING};
+use crate::{AuthType, Parameter};
 #[cfg(feature = "rustc_hash")]
 use rustc_hash::FxHashMap as HashMap;
 use serde::{Deserialize, Serialize};
@@ -45,6 +45,7 @@ pub struct MacroSignature {
     pub expr: String,
     pub desc: Option<String>,
     pub return_type: Option<ValueType>,
+    pub required_auth: Vec<AuthType>,
 }
 
 // TODO TT
@@ -67,6 +68,7 @@ Macro Name  : {}
 Parameters  : {}
 Return      : {}
 Usage       : {}
+Required    : {:?}
 Description >> 
 {}",
             self.variant,
@@ -81,6 +83,7 @@ Description >>
                 .map(|s| s.to_string())
                 .unwrap_or("[NONE]".to_string()),
             self.expr,
+            self.required_auth,
             self.desc
                 .as_ref()
                 .map(|d| d

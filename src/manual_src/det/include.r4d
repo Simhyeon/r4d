@@ -1,17 +1,22 @@
 Include a file
 
+# Note
+
 - Include works as bufread in first level and chunk read in nested call.
 - Use readin if you want to enforce bufread
 - If raw mode is enabled include doesn't expand any macros inside the file
 
 # NOT Deterred
 
-# AUTH : FIN
-
 # Arguments
 
 - a_filename : A file name to read ( trimmed )
 - a_raw_mode : Whehter to escape the read. A default is false [boolean] ( trimmed, optional )
 
+# Demo
+
+```
 $include(file_path)
 $include(file_path, true)
+===
+```

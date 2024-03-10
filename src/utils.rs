@@ -23,6 +23,9 @@ use crate::common::RelayTarget;
 pub static NUM_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"[+-]?([\d]*[.])?\d+"#).expect("Failed to create number regex"));
 
+pub static UNUM_MATCH: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"([\d]*[.])?\d+"#).expect("Failed to create number regex"));
+
 pub static NAME_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"^[a-zA-Z]+[a-zA-Z0-9_]*$"#).expect("Failed to create name regex"));
 
@@ -990,28 +993,6 @@ impl Utils {
             if s.ends_with('\r') {
                 s.pop();
             }
-        }
-    }
-
-    /// Check file authority
-    pub(crate) fn is_granted(
-        name: &str,
-        auth_type: AuthType,
-        processor: &mut Processor,
-    ) -> RadResult<bool> {
-        match processor.get_auth_state(&auth_type) {
-            AuthState::Restricted => Err(RadError::PermissionDenied(name.to_owned(), auth_type)),
-            AuthState::Warn => {
-                processor.log_warning(
-                    &format!(
-                        "\"{}\" was called with \"{:?}\" permission",
-                        name, auth_type
-                    ),
-                    WarningType::Security,
-                )?;
-                Ok(true)
-            }
-            AuthState::Open => Ok(true),
         }
     }
 

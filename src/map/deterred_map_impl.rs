@@ -1,5 +1,4 @@
 use crate::argument::MacroInput;
-use crate::auth::AuthType;
 use crate::common::{ContainerType, FileTarget, FlowControl, MacroFragment, ProcessInput};
 use crate::common::{ErrorBehaviour, MacroType, RadResult, RelayTarget, STREAM_CONTAINER};
 use crate::consts::MACRO_SPECIAL_ANON;
@@ -377,9 +376,6 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("mapf", AuthType::FIN, p)? {
-            return Ok(None);
-        }
         let cursors = ArgParser::new()
             .level(level)
             .macro_name("mapf")
@@ -417,9 +413,6 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("mapfe", AuthType::FIN, p)? {
-            return Ok(None);
-        }
         let cursors = ArgParser::new()
             .level(level)
             .macro_name("mapfe")
@@ -919,9 +912,6 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("ifenv", AuthType::ENV, p)? {
-            return Ok(None);
-        }
         let cursors = ArgParser::new()
             .level(level)
             .macro_name("ifenv")
@@ -949,9 +939,6 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("ifenvel", AuthType::ENV, p)? {
-            return Ok(None);
-        }
         let cursors = ArgParser::new()
             .level(level)
             .macro_name("ifenvel")
@@ -1148,11 +1135,6 @@ impl DeterredMacroMap {
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         // Needs both permission
-        if !Utils::is_granted("readto", AuthType::FIN, p)?
-            || !Utils::is_granted("readto", AuthType::FOUT, p)?
-        {
-            return Ok(None);
-        }
         let cursors = ArgParser::new()
             .level(level)
             .macro_name("readto")
@@ -1219,9 +1201,6 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("readin", AuthType::FIN, p)? {
-            return Ok(None);
-        }
         let cursors = ArgParser::new()
             .level(level)
             .macro_name("readin")
@@ -1451,9 +1430,6 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("include", AuthType::FIN, p)? {
-            return Ok(None);
-        }
         let ap = ArgParser::new().no_strip();
         let cursors = ap.cursors_with_len(input)?;
         let file_path = cursors.get_path(p, 0)?;
@@ -1530,9 +1506,6 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("incread", AuthType::FIN, p)? {
-            return Ok(None);
-        }
         let cursors = ArgParser::new()
             .level(level)
             .macro_name("if")
@@ -1560,9 +1533,6 @@ impl DeterredMacroMap {
         level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        if !Utils::is_granted("tempin", AuthType::FIN, p)? {
-            return Ok(None);
-        }
         let file = p.get_temp_path().to_owned();
         let cursors = ArgParser::new()
             .level(level)

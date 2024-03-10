@@ -33,6 +33,7 @@ use crate::{lexor::*, stake};
 use crate::{ArgParser, Parameter};
 #[cfg(feature = "cindex")]
 use cindex::Indexer;
+use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -1095,22 +1096,18 @@ impl<'processor> Processor<'processor> {
                 ));
                 return Err(err);
             }
-            self.map.runtime.macros.insert(
-                name.to_owned(),
-                RuntimeMacro {
-                    name: name.to_owned(),
-                    params: args
-                        .split_whitespace()
+
+            let mac = RuntimeMacro::new(name)
+                .params(
+                    args.split_whitespace()
                         .map(|s| Parameter {
                             name: s.to_owned(),
                             arg_type: ValueType::Text,
                         })
-                        .collect::<Vec<Parameter>>(),
-                    body: body.to_string(),
-                    desc: None,
-                    is_static: false,
-                },
-            );
+                        .collect_vec(),
+                )
+                .body(body);
+            self.map.runtime.insert_macro(mac);
         }
         Ok(())
     }
@@ -1153,16 +1150,8 @@ impl<'processor> Processor<'processor> {
                 ));
                 return Err(err);
             }
-            self.map.runtime.macros.insert(
-                name.to_owned(),
-                RuntimeMacro {
-                    name: name.to_owned(),
-                    params: vec![],
-                    body: body.as_ref().to_owned(),
-                    desc: None,
-                    is_static: true,
-                },
-            );
+            let mac = RuntimeMacro::new(name).body(body.as_ref()).is_static();
+            self.map.runtime.insert_macro(mac);
         }
         Ok(())
     }
@@ -2205,13 +2194,14 @@ impl<'processor> Processor<'processor> {
         }
         // Find deterred macro
         if self.map.is_deterred_macro(name) {
+            let sig = self.map.get_signature(name).unwrap();
+            self.is_rejected(name, &sig.required_auth)?;
             if let Some(func) = self.map.deterred.get_deterred_macro(name) {
                 // On dry run, macro is not expanded but only checks if found macro exists
                 if self.state.process_type == ProcessType::Dry {
                     return Ok(None);
                 }
 
-                let sig = self.map.get_signature(name).unwrap();
                 let input = MacroInput::new(name, &args)
                     .attr(frag.attribute)
                     .optional(sig.optional)
@@ -2253,10 +2243,11 @@ impl<'processor> Processor<'processor> {
             }
 
             // Func always exists, because contains succeeded.
+            let sig = self.map.get_signature(name).unwrap();
+            self.is_rejected(name, &sig.required_auth)?;
             let func = self.map.function.get_func(name).unwrap();
             //let final_result = func(&args, self)?;
 
-            let sig = self.map.get_signature(name).unwrap();
             let input = MacroInput::new(name, &args)
                 .attr(frag.attribute)
                 .optional(sig.optional)
@@ -2993,13 +2984,7 @@ impl<'processor> Processor<'processor> {
             .runtime
             .macros
             .entry(name.to_string())
-            .or_insert(RuntimeMacro {
-                name: name.to_string(),
-                params: vec![],
-                body: String::new(),
-                desc: None,
-                is_static: true,
-            });
+            .or_insert(RuntimeMacro::new(name).is_static());
         Ok(())
     }
 
@@ -3679,6 +3664,28 @@ impl<'processor> Processor<'processor> {
     /// ```
     pub fn is_true(&self, src: &str) -> RadResult<bool> {
         src.is_arg_true()
+    }
+
+    /// Check file authority
+    pub(crate) fn is_rejected(&mut self, name: &str, auths: &[AuthType]) -> RadResult<AuthType> {
+        for auth_type in auths {
+            match self.get_auth_state(auth_type) {
+                AuthState::Restricted => {
+                    return Err(RadError::PermissionDenied(name.to_owned(), *auth_type));
+                }
+                AuthState::Warn => {
+                    self.log_warning(
+                        &format!(
+                            "\"{}\" was called with \"{:?}\" permission",
+                            name, auth_type
+                        ),
+                        WarningType::Security,
+                    )?;
+                }
+                AuthState::Open => (),
+            }
+        }
+        Ok(AuthType::LEN)
     }
 
     // </EXT>

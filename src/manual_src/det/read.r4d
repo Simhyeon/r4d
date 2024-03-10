@@ -1,0 +1,20 @@
+Include a file as "read" ( namely as chunk ) regardless of invocation level
+
+# Note
+
+- Refer repository's file inclusion section to better understand how include
+  and incread works.
+
+# NOT Deterred
+
+# Arguments
+
+- a_filename : A file name to read ( trimmed )
+- a_raw_mode : Whehter to escape the read. A default is false
+
+# Demo
+
+```
+$read|(file_path)
+===
+```
