@@ -43,7 +43,7 @@ pub struct MacroSignature {
     pub optional: Option<Parameter>,
     pub optional_multiple: bool,
     pub enum_table: ETMap,
-    pub return_type: Option<ValueType>,
+    pub return_type: ValueType,
     pub required_auth: Vec<AuthType>,
     pub desc: Option<String>,
 }
@@ -125,9 +125,7 @@ Description >>
             self.variant,
             self.name,
             params + optional,
-            self.return_type
-                .map(|s| s.to_string())
-                .unwrap_or("[NONE]".to_string()),
+            self.return_type,
             expr,
             self.required_auth,
             self.desc

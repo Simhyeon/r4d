@@ -1,7 +1,7 @@
 //! Main macro processing struct module
 
 use super::ProcessorState;
-use crate::argument::{MacroInput, TypeValidate, ValueType};
+use crate::argument::{MacroInput, ValueType};
 use crate::auth::{AuthState, AuthType};
 #[cfg(feature = "debug")]
 use crate::common::DiffOption;
@@ -37,7 +37,7 @@ use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::borrow::{Borrow, Cow};
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufReader, Read, Write};
@@ -2218,12 +2218,8 @@ impl<'processor> Processor<'processor> {
                     }
                 });
 
-                if !PROC_ENV.bypass_ret_validation {
-                    sig.return_type.is_valid_return_type(
-                        final_result.as_ref(),
-                        sig.enum_table.tables.get(RET_ETABLE),
-                    )?;
-                }
+                // sig.return_type
+                //     .is_valid_return_type(&final_result, sig.enum_table.tables.get(RET_ETABLE))?;
 
                 return Ok(final_result);
             }
@@ -2249,27 +2245,25 @@ impl<'processor> Processor<'processor> {
                 .parameter(&sig.params);
             let res = func(input, self);
 
-            let final_result = match res {
-                Ok(e) => e.filter(|f| {
-                    if !PROC_ENV.no_consume {
-                        !f.is_empty()
-                    } else {
-                        true
-                    }
-                }),
-                Err(err) => {
-                    return Err(err);
-                }
-            };
+            let final_result = res?;
+            // TODO TT
+            // match res {
+            // Ok(e) => e.filter(|f| {
+            //     if !PROC_ENV.no_consume {
+            //         !f.is_empty()
+            //     } else {
+            //         true
+            //     }
+            // }),
+            // Err(err) => {
+            //     return Err(err);
+            // }
+            // };
 
-            if !PROC_ENV.bypass_ret_validation {
-                sig.return_type.is_valid_return_type(
-                    final_result.as_ref(),
-                    sig.enum_table.tables.get(RET_ETABLE),
-                )?;
-            }
+            sig.return_type
+                .is_valid_return_type(&final_result, sig.enum_table.tables.get(RET_ETABLE))?;
 
-            Ok(final_result)
+            Ok(final_result.to_printable())
         }
         // No macros found to evaluate
         else {

@@ -169,8 +169,10 @@ pub(crate) trait ArgableCow<'a> {
 }
 
 impl<'a> ArgableCow<'a> for Cow<'a, str> {
+    /// Intenal method for primary conversion
     fn to_arg(self, param: &Parameter, candidates: Option<&ETable>) -> RadResult<Argument<'a>> {
         let arg = match param.arg_type {
+            ValueType::None => unreachable!("This is a logic error"),
             ValueType::Bool => Argument::Bool(self.is_arg_true().map_err(|_| {
                 RadError::InvalidArgument(format!(
                     "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Bool]",
@@ -236,6 +238,7 @@ impl<'a> ArgableCow<'a> for Cow<'a, str> {
 #[derive(Debug)]
 pub enum Argument<'a> {
     Text(Cow<'a, str>),
+    Enum(String),
     Bool(bool),
     Uint(usize),
     Int(isize),
@@ -243,8 +246,115 @@ pub enum Argument<'a> {
     Float(f32),
     Regex(&'a str),
 }
+
+#[derive(Debug)]
+pub enum Return {
+    None,
+    Text(String),
+    Enum(String),
+    Bool(bool),
+    Uint(usize),
+    Int(isize),
+    Path(PathBuf),
+    Float(f32),
+    Regex(String),
+}
+
+impl Return {
+    pub fn to_printable(self) -> Option<String> {
+        match self {
+            Self::None => None,
+            Self::Text(v) => Some(v.to_string()),
+            Self::Bool(v) => Some(v.to_string()),
+            Self::Uint(v) => Some(v.to_string()),
+            Self::Int(v) => Some(v.to_string()),
+            Self::Path(v) => Some(v.display().to_string()),
+            Self::Float(v) => Some(v.to_string()),
+            Self::Regex(v) => Some(v.to_string()),
+            Self::Enum(v) => Some(v.to_string()),
+        }
+    }
+}
+
+impl From<PathBuf> for Return {
+    fn from(value: PathBuf) -> Self {
+        Return::Path(value)
+    }
+}
+
+impl From<bool> for Return {
+    fn from(value: bool) -> Self {
+        Return::Bool(value)
+    }
+}
+
+impl From<f32> for Return {
+    fn from(value: f32) -> Self {
+        Return::Float(value)
+    }
+}
+
+impl From<usize> for Return {
+    fn from(value: usize) -> Self {
+        Return::Uint(value)
+    }
+}
+
+impl From<isize> for Return {
+    fn from(value: isize) -> Self {
+        Return::Int(value)
+    }
+}
+
+impl From<String> for Return {
+    fn from(value: String) -> Self {
+        Return::Text(value)
+    }
+}
+
+impl From<Option<String>> for Return {
+    fn from(value: Option<String>) -> Self {
+        match value {
+            Some(vv) => Return::Text(vv),
+            None => Return::None,
+        }
+    }
+}
+
+impl From<Option<&str>> for Return {
+    fn from(value: Option<&str>) -> Self {
+        match value {
+            Some(vv) => Return::Text(vv.to_string()),
+            None => Return::None,
+        }
+    }
+}
+
+impl From<&str> for Return {
+    fn from(value: &str) -> Self {
+        Self::Text(value.to_string())
+    }
+}
+
+impl Return {
+    pub fn get_type(&self) -> ValueType {
+        match self {
+            Self::None => ValueType::None,
+            Self::Text(_) => ValueType::Text,
+            Self::Bool(_) => ValueType::Bool,
+            Self::Uint(_) => ValueType::Uint,
+            Self::Int(_) => ValueType::Int,
+            Self::Path(_) => ValueType::Path,
+            Self::Float(_) => ValueType::Float,
+            Self::Regex(_) => ValueType::Regex,
+            Self::Enum(_) => ValueType::Enum,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ValueType {
+    None,
     Bool,
     Float,
     Uint,
@@ -256,48 +366,34 @@ pub enum ValueType {
     Regex,
 }
 
-pub(crate) trait TypeValidate {
-    fn is_valid_return_type(&self, ret: Option<&String>, etable: Option<&ETable>) -> RadResult<()>;
-}
+impl ValueType {
+    pub fn is_valid_return_type(&self, ret: &Return, etable: Option<&ETable>) -> RadResult<()> {
+        let ret_type = ret.get_type();
 
-impl TypeValidate for Option<ValueType> {
-    fn is_valid_return_type(&self, ret: Option<&String>, etable: Option<&ETable>) -> RadResult<()> {
-        if self.is_none() {
-            // Required empty ret but some value was returned
-            if ret.is_some() {
-                return Err(RadError::InvalidExecution(format!(
-                    "Return type out of sync. Expected : [NONE] type but got value \"{}\"",
-                    ret.unwrap()
-                )));
-            } else {
-                return Ok(());
+        // If argument's type is not same with given type => Error
+        if *self != ret_type {
+            return Err(RadError::InvalidExecution(format!(
+                "Return type out of sync. Expected : \"{}\" type but got \"{}\" type",
+                self, ret_type
+            )));
+        }
+
+        if let Return::Enum(inn) = ret {
+            // If enum doesn't match variatns => Error
+            if let Err(RadError::InvalidArgument(stros)) =
+                Cow::Borrowed(inn.as_str()).to_arg(&Parameter::new(*self, RET_ETABLE), etable)
+            {
+                return Err(RadError::InvalidExecution(
+                    stros
+                        + &format!(
+                            "
+= Expected a return type [{}] but validation failed",
+                            self
+                        ),
+                ));
             }
         }
-        // Return value
-        let self_type = self.unwrap();
-        if ret.is_none() {
-            let ret = match self_type {
-                ValueType::Text | ValueType::CText => Ok(()),
-                _ => Err(RadError::InvalidExecution(format!(
-                    "Return type out of sync. Expected : \"{}\" type but got empty value",
-                    self_type,
-                ))),
-            };
-            return ret;
-        }
-        let src: Cow<'_, str> = ret.unwrap().into();
-        if let Err(RadError::InvalidArgument(stros)) =
-            src.to_arg(&Parameter::new(self_type, RET_ETABLE), etable)
-        {
-            return Err(RadError::InvalidExecution(
-                stros
-                    + &format!(
-                        "
-= Expected a return type [{}] but validation failed",
-                        self_type
-                    ),
-            ));
-        }
+
         Ok(())
     }
 }
@@ -314,6 +410,7 @@ impl Display for ValueType {
             Self::Text => "Text",
             Self::Uint => "Uint",
             Self::Regex => "Regex",
+            Self::None => "NONE",
         };
         write!(f, "{}", text)
     }

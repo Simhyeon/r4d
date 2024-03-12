@@ -412,7 +412,7 @@ pub(crate) struct DMacroSign {
     pub logic: DFunctionMacroType,
     #[allow(dead_code)]
     desc: Option<String>,
-    pub ret: Option<ValueType>,
+    pub ret: ValueType,
     pub required_auth: Vec<AuthType>,
 }
 
@@ -438,13 +438,13 @@ impl DMacroSign {
             enum_table: ETMap::default(),
             logic,
             desc,
-            ret: Some(ValueType::Text),
+            ret: ValueType::Text,
             required_auth: vec![],
         }
     }
 
     pub fn no_ret(mut self) -> Self {
-        self.ret = None;
+        self.ret = ValueType::None;
         self
     }
 
@@ -454,7 +454,7 @@ impl DMacroSign {
     }
 
     pub fn ret(mut self, ret_type: ValueType) -> Self {
-        self.ret.replace(ret_type);
+        self.ret = ret_type;
         self
     }
 

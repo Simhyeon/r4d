@@ -69,7 +69,7 @@ impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
             optional_multiple: mac.optional_multiple,
             enum_table: ETMap::default(),
             desc: mac.desc.clone(),
-            return_type: Some(crate::argument::ValueType::Text),
+            return_type: crate::argument::ValueType::Text,
             required_auth: mac.required_auth.clone(),
         }
     }

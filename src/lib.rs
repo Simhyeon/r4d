@@ -65,7 +65,7 @@ pub(crate) use map::function_map;
 pub(crate) use map::hookmap;
 pub(crate) use map::runtime_map;
 pub(crate) use map::sigmap;
-pub(crate) use utils::{RadStr, RegCow};
+pub(crate) use utils::RadStr;
 
 pub(crate) mod auth;
 pub(crate) mod common;

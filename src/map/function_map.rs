@@ -3,7 +3,7 @@
 //! Function macro module includes struct and methods related to function macros
 //! which are technically function pointers.
 
-use crate::argument::{MacroInput, ValueType};
+use crate::argument::{Return, MacroInput, ValueType};
 use crate::consts::ESR;
 use crate::extension::ExtMacroBuilder;
 use crate::{common::*, AuthType};
@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 
 /// Function signature for "function" macro functions
-pub(crate) type FunctionMacroType = fn(MacroInput, &mut Processor) -> RadResult<Option<String>>;
+pub(crate) type FunctionMacroType = fn(MacroInput, &mut Processor) -> RadResult<Return>;
 
 #[derive(Clone)]
 /// Collection map for a "function" macro function
@@ -41,7 +41,7 @@ impl FunctionMacroMap {
                 FMacroSign::new(
                     "-",
                     ESR,
-                    Self::get_pipe,
+                    Self::get_pipe ,
                     Some(man_fun!("get_pipe.r4d")),
                 ).optional(Parameter::new(ValueType::CText,"a_pipe_name"))
             ),
@@ -1708,6 +1708,7 @@ impl FunctionMacroMap {
                 .enum_table(ETable::new("a_macro_type").candidates(&["macro", "char"])),
             );
         }
+
         map
     }
 
@@ -1779,7 +1780,7 @@ pub(crate) struct FMacroSign {
     pub logic: FunctionMacroType,
     #[allow(dead_code)]
     pub desc: Option<String>,
-    pub ret: Option<ValueType>,
+    pub ret: ValueType,
     pub required_auth: Vec<AuthType>,
 }
 
@@ -1805,18 +1806,18 @@ impl FMacroSign {
             enum_table: ETMap::default(),
             logic,
             desc,
-            ret: Some(ValueType::Text),
+            ret: ValueType::Text,
             required_auth: vec![],
         }
     }
 
     pub fn no_ret(mut self) -> Self {
-        self.ret = None;
+        self.ret = ValueType::None;
         self
     }
 
     pub fn ret(mut self, ret_type: ValueType) -> Self {
-        self.ret.replace(ret_type);
+        self.ret = ret_type;
         self
     }
 
