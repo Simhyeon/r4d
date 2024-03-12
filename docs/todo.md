@@ -51,12 +51,9 @@ Actually finish deterred macro later...
 
 # todo immediate
 
-* [ ] New valuetype regex so that user knows which value should be requested.
-    * [x] Added type with getter
-    * [ ] Should be added to function signatures
-
-* [ ] ArgParser allow empty input
-    * [ ] Count
+* [ ] Search `to_string` to set type correct
+* [ ] Rename argument to RadValue
+* [ ] Return valuetype from macro
 
 * [ ] Forin -> For inner : Iterate through inner calls ( increase by one )
 
@@ -99,12 +96,14 @@ Actually finish deterred macro later...
 
 * [ ] Make error codes much more intuitive
 
+* [ ] Check if which macro should support empty input e.g. count
 * [ ] Check unnecessary ctext
 * [ ] Check type incoherence
 
 * [ ] FN `new_ext_macro(&mut self, ext: ExtMacroBuilder)` is currently
   disabled 
 
+* [ ] Find better method and levenshtein
 * [ ] Rearrange modules and struct and enums.
 
 * [ ] Split by
@@ -460,3 +459,7 @@ file.
 * [x] Return type validation should also check no return -> Which was already
   done but I cleaned the code anyway
 * [x] Fixed ranga index panic error
+* [x] ArgParser allow empty input
+* [x] New valuetype regex so that user knows which value should be requested.
+    * [x] Added type with getter
+    * [x] Should be added to function signatures
