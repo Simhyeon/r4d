@@ -246,7 +246,7 @@ impl Debugger {
     }
 
     /// Print debug information log
-    pub(crate) fn print_log(
+    pub(crate) fn print_fragment_log(
         &mut self,
         macro_name: &str,
         raw_args: &str,
@@ -260,6 +260,23 @@ impl Debugger {
         logger.dlog_print(&format!(
             r#"Name    = "{}"{}Attr    ={}{}Args    = "{}"{}---{}"#,
             macro_name, LINE_ENDING, LINE_ENDING, attributes, raw_args, LINE_ENDING, LINE_ENDING
+        ))?;
+        Ok(())
+    }
+
+    /// Print debug information log
+    pub(crate) fn print_expansion_log(
+        &mut self,
+        macro_name: &str,
+        expanded: &str,
+        logger: &mut Logger,
+    ) -> RadResult<()> {
+        if !self.log {
+            return Ok(());
+        }
+        logger.dlog_print(&format!(
+            r#"Name    = "{}"{}Expanded  = "{}"{}"#,
+            macro_name, LINE_ENDING, expanded, LINE_ENDING
         ))?;
         Ok(())
     }

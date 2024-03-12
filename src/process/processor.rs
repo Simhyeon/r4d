@@ -2137,12 +2137,8 @@ impl<'processor> Processor<'processor> {
             }
         }
 
-        #[cfg(feature = "debug")]
-        {
-            // Print a log information
-            self.debugger
-                .print_log(&frag.name, &args, frag, &mut self.logger)?;
-        }
+        // Print a log information
+        self.print_fragment_log(&args, frag)?;
 
         // Find local macro
         // The macro can be  the one defined in parent macro
@@ -2191,6 +2187,9 @@ impl<'processor> Processor<'processor> {
             }
 
             let result = self.invoke_runtime(level, Some(name), &frag.attribute, &args)?;
+
+            self.print_expansion_log(name, result.as_deref().unwrap_or(""))?;
+
             return Ok(result);
         }
         // Find deterred macro
@@ -2215,7 +2214,10 @@ impl<'processor> Processor<'processor> {
                 sig.return_type
                     .is_valid_return_type(&final_result, sig.enum_table.tables.get(RET_ETABLE))?;
 
-                return Ok(final_result.to_printable());
+                let printable = final_result.to_printable();
+                self.print_expansion_log(name, printable.as_deref().unwrap_or(""))?;
+
+                return Ok(printable);
             }
         }
         // Find function macro
@@ -2257,7 +2259,10 @@ impl<'processor> Processor<'processor> {
             sig.return_type
                 .is_valid_return_type(&final_result, sig.enum_table.tables.get(RET_ETABLE))?;
 
-            Ok(final_result.to_printable())
+            let printable = final_result.to_printable();
+            self.print_expansion_log(name, printable.as_deref().unwrap_or(""))?;
+
+            Ok(printable)
         }
         // No macros found to evaluate
         else {
@@ -2942,6 +2947,26 @@ impl<'processor> Processor<'processor> {
     // ----------
     // Start of miscellaenous methods
     // <MISC>
+
+    pub(crate) fn print_fragment_log(&mut self, args: &str, frag: &MacroFragment) -> RadResult<()> {
+        #[cfg(feature = "debug")]
+        {
+            // Print a log information
+            self.debugger
+                .print_fragment_log(&frag.name, args, frag, &mut self.logger)?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn print_expansion_log(&mut self, name: &str, expanded: &str) -> RadResult<()> {
+        #[cfg(feature = "debug")]
+        {
+            // Print a log information
+            self.debugger
+                .print_expansion_log(name, expanded, &mut self.logger)?;
+        }
+        Ok(())
+    }
 
     /// Get logger's write option reference
     pub(crate) fn get_logger_write_option(&self) -> Option<&WriteOption> {
