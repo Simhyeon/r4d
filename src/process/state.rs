@@ -139,6 +139,13 @@ impl RegexCache {
         Ok(())
     }
 
+    /// Insert a regex object
+    ///
+    /// This doesn't check existing case but always override
+    pub fn insert(&mut self, name: &str, regex: Regex) {
+        self.cache.insert(name.to_string(), regex);
+    }
+
     /// Append a regex to cache
     pub fn append(&mut self, src: &str) -> RadResult<&Regex> {
         // Set hard capacity of 100

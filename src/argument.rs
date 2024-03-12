@@ -497,13 +497,17 @@ as given type. You should use proper getter for the type"
         self.get(input.index)?.to_expanded(p, &input)
     }
 
-    pub fn get_regex<'b>(&'a self, p: &'b mut Processor, index: usize) -> RadResult<&'b Regex> {
+    pub fn get_regex<'b>(
+        &'a self,
+        p: &'b mut Processor,
+        index: usize,
+    ) -> RadResult<Cow<'b, Regex>> {
         let input = ExInput::new(&self.macro_name)
             .index(index)
             .level(self.level)
             .trim();
         let expanded = self.get(input.index)?.to_expanded(p, &input)?;
-        p.try_get_or_insert_regex(&expanded)
+        p.try_get_or_create_regex(&expanded)
     }
 
     pub fn get_custom<T>(
@@ -599,9 +603,9 @@ impl<'a> ParsedArguments<'a> {
         &'a self,
         index: usize,
         processor: &'b mut Processor,
-    ) -> RadResult<&'b Regex> {
+    ) -> RadResult<Cow<'b, Regex>> {
         match self.args.get(index) {
-            Some(Argument::Regex(val)) => processor.try_get_or_insert_regex(val),
+            Some(Argument::Regex(val)) => processor.try_get_or_create_regex(val),
             _ => Err(crate::RadError::InvalidExecution(format!(
                 "Failed to get argument as regex \
 . Tried to refer a value {:?}",

@@ -94,7 +94,7 @@ impl DeterredMacroMap {
 
         let mut res = String::new();
 
-        let reg = p.try_get_or_insert_regex(&match_expr)?.clone();
+        let reg = p.try_get_or_create_regex(&match_expr)?.into_owned();
 
         append_captured_expressions(
             &reg,
@@ -107,6 +107,7 @@ impl DeterredMacroMap {
             &macro_arguments,
         )?;
 
+        p.insert_regex(&match_expr, Some(reg))?;
         Ok(Some(res))
     }
 
@@ -197,7 +198,7 @@ impl DeterredMacroMap {
 
         // If this regex is not cloned, "capture" should collect captured string into a allocated
         // vector. Which is generaly worse for performance.
-        let reg = p.try_get_or_insert_regex(&match_expr)?.clone();
+        let reg = p.try_get_or_create_regex(&match_expr)?.into_owned();
 
         let preserve_non_matched_lines = p.env.map_preserve;
 
@@ -218,6 +219,8 @@ impl DeterredMacroMap {
                 res.push_str(line);
             }
         }
+
+        p.insert_regex(&match_expr, Some(reg))?;
 
         Ok(Some(res))
     }
@@ -256,9 +259,8 @@ impl DeterredMacroMap {
         let preserve = p.env.map_preserve;
         let mut on_grep = false;
 
-        let regs = p.try_get_or_insert_multiple_regex(&[&start_expr, &end_expr])?;
-        let reg_start = regs[0].clone();
-        let reg_end = regs[1].clone();
+        let reg_start = p.try_get_or_create_regex(&start_expr)?.into_owned();
+        let reg_end = p.try_get_or_create_regex(&end_expr)?.into_owned();
 
         let mut iter = source.full_lines_with_index().peekable();
         while let Some((idx, line)) = iter.next() {
@@ -298,6 +300,9 @@ impl DeterredMacroMap {
                 folded.push_str(line);
             }
         }
+
+        p.insert_regex(&start_expr, Some(reg_start))?;
+        p.insert_regex(&end_expr, Some(reg_end))?;
 
         Ok(Some(folded))
     }
@@ -423,7 +428,7 @@ impl DeterredMacroMap {
 
         // If this regex is not cloned, "capture" should collect captured string into a allocated
         // vector. Which is generaly worse for performance.
-        let reg = p.try_get_or_insert_regex(&match_expr)?.clone();
+        let reg = p.try_get_or_create_regex(&match_expr)?.into_owned();
 
         let preserve_non_matched_lines = p.env.map_preserve;
 
@@ -445,6 +450,7 @@ impl DeterredMacroMap {
                 res.push_str(&line);
             }
         }
+        p.insert_regex(&match_expr, Some(reg))?;
 
         Ok(Some(res))
     }

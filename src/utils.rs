@@ -1,11 +1,9 @@
 //! Utility struct, methods for various operations
 
 use crate::argument::ValueType;
-use crate::auth::{AuthState, AuthType};
 use crate::common::{ProcessInput, RadResult};
 use crate::env::PROC_ENV;
 use crate::error::RadError;
-use crate::logger::WarningType;
 use crate::{Parameter, Processor, WriteOption};
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -1258,5 +1256,18 @@ impl RadStr for str {
         Err(RadError::InvalidArgument(
             "Neither true nor false".to_owned(),
         ))
+    }
+}
+
+pub(crate) trait RegCow {
+    fn to_option(self) -> Option<Regex>;
+}
+
+impl RegCow for Cow<'_, Regex> {
+    fn to_option(self) -> Option<Regex> {
+        match self {
+            Cow::Borrowed(_) => None,
+            Cow::Owned(reg) => Some(reg),
+        }
     }
 }

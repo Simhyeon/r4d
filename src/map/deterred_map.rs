@@ -89,7 +89,7 @@ impl DeterredMacroMap {
             (DMacroSign::new(
                 "mapfe",
                 [
-                    (ValueType::Text, "a_expr"),
+                    (ValueType::Regex, "a_expr"),
                     (ValueType::CText, "a_macro_name"),
                     (ValueType::Text, "a_lines"),
                 ],
@@ -232,7 +232,7 @@ impl DeterredMacroMap {
             (DMacroSign::new(
                 "map",
                 [
-                    (ValueType::Text, "a_expr"),
+                    (ValueType::Regex, "a_expr"),
                     (ValueType::CText, "a_macro_name"),
                     (ValueType::Text, "a_text"),
                 ],
@@ -242,7 +242,7 @@ impl DeterredMacroMap {
             (DMacroSign::new(
                 "mape",
                 [
-                    (ValueType::Text, "a_start_expr"),
+                    (ValueType::Regex, "a_start_expr"),
                     (ValueType::Text, "a_end_expr"),
                     (ValueType::CText, "a_macro_name"),
                     (ValueType::Text, "a_source"),
@@ -271,7 +271,7 @@ impl DeterredMacroMap {
             (DMacroSign::new(
                 "maple",
                 [
-                    (ValueType::Text, "a_expr"),
+                    (ValueType::Regex, "a_expr"),
                     (ValueType::CText, "a_macro_name"),
                     (ValueType::Text, "a_lines"),
                 ],

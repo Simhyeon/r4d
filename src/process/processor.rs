@@ -37,6 +37,7 @@ use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::borrow::{Borrow, Cow};
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufReader, Read, Write};
@@ -3347,38 +3348,26 @@ impl<'processor> Processor<'processor> {
     ///
     /// # Return
     ///
-    /// this returns reference to a existing or compiled regex
-    pub fn try_get_or_insert_regex(&mut self, expression: &str) -> RadResult<&Regex> {
-        if self.state.regex_cache.contains(expression) {
-            Ok(self.state.regex_cache.get(expression).unwrap())
+    /// this returns reference to a existing or a compiled regex object
+    pub fn try_get_or_create_regex(&self, expression: &str) -> RadResult<Cow<'_, Regex>> {
+        let ret = if let Some(expr) = self.state.regex_cache.get(expression) {
+            Cow::Borrowed(expr)
         } else {
-            self.state.regex_cache.append(expression)
-        }
+            Cow::Owned(Regex::new(expression)?)
+        };
+        Ok(ret)
     }
 
-    /// Try getting regexes or newly compile
+    /// Insert regex to cache
     ///
-    /// # Return
-    ///
-    /// this returns reference to a existing or compiled regex
-    pub(crate) fn try_get_or_insert_multiple_regex(
-        &mut self,
-        exprs: &[&str],
-    ) -> RadResult<Vec<&Regex>> {
-        let mut contains = vec![];
-        let mut regexex = vec![];
-        for exp in exprs {
-            contains.push(self.state.regex_cache.contains(exp));
-        }
-        for (idx, cont) in contains.iter().enumerate() {
-            if !cont {
-                self.state.regex_cache.append(exprs[idx])?;
+    /// This doesn't override exsiting regex
+    pub fn insert_regex(&mut self, name: &str, regex: Option<Regex>) -> RadResult<()> {
+        if let Some(reg) = regex {
+            if !self.state.regex_cache.contains(name) {
+                self.state.regex_cache.insert(name, reg)
             }
         }
-        for reg in exprs {
-            regexex.push(self.state.regex_cache.get(reg).unwrap());
-        }
-        Ok(regexex)
+        Ok(())
     }
 
     /// Expand chunk and strip quotes

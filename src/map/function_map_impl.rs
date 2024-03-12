@@ -18,7 +18,7 @@ use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
 use crate::hookmap::HookType;
 use crate::logger::WarningType;
-use crate::utils::{RadStr, Utils, NUM_MATCH, UNUM_MATCH};
+use crate::utils::{RadStr, RegCow, Utils, NUM_MATCH, UNUM_MATCH};
 use crate::{CommentType, WriteOption};
 use crate::{Hygiene, Processor};
 #[cfg(feature = "cindex")]
@@ -144,8 +144,10 @@ impl FunctionMacroMap {
             ));
         }
 
-        let reg = p.try_get_or_insert_regex(match_expr)?;
-        Ok(Some(reg.replace_all(source, substitution).to_string()))
+        let reg = p.try_get_or_create_regex(match_expr)?;
+        let ret = reg.replace_all(source, substitution).to_string();
+        p.insert_regex(match_expr, reg.to_option())?;
+        Ok(Some(ret))
     }
 
     /// Print current file input
@@ -210,8 +212,10 @@ impl FunctionMacroMap {
             ));
         }
 
-        let reg = p.try_get_or_insert_regex(match_expr)?;
-        Ok(Some(reg.is_match(source).to_string()))
+        let reg = p.try_get_or_create_regex(match_expr)?;
+        let ret = reg.is_match(source).to_string();
+        p.insert_regex(match_expr, reg.to_option())?;
+        Ok(Some(ret))
     }
 
     /// Find multiple occurrence form a source
@@ -233,8 +237,10 @@ impl FunctionMacroMap {
             ));
         }
 
-        let reg = p.try_get_or_insert_regex(match_expr)?;
-        Ok(Some(reg.find_iter(source).count().to_string()))
+        let reg = p.try_get_or_create_regex(match_expr)?;
+        let ret = reg.find_iter(source).count().to_string();
+        p.insert_regex(match_expr, reg.to_option())?;
+        Ok(Some(ret))
     }
 
     /// Evaluate given expression
@@ -3145,7 +3151,7 @@ impl FunctionMacroMap {
         let expr = args.get_text(0)?;
         let content = args.get_text(1)?;
         let nl = p.state.newline.clone();
-        let reg = p.try_get_or_insert_regex(expr)?;
+        let reg = p.try_get_or_create_regex(expr)?;
 
         let mut acc = String::new();
         // TODO CHeck lines method sanity
@@ -3163,6 +3169,7 @@ impl FunctionMacroMap {
             acc.push_str(&nl);
         }
 
+        p.insert_regex(expr, reg.to_option())?;
         Ok(Some(acc))
     }
 
@@ -3305,10 +3312,8 @@ impl FunctionMacroMap {
             .collect::<RadResult<Vec<_>>>()?;
 
         let env = p.env;
-        let regs = p.try_get_or_insert_multiple_regex(&values[0..2])?;
-
-        let reg_start = regs[0];
-        let reg_end = regs[1];
+        let reg_start = p.try_get_or_create_regex(values[0])?;
+        let reg_end = p.try_get_or_create_regex(values[1])?;
 
         for line in args.get_text(2)?.full_lines() {
             // Start new container
@@ -3331,6 +3336,12 @@ impl FunctionMacroMap {
             p.env,
             Some(&p.state.newline),
         ));
+
+        let reg_start = reg_start.to_option();
+        let reg_end = reg_end.to_option();
+
+        p.insert_regex(values[0], reg_start)?;
+        p.insert_regex(values[1], reg_end)?;
 
         Ok(Some(folded))
     }
@@ -3379,7 +3390,7 @@ impl FunctionMacroMap {
         // TODO
         // Env : to separate it by comma
         let nl = p.state.newline.clone();
-        let reg = p.try_get_or_insert_regex(expr)?;
+        let reg = p.try_get_or_create_regex(expr)?;
         let acc = reg
             .captures_iter(args.get_text(1)?)
             .fold(String::new(), |mut acc, x| {
@@ -3401,6 +3412,7 @@ impl FunctionMacroMap {
                 acc.push_str(&nl);
                 acc
             });
+        p.insert_regex(expr, reg.to_option())?;
         Ok(acc.strip_suffix(&nl).map(|s| s.to_owned()))
     }
 
@@ -3415,7 +3427,7 @@ impl FunctionMacroMap {
             .args_with_len(input)?;
 
         let expr = args.get_text(0)?;
-        let reg = p.try_get_or_insert_regex(expr)?;
+        let reg = p.try_get_or_create_regex(expr)?;
 
         // It is mostly safe to unwrap because every input is text by default
         let mut grepped = (1..args.len())
@@ -3427,6 +3439,7 @@ impl FunctionMacroMap {
                 acc
             });
         grepped.pop();
+        p.insert_regex(expr, reg.to_option())?;
         Ok(Some(grepped))
     }
 
@@ -3439,7 +3452,7 @@ impl FunctionMacroMap {
         let args = ArgParser::new().args_with_len(input)?;
 
         let expr = args.get_text(0)?;
-        let reg = p.try_get_or_insert_regex(expr)?;
+        let reg = p.try_get_or_create_regex(expr)?;
         let content = args.get_text(1)?.full_lines();
         let grepped = content
             .filter(|l| reg.is_match(l))
@@ -3447,6 +3460,8 @@ impl FunctionMacroMap {
                 acc.push_str(l);
                 acc
             });
+        p.insert_regex(expr, reg.to_option())?;
+
         Ok(Some(grepped))
     }
 
@@ -3470,7 +3485,7 @@ impl FunctionMacroMap {
         };
 
         let expr = args.get_text(0)?;
-        let reg = p.try_get_or_insert_regex(expr)?;
+        let reg = p.try_get_or_create_regex(expr)?;
         let file_stream = std::fs::File::open(path)?;
         let reader = std::io::BufReader::new(file_stream);
 
@@ -3482,6 +3497,7 @@ impl FunctionMacroMap {
             }
         }
 
+        p.insert_regex(expr, reg.to_option())?;
         Ok(Some(vec.join("")))
     }
 
@@ -5332,6 +5348,8 @@ fn check_neg(num: isize, no_negative_index: bool) -> RadResult<()> {
     }
     Ok(())
 }
+
+// TEST
 
 // ---
 // </MISC>
