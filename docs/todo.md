@@ -1,65 +1,141 @@
 # Manual note ( This has be checked later n )
 
-* Border : add a new env for border exception rules
-* Cut and scut support `_` syntax -> Change argument type
-* Change clear's manual after binary hygiene is updated
-* dnl,enl logic check
-* Refactor istype
-* insulav and insulah
-* docu macro after complicated runtime definition
+## Function Macro
 
-* Make naems of Parameter intuitive
+- fileout: Should it have truncate as argument or as env
+- Border : add a new env for border exception rules
+- Cut and scut support `_` syntax -> Change argument type
+- Change clear's manual after binary hygiene is updated
+- dnl,enl logic check
+- Refactor istype
+- insulav and insulah
+- docu macro after complicated runtime definition
+- Hygiene
+- Sortc
+- Import 
+- notat
+- get-pipe
+- relay series + halt
+- source
+- strict
+- rangeby
+- table...
+- tr : with performance update
+- exdent
+- def + anon ( this is deterred )
+- cindex
+- hook
+
+## Deterred
+
+- Bufread
+- readto
+- tempin, raw mode
+- append : Later with modification macros
+- map seires
+
+Actually finish deterred macro later...
+
+## Misc
+
+* Find \" and \\
+* Remove examples
+* Make names of Parameter intuitive
     - Literal pattern should be distinctive from regex pattern
 
-* -> Remove tabs
-
----
+* Replace tabs with 4 spaces
 
 * Search keyword TODO
 * Remove all `# Return`
+* Some manuals lacks arguments name ( Especially optional ) and inconsistent naming.
 
 # todo immediate
 
-* [ ] Permission as macro signature?
-
-* [x] Refactor ParralelRight 
-* [x] Fixed mapn bug
-* [x] Fixed comp bug
-* [x] Fixed sqrt bug
-* [x] Fixed isempty bug
-* [x] Fixed fold 
-
-* [ ] Env to bypass return validation
-* [ ] Env allow empty count
-* [ ] Env to retain newlines for strip series
-* [ ] Env to verbose print for container
-* [ ] Env cont pop no return
-
 * [ ] New valuetype regex so that user knows which value should be requested.
-* [ ] Notify users that trim input is applied after expansion.
+    * [x] Added type with getter
+    * [ ] Should be added to function signatures
+
+* [ ] ArgParser allow empty input
+    * [ ] Count
+
+* [ ] Forin -> For inner : Iterate through inner calls ( increase by one )
+
+* [ ] Possibly a new feature to allow permission for specific macro
+
+* [ ] Add a new macro to `drop expression` + add doc for addexpr
+
+* [ ] Currently arg_parser detect `$name(` to search macro invocation but this
+  doesn't respect custom macro character rule
+
+* [ ] Comment disrupts consume newline. Possibly due to newline Refer
+  `get_pipe` manual
+
+* [ ] Permission as macro signature.
+    * [ ] Check if permission is coherent
+
+* [ ] Change freeze melt to differnt terms
+* [ ] Possibly sortc to sorte?
+* [ ] Index should support _ syntax or not? because it is handy but makes
+  indexing undefined from static perspective.
+* [ ] Currently runtime map doesn't check auth
+
+* [ ] Map series with arguments are very limited. it is impossible to insert
+  space as arguments... can it be improved?
+
+* [ ] Name alias
+
+* [ ] Remove unnecessary pub keywords and make it private
+
+* [ ] Is rangeby really necessary?
+
 * [ ] --log is not useful in general cases... Paste expanded and split
   arguments into log message
-* [ ] Update manuals so that you can fix bugs. Especially deterred macro
-* [ ] Possibly change usage syntax
-* [ ] Loop is also buggy.
 
-* [ ] Value that acceps multiple optional value should not be annoted as optional or shoul
-    -> Non... It is better to make a type array for it. Nope... Hmmm. I don't know
-* [ ] Fix type for path or split or yatti yatta.
-* [ ] Consider strip for cases
+* [ ] Update manuals so that you can fix bugs. Especially deterred macro
+
+* [ ] Consider `strip` cases
+
 * [ ] `Parse_chunk_arg` to return Cow<'a,str>
 
 * [ ] Make error codes much more intuitive
-* [ ] Refactor reverse-array
-* [ ] Refactor list-directory-files
+
 * [ ] Check unnecessary ctext
 * [ ] Check type incoherence
-* [ ] Find a way to display if optional is multiple or not
-* [ ] Refactor qualify-value method
+
 * [ ] FN `new_ext_macro(&mut self, ext: ExtMacroBuilder)` is currently
   disabled 
-* [x] Removed counter macro -> use mie instead
-* [ ] Env for eval related macros
+
+* [ ] Rearrange modules and struct and enums.
+
+* [ ] Split by
+
+- Debug all manuals
+    1. Test english charcters
+    2. Test korean characters
+    3. Test invalid syntax, characters.
+    4. Test macro argument's default attribute
+
+
+#### bug
+
+* [ ] On some cases, rad prints strange error : WTF is this error...?
+
+```
+-> Argument doesn't match argument type
+```
+
+* [ ] Exdent doesn't work well with argument type system...
+* [ ] Mapn broken?
+    -> Mostly due to `NUM_MATCH` this finds both + and - from first... HMM
+    
+* [ ] Loop is also buggy.
+
+* [ ] BUG : Error inside file trigers nested error message
+* [ ] Currently bufread series has a bug
+```
+thread 'main' panicked at src/logger.rs:542:31:
+-> Looks like no tracker was created
+```
 
 * [ ] Map exression (mape) is completely broken... damn...
 * [  ] Bug
@@ -77,18 +153,6 @@ Doesn't yield a_LN and $:() why is that?
 ```
 
 * [ ] Bug : Peel removes following text after "to be peeled".
-* [ ] Rearrange modules and struct and enums.
-
-* [ ] Split by
-
-- Debug all manuals
-    1. Test english charcters
-    2. Test korean characters
-    3. Test invalid syntax, characters.
-    4. Test macro argument's default attribute
-
-
-#### BUG
 
 * Check PS.r4d manual because escape character is strange in the document.
 
@@ -128,6 +192,8 @@ Doesn't yield a_LN and $:() why is that?
 
 #### Documentation
 
+* [ ] Notify users that trim input is applied after expansion.
+
 * [ ] Notify that trim can remove empty newline
 * [ ] Update repository documentations
     * [ ] macro indices
@@ -158,7 +224,42 @@ Doesn't yield a_LN and $:() why is that?
 * [ ] Update template macro...
 * [ ] Check if greedy argument's no-strip behaviour is ideal or not
 
+#### Env
+
+* [ ] Enable frontal search for rotatei
+* [ ] Env to apply `trim_each_lines` for trim-input
+* [ ] Env for bordering ( exdentl )
+* [ ] Env to auto precision for eval? maybe?
+* [ ] Env allow empty count
+* [ ] Env to retain newlines for strip series
+* [ ] Env to verbose print for container
+* [ ] Env cont pop no return
+* [x] Env to bypass return validation
+
 #### Macro ( macro )
+
+* [ ] Fill macro
+```
+$fill([,],x,* [] ABC)
+$fill([,],x,* [ ] ABC)
+$fill([,],x,* [  ] ABC)
+% With env RAD_FILL_REPEAT
+$fill([,],xy,* [   ] ABC)
+===
+* [x] ABC
+* [x] ABC
+* [x ] ABC
+* [xyxy] ABC
+```
+* [ ] Refactor qualify-value method
+* [ ] Refactor list-directory-files
+* [ ] Wrap as unicode charaters
+* [ ] Macro body modification macro
+    * [x] pop
+    * [x] append
+    * [x] prepend
+    * [ ] Replace : Current implemnation only replaces runtime macro not local macro is it ok?
+    -> Which modification method should be provided or not. hard question.
 
 * [ ] Peelmap
 * [ ] Insertat(index,target,source)
@@ -200,7 +301,13 @@ $slice(pat,1,2,source)
 =
 [a,     b,     c]
 ```
-#### MISC, bug detecting, Ergonomics
+#### ergonomics, misc
+
+* [ ] Change order of Parameter for better piping
+* [ ] Support multiple arguments for such desirable macros
+    -> Eagerly find appropriate one
+* [ ] How to include deterred order in signature?
+* [ ] Add a warning message when user tries to repl function macro 
 
 * [ ] Should istype support string type? Which means non-digit in this case?
 * [ ] Regcsv add skip parsing and skip extension maybe?
@@ -328,3 +435,28 @@ file.
 
 * [x] Subverge relay to relay and relay temp and relay file
 * [x] Fixed a in-body comment bug
+
+#### Others
+
+* [x] Syscmd -> shell
+* [x] Refactor ParralelRight 
+* [x] Possibly change usage syntax -> Arg name rather than arg type
+* [x] Find a way to display if optional is multiple or not
+* [x] Re-enable eval feature ( default for binary but can be disabled )
+* [x] Remove border and implement it as env for exdentl
+* [x] Utilize proper optional arguments rather than split logics
+* [x] Change signature for FMacroDesign so that level can be included
+    * [x] Now level is merged to input
+
+* [-] Macro name path might be inappropriate
+    -> THere are hardly any alternative
+* [x] Revl -> Reverse lines
+* [x] Removed counter macro -> use mie instead
+* [x] --allow should use adequate syntax comma rather than weird plus syntax
+    -> Not it is split by comma
+* [x] Is rename hijacking bad so that I need to handle or not?
+    -> Add a new permission "DYN"
+    -> Both rename and undef requires dyn because undef + def can simulate rename
+* [x] Return type validation should also check no return -> Which was already
+  done but I cleaned the code anyway
+* [x] Fixed ranga index panic error
