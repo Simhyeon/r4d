@@ -104,7 +104,7 @@ impl<'cli> RadCli<'cli> {
             .allow_with_warning(&self.allow_auth_warn)
             .unix_new_line(args.get_flag("newline"))
             .pipe_truncate(!args.get_flag("no-truncate"))
-            .melt_files(&self.rules)?
+            .import_files(&self.rules)?
             .discard(args.get_flag("discard"));
 
         processor.add_env()?;
@@ -221,13 +221,13 @@ impl<'cli> RadCli<'cli> {
         // Main options
 
         // Process type related state changes
-        if args.get_flag("freeze") {
+        if args.get_flag("export") {
             if self.write_to_file.is_none() {
                 return Err(RadError::InvalidCommandOption(
-                    "Freeze options needs an out file to write into".to_string(),
+                    "Export options needs an out file to write into".to_string(),
                 ));
             }
-            self.processor.set_freeze_mode();
+            self.processor.set_export_mode();
         } else if args.get_flag("dryrun") {
             self.processor.set_dry_mode();
             self.processor.add_pass_through("anon");
@@ -321,7 +321,7 @@ impl<'cli> RadCli<'cli> {
                 }
             }
             self.print_signature(args)?;
-        } else if !args.get_flag("freeze") {
+        } else if !args.get_flag("export") {
             // -->> Read from stdin
 
             // Print signature if such option is given
@@ -363,13 +363,13 @@ impl<'cli> RadCli<'cli> {
         // Print result
         self.processor.print_result()?;
 
-        // Freeze to a rule file if such option was given
-        if args.get_flag("freeze") {
+        // Export to a rule file if such option was given
+        if args.get_flag("export") {
             match &self.write_to_file {
-                Some(file) => self.processor.freeze_to_file(file)?,
+                Some(file) => self.processor.export_to_file(file)?,
                 None => {
                     return Err(RadError::InvalidCommandOption(
-                        "Freeze options needs an out file to write into".to_string(),
+                        "Export options needs an out file to write into".to_string(),
                     ))
                 }
             }
@@ -420,7 +420,7 @@ impl<'cli> RadCli<'cli> {
         // ========
         // Sub options
         // custom rules
-        self.rules = if let Some(files) = args.get_many::<String>("melt") {
+        self.rules = if let Some(files) = args.get_many::<String>("import") {
             files
                 .into_iter()
                 .map(PathBuf::from)
@@ -476,7 +476,7 @@ impl<'cli> RadCli<'cli> {
     echo <STDIN_TEXT | rad 
     echo <STDIN_TEXT> | rad --combination <FILE> --diff
     rad <FILE> --debug --log --interactive
-    rad <FILE> --freeze -o <RULE_FILE> --discard -n --silent")
+    rad <FILE> --export -o <RULE_FILE> --discard -n --silent")
             .arg(Arg::new("INPUT")
                 .num_args(0..)
                 .help("INPUT source to execute processing"))
@@ -622,17 +622,17 @@ impl<'cli> RadCli<'cli> {
                 .long("newline")
                 .action(ArgAction::SetTrue)
                 .help("Use unix newline for formatting"))
-            .arg(Arg::new("melt")
+            .arg(Arg::new("import")
                 .short('m')
-                .long("melt")
+                .long("import")
                 .action(ArgAction::Append)
                 .value_name("FILE")
-                .help("Read macros from frozen file"))
-            .arg(Arg::new("freeze") // TODO, should this arg accept value?
+                .help("Import macros from exported file"))
+            .arg(Arg::new("export") // TODO, should this arg accept value?
                 .short('f')
-                .long("freeze")
+                .long("export")
                 .action(ArgAction::SetTrue)
-                .help("Freeze macros into a single file"))
+                .help("Export macros into a single file"))
             .arg(Arg::new("dryrun")
                 .long("dryrun")
                 .action(ArgAction::SetTrue)

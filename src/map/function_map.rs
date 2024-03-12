@@ -3,7 +3,7 @@
 //! Function macro module includes struct and methods related to function macros
 //! which are technically function pointers.
 
-use crate::argument::{Return, MacroInput, ValueType};
+use crate::argument::{Raturn, MacroInput, ValueType};
 use crate::consts::ESR;
 use crate::extension::ExtMacroBuilder;
 use crate::{common::*, AuthType};
@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 
 /// Function signature for "function" macro functions
-pub(crate) type FunctionMacroType = fn(MacroInput, &mut Processor) -> RadResult<Return>;
+pub(crate) type FunctionMacroType = fn(MacroInput, &mut Processor) -> RadResult<Raturn>;
 
 #[derive(Clone)]
 /// Collection map for a "function" macro function
@@ -734,7 +734,7 @@ impl FunctionMacroMap {
                 FMacroSign::new(
                     "import",
                     [(ValueType::Path,"a_file"),],
-                    Self::import_frozen_file,
+                    Self::import_file,
                     Some(man_fun!("import.r4d")),
                 ).no_ret()
                 .require_auth(&[AuthType::FIN])

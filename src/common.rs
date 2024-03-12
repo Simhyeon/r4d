@@ -347,7 +347,7 @@ pub enum ProcessType {
     /// Expand every macros
     Expand,
     /// Freeze definitions
-    Freeze,
+    Export,
     /// Dry run mode
     Dry,
 }

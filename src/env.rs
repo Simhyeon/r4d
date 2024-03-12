@@ -14,7 +14,6 @@ pub struct ProcEnv {
     pub(crate) no_consume: bool,
     pub(crate) no_color_print: bool,
     pub(crate) backtrace: bool,
-    pub(crate) bypass_ret_validation: bool,
 }
 
 impl ProcEnv {
@@ -23,7 +22,6 @@ impl ProcEnv {
             no_consume: set_env_safely("RAD_NO_CONSUME"),
             no_color_print: set_env_safely("RAD_NO_COLOR"),
             backtrace: set_env_safely("RAD_BACKTRACE"),
-            bypass_ret_validation: set_env_safely("RAD_BYPASS_RET_VAL"),
         }
     }
 }

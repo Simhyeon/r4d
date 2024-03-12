@@ -94,7 +94,7 @@ static MAC_NAME: Lazy<Regex> =
 ///         .error_to_file(Path::new("err.txt"))?                // default is stderr
 ///         .unix_new_line(true)                                 // use unix new line for formatting
 ///         .discard(true)                                       // discard all output
-///         .melt_files(&[Path::new("source.r4d")])?             // Read runtime macros from frozen
+///         .import_files(&[Path::new("source.r4d")])?           // Read runtime macros from exported file
 ///         // Permission
 ///         .allow(&[AuthType::ENV])                             // Grant permission of authtypes
 ///         .allow_with_warning(&[AuthType::CMD]);               // Grant permission of authypes with warning enabled
@@ -146,7 +146,7 @@ static MAC_NAME: Lazy<Regex> =
 ///     processor.process_stdin()?;
 ///     processor.process_file(Path::new("from.txt"))?;
 ///
-///     processor.freeze_to_file(Path::new("out.r4f"))?; // Create frozen file
+///     processor.export_to_file(Path::new("out.r4f"))?; // Create export file
 ///
 ///     // Print out result
 ///     // This will print counts of warning and errors.
@@ -612,21 +612,21 @@ impl<'processor> Processor<'processor> {
         self
     }
 
-    /// Melt rule file
+    /// Import rule file
     ///
-    /// This always melt file into non-volatile form, which means hygiene doesn't affect melted
+    /// This always import file into non-volatile form, which means hygiene doesn't affect imported
     /// macros.
     ///
     /// ```rust
     /// use std::path::Path;
     /// let proc = r4d::Processor::empty()
-    ///     .melt_files(&[Path::new("a.r4f"), Path::new("b.r4f")]);
+    ///     .import_files(&[Path::new("a.r4f"), Path::new("b.r4f")]);
     /// ```
-    pub fn melt_files(mut self, paths: &[impl AsRef<Path>]) -> RadResult<Self> {
+    pub fn import_files(mut self, paths: &[impl AsRef<Path>]) -> RadResult<Self> {
         let mut rule_file = RuleFile::new(None);
         for p in paths.iter() {
-            // File validity is checked by melt methods
-            rule_file.melt(p.as_ref())?;
+            // File validity is checked by import methods
+            rule_file.import(p.as_ref())?;
         }
         self.map.runtime.extend_map(rule_file.rules, Hygiene::None);
 
@@ -718,17 +718,17 @@ impl<'processor> Processor<'processor> {
     // I don't really remember when this method was added at the first time.
     /// Melt rule as literal input source, or say from byte array
     ///
-    /// This always melt file into non-volatile form, which means hygiene doesn't affect melted
+    /// This always import file into non-volatile form, which means hygiene doesn't affect imported
     /// macros.
     ///
     /// ```rust
-    /// let source = b"Some frozen macro definition";
+    /// let source = b"Some macro definition";
     /// let proc = r4d::Processor::empty();
-    /// proc.melt_literal(source);
+    /// proc.import_literal(source);
     /// ```
-    pub fn melt_literal(&mut self, literal: &[u8]) -> RadResult<()> {
+    pub fn import_literal(&mut self, literal: &[u8]) -> RadResult<()> {
         let mut rule_file = RuleFile::new(None);
-        rule_file.melt_literal(literal)?;
+        rule_file.import_literal(literal)?;
         self.map.runtime.extend_map(rule_file.rules, Hygiene::None);
         Ok(())
     }
@@ -760,18 +760,18 @@ impl<'processor> Processor<'processor> {
         Ok(())
     }
 
-    /// Import(melt) a frozen file
+    /// Import a exported file
     ///
-    /// This always melt file into non-volatile form
+    /// This always import into non-volatile form
     ///
     /// ```rust
     /// use std::path::Path;
     /// let mut proc = r4d::Processor::empty();
-    /// proc.import_frozen_file(Path::new("file.r4f")).expect("Failed to import a frozen file");
+    /// proc.import_single_file(Path::new("file.r4f")).expect("Failed to import a file");
     /// ```
-    pub fn import_frozen_file(&mut self, path: &Path) -> RadResult<()> {
+    pub fn import_single_file(&mut self, path: &Path) -> RadResult<()> {
         let mut rule_file = RuleFile::new(None);
-        rule_file.melt(path)?;
+        rule_file.import(path)?;
         self.map.runtime.extend_map(rule_file.rules, Hygiene::None);
 
         Ok(())
@@ -819,16 +819,16 @@ impl<'processor> Processor<'processor> {
         self.state.auth_flags.clear();
     }
 
-    /// Set to freeze mode
-    pub fn set_freeze_mode(&mut self) {
+    /// Set to export mode
+    pub fn set_export_mode(&mut self) {
         self.write_option = WriteOption::Discard;
-        self.state.process_type = ProcessType::Freeze;
+        self.state.process_type = ProcessType::Export;
         self.state.auth_flags.clear();
     }
 
     /// Clear volatile macros
     ///
-    /// This removes runtime macros which are not melted from.
+    /// This removes runtime macros which are not imported from.
     ///
     /// ```rust
     /// let mut proc = r4d::Processor::empty();
@@ -1013,24 +1013,24 @@ impl<'processor> Processor<'processor> {
         }
     }
 
-    /// Freeze to a single file
+    /// Export to a single file
     ///
-    /// Frozen file is a bincode encoded binary format file.
+    /// Exported file is a bincode encoded binary format file.
     ///
     /// ```rust
     /// use std::path::Path;
     /// let mut proc = r4d::Processor::empty();
-    /// proc.freeze_to_file(Path::new("file.r4f")).expect("Failed to freeze to a file");
+    /// proc.export_to_file(Path::new("file.r4f")).expect("Failed to export to a file");
     /// ```
-    pub fn freeze_to_file(&mut self, path: impl AsRef<Path>) -> RadResult<()> {
-        // File path validity is checked by freeze method
-        RuleFile::new(Some(self.map.runtime.macros.clone())).freeze(path.as_ref())?;
+    pub fn export_to_file(&mut self, path: impl AsRef<Path>) -> RadResult<()> {
+        // File path validity is checked by export method
+        RuleFile::new(Some(self.map.runtime.macros.clone())).export(path.as_ref())?;
         Ok(())
     }
 
     /// Serialize rule files into a bincode
     pub fn serialize_rules(&self) -> RadResult<Vec<u8>> {
-        // File path validity is checked by freeze method
+        // File path validity is checked by export method
         RuleFile::new(Some(self.map.runtime.macros.clone())).serialize()
     }
 
@@ -1531,7 +1531,7 @@ impl<'processor> Processor<'processor> {
         reader.read_to_end(&mut source)?;
         let static_script = StaticScript::unpack(source)?;
         let mut reader = BufReader::new(&static_script.body[..]);
-        self.melt_literal(&static_script.header[..])?;
+        self.import_literal(&static_script.header[..])?;
         self.process_buffer(&mut reader, backup, ContainerType::None)?;
         self.organize_and_clear_cache()
     }
@@ -2104,10 +2104,10 @@ impl<'processor> Processor<'processor> {
         } else {
             // Is deterred macro
 
-            // Deterred macro is not allowed in freeze mode
-            if self.state.process_type == ProcessType::Freeze {
+            // Deterred macro is not allowed in export mode
+            if self.state.process_type == ProcessType::Export {
                 self.log_warning(
-                    "Deterred macro is not expanded in freeze mode.",
+                    "Deterred macro is not expanded in export mode.",
                     WarningType::Sanity,
                 )?;
                 frag.clear();
@@ -2210,18 +2210,12 @@ impl<'processor> Processor<'processor> {
                     .level(level)
                     .parameter(&sig.params);
 
-                let final_result = det_func(input, self)?.filter(|f| {
-                    if !PROC_ENV.no_consume {
-                        !f.is_empty()
-                    } else {
-                        true
-                    }
-                });
+                let final_result = det_func(input, self)?;
 
-                // sig.return_type
-                //     .is_valid_return_type(&final_result, sig.enum_table.tables.get(RET_ETABLE))?;
+                sig.return_type
+                    .is_valid_return_type(&final_result, sig.enum_table.tables.get(RET_ETABLE))?;
 
-                return Ok(final_result);
+                return Ok(final_result.to_printable());
             }
         }
         // Find function macro
@@ -2565,7 +2559,7 @@ impl<'processor> Processor<'processor> {
     ) {
         // THis is necessary because whole string should be whole anyway
         frag.whole_string.push(ch);
-        // Freeze needed for logging
+        // Export needed for logging
         self.logger.append_track(String::from("empty name"));
         // If paused, then reset lexor context to remove cost
         if self.state.paused {
@@ -2642,9 +2636,9 @@ impl<'processor> Processor<'processor> {
 
                 self.log_warning(&err.to_string(), WarningType::Security)?;
             } else {
-                if level != 0 && self.state.process_type == ProcessType::Freeze {
+                if level != 0 && self.state.process_type == ProcessType::Export {
                     self.log_warning(
-                        "Only first level define is allowed in freeze mode",
+                        "Only first level define is allowed in export mode",
                         WarningType::Sanity,
                     )?;
                     frag.clear();
@@ -3773,12 +3767,12 @@ impl RuleFile {
     }
 
     /// Read from rule file and make it into hash map
-    pub fn melt(&mut self, path: &Path) -> RadResult<()> {
+    pub fn import(&mut self, path: &Path) -> RadResult<()> {
         Utils::is_real_path(path)?;
         let result = bincode::deserialize::<Self>(&std::fs::read(path)?);
         if let Err(err) = result {
             Err(RadError::BincodeError(format!(
-                "Failed to melt the file : {} \n {}",
+                "Failed to import from file : {} \n {}",
                 path.display(),
                 err
             )))
@@ -3788,25 +3782,25 @@ impl RuleFile {
         }
     }
 
-    /// Melt from byte array not a file
-    pub fn melt_literal(&mut self, literal: &[u8]) -> RadResult<()> {
+    /// Import from byte array not a file
+    pub fn import_literal(&mut self, literal: &[u8]) -> RadResult<()> {
         let result = bincode::deserialize::<Self>(literal);
         if let Ok(rule_file) = result {
             self.rules.extend(rule_file.rules);
             Ok(())
         } else {
             Err(RadError::BincodeError(
-                "Failed to melt the literal value".to_string(),
+                "Failed to import the literal value".to_string(),
             ))
         }
     }
 
     /// Convert runtime rules into a single binary file
-    pub(crate) fn freeze(&self, path: &std::path::Path) -> RadResult<()> {
+    pub(crate) fn export(&self, path: &std::path::Path) -> RadResult<()> {
         let result = bincode::serialize(self);
         if result.is_err() {
             Err(RadError::BincodeError(format!(
-                "Failed to freeze to a file : {}",
+                "Failed to export to a file : {}",
                 path.display()
             )))
         } else if std::fs::write(path, result.unwrap()).is_err() {

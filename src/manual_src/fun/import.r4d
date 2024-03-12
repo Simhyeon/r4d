@@ -1,4 +1,4 @@
-Import a frozen file at runtime
+Import a file at runtime
 
 - Import always include the macros as non-volatile form, thus never cleared 
 unless accessed from library

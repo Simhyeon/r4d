@@ -1,5 +1,5 @@
 //! Macro collection for deterred macros
-use crate::argument::{MacroInput, ValueType};
+use crate::argument::{MacroInput, Raturn, ValueType};
 use crate::common::{ETMap, ETable, RadResult};
 use crate::consts::ESR;
 use crate::extension::{ExtMacroBody, ExtMacroBuilder};
@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 
 /// Function signature for a deterred macro function
-pub(crate) type DFunctionMacroType = fn(MacroInput, &mut Processor) -> RadResult<Option<String>>;
+pub(crate) type DFunctionMacroType = fn(MacroInput, &mut Processor) -> RadResult<Raturn>;
 
 /// Collection map for a deterred macro function
 #[derive(Clone)]

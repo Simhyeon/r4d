@@ -248,7 +248,7 @@ pub enum Argument<'a> {
 }
 
 #[derive(Debug)]
-pub enum Return {
+pub enum Raturn {
     None,
     Text(String),
     Enum(String),
@@ -260,7 +260,7 @@ pub enum Return {
     Regex(String),
 }
 
-impl Return {
+impl Raturn {
     pub fn to_printable(self) -> Option<String> {
         match self {
             Self::None => None,
@@ -276,67 +276,67 @@ impl Return {
     }
 }
 
-impl From<PathBuf> for Return {
+impl From<PathBuf> for Raturn {
     fn from(value: PathBuf) -> Self {
-        Return::Path(value)
+        Raturn::Path(value)
     }
 }
 
-impl From<bool> for Return {
+impl From<bool> for Raturn {
     fn from(value: bool) -> Self {
-        Return::Bool(value)
+        Raturn::Bool(value)
     }
 }
 
-impl From<f32> for Return {
+impl From<f32> for Raturn {
     fn from(value: f32) -> Self {
-        Return::Float(value)
+        Raturn::Float(value)
     }
 }
 
-impl From<usize> for Return {
+impl From<usize> for Raturn {
     fn from(value: usize) -> Self {
-        Return::Uint(value)
+        Raturn::Uint(value)
     }
 }
 
-impl From<isize> for Return {
+impl From<isize> for Raturn {
     fn from(value: isize) -> Self {
-        Return::Int(value)
+        Raturn::Int(value)
     }
 }
 
-impl From<String> for Return {
+impl From<String> for Raturn {
     fn from(value: String) -> Self {
-        Return::Text(value)
+        Raturn::Text(value)
     }
 }
 
-impl From<Option<String>> for Return {
+impl From<Option<String>> for Raturn {
     fn from(value: Option<String>) -> Self {
         match value {
-            Some(vv) => Return::Text(vv),
-            None => Return::None,
+            Some(vv) => Raturn::Text(vv),
+            None => Raturn::None,
         }
     }
 }
 
-impl From<Option<&str>> for Return {
+impl From<Option<&str>> for Raturn {
     fn from(value: Option<&str>) -> Self {
         match value {
-            Some(vv) => Return::Text(vv.to_string()),
-            None => Return::None,
+            Some(vv) => Raturn::Text(vv.to_string()),
+            None => Raturn::None,
         }
     }
 }
 
-impl From<&str> for Return {
+impl From<&str> for Raturn {
     fn from(value: &str) -> Self {
         Self::Text(value.to_string())
     }
 }
 
-impl Return {
+impl Raturn {
     pub fn get_type(&self) -> ValueType {
         match self {
             Self::None => ValueType::None,
@@ -367,7 +367,7 @@ pub enum ValueType {
 }
 
 impl ValueType {
-    pub fn is_valid_return_type(&self, ret: &Return, etable: Option<&ETable>) -> RadResult<()> {
+    pub fn is_valid_return_type(&self, ret: &Raturn, etable: Option<&ETable>) -> RadResult<()> {
         let ret_type = ret.get_type();
 
         // If argument's type is not same with given type => Error
@@ -378,7 +378,7 @@ impl ValueType {
             )));
         }
 
-        if let Return::Enum(inn) = ret {
+        if let Raturn::Enum(inn) = ret {
             // If enum doesn't match variatns => Error
             if let Err(RadError::InvalidArgument(stros)) =
                 Cow::Borrowed(inn.as_str()).to_arg(&Parameter::new(*self, RET_ETABLE), etable)
