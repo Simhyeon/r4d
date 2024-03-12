@@ -1,9 +1,15 @@
 Create an anonymous macro and return it's name
 
+# Note
+
+- This is a deterred macro because it's body is not expanded on defintition
+
 # Arguments
 
 - a_macro : A macro defintition without name
 
-# Example
+# Demo
 
-$map($anon(a=$a()+),a,b,c)
+```
+$anon(a:t=$a())
+```

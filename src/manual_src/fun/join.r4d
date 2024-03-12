@@ -2,7 +2,7 @@ Join an array into a single chunk with given separator
 
 # Arguments
 
-- a_sep   : A separator used for joining
+- a_item  : A separator used for joining
 - a_array : Source to array to join
 
 # Demo

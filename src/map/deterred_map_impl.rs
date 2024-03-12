@@ -9,7 +9,6 @@ use crate::utils::{RadStr, Utils, NUM_MATCH};
 use crate::WarningType;
 use crate::{Processor, RadError};
 use dcsv::VCont;
-use evalexpr::eval;
 use itertools::Itertools;
 use regex::Regex;
 use std::fs::File;
@@ -20,6 +19,7 @@ impl DeterredMacroMap {
     // ----------
     // Keyword Macros start
 
+    // This is a deterred macro because it should not expand body
     /// Anon
     ///
     /// # Usage
@@ -27,11 +27,9 @@ impl DeterredMacroMap {
     /// $anon(a=$a())
     pub(crate) fn add_anonymous_macro(
         input: MacroInput,
-        level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = p.parse_chunk(level, "anon", input.args)?;
-        p.add_anon_macro(&args)?;
+        p.add_anon_macro(input.args)?;
         Ok(Some(String::from(MACRO_SPECIAL_ANON)))
     }
 
@@ -44,19 +42,18 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $append(macro_name,Content)
-    pub(crate) fn append(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn append(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("append")
             .cursors_with_len(input)?;
 
         let name = cursors.get_text(p, 0)?;
         let target = cursors.get_text(p, 1)?;
 
+        // TODO TT
+        // Replace this with generic processor method
         if let Some(name) = p.contains_local_macro(level, &name) {
             p.append_local_macro(&name, &target);
         } else if p.contains_macro(&name, MacroType::Runtime) {
@@ -76,13 +73,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $map(expr,macro,text)
-    pub(crate) fn map(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn map(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("map")
             .cursors_with_len(input)?;
 
@@ -120,13 +115,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $mapa(macro_name,array)
-    pub(crate) fn map_array(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn map_array(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("mapa")
             .cursors_with_len(input)?;
 
@@ -150,13 +143,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $mapl(macro_name,lines)
-    pub(crate) fn map_lines(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn map_lines(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("mapl")
             .cursors_with_len(input)?;
 
@@ -182,11 +173,12 @@ impl DeterredMacroMap {
     /// $maple(type,expr,macro,text)
     pub(crate) fn map_lines_expr(
         input: MacroInput,
-        level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("maple")
             .cursors_with_len(input)?;
 
@@ -238,11 +230,12 @@ impl DeterredMacroMap {
     /// 2)
     pub(crate) fn map_expression(
         input: MacroInput,
-        level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("mape")
             .cursors_with_len(input)?;
 
@@ -314,13 +307,12 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $mapn()
-    pub(crate) fn map_number(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    #[cfg(feature = "evalexpr")]
+    pub(crate) fn map_number(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("mapn")
             .cursors_with_len(input)?;
 
@@ -354,6 +346,7 @@ impl DeterredMacroMap {
                     )?
                     .unwrap_or_default(),
                 "formula" => {
+                    use evalexpr::eval;
                     let string = operation.replace('n', m.as_str());
                     eval(&string)?.to_string()
                 }
@@ -371,13 +364,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $mapf(macro_name,file_name)
-    pub(crate) fn map_file(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn map_file(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("mapf")
             .cursors_with_len(input)?;
 
@@ -408,13 +399,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $mapfe(type,expr,macro,text)
-    pub(crate) fn map_file_expr(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn map_file_expr(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("mapfe")
             .cursors_with_len(input)?;
 
@@ -465,13 +454,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $forby($:(),-,a-b-c)
-    pub(crate) fn forby(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn forby(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("forby")
             .cursors_with_len(input)?;
 
@@ -498,13 +485,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $foreach($:(),a,b,c)
-    pub(crate) fn foreach(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn foreach(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("foreach")
             .cursors_with_len(input)?;
 
@@ -540,13 +525,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $forjoin($:(),a,b,c\nd,e,f)
-    pub(crate) fn forjoin(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn forjoin(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("forjoin")
             .cursors_with_len(input)?;
 
@@ -610,13 +593,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $forsp($:(),a,b,c)
-    pub(crate) fn for_space(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn for_space(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("forsp")
             .cursors_with_len(input)?;
 
@@ -652,13 +633,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $forline($:(),Content)
-    pub(crate) fn forline(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn forline(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("forline")
             .cursors_with_len(input)?;
 
@@ -681,13 +660,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $forloop($:(),1,5)
-    pub(crate) fn forloop(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn forloop(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("forloop")
             .cursors_with_len(input)?;
 
@@ -728,13 +705,10 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $forcol($:(),Content)
-    pub(crate) fn forcol(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn forcol(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("forcol")
             .cursors_with_len(input)?;
 
@@ -771,17 +745,18 @@ impl DeterredMacroMap {
     /// $logm(mac)
     pub(crate) fn log_macro_info(
         input: MacroInput,
-        level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("logm")
             .cursors_with_len(input)?;
 
         let macro_name = cursors.get_ctext(p, 0)?;
         let body = if let Some(name) = p.contains_local_macro(level, &macro_name) {
-            p.get_local_macro_body(&name)?.to_string()
+            p.get_local_macro_body(&name, level)?.to_string()
         } else if let Ok(body) = p.get_runtime_macro_body(&macro_name) {
             body.to_string()
         } else {
@@ -799,13 +774,9 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $if(evaluation, ifstate)
-    pub(crate) fn if_cond(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn if_cond(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("if")
             .cursors_with_len(input)?;
 
@@ -825,13 +796,9 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $ifelse(evaluation, \*ifstate*\, \*elsestate*\)
-    pub(crate) fn ifelse(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn ifelse(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("ifelse")
             .cursors_with_len(input)?;
 
@@ -853,13 +820,9 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $ifdef(macro_name, expr)
-    pub(crate) fn ifdef(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn ifdef(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("ifdef")
             .cursors_with_len(input)?;
 
@@ -879,13 +842,9 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $ifdefel(macro_name,expr,expr2)
-    pub(crate) fn ifdefel(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn ifdefel(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("ifdefel")
             .cursors_with_len(input)?;
 
@@ -907,13 +866,9 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $ifenv(env_name, expr)
-    pub(crate) fn ifenv(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn ifenv(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("ifenv")
             .cursors_with_len(input)?;
 
@@ -934,13 +889,9 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $ifenvel(env_name,expr,expr2)
-    pub(crate) fn ifenvel(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn ifenvel(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("ifenvel")
             .cursors_with_len(input)?;
 
@@ -967,14 +918,13 @@ impl DeterredMacroMap {
     /// $expand(expression)
     pub(crate) fn expand_expression(
         input: MacroInput,
-        level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         if input.args.trim().is_empty() {
             p.log_warning("Expanding empty value", WarningType::Sanity)?;
         }
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("expand")
             .cursors_with_len(input)?;
         let result = cursors.get_text(p, 0)?;
@@ -993,16 +943,12 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $fassert(abc)
-    pub(crate) fn assert_fail(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn assert_fail(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let backup = p.state.behaviour;
         p.state.behaviour = ErrorBehaviour::Assert;
 
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("if")
             .cursors_with_len(input)?;
 
@@ -1029,11 +975,7 @@ impl DeterredMacroMap {
     ///
     /// $stream(macro_name)
     /// $consume()
-    pub(crate) fn consume(
-        _: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn consume(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         // Eagerly pop relay target
         p.state.relay.pop();
 
@@ -1048,7 +990,7 @@ impl DeterredMacroMap {
             for item in content.lines() {
                 acc.push_str(
                     &p.execute_macro(
-                        level,
+                        input.level,
                         "consume",
                         macro_name,
                         &(macro_arguments.clone() + item),
@@ -1059,7 +1001,7 @@ impl DeterredMacroMap {
             Some(acc)
         } else {
             p.execute_macro(
-                level,
+                input.level,
                 "consume",
                 macro_name,
                 &(macro_arguments.clone() + content),
@@ -1075,11 +1017,7 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $que(Sentence to process)
-    pub(crate) fn queue_content(
-        input: MacroInput,
-        _: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn queue_content(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         if input.args.trim().is_empty() {
             p.log_warning("Queuing empty value", WarningType::Sanity)?;
         }
@@ -1094,11 +1032,10 @@ impl DeterredMacroMap {
     /// $queif(true,Sentence to process)
     pub(crate) fn if_queue_content(
         input: MacroInput,
-        level: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("queif")
             .cursors_with_len(input)?;
 
@@ -1110,12 +1047,8 @@ impl DeterredMacroMap {
         Ok(None)
     }
 
-    pub(crate) fn escape_blanks(
-        _: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        if level != 1 {
+    pub(crate) fn escape_blanks(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        if input.level != 1 {
             return Err(RadError::UnallowedMacroExecution(
                 "\"EB\" is only available on first level".to_string(),
             ));
@@ -1129,14 +1062,10 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $readto(file_a,file_b)
-    pub(crate) fn read_to(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn read_to(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         // Needs both permission
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("readto")
             .cursors_with_len(input)?;
 
@@ -1196,13 +1125,9 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $readin(file_a)
-    pub(crate) fn read_in(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn read_in(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("readin")
             .cursors_with_len(input)?;
 
@@ -1253,13 +1178,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $exec(macro_name,attrs,macro_args)
-    pub(crate) fn execute_macro(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn execute_macro(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("exec")
             .cursors_with_len(input)?;
 
@@ -1287,13 +1210,11 @@ impl DeterredMacroMap {
     /// 1,2,3
     /// 4,5,6
     /// )
-    pub(crate) fn spread_data(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn spread_data(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("spread")
             .cursors_with_len(input)?;
 
@@ -1341,11 +1262,7 @@ impl DeterredMacroMap {
     ///
     /// $stream(macro_name)
     /// $consume()
-    pub(crate) fn stream(
-        input: MacroInput,
-        _: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn stream(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         if p.state.stream_state.on_stream {
             return Err(RadError::UnallowedMacroExecution(
                 "Stream cannot be nested".to_string(),
@@ -1382,7 +1299,6 @@ impl DeterredMacroMap {
     /// $consume()
     pub(crate) fn stream_by_lines(
         input: MacroInput,
-        _: usize,
         p: &mut Processor,
     ) -> RadResult<Option<String>> {
         if p.state.stream_state.on_stream {
@@ -1425,11 +1341,9 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $include(path)
-    pub(crate) fn include(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn include(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let ap = ArgParser::new().no_strip();
         let cursors = ap.cursors_with_len(input)?;
         let file_path = cursors.get_path(p, 0)?;
@@ -1501,13 +1415,11 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $incread(path)
-    pub(crate) fn incread(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn incread(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("if")
             .cursors_with_len(input)?;
 
@@ -1528,14 +1440,12 @@ impl DeterredMacroMap {
     /// # Usage
     ///
     /// $tempin()
-    pub(crate) fn temp_include(
-        input: MacroInput,
-        level: usize,
-        p: &mut Processor,
-    ) -> RadResult<Option<String>> {
+    pub(crate) fn temp_include(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+
         let file = p.get_temp_path().to_owned();
         let cursors = ArgParser::new()
-            .level(level)
+            .level(input.level)
             .macro_name("tempin")
             .cursors_with_len(input)?;
 

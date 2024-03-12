@@ -13,8 +13,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 
 /// Function signature for a deterred macro function
-pub(crate) type DFunctionMacroType =
-    fn(MacroInput, usize, &mut Processor) -> RadResult<Option<String>>;
+pub(crate) type DFunctionMacroType = fn(MacroInput, &mut Processor) -> RadResult<Option<String>>;
 
 /// Collection map for a deterred macro function
 #[derive(Clone)]
@@ -98,6 +97,7 @@ impl DeterredMacroMap {
                 None,
             )
             .require_auth(&[AuthType::FIN])),
+            #[cfg(feature = "evalexpr")]
             (DMacroSign::new(
                 "mapn",
                 [
@@ -144,6 +144,13 @@ impl DeterredMacroMap {
                 Self::add_anonymous_macro,
                 Some(man_det!("anon.r4d")),
             )),
+            (DMacroSign::new(
+                "stream",
+                [(ValueType::CText, "a_macro_name")],
+                Self::stream,
+                Some(man_det!("stream.r4d")),
+            )
+            .no_ret()),
             (DMacroSign::new("consume", ESR, Self::consume, Some(man_det!("consume.r4d")))),
             (DMacroSign::new(
                 "EB",
@@ -281,13 +288,6 @@ impl DeterredMacroMap {
                 Some(man_det!("spread.r4d")),
             )),
             (DMacroSign::new(
-                "stream",
-                [(ValueType::CText, "a_macro_name")],
-                Self::stream,
-                Some(man_det!("stream.r4d")),
-            )
-            .no_ret()),
-            (DMacroSign::new(
                 "streaml",
                 [(ValueType::CText, "a_macro_name")],
                 Self::stream_by_lines,
@@ -407,6 +407,7 @@ pub(crate) struct DMacroSign {
     name: String,
     params: Vec<Parameter>,
     optional: Option<Parameter>,
+    optional_multiple: bool,
     pub enum_table: ETMap,
     pub logic: DFunctionMacroType,
     #[allow(dead_code)]
@@ -433,6 +434,7 @@ impl DMacroSign {
             name: name.to_owned(),
             params,
             optional: None,
+            optional_multiple: false,
             enum_table: ETMap::default(),
             logic,
             desc,
@@ -465,27 +467,14 @@ impl DMacroSign {
         self.optional.replace(param);
         self
     }
+
+    pub fn optional_multiple(mut self) -> Self {
+        self.optional_multiple = true;
+        self
+    }
 }
 
 // ------ REFACTOR
-
-impl std::fmt::Display for DMacroSign {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut inner = self.params.iter().fold(String::new(), |acc, param| {
-            acc + &param.arg_type.to_string() + ","
-        });
-        // This removes last "," character
-        inner.pop();
-        let basic_usage = format!("${}({}", self.name, inner); // Without ending brace
-        let ret = write!(f, "{})", basic_usage);
-        let sep = if inner.is_empty() { "" } else { ", " };
-        if let Some(op) = self.optional.as_ref() {
-            write!(f, "  ||  {}{}{}?)", basic_usage, sep, op.arg_type)
-        } else {
-            ret
-        }
-    }
-}
 
 impl From<&DMacroSign> for crate::sigmap::MacroSignature {
     fn from(ms: &DMacroSign) -> Self {
@@ -494,8 +483,8 @@ impl From<&DMacroSign> for crate::sigmap::MacroSignature {
             name: ms.name.to_owned(),
             params: ms.params.to_owned(),
             optional: ms.optional.clone(),
+            optional_multiple: ms.optional_multiple,
             enum_table: ms.enum_table.clone(),
-            expr: ms.to_string(),
             desc: ms.desc.clone(),
             return_type: ms.ret,
             required_auth: ms.required_auth.clone(),

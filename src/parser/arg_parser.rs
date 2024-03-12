@@ -16,7 +16,7 @@ pub static MACRO_START_MATCH: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"^\$\S*\($"#).expect("Failed to create name regex"));
 
 /// State indicates whether argument should be parsed greedily or not
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum SplitVariant {
     /// Split argument with given amount
     Amount(usize),
@@ -110,11 +110,8 @@ impl ArgParser {
             }
             return Ok(ParsedCursors::new(input.name));
         }
-        self.split_variant = if length > 1 {
-            SplitVariant::Amount(length - 1)
-        } else {
-            SplitVariant::Greedy
-        };
+
+        self.set_split_variant(length);
 
         let curs = self.get_cursor_list(&input)?;
 
@@ -146,11 +143,8 @@ impl ArgParser {
             }
             return Ok(ParsedArguments::with_args(vec![]));
         }
-        self.split_variant = if length > 1 {
-            SplitVariant::Amount(length - 1)
-        } else {
-            SplitVariant::Greedy
-        };
+
+        self.set_split_variant(length);
 
         let name = input.name;
         let args = self.get_arg_list(input)?;
@@ -180,11 +174,7 @@ impl ArgParser {
             return Ok(Vec::new());
         }
 
-        self.split_variant = if length > 1 {
-            SplitVariant::Amount(length - 1)
-        } else {
-            SplitVariant::Greedy
-        };
+        self.set_split_variant(length);
 
         let name = input.name;
         let args = self.get_text_list(input)?;
@@ -478,6 +468,17 @@ impl ArgParser {
 
         values.push(type_checked_arg);
         Ok(values)
+    }
+
+    fn set_split_variant(&mut self, length: usize) {
+        if self.split_variant == SplitVariant::Always {
+            return;
+        }
+        self.split_variant = if length > 1 {
+            SplitVariant::Amount(length - 1)
+        } else {
+            SplitVariant::Greedy
+        };
     }
 
     /// Branch on delimiter found

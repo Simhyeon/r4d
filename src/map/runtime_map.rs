@@ -19,6 +19,7 @@ pub struct RuntimeMacro {
     pub body: String,
     pub desc: Option<String>,
     pub is_static: bool,
+    pub optional_multiple: bool,
     pub required_auth: Vec<AuthType>,
 }
 
@@ -32,6 +33,7 @@ impl RuntimeMacro {
             body: String::new(),
             desc: None,
             is_static: false,
+            optional_multiple: false,
             required_auth: vec![],
         }
     }
@@ -52,17 +54,6 @@ impl RuntimeMacro {
     }
 }
 
-impl std::fmt::Display for RuntimeMacro {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut inner = self.params.iter().fold(String::new(), |acc, param| {
-            acc + &param.arg_type.to_string() + ","
-        });
-        // This removes last "," character
-        inner.pop();
-        write!(f, "${}({})", self.name, inner)
-    }
-}
-
 impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
     fn from(mac: &RuntimeMacro) -> Self {
         let variant = if mac.is_static {
@@ -75,8 +66,8 @@ impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
             name: mac.name.to_owned(),
             params: mac.params.to_owned(),
             optional: None,
+            optional_multiple: mac.optional_multiple,
             enum_table: ETMap::default(),
-            expr: mac.to_string(),
             desc: mac.desc.clone(),
             return_type: Some(crate::argument::ValueType::Text),
             required_auth: mac.required_auth.clone(),

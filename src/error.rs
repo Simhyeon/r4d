@@ -23,9 +23,10 @@ pub enum RadError {
     AssertFail,
     ///Invalid argument means argument is invalid before processing
     ///
-    ///This error can also mean "ingredients" associated with macro argument is tot valid
+    ///This error can also mean "ingredients" associated with macro argument is not valid
     InvalidArgument(String),
-    ///Invalid exeuction means macro processing has failed to achieve expected result.
+    ///Invalid exeuction means macro processing has "failed" to achieve expected result due to
+    ///variadic situation which is not necessarily by user's fault.
     InvalidExecution(String),
     ///Error when processor fails to define a macro
     InvalidMacroDefinition(String),
@@ -35,7 +36,7 @@ pub enum RadError {
     ///
     ///This error types accepts similar macro name and display it to user.
     NoSuchMacroName(String, Option<String>),
-    ///Macro is not availble for execution due to variadic situation
+    ///Macro is not "permitted" for execution due to variadic situation
     UnallowedMacroExecution(String),
     ///Error behaviour which was specifically enforced by a user.
     UnsoundExecution(String),
@@ -90,6 +91,7 @@ pub enum RadError {
     /// Conversion of regex error
     InvalidRegex(regex::Error),
     /// Conversion of evalexpr error
+    #[cfg(feature = "evalexpr")]
     InvalidFormula(evalexpr::EvalexprError),
     StdIo(std::io::Error),
     FmtError(std::fmt::Error),
@@ -124,6 +126,7 @@ impl std::fmt::Display for RadError {
             },
             Self::InvalidMacroDefinition(err) => format!("Invalid macro definition\n= {}", err),
             Self::InvalidRegex(err) => format!("Failed regex operation\n= {}", err),
+            #[cfg(feature = "evalexpr")]
             Self::InvalidFormula(err) => format!("Invalid formula\n= {}", err),
             Self::InvalidArgument(arg) => format!("Invalid argument\n= {}", arg),
             Self::InvalidFile(file) => format!("File,\"{}\", does not exist", file),
@@ -166,6 +169,7 @@ impl From<dcsv::DcsvError> for RadError {
     }
 }
 
+#[cfg(feature = "evalexpr")]
 impl From<evalexpr::EvalexprError> for RadError {
     fn from(err: evalexpr::EvalexprError) -> Self {
         Self::InvalidFormula(err)

@@ -12,7 +12,7 @@ use crate::consts::{
 };
 use crate::parser::{ArgParser, SplitVariant};
 
-use crate::env::{MacEnv, PROC_ENV};
+use crate::env::MacEnv;
 use crate::error::RadError;
 use crate::formatter::Formatter;
 #[cfg(feature = "hook")]
@@ -23,6 +23,7 @@ use crate::{CommentType, WriteOption};
 use crate::{Hygiene, Processor};
 #[cfg(feature = "cindex")]
 use cindex::OutOption;
+#[cfg(feature = "evalexpr")]
 use evalexpr::eval;
 use itertools::Itertools;
 use once_cell::sync::Lazy;
@@ -243,12 +244,20 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $eval(expression)
-    pub(crate) fn eval(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
+    #[cfg(feature = "evalexpr")]
+    pub(crate) fn eval(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
         let formula = args.get_text(0)?;
-        let result = evalexpr::eval(formula)?;
-        Ok(Some(result.to_string()))
+        let mut result = evalexpr::eval(formula)?.to_string();
+        if p.env.retain_formula {
+            if p.env.formula_space {
+                result.insert(0, ' ');
+            }
+            result.insert(0, '=');
+            result.insert_str(0, formula);
+        }
+        Ok(Some(result))
     }
 
     /// Evaluate given expression but force floating point
@@ -258,25 +267,34 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $evalf(expression)
-    pub(crate) fn evalf(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
+    #[cfg(feature = "evalexpr")]
+    pub(crate) fn evalf(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
         let formula = args.get_text(0)?;
-        let mut new = String::with_capacity(formula.len());
+        let mut new_formula = String::with_capacity(formula.len());
         let mut last_match = 0;
         for caps in UNUM_MATCH.captures_iter(formula) {
             let m = caps.get(0).unwrap();
-            new.push_str(&formula[last_match..m.start()]);
+            new_formula.push_str(&formula[last_match..m.start()]);
             if let Ok(num) = m.as_str().parse::<usize>() {
-                new.push_str(&(num.to_string() + ".0"));
+                new_formula.push_str(&(num.to_string() + ".0"));
             } else {
-                new.push_str(m.as_str());
+                new_formula.push_str(m.as_str());
             }
             last_match = m.end();
         }
-        new.push_str(&formula[last_match..]);
-        let result = evalexpr::eval(&new)?;
-        Ok(Some(result.to_string()))
+        new_formula.push_str(&formula[last_match..]);
+
+        let mut result = evalexpr::eval(&new_formula)?.to_string();
+        if p.env.retain_formula {
+            if p.env.formula_space {
+                result.insert(0, ' ');
+            }
+            result.insert(0, '=');
+            result.insert_str(0, formula);
+        }
+        Ok(Some(result))
     }
 
     /// Pipe in replace evaluation
@@ -284,6 +302,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $pie(expression)
+    #[cfg(feature = "evalexpr")]
     pub(crate) fn pipe_ire(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
@@ -305,6 +324,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $mie(macro,expression)
+    #[cfg(feature = "evalexpr")]
     pub(crate) fn macro_ire(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
@@ -391,6 +411,8 @@ impl FunctionMacroMap {
                     )?;
                 }
 
+                // It is required to utilize split by charater because other operations require
+                // unsplitted argument input.
                 for item in var.split(',') {
                     p.var_container.push(item.to_string());
                 }
@@ -524,49 +546,6 @@ impl FunctionMacroMap {
             args.get_ctext(0)?,
             target_count,
         )))
-    }
-
-    /// Append border
-    ///
-    /// # Usage
-    ///
-    /// $border(*, multi
-    /// line
-    /// expression
-    /// )
-    pub(crate) fn decorate_border(
-        input: MacroInput,
-        _: &mut Processor,
-    ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
-
-        let border_string = args.get_text(0)?;
-        let iter = args.get_text(1)?.full_lines();
-        let mut newter = Vec::new();
-        let mut max = 0;
-        for line in iter {
-            let len = UnicodeWidthStr::width(line);
-            max = max.max(len);
-            newter.push((len, line));
-        }
-        let ret = newter
-            .iter()
-            .map(move |(item_len, item)| {
-                let mut item = item.to_string();
-                let nl = item.get_line_ending().to_owned();
-                Utils::pop_newline(&mut item);
-
-                // Space is Insufficient
-                if *item_len < max {
-                    item.push_str(&" ".repeat(max - item_len));
-                }
-                item.push_str(border_string);
-                item.push_str(&nl);
-                item
-            })
-            .join("");
-
-        Ok(Some(ret))
     }
 
     /// Indent lines before
@@ -917,14 +896,14 @@ impl FunctionMacroMap {
         Ok(Some(repeated))
     }
 
-    /// Call system command
+    /// Call shell command
     ///
-    /// This calls via 'CMD \C' in windows platform while unix call is operated without any mediation.
+    /// This calls via 'CMD \C' in windows platform and 'sh -c' in *nix system
     ///
     /// # Usage
     ///
-    /// $syscmd(system command -a arguments)
-    pub(crate) fn syscmd(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+    /// $shell(system command -a arguments)
+    pub(crate) fn shell_command(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
         let source = args.get_ctext(0)?;
@@ -973,10 +952,23 @@ impl FunctionMacroMap {
         input: MacroInput,
         processor: &mut Processor,
     ) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
 
-        let name = args.get_ctext(0)?;
+        (0..args.len())
+            .map(|idx| {
+                let name = args.get_ctext(idx)?;
+                Self::try_undefine_macro(name, processor)?;
+                Ok(())
+            })
+            .collect::<RadResult<Vec<_>>>()?;
 
+        Ok(None)
+    }
+
+    #[inline]
+    fn try_undefine_macro(name: &str, processor: &mut Processor) -> RadResult<()> {
         if processor.contains_macro(name, MacroType::Any) {
             processor.undefine_macro(name, MacroType::Any);
         } else {
@@ -992,7 +984,7 @@ impl FunctionMacroMap {
                 name,
             ))?;
         }
-        Ok(None)
+        Ok(())
     }
 
     /// Placeholder for define
@@ -1173,16 +1165,18 @@ impl FunctionMacroMap {
     ///
     /// $join(" ",a,b,c)
     pub(crate) fn join(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
 
         let sep = args.get_text(0)?;
-        let text = args.get_text(1)?;
-        let join = text.split(',').fold(String::new(), |mut acc, s| {
-            acc.push_str(s);
-            acc.push_str(sep);
-            acc
-        });
-        Ok(join.strip_suffix(sep).map(|s| s.to_owned()))
+        let out = (1..args.len())
+            .map(|idx| args.get_text(idx))
+            .collect::<RadResult<Vec<&str>>>()?;
+
+        let ret = out.join(sep);
+
+        Ok(Some(ret))
     }
 
     /// Join lines
@@ -1522,7 +1516,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $exist(../canonic_path.txt)
-    pub(crate) fn file_exists(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+    pub(crate) fn file_exists(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
         let boolean = args.get_path(0)?.exists();
@@ -1735,43 +1729,63 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $rotatei(start,end,sep,source)
-    pub(crate) fn rotatei(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
+    pub(crate) fn rotatei(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        let start = args.get_text(0)?;
-        let end = args.get_text(1)?;
-        let sep = args.get_text(2)?;
+        let start_pattern = args.get_text(0)?;
+        let end_pattern = args.get_text(1)?;
+        let separator = args.get_text(2)?;
         let source = args.get_text(3)?;
 
+        let start_pattern_len = start_pattern.len();
+        let end_pattern_len = end_pattern.len();
+
         // Leading blank spaces from the line itself.
-        let first_split = source.split_once(start);
+        let first_split = source.find(start_pattern);
         if first_split.is_none() {
             return Err(RadError::InvalidArgument(format!(
                 "Given source \"{}\" doesn't include start pattern",
                 source,
             )));
         }
-        let (preceding, last) = first_split.unwrap();
-        let last_split = last.split_once(end);
+
+        let idx = first_split.unwrap();
+
+        let (text_before_start, last) = (&source[0..idx], &source[idx + start_pattern_len..]);
+
+        let last_split = if p.env.rotatei_order {
+            last.find(end_pattern)
+        } else {
+            last.rfind(end_pattern)
+        };
         if last_split.is_none() {
             return Err(RadError::InvalidArgument(format!(
                 "Given source \"{}\" doesn't include end pattern",
                 source,
             )));
         }
-        let (inner, lasting) = last_split.unwrap();
-        let inner_split = inner.split_once(sep);
-        if last_split.is_none() {
+
+        let idx = last_split.unwrap();
+
+        let (inner, leftover) = (&last[0..idx], &last[idx + end_pattern_len..]);
+
+        // TODO TT? Backward inner split search? wow... really?
+        let inner_split = inner.match_indices(separator).collect_vec();
+        if inner_split.is_empty() {
             return Err(RadError::InvalidArgument(format!(
                 "Given source \"{}\" doesn't include separator pattern",
                 source,
             )));
         }
-        let (before, after) = inner_split.unwrap();
+        let split_index = inner_split[inner_split.len() / 2].0;
+        let (before, after) = (
+            &inner[0..split_index],
+            &inner[split_index + separator.len()..],
+        );
 
         let result = format!(
             "{}{}{}{}{}{}{}",
-            preceding, start, after, sep, before, end, lasting
+            text_before_start, start_pattern, after, separator, before, end_pattern, leftover
         );
 
         Ok(Some(result))
@@ -2332,7 +2346,7 @@ impl FunctionMacroMap {
     /// $rangeu(0,5,안녕하세요ㅎ)
     pub(crate) fn substring_utf8(
         input: MacroInput,
-        _: &mut Processor,
+        p: &mut Processor,
     ) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
@@ -2345,7 +2359,7 @@ impl FunctionMacroMap {
         let end = args.get_ctext(1)?;
 
         if let Ok(num) = start.parse::<isize>() {
-            check_neg(num)?;
+            check_neg(num, p.env.no_negative_index)?;
             min.replace(num);
         } else if start != "_" && !start.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2355,7 +2369,7 @@ impl FunctionMacroMap {
         }
 
         if let Ok(num) = end.parse::<isize>() {
-            check_neg(num)?;
+            check_neg(num, p.env.no_negative_index)?;
             max.replace(num);
         } else if end != "_" && !end.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2372,7 +2386,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $range(0,5,GivenString)
-    pub(crate) fn substring(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
+    pub(crate) fn substring(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
         let source = args.get_text(2)?;
@@ -2384,7 +2398,7 @@ impl FunctionMacroMap {
         let end = args.get_ctext(1)?;
 
         if let Ok(num) = start.parse::<isize>() {
-            check_neg(num)?;
+            check_neg(num, p.env.no_negative_index)?;
             min.replace(num);
         } else if start != "_" && !start.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2394,7 +2408,7 @@ impl FunctionMacroMap {
         }
 
         if let Ok(num) = end.parse::<isize>() {
-            check_neg(num)?;
+            check_neg(num, p.env.no_negative_index)?;
             max.replace(num);
         } else if end != "_" && !end.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2411,7 +2425,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $rangel(0,5,GivenLines)
-    pub(crate) fn range_lines(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
+    pub(crate) fn range_lines(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
         let source = args.get_text(2)?;
@@ -2423,7 +2437,7 @@ impl FunctionMacroMap {
         let end = args.get_ctext(1)?;
 
         if let Ok(num) = start.parse::<isize>() {
-            check_neg(num)?;
+            check_neg(num, p.env.no_negative_index)?;
             min.replace(num);
         } else if start != "_" && !start.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2433,7 +2447,7 @@ impl FunctionMacroMap {
         }
 
         if let Ok(num) = end.parse::<isize>() {
-            check_neg(num)?;
+            check_neg(num, p.env.no_negative_index)?;
             max.replace(num);
         } else if end != "_" && !end.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2450,7 +2464,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $rangeby(0,5,Content)
-    pub(crate) fn range_pieces(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
+    pub(crate) fn range_pieces(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
         let delimiter = args.get_text(0)?;
@@ -2463,7 +2477,7 @@ impl FunctionMacroMap {
         let end = args.get_ctext(2)?;
 
         if let Ok(num) = start.parse::<isize>() {
-            check_neg(num)?;
+            check_neg(num, p.env.no_negative_index)?;
             min.replace(num);
         } else if start != "_" && !start.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2473,7 +2487,7 @@ impl FunctionMacroMap {
         }
 
         if let Ok(num) = end.parse::<isize>() {
-            check_neg(num)?;
+            check_neg(num, p.env.no_negative_index)?;
             max.replace(num);
         } else if end != "_" && !end.is_empty() {
             return Err(RadError::InvalidArgument(format!(
@@ -2740,10 +2754,17 @@ impl FunctionMacroMap {
     ///
     /// $sort(asec,1,2,3,4,5)
     pub(crate) fn sort_array(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
 
         let order_type = args.get_enum(0, OrderType::from_str)?;
-        let content = &mut args.get_text(1)?.split(',').collect::<Vec<&str>>();
+
+        let mut content = (1..args.len())
+            .map(|i| args.get_text(i))
+            .rev()
+            .collect::<RadResult<Vec<_>>>()?;
+
         match order_type {
             OrderType::Ascending => content.sort_unstable(),
             OrderType::Descending => {
@@ -2885,19 +2906,23 @@ impl FunctionMacroMap {
     ///
     /// $index(1,1,2,3,4,5)
     pub(crate) fn index_array(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
 
-        // Don't allocate as vector if possible to improve performance
-        let content = &mut args.get_text(1)?.split(',');
+        // TODO TT
+        // POssibly don't allocate as vector if possible to improve performance
         let index = args.get_int(0)?;
+        let values = (1..args.len())
+            .map(|idx| args.get_text(idx))
+            .collect::<RadResult<Vec<_>>>()?;
 
-        let len = args.get_text(1)?.split(',').count();
+        let len = values.len();
 
         if index >= len as isize || index < -(len as isize) {
             return Err(RadError::InvalidArgument(format!(
                 "Index out of range. Given index is \"{}\" but array length is \"{}\"",
-                index,
-                content.count()
+                index, len
             )));
         }
 
@@ -2913,8 +2938,8 @@ impl FunctionMacroMap {
                 index, len
             )));
         }
-        // Safe to unwrap because bound check was already done
-        Ok(Some(content.nth(final_index).unwrap().to_owned()))
+
+        Ok(Some(values[final_index].to_string()))
     }
 
     /// Index lines
@@ -3167,8 +3192,12 @@ impl FunctionMacroMap {
     ///
     /// $rangea(1,2,1,2,3,4,5)
     pub(crate) fn range_array(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
 
+        // THis strange type is a legacy of '_' syntax support
+        // This is stayed as it is because it might support '_' later on.
         let mut min: Option<usize> = None;
         let mut max: Option<usize> = None;
 
@@ -3187,11 +3216,26 @@ impl FunctionMacroMap {
             return Err(RadError::InvalidArgument(format!("Rangea's max value should be non zero positive integer or empty value but given \"{}\"", end_src)));
         }
 
-        let content = args.get_text(2)?.split(',').collect::<Vec<_>>();
+        let content = (2..args.len())
+            .map(|idx| {
+                let value = args.get_text(idx)?;
+                Ok(value)
+            })
+            .collect::<RadResult<Vec<_>>>()?;
 
-        Ok(Some(
-            content[min.unwrap_or(0)..=max.unwrap_or(content.len() - 1)].join(","),
-        ))
+        let min = min.unwrap();
+        let max = max.unwrap();
+
+        if content.len() <= min || content.len() <= max {
+            return Err(RadError::InvalidArgument(format!(
+                "Index out of range. Given indices are \"{}\" & \"{}\" but array length is \"{}\"",
+                min,
+                max,
+                content.len()
+            )));
+        }
+
+        Ok(Some(content[min..=max].join(",")))
     }
 
     /// Fold array
@@ -3200,9 +3244,17 @@ impl FunctionMacroMap {
     ///
     /// $fold(1,2,3,4,5)
     pub(crate) fn fold(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
 
-        let mut content = args.get_text(0)?.split(',').collect::<Vec<_>>();
+        let mut content = (0..args.len())
+            .map(|idx| {
+                let value = args.get_text(idx)?;
+                Ok(value)
+            })
+            .collect::<RadResult<Vec<_>>>()?;
+
         let res = merge_container(&mut content, p.env, None);
 
         Ok(Some(res))
@@ -3358,13 +3410,16 @@ impl FunctionMacroMap {
     ///
     /// $grepa(expr,Array)
     pub(crate) fn grep_array(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
 
         let expr = args.get_text(0)?;
         let reg = p.try_get_or_insert_regex(expr)?;
-        let mut grepped = args
-            .get_text(1)?
-            .split(',')
+
+        // It is mostly safe to unwrap because every input is text by default
+        let mut grepped = (1..args.len())
+            .map(|idx| args.get_text(idx).unwrap())
             .filter(|l| reg.is_match(l))
             .fold(String::new(), |mut acc, x| {
                 acc.push_str(x);
@@ -3473,12 +3528,7 @@ impl FunctionMacroMap {
     /// $count(1,2,3,4,5)
     pub(crate) fn count(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
-
-        if args.is_empty() {
-            return Ok(Some("0".to_string()));
-        }
-        let array_count = args.get_text(0)?.split(',').count();
-        Ok(Some(array_count.to_string()))
+        Ok(Some(args.len().to_string()))
     }
 
     /// Count words
@@ -3932,15 +3982,14 @@ impl FunctionMacroMap {
     ///
     /// $max(1,2,3,4,5)
     pub(crate) fn get_max(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
 
-        let content = args.get_text(0)?;
-        if content.trim().is_empty() {
-            return Err(RadError::InvalidArgument(
-                "max requires an array to process but given empty value".to_owned(),
-            ));
-        }
-        let max = content.split(',').max().unwrap();
+        let max = (0..args.len())
+            .map(|i| args.get_text(i).unwrap())
+            .max()
+            .unwrap();
         Ok(Some(max.to_string()))
     }
 
@@ -3950,16 +3999,15 @@ impl FunctionMacroMap {
     ///
     /// $min(1,2,3,4,5)
     pub(crate) fn get_min(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
 
-        let content = args.get_text(0)?;
-        if content.trim().is_empty() {
-            return Err(RadError::InvalidArgument(
-                "min requires an array to process but given empty value".to_owned(),
-            ));
-        }
-        let max = content.split(',').min().unwrap();
-        Ok(Some(max.to_string()))
+        let min = (0..args.len())
+            .map(|i| args.get_text(i).unwrap())
+            .min()
+            .unwrap();
+        Ok(Some(min.to_string()))
     }
 
     /// Increase source by value
@@ -3968,6 +4016,7 @@ impl FunctionMacroMap {
     ///
     /// $inc(value)
     /// $inc(value,amount)
+    #[cfg(feature = "evalexpr")]
     pub(crate) fn increase_number(
         input: MacroInput,
         _: &mut Processor,
@@ -3996,6 +4045,7 @@ impl FunctionMacroMap {
     ///
     /// $dec(value)
     /// $dec(value,amount)
+    #[cfg(feature = "evalexpr")]
     pub(crate) fn decrease_number(
         input: MacroInput,
         _: &mut Processor,
@@ -4023,6 +4073,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $square(value)
+    #[cfg(feature = "evalexpr")]
     pub(crate) fn square_number(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
@@ -4036,6 +4087,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $cube(value)
+    #[cfg(feature = "evalexpr")]
     pub(crate) fn cube_number(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
@@ -4049,6 +4101,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $pow(value,exponent)
+    #[cfg(feature = "evalexpr")]
     pub(crate) fn power_number(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
@@ -4063,6 +4116,7 @@ impl FunctionMacroMap {
     /// # Usage
     ///
     /// $sqrt(value,exponent)
+    #[cfg(feature = "evalexpr")]
     pub(crate) fn square_root(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
         let args = ArgParser::new().args_with_len(input)?;
 
@@ -4131,19 +4185,43 @@ impl FunctionMacroMap {
     ///
     /// $rev(1,2,3,4,5)
     pub(crate) fn reverse_array(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        if input.args.is_empty() {
-            Err(RadError::InvalidArgument(
-                "rev requires an argument".to_owned(),
-            ))
-        } else {
-            let mut reversed = input.args.rsplit(',').fold(String::new(), |mut acc, a| {
-                acc.push_str(a);
-                acc.push(',');
-                acc
-            });
-            reversed.pop();
-            Ok(Some(reversed))
+        let args = ArgParser::new()
+            .split(SplitVariant::Always)
+            .args_with_len(input)?;
+
+        let rev = (0..args.len())
+            .map(|i| args.get_text(i))
+            .rev()
+            .collect::<RadResult<Vec<_>>>()?
+            .join(",");
+
+        Ok(Some(rev))
+    }
+
+    /// Reverse lines
+    ///
+    /// # Usage
+    ///
+    /// $revl( ... )
+    pub(crate) fn reverse_lines(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
+        let args = ArgParser::new().args_with_len(input)?;
+
+        let text = args.get_text(0)?;
+
+        let line_ending = text.get_line_ending();
+
+        let mut tet = text
+            .full_lines()
+            .collect::<Vec<&str>>()
+            .iter()
+            .rev()
+            .join("");
+
+        if !tet.ends_with(line_ending) {
+            tet.push_str(line_ending);
         }
+
+        Ok(Some(tet))
     }
 
     /// Declare an empty macros
@@ -4848,6 +4926,67 @@ impl FunctionMacroMap {
         ))
     }
 
+    /// Pop value from macro
+    ///
+    /// THis never fails to pop
+    ///
+    /// $pop(macro_name)
+    pub(crate) fn pop(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+        let args = ArgParser::new().args_with_len(input)?;
+
+        let name = args.get_ctext(0)?;
+        p.modify_macro_body(name, "", level, |s: &str, _: &str| -> RadResult<String> {
+            let last_ch_byte_index = s.char_indices().next_back().unwrap_or((0, '0')).0;
+            Ok(s[0..last_ch_byte_index].to_string())
+        })?;
+        Ok(None)
+    }
+
+    /// append value to macro
+    ///
+    /// $append(macro_name, value)
+    pub(crate) fn append(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+        let args = ArgParser::new().args_with_len(input)?;
+
+        let name = args.get_ctext(0)?;
+        let value = args.get_text(1)?;
+        p.modify_macro_body(
+            name,
+            value,
+            level,
+            |s: &str, args: &str| -> RadResult<String> {
+                let mut ret = s.to_owned();
+                ret.push_str(args);
+                Ok(ret)
+            },
+        )?;
+        Ok(None)
+    }
+
+    /// prepend value to macro
+    ///
+    /// $prepend(macro_name, value)
+    pub(crate) fn prepend(input: MacroInput, p: &mut Processor) -> RadResult<Option<String>> {
+        let level = input.level;
+        let args = ArgParser::new().args_with_len(input)?;
+
+        let name = args.get_ctext(0)?;
+        let value = args.get_text(1)?;
+        p.modify_macro_body(
+            name,
+            value,
+            level,
+            |s: &str, args: &str| -> RadResult<String> {
+                let mut ret = s.to_owned();
+                ret.insert_str(0, args);
+                Ok(ret)
+            },
+        )?;
+        Ok(None)
+    }
+
     /// Get characters array
     ///
     /// $chars(abcde)
@@ -5185,8 +5324,8 @@ fn merge_container(
 }
 
 #[inline]
-fn check_neg(num: isize) -> RadResult<()> {
-    if PROC_ENV.no_negative_index && num.is_negative() {
+fn check_neg(num: isize, no_negative_index: bool) -> RadResult<()> {
+    if no_negative_index && num.is_negative() {
         return Err(RadError::UnsoundExecution(
             "Negative index is an error because environment variable is set".to_string(),
         ));

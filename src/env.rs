@@ -6,12 +6,15 @@ use once_cell::sync::Lazy;
 
 pub static PROC_ENV: Lazy<ProcEnv> = Lazy::new(ProcEnv::new);
 
+/// This environmnet changes how processor works
+///
+/// This environmnet cannot be overriden by design
 #[derive(Debug)]
 pub struct ProcEnv {
     pub(crate) no_consume: bool,
     pub(crate) no_color_print: bool,
     pub(crate) backtrace: bool,
-    pub(crate) no_negative_index: bool,
+    pub(crate) bypass_ret_validation: bool,
 }
 
 impl ProcEnv {
@@ -19,12 +22,15 @@ impl ProcEnv {
         Self {
             no_consume: set_env_safely("RAD_NO_CONSUME"),
             no_color_print: set_env_safely("RAD_NO_COLOR"),
-            no_negative_index: set_env_safely("RAD_NO_NIN"),
             backtrace: set_env_safely("RAD_BACKTRACE"),
+            bypass_ret_validation: set_env_safely("RAD_BYPASS_RET_VAL"),
         }
     }
 }
 
+/// This environmnet changes how macro works
+///
+/// This environmnet can be overriden by design
 #[derive(Default, Debug, Clone, Copy)]
 pub(crate) struct MacEnv {
     pub rad_tab_width: Option<usize>,
@@ -33,6 +39,14 @@ pub(crate) struct MacEnv {
     pub fold_trim: bool,
     pub map_preserve: bool,
     pub split_for_space: bool,
+    pub rotatei_order: bool,
+    pub no_negative_index: bool,
+
+    // Feature gated
+    #[cfg(feature = "evalexpr")]
+    pub retain_formula: bool,
+    #[cfg(feature = "evalexpr")]
+    pub formula_space: bool,
 }
 
 impl MacEnv {
@@ -52,6 +66,14 @@ impl MacEnv {
             fold_trim: set_env_safely("RAD_FOLD_TRIM"),
             map_preserve: set_env_safely("RAD_MAP_PRESERVE"),
             split_for_space: set_env_safely("RAD_SPLIT_SPACE"),
+            rotatei_order: set_env_safely("RAD_ROTATEI_ORDER"),
+            no_negative_index: set_env_safely("RAD_NO_NIN"),
+
+            // Feature gated
+            #[cfg(feature = "evalexpr")]
+            retain_formula: set_env_safely("RAD_RETAIN_FORMULA"),
+            #[cfg(feature = "evalexpr")]
+            formula_space: set_env_safely("RAD_FORMULA_SPACE"),
         })
     }
 }

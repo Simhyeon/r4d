@@ -90,8 +90,10 @@ pub enum AuthType {
     FOUT = 2,
     /// System command permission
     CMD = 3,
+    /// Dynamic processing permission
+    DYN = 4,
     /// This is a functional variant not a real value
-    LEN = 4,
+    LEN = 5,
 }
 
 impl std::fmt::Display for AuthType {
@@ -101,6 +103,7 @@ impl std::fmt::Display for AuthType {
             Self::FIN => "FIN",
             Self::FOUT => "FOUT",
             Self::CMD => "CMD",
+            Self::DYN => "DYN",
             Self::LEN => "LEN",
         };
 
@@ -116,6 +119,7 @@ impl std::str::FromStr for AuthType {
             "fin" => Ok(Self::FIN),
             "fout" => Ok(Self::FOUT),
             "cmd" => Ok(Self::CMD),
+            "dyn" => Ok(Self::DYN),
             _ => Err(RadError::InvalidArgument(format!(
                 "Given type \"{}\" is not a valid auth type",
                 s
@@ -132,6 +136,7 @@ impl AuthType {
             1 => Some(Self::FIN),
             2 => Some(Self::FOUT),
             3 => Some(Self::CMD),
+            4 => Some(Self::DYN),
             _ => None,
         }
     }

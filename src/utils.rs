@@ -257,6 +257,8 @@ impl Utils {
     }
 
     /// Create a local name from level and name
+    ///
+    /// Local name looks like following '0.name'
     pub(crate) fn local_name(level: usize, name: &str) -> String {
         format!("{}.{}", level, name)
     }

@@ -27,4 +27,4 @@ let var = usize::MAX;
 
 # Example
 
-$assert(2,$countl($grepl(Cargo,$syscmd(ls))))
+$assert(2,$countl($grepl(Cargo,$shell(ls))))

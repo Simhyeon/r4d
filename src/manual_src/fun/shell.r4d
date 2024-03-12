@@ -1,0 +1,31 @@
+Execute a shell command
+
+# NOTE
+
+- Each shell command is executed as subprocess of folloiwng platform procedures
+- Windows : cmd /C
+- *Nix    : sh -c
+
+- Command's stdout is redirected to rad's input. Which enables inclusion of 
+system call's result into a desired output.
+- However, due to the inherent limit, you cannot use redirection within 
+command's call.
+- Therefore code such as $shell(ls > file) will not work as expected.
+
+# Arguments
+
+- a_command : A command to exectute
+
+# Demo
+
+```
+$shell(ls)
+===
+Cargo.lock
+Cargo.toml
+LICENSE
+```
+
+# Example
+
+$assert(Linux,$shell(uname))

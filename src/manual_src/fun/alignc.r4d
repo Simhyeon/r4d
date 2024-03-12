@@ -16,7 +16,7 @@ Align content by columns ( namely as formatted table )
 % amit manager account 47000
 
 $stream(alignc l)
-$syscmd(awk '{print NR,$0}' employee.txt)
+$shell(awk '{print NR,$0}' employee.txt)
 $-()
 $consume()
 ===
@@ -25,9 +25,3 @@ $consume()
 3 varun  manager  sales    50000
 4 amit   manager  account  47000
 ```
-
-# Example
-
-$assert($alignc(left,aa bbbb ccccc$nl()1 2 3),$enl()
-aa bbbb ccccc
-1  2    3    )

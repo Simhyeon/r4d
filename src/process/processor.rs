@@ -1,7 +1,7 @@
 //! Main macro processing struct module
 
 use super::ProcessorState;
-use crate::argument::{MacroInput, ValueType};
+use crate::argument::{MacroInput, TypeValidate, ValueType};
 use crate::auth::{AuthState, AuthType};
 #[cfg(feature = "debug")]
 use crate::common::DiffOption;
@@ -2196,7 +2196,7 @@ impl<'processor> Processor<'processor> {
         if self.map.is_deterred_macro(name) {
             let sig = self.map.get_signature(name).unwrap();
             self.is_rejected(name, &sig.required_auth)?;
-            if let Some(func) = self.map.deterred.get_deterred_macro(name) {
+            if let Some(det_func) = self.map.deterred.get_deterred_macro(name) {
                 // On dry run, macro is not expanded but only checks if found macro exists
                 if self.state.process_type == ProcessType::Dry {
                     return Ok(None);
@@ -2206,9 +2206,10 @@ impl<'processor> Processor<'processor> {
                     .attr(frag.attribute)
                     .optional(sig.optional)
                     .enum_table(&sig.enum_table)
+                    .level(level)
                     .parameter(&sig.params);
 
-                let final_result = func(input, level, self)?.filter(|f| {
+                let final_result = det_func(input, self)?.filter(|f| {
                     if !PROC_ENV.no_consume {
                         !f.is_empty()
                     } else {
@@ -2216,20 +2217,11 @@ impl<'processor> Processor<'processor> {
                     }
                 });
 
-                match sig.return_type {
-                    Some(ret_type) => {
-                        ret_type.is_valid_return_type(
-                            final_result.as_ref(),
-                            sig.enum_table.tables.get(RET_ETABLE),
-                        )?;
-                    }
-                    None => {
-                        if final_result.is_some() {
-                            return Err(RadError::InvalidExecution(
-                                    format!( "Return type out of sync. Expected : [NONE] type but got value \"{}\"", final_result.unwrap())
-                            ));
-                        }
-                    }
+                if !PROC_ENV.bypass_ret_validation {
+                    sig.return_type.is_valid_return_type(
+                        final_result.as_ref(),
+                        sig.enum_table.tables.get(RET_ETABLE),
+                    )?;
                 }
 
                 return Ok(final_result);
@@ -2252,6 +2244,7 @@ impl<'processor> Processor<'processor> {
                 .attr(frag.attribute)
                 .optional(sig.optional)
                 .enum_table(&sig.enum_table)
+                .level(level)
                 .parameter(&sig.params);
             let res = func(input, self);
 
@@ -2268,21 +2261,11 @@ impl<'processor> Processor<'processor> {
                 }
             };
 
-            match sig.return_type {
-                Some(ret_type) => {
-                    ret_type.is_valid_return_type(
-                        final_result.as_ref(),
-                        sig.enum_table.tables.get(RET_ETABLE),
-                    )?;
-                }
-                None => {
-                    if final_result.is_some() {
-                        return Err(RadError::InvalidExecution(format!(
-                            "Return type out of sync. Expected : [NONE] type but got value \"{}\"",
-                            final_result.unwrap()
-                        )));
-                    }
-                }
+            if !PROC_ENV.bypass_ret_validation {
+                sig.return_type.is_valid_return_type(
+                    final_result.as_ref(),
+                    sig.enum_table.tables.get(RET_ETABLE),
+                )?;
             }
 
             Ok(final_result)
@@ -3191,19 +3174,14 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Get a local macro's raw body
-    pub(crate) fn get_local_macro_body(&self, macro_name: &str) -> RadResult<&str> {
-        let body = &self
-            .map
-            .local
-            .get(macro_name)
-            .ok_or_else(|| {
-                RadError::NoSuchMacroName(
-                    macro_name.to_string(),
-                    self.get_similar_local_macro(macro_name),
-                )
-            })?
-            .body;
-        Ok(body)
+    pub(crate) fn get_local_macro_body(&self, macro_name: &str, level: usize) -> RadResult<&str> {
+        match self.get_local_macro(level, macro_name) {
+            Some(mac) => Ok(&mac.body),
+            None => Err(RadError::NoSuchMacroName(
+                macro_name.to_string(),
+                self.get_similar_local_macro(macro_name, level),
+            )),
+        }
     }
 
     /// Get a runtime macro's raw body
@@ -3273,14 +3251,16 @@ impl<'processor> Processor<'processor> {
 
     #[inline]
     /// Find similar local macro name
-    pub(crate) fn get_similar_local_macro(&self, macro_name: &str) -> Option<String> {
+    // TODO TT CHeck if this function really works
+    pub(crate) fn get_similar_local_macro(&self, macro_name: &str, level: usize) -> Option<String> {
         use std::cmp::Ordering::{Equal, Less};
         let mut min_distance = 2usize; // Distance should be smaller than 2 at least.
         let mut current_distance: usize;
         let mut candidates = vec![];
+        let mac_name = Utils::local_name(level, macro_name);
         let sigs = self.map.local.keys().collect::<Vec<_>>();
         for (idx, local_name) in sigs.iter().enumerate() {
-            current_distance = Utils::levenshtein(local_name, macro_name);
+            current_distance = Utils::levenshtein(local_name, &mac_name);
             match current_distance.cmp(&min_distance) {
                 Less => {
                     candidates.clear();
@@ -3534,6 +3514,36 @@ impl<'processor> Processor<'processor> {
         None
     }
 
+    fn get_runtime_macro_mut(&mut self, macro_name: &str) -> Option<&mut RuntimeMacro> {
+        self.map.runtime.get_mut(macro_name, self.state.hygiene)
+    }
+
+    fn get_local_macro_mut(
+        &mut self,
+        mut level: usize,
+        macro_name: &str,
+    ) -> Option<&mut LocalMacro> {
+        while level > 0 {
+            let local_name = Utils::local_name(level, macro_name);
+            if self.map.local.get(&local_name).is_some() {
+                return self.map.local.get_mut(&local_name);
+            }
+            level -= 1;
+        }
+        None
+    }
+
+    fn get_local_macro(&self, mut level: usize, macro_name: &str) -> Option<&LocalMacro> {
+        while level > 0 {
+            let local_name = Utils::local_name(level, macro_name);
+            if let Some(ret) = self.map.local.get(&local_name) {
+                return Some(ret);
+            }
+            level -= 1;
+        }
+        None
+    }
+
     /// Try undefine a macro
     ///
     /// This exits for internal macro logic.
@@ -3686,6 +3696,27 @@ impl<'processor> Processor<'processor> {
             }
         }
         Ok(AuthType::LEN)
+    }
+
+    /// Apply modifier function to macro body
+    pub fn modify_macro_body(
+        &mut self,
+        name: &str,
+        args: &str,
+        level: usize,
+        fns: fn(&str, &str) -> RadResult<String>,
+    ) -> RadResult<()> {
+        if let Some(local) = self.get_local_macro_mut(level, name) {
+            local.body = fns(&local.body, args)?;
+        } else if let Some(mac) = self.get_runtime_macro_mut(name) {
+            mac.body = fns(&mac.body, args)?;
+        } else {
+            let sim = self
+                .get_similar_macro(name, true)
+                .and(self.get_similar_local_macro(name, level));
+            return Err(RadError::NoSuchMacroName(name.to_string(), sim));
+        }
+        Ok(())
     }
 
     // </EXT>

@@ -37,21 +37,22 @@ pub enum MacroVariant {
 /// Macro signature struct
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MacroSignature {
-    pub variant: MacroVariant,
     pub name: String,
+    pub variant: MacroVariant,
     pub params: Vec<Parameter>,
     pub optional: Option<Parameter>,
+    pub optional_multiple: bool,
     pub enum_table: ETMap,
-    pub expr: String,
-    pub desc: Option<String>,
     pub return_type: Option<ValueType>,
     pub required_auth: Vec<AuthType>,
+    pub desc: Option<String>,
 }
 
 // TODO TT
 // Display value table for such parameters
 impl std::fmt::Display for MacroSignature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Parameter construction
         let params = if self.params.is_empty() {
             "[NONE]".to_owned()
         } else {
@@ -61,6 +62,56 @@ impl std::fmt::Display for MacroSignature {
                 .collect::<Vec<_>>()
                 .join(", ")
         };
+
+        let duplicate = self.params.last().map(|s| s.name.as_ref()).unwrap_or(".")
+            == self
+                .optional
+                .as_ref()
+                .map(|s| s.name.as_ref())
+                .unwrap_or(".");
+
+        // Optional construction
+        let optional = &self
+            .optional
+            .as_ref()
+            .map(|p| {
+                if self.optional_multiple {
+                    if duplicate {
+                        " ... ".to_string()
+                    } else {
+                        format!(", '[{}'? : {} ... ]", p.name, p.arg_type)
+                    }
+                } else {
+                    format!(", '{}'? : {}", p.name, p.arg_type)
+                }
+            })
+            .unwrap_or_default();
+
+        let mut inner = self
+            .params
+            .iter()
+            .fold(String::new(), |acc, param| acc + &param.name + ",");
+
+        // This removes last "," character
+        inner.pop();
+        let expr = if let Some(opt) = self.optional.as_ref() {
+            // Optional
+            if self.optional_multiple {
+                if duplicate {
+                    format!("${}({}, ... )", self.name, inner)
+                } else {
+                    let basic_usage = format!("${}({}", self.name, inner);
+                    format!("{}) || {},{}?)", basic_usage, basic_usage, opt.name)
+                }
+            } else {
+                let basic_usage = format!("${}({}", self.name, inner);
+                format!("{}) || {},{}?)", basic_usage, basic_usage, opt.name)
+            }
+        } else {
+            // No optional
+            format!("${}({})", self.name, inner) // Without ending brace
+        };
+
         write!(
             f,
             "Macro Type  : {:#?}
@@ -73,16 +124,11 @@ Description >>
 {}",
             self.variant,
             self.name,
-            params
-                + &self
-                    .optional
-                    .as_ref()
-                    .map(|p| format!(", '{}'? : {}", p.name, p.arg_type))
-                    .unwrap_or_default(),
+            params + optional,
             self.return_type
                 .map(|s| s.to_string())
                 .unwrap_or("[NONE]".to_string()),
-            self.expr,
+            expr,
             self.required_auth,
             self.desc
                 .as_ref()

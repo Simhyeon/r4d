@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use regex::Regex;
 use std::borrow::Cow;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
@@ -52,6 +53,7 @@ pub struct MacroInput<'a> {
     pub attr: MacroAttribute,
     pub name: &'a str,
     pub args: &'a str,
+    pub level: usize,
 }
 
 impl<'a> MacroInput<'a> {
@@ -63,7 +65,13 @@ impl<'a> MacroInput<'a> {
             enum_table: None,
             name,
             args,
+            level: 0,
         }
+    }
+
+    pub fn level(mut self, level: usize) -> Self {
+        self.level = level;
+        self
     }
 
     pub fn enum_table(mut self, table: &'a ETMap) -> Self {
@@ -188,7 +196,7 @@ impl<'a> ArgableCow<'a> for Cow<'a, str> {
                 ))
             })?),
             ValueType::Path => Argument::Path(PathBuf::from(self.as_ref())),
-            ValueType::CText | ValueType::Text => Argument::Text(self),
+            ValueType::CText | ValueType::Text | ValueType::Regex => Argument::Text(self),
             ValueType::Enum => {
                 if candidates.is_none() {
                     return Err(RadError::InvalidExecution(format!(
@@ -233,6 +241,7 @@ pub enum Argument<'a> {
     Int(isize),
     Path(PathBuf),
     Float(f32),
+    Regex(&'a str),
 }
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ValueType {
@@ -244,34 +253,48 @@ pub enum ValueType {
     Text,
     CText,
     Enum,
+    Regex,
 }
 
-impl ValueType {
-    pub fn is_valid_return_type(
-        &self,
-        src: Option<&String>,
-        etable: Option<&ETable>,
-    ) -> RadResult<()> {
-        if src.is_none() {
-            let ret = match self {
+pub(crate) trait TypeValidate {
+    fn is_valid_return_type(&self, ret: Option<&String>, etable: Option<&ETable>) -> RadResult<()>;
+}
+
+impl TypeValidate for Option<ValueType> {
+    fn is_valid_return_type(&self, ret: Option<&String>, etable: Option<&ETable>) -> RadResult<()> {
+        if self.is_none() {
+            // Required empty ret but some value was returned
+            if ret.is_some() {
+                return Err(RadError::InvalidExecution(format!(
+                    "Return type out of sync. Expected : [NONE] type but got value \"{}\"",
+                    ret.unwrap()
+                )));
+            } else {
+                return Ok(());
+            }
+        }
+        // Return value
+        let self_type = self.unwrap();
+        if ret.is_none() {
+            let ret = match self_type {
                 ValueType::Text | ValueType::CText => Ok(()),
                 _ => Err(RadError::InvalidExecution(format!(
                     "Return type out of sync. Expected : \"{}\" type but got empty value",
-                    self,
+                    self_type,
                 ))),
             };
             return ret;
         }
-        let src: Cow<'_, str> = src.unwrap().into();
+        let src: Cow<'_, str> = ret.unwrap().into();
         if let Err(RadError::InvalidArgument(stros)) =
-            src.to_arg(&Parameter::new(*self, RET_ETABLE), etable)
+            src.to_arg(&Parameter::new(self_type, RET_ETABLE), etable)
         {
             return Err(RadError::InvalidExecution(
                 stros
                     + &format!(
                         "
 = Expected a return type [{}] but validation failed",
-                        self
+                        self_type
                     ),
             ));
         }
@@ -290,6 +313,7 @@ impl Display for ValueType {
             Self::Path => "Path",
             Self::Text => "Text",
             Self::Uint => "Uint",
+            Self::Regex => "Regex",
         };
         write!(f, "{}", text)
     }
@@ -473,6 +497,15 @@ as given type. You should use proper getter for the type"
         self.get(input.index)?.to_expanded(p, &input)
     }
 
+    pub fn get_regex<'b>(&'a self, p: &'b mut Processor, index: usize) -> RadResult<&'b Regex> {
+        let input = ExInput::new(&self.macro_name)
+            .index(index)
+            .level(self.level)
+            .trim();
+        let expanded = self.get(input.index)?.to_expanded(p, &input)?;
+        p.try_get_or_insert_regex(&expanded)
+    }
+
     pub fn get_custom<T>(
         &'a self,
         p: &mut Processor,
@@ -556,6 +589,21 @@ impl<'a> ParsedArguments<'a> {
             Some(Argument::Text(val)) => Ok(val.trim()),
             _ => Err(crate::RadError::InvalidExecution(format!(
                 "Failed to get argument as compact text \
+. Tried to refer a value {:?}",
+                self.args.get(index)
+            ))),
+        }
+    }
+
+    pub fn get_regex<'b>(
+        &'a self,
+        index: usize,
+        processor: &'b mut Processor,
+    ) -> RadResult<&'b Regex> {
+        match self.args.get(index) {
+            Some(Argument::Regex(val)) => processor.try_get_or_insert_regex(val),
+            _ => Err(crate::RadError::InvalidExecution(format!(
+                "Failed to get argument as regex \
 . Tried to refer a value {:?}",
                 self.args.get(index)
             ))),

@@ -10,7 +10,7 @@ Check if a given value is a type
 # Demo
 
 ```
-$syscmd|(sh get_current_server_status.sh)
+$shell|(sh get_current_server_status.sh)
 $if($istype-!(uint),$panic(Critical Error))
 ```
 

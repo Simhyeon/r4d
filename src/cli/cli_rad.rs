@@ -438,7 +438,7 @@ impl<'cli> RadCli<'cli> {
         // Permission
         if let Some(auths) = args.get_one::<String>("allow") {
             self.allow_auth = auths
-                .split('+')
+                .split(',')
                 .map(AuthType::from_str)
                 .collect::<RadResult<Vec<AuthType>>>()?;
         }
