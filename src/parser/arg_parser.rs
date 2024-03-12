@@ -38,6 +38,7 @@ pub struct ArgParser {
     no_previous: bool,
     strip_literal: bool,
     cursor: ArgCursor,
+    allow_empty_input: bool,
 
     // For ParsedCursor generation
     invoke_level: usize,
@@ -54,12 +55,18 @@ impl ArgParser {
             no_previous: false,
             strip_literal: true,
             cursor: ArgCursor::Reference(0, 0),
+            allow_empty_input: false,
             delimiter: b',',
             trim: false,
             split_variant: SplitVariant::Greedy,
             invoke_level: 0,
             macro_name: String::default(),
         }
+    }
+
+    pub(crate) fn allow_empty_input(mut self) -> Self {
+        self.allow_empty_input = true;
+        self
     }
 
     /// Don't strip literals
@@ -95,19 +102,26 @@ impl ArgParser {
             .map(|s| s.to_string())
     }
 
+    fn is_empty_input_allowed(&self, input: &MacroInput, required_len: usize) -> RadResult<bool> {
+        if !self.allow_empty_input && input.args.trim().is_empty() {
+            if required_len > 0 {
+                return Err(RadError::InvalidArgument(format!(
+                    "Macro [{}] received empty arguments",
+                    input.name
+                )));
+            }
+            return Ok(true);
+        }
+        Ok(self.allow_empty_input)
+    }
+
     /// Check if given length is qualified for given raw arguments
     ///
     /// If length is qualified it returns vector of arguments
     pub(crate) fn cursors_with_len(mut self, input: MacroInput) -> RadResult<ParsedCursors> {
         let len_src = input.type_len();
         let length = len_src + if input.optional.is_some() { 1 } else { 0 };
-        if input.args.trim().is_empty() {
-            if len_src > 0 {
-                return Err(RadError::InvalidArgument(format!(
-                    "Macro [{}] received empty arguments",
-                    input.name
-                )));
-            }
+        if self.is_empty_input_allowed(&input, len_src)? {
             return Ok(ParsedCursors::new(input.name));
         }
 
@@ -134,13 +148,8 @@ impl ArgParser {
     pub(crate) fn args_with_len(mut self, input: MacroInput) -> RadResult<ParsedArguments> {
         let len_src = input.type_len();
         let length = len_src + if input.optional.is_some() { 1 } else { 0 };
-        if input.args.trim().is_empty() {
-            if len_src > 0 {
-                return Err(RadError::InvalidArgument(format!(
-                    "Macro [{}] received empty arguments",
-                    input.name
-                )));
-            }
+
+        if self.is_empty_input_allowed(&input, len_src)? {
             return Ok(ParsedArguments::with_args(vec![]));
         }
 
@@ -164,13 +173,7 @@ impl ArgParser {
     pub(crate) fn texts_with_len(mut self, input: MacroInput) -> RadResult<Vec<Cow<'_, str>>> {
         let len_src = input.type_len();
         let length = len_src + if input.optional.is_some() { 1 } else { 0 };
-        if input.args.trim().is_empty() {
-            if len_src > 0 {
-                return Err(RadError::InvalidArgument(format!(
-                    "Macro [{}] received empty arguments",
-                    input.name
-                )));
-            }
+        if self.is_empty_input_allowed(&input, len_src)? {
             return Ok(Vec::new());
         }
 

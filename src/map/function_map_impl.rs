@@ -3527,7 +3527,7 @@ impl FunctionMacroMap {
     ///
     /// $count(1,2,3,4,5)
     pub(crate) fn count(input: MacroInput, _: &mut Processor) -> RadResult<Option<String>> {
-        let args = ArgParser::new().args_with_len(input)?;
+        let args = ArgParser::new().allow_empty_input().args_with_len(input)?;
         Ok(Some(args.len().to_string()))
     }
 
