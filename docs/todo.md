@@ -34,6 +34,8 @@
 - append : Later with modification macros
 - map seires
 
+* [ ] Move macros from deterred to function that doesn't have to be deterred.
+
 Actually finish deterred macro later...
 
 ## Misc
@@ -51,48 +53,24 @@ Actually finish deterred macro later...
 
 # todo immediate
 
-* [ ] Search `to_string` to set type correct
-* [ ] Rename argument to RadValue
-* [ ] Return valuetype from macro
+* [ ] Macro attribute `!!` for discard
 
-* [ ] Forin -> For inner : Iterate through inner calls ( increase by one )
+* [ ] Mediocre result for duplicate error logging... Make hash and skip if
+  previous is same with current logging.
+    * [ ] General rule of thumb... **Don't use log_error preemptively**
 
-* [ ] Possibly a new feature to allow permission for specific macro
-
-* [ ] Add a new macro to `drop expression` + add doc for addexpr
+* [ ] Should runtime macro also respect empty return? like function or deterred?
 
 * [ ] Currently arg_parser detect `$name(` to search macro invocation but this
   doesn't respect custom macro character rule
 
-* [ ] Comment disrupts consume newline. Possibly due to newline Refer
-  `get_pipe` manual
-
-* [ ] Permission as macro signature.
-    * [ ] Check if permission is coherent
-
-* [ ] Change freeze melt to differnt terms
-* [ ] Possibly sortc to sorte?
 * [ ] Index should support _ syntax or not? because it is handy but makes
   indexing undefined from static perspective.
-* [ ] Currently runtime map doesn't check auth
-
-* [ ] Map series with arguments are very limited. it is impossible to insert
-  space as arguments... can it be improved?
+    -> Definitely but if range already supports? then... why not?
 
 * [ ] Name alias
 
-* [ ] Remove unnecessary pub keywords and make it private
-
-* [ ] Is rangeby really necessary?
-
-* [ ] --log is not useful in general cases... Paste expanded and split
-  arguments into log message
-
-* [ ] Update manuals so that you can fix bugs. Especially deterred macro
-
 * [ ] Consider `strip` cases
-
-* [ ] `Parse_chunk_arg` to return Cow<'a,str>
 
 * [ ] Make error codes much more intuitive
 
@@ -103,10 +81,12 @@ Actually finish deterred macro later...
 * [ ] FN `new_ext_macro(&mut self, ext: ExtMacroBuilder)` is currently
   disabled 
 
-* [ ] Find better method and levenshtein
+* [ ] Find better method than levenshtein
 * [ ] Rearrange modules and struct and enums.
+    * [ ] Function should belong to processor not sub structs e.g. state, map
+* [ ] Remove unnecessary pub keywords and make it private
 
-* [ ] Split by
+* [ ] SplitBy macro ?
 
 - Debug all manuals
     1. Test english charcters
@@ -114,18 +94,9 @@ Actually finish deterred macro later...
     3. Test invalid syntax, characters.
     4. Test macro argument's default attribute
 
-
 #### bug
 
-* [ ] On some cases, rad prints strange error : WTF is this error...?
-
-```
--> Argument doesn't match argument type
-```
-
 * [ ] Exdent doesn't work well with argument type system...
-* [ ] Mapn broken?
-    -> Mostly due to `NUM_MATCH` this finds both + and - from first... HMM
     
 * [ ] Loop is also buggy.
 
@@ -137,40 +108,17 @@ thread 'main' panicked at src/logger.rs:542:31:
 ```
 
 * [ ] Map exression (mape) is completely broken... damn...
-* [  ] Bug
-
-```
-$define(typefy,a_src=
-    $forline=(
-        $let(line_number,$a_LN())
-        $let(line_src,$:())
-        $logm(line_src),
-        $a_src()
-    )
-)
-Doesn't yield a_LN and $:() why is that?
-```
 
 * [ ] Bug : Peel removes following text after "to be peeled".
 
 * Check PS.r4d manual because escape character is strange in the document.
 
-* [ ] Check macros with single argument so that a function might not be
-  analyzing shits.
-
-* [x] Consider reverting changes for greedy and greedy strip
-
 * [ ] How come insula doesn't print any insulav or insulah for help message?
 * [ ] Improve repl's error code
-* [ ] Not every funcion macro was treating zero width string as None.. It is
-  shoking. Yet is it a "bug" that should be fixed or not?
-    - I changed the behaviour of deterred macro and function macro to treate
-    zero width string as None. Runtime and local macro should work as same.
-    In this way, user knows why their macro has failed to malfunctioned.
-    While making an experince of function macros comfortable.
-    - However, giving an option to override is not necessarily a bad thing.
-    Consider adding later.
 * [ ] Fix regex register shenenigans
+
+---
+
  [ ] Fix deubbing feature bugs
     1. Add assertion information
         1. WHy it failed
@@ -180,7 +128,6 @@ Doesn't yield a_LN and $:() why is that?
     4. Logging, Debugging
     5. You know what? Almost everything is bugged.
 
-* [ ] Test all clap flags if they work as expected. -> DONE, except debugging
 * [ ] Check CLI debugging options
     * [ ] Diff doesn't work at all
     * [ ] Dryun doesn't detect static macros...
@@ -192,6 +139,7 @@ Doesn't yield a_LN and $:() why is that?
 #### Documentation
 
 * [ ] Notify users that trim input is applied after expansion.
+* [ ] Notify users how mapn works ( + and - are all included )
 
 * [ ] Notify that trim can remove empty newline
 * [ ] Update repository documentations
@@ -204,12 +152,16 @@ Doesn't yield a_LN and $:() why is that?
 
 #### Features
 
-* [ ] --eman option to print manual for environmnet
 * [ ] Add a hygiene option for binary
 * [ ] Add an option for Positive regulation which means auth related macros are
   only executed when it was allowed speicifically by user. Or simply wihout
   auth macros then
   -> This is to circumvent harsh hygiene rules and utilize runtieme macros
+
+* [ ] --eman option to print manual for environmnet
+* [ ] Complicated runtime macro definition
+    * [ ] Auth, ret type etc...
+* [ ] Possibly a new feature to allow permission for specific macro
 
 * [ ] Add regex-file option
     -> Adding a complicated regex is fucking hard and somtimes very time
@@ -218,10 +170,8 @@ Doesn't yield a_LN and $:() why is that?
     ->> However making a literal rule concrete is the first thing to come though.
 
 * [ ] Consider implemtnting consecutive macro calls for sc and sl flags
-* [ ] Flag to print all realted environmnet vairables
 * [ ] Panic message is kinda cringe... improve it.
 * [ ] Update template macro...
-* [ ] Check if greedy argument's no-strip behaviour is ideal or not
 
 #### Env
 
@@ -237,6 +187,10 @@ Doesn't yield a_LN and $:() why is that?
 
 #### Macro ( macro )
 
+* [ ] Rename sortc to sorte
+* [ ] Forin -> For inner : Iterate through inner calls ( increase by one )
+* [ ] Add a new macro to `drop expression` + add doc for addexpr
+
 * [ ] Fill macro
 ```
 $fill([,],x,* [] ABC)
@@ -251,7 +205,6 @@ $fill([,],xy,* [   ] ABC)
 * [xyxy] ABC
 ```
 * [ ] Refactor qualify-value method
-* [ ] Refactor list-directory-files
 * [ ] Wrap as unicode charaters
 * [ ] Macro body modification macro
     * [x] pop
@@ -331,12 +284,11 @@ $slice(pat,1,2,source)
 * [ ] Consider implementing align super which applies consecutive alignby rules 
         -> e.g. first alignby ] and then by : and then # etc...
 * [ ] Should textwrap respect unicode width?
-* [ ] Rename rer? because rearrange is useful name and reordering numbers can be
-        different name I guess
-* [ ] Should rad support awk like operations?
 
 #### Performance
 
+* [ ] Return value variant : Slice -> Trim, range etc...
+* [ ] `Parse_chunk_arg` to return cursors
 * [ ] Rearrange processor's lex branch method's arguments
 * [ ] Become a no nester :).
 
@@ -463,3 +415,19 @@ file.
 * [x] New valuetype regex so that user knows which value should be requested.
     * [x] Added type with getter
     * [x] Should be added to function signatures
+* [x] Return valuetype from macro
+
+* [x] Change freeze melt to differnt terms
+
+* [-] Refactor list-directory-files : Dropped
+* [x] New log line for log flag
+* [x] Comment disrupts consume newline. Possibly due to newline Refer `get_pipe` manual -> Somehow fixed...? I don't know
+* [x] Ditched rangeby
+* [x] Improved Map arguments
+* [x] Re-added no consume env
+* [x] Flag to print all realted environmnet vairables : print-env
+* [x] Mapn broken -> Mostly due to `NUM_MATCH` this finds both + and - from first
+    -> THis has more pros thans cons, simply notify users that how mapn works
+* [x] No such macro should be early returned
+* [x] Logm is bugged : Fixed
+* [x] BUG : Currently trim input doesn't work for deterred macro -> Fixed
