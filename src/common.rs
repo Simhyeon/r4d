@@ -69,6 +69,7 @@ pub struct MacroAttribute {
     pub trim_input: bool,
     pub trim_output: bool,
     pub skip_expansion: bool,
+    pub discard_output: bool,
 }
 
 impl MacroAttribute {
@@ -80,7 +81,14 @@ impl MacroAttribute {
         match attr {
             '|' => self.pipe_output = true,
             '*' => self.yield_literal = true,
-            '!' => self.negate_result = true,
+            '!' => {
+                if !self.negate_result {
+                    self.negate_result = true;
+                } else {
+                    self.negate_result = false;
+                    self.discard_output = true;
+                }
+            }
             '=' => self.trim_input = true,
             '^' => self.trim_output = true,
             '-' => self.pipe_input = true,
@@ -120,6 +128,9 @@ impl Display for MacroAttribute {
         }
         if self.skip_expansion {
             formatted.push('~')
+        }
+        if self.discard_output {
+            formatted.push_str("!!")
         }
         write!(f, "{}", formatted)
     }

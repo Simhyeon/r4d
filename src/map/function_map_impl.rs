@@ -3269,7 +3269,7 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $addexpr(name,EXPR)
+    /// $addexp(name,EXPR)
     pub(crate) fn register_expression(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
         let args = ArgParser::new().args_with_len(input)?;
 
@@ -3277,6 +3277,20 @@ impl FunctionMacroMap {
         let expr = args.get_text(1)?;
 
         p.state.regex_cache.register(name, expr)?;
+        Ok(Raturn::None)
+    }
+
+    /// Drop expression
+    ///
+    /// # Usage
+    ///
+    /// $dropexp(name)
+    pub(crate) fn remove_expression(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
+        let args = ArgParser::new().args_with_len(input)?;
+
+        let name = args.get_text(0)?;
+
+        p.state.regex_cache.remove(name)?;
         Ok(Raturn::None)
     }
 

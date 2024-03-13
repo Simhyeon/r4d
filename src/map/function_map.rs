@@ -1075,14 +1075,20 @@ impl FunctionMacroMap {
             ),
             (
                 FMacroSign::new(
-                    "addexpr",
+                    "addexp",
                     [(ValueType::CText,"a_name"),(ValueType::Text, "a_expr"),],
                     Self::register_expression,
-                    Some(man_fun!("addexpr.r4d")),
+                    Some(man_fun!("addexp.r4d")),
                 ).no_ret()
             ),
-            // TODO TT
-            // Add dyn permission
+            (
+                FMacroSign::new(
+                    "dropexp",
+                    [(ValueType::CText,"a_name")],
+                    Self::remove_expression,
+                    None
+                ).no_ret()
+            ),
             (
                 FMacroSign::new(
                     "rename",

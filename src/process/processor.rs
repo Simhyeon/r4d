@@ -2863,6 +2863,10 @@ impl<'processor> Processor<'processor> {
                     self.state.consume_newline = true;
                 }
             }
+            if frag.attribute.discard_output {
+                content.clear();
+                self.state.consume_newline = true;
+            }
 
             // Negate result
             if frag.attribute.negate_result {
