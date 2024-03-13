@@ -1131,8 +1131,8 @@ impl DeterredMacroMap {
     ///
     /// # Usage
     ///
-    /// $readin(file_a)
-    pub(crate) fn read_in(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
+    /// $bufread(file_a)
+    pub(crate) fn bufread(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
         let cursors = ArgParser::new()
             .level(input.level)
             .macro_name("readin")

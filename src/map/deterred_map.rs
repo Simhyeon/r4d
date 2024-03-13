@@ -51,7 +51,7 @@ impl DeterredMacroMap {
             (DMacroSign::new(
                 "bufread",
                 [(ValueType::Path, "a_file")],
-                DeterredMacroMap::read_in,
+                DeterredMacroMap::bufread,
                 Some(man_det!("bufread.r4d")),
             )
             .optional(Parameter::new(ValueType::Bool, "a_raw_mode"))
