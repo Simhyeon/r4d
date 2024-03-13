@@ -63,6 +63,31 @@ impl FunctionMacroMap {
             ),
             (
                 FMacroSign::new(
+                    "fill",
+                    [
+                        (ValueType::Text, "a_start_pat"),
+                        (ValueType::Text, "a_end_pat"),
+                        (ValueType::Text, "a_filler"),
+                        (ValueType::Text, "a_content")
+                    ],
+                    Self::fill,
+                    None,
+                )
+            ),
+            (
+                FMacroSign::new(
+                    "drain",
+                    [
+                        (ValueType::Text, "a_start_pat"),
+                        (ValueType::Text, "a_end_pat"),
+                        (ValueType::Text, "a_content")
+                    ],
+                    Self::drain,
+                    None,
+                )
+            ),
+            (
+                FMacroSign::new(
                     "pad",
                     [(ValueType::Enum,"a_type"),(ValueType::Uint,"a_width"),(ValueType::Text,"a_fill"),(ValueType::Text,"a_text"),],
                     Self::pad_string,

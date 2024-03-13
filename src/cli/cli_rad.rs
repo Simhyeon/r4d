@@ -100,6 +100,11 @@ impl<'cli> RadCli<'cli> {
                     .unwrap_or(&"none".to_string()),
             )?)
             .assert(args.get_flag("assert"))
+            .hygiene(Hygiene::from_str(
+                args.get_one::<String>("hygiene")
+                    .unwrap_or(&String::from("none"))
+                    .as_str(),
+            )?)
             .allow(&self.allow_auth)
             .allow_with_warning(&self.allow_auth_warn)
             .unix_new_line(args.get_flag("newline"))
@@ -446,7 +451,7 @@ impl<'cli> RadCli<'cli> {
         // Permission with warning
         if let Some(auths) = args.get_one::<String>("allow_warn") {
             self.allow_auth_warn = auths
-                .split('+')
+                .split(',')
                 .map(AuthType::from_str)
                 .collect::<RadResult<Vec<AuthType>>>()?;
         }
@@ -486,6 +491,12 @@ impl<'cli> RadCli<'cli> {
                 .action(ArgAction::SetTrue)
                 .conflicts_with("combination")
                 .help("Send stdin as a pipe value without evaluation"))
+            .arg(Arg::new("hygiene")
+                .short('H')
+                .long("hygiene")
+                .action(ArgAction::Append)
+                .value_names(["none","macro","input","aseptic"])
+                .help("Set hygiene for processing"))
             .arg(Arg::new("no-truncate")
                 .long("no-truncate")
                 .action(ArgAction::SetTrue)

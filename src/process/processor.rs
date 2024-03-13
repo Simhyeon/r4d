@@ -2623,10 +2623,10 @@ impl<'processor> Processor<'processor> {
                 frag.clear();
                 frag.is_processed = true;
                 self.state.consume_newline = true;
-                let err = RadError::UnallowedMacroExecution(format!(
-                    "Cannot register a macro : \"{}\" in aseptic mode",
-                    frag.name
-                ));
+                let err = RadError::UnallowedMacroExecution(
+                    "Cannot register a macro in aseptic mode".to_string(),
+                );
+
                 if self.state.behaviour == ErrorBehaviour::Strict {
                     self.log_error(&err.to_string())?;
                     return Err(RadError::StrictPanic);

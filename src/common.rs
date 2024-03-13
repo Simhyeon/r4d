@@ -472,6 +472,22 @@ pub enum Hygiene {
     Aseptic,
 }
 
+impl FromStr for Hygiene {
+    type Err = RadError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "none" => Ok(Self::None),
+            "macro" => Ok(Self::Macro),
+            "input" => Ok(Self::Input),
+            "aseptic" => Ok(Self::Aseptic),
+            _ => Err(RadError::InvalidConversion(format!(
+                "Hygiene type : \"{}\" is not available.",
+                s
+            ))),
+        }
+    }
+}
+
 // This is mostly useful for include macro
 /// Type of container
 ///

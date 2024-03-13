@@ -3294,6 +3294,110 @@ impl FunctionMacroMap {
         Ok(Raturn::None)
     }
 
+    /// Fill inner
+    pub(crate) fn fill(input: MacroInput, _: &mut Processor) -> RadResult<Raturn> {
+        let args = ArgParser::new().args_with_len(input)?;
+
+        let p1 = args.get_text(0)?;
+        let p2 = args.get_text(1)?;
+        let filler = args.get_text(2)?;
+        let src = args.get_text(3)?;
+
+        let mut find_next = false;
+        if p1 == p2 {
+            find_next = true;
+        }
+
+        let start_idx = src.find(p1).ok_or_else(|| {
+            RadError::InvalidArgument(format!(
+                "Start pattern \"{}\" was not detected from \"{}\"",
+                p1, src
+            ))
+        })?;
+        let end_idx = if !find_next {
+            src.find(p2)
+        } else {
+            // Find next
+            src.match_indices(p2).nth(2).map(|(s, _)| s)
+        };
+        let end_idx = end_idx.ok_or_else(|| {
+            RadError::InvalidArgument(format!(
+                "End pattern \"{}\" was not detected from \"{}\"",
+                p1, src
+            ))
+        })?;
+
+        let blank_target = &src[start_idx + 1..end_idx];
+        if !blank_target.trim().is_empty() {
+            return Err(RadError::InvalidArgument(format!(
+                "Cannot fill \"{}\" because it is not empty",
+                blank_target
+            )));
+        }
+
+        let filler_len = UnicodeWidthStr::width(filler);
+        let length = UnicodeWidthStr::width(blank_target);
+        let mut filled_string = String::from(&src[..=start_idx]);
+        if filler_len >= length {
+            filled_string.push_str(filler);
+        } else {
+            // Construct filled chunk
+            let offset = length - filler_len;
+            let left = offset / 2;
+            let right = offset - left;
+            filled_string.push_str(&format!(
+                "{}{}{}",
+                " ".repeat(left),
+                filler,
+                " ".repeat(right)
+            ));
+        }
+        filled_string.push_str(&src[end_idx..]);
+
+        Ok(filled_string.into())
+    }
+
+    /// drain inner
+    pub(crate) fn drain(input: MacroInput, _: &mut Processor) -> RadResult<Raturn> {
+        let args = ArgParser::new().args_with_len(input)?;
+
+        let p1 = args.get_text(0)?;
+        let p2 = args.get_text(1)?;
+        let src = args.get_text(3)?;
+
+        let mut find_next = false;
+        if p1 == p2 {
+            find_next = true;
+        }
+
+        let start_idx = src.find(p1).ok_or_else(|| {
+            RadError::InvalidArgument(format!(
+                "Start pattern \"{}\" was not detected from \"{}\"",
+                p1, src
+            ))
+        })?;
+        let end_idx = if !find_next {
+            src.find(p2)
+        } else {
+            // Find next
+            src.match_indices(p2).nth(2).map(|(s, _)| s)
+        };
+        let end_idx = end_idx
+            .ok_or_else(|| {
+                RadError::InvalidArgument(format!(
+                    "End pattern \"{}\" was not detected from \"{}\"",
+                    p1, src
+                ))
+            })?
+            .min(src.len() - 1);
+
+        let mut drained_string = String::from(&src[..=start_idx]);
+        drained_string.push(' ');
+        drained_string.push_str(&src[end_idx..]);
+
+        Ok(drained_string.into())
+    }
+
     /// Grep expressions
     ///
     /// # Usage
