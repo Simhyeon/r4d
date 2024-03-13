@@ -984,6 +984,14 @@ impl FunctionMacroMap {
             ),
             (
                 FMacroSign::new(
+                    "maparg",
+                    [(ValueType::Text, "a_value"),],
+                    Self::map_arg,
+                    None,
+                ).no_ret()
+            ),
+            (
+                FMacroSign::new(
                     "prec",
                     [(ValueType::Uint, "a_precision"),(ValueType::Float,"a_number")],
                     Self::prec,
@@ -1255,14 +1263,6 @@ impl FunctionMacroMap {
                     [(ValueType::CText,"a_start_index"),(ValueType::CText, "a_end_index"),(ValueType::Text, "a_lines"),],
                     Self::range_lines,
                     Some(man_fun!("rangel.r4d")),
-                )
-            ),
-            (
-                FMacroSign::new(
-                    "rangeby",
-                    [(ValueType::Text,"a_delimeter"),(ValueType::CText,"a_start_index"),(ValueType::CText, "a_end_index"),(ValueType::Text, "a_lines"),],
-                    Self::range_pieces,
-                    None
                 )
             ),
             (

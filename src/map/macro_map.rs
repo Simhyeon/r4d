@@ -233,8 +233,7 @@ impl MacroMap {
         }
     }
 
-    /// Get a macro signature
-    pub fn get_signature(&self, macro_name: &str) -> Option<MacroSignature> {
+    pub(crate) fn get_signature(&self, macro_name: &str) -> Option<MacroSignature> {
         if let Some(mac) = self.runtime.get(macro_name, Hygiene::None) {
             Some(MacroSignature::from(mac))
         } else if let Some(mac) = self.deterred.get_signature(macro_name) {

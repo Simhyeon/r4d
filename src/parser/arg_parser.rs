@@ -13,7 +13,7 @@ use regex::Regex;
 use std::{borrow::Cow, slice::Iter};
 
 pub static MACRO_START_MATCH: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"^\$\S*\($"#).expect("Failed to create name regex"));
+    Lazy::new(|| Regex::new(r#"\$\S*\($"#).expect("Failed to create name regex"));
 
 /// State indicates whether argument should be parsed greedily or not
 #[derive(Debug, PartialEq)]
@@ -90,17 +90,18 @@ impl ArgParser {
         self
     }
 
-    /// Don't strip literals
-    pub(crate) fn set_strip(&mut self, strip_literal: bool) {
-        self.strip_literal = strip_literal;
-    }
-
-    /// Simply strip literal chunk
-    pub(crate) fn strip(self, name: &str, args: &str) -> RadResult<String> {
-        self.args_with_len(MacroInput::new(name, args))?
-            .get_text(0)
-            .map(|s| s.to_string())
-    }
+    // TODO TT Remove this
+    // /// Don't strip literals
+    // pub(crate) fn set_strip(&mut self, strip_literal: bool) {
+    //     self.strip_literal = strip_literal;
+    // }
+    //
+    // /// Simply strip literal chunk
+    // pub(crate) fn strip(self, name: &str, args: &str) -> RadResult<String> {
+    //     self.args_with_len(MacroInput::new(name, args))?
+    //         .get_text(0)
+    //         .map(|s| s.to_string())
+    // }
 
     fn is_empty_input_allowed(&self, input: &MacroInput, required_len: usize) -> RadResult<bool> {
         if !self.allow_empty_input && input.args.trim().is_empty() {
@@ -141,6 +142,7 @@ impl ArgParser {
             .with_cursors(curs)
             .with_params(input.params.clone())
             .level(self.invoke_level)
+            .trim(input.attr.trim_input)
             .macro_name(self.macro_name))
     }
 
@@ -308,9 +310,17 @@ impl ArgParser {
 
                 if split {
                     let value: Cow<'_, str> = if let Some(v) = ret {
-                        v.into()
+                        let mut src = v;
+                        if trim {
+                            src = src.trim().to_string();
+                        }
+                        src.into()
                     } else {
-                        input.args[start..end].into()
+                        let mut src = &input.args[start..end];
+                        if trim {
+                            src = src.trim();
+                        }
+                        src.into()
                     };
 
                     // Only validate and drop arg
@@ -349,7 +359,11 @@ impl ArgParser {
         ) {
             v.into()
         } else {
-            input.args[start..end].into()
+            let mut src = &input.args[start..end];
+            if trim {
+                src = src.trim();
+            }
+            src.into()
         };
 
         Self::validate_arg_no_return(
@@ -416,10 +430,19 @@ impl ArgParser {
 
                 if split {
                     let value: Cow<'_, str> = if let Some(v) = ret {
-                        v.into()
+                        let mut src = v;
+                        if trim {
+                            src = src.trim().to_string();
+                        }
+                        src.into()
                     } else {
-                        input.args[start..end].into()
+                        let mut src = &input.args[start..end];
+                        if trim {
+                            src = src.trim();
+                        }
+                        src.into()
                     };
+
                     let arg = Self::validate_arg(
                         get_next_type(&mut at_iter, input.optional.as_ref())?,
                         value,
@@ -552,7 +575,7 @@ impl ArgParser {
 
         if ch == b'(' {
             let stack = if MACRO_START_MATCH
-                .find(self.cursor.peek_value(src).trim())
+                .find(self.cursor.peek_last_invocation(src).trim())
                 .is_some()
             {
                 ParenStack {

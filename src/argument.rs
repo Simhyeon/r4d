@@ -7,6 +7,7 @@ use std::str::FromStr;
 
 use crate::common::{ETMap, ETable, MacroAttribute};
 use crate::consts::RET_ETABLE;
+use crate::env::PROC_ENV;
 use crate::RadStr;
 use crate::{Processor, RadError, RadResult};
 use serde::{Deserialize, Serialize};
@@ -120,9 +121,70 @@ impl Display for Parameter {
     }
 }
 pub(crate) trait ArgableStr<'a> {
+    fn to_arg(&'a self, param: &Parameter, candidates: Option<&ETable>) -> RadResult<Argument<'a>>;
     fn is_argable(&self, param: &Parameter) -> RadResult<()>;
 }
 impl<'a> ArgableStr<'a> for str {
+    /// Intenal method for primary conversion
+    fn to_arg(&'a self, param: &Parameter, candidates: Option<&ETable>) -> RadResult<Argument<'a>> {
+        let arg = match param.arg_type {
+            ValueType::None => unreachable!("This is a logic error"),
+            ValueType::Bool => Argument::Bool(self.is_arg_true().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Bool]",
+                    param.name, self
+                ))
+            })?),
+            ValueType::Int => Argument::Int(self.trim().parse::<isize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Int]",
+                    param.name, self
+                ))
+            })?),
+            ValueType::Uint => Argument::Uint(self.trim().parse::<usize>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [UInt]",
+                    param.name, self
+                ))
+            })?),
+            ValueType::Float => Argument::Float(self.trim().parse::<f32>().map_err(|_| {
+                RadError::InvalidArgument(format!(
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Float]",
+                    param.name, self
+                ))
+            })?),
+            ValueType::Path => Argument::Path(PathBuf::from(self)),
+            ValueType::CText | ValueType::Text | ValueType::Regex => Argument::Text(self.into()),
+            ValueType::Enum => {
+                if candidates.is_none() {
+                    return Err(RadError::InvalidExecution(format!(
+                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Enum] because etable was empty.",
+                    param.name, self
+                )));
+                }
+
+                let tab = candidates.unwrap();
+                let comparator = self.trim().to_lowercase();
+                let err = tab
+                    .candidates
+                    .iter()
+                    .filter(|&s| s == &comparator)
+                    .collect_vec()
+                    .is_empty();
+
+                if err {
+                    return Err(RadError::InvalidArgument(format!(
+                        "[Parameter: {}] : Could not convert a given value \"{}\" into a value among {:?}",
+                        param.name, self, tab.candidates
+                    )));
+                }
+
+                Argument::Text(self.into())
+            }
+        };
+        Ok(arg)
+    }
+
     fn is_argable(&self, param: &Parameter) -> RadResult<()> {
         match param.arg_type {
             ValueType::Bool => {
@@ -261,7 +323,19 @@ pub enum Raturn {
 }
 
 impl Raturn {
-    pub fn to_printable(self) -> Option<String> {
+    pub fn convert_empty_to_none(self) -> Self {
+        if PROC_ENV.no_consume {
+            return self;
+        }
+        if let Self::Text(text) = &self {
+            if text.is_empty() {
+                return Self::None;
+            }
+        }
+        self
+    }
+
+    pub fn printable(self) -> Option<String> {
         match self {
             Self::None => None,
             Self::Text(v) => Some(v.to_string()),
@@ -444,6 +518,7 @@ pub struct ParsedCursors<'a> {
     src: &'a str,
     level: usize,
     macro_name: String,
+    trim_input: bool,
     params: Vec<Parameter>,
     cursors: Vec<ArgCursor>,
 }
@@ -456,7 +531,13 @@ impl<'a> ParsedCursors<'a> {
             cursors: Vec::new(),
             level: 0,
             macro_name: String::new(),
+            trim_input: false,
         }
+    }
+
+    pub(crate) fn trim(mut self, trim: bool) -> Self {
+        self.trim_input = trim;
+        self
     }
 
     pub(crate) fn level(mut self, level: usize) -> Self {
@@ -485,15 +566,28 @@ impl<'a> ParsedCursors<'a> {
 
     // TODO TT
     // Notify the value that user tried to get
+    /// Internal method before get_{type}
+    ///
+    /// Trim is applied when get is called
     fn get(&self, index: usize) -> RadResult<Cow<'a, str>> {
         let cursor = self
             .cursors
             .get(index)
             .ok_or(RadError::InvalidExecution("Index out of error".to_string()))?;
         match cursor {
-            ArgCursor::Reference(star, end) => Ok(self.src[*star..*end].into()),
+            ArgCursor::Reference(star, end) => {
+                let mut src = &self.src[*star..*end];
+                if self.trim_input {
+                    src = src.trim();
+                }
+                Ok(src.into())
+            }
             ArgCursor::Modified(val) => {
-                Ok(std::str::from_utf8(&val[..]).unwrap().to_string().into())
+                let mut src = std::str::from_utf8(&val[..]).unwrap();
+                if self.trim_input {
+                    src = src.trim();
+                }
+                Ok(src.to_string().into())
             }
         }
     }
@@ -788,12 +882,17 @@ impl ArgCursor {
         }
     }
 
-    /// Peek value without taking
-    pub fn peek_value<'a>(&'a self, src: &'a str) -> &str {
-        match self {
+    /// Peek last invocation without taking
+    pub fn peek_last_invocation<'a>(&'a self, src: &'a str) -> &str {
+        let mut ret = match self {
             Self::Reference(s, e) => &src[*s..=*e.min(&(src.len() - 1))],
             Self::Modified(v) => std::str::from_utf8(&v[..]).unwrap(),
+        };
+        if let Some(rp_index) = ret.rfind(')') {
+            let index = (rp_index + 1).min(ret.len() - 1);
+            ret = (ret[index..]).trim_start();
         }
+        ret
     }
 
     pub fn take(&mut self, index: usize) -> Self {

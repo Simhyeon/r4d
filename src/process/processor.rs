@@ -25,7 +25,7 @@ use crate::logger::{Logger, WarningType};
 use crate::map::MacroMap;
 use crate::package::StaticScript;
 use crate::runtime_map::RuntimeMacro;
-use crate::sigmap::SignatureMap;
+use crate::sigmap::{MacroSignature, SignatureMap};
 use crate::storage::{RadStorage, StorageOutput};
 use crate::utils::{RadStr, Utils};
 use crate::{consts::*, RadResult};
@@ -2065,6 +2065,8 @@ impl<'processor> Processor<'processor> {
         let (name, raw_args) = (&frag.name, frag.args.clone());
 
         let mut args;
+
+        // Not a deterred macro
         if !self.map.is_deterred_macro(name) || self.state.process_type == ProcessType::Dry {
             // Preprocess only when macro is not a deterred macro
 
@@ -2117,6 +2119,7 @@ impl<'processor> Processor<'processor> {
             // Set raw args as literal
             args = raw_args;
 
+            // TODO TT
             // Pipe doesn't expanded but added
             if frag.attribute.pipe_input {
                 let pipe_value = self.state.get_pipe("-", false).unwrap_or_default();
@@ -2194,7 +2197,7 @@ impl<'processor> Processor<'processor> {
         }
         // Find deterred macro
         if self.map.is_deterred_macro(name) {
-            let sig = self.map.get_signature(name).unwrap();
+            let sig = self.get_signature(name).unwrap();
             self.is_rejected(name, &sig.required_auth)?;
             if let Some(det_func) = self.map.deterred.get_deterred_macro(name) {
                 // On dry run, macro is not expanded but only checks if found macro exists
@@ -2214,7 +2217,9 @@ impl<'processor> Processor<'processor> {
                 sig.return_type
                     .is_valid_return_type(&final_result, sig.enum_table.tables.get(RET_ETABLE))?;
 
-                let printable = final_result.to_printable();
+                let ret = final_result.convert_empty_to_none();
+
+                let printable = ret.printable();
                 self.print_expansion_log(name, printable.as_deref().unwrap_or(""))?;
 
                 return Ok(printable);
@@ -2242,30 +2247,18 @@ impl<'processor> Processor<'processor> {
             let res = func(input, self);
 
             let final_result = res?;
-            // TODO TT
-            // match res {
-            // Ok(e) => e.filter(|f| {
-            //     if !PROC_ENV.no_consume {
-            //         !f.is_empty()
-            //     } else {
-            //         true
-            //     }
-            // }),
-            // Err(err) => {
-            //     return Err(err);
-            // }
-            // };
 
             sig.return_type
                 .is_valid_return_type(&final_result, sig.enum_table.tables.get(RET_ETABLE))?;
 
-            let printable = final_result.to_printable();
+            let ret = final_result.convert_empty_to_none();
+
+            let printable = ret.printable();
             self.print_expansion_log(name, printable.as_deref().unwrap_or(""))?;
 
             Ok(printable)
-        }
-        // No macros found to evaluate
-        else {
+        } else {
+            // No macros found to evaluate
             let sim = self.get_similar_macro(name, false);
             let err = RadError::NoSuchMacroName(name.to_string(), sim);
 
@@ -2758,9 +2751,25 @@ impl<'processor> Processor<'processor> {
                 return Ok(());
             }
         }
+        // Check if target macro exists
+        let evaluation_result = if !self.contains_macro(&frag.name, MacroType::Any)
+            && self.contains_local_macro(level, &frag.name).is_none()
+        {
+            let err = RadError::NoSuchMacroName(
+                frag.name.clone(),
+                self.get_similar_macro(&frag.name, false),
+            );
+            if self.state.behaviour == ErrorBehaviour::Strict {
+                return Err(err);
+            } else {
+                self.log_warning(&err.to_string(), WarningType::Sanity)?;
+                return Ok(());
+            }
+        } else {
+            self.evaluate(level, caller, frag)
+        };
 
         // Main entry for macro evaluation
-        let evaluation_result = self.evaluate(level, caller, frag);
 
         match evaluation_result {
             // If panicked, this means unrecoverable error occured.
@@ -2947,6 +2956,20 @@ impl<'processor> Processor<'processor> {
     // ----------
     // Start of miscellaenous methods
     // <MISC>
+
+    /// Get a macro signature
+    pub fn get_signature(&self, macro_name: &str) -> Option<MacroSignature> {
+        if let Some(mac) = self.map.runtime.get(macro_name, Hygiene::None) {
+            Some(MacroSignature::from(mac))
+        } else if let Some(mac) = self.map.deterred.get_signature(macro_name) {
+            Some(MacroSignature::from(mac))
+        } else {
+            self.map
+                .function
+                .get_signature(macro_name)
+                .map(MacroSignature::from)
+        }
+    }
 
     pub(crate) fn print_fragment_log(&mut self, args: &str, frag: &MacroFragment) -> RadResult<()> {
         #[cfg(feature = "debug")]
@@ -3505,11 +3528,15 @@ impl<'processor> Processor<'processor> {
     ///     proc.print_error("Error").expect("Failed to write error");
     /// }
     /// ```
-    pub fn contains_local_macro(&self, mut level: usize, macro_name: &str) -> Option<String> {
+    pub fn contains_local_macro<'a>(
+        &self,
+        mut level: usize,
+        macro_name: &'a str,
+    ) -> Option<&'a str> {
         while level > 0 {
             let local_name = Utils::local_name(level, macro_name);
             if self.map.contains_local_macro(&local_name) {
-                return Some(local_name);
+                return Some(macro_name);
             }
             level -= 1;
         }
@@ -3535,6 +3562,7 @@ impl<'processor> Processor<'processor> {
         None
     }
 
+    /// Getter
     fn get_local_macro(&self, mut level: usize, macro_name: &str) -> Option<&LocalMacro> {
         while level > 0 {
             let local_name = Utils::local_name(level, macro_name);

@@ -8,6 +8,7 @@ use crate::common::{
     AlignType, ErrorBehaviour, FlowControl, LineUpType, MacroType, OrderType, OutputType,
     ProcessInput, RadResult, RelayTarget,
 };
+use crate::consts::MAP_ARG;
 use crate::consts::{
     LOREM, LOREM_SOURCE, LOREM_WIDTH, MACRO_SPECIAL_LIPSUM, MAIN_CALLER, PATH_SEPARATOR,
 };
@@ -1229,6 +1230,18 @@ impl FunctionMacroMap {
         Ok(Raturn::None)
     }
 
+    /// Add MAP_ARG pipe
+    ///
+    /// # Usage
+    ///
+    /// $map_arg(Value)
+    pub(crate) fn map_arg(input: MacroInput, processor: &mut Processor) -> RadResult<Raturn> {
+        processor
+            .state
+            .add_pipe(Some(MAP_ARG), input.args.to_string());
+        Ok(Raturn::None)
+    }
+
     /// Peel enclosed value
     ///
     /// # Usage
@@ -1359,14 +1372,7 @@ impl FunctionMacroMap {
             })
             .collect::<RadResult<PathBuf>>()?;
 
-        if let Some(value) = out.to_str() {
-            Ok(value.to_owned().into())
-        } else {
-            Err(RadError::InvalidArgument(format!(
-                "Invalid path : {}",
-                out.display()
-            )))
-        }
+        Ok(out.into())
     }
 
     /// Print tab
@@ -2420,46 +2426,6 @@ impl FunctionMacroMap {
         }
 
         Ok(Utils::sub_lines(source, min, max)?.into())
-    }
-
-    /// Get a sub_piecess(indexed) from given content
-    ///
-    /// # Usage
-    ///
-    /// $rangeby(0,5,Content)
-    pub(crate) fn range_pieces(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
-        let args = ArgParser::new().args_with_len(input)?;
-
-        let delimiter = args.get_text(0)?;
-        let source = args.get_text(3)?;
-
-        let mut min: Option<isize> = None;
-        let mut max: Option<isize> = None;
-
-        let start = args.get_ctext(1)?;
-        let end = args.get_ctext(2)?;
-
-        if let Ok(num) = start.parse::<isize>() {
-            check_neg(num, p.env.no_negative_index)?;
-            min.replace(num);
-        } else if start != "_" && !start.is_empty() {
-            return Err(RadError::InvalidArgument(format!(
-                "rangeby's min value should be non zero positive integer but given \"{}\"",
-                start
-            )));
-        }
-
-        if let Ok(num) = end.parse::<isize>() {
-            check_neg(num, p.env.no_negative_index)?;
-            max.replace(num);
-        } else if end != "_" && !end.is_empty() {
-            return Err(RadError::InvalidArgument(format!(
-                "rangeby's max value should be singed integer or empty value but given \"{}\"",
-                end
-            )));
-        }
-
-        Ok(Utils::sub_pieces(source, delimiter, min, max)?.into())
     }
 
     /// Get a substring(indexed) until a pattern

@@ -2,7 +2,7 @@ use crate::argument::MacroInput;
 use crate::argument::Raturn;
 use crate::common::{ContainerType, FileTarget, FlowControl, MacroFragment, ProcessInput};
 use crate::common::{ErrorBehaviour, MacroType, RadResult, RelayTarget, STREAM_CONTAINER};
-use crate::consts::MACRO_SPECIAL_ANON;
+use crate::consts::{MACRO_SPECIAL_ANON, MAP_ARG};
 use crate::deterred_map::DeterredMacroMap;
 use crate::formatter::Formatter;
 use crate::parser::ArgParser;
@@ -31,41 +31,6 @@ impl DeterredMacroMap {
         Ok(String::from(MACRO_SPECIAL_ANON).into())
     }
 
-    /// Append content to a macro
-    ///
-    /// This is deterred because it needs level for local macro indexing
-    ///
-    /// Runtime + local macros can be appended.
-    ///
-    /// # Usage
-    ///
-    /// $append(macro_name,Content)
-    pub(crate) fn append(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
-        let level = input.level;
-        let cursors = ArgParser::new()
-            .level(input.level)
-            .macro_name("append")
-            .cursors_with_len(input)?;
-
-        let name = cursors.get_text(p, 0)?;
-        let target = cursors.get_text(p, 1)?;
-
-        // TODO TT
-        // Replace this with generic processor method
-        if let Some(name) = p.contains_local_macro(level, &name) {
-            p.append_local_macro(&name, &target);
-        } else if p.contains_macro(&name, MacroType::Runtime) {
-            p.append_macro(&name, &target);
-        } else {
-            return Err(RadError::NoSuchMacroName(
-                name.clone(),
-                p.get_similar_macro(&name, true), // Only runtime
-            ));
-        }
-
-        Ok(Raturn::None)
-    }
-
     /// Apply map on expressions
     ///
     /// # Usage
@@ -81,7 +46,13 @@ impl DeterredMacroMap {
 
         let match_expr = cursors.get_text(p, 0)?;
         let macro_src = cursors.get_ctext(p, 1)?;
-        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+        let (macro_name, mut macro_arguments) =
+            Utils::get_name_n_arguments(&macro_src, p.env.disable_map_quote, true)?;
+
+        if let Some(arg) = p.state.get_pipe(MAP_ARG, true) {
+            macro_arguments = arg + ",";
+        }
+
         let source = cursors.get_text(p, 2)?;
 
         if match_expr.is_empty() {
@@ -123,7 +94,13 @@ impl DeterredMacroMap {
             .cursors_with_len(input)?;
 
         let expanded = cursors.get_text(p, 0)?;
-        let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
+        let (name, mut arguments) =
+            Utils::get_name_n_arguments(&expanded, p.env.disable_map_quote, true)?;
+
+        if let Some(arg) = p.state.get_pipe(MAP_ARG, true) {
+            arguments = arg + ",";
+        }
+
         let src = cursors.get_text(p, 1)?;
         let array = src.split(',');
 
@@ -151,7 +128,13 @@ impl DeterredMacroMap {
             .cursors_with_len(input)?;
 
         let expanded = cursors.get_text(p, 0)?;
-        let (name, arguments) = Utils::get_name_n_arguments(&expanded, true)?;
+        let (name, mut arguments) =
+            Utils::get_name_n_arguments(&expanded, p.env.disable_map_quote, true)?;
+
+        if let Some(arg) = p.state.get_pipe(MAP_ARG, true) {
+            arguments = arg + ",";
+        }
+
         let src = cursors.get_text(p, 1)?;
         let lines = src.full_lines();
 
@@ -180,7 +163,13 @@ impl DeterredMacroMap {
 
         let match_expr = cursors.get_text(p, 0)?;
         let macro_src = cursors.get_text(p, 1)?;
-        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+        let (macro_name, mut macro_arguments) =
+            Utils::get_name_n_arguments(&macro_src, p.env.disable_map_quote, true)?;
+
+        if let Some(arg) = p.state.get_pipe(MAP_ARG, true) {
+            macro_arguments = arg + ",";
+        }
+
         let source = cursors.get_text(p, 2)?;
 
         if match_expr.is_empty() {
@@ -237,7 +226,13 @@ impl DeterredMacroMap {
         let start_expr = cursors.get_text(p, 0)?;
         let end_expr = cursors.get_text(p, 1)?;
         let macro_src = cursors.get_text(p, 2)?;
-        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+        let (macro_name, mut macro_arguments) =
+            Utils::get_name_n_arguments(&macro_src, p.env.disable_map_quote, true)?;
+
+        if let Some(arg) = p.state.get_pipe(MAP_ARG, true) {
+            macro_arguments = arg + ",";
+        }
+
         let source = cursors.get_text(p, 3)?;
 
         if start_expr.is_empty() || end_expr.is_empty() {
@@ -316,7 +311,12 @@ impl DeterredMacroMap {
         let mut operation = String::new();
         let op_src = cursors.get_ctext(p, 0)?;
         let src = cursors.get_text(p, 1)?;
-        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&op_src, true)?;
+        let (macro_name, mut macro_arguments) =
+            Utils::get_name_n_arguments(&op_src, p.env.disable_map_quote, true)?;
+
+        if let Some(arg) = p.state.get_pipe(MAP_ARG, true) {
+            macro_arguments = arg + ",";
+        }
 
         let map_type = if p.contains_macro(macro_name, MacroType::Any) {
             "macro"
@@ -370,7 +370,13 @@ impl DeterredMacroMap {
             .cursors_with_len(input)?;
 
         let macro_src = cursors.get_ctext(p, 0)?;
-        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+        let (macro_name, mut macro_arguments) =
+            Utils::get_name_n_arguments(&macro_src, p.env.disable_map_quote, true)?;
+
+        if let Some(arg) = p.state.get_pipe(MAP_ARG, true) {
+            macro_arguments = arg + ",";
+        }
+
         let file = Utils::full_lines(BufReader::new(std::fs::File::open(
             cursors.get_path(p, 1)?,
         )?));
@@ -406,7 +412,13 @@ impl DeterredMacroMap {
 
         let match_expr = cursors.get_text(p, 0)?;
         let macro_src = cursors.get_ctext(p, 1)?;
-        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+        let (macro_name, mut macro_arguments) =
+            Utils::get_name_n_arguments(&macro_src, p.env.disable_map_quote, true)?;
+
+        if let Some(arg) = p.state.get_pipe(MAP_ARG, true) {
+            macro_arguments = arg + ",";
+        }
+
         let source_file = cursors.get_path(p, 2)?;
 
         if !source_file.exists() {
@@ -751,7 +763,7 @@ impl DeterredMacroMap {
 
         let macro_name = cursors.get_ctext(p, 0)?;
         let body = if let Some(name) = p.contains_local_macro(level, &macro_name) {
-            p.get_local_macro_body(&name, level)?.to_string()
+            p.get_local_macro_body(name, level)?.to_string()
         } else if let Ok(body) = p.get_runtime_macro_body(&macro_name) {
             body.to_string()
         } else {
@@ -973,7 +985,12 @@ impl DeterredMacroMap {
         p.state.relay.pop();
 
         let macro_src = std::mem::take(&mut p.state.stream_state.macro_src);
-        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&macro_src, true)?;
+        let (macro_name, mut macro_arguments) =
+            Utils::get_name_n_arguments(&macro_src, p.env.disable_map_quote, true)?;
+
+        if let Some(arg) = p.state.get_pipe(MAP_ARG, true) {
+            macro_arguments = arg + ",";
+        }
 
         let body = p.extract_runtime_macro_body(STREAM_CONTAINER)?;
         let content = &body;
@@ -1210,7 +1227,13 @@ impl DeterredMacroMap {
 
         let expanded_src = cursors.get_text(p, 0)?;
         let expanded_data = cursors.get_text(p, 1)?;
-        let (macro_name, macro_arguments) = Utils::get_name_n_arguments(&expanded_src, true)?;
+        let (macro_name, mut macro_arguments) =
+            Utils::get_name_n_arguments(&expanded_src, p.env.disable_map_quote, true)?;
+
+        if let Some(arg) = p.state.get_pipe(MAP_ARG, true) {
+            macro_arguments = arg + ",";
+        }
+
         let macro_data = expanded_data.trim();
 
         let result =

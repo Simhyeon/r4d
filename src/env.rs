@@ -39,6 +39,7 @@ pub(crate) struct MacEnv {
     pub split_for_space: bool,
     pub rotatei_order: bool,
     pub no_negative_index: bool,
+    pub disable_map_quote: bool,
 
     // Feature gated
     #[cfg(feature = "evalexpr")]
@@ -66,6 +67,7 @@ impl MacEnv {
             split_for_space: set_env_safely("RAD_SPLIT_SPACE"),
             rotatei_order: set_env_safely("RAD_ROTATEI_ORDER"),
             no_negative_index: set_env_safely("RAD_NO_NIN"),
+            disable_map_quote: set_env_safely("RAD_NO_MAP_QUOTE"),
 
             // Feature gated
             #[cfg(feature = "evalexpr")]

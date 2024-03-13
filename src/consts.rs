@@ -17,6 +17,8 @@ pub static LOREM: Lazy<Vec<&'static str>> = Lazy::new(|| LOREM_SOURCE.split(' ')
 /// Static lorem lipsum vector's length
 pub static LOREM_WIDTH: Lazy<usize> = Lazy::new(|| LOREM.len());
 
+pub static MAP_ARG: &str = "MAP_ARG";
+
 /// Get macro start character
 ///
 /// This return custom character if given so

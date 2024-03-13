@@ -129,16 +129,6 @@ impl DeterredMacroMap {
             )
             .require_auth(&[AuthType::ENV])),
             (DMacroSign::new(
-                "append",
-                [
-                    (ValueType::CText, "a_macro_name"),
-                    (ValueType::Text, "a_content"),
-                ],
-                Self::append,
-                Some(man_det!("append.r4d")),
-            )
-            .no_ret()),
-            (DMacroSign::new(
                 "anon",
                 [(ValueType::Text, "a_macro_definition")],
                 Self::add_anonymous_macro,

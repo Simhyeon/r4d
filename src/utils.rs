@@ -5,6 +5,7 @@ use crate::common::{ProcessInput, RadResult};
 use crate::env::PROC_ENV;
 use crate::error::RadError;
 use crate::{Parameter, Processor, WriteOption};
+use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::borrow::Cow;
@@ -191,13 +192,44 @@ impl Utils {
     /// Split macro name and arguments from given source
     pub(crate) fn get_name_n_arguments(
         src: &str,
+        disable_quote_rules: bool,
         with_trailing_comma: bool,
     ) -> RadResult<(&str, String)> {
-        let macro_src_joined = src.split_whitespace().collect::<Vec<_>>();
-        let macro_name = macro_src_joined.first().ok_or(RadError::InvalidArgument(
+        let mut src_iter = src.split_whitespace();
+        let macro_name = src_iter.next().ok_or(RadError::InvalidArgument(
             "Macro name cannot be empty".to_string(),
         ))?;
-        let mut macro_arguments = macro_src_joined[1..].join(",");
+
+        let next_elem = src_iter.next();
+
+        if next_elem.is_none() {
+            return Ok((macro_name, String::new()));
+        }
+
+        let next_elem = next_elem.unwrap();
+
+        #[inline]
+        fn addr_of(s: &str) -> usize {
+            s.as_ptr() as usize
+        }
+
+        // This return subslice after macro name
+        // e.g. $map(surr abc,...)
+        // Given source is "surr abc"
+        // -> Next elem is "abc"
+        // "surr abc"
+        //  |    |-> next_elem address
+        //  |
+        //  Src address
+        //
+        //  By subtraction you get accurate position of subslice byte index
+        let macro_arg_src = &src[addr_of(next_elem) - addr_of(src)..];
+
+        let mut macro_arguments = if !disable_quote_rules {
+            Self::get_whitespace_split_retain_quote_rule(macro_arg_src).join(",")
+        } else {
+            macro_arg_src.split_whitespace().collect_vec().join(",")
+        };
         if with_trailing_comma && !macro_arguments.is_empty() {
             macro_arguments.push(',');
         }
@@ -628,279 +660,6 @@ impl Utils {
                 if let Some(sliced) = sliced.strip_suffix("\r\n") {
                     Ok(sliced)
                 } else if let Some(sliced) = sliced.strip_suffix('\n') {
-                    Ok(sliced)
-                } else {
-                    Ok(sliced)
-                }
-            }
-            _ => Err(RadError::InvalidArgument(
-                "Given slice index is not in the boundary of lines length".to_string(),
-            )),
-        }
-    }
-
-    // this method was copy pasta~ed from sub_lines
-    // because I'm too tired to make it generic ...
-    /// Get a sub pieces from text
-    ///
-    /// None means end of slice
-    #[allow(clippy::needless_late_init)]
-    #[allow(clippy::iter_skip_zero)]
-    pub(crate) fn sub_pieces<'a>(
-        source: &'a str,
-        delimiter: &'a str,
-        min_src: Option<isize>,
-        max_src: Option<isize>,
-    ) -> RadResult<&'a str> {
-        // Critical exception
-        // which is...
-        //
-        // empty source :)
-        if source.is_empty() {
-            return Err(RadError::InvalidArgument(
-                "Given source is empty which cannot be sliced".to_string(),
-            ));
-        }
-        if delimiter.is_empty() {
-            return Err(RadError::InvalidArgument(
-                "Given delimiter is empty which cannot be used for sliced".to_string(),
-            ));
-        }
-
-        let raw_min: isize;
-        let raw_max: isize;
-        let mut min_index: usize = 0; // Converted value corresponds to real index
-        let mut max_index: usize = 0; // Converted value corresponds to real index
-        let mut min_byte_index: Option<usize> = None; // Byte index from str
-        let mut max_byte_index: Option<usize> = None; // Byte index from str
-
-        // ----------
-        // >>>>>>>>>>
-        // <DELMITER LOGICS>
-        // ----------
-        let (ending_delimiter, strip_count) = if source.ends_with(delimiter) {
-            (true, delimiter.len())
-        } else {
-            (false, 0)
-        };
-
-        let final_index = source.len() - 1;
-        let chain_src = [(final_index, delimiter)]; // Attach additional delimiter
-
-        let chained = if ending_delimiter {
-            chain_src.into_iter().rev().skip(1).rev() // Remove it
-        } else {
-            // This is required because of type coercion
-            chain_src.into_iter().rev().skip(0).rev() // Retain it
-        };
-
-        // Final iterator that is used globally
-        let mut lines_indices = source
-            .match_indices(delimiter)
-            .chain(chained)
-            .enumerate()
-            .peekable();
-
-        // ----------
-        // <<<<<<<<<<
-        // </DELMITER LOGICS>
-        // ----------
-
-        // --------------------
-        // ABOUT : Early return cases
-        //
-        // [1] _,_
-        // [2] 0,0
-        // [3] 0,_
-
-        // ----------
-        // >>>>>>>>>>
-        // <SPECIAL SYNTAX CHECK>
-        // ----------
-
-        if min_src.is_none() {
-            if max_src.is_none() {
-                // -> Both min and max is '_'
-                //
-                // This is valid and
-                // return final line early
-
-                let lines_indices_collected = lines_indices.collect::<Vec<_>>();
-
-                // No line separator
-                if !ending_delimiter && lines_indices_collected.len() == 1 {
-                    return Ok(source);
-                }
-
-                // Slice until end of string
-                let sliced = if lines_indices_collected.len() <= 1 {
-                    source
-                } else {
-                    let (_, (idx, _)) = lines_indices_collected
-                        .get(lines_indices_collected.len() - 2)
-                        .unwrap();
-                    &source[idx + 1..]
-                };
-
-                if ending_delimiter {
-                    return Ok(&sliced[..sliced.len() - strip_count]);
-                }
-
-                return Ok(sliced);
-            }
-
-            // Min = '_'
-            // Max = positive number or negative number ( Real number )
-            // This is not valid
-            return Err(RadError::InvalidArgument(
-                "Given slice index is not in the boundary of lines length. '_' min index cannot be used with real max index number".to_string(),
-            ));
-        }
-
-        // ----------
-        // </SPECIAL SYNTAX CHECK>
-        // <<<<<<<<<<
-        // ----------
-
-        // ----------
-        // <ZERO CHECK>
-        // <<<<<<<<<<
-        // ----------
-        // Min and max is both 0
-        // Simply return first line without processing
-        let min_temp = min_src.unwrap_or(10);
-        if min_temp == max_src.unwrap_or(10) && min_temp == 0 {
-            return Ok(match source.split_once(delimiter) {
-                None => source,
-                Some((prefix, _)) => prefix,
-            });
-        }
-        // ----------
-        // </ZERO CHECK>
-        // <<<<<<<<<<
-        // ----------
-
-        // ----------
-        // Early set values and possibly early return
-        // ----------
-        if let Some(0) = min_src {
-            min_byte_index.replace(0);
-        }
-        if max_src.is_none() {
-            max_byte_index.replace(final_index);
-        }
-
-        if min_byte_index.is_some() && max_byte_index.is_some() {
-            return Ok(source);
-        }
-
-        // ----------
-        // : END OF EARLY RETURN CASES
-        // ----------
-
-        let lines_indices_collected: Vec<(usize, (usize, &str))>;
-
-        // MIN MAX
-        // _   _   -> Early return
-        // _   +   -> Error
-        // _   -   -> Error
-        // From 3x3 cases all none('_') cases were already addressed
-        raw_min = min_src.expect("Logical error and should not happen");
-
-        // ----------
-        // [NORMALIZE] min and max index ( Usize )
-        // Optinoally collect iterator to valid allocation
-
-        // Max byte index is real number
-        // -> Not '_'
-        // Only find min index
-        if max_byte_index.is_some() {
-            max_index = usize::MAX; // This value is not used rather it's a placeholder
-            if raw_min >= 0 {
-                min_index = raw_min as usize;
-            } else {
-                lines_indices_collected = lines_indices.clone().collect();
-                min_index = lines_indices_collected.len() - raw_min.unsigned_abs() - 1;
-            }
-        } else {
-            raw_max = max_src.expect("Logical error and should not happen");
-            if raw_min < 0 || raw_max < 0 {
-                lines_indices_collected = lines_indices.clone().collect();
-
-                // ----------
-                // Empty iteratoable list -> Error
-                // ----------
-                if !ending_delimiter && lines_indices_collected.len() == 1 {
-                    return Err(RadError::InvalidArgument(
-                        "Cannot slice a string without any newlines with non 0 integer".to_string(),
-                    ));
-                }
-
-                if raw_min < 0 {
-                    min_index = lines_indices_collected.len() - raw_min.unsigned_abs() - 1;
-                }
-                if raw_max < 0 {
-                    max_index = lines_indices_collected.len() - raw_max.unsigned_abs() - 1;
-                }
-            }
-            // Max is not real number
-            if raw_min >= 0 {
-                min_index = raw_min as usize;
-            }
-
-            if raw_max >= 0 {
-                max_index = raw_max as usize;
-            }
-        }
-        // ----------
-        // </NORMALIZE>
-        // ----------
-
-        // Global iteration
-        while let Some((line_index, (byte_index, _))) = lines_indices.next() {
-            // Min byte is known +
-            // final newline is not existent +
-            // max value is same with lines length
-            // = slice until last
-            if lines_indices.peek().is_none()
-                && !ending_delimiter
-                && max_byte_index.is_none()
-                && line_index == max_index.saturating_sub(2)
-            {
-                if let Some(min) = min_byte_index {
-                    let sliced = &source[min..];
-                    if ending_delimiter {
-                        return Ok(&sliced[..sliced.len() - strip_count]);
-                    }
-
-                    return Ok(sliced);
-                }
-            }
-
-            if min_byte_index.is_none() && line_index == min_index.saturating_sub(1) {
-                min_byte_index.replace(byte_index + 1);
-            }
-
-            if max_byte_index.is_none() && max_index == line_index {
-                max_byte_index.replace(byte_index);
-            }
-
-            if min_byte_index.is_some() && max_byte_index.is_some() {
-                break;
-            }
-        }
-
-        match (min_byte_index, max_byte_index) {
-            (Some(a), Some(b)) => {
-                if a > b {
-                    return Err(RadError::InvalidArgument(
-                        "Given slice index is not in the boundary of lines length".to_string(),
-                    ));
-                }
-
-                let sliced = &source[a..=b];
-                // TODO This is ugly
-                if let Some(sliced) = sliced.strip_suffix(delimiter) {
                     Ok(sliced)
                 } else {
                     Ok(sliced)
