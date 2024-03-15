@@ -3,6 +3,8 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
 
+pub const MACRO_CHAR: char = '$';
+
 /// Text display wrapper
 ///
 /// This can be either simple string or "Color" crate's function
@@ -66,13 +68,13 @@ pub const MACRO_SPECIAL_LIPSUM: &str = "_LIPSUM_";
 pub const RET_ETABLE: &str = "_RET_";
 
 // Numbers
-// Macro attributes * ^ = - | ~
+// Macro attributes * ^ < - | ~
 // Underscore and reverse slash (\)
 // Colon (:) for iterated value
 // Exclamation ( ! ) for negation
 /// Unallowed regex pattern that is reserved for other purposes
 pub static UNALLOWED_CHARS: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"[a-zA-Z1-9\\_\*\^\|\(\)-=,:~!]"#).expect("Failed to create regex expression")
+    Regex::new(r#"[a-zA-Z1-9\\_\*\^\|\(\)-=,:~!<]"#).expect("Failed to create regex expression")
 });
 
 // Diff related

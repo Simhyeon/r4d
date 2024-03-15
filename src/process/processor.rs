@@ -1,16 +1,16 @@
 //! Main macro processing struct module
 
 use super::ProcessorState;
-use crate::argument::{MacroInput, ValueType};
+use crate::argument::{MacroInput, Raturn, ValueType};
 use crate::auth::{AuthState, AuthType};
 #[cfg(feature = "debug")]
 use crate::common::DiffOption;
-use crate::common::SignatureType;
 use crate::common::{
     CommentType, ErrorBehaviour, FlowControl, Hygiene, LocalMacro, MacroFragment, MacroType,
-    ProcessInput, ProcessType, RelayTarget, WriteOption,
+    Negation, PipeOutput, ProcessInput, ProcessType, RelayTarget, WriteOption,
 };
 use crate::common::{ContainerType, MacroAttribute};
+use crate::common::{PipeInput, SignatureType};
 #[cfg(feature = "debug")]
 use crate::debugger::DebugSwitch;
 #[cfg(feature = "debug")]
@@ -82,7 +82,6 @@ static MAC_NAME: Lazy<Regex> =
 ///     // Builder
 ///     let mut processor = Processor::new()
 ///         .set_comment_type(CommentType::Start)                // Use comment
-///         .custom_macro_char('~')?                             // use custom macro character
 ///         .custom_comment_char('#')?                           // use custom comment character
 ///         .purge(true)                                         // Purge undefined macro
 ///         .silent(WarningType::Security)                       // Silents all warnings
@@ -355,7 +354,7 @@ impl<'processor> Processor<'processor> {
                 character
             )));
         }
-        if self.get_macro_char() == character {
+        if character == MACRO_CHAR {
             // macro char and comment char should not be equal
             return Err(RadError::UnallowedChar(format!(
                 "\"{}\" is already defined for macro character",
@@ -363,63 +362,6 @@ impl<'processor> Processor<'processor> {
             )));
         }
         self.state.comment_char.replace(character);
-        Ok(self)
-    }
-
-    /// Set custom characters
-    ///
-    /// Every character that consists of valid macro name cannot be a custom macro character.
-    /// Unallowed characters are ```[a-zA-Z1-9\\_\*\^\|\(\)=,]```
-    ///
-    /// ```rust
-    /// let proc = r4d::Processor::empty()
-    ///     .custom_chars('&', '%');
-    /// ```
-    pub fn custom_chars(mut self, macro_character: char, comment_char: char) -> RadResult<Self> {
-        if macro_character == comment_char {
-            return Err(RadError::UnallowedChar(
-                "Cannot set a same character for macro and comment".to_string(),
-            ));
-        }
-        if UNALLOWED_CHARS.is_match(&macro_character.to_string())
-            || UNALLOWED_CHARS.is_match(&comment_char.to_string())
-        {
-            return Err(RadError::UnallowedChar(format!(
-                "\"{}\" is not allowed",
-                macro_character
-            )));
-        }
-
-        self.state.macro_char.replace(macro_character);
-        self.state.comment_char.replace(comment_char);
-        Ok(self)
-    }
-
-    /// Custom macro character
-    ///
-    /// Every character that consists of valid macro name cannot be a custom macro character.
-    /// Unallowed characters are ```[a-zA-Z1-9\\_\*\^\|\(\)=,]```
-    ///
-    /// ```rust
-    /// let proc = r4d::Processor::empty()
-    ///     .custom_macro_char('&');
-    /// ```
-    pub fn custom_macro_char(mut self, character: char) -> RadResult<Self> {
-        if UNALLOWED_CHARS.is_match(&character.to_string()) {
-            return Err(RadError::UnallowedChar(format!(
-                "\"{}\" is not allowed",
-                character
-            )));
-        }
-        if self.get_comment_char() == character {
-            // macro char and comment char should not be equal
-            return Err(RadError::UnallowedChar(format!(
-                "\"{}\" is already defined for comment character",
-                character
-            )));
-        }
-
-        self.state.macro_char.replace(character);
         Ok(self)
     }
 
@@ -1412,11 +1354,11 @@ impl<'processor> Processor<'processor> {
             .unwrap_or("")
             .to_string();
 
-        self.state.add_pipe(None, content);
+        self.state.add_pipe(None, [content]);
 
         let mut frag = MacroFragment::new();
         frag.args = macro_arguments;
-        frag.attribute.pipe_input = true;
+        frag.attribute.pipe_input = PipeInput::Single;
         frag.name = macro_name.to_string();
         self.process_piece(&mut frag)?;
 
@@ -1475,13 +1417,13 @@ impl<'processor> Processor<'processor> {
 
         let line_iter = Utils::full_lines(buffer);
         let mut frag = MacroFragment::new();
-        frag.attribute.pipe_input = true;
+        frag.attribute.pipe_input = PipeInput::Single;
         frag.name = macro_name.to_string();
         frag.args = macro_arguments;
         let nl = self.state.newline.clone();
         for line in line_iter {
             let line = line?;
-            self.state.add_pipe(None, line);
+            self.state.add_pipe(None, [line]);
             self.process_piece(&mut frag)?;
             if put_newline {
                 self.direct_write(&nl)?;
@@ -1570,11 +1512,7 @@ impl<'processor> Processor<'processor> {
         cont_type: ContainerType,
     ) -> RadResult<Option<String>> {
         let mut line_iter = Utils::full_lines(buffer).peekable();
-        let mut lexor = Lexor::new(
-            self.get_macro_char(),
-            self.get_comment_char(),
-            &self.state.comment_type,
-        );
+        let mut lexor = Lexor::new(self.get_comment_char(), &self.state.comment_type);
         let mut frag = MacroFragment::new();
 
         // when processing has to return a value rather than modify in-place
@@ -1814,11 +1752,7 @@ impl<'processor> Processor<'processor> {
         caller: &str,
         chunk: &str,
     ) -> RadResult<String> {
-        let mut lexor = Lexor::new(
-            self.get_macro_char(),
-            self.get_comment_char(),
-            &self.state.comment_type,
-        );
+        let mut lexor = Lexor::new(self.get_comment_char(), &self.state.comment_type);
         let mut frag = MacroFragment::new();
         let mut result = String::new();
         self.logger
@@ -1856,11 +1790,7 @@ impl<'processor> Processor<'processor> {
         caller: &str,
         chunk: &str,
     ) -> RadResult<String> {
-        let mut lexor = Lexor::new(
-            self.get_macro_char(),
-            self.get_comment_char(),
-            &self.state.comment_type,
-        );
+        let mut lexor = Lexor::new(self.get_comment_char(), &self.state.comment_type);
         // Set inner parsing logic
         lexor.set_inner();
         let mut frag = MacroFragment::new();
@@ -1955,7 +1885,7 @@ impl<'processor> Processor<'processor> {
                     remainder.push_str(&frag.whole_string);
                     frag.clear();
                     frag.is_processed = true;
-                    frag.whole_string.push(self.get_macro_char());
+                    frag.whole_string.push(MACRO_CHAR);
                 }
                 LexResult::EmptyName => {
                     self.lex_branch_empty_name(ch, frag, &mut remainder, lexor);
@@ -1990,11 +1920,8 @@ impl<'processor> Processor<'processor> {
                     let mut hook_frag = MacroFragment::new();
                     hook_frag.name = mac_name;
                     let mut hook_mainder = String::new();
-                    let mut hook_lexor = Lexor::new(
-                        self.get_macro_char(),
-                        self.get_comment_char(),
-                        &self.state.comment_type,
-                    );
+                    let mut hook_lexor =
+                        Lexor::new(self.get_comment_char(), &self.state.comment_type);
 
                     // Char marcro execute
                     self.expand_frag_as_invocation(
@@ -2064,7 +1991,7 @@ impl<'processor> Processor<'processor> {
         // Assign local variables
         let (name, raw_args) = (&frag.name, frag.args.clone());
 
-        let mut args;
+        let args;
 
         // Not a deterred macro
         if !self.map.is_deterred_macro(name) || self.state.process_type == ProcessType::Dry {
@@ -2076,26 +2003,6 @@ impl<'processor> Processor<'processor> {
                 args = self.parse_chunk(level, name, &raw_args)?;
             } else {
                 args = raw_args;
-            }
-
-            // Pipe doesn't expanded but added
-            if frag.attribute.pipe_input {
-                let pipe_value = self.state.get_pipe("-", false).unwrap_or_default();
-
-                if pipe_value.is_empty() {
-                    self.log_warning(
-                        &format!("Adding empty pipe value to \"{}\"", frag.name),
-                        WarningType::Sanity,
-                    )?;
-                }
-
-                if args.is_empty() {
-                    args = pipe_value;
-                } else {
-                    // Append pipe vluae next to value
-                    args.push(',');
-                    args.push_str(&pipe_value);
-                }
             }
 
             // Also update original arguments for better debugging
@@ -2119,19 +2026,6 @@ impl<'processor> Processor<'processor> {
             // Set raw args as literal
             args = raw_args;
 
-            // TODO TT
-            // Pipe doesn't expanded but added
-            if frag.attribute.pipe_input {
-                let pipe_value = self.state.get_pipe("-", false).unwrap_or_default();
-                if args.is_empty() {
-                    args = pipe_value;
-                } else {
-                    // Append pipe vluae next to value
-                    args.push(',');
-                    args.push_str(&pipe_value);
-                }
-            }
-
             // Set processed_args some helpful message
             #[cfg(feature = "debug")]
             {
@@ -2154,9 +2048,11 @@ impl<'processor> Processor<'processor> {
             }
             temp_level -= 1;
         }
+
         // SPECIAL MACROS
+        // Namely `ANON` macro
         if name == MACRO_SPECIAL_ANON && self.map.get_anon_macro().is_some() {
-            let result = self.invoke_runtime(level, None, &frag.attribute, &args)?;
+            let result = self.invoke_runtime(level, None, frag, &args)?;
             return Ok(result);
         }
 
@@ -2189,7 +2085,7 @@ impl<'processor> Processor<'processor> {
                 }
             }
 
-            let result = self.invoke_runtime(level, Some(name), &frag.attribute, &args)?;
+            let result = self.invoke_runtime(level, Some(name), frag, &args)?;
 
             self.print_expansion_log(name, result.as_deref().unwrap_or(""))?;
 
@@ -2205,17 +2101,27 @@ impl<'processor> Processor<'processor> {
                     return Ok(None);
                 }
 
-                let input = MacroInput::new(name, &args)
+                let mut input = MacroInput::new(name, &args)
                     .attr(frag.attribute)
                     .optional(sig.optional)
                     .enum_table(&sig.enum_table)
                     .level(level)
                     .parameter(&sig.params);
 
-                let final_result = det_func(input, self)?;
+                if !frag.attribute.pipe_input.is_empty() {
+                    input.add_pipe_input(frag.attribute.pipe_input, self.state.get_pipe("-", false))
+                }
+
+                let mut final_result = det_func(input, self)?;
 
                 sig.return_type
                     .is_valid_return_type(&final_result, sig.enum_table.tables.get(RET_ETABLE))?;
+                // Negate result
+                final_result = match frag.attribute.negate_result {
+                    Negation::None => final_result,
+                    Negation::Value => final_result.negate()?,
+                    Negation::Yield => Raturn::None,
+                };
 
                 let ret = final_result.convert_empty_to_none();
 
@@ -2238,18 +2144,30 @@ impl<'processor> Processor<'processor> {
             let func = self.map.function.get_func(name).unwrap();
             //let final_result = func(&args, self)?;
 
-            let input = MacroInput::new(name, &args)
+            let mut input = MacroInput::new(name, &args)
                 .attr(frag.attribute)
                 .optional(sig.optional)
                 .enum_table(&sig.enum_table)
                 .level(level)
                 .parameter(&sig.params);
+
+            if !frag.attribute.pipe_input.is_empty() {
+                input.add_pipe_input(frag.attribute.pipe_input, self.state.get_pipe("-", false))
+            }
+
             let res = func(input, self);
 
-            let final_result = res?;
+            let mut final_result = res?;
 
             sig.return_type
                 .is_valid_return_type(&final_result, sig.enum_table.tables.get(RET_ETABLE))?;
+
+            // Negate result
+            final_result = match frag.attribute.negate_result {
+                Negation::None => final_result,
+                Negation::Value => final_result.negate()?,
+                Negation::Yield => Raturn::None,
+            };
 
             let ret = final_result.convert_empty_to_none();
 
@@ -2285,7 +2203,7 @@ impl<'processor> Processor<'processor> {
         &mut self,
         level: usize,
         name: Option<&str>,
-        attr: &MacroAttribute,
+        frag: &MacroFragment,
         arg_values: &str,
     ) -> RadResult<Option<String>> {
         let new_name;
@@ -2310,13 +2228,17 @@ impl<'processor> Processor<'processor> {
 
         let arg_names = &rule.params;
 
+        let mut input = MacroInput::new(new_name, arg_values)
+            .attr(frag.attribute)
+            .parameter(&rule.params);
+
+        if !frag.attribute.pipe_input.is_empty() {
+            input.add_pipe_input(frag.attribute.pipe_input, self.state.get_pipe("-", false));
+        }
+
         // Set variable to local macros
         // TODO TT
-        let args = match ArgParser::new().texts_with_len(
-            MacroInput::new(new_name, arg_values)
-                .attr(*attr)
-                .parameter(&rule.params),
-        ) {
+        let args = match ArgParser::new().texts_with_len(input) {
             Ok(content) => content,
             Err(err) => {
                 if self.state.process_type == ProcessType::Dry {
@@ -2708,9 +2630,10 @@ impl<'processor> Processor<'processor> {
         // Name is empty
         if frag.name.is_empty() {
             // $-() is valid syntax
-            if frag.attribute.pipe_input {
-                frag.attribute.pipe_input = false;
-                frag.name = "-".to_string();
+            if !frag.attribute.pipe_input.is_empty() {
+                // $-() invokes same behaviour for string or vector
+                frag.name = String::from("-");
+                frag.attribute.pipe_input = PipeInput::None;
             } else {
                 let err = RadError::InvalidMacroReference(
                     "Cannot invoke a macro with empty name".to_string(),
@@ -2751,9 +2674,10 @@ impl<'processor> Processor<'processor> {
                 return Ok(());
             }
         }
+
         // Check if target macro exists
         let evaluation_result = if !self.contains_macro(&frag.name, MacroType::Any)
-            && self.contains_local_macro(level, &frag.name).is_none()
+            && self.contains_local_macro(level + 1, &frag.name).is_none()
         {
             let err = RadError::NoSuchMacroName(
                 frag.name.clone(),
@@ -2868,29 +2792,6 @@ impl<'processor> Processor<'processor> {
                 self.state.consume_newline = true;
             }
 
-            // Negate result
-            if frag.attribute.negate_result {
-                match content.is_arg_true() {
-                    Ok(boolean) => content = (!boolean).to_string(),
-                    Err(_) => {
-                        if self.state.behaviour == ErrorBehaviour::Strict {
-                            return Err(RadError::InvalidExecution(format!(
-                                "Tried to negate value, \"{}\" which is not a boolean",
-                                content
-                            )));
-                        }
-
-                        self.log_warning(
-                            &format!(
-                                "Tried to negate value, \"{}\" which is not a boolean",
-                                content
-                            ),
-                            WarningType::Sanity,
-                        )?;
-                    }
-                }
-            }
-
             if frag.attribute.yield_literal {
                 content = format!("\\*{}*\\", content);
             }
@@ -2903,11 +2804,7 @@ impl<'processor> Processor<'processor> {
                 let mut hook_frag = MacroFragment::new();
                 hook_frag.name = mac_name;
                 let mut hook_mainder = String::new();
-                let mut hook_lexor = Lexor::new(
-                    self.get_macro_char(),
-                    self.get_comment_char(),
-                    &self.state.comment_type,
-                );
+                let mut hook_lexor = Lexor::new(self.get_comment_char(), &self.state.comment_type);
                 // Macro hook execute
                 self.expand_frag_as_invocation(
                     &mut hook_lexor,
@@ -2928,13 +2825,18 @@ impl<'processor> Processor<'processor> {
             // This should come later!!
             // because pipe should respect all other macro attributes
             // not the other way
-            if frag.attribute.pipe_output {
-                self.state.add_pipe(None, content);
-                // TODO
-                // Wait.... what? why consume newline?
-                self.state.consume_newline = true;
-            } else {
-                remainder.push_str(&content);
+            match frag.attribute.pipe_output {
+                PipeOutput::Vector => {
+                    self.state.add_pipe(None, content.split(','));
+                    self.state.consume_newline = true;
+                }
+                PipeOutput::Single => {
+                    // TODO TT
+                    // Also respect pipe as vector attribute
+                    self.state.add_pipe(None, [content]);
+                    self.state.consume_newline = true;
+                }
+                PipeOutput::None => remainder.push_str(&content),
             }
         } else {
             self.state.consume_newline = true;
@@ -3019,13 +2921,6 @@ impl<'processor> Processor<'processor> {
         comment_start(self.state.comment_char)
     }
 
-    /// Get macro chararacter
-    ///
-    /// This will return custom character if existent
-    pub(crate) fn get_macro_char(&self) -> char {
-        macro_start(self.state.macro_char)
-    }
-
     /// Bridge method to get auth state
     pub(crate) fn get_auth_state(&self, auth_type: &AuthType) -> AuthState {
         *self.state.auth_flags.get_state(auth_type)
@@ -3038,12 +2933,9 @@ impl<'processor> Processor<'processor> {
         self.state.set_temp_target(path)
     }
 
-    /// Set pipe value manually
-    #[allow(dead_code)]
-    pub(crate) fn set_pipe(&mut self, value: &str) {
-        self.state
-            .pipe_map
-            .insert("-".to_owned(), value.to_string());
+    /// Set main pipe value manually
+    pub(crate) fn set_main_pipe(&mut self, value: &str) {
+        self.state.add_pipe(None, [value]);
     }
 
     /// Set debug flag

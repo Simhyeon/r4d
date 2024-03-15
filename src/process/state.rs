@@ -8,6 +8,7 @@ use crate::common::{
 };
 use crate::consts::LINE_ENDING;
 use crate::RadError;
+use itertools::Itertools;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
@@ -26,7 +27,7 @@ pub(crate) struct ProcessorState {
     // This is reserved for hygienic execution
     pub hygiene: Hygiene,
     pub pipe_truncate: bool,
-    pub pipe_map: HashMap<String, String>,
+    pub pipe_map: HashMap<String, Vec<String>>,
     pub relay: Vec<RelayTarget>,
     pub sandbox: bool,
     pub behaviour: ErrorBehaviour,
@@ -93,20 +94,36 @@ impl ProcessorState {
     /// Add a pipe with name
     ///
     /// THis will update the value if already exists
-    pub fn add_pipe(&mut self, name: Option<&str>, value: String) {
+    pub fn add_pipe(
+        &mut self,
+        name: Option<&str>,
+        values: impl IntoIterator<Item = impl AsRef<str>>,
+    ) {
         if let Some(name) = name {
-            self.pipe_map.insert(name.to_owned(), value);
+            self.pipe_map.insert(
+                name.to_owned(),
+                values
+                    .into_iter()
+                    .map(|s| s.as_ref().to_string())
+                    .collect_vec(),
+            );
         } else {
-            self.pipe_map.insert("-".to_owned(), value);
+            self.pipe_map.insert(
+                "-".to_owned(),
+                values
+                    .into_iter()
+                    .map(|s| s.as_ref().to_string())
+                    .collect_vec(),
+            );
         }
     }
 
     /// Get a pipe with key
-    pub fn get_pipe(&mut self, key: &str, ignore_truncate: bool) -> Option<String> {
+    pub fn get_pipe(&mut self, key: &str, ignore_truncate: bool) -> Option<Vec<String>> {
         if self.pipe_truncate && !ignore_truncate {
             self.pipe_map.remove(key)
         } else {
-            self.pipe_map.get(key).map(|s| s.to_owned())
+            self.pipe_map.get(key).cloned()
         }
     }
 }

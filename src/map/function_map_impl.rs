@@ -303,7 +303,7 @@ impl FunctionMacroMap {
         let args = ArgParser::new().args_with_len(input)?;
 
         let mut formula = args.get_text(0)?.to_string();
-        let pipe = p.state.get_pipe("-", true).unwrap_or("".to_string());
+        let pipe = p.state.get_pipe("-", true).unwrap_or_default().join(",");
         let replaced = if formula.contains('p') {
             formula.replace('p', &pipe)
         } else {
@@ -311,7 +311,7 @@ impl FunctionMacroMap {
             formula
         };
         let result = evalexpr::eval(&replaced)?;
-        p.state.add_pipe(None, result.to_string());
+        p.state.add_pipe(None, [result.as_string()?]);
         Ok(Raturn::None)
     }
 
@@ -1208,9 +1208,26 @@ impl FunctionMacroMap {
     pub(crate) fn pipe(input: MacroInput, processor: &mut Processor) -> RadResult<Raturn> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        processor
-            .state
-            .add_pipe(None, args.get_text(0)?.to_string());
+        processor.state.add_pipe(None, [args.get_text(0)?]);
+        Ok(Raturn::None)
+    }
+
+    /// Put value into a temporary stack called pipe as vector form
+    ///
+    /// Piped value can be popped with macro '-'
+    ///
+    /// # Usage
+    ///
+    /// $pipev(Value)
+    pub(crate) fn pipe_as_vector(
+        input: MacroInput,
+        processor: &mut Processor,
+    ) -> RadResult<Raturn> {
+        let args = ArgParser::new().args_with_len(input)?;
+
+        let vec_ter = (0..args.len()).map(|idx| args.get_text(idx).unwrap());
+
+        processor.state.add_pipe(None, vec_ter);
         Ok(Raturn::None)
     }
 
@@ -1226,7 +1243,7 @@ impl FunctionMacroMap {
 
         processor
             .state
-            .add_pipe(Some(args.get_ctext(0)?), args.get_text(1)?.to_string());
+            .add_pipe(Some(args.get_ctext(0)?), [args.get_text(1)?]);
         Ok(Raturn::None)
     }
 
@@ -1236,9 +1253,7 @@ impl FunctionMacroMap {
     ///
     /// $map_arg(Value)
     pub(crate) fn map_arg(input: MacroInput, processor: &mut Processor) -> RadResult<Raturn> {
-        processor
-            .state
-            .add_pipe(Some(MAP_ARG), input.args.to_string());
+        processor.state.add_pipe(Some(MAP_ARG), [input.args]);
         Ok(Raturn::None)
     }
 
@@ -1572,14 +1587,13 @@ impl FunctionMacroMap {
                 None
             }
         } else {
-            // "-" Always exsit, thus safe to unwrap
             let out = processor.state.get_pipe("-", false).unwrap_or_default();
             if out.is_empty() {
                 processor.log_warning("Empty pipe", WarningType::Sanity)?;
             }
             Some(out)
         };
-        Ok(pipe.into())
+        Ok(pipe.map(|s| s.join(",")).into())
     }
 
     /// Print left parenthesis
@@ -3978,6 +3992,22 @@ impl FunctionMacroMap {
     /// $loge(This is a problem)
     pub(crate) fn log_error_message(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
         p.print_error(input.args)?;
+        Ok(Raturn::None)
+    }
+
+    /// Log pipe
+    ///
+    /// # Usage
+    ///
+    /// $logp(Pipe_name)
+    pub(crate) fn log_pipe(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
+        let args = ArgParser::new().args_with_len(input)?;
+        let pipe = p
+            .state
+            .get_pipe(args.get_ctext(0).unwrap_or("-"), true)
+            .unwrap_or_default();
+
+        p.log_message(&format!("Pipe : {:?}", pipe))?;
         Ok(Raturn::None)
     }
 

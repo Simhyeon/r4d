@@ -18,7 +18,6 @@ pub struct Lexor {
     pub cursor: Cursor,
     literal_count: usize,     // Literal nest level
     parenthesis_count: usize, // Parenthesis nest level
-    macro_char: char,
     comment_char: Option<char>,
     consume_previous: bool,
     consume_blank: bool,
@@ -27,7 +26,7 @@ pub struct Lexor {
 
 impl Lexor {
     /// Create a new instance
-    pub fn new(macro_char: char, comment_char: char, comment_type: &CommentType) -> Self {
+    pub fn new(comment_char: char, comment_type: &CommentType) -> Self {
         let comment_char = if let CommentType::Any = comment_type {
             Some(comment_char)
         } else {
@@ -39,7 +38,6 @@ impl Lexor {
             cursor: Cursor::None,
             literal_count: 0,
             parenthesis_count: 0,
-            macro_char,
             comment_char,
             consume_previous: false,
             consume_blank: false,
@@ -128,7 +126,7 @@ impl Lexor {
     /// Branch on none state
     fn branch_none(&mut self, ch: char) -> LexResult {
         let result: LexResult;
-        if ch == self.macro_char && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
+        if ch == MACRO_CHAR && self.previous_char.unwrap_or('0') != ESCAPE_CHAR {
             self.cursor = Cursor::Name;
             result = LexResult::Ignore;
         } else if self.inner_parse
@@ -162,10 +160,10 @@ impl Lexor {
             self.parenthesis_count = 1;
             result = LexResult::StartFrag;
             // Empty name
-            if self.previous_char.unwrap_or('0') == self.macro_char {
+            if self.previous_char.unwrap_or('0') == MACRO_CHAR {
                 result = LexResult::EmptyName;
             }
-        } else if ch == self.macro_char {
+        } else if ch == MACRO_CHAR {
             result = LexResult::RestartName;
         } else {
             result = LexResult::AddToFrag(Cursor::Name);

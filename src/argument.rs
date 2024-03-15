@@ -5,7 +5,7 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use crate::common::{ETMap, ETable, MacroAttribute};
+use crate::common::{ETMap, ETable, MacroAttribute, PipeInput};
 use crate::consts::RET_ETABLE;
 use crate::env::PROC_ENV;
 use crate::RadStr;
@@ -51,6 +51,7 @@ pub struct MacroInput<'a> {
     pub params: Vec<Parameter>,
     pub optional: Option<Parameter>,
     pub enum_table: Option<&'a ETMap>,
+    pub piped_args: Option<Vec<String>>,
     pub attr: MacroAttribute,
     pub name: &'a str,
     pub args: &'a str,
@@ -63,10 +64,19 @@ impl<'a> MacroInput<'a> {
             params: Vec::new(),
             optional: None,
             attr: MacroAttribute::default(),
+            piped_args: None,
             enum_table: None,
             name,
             args,
             level: 0,
+        }
+    }
+
+    pub(crate) fn add_pipe_input(&mut self, pipe_input: PipeInput, piped: Option<Vec<String>>) {
+        match pipe_input {
+            PipeInput::Vector => self.piped_args = piped,
+            PipeInput::Single => self.piped_args = piped.map(|s| vec![s.join(",")]),
+            _ => (),
         }
     }
 
@@ -335,17 +345,44 @@ impl Raturn {
         self
     }
 
+    pub fn negate(self) -> RadResult<Self> {
+        let negated_arg = match self {
+            Self::Bool(v) => (!v).into(),
+            Self::Uint(v) => (-(v as isize)).into(),
+            Self::Int(v) => (-v).into(),
+            Self::Float(v) => (-v).into(),
+            _ => {
+                return Err(RadError::InvalidArgument(format!(
+                    "Failed to negate a value \"{}\" because it is not logically available",
+                    self
+                )))
+            }
+        };
+
+        Ok(negated_arg)
+    }
+
+    /// THis is a legacy method used among processor pipeline
+    ///
+    /// use to_string method if you want simple string form
     pub fn printable(self) -> Option<String> {
         match self {
             Self::None => None,
-            Self::Text(v) => Some(v.to_string()),
-            Self::Bool(v) => Some(v.to_string()),
-            Self::Uint(v) => Some(v.to_string()),
-            Self::Int(v) => Some(v.to_string()),
-            Self::Path(v) => Some(v.display().to_string()),
-            Self::Float(v) => Some(v.to_string()),
-            Self::Regex(v) => Some(v.to_string()),
-            Self::Enum(v) => Some(v.to_string()),
+            _ => Some(self.to_string()),
+        }
+    }
+
+    pub fn get_type(&self) -> ValueType {
+        match self {
+            Self::None => ValueType::None,
+            Self::Text(_) => ValueType::Text,
+            Self::Bool(_) => ValueType::Bool,
+            Self::Uint(_) => ValueType::Uint,
+            Self::Int(_) => ValueType::Int,
+            Self::Path(_) => ValueType::Path,
+            Self::Float(_) => ValueType::Float,
+            Self::Regex(_) => ValueType::Regex,
+            Self::Enum(_) => ValueType::Enum,
         }
     }
 }
@@ -410,19 +447,20 @@ impl From<&str> for Raturn {
     }
 }
 
-impl Raturn {
-    pub fn get_type(&self) -> ValueType {
-        match self {
-            Self::None => ValueType::None,
-            Self::Text(_) => ValueType::Text,
-            Self::Bool(_) => ValueType::Bool,
-            Self::Uint(_) => ValueType::Uint,
-            Self::Int(_) => ValueType::Int,
-            Self::Path(_) => ValueType::Path,
-            Self::Float(_) => ValueType::Float,
-            Self::Regex(_) => ValueType::Regex,
-            Self::Enum(_) => ValueType::Enum,
-        }
+impl Display for Raturn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let ret = match self {
+            Self::None => String::new(),
+            Self::Text(v) => v.to_string(),
+            Self::Bool(v) => v.to_string(),
+            Self::Uint(v) => v.to_string(),
+            Self::Int(v) => v.to_string(),
+            Self::Path(v) => v.display().to_string(),
+            Self::Float(v) => v.to_string(),
+            Self::Regex(v) => v.to_string(),
+            Self::Enum(v) => v.to_string(),
+        };
+        write!(f, "{}", ret)
     }
 }
 
@@ -521,6 +559,7 @@ pub struct ParsedCursors<'a> {
     trim_input: bool,
     params: Vec<Parameter>,
     cursors: Vec<ArgCursor>,
+    piped: Vec<String>,
 }
 
 impl<'a> ParsedCursors<'a> {
@@ -532,6 +571,7 @@ impl<'a> ParsedCursors<'a> {
             level: 0,
             macro_name: String::new(),
             trim_input: false,
+            piped: vec![],
         }
     }
 
@@ -560,6 +600,11 @@ impl<'a> ParsedCursors<'a> {
         self
     }
 
+    pub fn piped(mut self, pipe_input: Option<Vec<String>>) -> Self {
+        self.piped.extend(pipe_input.unwrap_or_default());
+        self
+    }
+
     pub fn is_empty(&self) -> bool {
         self.cursors.is_empty()
     }
@@ -569,11 +614,24 @@ impl<'a> ParsedCursors<'a> {
     /// Internal method before get_{type}
     ///
     /// Trim is applied when get is called
-    fn get(&self, index: usize) -> RadResult<Cow<'a, str>> {
-        let cursor = self
-            .cursors
-            .get(index)
-            .ok_or(RadError::InvalidExecution("Index out of error".to_string()))?;
+    fn get(&'a self, index: usize) -> RadResult<Cow<'a, str>> {
+        // Get argument from piped_input
+        if index >= self.cursors.len() {
+            let idx = index.saturating_sub(self.cursors.len());
+            let src = self.piped.get(idx).ok_or(RadError::InvalidExecution(
+                "Failed to get argument by index. [Index out of error]".to_string(),
+            ))?;
+
+            if self.trim_input {
+                return Ok(src.trim().into());
+            } else {
+                return Ok(src.into());
+            }
+        }
+
+        let cursor = self.cursors.get(index).ok_or(RadError::InvalidExecution(
+            "Failed to get argument by index. [Index out of error]".to_string(),
+        ))?;
         match cursor {
             ArgCursor::Reference(star, end) => {
                 let mut src = &self.src[*star..*end];
@@ -737,7 +795,7 @@ impl<'a> ParsedArguments<'a> {
     }
 
     // ---- GETTERS
-    pub fn get(&'a self, index: usize) -> RadResult<&Argument<'a>> {
+    pub(crate) fn get(&'a self, index: usize) -> RadResult<&Argument<'a>> {
         match self.args.get(index) {
             Some(val) => Ok(val),
             None => Err(crate::RadError::InvalidExecution(

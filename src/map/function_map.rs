@@ -839,6 +839,14 @@ impl FunctionMacroMap {
             ),
             (
                 FMacroSign::new(
+                    "logp",
+                    [(ValueType::Text,"a_pipe_name"),],
+                    Self::log_pipe,
+                    None
+                ).no_ret()
+            ),
+            (
+                FMacroSign::new(
                     "lower",
                     [(ValueType::Text,"a_text"),],
                     Self::lower,
@@ -998,6 +1006,17 @@ impl FunctionMacroMap {
                     Self::pipe,
                     Some(man_fun!("pipe.r4d")),
                 ).no_ret()
+            ),
+            // TODO TT
+            (
+                FMacroSign::new(
+                    "pipev",
+                    [(ValueType::Text,"a_item")],
+                    Self::pipe_as_vector,
+                    None
+                ).optional_multiple()
+                .optional(Parameter::new(ValueType::Text,"a_item"))
+                .no_ret()
             ),
             (
                 FMacroSign::new(

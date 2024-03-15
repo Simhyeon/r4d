@@ -6,8 +6,9 @@ use crate::{
     argument::{ArgCursor, Argument, MacroInput, ParsedArguments, ParsedCursors},
     common::ETMap,
     consts::{ESCAPE_CHAR_U8, LIT_CHAR_U8},
-    Parameter, RadError, RadResult,
+    ArgableCow, Parameter, RadError, RadResult,
 };
+use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::{borrow::Cow, slice::Iter};
@@ -103,13 +104,22 @@ impl ArgParser {
     //         .map(|s| s.to_string())
     // }
 
-    fn is_empty_input_allowed(&self, input: &MacroInput, required_len: usize) -> RadResult<bool> {
+    fn check_empty_input(&self, input: &MacroInput, required_len: usize) -> RadResult<bool> {
         if !self.allow_empty_input && input.args.trim().is_empty() {
             if required_len > 0 {
-                return Err(RadError::InvalidArgument(format!(
-                    "Macro [{}] received empty arguments",
-                    input.name
-                )));
+                if input.piped_args.is_some() {
+                    return Err(RadError::InvalidArgument(format!(
+                        "Required [{}] more arguments from pipe but received [{}] arguments",
+                        input.type_len(),
+                        required_len,
+                    )));
+                } else {
+                    // This is pure empty input error
+                    return Err(RadError::InvalidArgument(format!(
+                        "Macro [{}] received empty arguments",
+                        input.name
+                    )));
+                }
             }
             return Ok(true);
         }
@@ -120,9 +130,19 @@ impl ArgParser {
     ///
     /// If length is qualified it returns vector of arguments
     pub(crate) fn cursors_with_len(mut self, input: MacroInput) -> RadResult<ParsedCursors> {
-        let len_src = input.type_len();
-        let length = len_src + if input.optional.is_some() { 1 } else { 0 };
-        if self.is_empty_input_allowed(&input, len_src)? {
+        let mut min_len = input.type_len();
+        let mut length = min_len + if input.optional.is_some() { 1 } else { 0 };
+
+        let offset = input
+            .piped_args
+            .as_ref()
+            .map(|s| s.len())
+            .unwrap_or_default();
+
+        min_len = min_len.saturating_sub(offset);
+        length = length.saturating_sub(offset);
+
+        if self.check_empty_input(&input, min_len)? {
             return Ok(ParsedCursors::new(input.name));
         }
 
@@ -130,68 +150,116 @@ impl ArgParser {
 
         let curs = self.get_cursor_list(&input)?;
 
-        if curs.len() < len_src {
+        if curs.len() < min_len {
             return Err(RadError::InvalidArgument(format!(
                 "Macro [{}] requires [{}] arguments but given [{}] arguments",
                 input.name,
-                len_src,
+                min_len,
                 curs.len()
             )));
         }
+
         Ok(ParsedCursors::new(input.args)
             .with_cursors(curs)
             .with_params(input.params.clone())
             .level(self.invoke_level)
+            .piped(input.piped_args)
             .trim(input.attr.trim_input)
             .macro_name(self.macro_name))
     }
 
     /// Check if given length is qualified for given raw arguments
-    pub(crate) fn args_with_len(mut self, input: MacroInput) -> RadResult<ParsedArguments> {
-        let len_src = input.type_len();
-        let length = len_src + if input.optional.is_some() { 1 } else { 0 };
+    pub(crate) fn args_with_len(mut self, mut input: MacroInput) -> RadResult<ParsedArguments> {
+        let min_len = input.type_len();
+        let length = min_len + if input.optional.is_some() { 1 } else { 0 };
 
-        if self.is_empty_input_allowed(&input, len_src)? {
-            return Ok(ParsedArguments::with_args(vec![]));
+        let offset = input
+            .piped_args
+            .as_ref()
+            .map(|s| s.len())
+            .unwrap_or_default();
+
+        self.set_split_variant(length.saturating_sub(offset));
+
+        if self.check_empty_input(&input, min_len.saturating_sub(offset))? {
+            let piped = std::mem::take(&mut input.piped_args);
+            let mut at_iter = input.params.iter();
+            let args = piped
+                .unwrap_or_default()
+                .into_iter()
+                .map(|s| {
+                    let p = get_next_type(&mut at_iter, input.optional.as_ref())?;
+                    let cow: Cow<'_, str> = Cow::Owned(s);
+                    let et = if let Some(etos) = input.enum_table {
+                        etos.tables.get(&p.name)
+                    } else {
+                        None
+                    };
+                    cow.to_arg(p, et)
+                })
+                .collect::<RadResult<Vec<_>>>()?;
+            let args = ParsedArguments::with_args(args);
+            return Ok(args);
         }
-
-        self.set_split_variant(length);
 
         let name = input.name;
         let args = self.get_arg_list(input)?;
 
-        if args.len() < len_src {
+        if args.len() < min_len {
             return Err(RadError::InvalidArgument(format!(
                 "Macro [{}] requires [{}] arguments but given [{}] arguments",
                 name,
-                len_src,
+                min_len,
                 args.len()
             )));
         }
+
         Ok(ParsedArguments::with_args(args))
     }
 
     /// Check if given length is qualified for given raw arguments
-    pub(crate) fn texts_with_len(mut self, input: MacroInput) -> RadResult<Vec<Cow<'_, str>>> {
-        let len_src = input.type_len();
-        let length = len_src + if input.optional.is_some() { 1 } else { 0 };
-        if self.is_empty_input_allowed(&input, len_src)? {
-            return Ok(Vec::new());
+    pub(crate) fn texts_with_len(mut self, mut input: MacroInput) -> RadResult<Vec<Cow<'_, str>>> {
+        let mut min_len = input.type_len();
+        let mut length = min_len + if input.optional.is_some() { 1 } else { 0 };
+
+        let offset = input
+            .piped_args
+            .as_ref()
+            .map(|s| s.len())
+            .unwrap_or_default();
+
+        min_len = min_len.saturating_sub(offset);
+        length = length.saturating_sub(offset);
+
+        if self.check_empty_input(&input, min_len)? {
+            let piped = std::mem::take(&mut input.piped_args);
+            let args = piped
+                .unwrap_or_default()
+                .into_iter()
+                .map(Cow::Owned)
+                .collect_vec();
+            return Ok(args);
         }
 
+        let piped = std::mem::take(&mut input.piped_args);
+        // Note
+        // Length was already subtracted, no need to subtract offset again
         self.set_split_variant(length);
 
         let name = input.name;
-        let args = self.get_text_list(input)?;
+        let mut args = self.get_text_list(input)?;
 
-        if args.len() < len_src {
+        if args.len() < min_len {
             return Err(RadError::InvalidArgument(format!(
                 "Macro [{}] requires [{}] arguments but given [{}] arguments",
                 name,
-                len_src,
+                min_len,
                 args.len()
             )));
         }
+
+        args.extend(piped.unwrap_or_default().into_iter().map(Cow::Owned));
+
         Ok(args)
     }
 
@@ -272,22 +340,6 @@ impl ArgParser {
         // TODO TT
         // If arg_type is empty, every type is treated as text
         let mut at_iter = input.params.iter();
-
-        #[inline]
-        fn get_next_type<'b>(
-            iter: &mut Iter<'b, Parameter>,
-            optional: Option<&'b Parameter>,
-        ) -> RadResult<&'b Parameter> {
-            if let Some(v) = iter.next() {
-                Ok(v)
-            } else if let Some(p) = optional {
-                Ok(p)
-            } else {
-                Err(RadError::InvalidExecution(
-                    "Argument doesn't match argument type".to_string(),
-                ))
-            }
-        }
 
         // Return empty vector without going through logics
         if input.args.is_empty() {
@@ -491,8 +543,18 @@ impl ArgParser {
             value,
             input.enum_table,
         )?;
-
         values.push(type_checked_arg);
+
+        // Parse piped_input
+        for p in input.piped_args.unwrap_or_default().into_iter() {
+            let type_checked_arg = Self::validate_arg(
+                get_next_type(&mut at_iter, input.optional.as_ref())?,
+                Cow::Owned(p),
+                input.enum_table,
+            )?;
+            values.push(type_checked_arg);
+        }
+
         Ok(values)
     }
 
@@ -687,7 +749,6 @@ impl ArgParser {
         source: Cow<'a, str>,
         etable: Option<&ETMap>,
     ) -> RadResult<Argument<'a>> {
-        use crate::ArgableCow;
         let et = if let Some(etos) = etable {
             etos.tables.get(&param.name)
         } else {
@@ -703,4 +764,20 @@ impl ArgParser {
 #[derive(Debug)]
 pub struct ParenStack {
     macro_invocation: bool,
+}
+
+#[inline]
+fn get_next_type<'b>(
+    iter: &mut Iter<'b, Parameter>,
+    optional: Option<&'b Parameter>,
+) -> RadResult<&'b Parameter> {
+    if let Some(v) = iter.next() {
+        Ok(v)
+    } else if let Some(p) = optional {
+        Ok(p)
+    } else {
+        Err(RadError::InvalidExecution(
+            "Argument doesn't match argument type".to_string(),
+        ))
+    }
 }

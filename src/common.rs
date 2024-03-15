@@ -62,10 +62,10 @@ impl LocalMacro {
 #[derive(Debug, Default, Clone, Copy)]
 pub struct MacroAttribute {
     // Macro attributes
-    pub pipe_output: bool,
-    pub pipe_input: bool,
+    pub pipe_output: PipeOutput,
+    pub pipe_input: PipeInput,
+    pub negate_result: Negation,
     pub yield_literal: bool,
-    pub negate_result: bool,
     pub trim_input: bool,
     pub trim_output: bool,
     pub skip_expansion: bool,
@@ -79,19 +79,12 @@ impl MacroAttribute {
 
     pub(crate) fn set(&mut self, attr: char) -> bool {
         match attr {
-            '|' => self.pipe_output = true,
-            '*' => self.yield_literal = true,
-            '!' => {
-                if !self.negate_result {
-                    self.negate_result = true;
-                } else {
-                    self.negate_result = false;
-                    self.discard_output = true;
-                }
-            }
-            '=' => self.trim_input = true,
+            '!' => self.negate_result.set(),
+            '|' => self.pipe_output.set(),
+            '-' => self.pipe_input.set(),
+            '<' => self.trim_input = true,
             '^' => self.trim_output = true,
-            '-' => self.pipe_input = true,
+            '*' => self.yield_literal = true,
             '~' => self.skip_expansion = true,
             _ => return false,
         }
@@ -108,11 +101,13 @@ impl MacroAttribute {
 impl Display for MacroAttribute {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut formatted = String::new();
-        if self.pipe_input {
-            formatted.push('-')
-        }
-        if self.pipe_output {
-            formatted.push('|')
+
+        formatted.push_str(&self.pipe_input.to_string());
+
+        match self.pipe_output {
+            PipeOutput::Single => formatted.push('|'),
+            PipeOutput::Vector => formatted.push_str("||"),
+            PipeOutput::None => (),
         }
         if self.yield_literal {
             formatted.push('*')
@@ -123,8 +118,10 @@ impl Display for MacroAttribute {
         if self.trim_input {
             formatted.push('=')
         }
-        if self.negate_result {
-            formatted.push('!')
+        match self.negate_result {
+            Negation::Value => formatted.push('!'),
+            Negation::Yield => formatted.push_str("!!"),
+            Negation::None => (),
         }
         if self.skip_expansion {
             formatted.push('~')
@@ -133,6 +130,100 @@ impl Display for MacroAttribute {
             formatted.push_str("!!")
         }
         write!(f, "{}", formatted)
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub enum PipeOutput {
+    #[default]
+    None,
+    Single,
+    Vector,
+}
+
+impl Display for PipeOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let ret = match self {
+            Self::None => "",
+            Self::Single => "|",
+            Self::Vector => "||",
+        };
+        write!(f, "{}", ret)
+    }
+}
+
+impl PipeOutput {
+    pub fn set(&mut self) {
+        match self {
+            Self::None => *self = Self::Single,
+            Self::Single => *self = Self::Vector,
+            _ => (),
+        }
+    }
+    pub fn is_empty(&self) -> bool {
+        *self == Self::None
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum PipeInput {
+    #[default]
+    None,
+    Vector,
+    Single,
+}
+
+impl Display for PipeInput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let ret = match self {
+            PipeInput::Vector => "-",
+            PipeInput::Single => "--",
+            PipeInput::None => "",
+        };
+        write!(f, "{}", ret)
+    }
+}
+
+impl PipeInput {
+    pub fn set(&mut self) {
+        match self {
+            Self::None => *self = Self::Vector,
+            Self::Vector => *self = Self::Single,
+            _ => (),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        *self == Self::None
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub enum Negation {
+    #[default]
+    None,
+    Value,
+    Yield,
+}
+
+impl Display for Negation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let ret = match self {
+            Self::None => "",
+            Self::Value => "!",
+            Self::Yield => "!!",
+        };
+        write!(f, "{}", ret)
+    }
+}
+
+impl Negation {
+    pub fn set(&mut self) {
+        match self {
+            Self::None => *self = Self::Value,
+            Self::Value => *self = Self::Yield,
+            _ => (),
+        }
     }
 }
 

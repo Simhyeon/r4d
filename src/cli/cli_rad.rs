@@ -253,7 +253,7 @@ impl<'cli> RadCli<'cli> {
             let stdin = std::io::stdin();
             let mut input = String::new();
             stdin.lock().read_to_string(&mut input)?;
-            self.processor.set_pipe(&input)
+            self.processor.set_main_pipe(&input)
         }
 
         // -->> Read from files or process as raw text
