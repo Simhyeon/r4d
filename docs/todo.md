@@ -53,7 +53,41 @@ Actually finish deterred macro later...
 
 # todo immediate
 
-* [ ] Macro attribute `!!` for discard
+* [ ] Make a newtype pattern
+
+* [ ] First
+    * [x] Add hygiene
+    * [x] Add feel macro
+    * [x] Add reverse-feel macro
+    * [x] Make macro character fixed 
+    * [x] Negation as argument not as string
+    * [x] Make pipe a vector based
+        * [x] Pipe input should be applied to `macro_input` rather than args
+        * [x] Now change `arg_parser` behaviour lastly
+    * [x] Test if pipeinput work for macros
+        * [x] Runtime -> Still doesn't work...
+        * [x] Function -> Empty arguments error... classic!
+        * [x] Deterred
+    * [x] Test pipeOutput
+    * [x] New macro logp -> log pipe
+    * [x] Change pipev signature from single value to multiple optional
+    * [x] Simplify macro attribute usages
+        * [x] Now trim input is `<` rather than ambiguous `=`
+    * [ ] Consider implemtnting return type for runtime macro
+    * [ ] Renew allowed comment character
+    * [ ] Fix bugs
+    * [ ] Restart manual checking
+    * [ ] Check things for basics
+    * [ ] Complete manual ( No adding macros... please )
+    * [ ] Push to master
+* [ ] Later
+    * [ ] Improve cli ergonomics ( e.g. Shell ValueHint , enumeration values...)
+    * [ ] New macros
+    * [ ] Performance ... 
+    * [ ] ExtMacroBuilder ... Extension etc...
+
+* [ ] Currently negation cannot logically work for runtime macro due to logic
+  changes.
 
 * [ ] Mediocre result for duplicate error logging... Make hash and skip if
   previous is same with current logging.
@@ -70,7 +104,8 @@ Actually finish deterred macro later...
 
 * [ ] Name alias
 
-* [ ] Consider `strip` cases
+* [ ] Consider if `strip` methods are required
+    * [ ] This is mostly related literal quote
 
 * [ ] Make error codes much more intuitive
 
@@ -98,18 +133,27 @@ Actually finish deterred macro later...
 
 * [ ] Exdent doesn't work well with argument type system...
     
-* [ ] Loop is also buggy.
+* [ ] Loop is also buggy. Not sure but can be buggy
 
-* [ ] BUG : Error inside file trigers nested error message
-* [ ] Currently bufread series has a bug
+* [ ] BUG : Error inside file triggers nested error message
+    -> NOt every error but some errors. Serach `log_error`
+    -> Remove strict error, make it returned not logged.
+* [-] Currently bufread series has a bug
 ```
 thread 'main' panicked at src/logger.rs:542:31:
 -> Looks like no tracker was created
 ```
+-> Failed to recreate.... god damn...
 
 * [ ] Map exression (mape) is completely broken... damn...
 
 * [ ] Bug : Peel removes following text after "to be peeled".
+
+```
+let val = wow(t) abc
+===
+let val = t
+```
 
 * Check PS.r4d manual because escape character is strange in the document.
 
@@ -153,14 +197,17 @@ thread 'main' panicked at src/logger.rs:542:31:
 #### Features
 
 * [ ] Add a hygiene option for binary
+
 * [ ] Add an option for Positive regulation which means auth related macros are
   only executed when it was allowed speicifically by user. Or simply wihout
   auth macros then
   -> This is to circumvent harsh hygiene rules and utilize runtieme macros
 
 * [ ] --eman option to print manual for environmnet
+
 * [ ] Complicated runtime macro definition
     * [ ] Auth, ret type etc...
+
 * [ ] Possibly a new feature to allow permission for specific macro
 
 * [ ] Add regex-file option
@@ -170,11 +217,15 @@ thread 'main' panicked at src/logger.rs:542:31:
     ->> However making a literal rule concrete is the first thing to come though.
 
 * [ ] Consider implemtnting consecutive macro calls for sc and sl flags
+
 * [ ] Panic message is kinda cringe... improve it.
+
 * [ ] Update template macro...
 
 #### Env
 
+* [ ] Drain behaviour Currently -> `* [x]` -> `* [ ]` ( Insert single space )
+* [ ] Fill expand ( [  ]  -> [xxxx])
 * [ ] Enable frontal search for rotatei
 * [ ] Env to apply `trim_each_lines` for trim-input
 * [ ] Env for bordering ( exdentl )
@@ -187,9 +238,8 @@ thread 'main' panicked at src/logger.rs:542:31:
 
 #### Macro ( macro )
 
-* [ ] Rename sortc to sorte
+* [ ] Change sortc to sorte?
 * [ ] Forin -> For inner : Iterate through inner calls ( increase by one )
-* [ ] Add a new macro to `drop expression` + add doc for addexpr
 
 * [ ] Fill macro
 ```
@@ -229,15 +279,11 @@ $forchunk(start_regex,end_regex,macro_body,src)
 $slice(pat,1,2,source)
 ```
 
-* [x] Make alignby with complicated rules supportted
-    * [ ] Rename macros that execute on lines that has no l suffix
-    * [ ] Condl variant to respect leading tabs and spaces 
-    -> Maybe this is a burden of pretty printer or env
-* [x] Joinl macro
-    * [ ] Add an environmnet variable to set sensible default for eliminating
-      empty new lines. Or say, if something can be eaisly achieved by another
-      macro there should be need to add sensible default behaviour. it is not
-      consistent 
+* [ ] Rename macros that execute on lines that has no l suffix
+
+* [ ] Condl variant to respect leading tabs and spaces 
+-> Maybe this is a burden of pretty printer or env
+
 * [ ] Discard and print status macro
 * [ ] Evalk formatting to be aesthetic
 * [ ] TOC macro-script ( Not builtin but usage's example )
@@ -287,6 +333,14 @@ $slice(pat,1,2,source)
 
 #### Performance
 
+* [ ] Pattern such as `&["a","b"]` is kinda hard to put but this is less
+  abmgious and saves compile time. While pattern like `["a", "b"]` has to be
+  accepted with `IntoIterator<Item = AsRef<str>>` which increases compiles time
+  but much cleaner for users. Think about what is better.
+
+* [ ] Argerparser cursor can return vector of ranges not a total string.
+  Currently cursor returns either single range for string which is comparably
+  worse in performance.
 * [ ] Return value variant : Slice -> Trim, range etc...
 * [ ] `Parse_chunk_arg` to return cursors
 * [ ] Rearrange processor's lex branch method's arguments
@@ -431,3 +485,8 @@ file.
 * [x] No such macro should be early returned
 * [x] Logm is bugged : Fixed
 * [x] BUG : Currently trim input doesn't work for deterred macro -> Fixed
+* [x] Macro attribute `!!` for discard
+
+* [x] Add a new macro to `drop expression` 
+* [x] Remove regexcache and unify to register
+
