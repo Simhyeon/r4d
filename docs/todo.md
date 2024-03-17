@@ -55,6 +55,35 @@ Actually finish deterred macro later...
 
 * [ ] Make a newtype pattern
 
+* [ ] <Performance> Module soundness + publicity
+    * [ ] Expose processor methods with impl arguments
+    * [ ] Use internal concrete type for crate method 
+    * [ ] Don't use expoed method for internal processor, if necessary make a
+      internal only determined method
+    * [ ] Use string::from for static str and `to_string` for display-able type
+    * [ ] Remove unnecessary `to_string` calls
+    * [ ] Recheck log_warning and log_error sanity
+    * [ ] Currently removing unnecessary `to_string` with Into<String> 
+        * [ ] Make a constructor for error type so that impl Into<String> can
+          be utilized
+    * [ ] Check publicity and modules
+        * [x] merge log and `log_no_line` 
+        * [ ] Add a new enum `LogLine`
+        * [ ] Check the followings.
+            * [ ] Tracktype publicity
+    * [ ] There are too many fucking methods that receives str and then convert
+      argument to string and I send Newly created string as reference.
+        -> This is retarded as its finest form... Please remove all these stupid codes
+    * [ ] Replace following pattern
+    ```
+        self.logger.start_new_tracker(TrackType::Input(
+            input_name.unwrap_or("String".to_string()).to_string(),
+        ));
+        with 
+        ===
+        self.logger.start_input_record("String");
+    ```
+
 * [ ] First
     * [x] Add hygiene
     * [x] Add feel macro
@@ -87,31 +116,11 @@ Actually finish deterred macro later...
         -> Ok, trim input is applied per `get_arg` method
     * [x] "Length of a runtime or local macro" macro -> mlen
     * [O] ----------DONE----------
-    * [ ] I'm switching every &str into impl AsRef<str>
-        - YOu have to replace them all and then check if there are cases where
-          only str or String is given to the method. If true, then change the
-          parameter to such 
-        - Function that is only used internally should have determined type
-        - Use String::from rather than `to_string`
-        - 라고 말할려고 했는데 그러기에는 시발 너무 많다. 체크아웃 한다음에 문제가 있는 걸 바꾸는 식으로 하자. 
-        - 먼저 `to_string` 을 체크하 고나서야 바꾸자. 
-    * [ ] Replace following pattern
-    ```
-        self.logger.start_new_tracker(TrackType::Input(
-            input_name.unwrap_or("String".to_string()).to_string(),
-        ));
-        with 
-        ===
-        self.logger.start_input_record("String");
-    ```
-    * [ ] Currently removing unnecessary `to_string` with Into<String> 
-        -> Although this will increase compile a lot... but I mean... it is
-        already long, thus why not
-        * [ ] Make a constructor for error type so that impl Into<String> can
-          be utilized
     * [ ] Don't eprint but rather return 
-        * [ ] My first try is to simply ditch every StrictPanic error and make
+        * [x] My first try is to simply ditch every StrictPanic error and make
           it as behavioural not decisional
+        * [x] Checked `function_map_impl`
+        * [ ] to check `deterred_map_impl`
     * [ ] Renew allowed comment character
     * [ ] Macro definition validity check is outrageous... It really doesn't make any sense.
     * [ ] Fix bugs
@@ -120,9 +129,6 @@ Actually finish deterred macro later...
     * [ ] Complete manual ( No adding macros... please )
     * [ ] Push to master
 * [ ] Later
-    * [ ] There are too many fucking methods that receives str and then convert
-      argument to string and I send Newly created string as reference.
-        -> This is retarded as its finest form... Please remove all these stupid codes
     * [ ] Use range over (usize,usize)
     * [ ] Complicated macro defintiion
         * [ ] Revert enum table for runtime macro
