@@ -86,22 +86,9 @@ impl ArgParser {
     }
 
     pub(crate) fn macro_name(mut self, name: &str) -> Self {
-        self.macro_name = name.to_string();
+        self.macro_name = String::from(name);
         self
     }
-
-    // TODO TT Remove this
-    // /// Don't strip literals
-    // pub(crate) fn set_strip(&mut self, strip_literal: bool) {
-    //     self.strip_literal = strip_literal;
-    // }
-    //
-    // /// Simply strip literal chunk
-    // pub(crate) fn strip(self, name: &str, args: &str) -> RadResult<String> {
-    //     self.args_with_len(MacroInput::new(name, args))?
-    //         .get_text(0)
-    //         .map(|s| s.to_string())
-    // }
 
     fn check_empty_input(&self, input: &MacroInput, required_len: usize) -> RadResult<bool> {
         if !self.allow_empty_input && input.args.trim().is_empty() {
@@ -313,9 +300,9 @@ impl ArgParser {
             } else if let Some(p) = optional {
                 Ok(p)
             } else {
-                Err(RadError::InvalidExecution(
-                    "Argument doesn't match argument type".to_string(),
-                ))
+                Err(RadError::InvalidExecution(String::from(
+                    "Argument doesn't match argument type",
+                )))
             }
         }
 
@@ -342,7 +329,7 @@ impl ArgParser {
                     let value: Cow<'_, str> = if let Some(v) = ret {
                         let mut src = v;
                         if trim {
-                            src = src.trim().to_string();
+                            src = String::from(src.trim());
                         }
                         src.into()
                     } else {
@@ -628,8 +615,8 @@ fn get_next_type<'b>(
     } else if let Some(p) = optional {
         Ok(p)
     } else {
-        Err(RadError::InvalidExecution(
-            "Argument doesn't match argument type".to_string(),
-        ))
+        Err(RadError::InvalidExecution(String::from(
+            "Argument doesn't match argument type",
+        )))
     }
 }

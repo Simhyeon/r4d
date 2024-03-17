@@ -1578,8 +1578,8 @@ impl FunctionMacroMap {
 
         #[cfg(feature = "cindex")]
         {
-            map.macros.insert(
-                "addcsv".to_string(),
+            map.insert(
+                
                 FMacroSign::new(
                     "addcsv",
                     [
@@ -1591,8 +1591,8 @@ impl FunctionMacroMap {
                 )
                 .no_ret(),
             );
-            map.macros.insert(
-                "dropcsv".to_string(),
+            map.insert(
+                
                 FMacroSign::new(
                     "dropcsv",
                     [(ValueType::CText, "a_table_name")],
@@ -1601,8 +1601,8 @@ impl FunctionMacroMap {
                 )
                 .no_ret(),
             );
-            map.macros.insert(
-                "query".to_string(),
+            map.insert(
+                
                 FMacroSign::new(
                     "query",
                     [(ValueType::CText, "a_query")],
@@ -1614,16 +1614,16 @@ impl FunctionMacroMap {
 
         #[cfg(feature = "chrono")]
         {
-            map.macros.insert(
-                "time".to_string(),
+            map.insert(
+                
                 FMacroSign::new("time", ESR, Self::time, Some(man_fun!("time.r4d"))),
             );
-            map.macros.insert(
-                "date".to_string(),
+            map.insert(
+                
                 FMacroSign::new("date", ESR, Self::date, Some(man_fun!("date.r4d"))),
             );
-            map.macros.insert(
-                "hms".to_string(),
+            map.insert(
+                
                 FMacroSign::new(
                     "hms",
                     [(ValueType::Uint, "a_second")],
@@ -1631,8 +1631,8 @@ impl FunctionMacroMap {
                     Some(man_fun!("hms.r4d")),
                 ),
             );
-            map.macros.insert(
-                "ftime".to_string(),
+            map.insert(
+                
                 FMacroSign::new(
                     "ftime",
                     [(ValueType::Path, "a_file")],
@@ -1645,8 +1645,8 @@ impl FunctionMacroMap {
         // EVALEXPR
         #[cfg(feature = "evalexpr")]
         {
-            map.macros.insert(
-                "eval".to_string(),
+            map.insert(
+                
                 FMacroSign::new(
                     "eval",
                     [(ValueType::Text, "a_expr")],
@@ -1654,12 +1654,12 @@ impl FunctionMacroMap {
                     Some(man_fun!("eval.r4d")),
                 ),
             );
-            map.macros.insert(
-                "evalf".to_string(),
+            map.insert(
+                
                 FMacroSign::new("evalf", [(ValueType::Text, "a_expr")], Self::evalf, None),
             );
-            map.macros.insert(
-                "pie".to_string(),
+            map.insert(
+                
                 FMacroSign::new(
                     "pie",
                     [(ValueType::Text, "a_formula")],
@@ -1668,8 +1668,8 @@ impl FunctionMacroMap {
                 )
                 .no_ret(),
             );
-            map.macros.insert(
-                "mie".to_string(),
+            map.insert(
+                
                 FMacroSign::new(
                     "mie",
                     [
@@ -1681,8 +1681,8 @@ impl FunctionMacroMap {
                 )
                 .no_ret(),
             );
-            map.macros.insert(
-                "inc".to_string(),
+            map.insert(
+                
                 FMacroSign::new(
                     "inc",
                     [(ValueType::CText,"a_number")],
@@ -1690,8 +1690,8 @@ impl FunctionMacroMap {
                     Some(man_fun!("inc.r4d")),
                 ).optional(Parameter::new(ValueType::Uint,"a_amount"))
             );
-            map.macros.insert(
-                    "dec".to_string(),
+            map.insert(
+                    
                 FMacroSign::new(
                     "dec",
                     [(ValueType::CText,"a_number")],
@@ -1699,8 +1699,8 @@ impl FunctionMacroMap {
                     Some(man_fun!("dec.r4d")),
                 ).optional(Parameter::new(ValueType::Uint,"a_amount"))
             );
-            map.macros.insert(
-                    "square".to_string(),
+            map.insert(
+                    
                 FMacroSign::new(
                     "square",
                     [(ValueType::Text,"a_number"),],
@@ -1708,8 +1708,8 @@ impl FunctionMacroMap {
                     Some(man_fun!("square.r4d")),
                 )
             );
-            map.macros.insert(
-                    "cube".to_string(),
+            map.insert(
+                    
                 FMacroSign::new(
                     "cube",
                     [(ValueType::Text,"a_number"),],
@@ -1717,8 +1717,8 @@ impl FunctionMacroMap {
                     Some(man_fun!("cube.r4d")),
                 )
             );
-            map.macros.insert(
-                    "pow".to_string(),
+            map.insert(
+                    
                 FMacroSign::new(
                     "pow",
                     [(ValueType::Text,"a_number"),(ValueType::Text,"a_exponent")],
@@ -1726,8 +1726,8 @@ impl FunctionMacroMap {
                     Some(man_fun!("pow.r4d")),
                 )
             );
-            map.macros.insert(
-                    "sqrt".to_string(),
+            map.insert(
+                    
                 FMacroSign::new(
                     "sqrt",
                     [(ValueType::Text,"a_number"),],
@@ -1739,8 +1739,8 @@ impl FunctionMacroMap {
 
         #[cfg(feature = "hook")]
         {
-            map.macros.insert(
-                "hookon".to_string(),
+            map.insert(
+                
                 FMacroSign::new(
                     "hookon",
                     [
@@ -1752,8 +1752,8 @@ impl FunctionMacroMap {
                 )
                 .enum_table(ETable::new("a_macro_type").candidates(&["macro", "char"])),
             );
-            map.macros.insert(
-                "hookoff".to_string(),
+            map.insert(
+                
                 FMacroSign::new(
                     "hookoff",
                     [
@@ -1768,6 +1768,11 @@ impl FunctionMacroMap {
         }
 
         map
+    }
+
+    /// Insert a function macro signature
+    pub fn insert(&mut self, sig: FMacroSign) {
+        self.macros.insert(sig.name.clone(), sig);
     }
 
     /// Add new macro extension from macro builder

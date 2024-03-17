@@ -835,7 +835,7 @@ impl<'processor> Processor<'processor> {
         if let Some(status) = self.state.auth_flags.get_status_string() {
             let mut status_with_header = String::from("Permission granted");
             status_with_header.push_str(&status);
-            self.log_warning_no_line(&status_with_header, WarningType::Security)?;
+            self.log_warning(false, &status_with_header, WarningType::Security)?;
         }
         Ok(())
     }
@@ -849,7 +849,7 @@ impl<'processor> Processor<'processor> {
     #[allow(dead_code)]
     pub fn print_env(&mut self) -> RadResult<()> {
         let envs = format!("{:#?}{}{:#?}", *PROC_ENV, LINE_ENDING, self.env);
-        self.logger.log_no_line(&envs)?;
+        self.logger.log(false, envs)?;
         Ok(())
     }
 
@@ -884,17 +884,17 @@ impl<'processor> Processor<'processor> {
             // Warn unterminated relaying
             if !self.state.relay.is_empty() {
                 let relay = format!("{:?}", self.state.relay.last().unwrap());
-                self.log_warning(&format!("There is unterminated relay target : \"{}\" which might not be an intended behaviour.", relay), WarningType::Sanity)?;
+                self.log_warning(false, format!("There is unterminated relay target : \"{}\" which might not be an intended behaviour.", relay), WarningType::Sanity)?;
             }
             // Warn flow control
             match self.state.flow_control {
                 FlowControl::None => (),
-                FlowControl::Exit => self
-                    .logger
-                    .wlog_no_line("Process exited.", WarningType::Sanity)?,
-                FlowControl::Escape => self
-                    .logger
-                    .wlog_no_line("Process escaped.", WarningType::Sanity)?,
+                FlowControl::Exit => {
+                    self.log_warning(false, "Process exited.", WarningType::Sanity)?
+                }
+                FlowControl::Escape => {
+                    self.log_warning(false, "Process escaped.", WarningType::Sanity)?
+                }
             }
         }
 
@@ -1025,10 +1025,9 @@ impl<'processor> Processor<'processor> {
                 rules.iter().map(|(s, _, _)| s.as_ref()).collect::<Vec<_>>()
             ));
             if self.state.behaviour == ErrorBehaviour::Strict {
-                self.log_error(&err.to_string())?;
-                return Err(RadError::StrictPanic);
+                return Err(err);
             }
-            self.log_warning(&err.to_string(), WarningType::Security)?;
+            self.log_warning(true, err.to_string(), WarningType::Security)?;
         }
         for (name, args, body) in rules {
             let name = name.as_ref().trim();
@@ -1079,10 +1078,9 @@ impl<'processor> Processor<'processor> {
                 rules.iter().map(|(s, _)| s.as_ref()).collect::<Vec<_>>()
             ));
             if self.state.behaviour == ErrorBehaviour::Strict {
-                self.log_error(&err.to_string())?;
                 return Err(err);
             }
-            self.log_warning(&err.to_string(), WarningType::Sanity)?;
+            self.log_warning(true, err.to_string(), WarningType::Sanity)?;
         }
         for (name, body) in rules {
             let name = name.as_ref().trim();
@@ -1600,14 +1598,15 @@ impl<'processor> Processor<'processor> {
         }
 
         if !frag.is_empty() {
-            self.log_warning_no_line("Unterminated macro execution exists, which is possibly due to unterminated parenthesis", WarningType::Sanity)?;
+            self.log_warning(false, "Unterminated macro execution exists, which is possibly due to unterminated parenthesis", WarningType::Sanity)?;
         }
 
         if cont_type != ContainerType::None {
             Ok(cont.filter(|t| !t.is_empty()))
         } else {
             if lexor.on_literal() {
-                self.log_warning_no_line(
+                self.log_warning(
+                    false,
                     "Literal quote is not finished. This might not be an intended behaviour",
                     WarningType::Sanity,
                 )?;
@@ -1715,8 +1714,10 @@ impl<'processor> Processor<'processor> {
             self.map.clear_anonymous_macros();
             // Clear local variable macros
             self.map.clear_local();
+
+            // TODO TT?
             // Reset error cache
-            self.state.error_cache.take();
+            // self.state.error_cache.take();
 
             // Clear volatile variables when macro hygiene is enabled
             if self.state.hygiene == Hygiene::Macro {
@@ -1782,7 +1783,7 @@ impl<'processor> Processor<'processor> {
         self.logger.stop_last_tracker();
 
         // TODO TT
-        let raturn = Raturn::from_string(&rule, result, None)?;
+        let raturn = Raturn::from_string(rule, result, None)?;
 
         Ok(raturn)
     } // parse_chunk end
@@ -2020,6 +2021,7 @@ impl<'processor> Processor<'processor> {
             // Deterred macro is not allowed in export mode
             if self.state.process_type == ProcessType::Export {
                 self.log_warning(
+                    true,
                     "Deterred macro is not expanded in export mode.",
                     WarningType::Sanity,
                 )?;
@@ -2067,7 +2069,8 @@ impl<'processor> Processor<'processor> {
             // Possibly inifinite loop so warn user
             if caller == name {
                 self.log_warning(
-                    &format!(
+                    true,
+                    format!(
                         "Calling self, which is \"{}\", can possibly trigger infinite loop. This is also occured when argument's name is equal to macro's name.",
                         name,
                     ),
@@ -2188,7 +2191,7 @@ impl<'processor> Processor<'processor> {
             // Because macros are not expanded, it is unsure if it is an error or not, thus rad
             // simply prints warning
             if self.state.process_type == ProcessType::Dry {
-                self.log_warning(&err.to_string(), WarningType::Sanity)?;
+                self.log_warning(true, err.to_string(), WarningType::Sanity)?;
                 Ok(None)
             } else {
                 Err(err)
@@ -2310,8 +2313,7 @@ impl<'processor> Processor<'processor> {
                 &def.name
             ));
             // TODO TT
-            self.log_error(&err.to_string())?;
-            return Err(RadError::StrictPanic);
+            return Err(err);
         }
 
         // Pre clone values for later usage
@@ -2348,7 +2350,7 @@ impl<'processor> Processor<'processor> {
                 .map_err(|_| &err);
 
             if res.is_err() {
-                self.log_warning(&err.to_string(), WarningType::Sanity)?;
+                self.log_warning(true, err.to_string(), WarningType::Sanity)?;
             }
         }
 
@@ -2509,7 +2511,11 @@ impl<'processor> Processor<'processor> {
         if !self.checker.check(ch) && !self.state.paused {
             self.logger
                 .append_track(String::from("Unbalanced parenthesis"));
-            self.log_warning("Unbalanced parenthesis detected.", WarningType::Sanity)?;
+            self.log_warning(
+                true,
+                "Unbalanced parenthesis detected.",
+                WarningType::Sanity,
+            )?;
             self.logger.merge_track();
         }
         remainder.push(ch);
@@ -2564,14 +2570,14 @@ impl<'processor> Processor<'processor> {
                 );
 
                 if self.state.behaviour == ErrorBehaviour::Strict {
-                    self.log_error(&err.to_string())?;
-                    return Err(RadError::StrictPanic);
+                    return Err(err);
                 }
 
-                self.log_warning(&err.to_string(), WarningType::Security)?;
+                self.log_warning(true, err.to_string(), WarningType::Security)?;
             } else {
                 if level != 0 && self.state.process_type == ProcessType::Export {
                     self.log_warning(
+                        true,
                         "Only first level define is allowed in export mode",
                         WarningType::Sanity,
                     )?;
@@ -2606,7 +2612,6 @@ impl<'processor> Processor<'processor> {
         #[cfg(feature = "debug")] level: usize,
     ) -> RadResult<()> {
         if let Err(err) = self.add_rule(frag) {
-            self.log_error(&err.to_string())?;
             match self.state.behaviour {
                 ErrorBehaviour::Exit => return Err(RadError::SaneExit),
                 ErrorBehaviour::Interrupt => return Err(err),
@@ -2614,7 +2619,7 @@ impl<'processor> Processor<'processor> {
                 // Re-throw error
                 // It is not captured in cli but it can be handled by library user.
                 ErrorBehaviour::Strict => {
-                    return Err(RadError::StrictPanic);
+                    return Err(err);
                 }
                 // If purge mode is set, don't print anything
                 // and don't print error
@@ -2654,14 +2659,13 @@ impl<'processor> Processor<'processor> {
                 let err = RadError::InvalidMacroReference(
                     "Cannot invoke a macro with empty name".to_string(),
                 );
-                self.log_error(&err.to_string())?;
 
                 // Handle empty name error
                 match self.state.behaviour {
                     ErrorBehaviour::Exit => return Err(RadError::SaneExit),
                     ErrorBehaviour::Assert => return Err(RadError::AssertFail),
                     ErrorBehaviour::Strict | ErrorBehaviour::Interrupt => {
-                        return Err(RadError::StrictPanic);
+                        return Err(err);
                     } // Error
                     ErrorBehaviour::Lenient => remainder.push_str(&frag.whole_string),
                     ErrorBehaviour::Purge => (),
@@ -2702,7 +2706,7 @@ impl<'processor> Processor<'processor> {
             if self.state.behaviour == ErrorBehaviour::Strict {
                 return Err(err);
             } else {
-                self.log_warning(&err.to_string(), WarningType::Sanity)?;
+                self.log_warning(true, err.to_string(), WarningType::Sanity)?;
                 return Ok(());
             }
         } else {
@@ -2747,13 +2751,14 @@ impl<'processor> Processor<'processor> {
             return Err(error);
         }
 
-        if self.state.error_cache.is_none() {
-            match error {
-                RadError::SaneExit => self.log_message(&error.to_string())?,
-                _ => self.log_error(&error.to_string())?,
-            }
-            self.state.error_cache.replace(error);
-        }
+        // TODO TT ?
+        // if self.state.error_cache.is_none() {
+        //     match error {
+        //         RadError::SaneExit => self.log_message(false, error.to_string())?,
+        //         _ => self.log_error(true, error.to_string())?,
+        //     }
+        //     self.state.error_cache.replace(error);
+        // }
 
         match self.state.behaviour {
             ErrorBehaviour::Exit => return Err(RadError::SaneExit),
@@ -2762,7 +2767,7 @@ impl<'processor> Processor<'processor> {
             // Re-throw error
             // It is not captured in cli but it can be handled by library user.
             ErrorBehaviour::Strict => {
-                return Err(RadError::StrictPanic);
+                return Err(error);
             }
             // If purge mode is set, don't print anything
             // and don't print error
@@ -2915,7 +2920,7 @@ impl<'processor> Processor<'processor> {
 
     /// Get logger's write option reference
     pub(crate) fn get_logger_write_option(&self) -> Option<&WriteOption> {
-        self.logger.write_option.as_ref()
+        self.logger.get_write_option()
     }
 
     /// Method for adding container macros
@@ -3007,30 +3012,25 @@ impl<'processor> Processor<'processor> {
     }
 
     /// Log message
-    pub(crate) fn log_message(&mut self, log: &str) -> RadResult<()> {
-        self.logger.log(log)?;
+    pub(crate) fn log_message(&mut self, log_line: bool, log: impl Into<String>) -> RadResult<()> {
+        self.logger.log(log_line, log.into())?;
         Ok(())
     }
 
     /// Log error message
-    pub(crate) fn log_error(&mut self, log: &str) -> RadResult<()> {
-        self.logger.elog(log)?;
-        Ok(())
-    }
-
-    /// Log warning message without line number
-    pub(crate) fn log_warning_no_line(
-        &mut self,
-        log: &str,
-        warning_type: WarningType,
-    ) -> RadResult<()> {
-        self.logger.wlog_no_line(log, warning_type)?;
+    pub(crate) fn log_error(&mut self, log_line: bool, log: impl Into<String>) -> RadResult<()> {
+        self.logger.elog(log_line, log.into())?;
         Ok(())
     }
 
     /// Log warning message
-    pub(crate) fn log_warning(&mut self, log: &str, warning_type: WarningType) -> RadResult<()> {
-        self.logger.wlog(log, warning_type)?;
+    pub(crate) fn log_warning(
+        &mut self,
+        log_line: bool,
+        log: impl Into<String>,
+        warning_type: WarningType,
+    ) -> RadResult<()> {
+        self.logger.wlog(log_line, log.into(), warning_type)?;
         Ok(())
     }
 
@@ -3166,13 +3166,8 @@ impl<'processor> Processor<'processor> {
         macro_name: &str,
         level: usize,
     ) -> Option<String> {
-        if let Some(mac) = self.get_similar_macro(macro_name, true) {
-            Some(mac)
-        } else if let Some(mac) = self.get_similar_local_macro(macro_name, level) {
-            Some(mac)
-        } else {
-            None
-        }
+        self.get_similar_macro(macro_name, true)
+            .and(self.get_similar_local_macro(macro_name, level))
     }
 
     #[inline]
@@ -3374,8 +3369,8 @@ impl<'processor> Processor<'processor> {
     /// let mut proc = r4d::Processor::new();
     /// proc.print_error_no_line("Error occured").expect("Failed to write error");
     /// ```
-    pub fn print_error_no_line(&mut self, error: &str) -> RadResult<()> {
-        self.logger.elog_no_line(error)?;
+    pub fn print_error_no_line(&mut self, error: impl Into<String>) -> RadResult<()> {
+        self.logger.elog(false, error.into())?;
         Ok(())
     }
 
@@ -3387,8 +3382,10 @@ impl<'processor> Processor<'processor> {
     /// let mut proc = r4d::Processor::new();
     /// proc.print_error("Error occured right now").expect("Failed to write error");
     /// ```
-    pub fn print_error(&mut self, error: &str) -> RadResult<()> {
-        self.log_error(error)?;
+    // TODO TT
+    // If this method are to be expoed, error might be better impl Into<String>
+    pub fn print_error(&mut self, error: impl Into<String>) -> RadResult<()> {
+        self.log_error(true, error.into())?;
         Ok(())
     }
 
@@ -3412,7 +3409,8 @@ impl<'processor> Processor<'processor> {
         let variant = match self.state.auth_flags.get_state(&auth_type) {
             AuthState::Warn => {
                 self.log_warning(
-                    &format!("{} was enabled with warning", auth_type),
+                    false,
+                    format!("{} was enabled with warning", auth_type),
                     WarningType::Security,
                 )?;
                 true
@@ -3564,7 +3562,7 @@ impl<'processor> Processor<'processor> {
 
     /// Add new macro name as pass through
     pub fn add_pass_through(&mut self, macro_name: &str) {
-        self.map.add_new_pass_through(macro_name);
+        self.map.add_new_pass_through(String::from(macro_name));
     }
 
     /// Clear all macro names from pass through
@@ -3641,7 +3639,8 @@ impl<'processor> Processor<'processor> {
                 }
                 AuthState::Warn => {
                     self.log_warning(
-                        &format!(
+                        true,
+                        format!(
                             "\"{}\" was called with \"{:?}\" permission",
                             name, auth_type
                         ),
@@ -3670,7 +3669,7 @@ impl<'processor> Processor<'processor> {
             let sim = self
                 .get_similar_macro(name, true)
                 .and(self.get_similar_local_macro(name, level));
-            return Err(RadError::NoSuchMacroName(name.to_string(), sim));
+            return Err(RadError::NoSuchMacroName(String::from(name), sim));
         }
         Ok(())
     }
@@ -3768,9 +3767,9 @@ impl RuleFile {
             self.rules.extend(rule_file.rules);
             Ok(())
         } else {
-            Err(RadError::BincodeError(
-                "Failed to import the literal value".to_string(),
-            ))
+            Err(RadError::BincodeError(String::from(
+                "Failed to import the literal value",
+            )))
         }
     }
 
@@ -3796,9 +3795,9 @@ impl RuleFile {
     pub(crate) fn serialize(&self) -> RadResult<Vec<u8>> {
         let result = bincode::serialize(self);
         if result.is_err() {
-            return Err(RadError::BincodeError(
-                "Failed to serialize a rule".to_string(),
-            ));
+            return Err(RadError::BincodeError(String::from(
+                "Failed to serialize a rule",
+            )));
         }
         Ok(result.unwrap())
     }

@@ -68,8 +68,6 @@ pub enum RadError {
     UnallowedChar(String),
     /// Required permission was not authorized to user
     PermissionDenied(String, AuthType),
-    /// Strict panic
-    StrictPanic,
     // </GENERAL>
 
     // <Preocedure flow related>
@@ -102,6 +100,18 @@ pub enum RadError {
     DcsvError(dcsv::DcsvError),
     // </MISC>
 }
+
+impl RadError {
+    // ----- Constructors
+    pub fn invalid_argument(err: impl Into<String>) -> Self {
+        Self::InvalidArgument(err.into())
+    }
+
+    pub fn invalid_execution(err: impl Into<String>) -> Self {
+        Self::InvalidExecution(err.into())
+    }
+}
+
 impl std::fmt::Display for RadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
@@ -138,7 +148,6 @@ impl std::fmt::Display for RadError {
                 "Permission denied for \"{0}\". Use a flag \"-a {1:?}\" to allow this macro.",
                 txt, atype
             ),
-            Self::StrictPanic => "Every error is panicking in strict mode".to_string(),
             Self::ManualPanic(txt) => format!("Panic triggered with message\n \"{}\"", txt),
             Self::StorageError(txt) => format!("Storage error with message\n= {0}", txt),
             #[cfg(feature = "cindex")]

@@ -6,6 +6,10 @@ use dcsv::VirtualArray;
 use itertools::Itertools;
 use std::fmt::Write;
 
+// TODO TT
+// use once_cell::sync::Lazy;
+// static EMPTY_ERROR: Lazy<RadError> = Lazy::new(|| RadError::InvalidArgument(String::from("")));
+
 /// Formatter that constructs multiple text formats
 pub(crate) struct Formatter;
 

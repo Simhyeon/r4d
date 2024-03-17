@@ -7,7 +7,6 @@ use crate::common::{
     CommentType, ErrorBehaviour, FlowControl, Hygiene, ProcessInput, ProcessType, RelayTarget,
 };
 use crate::consts::LINE_ENDING;
-use crate::RadError;
 use itertools::Itertools;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
@@ -23,7 +22,8 @@ pub(crate) struct ProcessorState {
     pub input_stack: HashSet<PathBuf>,
     pub newline: String,
     pub paused: bool,
-    pub error_cache: Option<RadError>,
+    // TODO TT?
+    // pub error_cache: Option<RadError>,
     // This is reserved for hygienic execution
     pub hygiene: Hygiene,
     pub pipe_truncate: bool,
@@ -39,7 +39,6 @@ pub(crate) struct ProcessorState {
     // Especially in unix, this is not so an unique case
     pub temp_target: FileTarget,
     pub comment_char: Option<char>,
-    pub macro_char: Option<char>,
     pub flow_control: FlowControl,
     pub deny_newline: bool,    // This deny next-next newline
     pub consume_newline: bool, // This consumes newline if the line was only empty
@@ -60,7 +59,7 @@ impl ProcessorState {
             pipe_truncate: true,
             pipe_map: HashMap::new(),
             paused: false,
-            error_cache: None,
+            // error_cache: None,
             hygiene: Hygiene::None,
             relay: vec![],
             behaviour: ErrorBehaviour::Strict,
@@ -70,7 +69,6 @@ impl ProcessorState {
             sandbox: false,
             temp_target: FileTarget::with_truncate(&std::env::temp_dir().join("rad.txt")).unwrap(),
             comment_char: None,
-            macro_char: None,
             flow_control: FlowControl::None,
             deny_newline: false,
             consume_newline: false,

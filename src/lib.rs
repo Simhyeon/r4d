@@ -49,7 +49,6 @@
 //! page](https://github.com/simhyeon/r4d/blob/master/docs/usage.md) or in
 //! [Processor](crate::Processor)
 
-mod argument;
 mod error;
 mod package;
 mod process;
@@ -58,13 +57,15 @@ mod parser;
 pub(crate) use parser::ArgParser;
 
 mod map;
-pub(crate) use argument::{ArgableCow, ArgableStr, Parameter};
 pub(crate) use map::deterred_map;
 pub(crate) use map::function_map;
 #[cfg(feature = "hook")]
 pub(crate) use map::hookmap;
 pub(crate) use map::runtime_map;
 pub(crate) use map::sigmap;
+
+mod argument;
+pub(crate) use argument::{ArgableCow, Parameter};
 pub(crate) use utils::RadStr;
 
 pub(crate) mod auth;
@@ -80,7 +81,6 @@ pub(crate) mod storage;
 #[macro_use]
 pub(crate) mod utils;
 
-pub use argument::{ParsedArguments, ParsedCursors};
 pub use auth::AuthType;
 pub use common::{CommentType, DiffOption, Hygiene, MacroType, RadResult, WriteOption};
 pub use error::RadError;
@@ -112,4 +112,4 @@ pub use rad_ext_template;
 #[cfg(test)]
 mod test;
 
-mod env;
+pub(crate) mod env;

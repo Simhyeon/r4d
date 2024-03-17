@@ -131,110 +131,6 @@ impl Display for Parameter {
         write!(f, "{} : {:#?}", self.name, self.arg_type)
     }
 }
-pub(crate) trait ArgableStr<'a> {
-    fn to_arg(&'a self, param: &Parameter, candidates: Option<&ETable>) -> RadResult<Argument<'a>>;
-    fn is_argable(&self, param: &Parameter) -> RadResult<()>;
-}
-impl<'a> ArgableStr<'a> for str {
-    /// Intenal method for primary conversion
-    fn to_arg(&'a self, param: &Parameter, candidates: Option<&ETable>) -> RadResult<Argument<'a>> {
-        let arg = match param.arg_type {
-            ValueType::None => unreachable!("This is a logic error"),
-            ValueType::Bool => Argument::Bool(self.is_arg_true().map_err(|_| {
-                RadError::InvalidArgument(format!(
-                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Bool]",
-                    param.name, self
-                ))
-            })?),
-            ValueType::Int => Argument::Int(self.trim().parse::<isize>().map_err(|_| {
-                RadError::InvalidArgument(format!(
-                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Int]",
-                    param.name, self
-                ))
-            })?),
-            ValueType::Uint => Argument::Uint(self.trim().parse::<usize>().map_err(|_| {
-                RadError::InvalidArgument(format!(
-                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [UInt]",
-                    param.name, self
-                ))
-            })?),
-            ValueType::Float => Argument::Float(self.trim().parse::<f32>().map_err(|_| {
-                RadError::InvalidArgument(format!(
-                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Float]",
-                    param.name, self
-                ))
-            })?),
-            ValueType::Path => Argument::Path(PathBuf::from(self)),
-            ValueType::CText | ValueType::Text | ValueType::Regex => Argument::Text(self.into()),
-            ValueType::Enum => {
-                if candidates.is_none() {
-                    return Err(RadError::InvalidExecution(format!(
-                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Enum] because etable was empty.",
-                    param.name, self
-                )));
-                }
-
-                let tab = candidates.unwrap();
-                let comparator = self.trim().to_lowercase();
-                let err = tab
-                    .candidates
-                    .iter()
-                    .filter(|&s| s == &comparator)
-                    .collect_vec()
-                    .is_empty();
-
-                if err {
-                    return Err(RadError::InvalidArgument(format!(
-                        "[Parameter: {}] : Could not convert a given value \"{}\" into a value among {:?}",
-                        param.name, self, tab.candidates
-                    )));
-                }
-
-                Argument::Text(self.into())
-            }
-        };
-        Ok(arg)
-    }
-
-    fn is_argable(&self, param: &Parameter) -> RadResult<()> {
-        match param.arg_type {
-            ValueType::Bool => {
-                self.is_arg_true().map_err(|_| {
-                    RadError::InvalidArgument(format!(
-                        "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Bool]",
-                        param.name, self
-                    ))
-                })?;
-            }
-            ValueType::Int => {
-                self.trim().parse::<isize>().map_err(|_| {
-                    RadError::InvalidArgument(format!(
-                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Int]",
-                        param.name, self
-                    ))
-                })?;
-            }
-            ValueType::Uint => {
-                self.trim().parse::<usize>().map_err(|_| {
-                    RadError::InvalidArgument(format!(
-                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [UInt]",
-                        param.name, self
-                    ))
-                })?;
-            }
-            ValueType::Float => {
-                self.trim().parse::<f32>().map_err(|_| {
-                    RadError::InvalidArgument(format!(
-                    "[Parameter: {}] : Could not convert a given value \"{}\" into a type [Float]",
-                        param.name, self
-                ))
-                })?;
-            }
-            _ => (),
-        };
-        Ok(())
-    }
-}
 
 pub(crate) trait ArgableCow<'a> {
     fn to_arg(self, param: &Parameter, candidates: Option<&ETable>) -> RadResult<Argument<'a>>;
@@ -642,7 +538,7 @@ impl FromStr for ValueType {
 }
 
 #[derive(Debug)]
-pub struct ParsedCursors<'a> {
+pub(crate) struct ParsedCursors<'a> {
     src: &'a str,
     level: usize,
     macro_name: String,
@@ -867,7 +763,7 @@ as given type. You should use proper getter for the type"
 }
 
 #[derive(Debug)]
-pub struct ParsedArguments<'a> {
+pub(crate) struct ParsedArguments<'a> {
     args: Vec<Argument<'a>>,
 }
 
@@ -1006,7 +902,7 @@ impl<'a> ParsedArguments<'a> {
 }
 
 #[derive(Debug)]
-pub enum ArgCursor {
+pub(crate) enum ArgCursor {
     Reference(usize, usize),
     Modified(Vec<u8>),
 }

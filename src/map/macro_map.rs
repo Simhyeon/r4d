@@ -10,7 +10,6 @@ use crate::runtime_map::{RuntimeMacro, RuntimeMacroMap};
 use crate::sigmap::MacroSignature;
 use crate::utils::Utils;
 use crate::MacroType;
-use crate::Parameter;
 use crate::RadResult;
 use std::collections::{HashMap, HashSet};
 
@@ -58,8 +57,8 @@ impl MacroMap {
     }
 
     /// Add new pass through macro
-    pub fn add_new_pass_through(&mut self, name: &str) {
-        self.pass_through.insert(name.to_string());
+    pub fn add_new_pass_through(&mut self, name: String) {
+        self.pass_through.insert(name);
     }
 
     /// Clear pass through

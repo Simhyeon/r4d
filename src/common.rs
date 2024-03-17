@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -748,7 +747,7 @@ pub struct ETable {
 impl ETable {
     pub fn new(name: &str) -> Self {
         Self {
-            arg_name: name.to_string(),
+            arg_name: String::from(name),
             candidates: Vec::default(),
         }
     }

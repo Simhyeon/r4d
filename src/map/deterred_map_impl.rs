@@ -507,7 +507,7 @@ impl DeterredMacroMap {
 
         // TODO TT
         // if args[1].contains("$:()") || args[1].contains("$a_LN()") {
-        //     p.log_warning(
+        //     p.log_warning(true,
         //         "Foreach's second argument is iterable array.",
         //         WarningType::Sanity,
         //     )?;
@@ -547,7 +547,7 @@ impl DeterredMacroMap {
 
         // TODO TT
         // if args[1].contains("$:()") || args[1].contains("$a_LN()") {
-        //     p.log_warning(
+        //     p.log_warning(true,
         //         "Forjoin's second argument is iterable array.",
         //         WarningType::Sanity,
         //     )?;
@@ -615,7 +615,7 @@ impl DeterredMacroMap {
 
         // TODO TT
         // if args[1].contains("$:()") || args[1].contains("$a_LN()") {
-        //     p.log_warning(
+        //     p.log_warning(true,
         //         "Foreach's second argument is iterable array.",
         //         WarningType::Sanity,
         //     )?;
@@ -682,7 +682,7 @@ impl DeterredMacroMap {
 
         // TODO TT
         // if args[2].contains("$:()") || args[1].contains("$a_LN()") {
-        //     p.log_warning(
+        //     p.log_warning(true,
         //         "Forloop's third argument is a max number",
         //         WarningType::Sanity,
         //     )?;
@@ -772,7 +772,7 @@ impl DeterredMacroMap {
                 p.get_similar_macro(&macro_name, true), // Only runtime
             ));
         };
-        p.log_message(&body)?;
+        p.log_message(true, body)?;
         Ok(Raturn::None)
     }
 
@@ -925,7 +925,7 @@ impl DeterredMacroMap {
     /// $expand(expression)
     pub(crate) fn expand_expression(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
         if input.args.trim().is_empty() {
-            p.log_warning("Expanding empty value", WarningType::Sanity)?;
+            p.log_warning(true, "Expanding empty value", WarningType::Sanity)?;
         }
         let cursors = ArgParser::new()
             .level(input.level)
@@ -1029,7 +1029,7 @@ impl DeterredMacroMap {
     /// $que(Sentence to process)
     pub(crate) fn queue_content(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
         if input.args.trim().is_empty() {
-            p.log_warning("Queuing empty value", WarningType::Sanity)?;
+            p.log_warning(true, "Queuing empty value", WarningType::Sanity)?;
         }
         p.insert_queue(input.args);
         Ok(Raturn::None)
@@ -1156,6 +1156,7 @@ impl DeterredMacroMap {
 
             if let Some(relay) = p.state.relay.last() {
                 p.log_warning(
+                    true,
                     &format!("Read file's content will be relayed to \"{:?}\"", relay),
                     WarningType::Sanity,
                 )?;
@@ -1293,7 +1294,11 @@ impl DeterredMacroMap {
             ));
         }
 
-        p.log_warning("Streaming text content to a macro", WarningType::Security)?;
+        p.log_warning(
+            true,
+            "Streaming text content to a macro",
+            WarningType::Security,
+        )?;
 
         p.state.stream_state.macro_src = name;
 
@@ -1329,7 +1334,11 @@ impl DeterredMacroMap {
             ));
         }
 
-        p.log_warning("Streaming text content to a macro", WarningType::Security)?;
+        p.log_warning(
+            true,
+            "Streaming text content to a macro",
+            WarningType::Security,
+        )?;
 
         p.state.stream_state.macro_src = name;
 

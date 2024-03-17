@@ -52,9 +52,9 @@ impl MacEnv {
     pub fn new() -> RadResult<Self> {
         let rad_tab_width = match env::var("RAD_TAB_WIDTH") {
             Ok(v) => Some(v.parse::<usize>().map_err(|_| {
-                RadError::InvalidMacroEnvironment(
-                    "RAD TAB WIDTH should be a unsigned integer.".to_string(),
-                )
+                RadError::InvalidMacroEnvironment(String::from(
+                    "RAD TAB WIDTH should be a unsigned integer.",
+                ))
             })?),
             Err(_) => None,
         };

@@ -402,6 +402,7 @@ impl FunctionMacroMap {
             VarContOperation::Extend => {
                 if var.is_empty() {
                     p.log_warning(
+                        true,
                         "No content was given to extend for container",
                         WarningType::Sanity,
                     )?;
@@ -956,17 +957,16 @@ impl FunctionMacroMap {
         if processor.contains_macro(name, MacroType::Any) {
             processor.undefine_macro(name, MacroType::Any);
         } else {
-            if processor.state.behaviour == ErrorBehaviour::Strict {
-                return Err(RadError::UnsoundExecution(format!(
-                    "Macro \"{}\" doesn't exist, therefore cannot undefine",
-                    name,
-                )));
-            }
-
-            processor.log_error(&format!(
+            let err = RadError::UnsoundExecution(format!(
                 "Macro \"{}\" doesn't exist, therefore cannot undefine",
                 name,
-            ))?;
+            ));
+
+            if processor.state.behaviour == ErrorBehaviour::Strict {
+                return Err(err);
+            }
+
+            processor.log_error(true, err.to_string())?;
         }
         Ok(())
     }
@@ -1315,6 +1315,7 @@ impl FunctionMacroMap {
         } else {
             if p.state.behaviour == ErrorBehaviour::Strict {
                 p.log_warning(
+                    true,
                     &format!("ENV : \"{}\" is not defined.", env),
                     WarningType::Sanity,
                 )?;
@@ -1573,7 +1574,7 @@ impl FunctionMacroMap {
                 let out = processor.state.get_pipe("-", false);
 
                 if out.is_none() {
-                    processor.log_warning("Empty pipe", WarningType::Sanity)?;
+                    processor.log_warning(true, "Empty pipe", WarningType::Sanity)?;
                 }
 
                 out
@@ -1581,6 +1582,7 @@ impl FunctionMacroMap {
                 Some(pipe)
             } else {
                 processor.log_warning(
+                    true,
                     &format!("Empty named pipe : \"{}\"", args.get_text(0)?),
                     WarningType::Sanity,
                 )?;
@@ -1589,7 +1591,7 @@ impl FunctionMacroMap {
         } else {
             let out = processor.state.get_pipe("-", false).unwrap_or_default();
             if out.is_empty() {
-                processor.log_warning("Empty pipe", WarningType::Sanity)?;
+                processor.log_warning(true, "Empty pipe", WarningType::Sanity)?;
             }
             Some(out)
         };
@@ -1849,17 +1851,15 @@ impl FunctionMacroMap {
         if processor.contains_macro(name, MacroType::Any) {
             processor.rename_macro(name, new, MacroType::Any);
         } else {
+            let err = RadError::UnsoundExecution(format!(
+                "Macro \"{}\" doesn't exist, therefore cannot be rename",
+                name,
+            ));
             if processor.state.behaviour == ErrorBehaviour::Strict {
-                return Err(RadError::UnsoundExecution(format!(
-                    "Macro \"{}\" doesn't exist, therefore cannot be rename",
-                    name,
-                )));
+                return Err(err);
             }
 
-            processor.log_error(&format!(
-                "Macro \"{}\" doesn't exist, therefore cannot rename",
-                name,
-            ))?;
+            processor.log_error(true, err.to_string())?;
         }
 
         Ok(Raturn::None)
@@ -3641,6 +3641,7 @@ impl FunctionMacroMap {
         let target = args.get_ctext(0)?;
 
         p.log_warning(
+            true,
             &format!("Relaying text content to \"{}\"", target),
             WarningType::Security,
         )?;
@@ -3673,6 +3674,7 @@ impl FunctionMacroMap {
         let target = args.get_ctext(0)?;
 
         p.log_warning(
+            true,
             &format!("Relaying text content to \"{}\"", target),
             WarningType::Security,
         )?;
@@ -3697,6 +3699,7 @@ impl FunctionMacroMap {
         let target = args.get_path(0)?;
 
         p.log_warning(
+            true,
             &format!("Relaying text content to \"{}\"", target.display()),
             WarningType::Security,
         )?;
@@ -3921,6 +3924,7 @@ impl FunctionMacroMap {
             .args_with_len(input)?;
         if args.is_empty() {
             p.log_warning(
+                true,
                 "Require macro used without any arguments.",
                 WarningType::Sanity,
             )?;
@@ -4004,7 +4008,7 @@ impl FunctionMacroMap {
     ///
     /// $log(This is a problem)
     pub(crate) fn log_message(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
-        p.log_message(input.args)?;
+        p.log_message(true, input.args)?;
         Ok(Raturn::None)
     }
 
@@ -4030,7 +4034,7 @@ impl FunctionMacroMap {
             .get_pipe(args.get_ctext(0).unwrap_or("-"), true)
             .unwrap_or_default();
 
-        p.log_message(&format!("Pipe : {:?}", pipe))?;
+        p.log_message(true, format!("Pipe : {:?}", pipe))?;
         Ok(Raturn::None)
     }
 
@@ -4307,6 +4311,7 @@ impl FunctionMacroMap {
         for (name, _, _) in runtime_rules.iter() {
             if name.is_empty() {
                 processor.log_warning(
+                    true,
                     "Declaring a macro with blank charcters is not valid",
                     WarningType::Sanity,
                 )?;
@@ -4319,6 +4324,7 @@ impl FunctionMacroMap {
                     )));
                 }
                 processor.log_warning(
+                    true,
                     &format!(
                         "Declaring a macro with a name already existing : \"{}\"",
                         name
@@ -4383,7 +4389,7 @@ impl FunctionMacroMap {
             }
 
             // Log error
-            processor.log_error(&err.to_string())?;
+            processor.log_error(true, err.to_string())?;
         }
 
         Ok(Raturn::None)
@@ -4409,6 +4415,7 @@ impl FunctionMacroMap {
     pub(crate) fn clear(_: MacroInput, processor: &mut Processor) -> RadResult<Raturn> {
         if processor.state.hygiene == Hygiene::None {
             processor.log_warning(
+                true,
                 "Currently hygiene mode is not set. Clear will do nothing.",
                 WarningType::Sanity,
             )?;
@@ -4470,6 +4477,7 @@ impl FunctionMacroMap {
             }
             // Its warn-able anyway
             processor.log_warning(
+                true,
                 &format!(
                     "Creating a static macro with a name already existing : \"{}\"",
                     name
@@ -4811,11 +4819,13 @@ impl FunctionMacroMap {
                 match processor.parse_chunk(0, MAIN_CALLER, body) {
                     Ok(body) => processor.add_static_rules(&[(name, body)])?,
                     Err(err) => {
-                        processor.log_error(&format!(
-                            "Failed to source a file \"{}\" in line \"{}\"",
+                        // TODO TT
+                        let err = RadError::InvalidExecution(format!(
+                            "Failed to source a file \"{}\" in line \"{}\" due to : {}",
                             path.display(),
-                            idx
-                        ))?;
+                            idx,
+                            err,
+                        ));
                         return Err(err);
                     }
                 }
@@ -5021,7 +5031,11 @@ impl FunctionMacroMap {
                 return Err(RadError::StorageError(format!("Update error : {}", err)));
             }
         } else {
-            processor.log_warning("Empty storage, update didn't trigger", WarningType::Sanity)?;
+            processor.log_warning(
+                true,
+                "Empty storage, update didn't trigger",
+                WarningType::Sanity,
+            )?;
         }
         Ok(Raturn::None)
     }

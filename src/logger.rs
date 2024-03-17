@@ -12,18 +12,20 @@ use std::io::Write as _;
 use trexter::{Track, Tracker};
 
 /// Logger that controls logging
+///
+/// This module is not expoed to public, use associated processor method instead.
 pub(crate) struct Logger<'logger> {
     suppresion_type: WarningType,
     current_input: ProcessInput,
-    pub(crate) tracker_stack: TrackerStack,
-    pub(crate) write_option: Option<WriteOption<'logger>>,
-    pub(crate) assert: bool,
+    tracker_stack: TrackerStack,
+    write_option: Option<WriteOption<'logger>>,
+    assert: bool,
     stat: LoggerStat,
 }
 
 /// Status of a logger
 #[derive(Default)]
-pub struct LoggerStat {
+pub(crate) struct LoggerStat {
     error_count: usize,
     warning_count: usize,
     assert_success: usize,
@@ -61,6 +63,11 @@ impl<'logger> Logger<'logger> {
     /// Retrieve tracker stack level
     pub fn get_tracker_level(&self) -> usize {
         self.tracker_stack.stack.len()
+    }
+
+    // -- Getter
+    pub fn get_write_option(&self) -> Option<&WriteOption> {
+        self.write_option.as_ref()
     }
 
     // ----Tracker methods----
@@ -199,45 +206,19 @@ impl<'logger> Logger<'logger> {
         Ok(position)
     }
 
-    /// Write formatted log message without line
-    fn write_formatted_log_msg_without_line(
-        &mut self,
-        prompt: &str,
-        log_msg: &str,
-        #[cfg(feature = "color")] color_func: ColorDisplayFunc,
-    ) -> RadResult<()> {
-        if let Some(option) = &mut self.write_option {
-            match option {
-                WriteOption::File(file) => {
-                    file.inner()
-                        .write_all(format!("{} : {}{}", prompt, log_msg, LINE_ENDING).as_bytes())?;
-                }
-                WriteOption::Terminal => {
-                    #[allow(unused_mut)]
-                    let mut prompt = prompt.to_string();
-                    #[cfg(feature = "color")]
-                    {
-                        prompt = color_func(&prompt, self.is_logging_to_file()).to_string();
-                    }
-                    write!(std::io::stderr(), "{}: {}{}", prompt, log_msg, LINE_ENDING)?;
-                }
-                WriteOption::Variable(var) => {
-                    write!(var, "{} : {}{}", prompt, log_msg, LINE_ENDING)?;
-                }
-                WriteOption::Discard => (),
-            } // Match end
-        }
-        Ok(())
-    }
-
     /// Write formatted log message
     fn write_formatted_log_msg(
         &mut self,
+        log_line: bool,
         prompt: &str,
-        log_msg: &str,
+        log_msg: String,
         #[cfg(feature = "color")] color_func: ColorDisplayFunc,
     ) -> RadResult<()> {
-        let log_pos = self.construct_log_position()?;
+        let log_pos = if log_line {
+            String::from(" -> ") + &self.construct_log_position()?
+        } else {
+            String::new()
+        };
         if let Some(option) = &mut self.write_option {
             match option {
                 WriteOption::File(file) => {
@@ -248,7 +229,7 @@ impl<'logger> Logger<'logger> {
                 }
                 WriteOption::Terminal => {
                     #[allow(unused_mut)]
-                    let mut prompt = prompt.to_string();
+                    let mut prompt = String::from(prompt);
                     #[cfg(feature = "color")]
                     {
                         prompt = color_func(&prompt, self.is_logging_to_file()).to_string();
@@ -277,8 +258,9 @@ impl<'logger> Logger<'logger> {
     }
 
     /// Log message
-    pub(crate) fn log(&mut self, log_msg: &str) -> RadResult<()> {
+    pub(crate) fn log(&mut self, log_line: bool, log_msg: String) -> RadResult<()> {
         self.write_formatted_log_msg(
+            log_line,
             "log",
             log_msg,
             #[cfg(feature = "color")]
@@ -286,71 +268,27 @@ impl<'logger> Logger<'logger> {
         )
     }
 
-    /// Log message
-    pub(crate) fn log_no_line(&mut self, log_msg: &str) -> RadResult<()> {
-        self.write_formatted_log_msg_without_line(
-            "ENV",
-            log_msg,
-            #[cfg(feature = "color")]
-            Utils::green,
-        )
-    }
-
     /// Log error
-    pub(crate) fn elog(&mut self, log_msg: &str) -> RadResult<()> {
+    pub(crate) fn elog(&mut self, log_line: bool, log_msg: String) -> RadResult<()> {
         self.stat.error_count += 1;
 
         if self.assert {
             return Ok(());
         }
         self.write_formatted_log_msg(
+            log_line,
             "error",
             log_msg,
             #[cfg(feature = "color")]
             Utils::red,
         )
-    }
-
-    /// Log error without line number
-    pub(crate) fn elog_no_line(&mut self, log_msg: impl std::fmt::Display) -> RadResult<()> {
-        self.stat.error_count += 1;
-
-        if self.assert {
-            return Ok(());
-        }
-        self.write_formatted_log_msg_without_line(
-            "error",
-            &log_msg.to_string(),
-            #[cfg(feature = "color")]
-            Utils::red,
-        )?;
-        Ok(())
     }
 
     /// Log warning
-    pub(crate) fn wlog(&mut self, log_msg: &str, warning_type: WarningType) -> RadResult<()> {
-        if self.suppresion_type == WarningType::Any || self.suppresion_type == warning_type {
-            return Ok(());
-        }
-
-        self.stat.warning_count += 1;
-
-        if self.assert {
-            return Ok(());
-        }
-
-        self.write_formatted_log_msg(
-            "warning",
-            log_msg,
-            #[cfg(feature = "color")]
-            Utils::yellow,
-        )
-    }
-
-    /// Log warning within line
-    pub(crate) fn wlog_no_line(
+    pub(crate) fn wlog(
         &mut self,
-        log_msg: &str,
+        log_line: bool,
+        log_msg: String,
         warning_type: WarningType,
     ) -> RadResult<()> {
         if self.suppresion_type == WarningType::Any || self.suppresion_type == warning_type {
@@ -363,14 +301,13 @@ impl<'logger> Logger<'logger> {
             return Ok(());
         }
 
-        self.write_formatted_log_msg_without_line(
+        self.write_formatted_log_msg(
+            log_line,
             "warning",
             log_msg,
             #[cfg(feature = "color")]
             Utils::yellow,
-        )?;
-
-        Ok(())
+        )
     }
 
     /// Assertion log
@@ -381,8 +318,9 @@ impl<'logger> Logger<'logger> {
         }
         self.stat.assert_fail += 1;
         self.write_formatted_log_msg(
+            true,
             "assert fail",
-            "",
+            String::new(),
             #[cfg(feature = "color")]
             Utils::red,
         )
@@ -522,7 +460,7 @@ impl std::str::FromStr for WarningType {
 
 /// Trackers container that saves trakcer as stack
 #[derive(Debug)]
-pub struct TrackerStack {
+struct TrackerStack {
     pub(crate) stack: Vec<Tracker<TrackType>>,
 }
 

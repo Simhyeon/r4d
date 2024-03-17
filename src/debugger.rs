@@ -16,18 +16,18 @@ use std::path::Path;
 
 /// Debugger
 pub(crate) struct Debugger {
-    pub(crate) debug: bool,
-    pub(crate) log: bool,
-    pub(crate) debug_switch: DebugSwitch,
-    pub(crate) line_number: usize,
+    pub debug: bool,
+    pub log: bool,
+    pub debug_switch: DebugSwitch,
+    pub line_number: usize,
     // This is a global line number storage for various debugging usages
     // This is a bit bloaty, but debugging needs functionality over efficiency
-    pub(crate) line_caches: HashMap<usize, String>,
-    pub(crate) do_yield_diff: bool,
-    pub(crate) diff_only_change: bool,
-    pub(crate) diff_original: Option<File>,
-    pub(crate) diff_processed: Option<File>,
-    pub(crate) interactive: bool,
+    pub line_caches: HashMap<usize, String>,
+    pub do_yield_diff: bool,
+    pub diff_only_change: bool,
+    pub diff_original: Option<File>,
+    pub diff_processed: Option<File>,
+    pub interactive: bool,
     prompt_log: Option<String>,
 }
 
@@ -166,7 +166,7 @@ impl Debugger {
         let mut colorfunc: Option<ColorDisplayFunc>;
 
         // Print header
-        logger.elog_no_line(format!("{0}DIFF : {0}", LINE_ENDING))?;
+        logger.elog(false, format!("{0}DIFF : {0}", LINE_ENDING))?;
 
         // Print changes with color support
         for change in result.iter_all_changes() {
@@ -211,9 +211,9 @@ impl Debugger {
                 } else {
                     func(&log, false)
                 };
-                logger.elog_no_line(&log)?;
+                logger.elog(false, log.to_string())?;
             } else {
-                logger.elog_no_line(&log)?;
+                logger.elog(false, log.to_string())?;
             }
 
             #[cfg(not(feature = "color"))]
@@ -533,7 +533,7 @@ impl Debugger {
                 }
 
                 // Put prompt log "Span" on top
-                let mut this_line = "\"Span\"".to_string();
+                let mut this_line = String::from("\"Span\"");
                 this_line.push_str(&sums);
                 sums = this_line;
 
