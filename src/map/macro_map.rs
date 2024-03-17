@@ -3,6 +3,7 @@
 use super::anon_map::AnonMap;
 use crate::common::Hygiene;
 use crate::common::LocalMacro;
+use crate::common::MacroDefinition;
 use crate::deterred_map::DeterredMacroMap;
 use crate::function_map::FunctionMacroMap;
 use crate::runtime_map::{RuntimeMacro, RuntimeMacroMap};
@@ -79,10 +80,16 @@ impl MacroMap {
     /// Create a new local macro
     ///
     /// This will override local macro if save value was given.
-    pub fn add_local_macro(&mut self, level: usize, name: &str, value: &str) {
+    pub fn add_local_macro(
+        &mut self,
+        level: usize,
+        name: impl Into<String>,
+        value: impl Into<String>,
+    ) {
+        let name: String = name.into();
         self.local.insert(
-            Utils::local_name(level, name),
-            LocalMacro::new(level, name.to_owned(), value.to_owned()),
+            Utils::local_name(level, &name),
+            LocalMacro::new(level, name, value.into()),
         );
     }
 
@@ -146,14 +153,15 @@ impl MacroMap {
     /// Register a new runtime macro
     pub fn register_runtime(
         &mut self,
-        name: &str,
-        params: Vec<Parameter>,
-        body: &str,
+        def: MacroDefinition,
         hygiene_type: Hygiene,
     ) -> RadResult<()> {
         // Trim all whitespaces and newlines from the string
-        let mac = RuntimeMacro::new(name).params(params).body(body);
-        self.runtime.new_macro(name, mac, hygiene_type);
+        let mac = RuntimeMacro::new(&def.name)
+            .params(def.params)
+            .ret(def.ret)
+            .body(def.body);
+        self.runtime.new_macro(&def.name, mac, hygiene_type);
         Ok(())
     }
 

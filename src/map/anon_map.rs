@@ -12,12 +12,12 @@ impl AnonMap {
         Self::default()
     }
 
-    pub fn new_macro(&mut self, body: &str) -> RadResult<()> {
+    pub fn new_macro(&mut self, body_src: &str) -> RadResult<()> {
         let mut full_body = "anon,".to_string();
-        full_body.push_str(body);
+        full_body.push_str(body_src);
 
-        let (_, params, body) = Utils::split_macro_definition(full_body.as_str())?;
-        let rt_macro = RuntimeMacro::new("anon").body(body).params(params);
+        let def = Utils::split_macro_definition(full_body.as_str())?;
+        let rt_macro = RuntimeMacro::new("anon").body(def.body).params(def.params);
         self.macros.push(rt_macro);
         Ok(())
     }

@@ -8,6 +8,7 @@ use std::str::FromStr;
 use crate::common::{ETMap, ETable, MacroAttribute, PipeInput};
 use crate::consts::RET_ETABLE;
 use crate::env::PROC_ENV;
+use crate::runtime_map::RuntimeMacro;
 use crate::RadStr;
 use crate::{Processor, RadError, RadResult};
 use serde::{Deserialize, Serialize};
@@ -270,7 +271,11 @@ impl<'a> ArgableCow<'a> for Cow<'a, str> {
                 ))
             })?),
             ValueType::Path => Argument::Path(PathBuf::from(self.as_ref())),
-            ValueType::CText | ValueType::Text | ValueType::Regex => Argument::Text(self),
+            ValueType::CText => match self {
+                Cow::Owned(v) => Argument::Text(Cow::Owned(v.trim().to_string())),
+                Cow::Borrowed(v) => Argument::Text(Cow::Borrowed(v.trim())),
+            },
+            ValueType::Text | ValueType::Regex => Argument::Text(self),
             ValueType::Enum => {
                 if candidates.is_none() {
                     return Err(RadError::InvalidExecution(format!(
@@ -319,6 +324,22 @@ pub enum Argument<'a> {
     Regex(&'a str),
 }
 
+impl<'a> Display for Argument<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let ret = match self {
+            Self::Text(v) => v.to_string(),
+            Self::Bool(v) => v.to_string(),
+            Self::Uint(v) => v.to_string(),
+            Self::Int(v) => v.to_string(),
+            Self::Path(v) => v.display().to_string(),
+            Self::Float(v) => v.to_string(),
+            Self::Regex(v) => v.to_string(),
+            Self::Enum(v) => v.to_string(),
+        };
+        write!(f, "{}", ret)
+    }
+}
+
 #[derive(Debug)]
 pub enum Raturn {
     None,
@@ -333,6 +354,69 @@ pub enum Raturn {
 }
 
 impl Raturn {
+    pub fn from_string(
+        rule: &RuntimeMacro,
+        value: impl Into<String>,
+        candidates: Option<ETable>,
+    ) -> RadResult<Self> {
+        let value: String = value.into();
+
+        #[inline]
+        fn make_err(value: &str, rule: &RuntimeMacro) -> RadError {
+            RadError::InvalidConversion(format!(
+                "[RET] : Could not convert a given value \"{}\" into a type [{}]",
+                value, rule.return_type
+            ))
+        }
+
+        let ret = match rule.return_type {
+            ValueType::None => Self::None,
+            ValueType::Bool => value
+                .parse::<bool>()
+                .map_err(|_| make_err(&value, rule))?
+                .into(),
+            ValueType::Float => value
+                .parse::<f32>()
+                .map_err(|_| make_err(&value, rule))?
+                .into(),
+            ValueType::Uint => value
+                .parse::<usize>()
+                .map_err(|_| make_err(&value, rule))?
+                .into(),
+            ValueType::Int => value
+                .parse::<isize>()
+                .map_err(|_| make_err(&value, rule))?
+                .into(),
+            ValueType::Path => PathBuf::from(value).into(),
+            ValueType::Text | ValueType::Regex => Raturn::Text(value),
+            ValueType::CText => Raturn::Text(value.trim().to_string()),
+            ValueType::Enum => {
+                if candidates.is_none() {
+                    return Err(RadError::InvalidConversion(String::new()));
+                }
+
+                let tab = candidates.unwrap();
+                let comparator = value.trim().to_lowercase();
+                let err = tab
+                    .candidates
+                    .iter()
+                    .filter(|&s| s == &comparator)
+                    .collect_vec()
+                    .is_empty();
+
+                if err {
+                    return Err(RadError::InvalidArgument(format!(
+                        "[RET] : Could not convert a given value \"{}\" into a value among {:?}",
+                        value, tab.candidates
+                    )));
+                }
+                Raturn::Text(value.trim().to_string())
+            }
+        };
+
+        Ok(ret)
+    }
+
     pub fn convert_empty_to_none(self) -> Self {
         if PROC_ENV.no_consume {
             return self;
@@ -476,6 +560,12 @@ pub enum ValueType {
     CText,
     Enum,
     Regex,
+}
+
+impl Default for ValueType {
+    fn default() -> Self {
+        Self::Text
+    }
 }
 
 impl ValueType {
@@ -782,6 +872,10 @@ pub struct ParsedArguments<'a> {
 }
 
 impl<'a> ParsedArguments<'a> {
+    pub fn empty() -> Self {
+        Self { args: Vec::new() }
+    }
+
     pub fn with_args(args: Vec<Argument<'a>>) -> Self {
         Self { args }
     }

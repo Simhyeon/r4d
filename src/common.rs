@@ -1,10 +1,13 @@
 //! Common structs, enums for code usage.
 
+use crate::argument::ValueType;
 use crate::error::RadError;
+use crate::Parameter;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::fs::File;
 use std::fs::OpenOptions;
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -753,5 +756,27 @@ impl ETable {
     pub fn candidates(mut self, cand: &[&str]) -> (String, Self) {
         self.candidates = cand.iter().map(|s| s.to_string()).collect();
         (self.arg_name.clone(), self)
+    }
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct MacroDefinition {
+    pub name: String,
+    pub params: Vec<Parameter>,
+    pub ret: ValueType,
+    pub body: String,
+}
+
+impl MacroDefinition {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            ..Default::default()
+        }
+    }
+
+    pub fn body(mut self, body: impl Into<String>) -> Self {
+        self.body = body.into();
+        self
     }
 }

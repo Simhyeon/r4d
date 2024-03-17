@@ -1806,10 +1806,33 @@ impl FunctionMacroMap {
     ///
     /// # Usage
     ///
-    /// $len(안녕하세요)
-    /// $len(Hello)
+    /// $ulen(안녕하세요)
+    /// $ulen(Hello)
     pub(crate) fn unicode_len(input: MacroInput, _: &mut Processor) -> RadResult<Raturn> {
         Ok(unicode_width::UnicodeWidthStr::width(input.args).into())
+    }
+
+    /// Return a length of the macro body
+    ///
+    /// $mlen(run)
+    /// $mlen(loc)
+    pub(crate) fn macro_len(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
+        let level = input.level;
+        let args = ArgParser::new().args_with_len(input)?;
+
+        let name = args.get_ctext(0)?;
+        let len = if let Ok(body) = p.get_local_macro_body(name, level) {
+            body.len()
+        } else if let Ok(body) = p.get_runtime_macro_body(name) {
+            body.len()
+        } else {
+            return Err(RadError::NoSuchMacroName(
+                name.to_string(),
+                p.get_similar_macro_runtime_or_local(name, level),
+            ));
+        };
+
+        Ok(len.into())
     }
 
     /// Rename macro rule to other name

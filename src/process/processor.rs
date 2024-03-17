@@ -1049,7 +1049,7 @@ impl<'processor> Processor<'processor> {
                         })
                         .collect_vec(),
                 )
-                .body(body);
+                .body(body.to_string());
             self.map.runtime.insert_macro(mac);
         }
         Ok(())
@@ -1750,15 +1750,15 @@ impl<'processor> Processor<'processor> {
         &mut self,
         level: usize,
         caller: &str,
-        chunk: &str,
-    ) -> RadResult<String> {
+        rule: &RuntimeMacro,
+    ) -> RadResult<Raturn> {
         let mut lexor = Lexor::new(self.get_comment_char(), &self.state.comment_type);
         let mut frag = MacroFragment::new();
         let mut result = String::new();
         self.logger
             .start_new_tracker(TrackType::Body(caller.to_string()));
 
-        for line in chunk.full_lines() {
+        for line in rule.body.full_lines() {
             // Deny newline
             if self.state.deny_newline {
                 self.state.deny_newline = false;
@@ -1780,7 +1780,11 @@ impl<'processor> Processor<'processor> {
         }
 
         self.logger.stop_last_tracker();
-        Ok(result)
+
+        // TODO TT
+        let raturn = Raturn::from_string(&rule, result, None)?;
+
+        Ok(raturn)
     } // parse_chunk end
 
     /// Parse chunk(string) by separating it into lines which implements BufRead
@@ -2052,7 +2056,7 @@ impl<'processor> Processor<'processor> {
         // SPECIAL MACROS
         // Namely `ANON` macro
         if name == MACRO_SPECIAL_ANON && self.map.get_anon_macro().is_some() {
-            let result = self.invoke_runtime(level, None, frag, &args)?;
+            let result = self.invoke_runtime_macro(level, None, frag, &args)?;
             return Ok(result);
         }
 
@@ -2085,7 +2089,7 @@ impl<'processor> Processor<'processor> {
                 }
             }
 
-            let result = self.invoke_runtime(level, Some(name), frag, &args)?;
+            let result = self.invoke_runtime_macro(level, Some(name), frag, &args)?;
 
             self.print_expansion_log(name, result.as_deref().unwrap_or(""))?;
 
@@ -2199,7 +2203,7 @@ impl<'processor> Processor<'processor> {
     /// If name is none, invoke anonymous macro
     ///
     /// Invoke rule evaluates body of macro rule because the body is not evaluated on register process
-    fn invoke_runtime(
+    fn invoke_runtime_macro(
         &mut self,
         level: usize,
         name: Option<&str>,
@@ -2226,7 +2230,7 @@ impl<'processor> Processor<'processor> {
             return Ok(Some(rule.body));
         }
 
-        let arg_names = &rule.params;
+        let parameters = &rule.params;
 
         let mut input = MacroInput::new(new_name, arg_values)
             .attr(frag.attribute)
@@ -2238,93 +2242,102 @@ impl<'processor> Processor<'processor> {
 
         // Set variable to local macros
         // TODO TT
-        let args = match ArgParser::new().texts_with_len(input) {
+        let args = match ArgParser::new().args_with_len(input) {
             Ok(content) => content,
+            Err(RadError::InvalidArgument(err)) => {
+                let err = RadError::InvalidArgument(format!("[Macro : {}] >> {}", frag.name, err));
+                return Err(err);
+            }
             Err(err) => {
-                if self.state.process_type == ProcessType::Dry {
-                    self.log_warning(&err.to_string(), WarningType::Sanity)?;
-                    return Ok(None);
-                }
-
                 return Err(err);
             }
         };
 
-        for (idx, param) in arg_names.iter().enumerate() {
+        for (idx, param) in parameters.iter().enumerate() {
             //Set arg to be substitued
-            self.map.add_local_macro(level + 1, &param.name, &args[idx]);
+            let arg = args.get(idx)?;
+
+            self.map
+                .add_local_macro(level + 1, &param.name, arg.to_string());
         }
 
         // Process the rule body
-        // NOTE
-        // Previously, this was parse_chunk_body
-        let result = self.parse_chunk_and_expand(level, new_name, &rule.body)?;
+        let mut result = match self.parse_chunk_and_expand(level, new_name, &rule) {
+            Ok(content) => content,
+            Err(RadError::InvalidConversion(err)) => {
+                let err = RadError::InvalidArgument(format!("[Macro : {}] >> {}", frag.name, err));
+
+                return Err(err);
+            }
+            Err(err) => {
+                return Err(err);
+            }
+        };
+        // Negate result
+        result = match frag.attribute.negate_result {
+            Negation::None => result,
+            Negation::Value => result.negate()?,
+            Negation::Yield => Raturn::None,
+        };
+
+        let ret = result.convert_empty_to_none().printable();
 
         // Clear lower locals to prevent local collisions
         self.map.clear_lower_locals(level);
 
-        Ok(Some(result))
+        Ok(ret)
     }
 
     /// Add runtime rule to macro map
     ///
     /// This doesn't clear fragment
     fn add_rule(&mut self, frag: &MacroFragment) -> RadResult<()> {
-        let (name, params, body) = Utils::split_macro_definition(&frag.args)?;
-        if name.is_empty() {
+        let mut def = Utils::split_macro_definition(&frag.args)?;
+        if def.name.is_empty() {
             let err = RadError::InvalidMacroDefinition("Cannot define an empty macro".to_string());
             return Err(err);
         }
+
         // Strict mode
         // Overriding is prohibited
         if self.state.behaviour == ErrorBehaviour::Strict
             && self
                 .map
-                .contains_macro(name, MacroType::Any, self.state.hygiene)
+                .contains_macro(&def.name, MacroType::Any, self.state.hygiene)
         {
-            // It is safe to unwrap
-            let mac_name = if frag.args.contains(',') {
-                frag.args.split(',').next().unwrap()
-            } else {
-                frag.args.split('=').next().unwrap()
-            };
             let err = RadError::UnsoundExecution(format!(
                 "Can't override exsiting macro : \"{}\"",
-                mac_name
+                &def.name
             ));
+            // TODO TT
             self.log_error(&err.to_string())?;
             return Err(RadError::StrictPanic);
         }
 
         // Pre clone values for later usage
         let dry_run_parameter = if self.state.process_type == ProcessType::Dry {
-            Some(params.clone())
+            Some(def.params.clone())
         } else {
             None
         };
 
-        if frag.attribute.trim_input {
-            self.map.register_runtime(
-                name,
-                params,
-                &body.trim().trim_each_lines(),
-                self.state.hygiene,
-            )?;
+        if dry_run_parameter.is_none() {
+            if frag.attribute.trim_input {
+                def.body = def.body.trim_each_lines();
+            }
+            return self.map.register_runtime(def, self.state.hygiene);
         } else {
-            self.map
-                .register_runtime(name, params, body, self.state.hygiene)?;
-        }
-
-        // Dry run if such mode is set
-        if let Some(params) = dry_run_parameter {
-            let err =
-                RadError::InvalidMacroDefinition(format!("Macro \"{}\" has invalid body", name));
+            let params = dry_run_parameter.unwrap();
+            let err = RadError::InvalidMacroDefinition(format!(
+                "Macro \"{}\" has invalid body",
+                def.name
+            ));
             let res = self
                 .process_string(
                     None,
                     &format!(
                         "${}({})",
-                        name,
+                        def.name,
                         params
                             .iter()
                             .map(|s| s.name.as_str())
@@ -2338,6 +2351,7 @@ impl<'processor> Processor<'processor> {
                 self.log_warning(&err.to_string(), WarningType::Sanity)?;
             }
         }
+
         Ok(())
     }
 
@@ -2565,6 +2579,8 @@ impl<'processor> Processor<'processor> {
                     remainder.clear();
                     return Ok(());
                 }
+
+                // Finally define
                 self.lex_branch_end_frag_define(
                     frag,
                     remainder,
@@ -3143,6 +3159,20 @@ impl<'processor> Processor<'processor> {
             .ok_or_else(|| RadError::NoSuchMacroName(macro_name.to_string(), similar))?
             .body;
         Ok(std::mem::take(body))
+    }
+
+    pub(crate) fn get_similar_macro_runtime_or_local(
+        &self,
+        macro_name: &str,
+        level: usize,
+    ) -> Option<String> {
+        if let Some(mac) = self.get_similar_macro(macro_name, true) {
+            Some(mac)
+        } else if let Some(mac) = self.get_similar_local_macro(macro_name, level) {
+            Some(mac)
+        } else {
+            None
+        }
     }
 
     #[inline]

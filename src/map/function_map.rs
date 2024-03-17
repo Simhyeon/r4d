@@ -799,6 +799,14 @@ impl FunctionMacroMap {
             ),
             (
                 FMacroSign::new(
+                    "mlen",
+                    [(ValueType::CText,"a_macro_name"),],
+                    Self::macro_len,
+                    None
+                ).ret(ValueType::Uint)
+            ),
+            (
+                FMacroSign::new(
                     "let",
                     [(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_value"),],
                     Self::bind_to_local,

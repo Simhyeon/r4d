@@ -1,7 +1,7 @@
 //! Utility struct, methods for various operations
 
 use crate::argument::ValueType;
-use crate::common::{ProcessInput, RadResult};
+use crate::common::{MacroDefinition, ProcessInput, RadResult};
 use crate::env::PROC_ENV;
 use crate::error::RadError;
 use crate::{Parameter, Processor, WriteOption};
@@ -76,45 +76,52 @@ pub(crate) struct Utils;
 impl Utils {
     // TODO
     // Check name validatity
-    pub fn split_macro_definition(src: &str) -> RadResult<(&str, Vec<Parameter>, &str)> {
+    pub fn split_macro_definition(src: &str) -> RadResult<MacroDefinition> {
+        // Equal sign is mandatory
         if let Some((header, body)) = src.split_once('=') {
-            // THis form is a,b=c
-            if let Some((name, args)) = header.split_once(',') {
-                let name = name.trim();
+            let mut error = false;
+            let mut params = vec![];
+            let name_and_params: &str;
+            let mut ret = "";
+
+            // Check if definition has return type
+            if let Some((na, return_type)) = header.split_once('?') {
+                let before = na.trim();
+                name_and_params = before;
+                ret = return_type;
+            } else {
+                name_and_params = header;
+            }
+
+            // Ret is not provided
+            // THis form is a=b
+            if ret.is_empty() {
+                // Check name validity
+                let name = header.trim();
                 if NAME_MATCH.find(name).is_none() {
                     return Err(RadError::InvalidMacroDefinition(format!(
-                        "Given name \"{}\" doesn't conform with macro definition rules.",
+                        "Given macro header \"{}\" doesn't conform with macro definition rules. This is mostly due to missing return type",
                         name
                     )));
                 }
-                let mut error = false;
-                let mut params = vec![];
-                for item in args.split(',') {
-                    if let Some((name, arg_type)) = item.split_once(':') {
-                        let name = name.trim();
-                        if NAME_MATCH.find(name).is_none() {
-                            error = true;
-                        } else {
-                            let arg_type = ValueType::from_str(arg_type)?;
-                            params.push(Parameter::new(arg_type, name));
-                        }
-                    } else {
-                        error = true;
-                    }
 
-                    if error {
-                        return Err(RadError::InvalidMacroDefinition(format!(
-                            "Given argument \"{}\" doesn't conform with macro definition rules.",
-                            item
-                        )));
-                    }
-                }
-                return Ok((name.trim(), params, body));
+                // No argument
+                let def = MacroDefinition::new(name.trim().to_string()).body(body);
+
+                return Ok(def);
             }
 
-            // THis form is a=b
-            // Check name validity
-            let name = header.trim();
+            // Return type parsing
+            let raturn = ValueType::from_str(ret)?;
+
+            // Has return type
+            // THis form is either "a:t,b:t ? Type = Body" ||  "a ? Type = Body"
+            let (name, param_src) = if let Some((n, p)) = name_and_params.split_once(',') {
+                (n, p)
+            } else {
+                (name_and_params, "")
+            };
+
             if NAME_MATCH.find(name).is_none() {
                 return Err(RadError::InvalidMacroDefinition(format!(
                     "Given name \"{}\" doesn't conform with macro definition rules.",
@@ -122,11 +129,50 @@ impl Utils {
                 )));
             }
 
-            // No argument
-            Ok((name, vec![], body))
-        } else {
-            Err(RadError::InvalidMacroDefinition(format!("Macro definition \"{}\" doesn't include a syntax \"=\" which concludes to invalid definition.", src)))
+            if param_src.is_empty() {
+                let mut def = MacroDefinition::new(name.trim().to_string());
+                def.ret = raturn;
+                def.body = body.to_string();
+                return Ok(def);
+            }
+
+            // Parameter parsing
+            for item in param_src.split(',') {
+                if let Some((name, param_type)) = item.split_once(':') {
+                    let name = name.trim();
+                    if NAME_MATCH.find(name).is_none() {
+                        error = true;
+                    } else {
+                        let par_type = ValueType::from_str(param_type)?;
+                        params.push(Parameter::new(par_type, name));
+                    }
+                } else {
+                    error = true;
+                }
+
+                if error {
+                    if item.is_empty() {
+                        return Err(RadError::InvalidMacroDefinition(
+                            "Given parameter name is empty. Macro definition might have trailing comma for parameters"
+                                .to_string(),
+                        ));
+                    } else {
+                        return Err(RadError::InvalidMacroDefinition(format!(
+                        "Given parameter name \"{}\" doesn't conform with macro definition rules.",
+                        item
+                    )));
+                    }
+                }
+            }
+
+            let mut def = MacroDefinition::new(name.trim().to_string());
+            def.params = params;
+            def.ret = raturn;
+            def.body = body.to_string();
+            return Ok(def);
         }
+
+        Err(RadError::InvalidMacroDefinition(format!("Macro definition \"{}\" doesn't include a syntax \"=\" which concludes to invalid definition.", src)))
     }
 
     /// Split string by whitespaces but respect spaces within commas and strip commas
@@ -207,11 +253,6 @@ impl Utils {
         }
 
         let next_elem = next_elem.unwrap();
-
-        #[inline]
-        fn addr_of(s: &str) -> usize {
-            s.as_ptr() as usize
-        }
 
         // This return subslice after macro name
         // e.g. $map(surr abc,...)
@@ -1029,4 +1070,9 @@ impl RegCow for Cow<'_, Regex> {
             Cow::Owned(reg) => Some(reg),
         }
     }
+}
+
+#[inline]
+fn addr_of(s: &str) -> usize {
+    s.as_ptr() as usize
 }

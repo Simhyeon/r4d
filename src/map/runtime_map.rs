@@ -3,8 +3,9 @@
 //! Runtime macro is defined on runtime.
 
 use crate::{
+    argument::ValueType,
     common::{ETMap, Hygiene},
-    AuthType, Parameter,
+    Parameter,
 };
 #[cfg(feature = "rustc_hash")]
 use rustc_hash::FxHashMap as HashMap;
@@ -19,8 +20,7 @@ pub struct RuntimeMacro {
     pub body: String,
     pub desc: Option<String>,
     pub is_static: bool,
-    pub optional_multiple: bool,
-    pub required_auth: Vec<AuthType>,
+    pub return_type: ValueType,
 }
 
 impl RuntimeMacro {
@@ -33,8 +33,7 @@ impl RuntimeMacro {
             body: String::new(),
             desc: None,
             is_static: false,
-            optional_multiple: false,
-            required_auth: vec![],
+            return_type: ValueType::Text,
         }
     }
 
@@ -43,13 +42,18 @@ impl RuntimeMacro {
         self
     }
 
-    pub fn body(mut self, body: &str) -> Self {
-        self.body = body.to_string();
+    pub fn body(mut self, body: impl Into<String>) -> Self {
+        self.body = body.into();
         self
     }
 
     pub fn params(mut self, params: Vec<Parameter>) -> Self {
         self.params = params;
+        self
+    }
+
+    pub fn ret(mut self, return_type: ValueType) -> Self {
+        self.return_type = return_type;
         self
     }
 }
@@ -66,11 +70,11 @@ impl From<&RuntimeMacro> for crate::sigmap::MacroSignature {
             name: mac.name.to_owned(),
             params: mac.params.to_owned(),
             optional: None,
-            optional_multiple: mac.optional_multiple,
+            optional_multiple: false,
             enum_table: ETMap::default(),
             desc: mac.desc.clone(),
             return_type: crate::argument::ValueType::Text,
-            required_auth: mac.required_auth.clone(),
+            required_auth: vec![],
         }
     }
 }

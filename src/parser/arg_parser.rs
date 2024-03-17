@@ -8,7 +8,6 @@ use crate::{
     consts::{ESCAPE_CHAR_U8, LIT_CHAR_U8},
     ArgableCow, Parameter, RadError, RadResult,
 };
-use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::{borrow::Cow, slice::Iter};
@@ -133,6 +132,11 @@ impl ArgParser {
         let mut min_len = input.type_len();
         let mut length = min_len + if input.optional.is_some() { 1 } else { 0 };
 
+        if length == 0 {
+            // Return empty
+            return Ok(ParsedCursors::new(input.args));
+        }
+
         let offset = input
             .piped_args
             .as_ref()
@@ -172,6 +176,10 @@ impl ArgParser {
     pub(crate) fn args_with_len(mut self, mut input: MacroInput) -> RadResult<ParsedArguments> {
         let min_len = input.type_len();
         let length = min_len + if input.optional.is_some() { 1 } else { 0 };
+
+        if length == 0 {
+            return Ok(ParsedArguments::empty());
+        }
 
         let offset = input
             .piped_args
@@ -215,52 +223,6 @@ impl ArgParser {
         }
 
         Ok(ParsedArguments::with_args(args))
-    }
-
-    /// Check if given length is qualified for given raw arguments
-    pub(crate) fn texts_with_len(mut self, mut input: MacroInput) -> RadResult<Vec<Cow<'_, str>>> {
-        let mut min_len = input.type_len();
-        let mut length = min_len + if input.optional.is_some() { 1 } else { 0 };
-
-        let offset = input
-            .piped_args
-            .as_ref()
-            .map(|s| s.len())
-            .unwrap_or_default();
-
-        min_len = min_len.saturating_sub(offset);
-        length = length.saturating_sub(offset);
-
-        if self.check_empty_input(&input, min_len)? {
-            let piped = std::mem::take(&mut input.piped_args);
-            let args = piped
-                .unwrap_or_default()
-                .into_iter()
-                .map(Cow::Owned)
-                .collect_vec();
-            return Ok(args);
-        }
-
-        let piped = std::mem::take(&mut input.piped_args);
-        // Note
-        // Length was already subtracted, no need to subtract offset again
-        self.set_split_variant(length);
-
-        let name = input.name;
-        let mut args = self.get_text_list(input)?;
-
-        if args.len() < min_len {
-            return Err(RadError::InvalidArgument(format!(
-                "Macro [{}] requires [{}] arguments but given [{}] arguments",
-                name,
-                min_len,
-                args.len()
-            )));
-        }
-
-        args.extend(piped.unwrap_or_default().into_iter().map(Cow::Owned));
-
-        Ok(args)
     }
 
     /// Split raw arguments into cursors
@@ -319,110 +281,6 @@ impl ArgParser {
         } // while end
           // Add last arg
         let value = self.cursor.take(input.args.len());
-        values.push(value);
-        Ok(values)
-    }
-
-    /// Split raw arguments into a vector
-    ///
-    /// This is used for parsing aruments ofr runtime macro
-    fn get_text_list<'a>(&mut self, input: MacroInput<'a>) -> RadResult<Vec<Cow<'a, str>>> {
-        let mut values: Vec<Cow<'a, str>> = vec![];
-        self.cursor = ArgCursor::Reference(0, 0);
-        let (mut start, mut end) = (0, 0);
-        let trim = input.attr.trim_input;
-
-        // This is totally ok to iterate as char_indices rather than chars
-        // because "only ASCII char is matched" so there is zero possibilty that
-        // char_indices will make any unexpected side effects.
-        let arg_iter = input.args.as_bytes().iter().enumerate();
-
-        // TODO TT
-        // If arg_type is empty, every type is treated as text
-        let mut at_iter = input.params.iter();
-
-        // Return empty vector without going through logics
-        if input.args.is_empty() {
-            return Err(RadError::InvalidArgument(format!(
-                "Macro [{}] received empty arguments",
-                input.name
-            )));
-        }
-
-        for (idx, &ch) in arg_iter {
-            // Check parenthesis
-            self.check_parenthesis(ch, input.args);
-
-            if ch == self.delimiter {
-                // TODO TT
-                // This is not a neat solution it works...
-                let mut split = false;
-                let ret =
-                    self.branch_delimiter(ch, idx, &mut split, (&mut start, &mut end), input.args);
-
-                if split {
-                    let value: Cow<'_, str> = if let Some(v) = ret {
-                        let mut src = v;
-                        if trim {
-                            src = src.trim().to_string();
-                        }
-                        src.into()
-                    } else {
-                        let mut src = &input.args[start..end];
-                        if trim {
-                            src = src.trim();
-                        }
-                        src.into()
-                    };
-
-                    // Only validate and drop arg
-                    Self::validate_arg_no_return(
-                        get_next_type(&mut at_iter, input.optional.as_ref())?,
-                        &value,
-                    )?;
-
-                    values.push(value);
-                }
-            } else if ch == ESCAPE_CHAR_U8 {
-                self.branch_escape_char(ch, input.args);
-            } else {
-                // This pushes value in the end, so use continue not push the value
-                if ch == LIT_CHAR_U8 {
-                    // '*'
-                    self.branch_literal_char(ch, input.args);
-                } else {
-                    // Non literal character are just pushed
-                    self.cursor.push(&[ch]);
-                }
-            }
-
-            if self.no_previous {
-                self.previous.replace(b'0');
-                self.no_previous = false;
-            } else {
-                self.previous.replace(ch);
-            }
-        } // while end
-          // Add last arg
-        let value: Cow<'_, str> = if let Some(v) = self.cursor.get_cursor_range_or_get_string(
-            input.args.len(),
-            trim,
-            (&mut start, &mut end),
-        ) {
-            v.into()
-        } else {
-            let mut src = &input.args[start..end];
-            if trim {
-                src = src.trim();
-            }
-            src.into()
-        };
-
-        Self::validate_arg_no_return(
-            get_next_type(&mut at_iter, input.optional.as_ref())?,
-            &value,
-        )?;
-
         values.push(value);
         Ok(values)
     }
@@ -736,12 +594,6 @@ impl ArgParser {
         }
 
         self.paren_stack.last().unwrap().macro_invocation
-    }
-
-    fn validate_arg_no_return(param: &Parameter, source: &str) -> RadResult<()> {
-        use crate::ArgableStr;
-        source.is_argable(param)?;
-        Ok(())
     }
 
     fn validate_arg<'a>(
