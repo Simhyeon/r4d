@@ -73,8 +73,8 @@ pub const RET_ETABLE: &str = "_RET_";
 // Colon (:) for iterated value
 // Exclamation ( ! ) for negation
 /// Unallowed regex pattern that is reserved for other purposes
-pub static UNALLOWED_CHARS: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"[a-zA-Z1-9\\_\*\^\|\(\)-=,:~!<]"#).expect("Failed to create regex expression")
+pub static UNALLOWED_CHARS_FOR_COMMENT: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"[a-zA-Z1-9\\_\*\^\|\(\)-,:~!<]"#).expect("Failed to create regex expression")
 });
 
 // Diff related
