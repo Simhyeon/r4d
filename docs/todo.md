@@ -67,7 +67,6 @@ Actually finish deterred macro later...
         * [ ] Make a constructor for error type so that impl Into<String> can
           be utilized
     * [ ] Check publicity and modules
-        * [x] merge log and `log_no_line` 
         * [ ] Add a new enum `LogLine`
         * [ ] Check the followings.
             * [ ] Tracktype publicity
@@ -115,16 +114,31 @@ Actually finish deterred macro later...
     * [x] Check trim input behaviour of other macros
         -> Ok, trim input is applied per `get_arg` method
     * [x] "Length of a runtime or local macro" macro -> mlen
+    * [O] ----------FROM DEV+REF----------
+    * [x] Ditched strictpanic
+        * [x] merge log and `log_no_line` 
+        * [x] Don't eprint but rather return 
+    * [x] Renew allowed comment character
+    * [x] Macro definition validity check is was totally fine... I was fool
     * [O] ----------DONE----------
-    * [ ] Don't eprint but rather return 
-        * [x] My first try is to simply ditch every StrictPanic error and make
-          it as behavioural not decisional
-        * [x] Checked `function_map_impl`
-        * [ ] to check `deterred_map_impl`
-    * [ ] Renew allowed comment character
-    * [ ] Macro definition validity check is outrageous... It really doesn't make any sense.
     * [ ] Fix bugs
+    * [ ] Make an ergonomic getter for regex and make it forced to insert regex
+      later.
+    * [ ] I was not using `get_regex` none at all... wow
+        -> Actually there was a reason for that... but I didn't document it.
+        I exclusviely used `get_text` to stop side effects which is logical
+        but... kinda frustrating that there is a regex type while it doesn't
+        return proper type
+        * [ ] Let's create a new type for regex called RadRegex;
+        * [ ] Search `insert_or_something`
+        * [ ] Function macro
+        * [ ] Deterred macro
+        * [ ] Pattern `p.insert_regex(reg.take()?)?;` can fail because this is
+          only valid when `reg` is a newly created regex not referenced which
+          is not the "whole" case.
     * [ ] Restart manual checking
+        * [ ] No manuals for deterred macros
+    * [ ] Test error messages
     * [ ] Check things for basics
     * [ ] Complete manual ( No adding macros... please )
     * [ ] Push to master
@@ -137,6 +151,22 @@ Actually finish deterred macro later...
     * [ ] Performance ... 
     * [ ] ExtMacroBuilder ... Extension etc...
 
+* [ ] Consider implemtnting independent macro map struct and segregate from processor
+* [ ] Consider implemtnting Logger struct and segregate from processor
+* [ ] Consider implemtnting Debugger struct and segregate from processor
+
+for e.g.
+
+```rust
+let mut map = MacroMap::new();
+let mut logger = Logger::new();
+let mut debugger: Debugger::new();
+let proc = Process::new()
+    .map(map)
+    .logger(logger)
+    .debugger(debugger);
+```
+
 * [ ] Possibly warn when zero input macro actually accepted some arguments
 
 * [ ] Currently negation cannot logically work for runtime macro due to logic
@@ -144,7 +174,6 @@ Actually finish deterred macro later...
 
 * [ ] Mediocre result for duplicate error logging... Make hash and skip if
   previous is same with current logging.
-    * [ ] General rule of thumb... **Don't use log_error preemptively**
 
 * [ ] Should runtime macro also respect empty return? like function or deterred?
 
@@ -186,7 +215,7 @@ Actually finish deterred macro later...
 
 * [ ] Exdent doesn't work well with argument type system...
     
-* [ ] Loop is also buggy. Not sure but can be buggy
+* [ ] Loop can be buggy?. Not sure but can be buggy
 
 * [ ] BUG : Error inside file triggers nested error message
     -> NOt every error but some errors. Serach `log_error`
