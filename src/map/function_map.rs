@@ -1407,7 +1407,7 @@ impl FunctionMacroMap {
                     "undent",
                     [(ValueType::CText,"a_trim_option"),(ValueType::Text,"a_lines"),],
                     Self::undent,
-                    Some(man_fun!("exdent.r4d")),
+                    Some(man_fun!("undent.r4d")),
                 )
             ),
             (
