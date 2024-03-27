@@ -130,7 +130,7 @@ impl FunctionMacroMap {
     pub(crate) fn regex_sub(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        let match_expr = args.get_text(0)?;
+        let match_expr = args.get_regex(0)?;
         let substitution = args.get_text(1)?;
         let source = args.get_text(2)?;
 
@@ -193,7 +193,7 @@ impl FunctionMacroMap {
     pub(crate) fn find_occurence(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        let match_expr = args.get_text(0)?;
+        let match_expr = args.get_regex(0)?;
         let source = args.get_text(1)?;
 
         if match_expr.is_empty() {
@@ -218,7 +218,7 @@ impl FunctionMacroMap {
         p: &mut Processor,
     ) -> RadResult<Raturn> {
         let args = ArgParser::new().args_with_len(input)?;
-        let match_expr = args.get_text(0)?;
+        let match_expr = args.get_regex(0)?;
         let source = args.get_text(1)?;
 
         if match_expr.is_empty() {
@@ -3093,7 +3093,7 @@ impl FunctionMacroMap {
     ) -> RadResult<Raturn> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        let expr = args.get_text(0)?;
+        let expr = args.get_regex(0)?;
         let content = args.get_text(1)?;
         let nl = p.state.newline.clone();
         let reg = p.try_get_or_create_regex(expr)?;
@@ -3311,7 +3311,7 @@ impl FunctionMacroMap {
         let args = ArgParser::new().args_with_len(input)?;
 
         let name = args.get_text(0)?;
-        let expr = args.get_text(1)?;
+        let expr = args.get_regex(1)?;
 
         p.state.regex_cache.register(name, expr)?;
         Ok(Raturn::None)
@@ -3443,7 +3443,7 @@ impl FunctionMacroMap {
     pub(crate) fn grep_expr(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        let expr = args.get_text(0)?;
+        let expr = args.get_regex(0)?;
         // TODO
         // Env : to separate it by comma
         let nl = p.state.newline.clone();
@@ -3483,7 +3483,7 @@ impl FunctionMacroMap {
             .split(SplitVariant::Always)
             .args_with_len(input)?;
 
-        let expr = args.get_text(0)?;
+        let expr = args.get_regex(0)?;
         let reg = p.try_get_or_create_regex(expr)?;
 
         // It is mostly safe to unwrap because every input is text by default
@@ -3508,7 +3508,7 @@ impl FunctionMacroMap {
     pub(crate) fn grep_lines(input: MacroInput, p: &mut Processor) -> RadResult<Raturn> {
         let args = ArgParser::new().args_with_len(input)?;
 
-        let expr = args.get_text(0)?;
+        let expr = args.get_regex(0)?;
         let reg = p.try_get_or_create_regex(expr)?;
         let content = args.get_text(1)?.full_lines();
         let grepped = content
@@ -3541,7 +3541,7 @@ impl FunctionMacroMap {
             )));
         };
 
-        let expr = args.get_text(0)?;
+        let expr = args.get_regex(0)?;
         let reg = p.try_get_or_create_regex(expr)?;
         let file_stream = std::fs::File::open(path)?;
         let reader = std::io::BufReader::new(file_stream);

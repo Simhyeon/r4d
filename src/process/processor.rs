@@ -348,7 +348,7 @@ impl<'processor> Processor<'processor> {
     /// ```
     pub fn custom_comment_char(mut self, character: char) -> RadResult<Self> {
         // check if unallowed character
-        if UNALLOWED_CHARS.is_match(&character.to_string()) {
+        if UNALLOWED_CHARS_FOR_COMMENT.is_match(&character.to_string()) {
             return Err(RadError::UnallowedChar(format!(
                 "\"{}\" is not allowed",
                 character

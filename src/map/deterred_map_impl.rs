@@ -44,7 +44,7 @@ impl DeterredMacroMap {
             .macro_name("map")
             .cursors_with_len(input)?;
 
-        let match_expr = cursors.get_text(p, 0)?;
+        let match_expr = cursors.get_regex(p, 0)?;
         let macro_src = cursors.get_ctext(p, 1)?;
         let (macro_name, mut macro_arguments) =
             Utils::get_name_n_arguments(&macro_src, p.env.disable_map_quote, true)?;
@@ -161,7 +161,7 @@ impl DeterredMacroMap {
             .macro_name("maple")
             .cursors_with_len(input)?;
 
-        let match_expr = cursors.get_text(p, 0)?;
+        let match_expr = cursors.get_regex(p, 0)?;
         let macro_src = cursors.get_text(p, 1)?;
         let (macro_name, mut macro_arguments) =
             Utils::get_name_n_arguments(&macro_src, p.env.disable_map_quote, true)?;
@@ -223,8 +223,8 @@ impl DeterredMacroMap {
             .macro_name("mape")
             .cursors_with_len(input)?;
 
-        let start_expr = cursors.get_text(p, 0)?;
-        let end_expr = cursors.get_text(p, 1)?;
+        let start_expr = cursors.get_regex(p, 0)?;
+        let end_expr = cursors.get_regex(p, 1)?;
         let macro_src = cursors.get_text(p, 2)?;
         let (macro_name, mut macro_arguments) =
             Utils::get_name_n_arguments(&macro_src, p.env.disable_map_quote, true)?;
@@ -410,7 +410,7 @@ impl DeterredMacroMap {
             .macro_name("mapfe")
             .cursors_with_len(input)?;
 
-        let match_expr = cursors.get_text(p, 0)?;
+        let match_expr = cursors.get_regex(p, 0)?;
         let macro_src = cursors.get_ctext(p, 1)?;
         let (macro_name, mut macro_arguments) =
             Utils::get_name_n_arguments(&macro_src, p.env.disable_map_quote, true)?;

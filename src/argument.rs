@@ -538,6 +538,7 @@ impl FromStr for ValueType {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)] // TODO TT
 pub(crate) struct ParsedCursors<'a> {
     src: &'a str,
     level: usize,
@@ -732,17 +733,9 @@ as given type. You should use proper getter for the type"
         self.get(input.index)?.to_expanded(p, &input)
     }
 
-    pub fn get_regex<'b>(
-        &'a self,
-        p: &'b mut Processor,
-        index: usize,
-    ) -> RadResult<Cow<'b, Regex>> {
-        let input = ExInput::new(&self.macro_name)
-            .index(index)
-            .level(self.level)
-            .trim();
-        let expanded = self.get(input.index)?.to_expanded(p, &input)?;
-        p.try_get_or_create_regex(&expanded)
+    // Currently this is simply a wrapper around text
+    pub fn get_regex<'b>(&'a self, p: &'b mut Processor, index: usize) -> RadResult<String> {
+        self.get_text(p, index)
     }
 
     pub fn get_custom<T>(
@@ -838,13 +831,9 @@ impl<'a> ParsedArguments<'a> {
         }
     }
 
-    pub fn get_regex<'b>(
-        &'a self,
-        index: usize,
-        processor: &'b mut Processor,
-    ) -> RadResult<Cow<'b, Regex>> {
+    pub fn get_regex<'b>(&'a self, index: usize) -> RadResult<&str> {
         match self.args.get(index) {
-            Some(Argument::Regex(val)) => processor.try_get_or_create_regex(val),
+            Some(Argument::Regex(val)) => Ok(val),
             _ => Err(crate::RadError::InvalidExecution(format!(
                 "Failed to get argument as regex \
 . Tried to refer a value {:?}",

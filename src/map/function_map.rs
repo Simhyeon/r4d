@@ -253,7 +253,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "striper",
-                    [(ValueType::Regex,"a_expr"),(ValueType::Text,"a_content"),],
+                    [(ValueType::Regex,"a_regex"),(ValueType::Text,"a_content"),],
                     Self::strip_expression_from_rear,
                     Some(man_fun!("striper.r4d")),
                 )
@@ -594,7 +594,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "find",
-                    [(ValueType::Regex,"a_expr"),(ValueType::Text, "a_source"),],
+                    [(ValueType::Regex,"a_regex"),(ValueType::Text, "a_source"),],
                     Self::find_occurence,
                     Some(man_fun!("find.r4d")),
                 ).ret(ValueType::Bool)
@@ -602,7 +602,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "findm",
-                    [(ValueType::Regex,"a_expr"),(ValueType::Text, "a_source"),],
+                    [(ValueType::Regex,"a_regex"),(ValueType::Text, "a_source"),],
                     Self::find_multiple_occurence,
                     Some(man_fun!("findm.r4d")),
                 ).ret(ValueType::Uint)
@@ -643,7 +643,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "folde",
-                    [(ValueType::Regex,"a_start_expr"),(ValueType::Regex,"a_end_expr"),(ValueType::Text,"a_lines"),],
+                    [(ValueType::Regex,"a_start_regex"),(ValueType::Regex,"a_end_regex"),(ValueType::Text,"a_lines"),],
                     Self::fold_regular_expr,
                     None,
                 )
@@ -651,7 +651,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "grep",
-                    [(ValueType::Regex,"a_expr"),(ValueType::Text, "a_text"),],
+                    [(ValueType::Regex,"a_regex"),(ValueType::Text, "a_text"),],
                     Self::grep_expr,
                     Some(man_fun!("grep.r4d")),
                 )
@@ -659,7 +659,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "grepa",
-                    [(ValueType::Regex,"a_expr"),(ValueType::Text, "a_item"),],
+                    [(ValueType::Regex,"a_regex"),(ValueType::Text, "a_item"),],
                     Self::grep_array,
                     Some(man_fun!("grepa.r4d")),
                 ).optional_multiple()
@@ -668,7 +668,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "grepl",
-                    [(ValueType::Regex,"a_expr"),(ValueType::Text, "a_lines"),],
+                    [(ValueType::Regex,"a_regex"),(ValueType::Text, "a_lines"),],
                     Self::grep_lines,
                     Some(man_fun!("grepl.r4d")),
                 )
@@ -676,7 +676,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "grepf",
-                    [(ValueType::Regex,"a_expr"),(ValueType::Path, "a_file"),],
+                    [(ValueType::Regex,"a_regex"),(ValueType::Path, "a_file"),],
                     Self::grep_file,
                     Some(man_fun!("grepf.r4d"))
                 )
@@ -1120,7 +1120,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "sub",
-                    [(ValueType::Regex,"a_expr"),(ValueType::Text, "a_target"),(ValueType::Text, "a_source"),],
+                    [(ValueType::Regex,"a_regex"),(ValueType::Text, "a_target"),(ValueType::Text, "a_source"),],
                     Self::regex_sub,
                     Some(man_fun!("sub.r4d")),
                 )
@@ -1128,7 +1128,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "addexp",
-                    [(ValueType::CText,"a_name"),(ValueType::Text, "a_expr"),],
+                    [(ValueType::CText,"a_name"),(ValueType::Regex, "a_regex"),],
                     Self::register_expression,
                     Some(man_fun!("addexp.r4d")),
                 ).no_ret()
@@ -1287,7 +1287,7 @@ impl FunctionMacroMap {
             (
                 FMacroSign::new(
                     "static",
-                    [(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_expr"),],
+                    [(ValueType::CText,"a_macro_name"),(ValueType::Text, "a_body"),],
                     Self::define_static,
                     Some(man_fun!("static.r4d")),
                 ).no_ret()
@@ -1649,14 +1649,14 @@ impl FunctionMacroMap {
                 
                 FMacroSign::new(
                     "eval",
-                    [(ValueType::Text, "a_expr")],
+                    [(ValueType::Text, "a_formula")],
                     Self::eval,
                     Some(man_fun!("eval.r4d")),
                 ),
             );
             map.insert(
                 
-                FMacroSign::new("evalf", [(ValueType::Text, "a_expr")], Self::evalf, None),
+                FMacroSign::new("evalf", [(ValueType::Text, "a_formula")], Self::evalf, None),
             );
             map.insert(
                 
