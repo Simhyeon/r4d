@@ -1404,9 +1404,9 @@ impl FunctionMacroMap {
             ),
             (
                 FMacroSign::new(
-                    "exdent",
+                    "undent",
                     [(ValueType::CText,"a_trim_option"),(ValueType::Text,"a_lines"),],
-                    Self::exdent,
+                    Self::undent,
                     Some(man_fun!("exdent.r4d")),
                 )
             ),

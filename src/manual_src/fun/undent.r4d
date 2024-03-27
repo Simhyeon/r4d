@@ -1,4 +1,4 @@
-Exdent with given amount
+Undent with given amount
 
 # Note
 
@@ -17,7 +17,7 @@ for this macro
 
 # Example
 
-$exdent(min,$space(1)First
+$undent(min,$space(1)First
 $space(2)Second
 $space(3)Third)
 % ===
@@ -27,7 +27,7 @@ $space(3)Third)
 %   Third
 
 
-$exdent(3,$space(2)First
+$undent(3,$space(2)First
 $space(3)Second
 $space(5)Third)
 % ===

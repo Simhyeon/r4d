@@ -625,16 +625,16 @@ impl FunctionMacroMap {
         Ok(lines.into())
     }
 
-    /// Trim lines ( exdent ) with given amount
+    /// Trim lines ( undent ) with given amount
     ///
     /// # Usage
     ///
-    /// $exdent(min,
+    /// $undent(min,
     /// \t multi
     /// \t line
     /// \t expression
     /// )
-    pub(crate) fn exdent(input: MacroInput, _: &mut Processor) -> RadResult<Raturn> {
+    pub(crate) fn undent(input: MacroInput, _: &mut Processor) -> RadResult<Raturn> {
         let args = ArgParser::new().args_with_len(input)?;
 
         let option = args.get_ctext(0)?;
