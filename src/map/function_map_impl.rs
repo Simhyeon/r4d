@@ -1284,7 +1284,9 @@ impl FunctionMacroMap {
                 }
             } else if BYTE_CHARS_CLOSING.contains(ch) {
                 if target_level == level {
-                    result = src[..chunk_index].to_string() + &src[paren_index + 1..idx];
+                    result = src[..chunk_index].to_string()
+                        + &src[paren_index + 1..idx]
+                        + &src[idx + 1..];
                     return Ok(result.into());
                 }
 

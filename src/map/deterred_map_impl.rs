@@ -241,7 +241,6 @@ impl DeterredMacroMap {
             ));
         }
 
-        let mut chunk_index = 0usize;
         let mut folded = String::with_capacity(source.len());
         let preserve = p.env.map_preserve;
         let mut on_grep = false;
@@ -250,11 +249,14 @@ impl DeterredMacroMap {
         let reg_end = p.try_get_or_create_regex(&end_expr)?.into_owned();
 
         let mut iter = source.full_lines_with_index().peekable();
+        let mut chunk_index = 0usize;
         while let Some((idx, line)) = iter.next() {
             // Start a new container
             if reg_start.find(line).is_some() && reg_end.find(line).is_none() {
                 let previous = &source[chunk_index..idx.saturating_sub(1)];
                 on_grep = true;
+
+                // Append if the pattern was captured before
                 if !previous.is_empty() {
                     folded.push_str(
                         &p.execute_macro(
@@ -268,8 +270,9 @@ impl DeterredMacroMap {
                 }
                 chunk_index = idx;
             } else if reg_start.find(line).is_none() && reg_end.find(line).is_some() {
+                // || Found ending regex
                 let last_index = iter.peek().unwrap_or(&(source.len() - 1, "")).0;
-                let current = &source[chunk_index..last_index];
+                let current = &source[chunk_index..=last_index];
                 if !current.is_empty() {
                     folded.push_str(
                         &p.execute_macro(
